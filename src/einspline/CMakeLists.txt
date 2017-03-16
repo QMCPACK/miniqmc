@@ -12,7 +12,6 @@
 #////////////////////////////////////////////////////////////////////////////////////// 
 
 SET(HFILES
- aligned_alloc.h
  bspline_base.h bspline_create.h
  bspline.h bspline_structs.h
  bspline_eval_d.h
@@ -20,17 +19,9 @@ SET(HFILES
  multi_bspline_create.h    multi_bspline_structs.h
  multi_bspline_eval_d.h
  multi_bspline_eval_s.h    multi_bspline_eval_z.h
- multi_bspline_copy.h
  nubspline_structs.h nubasis.h nubspline.h nugrid.h
  nubspline_base.h nubspline_create.h
- nubspline_eval_d.h
- multi_nubspline.h
- multi_nubspline_create.h    multi_nubspline_structs.h
- multi_nubspline_eval_z.h
- multi_bspline_structs_cuda.h multi_bspline_create_cuda.h
- multi_bspline_eval_cuda.h bspline_eval_cuda.h
- bspline_structs_cuda.h bspline_create_cuda.h
- bspline_base_cuda.h
+
  )
 
 #FOREACH(a ${HFILES})
@@ -44,39 +35,24 @@ SET(SRCS ${SRCS}
   bspline_create.c
   bspline_data.c
   multi_bspline_create.c
-  multi_nubspline_create.c
   nubspline_create.c
   nubasis.c
-  nugrid.c
-  multi_bspline_copy.c
 )
 
 #do not compiler c functions
 IF(HAVE_SSE41)
   SET(SRCS ${SRCS}
-    multi_bspline_eval_s_sse.cpp
-    )
+  )
 else()
   SET(SRCS ${SRCS}
-    multi_bspline_eval_s_std3.cpp
     )
 endif()
 
 IF(HAVE_SSE2)
   set(SRCS ${SRCS}
-    bspline_eval_d_sse.cpp
-    nubspline_eval_d_sse.cpp
-    multi_bspline_eval_d_sse.cpp
-    multi_bspline_eval_z_sse.cpp
-    multi_nubspline_eval_z_sse.cpp
     )
 else()
   SET(SRCS ${SRCS}
-    bspline_eval_d_std.cpp
-    nubspline_eval_d_std.cpp
-    multi_bspline_eval_d_std3.cpp
-    multi_bspline_eval_z_std3.cpp
-    multi_nubspline_eval_z_std.cpp
     )
 endif()
 
@@ -91,8 +67,6 @@ else()
   ADD_LIBRARY(einspline ${SRCS})
 endif()
 
-#ADD_EXECUTABLE(time_multi time_multi_new.c)
 #target_link_libraries(time_multi einspline)
 #add_dependencies(time_multi ${PROJECT_BINARY_HOME}/include/einspline/bspline.h)
-#ADD_EXECUTABLE(test_multi_single test_multi_single.cpp)
 #target_link_libraries(test_multi_single einspline)

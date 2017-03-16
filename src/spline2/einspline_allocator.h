@@ -50,7 +50,7 @@ einspline_free (void *ptr)
 int posix_memalign(void **memptr, size_t alignment, size_t size);
 #endif
 
-inline void *
+void *
 einspline_alloc (size_t size, size_t alignment)
 {
   void *ptr;
@@ -58,7 +58,7 @@ einspline_alloc (size_t size, size_t alignment)
   return ptr;
 }
 
-inline void
+void
 einspline_free (void *ptr)
 {
   free (ptr);

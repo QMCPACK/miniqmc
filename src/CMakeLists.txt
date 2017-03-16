@@ -114,24 +114,15 @@ ENDIF(HAVE_OOMPI)
   ####################################
   SET(UTILITIES
     qmc_common.cpp
-    Utilities/RandRandom.cpp 
     Utilities/RandomGenerator.cpp 
     Utilities/OhmmsObject.cpp 
     Utilities/SpeciesSet.cpp 
-    Utilities/SimpleParser.cpp 
     Utilities/OhmmsInform.cpp 
     Utilities/OhmmsInfo.cpp 
     Utilities/NewTimer.cpp
     Utilities/ProgressReportEngine.cpp
-    Utilities/unit_conversion.cpp
-    OhmmsData/Libxml2Doc.cpp
-    OhmmsApp/ProjectData.cpp
-    OhmmsApp/RandomNumberControl.cpp
-    Numerics/OhmmsBlas.cpp
     Platforms/sysutil.cpp
-    QMCFactory/OneDimGridFactory.cpp
     Message/Communicate.cpp 
-    Message/MPIObjectBase.cpp 
     Optimize/VariableSet.cpp
     io/hdf_archive.cpp
     spline2/einspline_allocator.c
@@ -140,29 +131,9 @@ ENDIF(HAVE_OOMPI)
     ${GITREV_TMP}
     )
 
-  IF(QMC_ADIOS)
-    SET(UTILITIES ${UTILITIES}
-      ADIOS/ADIOS_verify.cpp
-      ADIOS/ADIOS_config.h
-      ADIOS/ADIOS_config.cpp
-      )
-  ENDIF(QMC_ADIOS)
+   ADD_LIBRARY(qmcutil ${UTILITIES} ${ADIOS})
 
-  IF(QMC_CUDA)
-    SET(UTILITIES ${UTILITIES} 
-      Numerics/CUDA/cuda_inverse.cu 
-      CUDA/gpu_vector.cpp
-      CUDA/gpu_misc.cpp
-      Particle/accept_kernel.cu)
-  ENDIF(QMC_CUDA)
 
-  IF(QMC_CUDA)
-    CUDA_ADD_LIBRARY(qmcutil ${UTILITIES})
-    CUDA_ADD_CUBLAS_TO_TARGET(qmcutil)
-  ELSE(QMC_CUDA)
-    ADD_LIBRARY(qmcutil ${UTILITIES} ${ADIOS})
-  ENDIF(QMC_CUDA)
-  
   # For unit tests, enable use for the fake RNG
   FUNCTION( USE_FAKE_RNG TARGET )
     TARGET_COMPILE_DEFINITIONS(${TARGET} PRIVATE "USE_FAKE_RNG")
@@ -170,10 +141,6 @@ ENDIF(HAVE_OOMPI)
 
   # Put the fake RNG in a separate library so production code doesn't
   # accidentally link to it
-  SET(UNIT_TEST_UTILITIES
-    Utilities/FakeRandom.cpp 
-  ) 
-  ADD_LIBRARY(qmcfakerng ${UNIT_TEST_UTILITIES})
 
   #IF(QMC_BUILD_STATIC)
   #  ADD_LIBRARY(qmcutil STATIC ${UTILITIES})
@@ -186,9 +153,6 @@ ENDIF(HAVE_OOMPI)
     SET(PARTICLE Lattice/Uniform3DGridLayout.cpp)
   ENDIF(OHMMS_DIM MATCHES 3)
 
-  IF(OHMMS_DIM MATCHES 2)
-    SET(PARTICLE Lattice/Uniform2DGridLayout.cpp)
-  ENDIF(OHMMS_DIM MATCHES 2)
 
   ####################################
   # create libqmcbase 
@@ -200,19 +164,11 @@ ENDIF(HAVE_OOMPI)
     Particle/DistanceTableAA.cpp
     Particle/DistanceTableAB.cpp
     Particle/DistanceTable.cpp
-    Particle/HDFWalkerInputManager.cpp
     Particle/make_clones.cpp
     LongRange/KContainer.cpp
     LongRange/StructFact.cpp
-    LongRange/LPQHIBasis.cpp
-    LongRange/LPQHISRCoulombBasis.cpp
-    LongRange/EwaldHandler.cpp
-    LongRange/LRCoulombSingleton.cpp
     )
 
-  IF(OHMMS_DIM MATCHES 2)
-    SET(PARTICLE ${PARTICLE} LongRange/TwoDEwaldHandler.cpp)
-  ENDIF(OHMMS_DIM MATCHES 2)
 
   # IF(QMC_BUILD_LEVEL GREATER 2)
   #   IF(NOT QMC_COMPLEX)
@@ -222,28 +178,13 @@ ENDIF(HAVE_OOMPI)
 
   SET(PARTICLEIO
     ParticleTags.cpp 
-    ParticleIO/ParticleLayoutIO.cpp 
-    ParticleIO/XMLParticleIO.cpp 
     ParticleIO/ParticleIOUtility.cpp 
     )
 
   IF(HAVE_LIBHDF5 OR HAVE_ADIOS)
     SET(PARTICLEIO ${PARTICLEIO}
-      Particle/HDFWalkerIOEngine.cpp 
       Particle/HDFWalkerOutput.cpp
-      Particle/HDFWalkerInput_0_0.cpp
-      Particle/HDFWalkerInput_0_4.cpp
       )
-    IF(HAVE_ADIOS)
-      SET(PARTICLEIO ${PARTICLEIO}
-        ADIOS/ADIOS_verify.cpp
-      )
-    ENDIF(HAVE_ADIOS)
-
-    IF(OHMMS_DIM  MATCHES 3)
-      SET(PARTICLEIO ${PARTICLEIO} ParticleIO/ESHDFParticleParser.cpp)
-    ENDIF(OHMMS_DIM  MATCHES 3)
-
   ENDIF(HAVE_LIBHDF5 OR HAVE_ADIOS)
 
   #Need to add this if nothing else but miniapps is compiled
@@ -272,22 +213,11 @@ ENDIF(HAVE_OOMPI)
   # Creating ADIOS
   #############################
 
-  SET(ADIOS ADIOS/ADIOS_config.cpp)
-  IF(HAVE_ADIOS)
-    SET(ADIOS ${ADIOS}
-    Particle/AdiosWalkerInput.cpp
-    ADIOS/ADIOS_profile.cpp
-    ADIOS/ADIOS_verify.cpp
-    ADIOS/ADIOSTrace.cpp
-    )
-  ENDIF(HAVE_ADIOS)
-
-  ADD_LIBRARY(adios_config ${ADIOS})
 
 
   SUBDIRS(QMCWaveFunctions)
   SUBDIRS(QMCHamiltonians)
-  SUBDIRS(QMCDrivers)
+  #SUBDIRS(QMCDrivers)
 
   IF(BUILD_AFQMC)
    SUBDIRS(AFQMC)
@@ -297,7 +227,7 @@ ENDIF(HAVE_OOMPI)
    SUBDIRS(FCIQMC)
   ENDIF(BUILD_FCIQMC)
 
-  SUBDIRS(QMCApp)
+  #SUBDIRS(QMCApp)
 
   #IF(BUILD_QMCTOOLS)
   SUBDIRS(QMCTools)
