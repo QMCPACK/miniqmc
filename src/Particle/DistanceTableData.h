@@ -200,13 +200,16 @@ struct DistanceTableData
 
   /** temp_dr */
   RowContainer Temp_dr;
+
+  /** true, if full table is needed at loadWalker */
+  bool Need_full_table_loadWalker;
   /*@}*/
 
   ///name of the table
   std::string Name;
   ///constructor using source and target ParticleSet
   DistanceTableData(const ParticleSet& source, const ParticleSet& target)
-    : Origin(&source), N(0), NeedDisplacement(false)
+    : Origin(&source), N(0), NeedDisplacement(false), Need_full_table_loadWalker(false)
   {  
     Rmax=0; //set 0
     //Rmax=source.Lattice.WignerSeitzRadius;   
@@ -381,6 +384,15 @@ struct DistanceTableData
     return 0;
   }
 
+  /** find the nearest neighbor
+   * @param iat source particle id
+   * @return the id of the nearest particle, -1 not found
+   */
+  virtual int get_first_neighbor(IndexType iat, RealType& r, PosType& dr) const
+  {
+    return -1;
+  }
+
   /** build a compact list of a neighbor for the iat source
    * @param iat source particle id
    * @param rcut cutoff radius
@@ -480,8 +492,3 @@ struct DistanceTableData
 };
 }
 #endif
-/***************************************************************************
- * $RCSfile$   $Author$
- * $Revision$   $Date$
- * $Id$
- ***************************************************************************/

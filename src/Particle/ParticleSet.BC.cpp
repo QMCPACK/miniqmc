@@ -71,11 +71,11 @@ void ParticleSet::createSK()
   //int membersize= mySpecies.addAttribute("membersize");
   //for(int ig=0; ig<mySpecies.size(); ++ig)
   //  SubPtcl[ig+1]=SubPtcl[ig]+mySpecies(membersize,ig);
-  
+
+  if(UseBoundBox) convert2Cart(R); //make sure that R is in Cartesian coordinates
 
   if(Lattice.SuperCellEnum != SUPERCELL_OPEN)
   {
-    convert2Cart(R); //make sure that R is in Cartesian coordinates
     Lattice.SetLRCutoffs();
     LRBox=Lattice;
     if(Lattice.SuperCellEnum == SUPERCELL_SLAB)
@@ -121,6 +121,14 @@ void ParticleSet::createSK()
     Mass[iat]=mySpecies(massind,GroupID[iat]);
 
   RSoA=R;
+}
+
+void ParticleSet::turnOnPerParticleSK()
+{
+  if(SK)
+    SK->turnOnStorePerParticle(*this);
+  else
+    APP_ABORT("ParticleSet::turnOnPerParticleSK trying to turn on per particle storage in SK but SK has not been created.");
 }
 
 void ParticleSet::convert(const ParticlePos_t& pin, ParticlePos_t& pout)
@@ -242,9 +250,4 @@ void ParticleSet::convert2CartInBox(const ParticlePos_t& pin, ParticlePos_t& pou
   convert2Cart(pout);
 }
 }
-/***************************************************************************
- * $RCSfile$   $Author$
- * $Revision$   $Date$
- * $Id$
- ***************************************************************************/
 

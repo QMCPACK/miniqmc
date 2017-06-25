@@ -41,7 +41,6 @@ namespace qmcplusplus
  * - loops over the groups: elminated PairID
  * - support simd function
  * - double the loop counts
- * - UseBuffer is introduced. Default is false.
  * - Memory use is O(N). 
  */
 template<class FT>
@@ -254,9 +253,7 @@ struct  J2OrbitalSoA : public OrbitalBase
       const valT* restrict dX=displ.data(idim);
       valT s=valT();
 
-      ASSUME_ALIGNED(du);
-      ASSUME_ALIGNED(dX);
-      #pragma omp simd reduction(+:s)
+      #pragma omp simd reduction(+:s) aligned(du,dX)
       for(int jat=0; jat<N; ++jat) s+=du[jat]*dX[jat];
       grad[idim]=s;
     }
@@ -291,7 +288,7 @@ J2OrbitalSoA<FT>::J2OrbitalSoA(ParticleSet& p, int tid) : TaskID(tid)
   init(p);
   FirstTime =true;
   KEcorr=0.0;
-  //OrbitalName = "J2OrbitalSoA";
+  OrbitalName = "J2OrbitalSoA";
 }
 
 template<typename FT>
@@ -342,9 +339,21 @@ void J2OrbitalSoA<FT>::addFunc(int ia, int ib, FT* j)
   }
   else
   {
-    F[ia*NumGroups+ib]=j;
-    if(ia<ib)
-      F[ib*NumGroups+ia]=j;
+    if(N==2)
+    {
+      // a very special case, 1 up + 1 down
+      // uu/dd was prevented by the builder
+      for(int ig=0; ig<NumGroups; ++ig)
+        for(int jg=0; jg<NumGroups; ++jg)
+          F[ig*NumGroups+jg]=j;
+    }
+    else
+    {
+      // generic case
+      F[ia*NumGroups+ib]=j;
+      if(ia<ib)
+        F[ib*NumGroups+ia]=j;
+    }
   }
   std::stringstream aname;
   aname<<ia<<ib;

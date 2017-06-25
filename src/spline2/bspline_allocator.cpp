@@ -17,8 +17,13 @@
  */
 #include "spline2/bspline_allocator.hpp"
 #include "spline2/einspline_allocator.h"
+#include "einspline/multi_bspline_copy.h"
 
 extern "C" {
+
+  void set_multi_UBspline_3d_d (multi_UBspline_3d_d *spline, int spline_num, double *data);
+
+  void set_multi_UBspline_3d_s (multi_UBspline_3d_s *spline, int spline_num, float *data);
 
   multi_UBspline_3d_s*
     einspline_create_multi_UBspline_3d_s (Ugrid x_grid, Ugrid y_grid, Ugrid z_grid,
@@ -36,9 +41,6 @@ extern "C" {
     einspline_create_UBspline_3d_d (Ugrid x_grid, Ugrid y_grid, Ugrid z_grid,
         BCtype_d xBC, BCtype_d yBC, BCtype_d zBC, double *data);
 
-  void set_multi_UBspline_3d_d (multi_UBspline_3d_d *spline, int spline_num, double *data);
-
-  void set_multi_UBspline_3d_s (multi_UBspline_3d_s *spline, int spline_num, float *data); 
 }
 
 namespace qmcplusplus { namespace einspline {
@@ -48,19 +50,6 @@ namespace qmcplusplus { namespace einspline {
   Allocator::~Allocator()
   {
   }
-
-  void Allocator::destroy(multi_UBspline_3d_s* spline)
-  {
-    einspline_free(spline->coefs);
-    free(spline);
-  }
-
-  void Allocator::destroy(multi_UBspline_3d_d* spline)
-  {
-    einspline_free(spline->coefs);
-    free(spline);
-  }
-
 
   multi_UBspline_3d_s* 
     Allocator::allocateMultiBspline(Ugrid x_grid, Ugrid y_grid, Ugrid z_grid, 
@@ -124,6 +113,33 @@ namespace qmcplusplus { namespace einspline {
   {
     //Do we ever need this????
     //APP_ABORT("Not done yet with Allocator::copy(in,out)");
+  }
+
+  // 1D spline interface to einspline routines.
+  void set(multi_UBspline_1d_d* spline, int i, UBspline_1d_d* spline_in,
+       const int offset, const int N)
+  {
+    copy_UBspline_1d_d(spline, i, spline_in, offset, N);
+  }
+
+  void set(multi_UBspline_1d_s* spline, int i, UBspline_1d_d* spline_in,
+       const int offset, const int N)
+  {
+    copy_UBspline_1d_d_s(spline, i, spline_in, offset, N);
+  }
+
+  multi_UBspline_1d_d* create(multi_UBspline_1d_d* s, Ugrid& grid, BCtype_d& bc, int num_splines)
+  {
+    multi_UBspline_1d_d* newspline=create_multi_UBspline_1d_d(grid, bc, num_splines);
+    std::fill(newspline->coefs, newspline->coefs+newspline->coefs_size, 0.0);
+    return newspline;
+  }
+
+  multi_UBspline_1d_s* create(multi_UBspline_1d_s* s, Ugrid& grid, BCtype_s& bc, int num_splines)
+  {
+    multi_UBspline_1d_s* newspline=create_multi_UBspline_1d_s(grid, bc, num_splines);
+    std::fill(newspline->coefs, newspline->coefs+newspline->coefs_size, 0.0f);
+    return newspline;
   }
 
 } }

@@ -28,6 +28,9 @@ template<typename T> inline void Communicate::reduce(T& ) { }
 template<typename T>
 inline void Communicate::reduce(T* restrict , T* restrict, int n) { }
 
+template<typename T>
+inline void Communicate::reduce_in_place(T* restrict, int n) { }
+
 template<typename T> inline void Communicate::bcast(T& ) {  }
 
 template<typename T> inline void Communicate::bcast(T* restrict ,int n) { }
@@ -141,8 +144,3 @@ void gmax(T&,Communicate::mpi_comm_type comm)
 
 #endif
 
-/***************************************************************************
- * $RCSfile$   $Author: kesler $
- * $Revision: 2635 $   $Date: 2008-04-25 16:46:48 -0500 (Fri, 25 Apr 2008) $
- * $Id: CommOperators.h 2635 2008-04-25 21:46:48Z kesler $
- ***************************************************************************/

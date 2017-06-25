@@ -22,75 +22,20 @@
  * Rename aligned_alloc/aligned_free as einspline_alloc/einspline_free to
  * avoid naming conflicts with the standards
  */
+
 #ifndef EINSPLINE_ALIGNED_ALLOC_H
 #define EINSPLINE_ALIGNED_ALLOC_H
 
-#include <stdlib.h>
-#include "config.h"
-#include <omp.h>
-
-#if defined(__INTEL_COMPILER)
-inline void *
-einspline_alloc (size_t size, size_t alignment)
-{
-  return _mm_malloc(size,alignment);
-}
-
-inline void
-einspline_free (void *ptr)
-{
-  _mm_free(ptr);
-}
-#else
-
-#ifdef HAVE_POSIX_MEMALIGN
-
-#if (defined(__IBMCPP__)) && ( __IBMCPP__ <= 1210 )
-#else
-int posix_memalign(void **memptr, size_t alignment, size_t size);
+#ifdef __cplusplus
+extern "C" {
 #endif
 
-void *
-einspline_alloc (size_t size, size_t alignment)
-{
-  void *ptr;
-  posix_memalign (&ptr, alignment, size);
-  return ptr;
-}
+void* einspline_alloc (size_t size, size_t alignment);
 
-void
-einspline_free (void *ptr)
-{
-  free (ptr);
-}
+void einspline_free (void *ptr);
 
-#else
-
-inline void *
-einspline_alloc (size_t size, size_t alignment)
-{
-  size += (alignment-1)+sizeof(void*);
-  void *ptr = malloc (size);
-  if (ptr == NULL)
-    return NULL;
-  else
-  {
-    void *shifted = ptr + sizeof(void*);
-    size_t offset = alignment - (size_t)shifted%(size_t)alignment;
-    void *aligned = shifted + offset;
-    *((void**)aligned-1) = ptr;
-    return aligned;
-  }
-}
-
-inline void
-einspline_free (void *aligned)
-{
-  void *ptr = *((void**)aligned-1);
-  free (ptr);
+#ifdef __cplusplus
 }
 #endif
 
-
-#endif
 #endif

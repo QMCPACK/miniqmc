@@ -85,9 +85,14 @@ ParticleSet::ParticleSet(const ParticleSet& p)
   if(p.DistTables.size())
   {
     app_log() << "  Cloning distance tables. It has " << p.DistTables.size() << std::endl;
-    addTable(*this,p.DistTables[0]->DTType); //first is always for this-this paier
+    addTable(*this,p.DistTables[0]->DTType); //first is always for this-this pair
     for (int i=1; i<p.DistTables.size(); ++i)
       addTable(p.DistTables[i]->origin(),p.DistTables[i]->DTType);
+  }
+  for(int i=0; i<p.DistTables.size(); ++i)
+  {
+    DistTables[i]->Need_full_table_loadWalker = p.DistTables[i]->Need_full_table_loadWalker;
+    DistTables[i]->Rmax = p.DistTables[i]->Rmax;
   }
   if(p.SK)
   {
@@ -333,10 +338,19 @@ bool ParticleSet::get(std::ostream& os) const
   for (int i=0; i<SubPtcl.size(); i++)
     os << SubPtcl[i] << " ";
   os <<"\n\n    " << LocalNum << "\n\n";
-  for (int i=0; i<LocalNum; i++)
+  const int maxParticlesToPrint = 10;
+  int numToPrint = std::min(LocalNum, maxParticlesToPrint);
+
+  for (int i=0; i<numToPrint; i++)
   {
     os << "    " << mySpecies.speciesName[GroupID[i]]  << R[i] << std::endl;
   }
+
+  if (numToPrint < LocalNum)
+  {
+    os << "    (... and " << (LocalNum-numToPrint) << " more particle positions ...)" << std::endl;
+  }
+
   return true;
 }
 
@@ -476,14 +490,14 @@ int ParticleSet::getTable(const ParticleSet& psrc)
   return tid;
 }
 
-void ParticleSet::update(int iflag)
+void ParticleSet::update(bool skipSK)
 {
 #if defined(ENABLE_AA_SOA)
   RSoA.copyIn(R); 
 #endif
   for (int i=0; i< DistTables.size(); i++)
     DistTables[i]->evaluate(*this);
-  if (SK)
+  if (!skipSK && SK)
     SK->UpdateAllPart(*this);
 
   Ready4Measure=true;
@@ -770,7 +784,7 @@ void ParticleSet::acceptMove(Index_t iat)
 
     //Do not change SK: 2007-05-18
     if (SK && SK->DoUpdate)
-      SK->acceptMove(iat,GroupID[iat]);
+      SK->acceptMove(iat,GroupID[iat],activePos);
   }
   else
   {
@@ -784,13 +798,15 @@ void ParticleSet::rejectMove(Index_t iat)
 {
   //restore the position by the saved activePos
   R[iat]=activePos;
+  for (int i=0; i< DistTables.size(); ++i)
+    DistTables[i]->activePtcl=-1;
 }
 
-void ParticleSet::donePbyP()
+void ParticleSet::donePbyP(bool skipSK)
 {
   for (size_t i=0,nt=DistTables.size(); i< nt; i++)
     DistTables[i]->donePbyP();
-  if (SK && !SK->DoUpdate)
+  if (!skipSK && SK && !SK->DoUpdate)
     SK->UpdateAllPart(*this);
   Ready4Measure=true;
 }
@@ -830,10 +846,9 @@ void ParticleSet::loadWalker(Walker_t& awalker, bool pbyp)
 #endif
   if (pbyp)
   {
-    //for (size_t i=0,nt=DistTables.sie(); i< nt; i++)
-    //{
-    //  if(DistTables[i]!= DT_SOA) DistTables[i]->evaluate(*this);
-    //}
+    // in certain cases, full tables must be ready
+    for (int i=0; i< DistTables.size(); i++)
+      if(DistTables[i]->Need_full_table_loadWalker) DistTables[i]->evaluate(*this);
     //computed so that other objects can use them, e.g., kSpaceJastrow
     if(SK && SK->DoUpdate)
       SK->UpdateAllPart(*this);
@@ -941,8 +956,3 @@ int ParticleSet::addPropertyHistory(int leng)
 
 }
 
-/***************************************************************************
- * $RCSfile$   $Author$
- * $Revision$   $Date$
- * $Id$
- ***************************************************************************/

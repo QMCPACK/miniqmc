@@ -294,9 +294,9 @@ public:
   }
 
   /** update the internal data
-   *@param iflag index for the update mode
+   *@param skip SK update if skipSK is true
    */
-  void update(int iflag=0);
+  void update(bool skipSK=false);
 
   /**update the internal data with new position
    *@param pos position vector assigned to R
@@ -306,6 +306,10 @@ public:
   /** create Structure Factor with PBCs
    */
   void createSK();
+
+  /** Turn on per particle storage in Structure Factor
+   */
+  void turnOnPerParticleSK();
 
   ///retrun the SpeciesSet of this particle set
   inline SpeciesSet& getSpeciesSet()
@@ -465,8 +469,10 @@ public:
    */
   void loadWalker(Walker_t* awalker);
 
-  /** update the buffer */
-  void donePbyP();
+  /** update the buffer
+   *@param skip SK update if skipSK is true
+   */
+  void donePbyP(bool skipSK=false);
 
   //return the address of the values of Hamiltonian terms
   inline EstimatorRealType* restrict getPropertyBase()
@@ -584,8 +590,3 @@ protected:
 };
 }
 #endif
-/***************************************************************************
- * $RCSfile$   $Author$
- * $Revision$   $Date$
- * $Id$
- ***************************************************************************/

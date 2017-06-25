@@ -43,12 +43,16 @@ IF (GIT_FOUND AND IS_GIT_PROJECT)
     OUTPUT ${GITREV_TMP}
     COMMAND ${CMAKE_COMMAND} -E echo_append "#define GIT_BRANCH_RAW " > ${GITREV_TMP}
     COMMAND ${GIT_EXECUTABLE} rev-parse --abbrev-ref HEAD >> ${GITREV_TMP}
+    COMMAND ${CMAKE_COMMAND} -E echo >> ${GITREV_TMP}
     COMMAND ${CMAKE_COMMAND} -E echo_append "#define GIT_HASH_RAW " >> ${GITREV_TMP}
     COMMAND ${GIT_EXECUTABLE} describe --always --dirty --abbrev=40 --match="NoTagWithThisName" >> ${GITREV_TMP}
+    COMMAND ${CMAKE_COMMAND} -E echo >> ${GITREV_TMP}
     COMMAND ${CMAKE_COMMAND} -E echo_append "#define GIT_COMMIT_LAST_CHANGED_RAW " >> ${GITREV_TMP}
     COMMAND ${GIT_EXECUTABLE} log -1 --format=%ad >> ${GITREV_TMP}
+    COMMAND ${CMAKE_COMMAND} -E echo >> ${GITREV_TMP}
     COMMAND ${CMAKE_COMMAND} -E echo_append "#define GIT_COMMIT_SUBJECT_RAW " >> ${GITREV_TMP}
-    COMMAND ${GIT_EXECUTABLE} log -1 --format=%s >> ${GITREV_TMP}
+    COMMAND ${GIT_EXECUTABLE} log -1 --format="%s" >> ${GITREV_TMP}
+    COMMAND ${CMAKE_COMMAND} -E echo >> ${GITREV_TMP}
     COMMAND ${CMAKE_COMMAND} -E copy_if_different ${GITREV_TMP} ${GITREV_FILE}
     COMMAND ${CMAKE_COMMAND} -E remove ${GITREV_TMP}
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
@@ -94,20 +98,21 @@ ELSE()
   )
 ENDIF()
 
+
 ####################################
 # create liboompi
 ####################################
-IF(HAVE_OOMPI)
-  CONFIGURE_FILE(${qmcpack_SOURCE_DIR}/src/oompi-config.h.cmake.in 
-    ${qmcpack_BINARY_DIR}/src/oompi-config.h)
-  INCLUDE_DIRECTORIES(${qmcpack_SOURCE_DIR}/src/OOMPI)
-  SUBDIRS(OOMPI)
-  IF ( MPI_LIBRARY )
-     SET(MPI_LIBRARY oompi ${MPI_LIBRARY})
-  ELSE()
-     SET(MPI_LIBRARY oompi )
-  ENDIF()
-ENDIF(HAVE_OOMPI)
+#IF(HAVE_OOMPI)
+#  CONFIGURE_FILE(${qmcpack_SOURCE_DIR}/src/oompi-config.h.cmake.in 
+#    ${qmcpack_BINARY_DIR}/src/oompi-config.h)
+#  INCLUDE_DIRECTORIES(${qmcpack_SOURCE_DIR}/src/OOMPI)
+#  SUBDIRS(OOMPI)
+#  IF ( MPI_LIBRARY )
+#     SET(MPI_LIBRARY oompi ${MPI_LIBRARY})
+#  ELSE()
+#     SET(MPI_LIBRARY oompi )
+#  ENDIF()
+#ENDIF(HAVE_OOMPI)
 
   ####################################
   # create libqmcutil
@@ -199,7 +204,6 @@ ENDIF(HAVE_OOMPI)
   #ELSE(QMC_BUILD_STATIC)
   #  ADD_LIBRARY(qmcbase SHARED ${PARTICLE}  ${PARTICLEIO})
   #ENDIF(QMC_BUILD_STATIC)
-
   #SUBDIRS(einspline)
 
   if(QMC_BUILD_LEVEL GREATER 4)
@@ -216,7 +220,7 @@ ENDIF(HAVE_OOMPI)
 
 
   SUBDIRS(QMCWaveFunctions)
-  SUBDIRS(QMCHamiltonians)
+  #SUBDIRS(QMCHamiltonians)
   #SUBDIRS(QMCDrivers)
 
   IF(BUILD_AFQMC)
@@ -250,6 +254,7 @@ ENDIF(HAVE_OOMPI)
     #Unit test directories
     INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/external_codes/catch)
     INCLUDE(${PROJECT_SOURCE_DIR}/CMake/unit_test.cmake)
+    SUBDIRS(OhmmsPETE/tests)
     SUBDIRS(Numerics/tests)
     SUBDIRS(Utilities/tests)
     SUBDIRS(einspline/tests)
@@ -263,6 +268,7 @@ ENDIF(HAVE_OOMPI)
     IF (HAS_TARGET_COMPILE_DEFINITIONS)
       SUBDIRS(ParticleBase/tests)
       SUBDIRS(QMCDrivers/tests)
+      SUBDIRS(QMCApp/tests)
     ENDIF()
   endif() #}
 
