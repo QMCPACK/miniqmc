@@ -162,7 +162,6 @@ ENDIF()
     Particle/DistanceTableAA.cpp
     Particle/DistanceTableAB.cpp
     Particle/DistanceTable.cpp
-    Particle/make_clones.cpp
     )
 
 
