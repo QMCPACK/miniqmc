@@ -123,14 +123,6 @@ struct  J2OrbitalSoA : public OrbitalBase
    */
   void evaluateGL(ParticleSet& P);
 
-  /**@{ OrbitalBase virtual functions that are not essential for the development */
-  void resetTargetParticleSet(ParticleSet& P){}
-  void reportStatus(std::ostream& os){}
-  void checkInVariables(opt_variables_type& active){}
-  void checkOutVariables(const opt_variables_type& active){}
-  void resetParameters(const opt_variables_type& active){}
-  /**@} */
-
   //not needed with SoA and algorithm improvement
   inline RealType registerData(ParticleSet& P, PooledData<RealType>& buf){ return RealType();}
   RealType updateBuffer(ParticleSet& P, PooledData<RealType>& buf, bool fromscratch=false){ return RealType();}

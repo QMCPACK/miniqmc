@@ -21,7 +21,6 @@
 
 #include "Configuration.h"
 #include "type_traits/scalar_traits.h"
-#include "Optimize/VariableSet.h"
 #include "Numerics/VectorViewer.h"
 
 namespace qmcplusplus
@@ -67,12 +66,6 @@ struct OrbitalSetTraits//: public OrbitalTraits<T>
   typedef VectorViewer<ValueType>             RefVector_t;
   typedef VectorSoaContainer<ValueType,DIM+2> VGLVector_t;
 };
-
-///typedef for a set of variables that are varied during an optimization
-typedef optimize::VariableSet  opt_variables_type;
-///typedef for a set of variables that can be varied
-typedef optimize::VariableSet::variable_map_type variable_map_type;
-
 
 template<typename T> inline T evaluatePhase(T sign_v)
 {

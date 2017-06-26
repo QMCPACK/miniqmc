@@ -227,13 +227,6 @@ public:
       ratios[k]=std::exp(myr[k]);
   }
 
-  inline void evaluateDerivRatios(VirtualParticleSet& VP, const opt_variables_type& optvars,
-      std::vector<ValueType>& ratios, Matrix<ValueType>& dratios)
-  {
-    evaluateRatios(VP,ratios);
-  }
-
-
   /** evaluate the ratio
    */
   inline void get_ratios(ParticleSet& P, std::vector<ValueType>& ratios)

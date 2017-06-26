@@ -143,26 +143,6 @@ public:
     IonDataList.resize(Nion);
   }
 
-  void initUnique()
-  {
-    typename std::map<std::string,FT*>::iterator it(J3Unique.begin()),it_end(J3Unique.end());
-    du_dalpha.resize(J3Unique.size());
-    dgrad_dalpha.resize(J3Unique.size());
-    dhess_dalpha.resize(J3Unique.size());
-    int ifunc=0;
-    while(it != it_end)
-    {
-      J3UniqueIndex[it->second]=ifunc;
-      FT &functor = *(it->second);
-      int numParams = functor.getNumParameters();
-      du_dalpha[ifunc].resize(numParams);
-      dgrad_dalpha[ifunc].resize(numParams);
-      dhess_dalpha[ifunc].resize(numParams);
-      ++it;
-      ifunc++;
-    }
-  }
-
   void addFunc(int iSpecies,
                int eSpecies1, int eSpecies2, FT* j)
   {
@@ -197,7 +177,6 @@ public:
     std::strstream aname;
     aname << iSpecies << "_" << eSpecies1 << "_" << eSpecies2;
     J3Unique[aname.str()]=j;
-    initUnique();
     FirstTime = false;
   }
 
@@ -257,119 +236,6 @@ public:
       APP_ABORT("eeI_JastrowOrbital::check_radii  J3 eeI are inconsistent for some ion species\n  see preceding messages for details");
     }
   }
-
-
-
-  //evaluate the distance table with els
-  void resetTargetParticleSet(ParticleSet& P)
-  {
-    eRef = &P;
-  }
-
-  /** check in an optimizable parameter
-   * @param o a super set of optimizable variables
-   */
-  void checkInVariables(opt_variables_type& active)
-  {
-    myVars.clear();
-    typename std::map<std::string,FT*>::iterator it(J3Unique.begin()),it_end(J3Unique.end());
-    while(it != it_end)
-    {
-      (*it).second->checkInVariables(active);
-      (*it).second->checkInVariables(myVars);
-      ++it;
-    }
-//       reportStatus(app_log());
-  }
-
-  /** check out optimizable variables
-   */
-  void checkOutVariables(const opt_variables_type& active)
-  {
-    // myVars.getIndex(active);
-    // Optimizable=myVars.is_optimizable();
-    // typename std::map<std::string,FT*>::iterator it(J3Unique.begin()),it_end(J3Unique.end());
-    // while(it != it_end)
-    // {
-    //   (*it++).second->checkOutVariables(active);
-    // }
-    myVars.clear();
-    typename std::map<std::string,FT*>::iterator it(J3Unique.begin()),it_end(J3Unique.end());
-    while (it != it_end)
-    {
-      (*it).second->myVars.getIndex(active);
-      myVars.insertFrom((*it).second->myVars);
-      ++it;
-    }
-    myVars.getIndex(active);
-    NumVars=myVars.size();
-    //myVars.print(std::cout);
-    if (NumVars)
-    {
-      dLogPsi.resize(NumVars);
-      gradLogPsi.resize(NumVars,Nelec);
-      lapLogPsi.resize(NumVars,Nelec);
-      // for (int i=0; i<NumVars; ++i) {
-      //   gradLogPsi[i].resize(Nelec);//=new GradVectorType(Nelec);
-      //   lapLogPsi[i].resize(Nelec);//=new ValueVectorType(Nelec);
-      // }
-      int nisp=iGroups=IRef->getSpeciesSet().getTotalNum();
-      int nesp=eGroups=eRef->groups();
-      VarOffset.resize(Nion, Nelec, Nelec);
-      int varoffset=myVars.Index[0];
-      for (int i=0; i<Nion; i++)
-      {
-        if(IonDataList[i].cutoff_radius>0.0)
-        {
-          for (int j=0; j<Nelec; j++)
-            for (int k=0; k<Nelec; k++)
-            {
-              FT &func_ijk = *F.data()[TripletID(i, j, k)];
-              VarOffset(i,j,k).first  = func_ijk.myVars.Index.front()-varoffset;
-              VarOffset(i,j,k).second = func_ijk.myVars.Index.size()+VarOffset(i,j,k).first;
-            }
-        }
-      }
-    }
-  }
-
-  ///reset the value of all the unique Two-Body Jastrow functions
-  void resetParameters(const opt_variables_type& active)
-  {
-    if(!Optimizable)
-      return;
-    typename std::map<std::string,FT*>::iterator it(J3Unique.begin()),it_end(J3Unique.end());
-    while(it != it_end)
-    {
-      (*it++).second->resetParameters(active);
-    }
-    //if (FirstTime) {
-    // if(!IsOptimizing)
-    // {
-    //   app_log() << "  Chiesa kinetic energy correction = "
-    //     << ChiesaKEcorrection() << std::endl;
-    //   //FirstTime = false;
-    // }
-    for(int i=0; i<myVars.size(); ++i)
-    {
-      int ii=myVars.Index[i];
-      if(ii>=0)
-        myVars[i]= active[ii];
-    }
-  }
-
-  /** print the state, e.g., optimizables */
-  void reportStatus(std::ostream& os)
-  {
-    typename std::map<std::string,FT*>::iterator it(J3Unique.begin()),it_end(J3Unique.end());
-    while(it != it_end)
-    {
-      (*it).second->myVars.print(os);
-      ++it;
-    }
-    ChiesaKEcorrection();
-  }
-
 
   /**
    *@param P input configuration containing N particles
@@ -1346,14 +1212,6 @@ public:
             fcmap[F(iG,eG1,eG2)]=fc;
           }
         }
-    eeIcopy->myVars.clear();
-    eeIcopy->myVars.insertFrom(myVars);
-    eeIcopy->NumVars=NumVars;
-    eeIcopy->dLogPsi.resize(NumVars);
-    eeIcopy->gradLogPsi.resize(NumVars,Nelec);
-    eeIcopy->lapLogPsi.resize(NumVars,Nelec);
-    eeIcopy->VarOffset=VarOffset;
-    eeIcopy->Optimizable = Optimizable;
     return eeIcopy;
   }
 
@@ -1374,121 +1232,6 @@ public:
     return KEcorr;
   }
 
-  void evaluateDerivatives(ParticleSet& P,
-                           const opt_variables_type& optvars,
-                           std::vector<RealType>& dlogpsi,
-                           std::vector<RealType>& dhpsioverpsi)
-  {
-    bool recalculate(false);
-    std::vector<bool> rcsingles(myVars.size(),false);
-    for (int k=0; k<myVars.size(); ++k)
-    {
-      int kk=myVars.where(k);
-      if (kk<0)
-        continue;
-      if (optvars.recompute(kk))
-        recalculate=true;
-      rcsingles[k]=true;
-    }
-    if (recalculate)
-    {
-      const DistanceTableData* ee_table=P.DistTables[0];
-      const DistanceTableData* eI_table=P.DistTables[myTableIndex];
-      // First, create lists of electrons within the sphere of each ion
-      for (int i=0; i<Nion; i++)
-      {
-        IonData &ion = IonDataList[i];
-        ion.elecs_inside.clear();
-        int iel=0;
-        if (ion.cutoff_radius > 0.0)
-          for (int nn=eI_table->M[i]; nn<eI_table->M[i+1]; nn++, iel++)
-            if (eI_table->r(nn) < ion.cutoff_radius)
-              ion.elecs_inside.push_back(iel);
-      }
-      dLogPsi=0.0;
-      gradLogPsi = PosType();
-      lapLogPsi = 0.0;
-      RealType u;
-      PosType gradF;
-      Tensor<RealType,3> hessF;
-      // Now, evaluate three-body term for each ion
-      for (int i=0; i<Nion; i++)
-      {
-        IonData &ion = IonDataList[i];
-        int nn0 = eI_table->M[i];
-        for (int j=0; j<ion.elecs_inside.size(); j++)
-        {
-          int jel = ion.elecs_inside[j];
-          RealType r_Ij     = eI_table->r(nn0+jel);
-          RealType r_Ij_inv = eI_table->rinv(nn0+jel);
-          int ee0 = ee_table->M[jel]-(jel+1);
-          for (int k=j+1; k<ion.elecs_inside.size(); k++)
-          {
-            int kel = ion.elecs_inside[k];
-            RealType r_Ik     = eI_table->r(nn0+kel);
-            RealType r_Ik_inv = eI_table->rinv(nn0+kel);
-            RealType r_jk     = ee_table->r(ee0+kel);
-            RealType r_jk_inv = ee_table->rinv(ee0+kel);
-            FT &func = *F.data()[TripletID(i, jel, kel)];
-            int idx = J3UniqueIndex[F.data()[TripletID(i, jel, kel)]];
-            func.evaluateDerivatives(r_jk, r_Ij, r_Ik, du_dalpha[idx],
-                                     dgrad_dalpha[idx], dhess_dalpha[idx]);
-            u = func.evaluate (r_jk, r_Ij, r_Ik, gradF, hessF);
-            LogValue -= u;
-            // Save for ratio
-            U[jel*Nelec+kel] += u;
-            U[kel*Nelec+jel] += u;
-            int first = VarOffset(i,jel,kel).first;
-            int last  = VarOffset(i,jel,kel).second;
-            std::vector<RealType> &dlog = du_dalpha[idx];
-            std::vector<PosType>  &dgrad = dgrad_dalpha[idx];
-            std::vector<Tensor<RealType,3> > &dhess = dhess_dalpha[idx];
-            for (int p=first,ip=0; p<last; p++,ip++)
-            {
-              RealType dval =  dlog[ip];
-              PosType dg  = dgrad[ip];
-              Tensor<RealType,3> dh  = dhess[ip];
-              PosType gr_ee =    dg[0]*r_jk_inv * ee_table->dr(ee0+kel);
-              PosType du_j, du_k;
-              RealType d2u_j, d2u_k;
-              du_j = dg[1]*r_Ij_inv * eI_table->dr(nn0+jel) - gr_ee;
-              du_k = dg[2]*r_Ik_inv * eI_table->dr(nn0+kel) + gr_ee;
-              d2u_j = (dh(0,0) + 2.0*r_jk_inv*dg[0] -
-                       2.0*dh(0,1)*dot(ee_table->dr(ee0+kel),eI_table->dr(nn0+jel))*r_jk_inv*r_Ij_inv
-                       + dh(1,1) + 2.0*r_Ij_inv*dg[1]);
-              d2u_k = (dh(0,0) + 2.0*r_jk_inv*dg[0] +
-                       2.0*dh(0,2)*dot(ee_table->dr(ee0+kel),eI_table->dr(nn0+kel))*r_jk_inv*r_Ik_inv
-                       + dh(2,2) + 2.0*r_Ik_inv*dg[2]);
-              dLogPsi[p] -= dval;
-              gradLogPsi(p,jel) -= du_j;
-              gradLogPsi(p,kel) -= du_k;
-              lapLogPsi(p,jel)  -= d2u_j;
-              lapLogPsi(p,kel)  -= d2u_k;
-            }
-          }
-        }
-      }
-      for (int k=0; k<myVars.size(); ++k)
-      {
-        int kk=myVars.where(k);
-        if (kk<0)
-          continue;
-        dlogpsi[kk]=dLogPsi[k];
-        RealType sum = 0.0;
-        for (int i=0; i<Nelec; i++)
-        {
-#if defined(QMC_COMPLEX)
-          sum -= 0.5*lapLogPsi(k,i);
-          for(int jdim=0; jdim<OHMMS_DIM; ++jdim)
-            sum -= P.G[i][jdim].real()*gradLogPsi(k,i)[jdim];
-#else
-          sum -= 0.5*lapLogPsi(k,i) + dot(P.G[i], gradLogPsi(k,i));
-#endif
-        }
-        dhpsioverpsi[kk] = sum;
-      }
-    }
-  }
 };
 
 

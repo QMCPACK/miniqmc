@@ -123,7 +123,6 @@ ENDIF()
     Utilities/SpeciesSet.cpp 
     Utilities/OhmmsInform.cpp 
     Utilities/OhmmsInfo.cpp 
-    Optimize/VariableSet.cpp
     spline2/einspline_allocator.c
     spline2/bspline_allocator.cpp
     spline2/MultiBspline.cpp

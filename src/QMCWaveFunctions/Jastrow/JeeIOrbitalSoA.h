@@ -128,15 +128,6 @@ public:
             fcmap[F(iG,eG1,eG2)]=fc;
           }
         }
-    // Ye: I don't like the following memory allocated by default.
-    eeIcopy->myVars.clear();
-    eeIcopy->myVars.insertFrom(myVars);
-    eeIcopy->NumVars=NumVars;
-    eeIcopy->dLogPsi.resize(NumVars);
-    eeIcopy->gradLogPsi.resize(NumVars,Nelec);
-    eeIcopy->lapLogPsi.resize(NumVars,Nelec);
-    eeIcopy->VarOffset=VarOffset;
-    eeIcopy->Optimizable = Optimizable;
     return eeIcopy;
   }
 
@@ -171,26 +162,6 @@ public:
     DistIndice.resize(Nelec);
   }
 
-  void initUnique()
-  {
-    typename std::map<std::string,FT*>::iterator it(J3Unique.begin()),it_end(J3Unique.end());
-    du_dalpha.resize(J3Unique.size());
-    dgrad_dalpha.resize(J3Unique.size());
-    dhess_dalpha.resize(J3Unique.size());
-    int ifunc=0;
-    while(it != it_end)
-    {
-      J3UniqueIndex[it->second]=ifunc;
-      FT &functor = *(it->second);
-      int numParams = functor.getNumParameters();
-      du_dalpha[ifunc].resize(numParams);
-      dgrad_dalpha[ifunc].resize(numParams);
-      dhess_dalpha[ifunc].resize(numParams);
-      ++it;
-      ifunc++;
-    }
-  }
-
   void addFunc(int iSpecies, int eSpecies1, int eSpecies2, FT* j)
   {
     if(eSpecies1==eSpecies2)
@@ -223,7 +194,6 @@ public:
     std::strstream aname;
     aname << iSpecies << "_" << eSpecies1 << "_" << eSpecies2;
     J3Unique[aname.str()]=j;
-    initUnique();
   }
 
 
@@ -280,85 +250,6 @@ public:
     }
   }
 
-
-  //evaluate the distance table with els
-  void resetTargetParticleSet(ParticleSet& P) {}
-
-  /** check in an optimizable parameter
-   * @param o a super set of optimizable variables
-   */
-  void checkInVariables(opt_variables_type& active)
-  {
-    myVars.clear();
-    typename std::map<std::string,FT*>::iterator it(J3Unique.begin()),it_end(J3Unique.end());
-    while(it != it_end)
-    {
-      (*it).second->checkInVariables(active);
-      (*it).second->checkInVariables(myVars);
-      ++it;
-    }
-  }
-
-  /** check out optimizable variables
-   */
-  void checkOutVariables(const opt_variables_type& active)
-  {
-    myVars.clear();
-    typename std::map<std::string,FT*>::iterator it(J3Unique.begin()),it_end(J3Unique.end());
-    while (it != it_end)
-    {
-      (*it).second->myVars.getIndex(active);
-      myVars.insertFrom((*it).second->myVars);
-      ++it;
-    }
-    myVars.getIndex(active);
-    NumVars=myVars.size();
-    if (NumVars)
-    {
-      dLogPsi.resize(NumVars);
-      gradLogPsi.resize(NumVars,Nelec);
-      lapLogPsi.resize(NumVars,Nelec);
-      VarOffset.resize(iGroups, eGroups, eGroups);
-      int varoffset=myVars.Index[0];
-      for (int ig=0; ig<iGroups; ig++)
-        for (int jg=0; jg<eGroups; jg++)
-          for (int kg=0; kg<eGroups; kg++)
-          {
-            FT &func_ijk = *F(ig, jg, kg);
-            VarOffset(ig,jg,kg).first  = func_ijk.myVars.Index.front()-varoffset;
-            VarOffset(ig,jg,kg).second = func_ijk.myVars.Index.size()+VarOffset(ig,jg,kg).first;
-          }
-    }
-  }
-
-  ///reset the value of all the unique Two-Body Jastrow functions
-  void resetParameters(const opt_variables_type& active)
-  {
-    if(!Optimizable)
-      return;
-    typename std::map<std::string,FT*>::iterator it(J3Unique.begin()),it_end(J3Unique.end());
-    while(it != it_end)
-    {
-      (*it++).second->resetParameters(active);
-    }
-    for(int i=0; i<myVars.size(); ++i)
-    {
-      int ii=myVars.Index[i];
-      if(ii>=0)
-        myVars[i]= active[ii];
-    }
-  }
-
-  /** print the state, e.g., optimizables */
-  void reportStatus(std::ostream& os)
-  {
-    typename std::map<std::string,FT*>::iterator it(J3Unique.begin()),it_end(J3Unique.end());
-    while(it != it_end)
-    {
-      (*it).second->myVars.print(os);
-      ++it;
-    }
-  }
 
   void build_compact_list(ParticleSet& P)
   {
@@ -667,127 +558,6 @@ public:
     LogValue=mhalf*LogValue;
   }
 
-  void evaluateDerivatives(ParticleSet& P,
-                           const opt_variables_type& optvars,
-                           std::vector<RealType>& dlogpsi,
-                           std::vector<RealType>& dhpsioverpsi)
-  {
-    bool recalculate(false);
-    std::vector<bool> rcsingles(myVars.size(),false);
-    for (int k=0; k<myVars.size(); ++k)
-    {
-      int kk=myVars.where(k);
-      if (kk<0)
-        continue;
-      if (optvars.recompute(kk))
-        recalculate=true;
-      rcsingles[k]=true;
-    }
-
-    if (recalculate)
-    {
-      constexpr valT czero(0);
-      constexpr valT cone(1);
-      constexpr valT cminus(-1);
-      constexpr valT ctwo(2);
-      constexpr valT lapfac=OHMMS_DIM-cone;
-
-      const DistanceTableData& ee_table=(*P.DistTables[0]);
-      const DistanceTableData& eI_table=(*P.DistTables[myTableID]);
-
-      build_compact_list(P);
-
-      dLogPsi=czero;
-      gradLogPsi = PosType();
-      lapLogPsi = czero;
-
-      for(int iat=0; iat<Nion; ++iat)
-      {
-        const int ig=Ions.GroupID[iat];
-        for(int jg=0; jg<eGroups; ++jg)
-          for(int jind=0; jind<elecs_inside(iat,jg).size(); jind++)
-          {
-            const int jel=elecs_inside(iat,jg)[jind];
-            const valT r_Ij     = eI_table.Distances[jel][iat];
-            const posT disp_Ij  = cminus*eI_table.Displacements[jel][iat];
-            const valT r_Ij_inv = cone/r_Ij;
-
-            for(int kg=0; kg<eGroups; ++kg)
-              for(int kind=0; kind<elecs_inside(iat,kg).size(); kind++)
-              {
-                const int kel=elecs_inside(iat,kg)[kind];
-                if(kel<jel)
-                {
-                  const FT& feeI(*F(ig,jg,kg));
-
-                  const valT r_Ik     = eI_table.Distances[kel][iat];
-                  const posT disp_Ik  = cminus*eI_table.Displacements[kel][iat];
-                  const valT r_Ik_inv = cone/r_Ik;
-
-                  const valT r_jk     = ee_table.Distances[jel][kel];
-                  const posT disp_jk  = ee_table.Displacements[jel][kel];
-                  const valT r_jk_inv = cone/r_jk;
-
-                  FT &func = *F(ig, jg, kg);
-                  int idx = J3UniqueIndex[F(ig, jg, kg)];
-                  func.evaluateDerivatives(r_jk, r_Ij, r_Ik, du_dalpha[idx],
-                                       dgrad_dalpha[idx], dhess_dalpha[idx]);
-                  int first = VarOffset(ig,jg,kg).first;
-                  int last  = VarOffset(ig,jg,kg).second;
-                  std::vector<RealType> &dlog = du_dalpha[idx];
-                  std::vector<PosType>  &dgrad = dgrad_dalpha[idx];
-                  std::vector<Tensor<RealType,3> > &dhess = dhess_dalpha[idx];
-
-                  for (int p=first,ip=0; p<last; p++,ip++)
-                  {
-                    RealType& dval = dlog[ip];
-                    PosType& dg = dgrad[ip];
-                    Tensor<RealType,3>& dh = dhess[ip];
-
-                    dg[0]*=r_jk_inv;
-                    dg[1]*=r_Ij_inv;
-                    dg[2]*=r_Ik_inv;
-
-                    PosType gr_ee = dg[0] * disp_jk;
-
-                    gradLogPsi(p,jel) -= dg[1] * disp_Ij - gr_ee;
-                    lapLogPsi(p,jel)  -= (dh(0,0) + lapfac*dg[0] -
-                         ctwo*dh(0,1)*dot(disp_jk,disp_Ij)*r_jk_inv*r_Ij_inv
-                         + dh(1,1) + lapfac*dg[1]);
-
-                    gradLogPsi(p,kel) -= dg[2] * disp_Ik + gr_ee;
-                    lapLogPsi(p,kel)  -= (dh(0,0) + lapfac*dg[0] +
-                         ctwo*dh(0,2)*dot(disp_jk,disp_Ik)*r_jk_inv*r_Ik_inv
-                         + dh(2,2) + lapfac*dg[2]);
-
-                    dLogPsi[p] -= dval;
-                  }
-                }
-              }
-          }
-      }
-
-      for (int k=0; k<myVars.size(); ++k)
-      {
-        int kk=myVars.where(k);
-        if (kk<0)
-          continue;
-        dlogpsi[kk]=dLogPsi[k];
-        RealType sum = 0.0;
-        for (int i=0; i<Nelec; i++)
-        {
-#if defined(QMC_COMPLEX)
-          sum -= 0.5*lapLogPsi(k,i);
-          for(int jdim=0; jdim<OHMMS_DIM; ++jdim)
-            sum -= P.G[i][jdim].real()*gradLogPsi(k,i)[jdim];
-#else
-          sum -= 0.5*lapLogPsi(k,i) + dot(P.G[i], gradLogPsi(k,i));
-#endif
-        }
-        dhpsioverpsi[kk] = sum;
-      }
-    }
-  }
 };
 
 }

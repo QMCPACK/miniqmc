@@ -12,7 +12,6 @@
 // -*- C++ -*-
 #ifndef QMCPLUSPLUS_BSPLINE2_FUNCTOR_H
 #define QMCPLUSPLUS_BSPLINE2_FUNCTOR_H
-#include "Numerics/OptimizableFunctorBase.h"
 #include "OhmmsData/AttributeSet.h"
 #include "Numerics/LinearFit.h"
 #include "simd/allocator.hpp"

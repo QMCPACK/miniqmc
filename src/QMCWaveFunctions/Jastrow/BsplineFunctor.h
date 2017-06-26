@@ -20,7 +20,6 @@
     
 #ifndef QMCPLUSPLUS_BSPLINE_FUNCTOR_H
 #define QMCPLUSPLUS_BSPLINE_FUNCTOR_H
-#include "Numerics/OptimizableFunctorBase.h"
 #include "OhmmsData/AttributeSet.h"
 #include "Numerics/LinearFit.h"
 #include "simd/allocator.hpp"
@@ -30,10 +29,13 @@ namespace qmcplusplus
 {
 
 template<class T>
-struct BsplineFunctor: public OptimizableFunctorBase
+struct BsplineFunctor
 {
 
+  typedef QMCTraits::RealType real_type;
   typedef real_type value_type;
+
+  real_type cutoff_radius;
   int NumParams;
   int Dummy;
   const TinyVector<real_type,16> A, dA, d2A, d3A;
@@ -78,11 +80,6 @@ struct BsplineFunctor: public OptimizableFunctorBase
     CuspValue(cusp), ResetCount(0), ReportLevel(0), notOpt(false), periodic(true)
   {
     cutoff_radius = 0.0;
-  }
-
-  OptimizableFunctorBase* makeClone() const
-  {
-    return new BsplineFunctor(*this);
   }
 
   inline void setReportLevel(int i, const std::string& fname)
@@ -482,10 +479,8 @@ struct BsplineFunctor: public OptimizableFunctorBase
         {
           std::stringstream sstr;
           sstr << id << "_" << i;
-          myVars.insert(sstr.str(),Parameters[i],!notOpt,optimize::LOGLINEAR_P);
         }
         app_log() << "Parameter     Name      Value\n";
-        myVars.print(app_log());
       }
       xmlCoefs = xmlCoefs->next;
     }
@@ -538,10 +533,8 @@ struct BsplineFunctor: public OptimizableFunctorBase
       {
         std::stringstream sstr;
         sstr << id << "_" << i;
-        myVars.insert(sstr.str(),Parameters[i],true,optimize::LOGLINEAR_P);
       }
       app_log() << "Parameter     Name      Value\n";
-      myVars.print(app_log());
     }
     else
 #endif
@@ -557,53 +550,6 @@ struct BsplineFunctor: public OptimizableFunctorBase
   {
     if (notOpt)
       return;
-    myVars.print(os);
-  }
-
-  void checkOutVariables(const opt_variables_type& active)
-  {
-    if (notOpt)
-      return;
-    myVars.getIndex(active);
-  }
-
-  void checkInVariables(opt_variables_type& active)
-  {
-    if (notOpt)
-      return;
-    active.insertFrom(myVars);
-  }
-
-  void resetParameters(const opt_variables_type& active)
-  {
-    if (notOpt)
-      return;
-    for (int i=0; i<Parameters.size(); ++i)
-    {
-      int loc=myVars.where(i);
-      if (loc>=0)
-        Parameters[i]=myVars[i]=active[loc];
-    }
-//         if (ResetCount++ == 100)
-//         {
-//           ResetCount = 0;
-//           if(ReportLevel) print();
-//         }
-    reset();
-  }
-
-  // check if this object has active optimizable parameters
-  bool isOptimizable()
-  {
-    if (notOpt)
-      return false;
-    for (int i=0; i<Parameters.size(); ++i)
-    {
-      int loc=myVars.where(i);
-      if (loc>=0)
-        return true;
-    }
-    return false;
   }
 
   void print()

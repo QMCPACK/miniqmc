@@ -42,12 +42,6 @@ OrbitalBase::OrbitalBase():
 //   //if(dPsi) dPsi=old.dPsi->makeClone();
 // }
 
-void OrbitalBase::evaluateDerivatives(ParticleSet& P,
-                                      const opt_variables_type& active,
-                                      std::vector<RealType>& dlogpsi, std::vector<RealType>& dhpsioverpsi)
-{
-}
-
 ///** makeClone uses optVars  to determine if it will make a clone (deepcopy)
 // * or make a ProxyOrbital.
 // */
@@ -119,11 +113,5 @@ void OrbitalBase::evaluateRatios(VirtualParticleSet& P, std::vector<ValueType>& 
   APP_ABORT(o.str());
 }
 
-void OrbitalBase::evaluateDerivRatios(VirtualParticleSet& VP, const opt_variables_type& optvars,
-    std::vector<ValueType>& ratios, Matrix<ValueType>& dratios)
-{
-  //default is only ratios and zero derivatives
-  evaluateRatios(VP,ratios);
-}
 }
 

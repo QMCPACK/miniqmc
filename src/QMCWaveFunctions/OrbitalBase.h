@@ -134,8 +134,6 @@ struct OrbitalBase: public QMCTraits
   /** Name of this orbital
    */
   std::string OrbitalName;
-  ///list of variables this orbital handles
-  opt_variables_type myVars;
 
   /// default constructor
   OrbitalBase();
@@ -407,29 +405,6 @@ struct OrbitalBase: public QMCTraits
    */
   virtual RealType KECorrection();
 
-  virtual void evaluateDerivatives(ParticleSet& P,
-                                   const opt_variables_type& optvars,
-                                   std::vector<RealType>& dlogpsi,
-                                   std::vector<RealType>& dhpsioverpsi) ;
-  virtual void multiplyDerivsByOrbR(std::vector<RealType>& dlogpsi)
-  {
-    RealType myrat = std::exp(LogValue)*std::cos(PhaseValue);
-    for(int j=0; j<myVars.size(); j++)
-    {
-      int loc=myVars.where(j);
-      dlogpsi[loc] *= myrat;
-    }
-  };
-
-//      virtual void evaluateDerivatives(ParticleSet& P,
-//                                       const opt_variables_type& optvars,
-//                                       std::vector<RealType>& dlogpsi,
-//                                       std::vector<RealType>& dhpsioverpsi,
-//                                       PooledData<RealType>& buf)
-//      {
-//         evaluateDerivatives(P,optvars,dlogpsi,dhpsioverpsi);
-//      }
-
   virtual void finalizeOptimization() { }
 
   /** evaluate ratios to evaluate the momentum distribution
@@ -443,14 +418,6 @@ struct OrbitalBase: public QMCTraits
    * @param ratios ratios with new positions VP.R[k] the VP.activePtcl
    */
   virtual void evaluateRatios(VirtualParticleSet& VP, std::vector<ValueType>& ratios);
-
-  /** evaluate ratios to evaluate the non-local PP
-   * @param VP VirtualParticleSet
-   * @param ratios ratios with new positions VP.R[k] the VP.activePtcl
-   * @param dratios \f$\partial_{\alpha}(\ln \Psi ({\bf R}^{\prime}) - \ln \Psi ({\bf R})) \f$
-   */
-  virtual void evaluateDerivRatios(VirtualParticleSet& VP, const opt_variables_type& optvars,
-      std::vector<ValueType>& ratios, Matrix<ValueType>& dratios);
 
   ///** copy data members from old
   // * @param old existing OrbitalBase from which all the data members are copied.
@@ -609,15 +576,6 @@ struct OrbitalBase: public QMCTraits
     abort();
   }
 
-  virtual void
-  evaluateDerivatives (MCWalkerConfiguration &W,
-                       const opt_variables_type& optvars,
-                       RealMatrix_t &dgrad_logpsi,
-                       RealMatrix_t &dhpsi_over_psi)
-  {
-    app_error() << "Need specialization of OrbitalBase::evaluateDerivatives.\n";
-    abort();
-  }
 #endif
 };
 }
