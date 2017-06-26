@@ -15,7 +15,6 @@
 
 
 #include "ParticleIO/ParticleIOUtility.h"
-#include "Utilities/ProgressReportEngine.h"
 namespace qmcplusplus
 {
 
@@ -34,7 +33,6 @@ void expandSuperCell(ParticleSet& ref_, Tensor<int,3>& tmat)
   }
   if(identity)
     return;
-  ReportEngine PRE("expandSuperCell"," ");
   app_log() << "  TileMatrix != Identity. Expanding a simulation cell for "
             << ref_.getName() << std::endl;
   {

@@ -21,7 +21,6 @@
 #ifndef QMCPLUSPLUS_BSPLINE_FUNCTOR_H
 #define QMCPLUSPLUS_BSPLINE_FUNCTOR_H
 #include "Numerics/OptimizableFunctorBase.h"
-#include "Utilities/ProgressReportEngine.h"
 #include "OhmmsData/AttributeSet.h"
 #include "Numerics/LinearFit.h"
 #include "simd/allocator.hpp"
@@ -389,7 +388,6 @@ struct BsplineFunctor: public OptimizableFunctorBase
 
   bool put(xmlNodePtr cur)
   {
-    ReportEngine PRE("BsplineFunctor","put(xmlNodePtr)");
     //CuspValue = -1.0e10;
     NumParams = 0;
     //cutoff_radius = 0.0;
@@ -415,7 +413,7 @@ struct BsplineFunctor: public OptimizableFunctorBase
         cutoff_radius = radius;
     if (NumParams == 0)
     {
-      PRE.error("You must specify a positive number of parameters for the Bspline jastrow function.",true);
+      APP_ABORT("You must specify a positive number of parameters for the Bspline jastrow function.");
     }
     app_log() << " size = " << NumParams << " parameters " << std::endl;
     app_log() << " cusp = " << CuspValue << std::endl;
@@ -437,7 +435,7 @@ struct BsplineFunctor: public OptimizableFunctorBase
         cAttrib.put(xmlCoefs);
         if (type != "Array")
         {
-          PRE.error("Unknown correlation type " + type + " in BsplineFunctor." + "Resetting to \"Array\"");
+          app_log() << "Unknown correlation type " + type + " in BsplineFunctor." + "Resetting to \"Array\"" << std::endl;
           xmlNewProp(xmlCoefs, (const xmlChar*) "type", (const xmlChar*) "Array");
         }
         std::vector<real_type> params;
@@ -501,13 +499,12 @@ struct BsplineFunctor: public OptimizableFunctorBase
   void initialize(int numPoints, std::vector<real_type>& x, std::vector<real_type>& y
                   , real_type cusp, real_type rcut, std::string& id, std::string& optimize )
   {
-    ReportEngine PRE("BsplineFunctor","initialize");
     NumParams = numPoints;
     cutoff_radius = rcut;
     CuspValue = cusp;
     if (NumParams == 0)
     {
-      PRE.error("You must specify a positive number of parameters for the Bspline jastrow function.",true);
+      APP_ABORT("You must specify a positive number of parameters for the Bspline jastrow function.");
     }
     app_log() << "Initializing BsplineFunctor from array. \n";
     app_log() << " size = " << NumParams << " parameters " << std::endl;
@@ -522,7 +519,7 @@ struct BsplineFunctor: public OptimizableFunctorBase
       real_type r = x[i];
       if (r > cutoff_radius)
       {
-        PRE.error("Error in BsplineFunctor::initialize: r > cutoff_radius.",true);
+        APP_ABORT("Error in BsplineFunctor::initialize: r > cutoff_radius.");
       }
       evaluateDerivatives(r, derivs);
       for (int j=0; j<NumParams; j++)

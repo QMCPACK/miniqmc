@@ -13,7 +13,6 @@
 #define QMCPLUSPLUS_ONEBODYJASTROW_OPTIMIZED_SOA_H
 #include "Configuration.h"
 #include "QMCWaveFunctions/OrbitalBase.h"
-#include <qmc_common.h>
 #include <simd/allocator.hpp>
 #include <simd/algorithm.hpp>
 #include  <map>

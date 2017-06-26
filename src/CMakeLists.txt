@@ -118,13 +118,11 @@ ENDIF()
   # create libqmcutil
   ####################################
   SET(UTILITIES
-    qmc_common.cpp
     Utilities/RandomGenerator.cpp 
     Utilities/OhmmsObject.cpp 
     Utilities/SpeciesSet.cpp 
     Utilities/OhmmsInform.cpp 
     Utilities/OhmmsInfo.cpp 
-    Utilities/ProgressReportEngine.cpp
     Platforms/sysutil.cpp
     Optimize/VariableSet.cpp
     spline2/einspline_allocator.c

@@ -22,7 +22,6 @@
 #include "Particle/FastParticleOperators.h"
 #include "Utilities/OhmmsInfo.h"
 #include "Message/OpenMP.h"
-#include "qmc_common.h"
 
 namespace qmcplusplus
 {

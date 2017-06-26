@@ -18,7 +18,6 @@
 #define QMCPLUSPLUS_POLYNOMIAL3D_FUNCTOR_H
 #include "Numerics/OptimizableFunctorBase.h"
 #include "Numerics/HDFNumericAttrib.h"
-#include "Utilities/ProgressReportEngine.h"
 #include "OhmmsData/AttributeSet.h"
 #include "Numerics/LinearFit.h"
 #include "Numerics/DeterminantOperators.h"
@@ -917,7 +916,6 @@ struct PolynomialFunctor3D: public OptimizableFunctorBase
 
   bool put(xmlNodePtr cur)
   {
-    ReportEngine PRE("PolynomialFunctor3D","put(xmlNodePtr)");
     // //CuspValue = -1.0e10;
     // NumParams_eI = NumParams_ee = 0;
     cutoff_radius = 0.0;
@@ -927,9 +925,9 @@ struct PolynomialFunctor3D: public OptimizableFunctorBase
     rAttrib.add(cutoff_radius,  "rcut");
     rAttrib.put(cur);
     if (N_eI == 0)
-      PRE.error("You must specify a positive number for \"isize\"",true);
+      APP_ABORT("You must specify a positive number for \"isize\"");
     if (N_ee == 0)
-      PRE.error("You must specify a positive number for \"esize\"",true);
+      APP_ABORT("You must specify a positive number for \"esize\"");
     // app_log() << " esize = " << NumParams_ee << " parameters " << std::endl;
     // app_log() << " isize = " << NumParams_eI << " parameters " << std::endl;
     // app_log() << " rcut = " << cutoff_radius << std::endl;
@@ -950,8 +948,8 @@ struct PolynomialFunctor3D: public OptimizableFunctorBase
         notOpt = (opt=="no");
         if (type != "Array")
         {
-          PRE.error( "Unknown correlation type " + type +
-                     " in PolynomialFunctor3D." + "Resetting to \"Array\"");
+          app_log() << "Unknown correlation type " + type +
+                     " in PolynomialFunctor3D." + "Resetting to \"Array\"" << std::endl;
           xmlNewProp (xmlCoefs, (const xmlChar*) "type",
                       (const xmlChar*) "Array");
         }

@@ -13,7 +13,6 @@
 #ifndef QMCPLUSPLUS_BSPLINE2_FUNCTOR_H
 #define QMCPLUSPLUS_BSPLINE2_FUNCTOR_H
 #include "Numerics/OptimizableFunctorBase.h"
-#include "Utilities/ProgressReportEngine.h"
 #include "OhmmsData/AttributeSet.h"
 #include "Numerics/LinearFit.h"
 #include "simd/allocator.hpp"
@@ -462,13 +461,12 @@ template<typename T> void
   BsplineFunctorSoA<T>::initialize(int numPoints, std::vector<real_type>& x, std::vector<real_type>& y
                   , real_type cusp, real_type rcut, std::string& id, std::string& optimize )
   {
-    ReportEngine PRE("BsplineFunctorSoA","initialize");
     NumParams = numPoints;
     cutoff_radius = rcut;
     CuspValue = cusp;
     if (NumParams == 0)
     {
-      PRE.error("You must specify a positive number of parameters for the Bspline jastrow function.",true);
+      APP_ABORT("You must specify a positive number of parameters for the Bspline jastrow function.");
     }
     app_log() << "Initializing BsplineFunctorSoA from array. \n";
     app_log() << " size = " << NumParams << " parameters " << std::endl;
@@ -483,7 +481,7 @@ template<typename T> void
       real_type r = x[i];
       if (r > cutoff_radius)
       {
-        PRE.error("Error in BsplineFunctorSoA::initialize: r > cutoff_radius.",true);
+        APP_ABORT("Error in BsplineFunctorSoA::initialize: r > cutoff_radius.");
       }
       evaluateDerivatives(r, derivs);
       for (int j=0; j<NumParams; j++)
