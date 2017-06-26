@@ -27,7 +27,6 @@
 #include <Utilities/SpeciesSet.h>
 #include <Utilities/PooledData.h>
 #include <OhmmsPETE/OhmmsArray.h>
-#include <Utilities/NewTimer.h>
 #include <OhmmsSoA/Container.h>
 
 namespace qmcplusplus
@@ -35,8 +34,6 @@ namespace qmcplusplus
 
 ///forward declaration of DistanceTableData
 class DistanceTableData;
-
-class StructFact;
 
 /** Monte Carlo Data of an ensemble
  *
@@ -153,9 +150,6 @@ public:
 
   ///SpeciesSet of particles
   SpeciesSet mySpecies;
-
-  ///Structure factor
-  StructFact *SK;
 
   ///distance tables that need to be updated by moving this ParticleSet
   std::vector<DistanceTableData*> DistTables;
@@ -302,14 +296,6 @@ public:
    *@param pos position vector assigned to R
    */
   void update(const ParticlePos_t& pos);
-
-  /** create Structure Factor with PBCs
-   */
-  void createSK();
-
-  /** Turn on per particle storage in Structure Factor
-   */
-  void turnOnPerParticleSK();
 
   ///retrun the SpeciesSet of this particle set
   inline SpeciesSet& getSpeciesSet()
@@ -583,7 +569,6 @@ protected:
   std::map<int,int> myDistTableMap;
   void initParticleSet();
 
-  std::vector<NewTimer*> myTimers;
   SingleParticlePos_t myTwist;
 
   std::string ParentName;

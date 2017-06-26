@@ -23,10 +23,8 @@
 #include  <map>
 #include  <numeric>
 #include "QMCWaveFunctions/OrbitalBase.h"
-#include "QMCWaveFunctions/Jastrow/DiffTwoBodyJastrowOrbital.h"
 #include "Particle/DistanceTableData.h"
 #include "Particle/DistanceTable.h"
-#include "LongRange/StructFact.h"
 #include <qmc_common.h>
 
 namespace qmcplusplus
@@ -140,87 +138,6 @@ public:
     ChiesaKEcorrection();
     FirstTime = false;
   }
-
-  //evaluate the distance table with els
-  void resetTargetParticleSet(ParticleSet& P)
-  {
-    PtclRef = &P;
-    if(dPsi)
-      dPsi->resetTargetParticleSet(P);
-  }
-
-  /** check in an optimizable parameter
-   * @param o a super set of optimizable variables
-   */
-  void checkInVariables(opt_variables_type& active)
-  {
-    myVars.clear();
-    typename std::map<std::string,FT*>::iterator it(J2Unique.begin()),it_end(J2Unique.end());
-    while(it != it_end)
-    {
-      (*it).second->checkInVariables(active);
-      (*it).second->checkInVariables(myVars);
-      ++it;
-    }
-//      reportStatus(app_log());
-  }
-
-  /** check out optimizable variables
-   */
-  void checkOutVariables(const opt_variables_type& active)
-  {
-    myVars.getIndex(active);
-    Optimizable=myVars.is_optimizable();
-    typename std::map<std::string,FT*>::iterator it(J2Unique.begin()),it_end(J2Unique.end());
-    while(it != it_end)
-    {
-      (*it).second->checkOutVariables(active);
-      ++it;
-    }
-    if(dPsi)
-      dPsi->checkOutVariables(active);
-  }
-
-  ///reset the value of all the unique Two-Body Jastrow functions
-  void resetParameters(const opt_variables_type& active)
-  {
-    if(!Optimizable)
-      return;
-    typename std::map<std::string,FT*>::iterator it(J2Unique.begin()),it_end(J2Unique.end());
-    while(it != it_end)
-    {
-      (*it).second->resetParameters(active);
-      ++it;
-    }
-    //if (FirstTime) {
-    // if(!IsOptimizing)
-    // {
-    //   app_log() << "  Chiesa kinetic energy correction = "
-    //     << ChiesaKEcorrection() << std::endl;
-    //   //FirstTime = false;
-    // }
-    if(dPsi)
-      dPsi->resetParameters( active );
-    for(int i=0; i<myVars.size(); ++i)
-    {
-      int ii=myVars.Index[i];
-      if(ii>=0)
-        myVars[i]= active[ii];
-    }
-  }
-
-  /** print the state, e.g., optimizables */
-  void reportStatus(std::ostream& os)
-  {
-    typename std::map<std::string,FT*>::iterator it(J2Unique.begin()),it_end(J2Unique.end());
-    while(it != it_end)
-    {
-      (*it).second->myVars.print(os);
-      ++it;
-    }
-    ChiesaKEcorrection();
-  }
-
 
   /**
    *@param P input configuration containing N particles
@@ -659,8 +576,6 @@ public:
   {
     //TwoBodyJastrowOrbital<FT>* j2copy=new TwoBodyJastrowOrbital<FT>(tqp,Write_Chiesa_Correction);
     TwoBodyJastrowOrbital<FT>* j2copy=new TwoBodyJastrowOrbital<FT>(tqp,-1);
-    if (dPsi)
-      j2copy->dPsi = dPsi->makeClone(tqp);
     std::map<const FT*,FT*> fcmap;
     for(int ig=0; ig<NumGroups; ++ig)
       for(int jg=ig; jg<NumGroups; ++jg)
@@ -673,7 +588,6 @@ public:
         {
           FT* fc=new FT(*F[ij]);
           j2copy->addFunc(ig,jg,fc);
-          //if (dPsi) (j2copy->dPsi)->addFunc(aname.str(),ig,jg,fc);
           fcmap[F[ij]]=fc;
         }
       }

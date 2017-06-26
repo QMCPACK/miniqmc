@@ -19,7 +19,6 @@
 #include <Particle/DistanceTableData.h>
 #include <OhmmsSoA/VectorSoaContainer.h>
 #include <random/random.hpp>
-#include <mpi/collectives.h>
 #include <miniapps/graphite.hpp>
 #include <miniapps/pseudo.hpp>
 #include <Utilities/Timer.h>
@@ -32,13 +31,12 @@ using namespace qmcplusplus;
 int main(int argc, char** argv)
 {
 
-  OHMMS::Controller->initialize(0, NULL);
   OhmmsInfo("distancetablelogfile");
-  Communicate* mycomm=OHMMS::Controller;
 
   //use the global generator
 
-  bool ionode=(mycomm->rank() == 0);
+  //bool ionode=(mycomm->rank() == 0);
+  bool ionode=1;
   int na=4;
   int nb=4;
   int nc=1;
@@ -296,8 +294,6 @@ int main(int argc, char** argv)
     cout << "AB SoA-AoS compact = " << dist_err/nn << " " << displ_err/nn;
     cout << " Total number of nn = " << nn << " / " << nels*nions << endl;
   }
-
-  OHMMS::Controller->finalize();
 
   return 0;
 }

@@ -22,12 +22,10 @@
 #ifndef QMCPLUSPLUS_TRIALWAVEFUNCTION_H
 #define QMCPLUSPLUS_TRIALWAVEFUNCTION_H
 
-#include "Message/MPIObjectBase.h"
 #include "Particle/VirtualParticleSet.h"
 #include "QMCWaveFunctions/OrbitalBase.h"
 #include "QMCWaveFunctions/FermionBase.h"
 #include "QMCWaveFunctions/DiffOrbitalBase.h"
-#include "Utilities/NewTimer.h"
 /**@defgroup MBWfs Many-body wave function group
  * @brief Classes to handle many-body trial wave functions
  */
@@ -97,7 +95,7 @@ struct CoefficientHolder
  *Each OrbitalBase should provide proper evaluate functions
  *for the value, gradient and laplacian values.
  */
-class TrialWaveFunction: public MPIObjectBase
+class TrialWaveFunction
 {
 
 public:
@@ -414,7 +412,6 @@ private:
 
   TrialWaveFunction();
 
-  std::vector<NewTimer*> myTimers;
   std::vector<RealType> myTwist;
 
   ///////////////////////////////////////////

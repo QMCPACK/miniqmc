@@ -22,7 +22,6 @@
 #define QMCPLUSPLUS_BASISSETBASE_H
 
 #include "Particle/ParticleSet.h"
-#include "Message/MPIObjectBase.h"
 #include "QMCWaveFunctions/OrbitalSetTraits.h"
 #include "QMCWaveFunctions/SPOSetInfo.h"
 #include <QMCWaveFunctions/SPOSetInputInfo.h>

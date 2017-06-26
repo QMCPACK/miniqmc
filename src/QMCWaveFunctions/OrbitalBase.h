@@ -48,15 +48,11 @@ struct NLjob
 
 ///forward declaration of OrbitalBase
 class OrbitalBase;
-///forward declaration of DiffOrbitalBase
-class DiffOrbitalBase;
 
 #if defined(ENABLE_SMARTPOINTER)
 typedef boost::shared_ptr<OrbitalBase>     OrbitalBasePtr;
-typedef boost::shared_ptr<DiffOrbitalBase> DiffOrbitalBasePtr;
 #else
 typedef OrbitalBase*                       OrbitalBasePtr;
-typedef DiffOrbitalBase*                   DiffOrbitalBasePtr;
 #endif
 
 /**@defgroup OrbitalComponent Orbital group
@@ -129,11 +125,6 @@ struct OrbitalBase: public QMCTraits
   /** current phase
    */
   RealType PhaseValue;
-  /** Pointer to the differential orbital of this object
-   *
-   * If dPsi=0, this orbital is constant with respect to the optimizable variables
-   */
-  DiffOrbitalBasePtr dPsi;
   /** A vector for \f$ \frac{\partial \nabla \log\phi}{\partial \alpha} \f$
    */
   GradVectorType dLogPsi;
@@ -171,34 +162,6 @@ struct OrbitalBase: public QMCTraits
   {
     return 0.0;
   }
-
-  ///assign a differential orbital
-  virtual void setDiffOrbital(DiffOrbitalBasePtr d);
-
-  /** check in optimizable parameters
-   * @param active a super set of optimizable variables
-   *
-   * Add the paramemters this orbital manage to active.
-   */
-  virtual void checkInVariables(opt_variables_type& active)=0;
-
-  /** check out optimizable variables
-   *
-   * Update myVars index map
-   */
-  virtual void checkOutVariables(const opt_variables_type& active)=0;
-
-  /** reset the parameters during optimizations
-   */
-  virtual void resetParameters(const opt_variables_type& active)=0;
-
-  /** print the state, e.g., optimizables */
-  virtual void reportStatus(std::ostream& os)=0;
-
-  /** reset properties, e.g., distance tables, for a new target ParticleSet
-   * @param P ParticleSet
-   */
-  virtual void resetTargetParticleSet(ParticleSet& P)=0;
 
   /** evaluate the value of the orbital for a configuration P.R
    *@param P  active ParticleSet

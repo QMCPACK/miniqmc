@@ -46,7 +46,8 @@ QMCState::QMCState()
 
 void QMCState::initialize(int argc, char **argv)
 {
-  io_node= (OHMMS::Controller->rank()==0);
+  //io_node= (OHMMS::Controller->rank()==0);
+  io_node= 1;
   bool stopit=false;
   //going to use better option library
   int i=1;

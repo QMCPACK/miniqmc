@@ -13,7 +13,6 @@
 #define QMCPLUSPLUS_ONEBODYJASTROW_OPTIMIZED_SOA_H
 #include "Configuration.h"
 #include "QMCWaveFunctions/OrbitalBase.h"
-#include "QMCWaveFunctions/Jastrow/DiffOneBodyJastrowOrbital.h"
 #include <qmc_common.h>
 #include <simd/allocator.hpp>
 #include <simd/algorithm.hpp>
@@ -311,62 +310,8 @@ struct  J1OrbitalSoA : public OrbitalBase
     {
       if (F[i] != nullptr) j1copy->addFunc(i,new FT(*F[i]));
     }
-    if (dPsi)
-    {
-      j1copy->dPsi =  dPsi->makeClone(tqp);
-    }
     return j1copy;
   }
-
-  /**@{ OrbitalBase virtual functions that are not essential for the development */
-  void resetTargetParticleSet(ParticleSet& P){}
-  void reportStatus(std::ostream& os)
-  {
-    for (size_t i=0,n=F.size(); i<n; ++i)
-    {
-      if(F[i] != nullptr) F[i]->myVars.print(os);
-    }
-  }
-
-  void checkInVariables(opt_variables_type& active)
-  {
-    myVars.clear();
-    for (size_t i=0,n=F.size(); i<n; ++i)
-    {
-      if(F[i] != nullptr)
-      {
-        F[i]->checkInVariables(active);
-        F[i]->checkInVariables(myVars);
-      }
-    }
-  }
-  void checkOutVariables(const opt_variables_type& active)
-  {
-    myVars.getIndex(active);
-    Optimizable=myVars.is_optimizable();
-    for (size_t i=0,n=F.size(); i<n; ++i)
-      if (F[i] != nullptr) F[i]->checkOutVariables(active);
-    if (dPsi)
-      dPsi->checkOutVariables(active);
-  }
-
-  void resetParameters(const opt_variables_type& active)
-  {
-    if (!Optimizable)
-      return;
-    for (size_t i=0,n=F.size(); i<n; ++i)
-      if (F[i] != nullptr) F[i]->resetParameters(active);
-
-    for (int i=0; i<myVars.size(); ++i)
-    {
-      int ii=myVars.Index[i];
-      if (ii>=0)
-        myVars[i]= active[ii];
-    }
-    if (dPsi)
-      dPsi->resetParameters(active);
-  }
-  /**@} */
 
   /** must be removed */
   ValueType ratio(ParticleSet& P, int iat,

@@ -33,9 +33,7 @@ using namespace qmcplusplus;
 int main(int argc, char** argv)
 {
 
-  OHMMS::Controller->initialize(0, NULL);
   OhmmsInfo("j2debuglogfile");
-  Communicate* mycomm=OHMMS::Controller;
 
   typedef QMCTraits::RealType           RealType;
   typedef ParticleSet::ParticlePos_t    ParticlePos_t;
@@ -306,8 +304,6 @@ int main(int argc, char** argv)
       cout << "ratio with SphereMove  Error = " << r_ratio/nsphere << " # of moves =" << nsphere << endl;
     }
   } //end of omp parallel
-
-  OHMMS::Controller->finalize();
 
   return 0;
 }

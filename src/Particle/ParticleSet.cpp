@@ -25,7 +25,6 @@
 #include "Particle/ParticleSet.h"
 #include "Particle/DistanceTableData.h"
 #include "Particle/DistanceTable.h"
-#include "LongRange/StructFact.h"
 #include "Utilities/IteratorUtility.h"
 #include "Utilities/RandomGenerator.h"
 #include "ParticleBase/RandomSeqGenerator.h"
@@ -44,27 +43,18 @@ template<> int ParticleSet::Walker_t::cuda_DataSize = 0;
 ///object counter
 int  ParticleSet::PtclObjectCounter = 0;
 
-void add_p_timer(std::vector<NewTimer*>& timers)
-{
-  timers.push_back(new NewTimer("ParticleSet::makeMove",timer_level_fine)); //timer for MC, ratio etc
-  timers.push_back(new NewTimer("ParticleSet::makeMoveOnSphere",timer_level_fine)); //timer for the walker loop
-  TimerManager.addTimer(timers[0]);
-  TimerManager.addTimer(timers[1]);
-}
-
 ParticleSet::ParticleSet()
   : UseBoundBox(true), UseSphereUpdate(true), IsGrouped(true)
-  , ThreadID(0), SK(0), ParentTag(-1), ParentName("0")
+  , ThreadID(0), ParentTag(-1), ParentName("0")
   , quantum_domain(classical)
 {
   initParticleSet();
   initPropertyList();
-  add_p_timer(myTimers);
 }
 
 ParticleSet::ParticleSet(const ParticleSet& p)
   : UseBoundBox(p.UseBoundBox), UseSphereUpdate(p.UseSphereUpdate),IsGrouped(p.IsGrouped)
-  , ThreadID(0), mySpecies(p.getSpeciesSet()),SK(0), ParentTag(p.tag()), ParentName(p.parentName())
+  , ThreadID(0), mySpecies(p.getSpeciesSet()), ParentTag(p.tag()), ParentName(p.parentName())
 {
   set_quantum_domain(p.quantum_domain);
   initBase();
@@ -94,17 +84,8 @@ ParticleSet::ParticleSet(const ParticleSet& p)
     DistTables[i]->Need_full_table_loadWalker = p.DistTables[i]->Need_full_table_loadWalker;
     DistTables[i]->Rmax = p.DistTables[i]->Rmax;
   }
-  if(p.SK)
-  {
-    LRBox=p.LRBox; //copy LRBox
-    SK=new StructFact(*p.SK); //safe to use the copy constructor
-    //R.InUnit=p.R.InUnit;
-    //createSK();
-    //SK->DoUpdate=p.SK->DoUpdate;
-  }
   if (p.Sphere.size())
     resizeSphere(p.Sphere.size());
-  add_p_timer(myTimers);
   myTwist=p.myTwist;
 
   RSoA.resize(getLocalNum());
@@ -114,8 +95,6 @@ ParticleSet::~ParticleSet()
 {
   DEBUG_MEMORY("ParticleSet::~ParticleSet");
   delete_iter(DistTables.begin(), DistTables.end());
-  if (SK)
-    delete SK;
   delete_iter(Sphere.begin(), Sphere.end());
 }
 
@@ -497,9 +476,6 @@ void ParticleSet::update(bool skipSK)
 #endif
   for (int i=0; i< DistTables.size(); i++)
     DistTables[i]->evaluate(*this);
-  if (!skipSK && SK)
-    SK->UpdateAllPart(*this);
-
   Ready4Measure=true;
 }
 
@@ -511,9 +487,6 @@ void ParticleSet::update(const ParticlePos_t& pos)
 #endif
   for (int i=0; i< DistTables.size(); i++)
     DistTables[i]->evaluate(*this);
-  if (SK && !SK->DoUpdate)
-    SK->UpdateAllPart(*this);
-
   Ready4Measure=true;
 }
 
@@ -534,10 +507,6 @@ ParticleSet::makeMove(Index_t iat, const SingleParticlePos_t& displ)
   for (int i=0; i< DistTables.size(); ++i)
     DistTables[i]->move(*this,newpos,iat);
   R[iat]=newpos;
-  //Do not change SK: 2007-05-18
-  //Change SK only if DoUpdate is true: 2008-09-12
-  if (SK && SK->DoUpdate)
-    SK->makeMove(iat,newpos);
   return newpos;
 }
 
@@ -559,14 +528,12 @@ void ParticleSet::setActive(int iat)
 bool
 ParticleSet::makeMoveAndCheck(Index_t iat, const SingleParticlePos_t& displ)
 {
-  myTimers[0]->start();
   activePtcl=iat;
   //SingleParticlePos_t red_displ(Lattice.toUnit(displ));
   if (UseBoundBox)
   {
     if (Lattice.outOfBound(Lattice.toUnit(displ)))
     {
-      myTimers[0]->stop();
       return false;
     }
     activePos=R[iat]; //save the current position
@@ -577,13 +544,9 @@ ParticleSet::makeMoveAndCheck(Index_t iat, const SingleParticlePos_t& displ)
       for (int i=0; i< DistTables.size(); ++i)
         DistTables[i]->move(*this,newpos,iat);
       R[iat]=newpos;
-      if (SK && SK->DoUpdate)
-        SK->makeMove(iat,newpos);
-      myTimers[0]->stop();
       return true;
     }
     //out of bound
-    myTimers[0]->stop();
     return false;
   }
   else
@@ -593,7 +556,6 @@ ParticleSet::makeMoveAndCheck(Index_t iat, const SingleParticlePos_t& displ)
     for (int i=0; i< DistTables.size(); ++i)
       DistTables[i]->move(*this,newpos,iat);
     R[iat]=newpos;
-    myTimers[0]->stop();
     return true;
   }
 }
@@ -625,8 +587,6 @@ bool ParticleSet::makeMove(const Walker_t& awalker
 #endif
   for (int i=0; i< DistTables.size(); i++)
     DistTables[i]->evaluate(*this);
-  if (SK)
-    SK->UpdateAllPart(*this);
   //every move is valid
   return true;
 }
@@ -659,8 +619,6 @@ bool ParticleSet::makeMove(const Walker_t& awalker
 #endif
   for (int i=0; i< DistTables.size(); i++)
     DistTables[i]->evaluate(*this);
-  if (SK)
-    SK->UpdateAllPart(*this);
   //every move is valid
   return true;
 }
@@ -701,8 +659,6 @@ bool ParticleSet::makeMoveWithDrift(const Walker_t& awalker
 #endif
   for (int i=0; i< DistTables.size(); i++)
     DistTables[i]->evaluate(*this);
-  if (SK)
-    SK->UpdateAllPart(*this);
   //every move is valid
   return true;
 }
@@ -738,8 +694,6 @@ bool ParticleSet::makeMoveWithDrift(const Walker_t& awalker
 
   for (int i=0; i< DistTables.size(); i++)
     DistTables[i]->evaluate(*this);
-  if (SK)
-    SK->UpdateAllPart(*this);
   //every move is valid
   return true;
 }
@@ -759,8 +713,6 @@ ParticleSet::makeMoveOnSphere(Index_t iat, const SingleParticlePos_t& displ)
   for (int i=0; i< DistTables.size(); ++i)
     DistTables[i]->moveOnSphere(*this,newpos,iat);
   R[iat]=newpos;
-  if (SK && SK->DoUpdate)
-    SK->makeMove(iat,R[iat]);
 }
 
 /** update the particle attribute by the proposed move
@@ -781,10 +733,6 @@ void ParticleSet::acceptMove(Index_t iat)
       std::cout << "Die here " << RSoA.size() << std::endl;
 
     RSoA(iat)=R[iat];
-
-    //Do not change SK: 2007-05-18
-    if (SK && SK->DoUpdate)
-      SK->acceptMove(iat,GroupID[iat],activePos);
   }
   else
   {
@@ -806,8 +754,6 @@ void ParticleSet::donePbyP(bool skipSK)
 {
   for (size_t i=0,nt=DistTables.size(); i< nt; i++)
     DistTables[i]->donePbyP();
-  if (!skipSK && SK && !SK->DoUpdate)
-    SK->UpdateAllPart(*this);
   Ready4Measure=true;
 }
 
@@ -849,9 +795,6 @@ void ParticleSet::loadWalker(Walker_t& awalker, bool pbyp)
     // in certain cases, full tables must be ready
     for (int i=0; i< DistTables.size(); i++)
       if(DistTables[i]->Need_full_table_loadWalker) DistTables[i]->evaluate(*this);
-    //computed so that other objects can use them, e.g., kSpaceJastrow
-    if(SK && SK->DoUpdate)
-      SK->UpdateAllPart(*this);
   }
 
   Ready4Measure=false;
@@ -874,8 +817,6 @@ void ParticleSet::saveWalker(Walker_t& awalker)
   awalker.L=L;
 #endif
   //PAOps<RealType,OHMMS_DIM>::copy(G,awalker.Drift);
-  //if (SK)
-  //  SK->UpdateAllPart(*this);
   //awalker.DataSet.rewind();
 }
 

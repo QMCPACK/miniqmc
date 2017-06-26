@@ -24,6 +24,8 @@
 #include "Particle/SymmetricDistanceTableData.h"
 #include "Lattice/ParticleBConds3DSoa.h"
 #include "Particle/SoaDistanceTableAA.h"
+#include "Message/OpenMP.h"
+
 namespace qmcplusplus
 {
 

@@ -124,12 +124,9 @@ ENDIF()
     Utilities/SpeciesSet.cpp 
     Utilities/OhmmsInform.cpp 
     Utilities/OhmmsInfo.cpp 
-    Utilities/NewTimer.cpp
     Utilities/ProgressReportEngine.cpp
     Platforms/sysutil.cpp
-    Message/Communicate.cpp 
     Optimize/VariableSet.cpp
-    io/hdf_archive.cpp
     spline2/einspline_allocator.c
     spline2/bspline_allocator.cpp
     spline2/MultiBspline.cpp
@@ -170,8 +167,6 @@ ENDIF()
     Particle/DistanceTableAB.cpp
     Particle/DistanceTable.cpp
     Particle/make_clones.cpp
-    LongRange/KContainer.cpp
-    LongRange/StructFact.cpp
     )
 
 
@@ -185,12 +180,6 @@ ENDIF()
     ParticleTags.cpp 
     ParticleIO/ParticleIOUtility.cpp 
     )
-
-  IF(HAVE_LIBHDF5 OR HAVE_ADIOS)
-    SET(PARTICLEIO ${PARTICLEIO}
-      Particle/HDFWalkerOutput.cpp
-      )
-  ENDIF(HAVE_LIBHDF5 OR HAVE_ADIOS)
 
   #Need to add this if nothing else but miniapps is compiled
   if(QMC_BUILD_LEVEL GREATER 4)
@@ -259,7 +248,6 @@ ENDIF()
     SUBDIRS(Utilities/tests)
     SUBDIRS(einspline/tests)
     SUBDIRS(OhmmsData/tests)
-    SUBDIRS(io/tests)
     SUBDIRS(Lattice/tests)
     SUBDIRS(Particle/tests)
     SUBDIRS(ParticleIO/tests)

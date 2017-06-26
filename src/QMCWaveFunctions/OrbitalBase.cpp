@@ -16,7 +16,6 @@
     
     
 #include "QMCWaveFunctions/OrbitalBase.h"
-#include "QMCWaveFunctions/DiffOrbitalBase.h"
 //#include "QMCWaveFunctions/ProxyOrbital.h"
 
 namespace qmcplusplus
@@ -25,7 +24,7 @@ OrbitalBase::OrbitalBase():
   IsOptimizing(false), Optimizable(true), UpdateMode(ORB_WALKER), //UseBuffer(true), //Counter(0),
   LogValue(1.0),PhaseValue(0.0),OrbitalName("OrbitalBase"), derivsDone(false), parameterType(0)
 #if !defined(ENABLE_SMARTPOINTER)
-  ,dPsi(0), ionDerivs(false)
+  , ionDerivs(false)
 #endif
 { 
   ///store instead of computing
@@ -43,26 +42,10 @@ OrbitalBase::OrbitalBase():
 //   //if(dPsi) dPsi=old.dPsi->makeClone();
 // }
 
-
-void OrbitalBase::setDiffOrbital(DiffOrbitalBasePtr d)
-{
-#if defined(ENABLE_SMARTPOINTER)
-  dPsi=DiffOrbitalBasePtr(d);
-#else
-  dPsi=d;
-#endif
-}
-
 void OrbitalBase::evaluateDerivatives(ParticleSet& P,
                                       const opt_variables_type& active,
                                       std::vector<RealType>& dlogpsi, std::vector<RealType>& dhpsioverpsi)
 {
-#if defined(ENABLE_SMARTPOINTER)
-  if (dPsi.get())
-#else
-  if (dPsi)
-#endif
-    dPsi->evaluateDerivatives(P, active, dlogpsi, dhpsioverpsi);
 }
 
 ///** makeClone uses optVars  to determine if it will make a clone (deepcopy)

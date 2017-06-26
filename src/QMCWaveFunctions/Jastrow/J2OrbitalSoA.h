@@ -16,7 +16,6 @@
 #include "Configuration.h"
 #if QMC_BUILD_LEVEL<5
 #include "QMCWaveFunctions/OrbitalBase.h"
-#include "QMCWaveFunctions/Jastrow/DiffTwoBodyJastrowOrbital.h"
 #include <qmc_common.h>
 #endif
 #include "Particle/DistanceTableData.h"
@@ -93,79 +92,6 @@ struct  J2OrbitalSoA : public OrbitalBase
 
   /** add functor for (ia,ib) pair */
   void addFunc(int ia, int ib, FT* j);
-
-
-  void resetTargetParticleSet(ParticleSet& P)
-  {
-    if(dPsi)
-      dPsi->resetTargetParticleSet(P);
-  }
-
-  /** check in an optimizable parameter
-   * @param o a super set of optimizable variables
-   */
-  void checkInVariables(opt_variables_type& active)
-  {
-    myVars.clear();
-    typename std::map<std::string,FT*>::iterator it(J2Unique.begin()),it_end(J2Unique.end());
-    while(it != it_end)
-    {
-      (*it).second->checkInVariables(active);
-      (*it).second->checkInVariables(myVars);
-      ++it;
-    }
-  }
-
-  /** check out optimizable variables
-   */
-  void checkOutVariables(const opt_variables_type& active)
-  {
-    myVars.getIndex(active);
-    Optimizable=myVars.is_optimizable();
-    typename std::map<std::string,FT*>::iterator it(J2Unique.begin()),it_end(J2Unique.end());
-    while(it != it_end)
-    {
-      (*it).second->checkOutVariables(active);
-      ++it;
-    }
-    if(dPsi)
-      dPsi->checkOutVariables(active);
-  }
-
-  ///reset the value of all the unique Two-Body Jastrow functions
-  void resetParameters(const opt_variables_type& active)
-  {
-    if(!Optimizable)
-      return;
-    typename std::map<std::string,FT*>::iterator it(J2Unique.begin()),it_end(J2Unique.end());
-    while(it != it_end)
-    {
-      (*it).second->resetParameters(active);
-      ++it;
-    }
-    if(dPsi)
-      dPsi->resetParameters( active );
-    for(int i=0; i<myVars.size(); ++i)
-    {
-      int ii=myVars.Index[i];
-      if(ii>=0)
-        myVars[i]= active[ii];
-    }
-  }
-
-  /** print the state, e.g., optimizables */
-  void reportStatus(std::ostream& os)
-  {
-    typename std::map<std::string,FT*>::iterator it(J2Unique.begin()),it_end(J2Unique.end());
-    while(it != it_end)
-    {
-      (*it).second->myVars.print(os);
-      ++it;
-    }
-    ChiesaKEcorrection();
-  }
-  RealType ChiesaKEcorrection() { return RealType();}
-  /**@} */
 
   OrbitalBasePtr makeClone(ParticleSet& tqp) const;
 
@@ -366,8 +292,6 @@ template<typename FT>
 OrbitalBasePtr J2OrbitalSoA<FT>::makeClone(ParticleSet& tqp) const
 {
   J2OrbitalSoA<FT>* j2copy=new J2OrbitalSoA<FT>(tqp,-1);
-  if (dPsi)
-    j2copy->dPsi = dPsi->makeClone(tqp);
   std::map<const FT*,FT*> fcmap;
   for(int ig=0; ig<NumGroups; ++ig)
     for(int jg=ig; jg<NumGroups; ++jg)
@@ -380,7 +304,6 @@ OrbitalBasePtr J2OrbitalSoA<FT>::makeClone(ParticleSet& tqp) const
       {
         FT* fc=new FT(*F[ij]);
         j2copy->addFunc(ig,jg,fc);
-        //if (dPsi) (j2copy->dPsi)->addFunc(aname.str(),ig,jg,fc);
         fcmap[F[ij]]=fc;
       }
     }

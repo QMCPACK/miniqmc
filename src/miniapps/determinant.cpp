@@ -18,7 +18,6 @@
 #include <Utilities/PrimeNumberSet.h>
 #include <Utilities/Timer.h>
 #include <random/random.hpp>
-#include <mpi/collectives.h>
 #include <getopt.h>
 using namespace std;
 #include <miniapps/determinant.hpp>
@@ -27,13 +26,12 @@ using namespace qmcplusplus;
 int main(int argc, char** argv)
 {
 
-  OHMMS::Controller->initialize(argc,argv);
-  OhmmsInfo welcome(argc,argv,OHMMS::Controller->rank());
-  Communicate* mycomm=OHMMS::Controller;
+  //OhmmsInfo welcome(argc,argv,OHMMS::Controller->rank());
 
   //use the global generator
 
-  bool ionode=(mycomm->rank() == 0);
+  //bool ionode=(mycomm->rank() == 0);
+  bool ionode=1;
   int nels=8;
   int iseed=11;
   int nsteps=100;
@@ -155,8 +153,6 @@ int main(int argc, char** argv)
   //t_pseudo   *=1.0/static_cast<double>(nsteps*nthreads);
   //cout << "#per MC step steps " << nsteps << " substeps " << nsubsteps << endl;
   //cout << "diffusion_mc " << t_diffusion << " pseudo_mc  " << t_pseudo << endl;
-
-  OHMMS::Controller->finalize();
 
   return 0;
 }

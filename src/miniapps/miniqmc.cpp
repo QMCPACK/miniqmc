@@ -21,7 +21,6 @@
 #include <Utilities/PrimeNumberSet.h>
 #include <Utilities/Timer.h>
 #include <random/random.hpp>
-#include <mpi/collectives.h>
 #include <miniapps/graphite.hpp>
 #include <miniapps/pseudo.hpp>
 #include <miniapps/common.hpp>
@@ -35,9 +34,7 @@ using namespace qmcplusplus;
 int main(int argc, char** argv)
 {
 
-  OHMMS::Controller->initialize(argc,argv);
-  OhmmsInfo welcome(argc,argv,OHMMS::Controller->rank());
-  Communicate* mycomm=OHMMS::Controller;
+  //OhmmsInfo welcome(argc,argv,OHMMS::Controller->rank());
 
   typedef QMCTraits::RealType           RealType;
   typedef ParticleSet::ParticlePos_t    ParticlePos_t;
@@ -47,7 +44,8 @@ int main(int argc, char** argv)
 
   //use the global generator
 
-  bool ionode=(mycomm->rank() == 0);
+  //bool ionode=(mycomm->rank() == 0);
+  bool ionode=1;
   int na=4;
   int nb=4;
   int nc=1;
@@ -321,7 +319,7 @@ int main(int argc, char** argv)
   double global_t[]={tInit*omp_fac,t0*omp_fac,t_diffusion*omp_fac,t_pseudo*omp_fac};
   double global_t_max[]={0.0,0.0,0.0,0.0};
 
-  MPI_Allreduce(global_t,global_t_max,4,MPI_DOUBLE,MPI_MAX,*mycomm);
+  //MPI_Allreduce(global_t,global_t_max,4,MPI_DOUBLE,MPI_MAX,*mycomm);
 
   if(ionode)
   {
@@ -329,7 +327,9 @@ int main(int argc, char** argv)
     t0         =global_t_max[1];
     t_diffusion=global_t_max[2];
     t_pseudo   =global_t_max[3];
-    double FOM=mycomm->size()*nsteps*nthreads/(t_diffusion+t_pseudo);
+    //const int nmpi=mycomm->size();
+    const int nmpi=1;
+    double FOM=nmpi*nsteps*nthreads/(t_diffusion+t_pseudo);
 
     cout << "================================== " << endl;
     cout << "miniqmc Init " << tInit  << " Tcomp " << t0
@@ -340,10 +340,8 @@ int main(int argc, char** argv)
     cout << "#per MC step steps " << nsteps << " substeps " << nsubsteps << endl;
     cout << "diffusion_mc " << t_diffusion << " pseudo_mc  " << t_pseudo << endl;
     cout << "#   N MPI OMP FOM  " << endl;
-    cout << "FOM " << nptcl << " " << mycomm->size() << " " << nthreads << " " << FOM << endl << endl;
+    cout << "FOM " << nptcl << " " << nmpi << " " << nthreads << " " << FOM << endl << endl;
   }
-
-  OHMMS::Controller->finalize();
 
   return 0;
 }

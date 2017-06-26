@@ -20,7 +20,6 @@
 #define QMCPLUSPLUS_GENERIC_ONEBODYJASTROW_H
 #include "Configuration.h"
 #include "QMCWaveFunctions/OrbitalBase.h"
-#include "QMCWaveFunctions/Jastrow/DiffOneBodyJastrowOrbital.h"
 #include "Particle/DistanceTableData.h"
 #include "Particle/DistanceTable.h"
 
@@ -110,77 +109,12 @@ public:
 
   ~OneBodyJastrowOrbital() { }
 
-  //evaluate the distance table with P
-  void resetTargetParticleSet(ParticleSet& P)
-  {
-    if (dPsi)
-      dPsi->resetTargetParticleSet(P);
-  }
-
   void addFunc(int source_type, FT* afunc, int target_type=-1)
   {
     for (int i=0; i<Fs.size(); i++)
       if (CenterRef.GroupID[i] == source_type)
         Fs[i]=afunc;
     Funique[source_type]=afunc;
-  }
-
-  /** check in an optimizable parameter
-   * @param o a super set of optimizable variables
-   */
-  void checkInVariables(opt_variables_type& active)
-  {
-    myVars.clear();
-    for (int i=0; i<Funique.size(); ++i)
-    {
-      FT* fptr=Funique[i];
-      if (fptr)
-      {
-        fptr->checkInVariables(active);
-        fptr->checkInVariables(myVars);
-      }
-    }
-  }
-
-  /** check out optimizable variables
-   */
-  void checkOutVariables(const opt_variables_type& active)
-  {
-    myVars.getIndex(active);
-    Optimizable=myVars.is_optimizable();
-    for (int i=0; i<Funique.size(); ++i)
-      if (Funique[i] != nullptr)
-        Funique[i]->checkOutVariables(active);
-    if (dPsi)
-      dPsi->checkOutVariables(active);
-  }
-
-  ///reset the value of all the unique Two-Body Jastrow functions
-  void resetParameters(const opt_variables_type& active)
-  {
-    if (!Optimizable)
-      return;
-    for (int i=0; i<Funique.size(); ++i)
-      if (Funique[i])
-        Funique[i]->resetParameters(active);
-    for (int i=0; i<myVars.size(); ++i)
-    {
-      int ii=myVars.Index[i];
-      if (ii>=0)
-        myVars[i]= active[ii];
-    }
-    if (dPsi)
-      dPsi->resetParameters(active);
-  }
-
-  /** print the state, e.g., optimizables */
-  void reportStatus(std::ostream& os)
-  {
-    for (int i=0; i<Funique.size(); ++i)
-    {
-      if (Funique[i])
-        Funique[i]->myVars.print(os);
-    }
   }
 
   /**
@@ -297,8 +231,6 @@ public:
       std::vector<ValueType>& ratios, Matrix<ValueType>& dratios)
   {
     evaluateRatios(VP,ratios);
-    if(dPsi)
-      dPsi->evaluateDerivRatios(VP,optvars,dratios);
   }
 
 
@@ -624,11 +556,6 @@ public:
     {
       if (Funique[i])
         j1copy->addFunc(i,new FT(*Funique[i]));
-    }
-    //j1copy->OrbitalName=OrbitalName+"_clone";
-    if (dPsi)
-    {
-      j1copy->dPsi =  dPsi->makeClone(tqp);
     }
     return j1copy;
   }

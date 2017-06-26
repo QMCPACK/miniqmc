@@ -25,14 +25,7 @@
 #include "Particle/DistanceTableData.h"
 #include "Particle/DistanceTable.h"
 #include "ParticleBase/RandomSeqGenerator.h"
-#include "Message/Communicate.h"
-#include "Message/CommOperators.h"
 #include "Utilities/IteratorUtility.h"
-#include "LongRange/StructFact.h"
-#include "Particle/HDFWalkerOutput.h"
-#include "QMCDrivers/QMCDriver.h"
-#include <io/hdf_hyperslab.h>
-#include "HDFVersion.h"
 #include <map>
 
 #ifdef QMC_CUDA
@@ -479,27 +472,6 @@ void MCWalkerConfiguration::loadEnsemble()
 //  clearEnsemble();
 //}
 
-bool
-MCWalkerConfiguration::dumpEnsemble(std::vector<MCWalkerConfiguration*>& others
-                                    , HDFWalkerOutput* out, int np, int nBlock)
-{
-#if !(defined(__bgp__)||(__bgq__))
-  MCWalkerConfiguration wtemp;
-  wtemp.resize(0,GlobalNum);
-  wtemp.loadEnsemble(others,false);
-  int w=wtemp.getActiveWalkers();
-  if(w==0)
-    return false;
-  std::vector<int> nwoff(np+1,0);
-  for(int ip=0; ip<np; ++ip)
-    nwoff[ip+1]=nwoff[ip]+w;
-  wtemp.setGlobalNumWalkers(nwoff[np]);
-  wtemp.setWalkerOffsets(nwoff);
-  out->dump(wtemp, nBlock);
-#endif
-  return true;
-}
-
 void MCWalkerConfiguration::loadEnsemble(std::vector<MCWalkerConfiguration*>& others, bool doclean)
 {
   std::vector<int> off(others.size()+1,0);
@@ -609,8 +581,6 @@ MCWalkerConfiguration::allocateGPU(size_t buffersize)
 {
   int N = WalkerList[0]->R.size();
   int Numk = 0;
-  if (SK)
-    Numk = SK->KLists.numk;
   int NumSpecies = getSpeciesSet().TotalNum;
   for (int iw=0; iw<WalkerList.size(); iw++)
   {
