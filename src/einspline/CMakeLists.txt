@@ -19,9 +19,6 @@ SET(HFILES
  multi_bspline_create.h    multi_bspline_structs.h
  multi_bspline_eval_d.h
  multi_bspline_eval_s.h    multi_bspline_eval_z.h
- nubspline_structs.h nubasis.h nubspline.h nugrid.h
- nubspline_base.h nubspline_create.h
-
  )
 
 #FOREACH(a ${HFILES})
@@ -35,8 +32,6 @@ SET(SRCS ${SRCS}
   bspline_create.c
   bspline_data.c
   multi_bspline_create.c
-  nubspline_create.c
-  nubasis.c
 )
 
 #do not compiler c functions
