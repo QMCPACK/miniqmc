@@ -16,6 +16,7 @@
     
 #ifndef QMCPLUSPLUS_POLYNOMIAL3D_FUNCTOR_H
 #define QMCPLUSPLUS_POLYNOMIAL3D_FUNCTOR_H
+#include "Numerics/OptimizableFunctorBase.h"
 #include "Numerics/HDFNumericAttrib.h"
 #include "OhmmsData/AttributeSet.h"
 #include "Numerics/LinearFit.h"
@@ -26,12 +27,9 @@
 namespace qmcplusplus
 {
 
-struct PolynomialFunctor3D
+struct PolynomialFunctor3D: public OptimizableFunctorBase
 {
-
-  typedef QMCTraits::RealType real_type;
   typedef real_type value_type;
-  real_type cutoff_radius;
   int N_eI, N_ee;
   Array<real_type,3> gamma;
   // Permutation vector, used when we need to pivot

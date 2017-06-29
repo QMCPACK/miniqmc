@@ -80,8 +80,6 @@ struct  J2OrbitalSoA : public OrbitalBase
   aligned_vector<int> DistIndice;
   ///Container for \f$F[ig*NumGroups+jg]\f$
   std::vector<FT*> F;
-  ///Uniquue J2 set for cleanup
-  std::map<std::string,FT*> J2Unique;
 
   J2OrbitalSoA(ParticleSet& p, int tid);
   J2OrbitalSoA(const J2OrbitalSoA& rhs)=delete;
@@ -93,8 +91,6 @@ struct  J2OrbitalSoA : public OrbitalBase
   /** add functor for (ia,ib) pair */
   void addFunc(int ia, int ib, FT* j);
 
-  OrbitalBasePtr makeClone(ParticleSet& tqp) const;
-
   RealType evaluateLog(ParticleSet& P,
                        ParticleSet::ParticleGradient_t& G,
                        ParticleSet::ParticleLaplacian_t& L);
@@ -102,19 +98,10 @@ struct  J2OrbitalSoA : public OrbitalBase
   /** recompute internal data assuming distance table is fully ready */
   void recompute(ParticleSet& P);
 
-  ValueType evaluate(ParticleSet& P,
-                     ParticleSet::ParticleGradient_t& G,
-                     ParticleSet::ParticleLaplacian_t& L)
-  {
-    evaluateLog(P,G,L);
-    return std::exp(LogValue);
-  }
-
   ValueType ratio(ParticleSet& P, int iat);
   GradType evalGrad(ParticleSet& P, int iat);
   ValueType ratioGrad(ParticleSet& P, int iat, GradType& grad_iat);
   void acceptMove(ParticleSet& P, int iat);
-  inline void restore(int iat) {}
 
   /** compute G and L after the sweep
    */
@@ -122,49 +109,6 @@ struct  J2OrbitalSoA : public OrbitalBase
                      ParticleSet::ParticleGradient_t& G,
                      ParticleSet::ParticleLaplacian_t& L, bool fromscratch=false);
 
-  inline RealType registerData(ParticleSet& P, PooledData<RealType>& buf)
-  {
-    evaluateLog(P,P.G,P.L);
-    buf.add(Uat.begin(), Uat.end());
-    buf.add(FirstAddressOfdU,LastAddressOfdU);
-    buf.add(d2Uat.begin(), d2Uat.end());
-    return LogValue;
-  }
-
-  inline void copyFromBuffer(ParticleSet& P, PooledData<RealType>& buf)
-  {
-    buf.get(Uat.begin(), Uat.end());
-    buf.get(FirstAddressOfdU,LastAddressOfdU);
-    buf.get(d2Uat.begin(), d2Uat.end());
-  }
-
-  RealType updateBuffer(ParticleSet& P, PooledData<RealType>& buf, bool fromscratch=false)
-  {
-    evaluateGL(P, P.G, P.L, false);
-    buf.put(Uat.begin(), Uat.end());
-    buf.put(FirstAddressOfdU,LastAddressOfdU);
-    buf.put(d2Uat.begin(), d2Uat.end());
-    return LogValue;
-  }
-
-  inline RealType evaluateLog(ParticleSet& P, PooledData<RealType>& buf)
-  {
-    buf.put(Uat.begin(), Uat.end());
-    buf.put(FirstAddressOfdU,LastAddressOfdU);
-    buf.put(d2Uat.begin(), d2Uat.end());
-    return LogValue;
-  }
-
-  //to be removed from QMCPACK: these are not used anymore with PbyPFast
-  void update(ParticleSet& P,
-              ParticleSet::ParticleGradient_t& dG,
-              ParticleSet::ParticleLaplacian_t& dL,
-              int iat) {}
-  ValueType ratio(ParticleSet& P, int iat,
-      ParticleSet::ParticleGradient_t& dG,
-      ParticleSet::ParticleLaplacian_t& dL){ return ValueType(1);}
-
-  
   /*@{ internal compute engines*/
   inline void computeU3(ParticleSet& P, int iat, const RealType* restrict dist,
       RealType* restrict u, RealType* restrict du, RealType* restrict d2u);
@@ -218,15 +162,7 @@ J2OrbitalSoA<FT>::J2OrbitalSoA(ParticleSet& p, int tid) : TaskID(tid)
 }
 
 template<typename FT>
-J2OrbitalSoA<FT>::~J2OrbitalSoA()
-{ 
-  auto it=J2Unique.begin();
-  while(it != J2Unique.end())
-  {
-    delete ((*it).second);
-    ++it;
-  }
-}//need to clean up J2Unique 
+J2OrbitalSoA<FT>::~J2OrbitalSoA() {}
 
 template<typename FT>
 void J2OrbitalSoA<FT>::init(ParticleSet& p)
@@ -283,32 +219,8 @@ void J2OrbitalSoA<FT>::addFunc(int ia, int ib, FT* j)
   }
   std::stringstream aname;
   aname<<ia<<ib;
-  J2Unique[aname.str()]=j;
   //ChiesaKEcorrection();
   FirstTime = false;
-}
-
-template<typename FT>
-OrbitalBasePtr J2OrbitalSoA<FT>::makeClone(ParticleSet& tqp) const
-{
-  J2OrbitalSoA<FT>* j2copy=new J2OrbitalSoA<FT>(tqp,-1);
-  std::map<const FT*,FT*> fcmap;
-  for(int ig=0; ig<NumGroups; ++ig)
-    for(int jg=ig; jg<NumGroups; ++jg)
-    {
-      int ij=ig*NumGroups+jg;
-      if(F[ij]==0)
-        continue;
-      typename std::map<const FT*,FT*>::iterator fit=fcmap.find(F[ij]);
-      if(fit == fcmap.end())
-      {
-        FT* fc=new FT(*F[ij]);
-        j2copy->addFunc(ig,jg,fc);
-        fcmap[F[ij]]=fc;
-      }
-    }
-  j2copy->Optimizable = Optimizable;
-  return j2copy;
 }
 
 /** intenal function to compute \f$\sum_j u(r_j), du/dr, d2u/dr2\f$

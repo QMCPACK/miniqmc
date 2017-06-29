@@ -176,11 +176,6 @@ ENDIF()
     ParticleIO/ParticleIOUtility.cpp 
     )
 
-  #Need to add this if nothing else but miniapps is compiled
-  if(QMC_BUILD_LEVEL GREATER 4)
-    set(PARTICLE  ${PARTICLE} QMCWaveFunctions/OrbitalBase.cpp)
-  endif()
-
   ADD_LIBRARY(qmcbase ${PARTICLE}  ${PARTICLEIO}) 
 
   #IF(QMC_BUILD_STATIC)

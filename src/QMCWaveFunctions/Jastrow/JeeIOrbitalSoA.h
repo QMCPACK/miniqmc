@@ -82,17 +82,6 @@ class JeeIOrbitalSoA: public OrbitalBase
 
   // Used for evaluating derivatives with respect to the parameters
   int NumVars;
-  Array<std::pair<int,int>,3> VarOffset;
-  Vector<RealType> dLogPsi;
-  Array<PosType,2> gradLogPsi;
-  Array<RealType,2> lapLogPsi;
-
-  // Temporary store for parameter derivatives of functor
-  // The first index is the functor index in J3Unique.  The second is the parameter index w.r.t. to that
-  // functor
-  std::vector<std::vector<RealType> >               du_dalpha;
-  std::vector<std::vector<PosType> >             dgrad_dalpha;
-  std::vector<std::vector<Tensor<RealType,3> > > dhess_dalpha;
 
 public:
 
@@ -109,27 +98,6 @@ public:
   }
 
   ~JeeIOrbitalSoA() { }
-
-  OrbitalBasePtr makeClone(ParticleSet& elecs) const
-  {
-    JeeIOrbitalSoA<FT>* eeIcopy= new JeeIOrbitalSoA<FT>(Ions, elecs, false);
-    std::map<const FT*,FT*> fcmap;
-    for (int iG=0; iG<iGroups; iG++)
-      for (int eG1=0; eG1<eGroups; eG1++)
-        for (int eG2=0; eG2<eGroups; eG2++)
-        {
-          if(F(iG,eG1,eG2)==0)
-            continue;
-          typename std::map<const FT*,FT*>::iterator fit=fcmap.find(F(iG,eG1,eG2));
-          if(fit == fcmap.end())
-          {
-            FT* fc=new FT(*F(iG,eG1,eG2));
-            eeIcopy->addFunc(iG, eG1, eG2, fc);
-            fcmap[F(iG,eG1,eG2)]=fc;
-          }
-        }
-    return eeIcopy;
-  }
 
   void init(ParticleSet& p)
   {
@@ -250,7 +218,6 @@ public:
     }
   }
 
-
   void build_compact_list(ParticleSet& P)
   {
     const DistanceTableData& eI_table=(*P.DistTables[myTableID]);
@@ -273,13 +240,6 @@ public:
     return LogValue;
   }
 
-  ValueType evaluate(ParticleSet& P,
-                     ParticleSet::ParticleGradient_t& G,
-                     ParticleSet::ParticleLaplacian_t& L)
-  {
-    return std::exp(evaluateLog(P,G,L));
-  }
-
   ValueType ratio(ParticleSet& P, int iat)
   {
     UpdateMode=ORB_PBYP_RATIO;
@@ -290,17 +250,6 @@ public:
     DiffVal=Uat[iat]-cur_Uat;
     return std::exp(DiffVal);
   }
-
-  //to be removed from QMCPACK: these are not used anymore with PbyPFast
-  inline void update(ParticleSet& P,
-                     ParticleSet::ParticleGradient_t& dG,
-                     ParticleSet::ParticleLaplacian_t& dL,
-                     int iat) {}
-
-  ValueType ratio(ParticleSet& P, int iat,
-                  ParticleSet::ParticleGradient_t& dG,
-                  ParticleSet::ParticleLaplacian_t& dL)
-  {return ValueType(1);}
 
   GradType evalGrad(ParticleSet& P, int iat)
   {
@@ -319,8 +268,6 @@ public:
     grad_iat+=cur_dUat;
     return std::exp(DiffVal);
   }
-
-  inline void restore(int iat) {}
 
   void acceptMove(ParticleSet& P, int iat)
   {
@@ -503,41 +450,6 @@ public:
           }
         }
       }
-  }
-
-  inline RealType registerData(ParticleSet& P, PooledData<RealType>& buf)
-  {
-    evaluateLog(P,P.G,P.L);
-    buf.add(Uat.begin(), Uat.end());
-    buf.add(FirstAddressOfdU,LastAddressOfdU);
-    buf.add(d2Uat.begin(), d2Uat.end());
-    return LogValue;
-  }
-
-  inline RealType updateBuffer(ParticleSet& P, PooledData<RealType>& buf,
-                               bool fromscratch=false)
-  {
-    evaluateGL(P, P.G, P.L, false);
-    buf.put(Uat.begin(), Uat.end());
-    buf.put(FirstAddressOfdU,LastAddressOfdU);
-    buf.put(d2Uat.begin(), d2Uat.end());
-    return LogValue;
-  }
-
-  inline void copyFromBuffer(ParticleSet& P, PooledData<RealType>& buf)
-  {
-    buf.get(Uat.begin(), Uat.end());
-    buf.get(FirstAddressOfdU,LastAddressOfdU);
-    buf.get(d2Uat.begin(), d2Uat.end());
-    build_compact_list(P);
-  }
-
-  inline RealType evaluateLog(ParticleSet& P, PooledData<RealType>& buf)
-  {
-    buf.put(Uat.begin(), Uat.end());
-    buf.put(FirstAddressOfdU,LastAddressOfdU);
-    buf.put(d2Uat.begin(), d2Uat.end());
-    return LogValue;
   }
 
   void evaluateGL(ParticleSet& P,

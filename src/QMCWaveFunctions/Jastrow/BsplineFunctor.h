@@ -20,6 +20,7 @@
     
 #ifndef QMCPLUSPLUS_BSPLINE_FUNCTOR_H
 #define QMCPLUSPLUS_BSPLINE_FUNCTOR_H
+#include "Numerics/OptimizableFunctorBase.h"
 #include "OhmmsData/AttributeSet.h"
 #include "Numerics/LinearFit.h"
 #include "simd/allocator.hpp"
@@ -29,13 +30,9 @@ namespace qmcplusplus
 {
 
 template<class T>
-struct BsplineFunctor
+struct BsplineFunctor: public OptimizableFunctorBase
 {
-
-  typedef QMCTraits::RealType real_type;
   typedef real_type value_type;
-
-  real_type cutoff_radius;
   int NumParams;
   int Dummy;
   const TinyVector<real_type,16> A, dA, d2A, d3A;

@@ -122,13 +122,6 @@ struct  J1OrbitalSoA : public OrbitalBase
     return LogValue;
   }
 
-  ValueType evaluate(ParticleSet& P,
-                     ParticleSet::ParticleGradient_t& G,
-                     ParticleSet::ParticleLaplacian_t& L)
-  {
-    return std::exp(evaluateLog(P,G,L));
-  }
-  
   ValueType ratio(ParticleSet& P, int iat)
   {
     UpdateMode=ORB_PBYP_RATIO;
@@ -254,9 +247,6 @@ struct  J1OrbitalSoA : public OrbitalBase
     return std::exp(Vat[iat]-curAt);
   }
 
-  /** Rejected move. Nothing to do */
-  inline void restore(int iat) { }
-
   /** Accpted move. Update Vat[iat],Grad[iat] and Lap[iat] */
   void acceptMove(ParticleSet& P, int iat)
   {
@@ -273,70 +263,7 @@ struct  J1OrbitalSoA : public OrbitalBase
     Lap[iat]  = curLap;
   }
 
-
-  inline RealType registerData(ParticleSet& P, PooledData<RealType>& buf)
-  {
-    evaluateLog(P,P.G,P.L);
-    return LogValue;
-  }
-
-  inline RealType updateBuffer(ParticleSet& P, PooledData<RealType>& buf, bool fromscratch=false)
-  {
-    const size_t n=P.getTotalNum();
-    for(size_t iat=0; iat<n; ++iat) P.G[iat]+=Grad[iat];
-    for(size_t iat=0; iat<n; ++iat) P.L[iat]-=Lap[iat];
-
-    //constexpr RealType mone(-1);
-    LogValue=-simd::accumulate_n(Vat.data(), P.getTotalNum(), valT());
-    return LogValue;
-  }
-
-  inline void copyFromBuffer(ParticleSet& P, PooledData<RealType>& buf) { }
-
-  inline RealType evaluateLog(ParticleSet& P, PooledData<RealType>& buf)
-  {
-    const size_t n=P.getTotalNum();
-    for(size_t iat=0; iat<n; ++iat) P.G[iat]+=Grad[iat];
-    for(size_t iat=0; iat<n; ++iat) P.L[iat]-=Lap[iat];
-    return LogValue;
-  }
-
-  OrbitalBasePtr makeClone(ParticleSet& tqp) const
-  {
-    J1OrbitalSoA<FT>* j1copy=new J1OrbitalSoA<FT>(Ions,tqp);
-    j1copy->Optimizable=Optimizable;
-    for (size_t i=0, n=F.size(); i<n; ++i)
-    {
-      if (F[i] != nullptr) j1copy->addFunc(i,new FT(*F[i]));
-    }
-    return j1copy;
-  }
-
-  /** must be removed */
-  ValueType ratio(ParticleSet& P, int iat,
-                  ParticleSet::ParticleGradient_t& dG,
-                  ParticleSet::ParticleLaplacian_t& dL)
-  {
-    APP_ABORT("OrbitalBase::ratio(P,iat,dG,dL) shuold not Used")
-    return 1;
-  }
-
-  /** must be removed */
-  inline void update(ParticleSet& P,
-                     ParticleSet::ParticleGradient_t& dG,
-                     ParticleSet::ParticleLaplacian_t& dL,
-                     int iat)
-  {
-    APP_ABORT("J1OrbitalSoA::update must not be used");
-  }
-
-
-
-
 };
-
-
-
 
 }
 #endif

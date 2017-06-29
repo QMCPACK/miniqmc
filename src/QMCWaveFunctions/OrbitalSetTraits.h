@@ -20,25 +20,25 @@
 #define QMCPLUSPLUS_ORBITALSETTRAITS_H
 
 #include "Configuration.h"
-#include "type_traits/scalar_traits.h"
 #include "Numerics/VectorViewer.h"
 
 namespace qmcplusplus
 {
-/** dummy class for templated classes
- */
-struct DummyGrid
+
+template<class T> struct scalar_traits
 {
-  inline void locate(double r) {}
-  DummyGrid* makeClone() const
-  {
-    return new DummyGrid;
-  }
+  enum {DIM=1};
+  typedef T real_type;
+  typedef T value_type;
 };
 
-typedef TinyVector<int,4> QuantumNumberType;
-
-enum {q_n=0,q_l,q_m, q_s};
+template<typename T>
+struct scalar_traits<std::complex<T> >
+{
+  enum {DIM=2};
+  typedef T          real_type;
+  typedef std::complex<T> value_type;
+};
 
 /** trait class to handel a set of Orbitals
  */

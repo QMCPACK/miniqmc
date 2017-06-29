@@ -14,8 +14,8 @@
 #include <Configuration.h>
 #include <QMCWaveFunctions/Jastrow/BsplineFunctor.h>
 #include <QMCWaveFunctions/Jastrow/TwoBodyJastrowOrbital.h>
+#include <QMCWaveFunctions/Jastrow/J2OrbitalSoA.h>
 #include <miniapps/BsplineFunctorSoA.h>
-#include <miniapps/J2OrbitalSoA.h>
 
 namespace qmcplusplus
 {
