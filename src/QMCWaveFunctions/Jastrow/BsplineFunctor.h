@@ -51,7 +51,6 @@ struct BsplineFunctor: public OptimizableFunctorBase
   std::string fileName;
 
   int ResetCount;
-  int ReportLevel;
   bool notOpt;
   bool periodic;
 
@@ -74,15 +73,9 @@ struct BsplineFunctor: public OptimizableFunctorBase
         0.0, 0.0,  0.0,  3.0,
         0.0, 0.0,  0.0, -3.0,
         0.0, 0.0,  0.0,  1.0),
-    CuspValue(cusp), ResetCount(0), ReportLevel(0), notOpt(false), periodic(true)
+    CuspValue(cusp), ResetCount(0), notOpt(false), periodic(true)
   {
     cutoff_radius = 0.0;
-  }
-
-  inline void setReportLevel(int i, const std::string& fname)
-  {
-    ReportLevel=i;
-    fileName=(ReportLevel)? fname:"0";
   }
 
   void resize(int n)
@@ -160,15 +153,6 @@ struct BsplineFunctor: public OptimizableFunctorBase
        SplineCoefs[i+2]*(A[ 8]*tp[0] + A[ 9]*tp[1] + A[10]*tp[2] + A[11]*tp[3])+
        SplineCoefs[i+3]*(A[12]*tp[0] + A[13]*tp[1] + A[14]*tp[2] + A[15]*tp[3]));
   }
-  inline real_type evaluate(real_type r, real_type rinv)
-  {
-    return Y=evaluate(r,dY,d2Y);
-  }
-
-  inline void evaluateAll(real_type r, real_type rinv)
-  {
-    Y=evaluate(r,dY,d2Y);
-  }
 
   inline real_type
   evaluate(real_type r, real_type& dudr, real_type& d2udr2)
@@ -212,64 +196,6 @@ struct BsplineFunctor: public OptimizableFunctorBase
        SplineCoefs[i+2]*(A[ 8]*tp[0] + A[ 9]*tp[1] + A[10]*tp[2] + A[11]*tp[3])+
        SplineCoefs[i+3]*(A[12]*tp[0] + A[13]*tp[1] + A[14]*tp[2] + A[15]*tp[3]));
   }
-
-
-  inline real_type
-  evaluate(real_type r, real_type& dudr, real_type& d2udr2, real_type &d3udr3)
-  {
-    if (r >= cutoff_radius)
-    {
-      dudr = d2udr2 = d3udr3 = 0.0;
-      return 0.0;
-    }
-    // real_type eps = 1.0e-5;
-//       real_type dudr_FD = (evaluate(r+eps)-evaluate(r-eps))/(2.0*eps);
-//       real_type d2udr2_FD = (evaluate(r+eps)+evaluate(r-eps)-2.0*evaluate(r))/(eps*eps);
-    // real_type d3udr3_FD = (-1.0*evaluate(r+1.0*eps)
-    //         +2.0*evaluate(r+0.5*eps)
-    //         -2.0*evaluate(r-0.5*eps)
-    //         +1.0*evaluate(r-1.0*eps))/(eps*eps*eps);
-    r *= DeltaRInv;
-    real_type ipart, t;
-    t = std::modf(r, &ipart);
-    int i = (int) ipart;
-    real_type tp[4];
-    tp[0] = t*t*t;
-    tp[1] = t*t;
-    tp[2] = t;
-    tp[3] = 1.0;
-    d3udr3 = DeltaRInv * DeltaRInv * DeltaRInv *
-             (SplineCoefs[i+0]*(d3A[ 0]*tp[0] + d3A[ 1]*tp[1] + d3A[ 2]*tp[2] + d3A[ 3]*tp[3])+
-              SplineCoefs[i+1]*(d3A[ 4]*tp[0] + d3A[ 5]*tp[1] + d3A[ 6]*tp[2] + d3A[ 7]*tp[3])+
-              SplineCoefs[i+2]*(d3A[ 8]*tp[0] + d3A[ 9]*tp[1] + d3A[10]*tp[2] + d3A[11]*tp[3])+
-              SplineCoefs[i+3]*(d3A[12]*tp[0] + d3A[13]*tp[1] + d3A[14]*tp[2] + d3A[15]*tp[3]));
-    d2udr2 = DeltaRInv * DeltaRInv *
-             (SplineCoefs[i+0]*(d2A[ 0]*tp[0] + d2A[ 1]*tp[1] + d2A[ 2]*tp[2] + d2A[ 3]*tp[3])+
-              SplineCoefs[i+1]*(d2A[ 4]*tp[0] + d2A[ 5]*tp[1] + d2A[ 6]*tp[2] + d2A[ 7]*tp[3])+
-              SplineCoefs[i+2]*(d2A[ 8]*tp[0] + d2A[ 9]*tp[1] + d2A[10]*tp[2] + d2A[11]*tp[3])+
-              SplineCoefs[i+3]*(d2A[12]*tp[0] + d2A[13]*tp[1] + d2A[14]*tp[2] + d2A[15]*tp[3]));
-    dudr = DeltaRInv *
-           (SplineCoefs[i+0]*(dA[ 0]*tp[0] + dA[ 1]*tp[1] + dA[ 2]*tp[2] + dA[ 3]*tp[3])+
-            SplineCoefs[i+1]*(dA[ 4]*tp[0] + dA[ 5]*tp[1] + dA[ 6]*tp[2] + dA[ 7]*tp[3])+
-            SplineCoefs[i+2]*(dA[ 8]*tp[0] + dA[ 9]*tp[1] + dA[10]*tp[2] + dA[11]*tp[3])+
-            SplineCoefs[i+3]*(dA[12]*tp[0] + dA[13]*tp[1] + dA[14]*tp[2] + dA[15]*tp[3]));
-//       if (std::abs(dudr_FD-dudr) > 1.0e-8)
-//  std::cerr << "Error in BsplineFunction:  dudr = " << dudr
-//       << "  dudr_FD = " << dudr_FD << std::endl;
-//       if (std::abs(d2udr2_FD-d2udr2) > 1.0e-4)
-//  std::cerr << "Error in BsplineFunction:  r = " << r << "  d2udr2 = " << dudr
-//       << "  d2udr2_FD = " << d2udr2_FD << "  rcut = " << cutoff_radius << std::endl;
-    // if (std::abs(d3udr3_FD-d3udr3) > 1.0e-4)
-    //  std::cerr << "Error in BsplineFunction:  r = " << r << "  d3udr3 = " << dudr
-    //       << "  d3udr3_FD = " << d3udr3_FD << "  rcut = " << cutoff_radius << std::endl;
-    return
-      (SplineCoefs[i+0]*(A[ 0]*tp[0] + A[ 1]*tp[1] + A[ 2]*tp[2] + A[ 3]*tp[3])+
-       SplineCoefs[i+1]*(A[ 4]*tp[0] + A[ 5]*tp[1] + A[ 6]*tp[2] + A[ 7]*tp[3])+
-       SplineCoefs[i+2]*(A[ 8]*tp[0] + A[ 9]*tp[1] + A[10]*tp[2] + A[11]*tp[3])+
-       SplineCoefs[i+3]*(A[12]*tp[0] + A[13]*tp[1] + A[14]*tp[2] + A[15]*tp[3]));
-  }
-
-
 
   inline bool
   evaluateDerivatives(real_type r, std::vector<TinyVector<real_type,3> >& derivs)
@@ -338,156 +264,6 @@ struct BsplineFunctor: public OptimizableFunctorBase
     return true;
   }
 
-  inline bool evaluateDerivatives(real_type r, std::vector<real_type>& derivs)
-  {
-    if (r >= cutoff_radius) return false;
-    real_type tp[4],v[4],ipart,t;
-    t = std::modf(r*DeltaRInv, &ipart);
-    tp[0] = t*t*t;
-    tp[1] = t*t;
-    tp[2] = t;
-    tp[3] = 1.0;
-    v[0] = A[ 0]*tp[0] + A[ 1]*tp[1] + A[ 2]*tp[2] + A[ 3]*tp[3];
-    v[1] = A[ 4]*tp[0] + A[ 5]*tp[1] + A[ 6]*tp[2] + A[ 7]*tp[3];
-    v[2] = A[ 8]*tp[0] + A[ 9]*tp[1] + A[10]*tp[2] + A[11]*tp[3];
-    v[3] = A[12]*tp[0] + A[13]*tp[1] + A[14]*tp[2] + A[15]*tp[3];
-    int i = (int) ipart;
-    int imin=std::max(i,1);
-    int imax=std::min(i+4,NumParams+1)-1;
-    int n=imin-1, j=imin-i;
-    while(n<imax && j<4)
-    {
-      derivs[n] = v[j];
-      n++; j++;
-    }
-    if(i==0) derivs[1]+= v[0];
-    return true;
-  }
-
-  inline real_type f(real_type r)
-  {
-    if (r>=cutoff_radius)
-      return 0.0;
-    return evaluate(r);
-  }
-  inline real_type df(real_type r)
-  {
-    if (r>=cutoff_radius)
-      return 0.0;
-    real_type du, d2u;
-    evaluate(r, du, d2u);
-    return du;
-  }
-
-
-  bool put(xmlNodePtr cur)
-  {
-    //CuspValue = -1.0e10;
-    NumParams = 0;
-    //cutoff_radius = 0.0;
-    OhmmsAttributeSet rAttrib;
-    real_type radius = -1.0;
-    rAttrib.add(NumParams,   "size");
-    rAttrib.add(radius,      "rcut");
-    rAttrib.add(radius,      "cutoff");
-    rAttrib.put(cur);
-    if (radius < 0.0)
-      if (periodic)
-        app_log() << "  Jastrow cutoff unspecified.  Setting to Wigner-Seitz radius = " << cutoff_radius << ".\n";
-      else
-      {
-        APP_ABORT("  Jastrow cutoff unspecified.  Cutoff must be given when using open boundary conditions");
-      }
-    else
-      if (periodic && radius > cutoff_radius)
-      {
-        APP_ABORT("  The Jastrow cutoff specified should not be larger than Wigner-Seitz radius.");
-      }
-      else
-        cutoff_radius = radius;
-    if (NumParams == 0)
-    {
-      APP_ABORT("You must specify a positive number of parameters for the Bspline jastrow function.");
-    }
-    app_log() << " size = " << NumParams << " parameters " << std::endl;
-    app_log() << " cusp = " << CuspValue << std::endl;
-    app_log() << " rcut = " << cutoff_radius << std::endl;
-    resize(NumParams);
-    // Now read coefficents
-    xmlNodePtr xmlCoefs = cur->xmlChildrenNode;
-    while (xmlCoefs != NULL)
-    {
-      std::string cname((const char*)xmlCoefs->name);
-      if (cname == "coefficients")
-      {
-        std::string type("0"), id("0");
-        std::string optimize("yes");
-        OhmmsAttributeSet cAttrib;
-        cAttrib.add(id, "id");
-        cAttrib.add(type, "type");
-        cAttrib.add(optimize, "optimize");
-        cAttrib.put(xmlCoefs);
-        if (type != "Array")
-        {
-          app_log() << "Unknown correlation type " + type + " in BsplineFunctor." + "Resetting to \"Array\"" << std::endl;
-          xmlNewProp(xmlCoefs, (const xmlChar*) "type", (const xmlChar*) "Array");
-        }
-        std::vector<real_type> params;
-        putContent(params, xmlCoefs);
-        if (params.size() == NumParams)
-          Parameters = params;
-        else
-        {
-          app_log() << "Changing number of Bspline parameters from "
-                    << params.size() << " to " << NumParams << ".  Performing fit:\n";
-          // Fit function to new number of parameters
-          const int numPoints = 500;
-          BsplineFunctor<T> tmp_func(CuspValue);
-          tmp_func.cutoff_radius = cutoff_radius;
-          tmp_func.resize(params.size());
-          tmp_func.Parameters = params;
-          tmp_func.reset();
-          std::vector<real_type> y(numPoints);
-          Matrix<real_type> basis(numPoints,NumParams);
-          std::vector<TinyVector<real_type,3> > derivs(NumParams);
-          for (int i=0; i<numPoints; i++)
-          {
-            real_type r = (real_type)i / (real_type)numPoints * cutoff_radius;
-            y[i] = tmp_func.evaluate(r);
-            evaluateDerivatives(r, derivs);
-            for (int j=0; j<NumParams; j++)
-              basis(i,j) = derivs[j][0];
-          }
-          resize(NumParams);
-          LinearFit(y, basis, Parameters);
-          app_log() << "New parameters are:\n";
-          for (int i=0; i < Parameters.size(); i++)
-            app_log() << "   " << Parameters[i] << std::endl;
-        }
-        if(optimize == "yes")
-        {
-          notOpt=false;
-        }
-        else
-        {
-          notOpt=true;
-        }
-        for (int i=0; i< NumParams; i++)
-        {
-          std::stringstream sstr;
-          sstr << id << "_" << i;
-        }
-        app_log() << "Parameter     Name      Value\n";
-      }
-      xmlCoefs = xmlCoefs->next;
-    }
-    reset();
-    real_type zeros=0;
-    for (int i=0; i< NumParams; i++)
-      zeros+=Parameters[i]*Parameters[i];
-    return zeros>1.0e-12; //true if Parameters are not zero
-  }
-
   void initialize(int numPoints, std::vector<real_type>& x, std::vector<real_type>& y
                   , real_type cusp, real_type rcut, std::string& id, std::string& optimize )
   {
@@ -543,35 +319,6 @@ struct BsplineFunctor: public OptimizableFunctorBase
     reset();
   }
 
-  void reportStatus(std::ostream& os)
-  {
-    if (notOpt)
-      return;
-  }
-
-  void print()
-  {
-    if(ReportLevel)
-    {
-      std::ofstream fout(fileName.c_str());
-      this->print(fout);
-    }
-  }
-
-
-  void print(std::ostream& os)
-  {
-    int n=100;
-    T d=cutoff_radius/100.,r=0;
-    T u,du,d2du;
-    for (int i=0; i<n; ++i)
-    {
-      u=evaluate(r,du,d2du);
-      os << std::setw(22) << r << std::setw(22) << u << std::setw(22) << du
-         << std::setw(22) << d2du << std::endl;
-      r+=d;
-    }
-  }
 };
 
 template<typename T>

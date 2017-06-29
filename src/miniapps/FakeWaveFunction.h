@@ -14,8 +14,8 @@
 #include <Configuration.h>
 #include <QMCWaveFunctions/Jastrow/BsplineFunctor.h>
 #include <QMCWaveFunctions/Jastrow/TwoBodyJastrowOrbital.h>
+#include <QMCWaveFunctions/Jastrow/BsplineFunctor.h>
 #include <QMCWaveFunctions/Jastrow/J2OrbitalSoA.h>
-#include <miniapps/BsplineFunctorSoA.h>
 
 namespace qmcplusplus
 {
@@ -66,7 +66,7 @@ namespace qmcplusplus
 
   struct SoAWaveFunction: public FakeWaveFunctionBase
   {
-    using J2OrbType=J2OrbitalSoA<BsplineFunctorSoA<valT> >;
+    using J2OrbType=J2OrbitalSoA<BsplineFunctor<valT> >;
 
     bool FirstTime;
     J2OrbType* J2;
