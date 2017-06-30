@@ -72,14 +72,12 @@ public:
   inline ParticleAttrib(const std::string& tname, const std::string& oname):
     InUnit(0), nLocal(0), nGhosts(0)
   {
-    ElementByteSize = sizeof(T);
   }
 
   /**@brief n-element is created but the type and object names */
   inline ParticleAttrib(const std::string& tname, const std::string& oname, int n):
     InUnit(0), nLocal(0), nGhosts(0)
   {
-    ElementByteSize = sizeof(T);
     resize(n);
     assign(*this, T());
   }
@@ -242,35 +240,6 @@ public:
     return &(X[0])+nLocal;
   }
   //@}
-
-  inline void begin_node(std::ostream& os) const
-  {
-    os << "<attrib name=\"" <<  objName()
-       << "\" datatype=\""<< typeName()
-       << "\" size=\""<< size()
-       << "\" condition=\"" << InUnit
-       << "\">" << std::endl;
-  }
-
-  inline void end_node(std::ostream& os) const
-  {
-    os << "</attrib>" << std::endl;
-  }
-
-
-  //----------------------------------------------------------------------
-  // parallel communication
-  //Message& putMessage(Message& m) const {
-  //  m.setCopy(true);
-  //  ::putMessage(m, X.begin(), X + D);
-  //    return m;
-  //}
-
-  //Message& getMessage(Message& m) {
-  //  ::getMessage(m, X, X + D);
-  //  return m;
-  //}
-
 
 private:
   Container_t X;
