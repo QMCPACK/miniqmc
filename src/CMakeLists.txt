@@ -171,7 +171,6 @@ ENDIF()
   # ENDIF(QMC_BUILD_LEVEL GREATER 2)
 
   SET(PARTICLEIO
-    ParticleTags.cpp 
     ParticleIO/ParticleIOUtility.cpp 
     )
 
