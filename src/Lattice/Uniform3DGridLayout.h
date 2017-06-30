@@ -24,7 +24,6 @@
 #include <iostream>
 #include "Utilities/OhmmsInfo.h"
 #include "Lattice/CrystalLattice.h"
-#include "Lattice/UniformCartesianGrid.h"
 
 /**@file Uniform3DGridLayout.h
  *@brief Concrete uniform grid layout for 3D
@@ -50,8 +49,7 @@ namespace qmcplusplus
  *the neighbor lists efficiently.
  *
  */
-class Uniform3DGridLayout: public CrystalLattice<OHMMS_PRECISION,3,OHMMS_ORTHO>,
-  public UniformCartesianGrid<OHMMS_PRECISION,3>
+class Uniform3DGridLayout: public CrystalLattice<OHMMS_PRECISION,3,OHMMS_ORTHO>
 {
 
 public:
@@ -67,7 +65,6 @@ public:
 
   typedef OHMMS_PRECISION                          value_type;
   typedef CrystalLattice<value_type,3,OHMMS_ORTHO> Base_t;
-  typedef UniformCartesianGrid<value_type,3>       Grid_t;
   typedef Uniform3DGridLayout                      This_t;
 
   typedef Base_t::SingleParticlePos_t   SingleParticlePos_t;
@@ -83,9 +80,6 @@ public:
   {
     for(int i=0; i<GridLevel; i++)
       Grid[i] = SingleParticleIndex_t(1);
-    SuperGrid.reserve(GridLevel);
-    for(int i=0; i<GridLevel; i++)
-      SuperGrid.push_back(NULL);
   }
 
   ///**copy constructor
@@ -104,15 +98,9 @@ public:
     LR_kc=pl.LR_kc;
     LR_rc=pl.LR_rc;
     Base_t::set(pl);
-    Grid_t::makeCopy(pl);
   }
 
-  inline ~Uniform3DGridLayout()
-  {
-    for(int i=0; i<SuperGrid.size(); i++)
-      if(SuperGrid[i])
-        delete SuperGrid[i];
-  }
+  inline ~Uniform3DGridLayout() { }
 
   ///return the first cell connected to the ig cell
   inline int first_connected(int ig) const
@@ -150,66 +138,6 @@ public:
     return c_offset.size()-1;
   }
 
-  /// return the maximum number of connected cells
-  int connectGrid(value_type int_rad, value_type con_rad=-1);
-
-  void makeShell(std::vector<SingleParticleIndex_t>& RS,
-                 std::vector<bool>& FS,
-                 const SingleParticleIndex_t& nc,
-                 value_type rr);
-
-  template<class GIM>
-  inline void makeGrid(const GIM& mgrid)
-  {
-    if(mgrid.size() < GridLevel)
-    {
-      Grid[SPATIAL_GRID] = mgrid.back();
-    }
-    else
-    {
-      for(int ig=0; ig<GridLevel; ig++)
-        Grid[ig] = mgrid[ig];
-    }
-    ///first build the spatial grid
-    setGrid(Grid[SPATIAL_GRID]);
-  }
-
-  inline Grid_t*
-  addGrid(int glevel, const SingleParticleIndex_t& agrid)
-  {
-    if(SuperGrid[glevel])
-    {
-      SuperGrid[glevel]->setGrid(agrid);
-      return SuperGrid[glevel];
-    }
-    else
-    {
-      Grid_t* g = new Grid_t(agrid);
-      SuperGrid[glevel] = g;
-      return g;
-    }
-  }
-
-  inline Grid_t* getGrid(int glevel)
-  {
-    return SuperGrid[glevel];
-  }
-  inline const Grid_t* getGrid(int glevel) const
-  {
-    return SuperGrid[glevel];
-  }
-  void initGrid(Grid_t& agrid, const Grid_t& subgrid);
-
-  void checkGrid(value_type int_rad);
-
-  inline int ngrid(int ig) const
-  {
-    return Grid[SPATIAL_GRID][ig];
-  }
-  inline int ngrid(int glevel, int ig) const
-  {
-    return Grid[glevel][ig];
-  }
   void print(std::ostream& os) const;
 
   inline void update()
@@ -230,7 +158,6 @@ public:
   inline void update(const Tensor<value_type,3>& lat)
   {
     Base_t::set(lat);
-    connectGrid(InteractionRadius,ConnectionRadius);
   }
 
   ///Uniform grid partitions at MPI_GRID, OPENMP_GRID, and SPATIAL_GRID levels.
@@ -254,9 +181,6 @@ public:
   value_type LR_kc;
 
   SingleParticleIndex_t NCMax;
-
-  ///UniformCartesianGrid for multi levels.
-  std::vector<Grid_t*> SuperGrid;
 
   ///offsets to determine cell conection
   std::vector<int> c_offset, c_max;
