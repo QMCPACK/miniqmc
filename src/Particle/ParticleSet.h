@@ -68,8 +68,7 @@ struct MCDataType
  */
 class ParticleSet
   :  public QMCTraits
-  , public OhmmsElementBase
-  , public ParticleBase<PtclOnLatticeTraits>
+  , public PtclOnLatticeTraits
 {
 public:
   ///@typedef walker type
@@ -84,25 +83,28 @@ public:
   ///quantum_domain of the particles, default = classical
   quantum_domains quantum_domain;
 
-  //@{ public data members
-  ///property of an ensemble represented by this ParticleSet
-  MCDataType<EstimatorRealType> EnsembleProperty;
-
-  ///gradients of the particles
-  ParticleGradient_t G;
-
-  ///laplacians of the particles
-  ParticleLaplacian_t L;
-
-  ///differential gradients of the particles
-  ParticleGradient_t dG;
-
-  ///differential laplacians of the particles
-  ParticleLaplacian_t dL;
-  ///SoA copy of R
-  VectorSoaContainer<RealType,DIM> RSoA;
+  ///the name of the particle set.
+  std::string myName;
+  //!< ParticleLayout
+  ParticleLayout_t Lattice, PrimitiveLattice;
+  //!< unique, persistent ID for each particle
+  ParticleIndex_t ID;
   ///index to the primitice cell with tiling
   ParticleIndex_t PCID;
+  //!< Species ID
+  ParticleIndex_t GroupID;
+  //!< Position
+  ParticlePos_t R;
+  ///SoA copy of R
+  VectorSoaContainer<RealType,DIM> RSoA;
+  ///gradients of the particles
+  ParticleGradient_t G;
+  ///laplacians of the particles
+  ParticleLaplacian_t L;
+  ///differential gradients of the particles
+  ParticleGradient_t dG;
+  ///differential laplacians of the particles
+  ParticleLaplacian_t dL;
   /** ID map that reflects species group
    *
    * IsGrouped=true, if ID==IndirectID
@@ -167,14 +169,6 @@ public:
   std::vector<ComplexType>   VHXC_G[2];
   Array<RealType,OHMMS_DIM> VHXC_r[2];
 
-  /** name-value map of Walker Properties
-   *
-   * PropertyMap is used to keep the name-value mapping of
-   * Walker_t::Properties.  PropertyList::Values are not
-   * necessarily updated during the simulations.
-   */
-  PropertySetType PropertyList;
-
   /** properties of the current walker
    *
    * The internal order is identical to PropertyList, which holds
@@ -210,9 +204,9 @@ public:
   virtual ~ParticleSet();
 
   /** create  particles
-   * @param n number of particles
+   * @param numPtcl number of particles
    */
-  void create(unsigned n);
+  void create(int numPtcl);
   /** create grouped particles
    * @param agroup number of particles per group
    */
@@ -226,9 +220,6 @@ public:
 
   ///reset member data
   void reset();
-
-  ///initialize ParticleSet from xmlNode
-  bool put(xmlNodePtr cur);
 
   ///specify quantum_domain of particles
   void set_quantum_domain(quantum_domains qdomain);
@@ -325,6 +316,7 @@ public:
   {
     return ParentName;
   }
+
   inline void setName(const std::string& aname)
   {
     myName     = aname;
@@ -334,9 +326,10 @@ public:
     }
   }
 
-  inline RealType getTotalWeight() const
+  ///return the name
+  inline const std::string& getName() const
   {
-    return EnsembleProperty.Weight;
+    return myName;
   }
 
   void resetGroups();
@@ -409,12 +402,6 @@ public:
   inline SingleParticlePos_t getOldPos() const
   {
     return activePos;
-  }
-
-  void initPropertyList();
-  inline int addProperty(const std::string& pname)
-  {
-    return PropertyList.add(pname.c_str());
   }
 
   int addPropertyHistory(int leng);
@@ -493,11 +480,6 @@ public:
     return myTwist;
   }
 
-  /** Initialize particles around another ParticleSet
-   * Used to initialize an electron ParticleSet by an ion ParticleSet
-   */
-  void randomizeFromSource (ParticleSet &src);
-
   /** return the ip-th clone
    * @param ip thread number
    *
@@ -546,6 +528,65 @@ public:
     return mySpecies.speciesName[GroupID[i]];
   }
 
+  inline int getTotalNum() const
+  {
+    return TotalNum;
+  }
+
+  inline void resize(int numPtcl)
+  {
+    TotalNum = numPtcl;
+
+    R.resize(numPtcl);
+    ID.resize(numPtcl);
+    PCID.resize(numPtcl);
+    GroupID.resize(numPtcl);
+    G.resize(numPtcl);
+    dG.resize(numPtcl);
+    L.resize(numPtcl);
+    dL.resize(numPtcl);
+    Mass.resize(numPtcl);
+    Z.resize(numPtcl);
+    IndirectID.resize(numPtcl);
+
+    RSoA.resize(numPtcl);
+  }
+
+  inline void assign(const ParticleSet& ptclin)
+  {
+    TotalNum = ptclin.getTotalNum();
+    resize(TotalNum);
+    Lattice = ptclin.Lattice;
+    PrimitiveLattice = ptclin.PrimitiveLattice;
+    R.InUnit = ptclin.R.InUnit;
+    R = ptclin.R;
+    ID = ptclin.ID;
+    GroupID = ptclin.GroupID;
+    if(ptclin.SubPtcl.size())
+    {
+      SubPtcl.resize(ptclin.SubPtcl.size());
+      SubPtcl =ptclin.SubPtcl;
+    }
+  }
+
+  ///return the number of groups
+  inline int groups() const
+  {
+    return SubPtcl.size()-1;
+  }
+
+  ///return the first index of a group i
+  inline int first(int igroup) const
+  {
+    return SubPtcl[igroup];
+  }
+
+  ///return the last index of a group i
+  inline int last(int igroup) const
+  {
+    return SubPtcl[igroup+1];
+  }
+
 protected:
   ///the number of particle objects
   static Index_t PtclObjectCounter;
@@ -567,6 +608,13 @@ protected:
   SingleParticlePos_t myTwist;
 
   std::string ParentName;
+
+  ///total number of particles
+  int TotalNum;
+
+  ///array to handle a group of distinct particles per species
+  ParticleIndex_t                       SubPtcl;
+
 };
 }
 #endif

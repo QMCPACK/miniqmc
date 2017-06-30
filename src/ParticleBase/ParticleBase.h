@@ -67,10 +67,6 @@ public:
   typedef typename PT::ParticleLaplacian_t     ParticleLaplacian_t;
   //@}
 
-  //! Mapping between an attribute name and particle attribute
-  typedef std::map<std::string,OhmmsObject*>::iterator  PAListIterator;
-
-
   /*! \note Lattice and three particle attributes, ID, GroupID, and R are
    * public. Encapsulation of ParticleBase is realized by making
    * a ParticleBase a protected member of PropagatorBase.

@@ -19,6 +19,8 @@
 #ifndef QMCPLUSPLUS_SYMMETRICDISTANCETABLEDATAIMPL_H
 #define QMCPLUSPLUS_SYMMETRICDISTANCETABLEDATAIMPL_H
 
+#include<algorithm>
+
 namespace qmcplusplus
 {
 
@@ -96,7 +98,7 @@ struct SymmetricDTD
       ri[i].first  = r_m[shift+i];
       ri[i].second = i;
     }
-    partial_sort(ri.begin(),ri.begin()+neighbors,ri.end());
+    std::partial_sort(ri.begin(),ri.begin()+neighbors,ri.end());
   }
 
   ///evaluate the Distance Table using a set of Particle Positions

@@ -38,7 +38,6 @@
 #include <vector>
 #include <string>
 #include <iostream>
-#include "Utilities/OhmmsObject.h"
 
 //#ifndef DEBUGMSG
 //#define DEBUGMSG(msg)
@@ -46,7 +45,7 @@
 namespace qmcplusplus
 {
 template<class T>
-class ParticleAttrib: public OhmmsObject
+class ParticleAttrib
 {
 public:
 
@@ -71,14 +70,14 @@ public:
    */
   /**@brief nothing is created but the type and object name */
   inline ParticleAttrib(const std::string& tname, const std::string& oname):
-    OhmmsObject(tname, oname), InUnit(0), nLocal(0), nGhosts(0)
+    InUnit(0), nLocal(0), nGhosts(0)
   {
     ElementByteSize = sizeof(T);
   }
 
   /**@brief n-element is created but the type and object names */
   inline ParticleAttrib(const std::string& tname, const std::string& oname, int n):
-    OhmmsObject(tname,oname), InUnit(0), nLocal(0), nGhosts(0)
+    InUnit(0), nLocal(0), nGhosts(0)
   {
     ElementByteSize = sizeof(T);
     resize(n);
@@ -165,11 +164,6 @@ public:
     return assign(*this,rhs);
   }
 
-  OhmmsObject* makeClone() const
-  {
-    return new ParticleAttrib<T>(*this);
-  }
-
   // Get and Set Operations
   inline Type_t& operator[](size_t i)
   {
@@ -196,9 +190,6 @@ public:
 
   ///read from std::istream
   bool put(std::istream& );
-
-  ///read from an xmlNode
-  bool put(xmlNodePtr cur);
 
   ///reset member data
   void reset() { }
@@ -341,13 +332,6 @@ template<class T>
 bool ParticleAttrib<T>::put(std::istream& is)
 {
   is >> InUnit;
-  return true;
-}
-
-/*@warning not fully implemented.*/
-template<class T>
-bool ParticleAttrib<T>::put(xmlNodePtr cur)
-{
   return true;
 }
 

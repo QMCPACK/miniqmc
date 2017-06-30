@@ -35,8 +35,6 @@ namespace qmcplusplus
 
 //Forward declaration
 class MultiChain;
-class MCSample;
-class HDFWalkerOutput;
 class Reptile;
 
 /** A set of walkers that are to be advanced by Metropolis Monte Carlo.
@@ -196,8 +194,6 @@ public:
   inline void setGlobalNumWalkers(int nw)
   {
     GlobalNumWalkers=nw;
-    EnsembleProperty.NumSamples=nw;
-    EnsembleProperty.Weight=nw;
   }
 
   inline void setWalkerOffsets(const std::vector<int>& o)
@@ -348,13 +344,6 @@ public:
   /** load SampleStack from others
     */
   void loadEnsemble(std::vector<MCWalkerConfiguration*>& others, bool doclean=true);
-  /** dump Samples to a file
-   * @param others MCWalkerConfigurations whose samples will be collected
-   * @param out engine to write the samples to state_0/walkers
-   * @param np number of processors
-   * @return true with non-zero samples
-   */
-  bool dumpEnsemble(std::vector<MCWalkerConfiguration*>& others, HDFWalkerOutput* out, int np, int nBlock);
   ///clear the ensemble
   void clearEnsemble();
   //@}
@@ -406,7 +395,6 @@ private:
   int MaxSamples;
   int CurSampleCount;
   //add samples
-  std::vector<MCSample*> SampleStack;
 
   /** initialize the PropertyList
    *

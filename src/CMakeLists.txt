@@ -119,7 +119,6 @@ ENDIF()
   ####################################
   SET(UTILITIES
     Utilities/RandomGenerator.cpp 
-    Utilities/OhmmsObject.cpp 
     Utilities/SpeciesSet.cpp 
     Utilities/OhmmsInform.cpp 
     Utilities/OhmmsInfo.cpp 

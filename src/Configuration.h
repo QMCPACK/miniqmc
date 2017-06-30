@@ -24,8 +24,6 @@
 #include <complex>
 #include <OhmmsPETE/TinyVector.h>
 #include <OhmmsPETE/Tensor.h>
-#include <OhmmsData/OhmmsElementBase.h>
-#include <OhmmsData/RecordProperty.h>
 #if OHMMS_DIM==3
 #include <Lattice/Uniform3DGridLayout.h>
 #elif OHMMS_DIM==2
@@ -34,7 +32,6 @@
 #error "Only 2D and 3D are implemented.\n"
 #endif
 #include <ParticleBase/ParticleAttrib.h>
-#include <ParticleBase/ParticleBase.h>
 #include <Utilities/OhmmsInfo.h>
 #include <Message/Communicate.h>
 
@@ -92,8 +89,6 @@ struct QMCTraits
   typedef TinyVector<RealType,DIM>       PosType;
   typedef TinyVector<ValueType,DIM>      GradType;
   typedef Tensor<RealType,DIM>           TensorType;
-  ///define PropertyList_t
-  typedef RecordNamedProperty<EstimatorRealType>    PropertySetType;
 #ifdef QMC_CUDA
   typedef CUDA_PRECISION                 CudaRealType;
   typedef TinyVector<CudaValueType,DIM>  CudaGradType;

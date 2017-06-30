@@ -17,7 +17,6 @@
 #ifndef OHMMS_PARTICLE_INPUTOUTPUT_UTILITY_H
 #define OHMMS_PARTICLE_INPUTOUTPUT_UTILITY_H
 
-#include "OhmmsData/OhmmsElementBase.h"
 #include "Particle/ParticleSet.h"
 
 namespace qmcplusplus

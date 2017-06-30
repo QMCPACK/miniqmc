@@ -49,7 +49,6 @@ ParticleSet::ParticleSet()
   , quantum_domain(classical)
 {
   initParticleSet();
-  initPropertyList();
 }
 
 ParticleSet::ParticleSet(const ParticleSet& p)
@@ -57,7 +56,7 @@ ParticleSet::ParticleSet(const ParticleSet& p)
   , ThreadID(0), mySpecies(p.getSpeciesSet()), ParentTag(p.tag()), ParentName(p.parentName())
 {
   set_quantum_domain(p.quantum_domain);
-  initBase();
+  //initBase();
   initParticleSet();
   assign(p); //only the base is copied, assumes that other properties are not assignable
   //need explicit copy:
@@ -67,8 +66,6 @@ ParticleSet::ParticleSet(const ParticleSet& p)
   o<<p.getName()<<ObjectTag;
   this->setName(o.str());
   app_log() << "  Copying a particle set " << p.getName() << " to " << this->getName() << " groups=" << groups() << std::endl;
-  PropertyList.Names=p.PropertyList.Names;
-  PropertyList.Values=p.PropertyList.Values;
   PropertyHistory=p.PropertyHistory;
   Collectables=p.Collectables;
   //construct the distance tables with the same order
@@ -88,7 +85,7 @@ ParticleSet::ParticleSet(const ParticleSet& p)
     resizeSphere(p.Sphere.size());
   myTwist=p.myTwist;
 
-  RSoA.resize(getLocalNum());
+  RSoA.resize(TotalNum);
 }
 
 ParticleSet::~ParticleSet()
@@ -98,16 +95,40 @@ ParticleSet::~ParticleSet()
   delete_iter(Sphere.begin(), Sphere.end());
 }
 
-void ParticleSet::create(unsigned n)
+void ParticleSet::create(int numPtcl)
 {
-  createBase(n);
-  RSoA.resize(n);
+  TotalNum = numPtcl;
+
+  R.create(numPtcl);
+  ID.create(numPtcl);
+  PCID.create(numPtcl);
+  GroupID.create(numPtcl);
+  G.create(numPtcl);
+  dG.create(numPtcl);
+  L.create(numPtcl);
+  dL.create(numPtcl);
+  Mass.create(numPtcl);
+  Z.create(numPtcl);
+  IndirectID.create(numPtcl);
+
+  RSoA.resize(numPtcl);
 }
 
 void ParticleSet::create(const std::vector<int>& agroup)
 {
-  createBase(agroup);
-  RSoA.resize(getTotalNum());
+  SubPtcl.resize(agroup.size()+1);
+  SubPtcl[0] = 0;
+  for(int is=0; is<agroup.size(); is++)
+    SubPtcl[is+1] = SubPtcl[is]+agroup[is];
+  size_t nsum = SubPtcl[agroup.size()];
+  resize(nsum);
+  TotalNum = nsum;
+  int loc=0;
+  for(int i=0; i<agroup.size(); i++)
+  {
+    for(int j=0; j<agroup[i]; j++,loc++)
+      GroupID[loc] = i;
+  }
 }
 
 void ParticleSet::set_quantum_domain(quantum_domains qdomain)
@@ -126,41 +147,8 @@ void ParticleSet::initParticleSet()
     PtclObjectCounter++;
   }
 
-  G.setTypeName(ParticleTags::gradtype_tag);
-  L.setTypeName(ParticleTags::laptype_tag);
-  dG.setTypeName(ParticleTags::gradtype_tag);
-  dL.setTypeName(ParticleTags::laptype_tag);
-
-  G.setObjName("grad");
-  L.setObjName("lap");
-  dG.setObjName("dgrad");
-  dL.setObjName("dlap");
-
-  addAttribute(G);
-  addAttribute(L);
-  addAttribute(dG);
-  addAttribute(dL);
-
-  //more particle attributes
-  Mass.setTypeName(ParticleTags::scalartype_tag);
-  Mass.setObjName("mass");
-  SameMass=true; //default is SameMass
-  addAttribute(Mass);
-
-  Z.setTypeName(ParticleTags::scalartype_tag);
-  Z.setObjName("charge");
-  addAttribute(Z);
-
-  PCID.setTypeName(ParticleTags::indextype_tag); //add PCID tags
-  PCID.setObjName("pcid");
-  addAttribute(PCID);
-
-  IndirectID.setTypeName(ParticleTags::indextype_tag); //add IndirectID tags
-  IndirectID.setObjName("id1");
-  addAttribute(IndirectID);
-
+  SameMass=true;
   myTwist=0.0;
-
   activeWalker=nullptr;
 }
 
@@ -230,104 +218,24 @@ void ParticleSet::resetGroups()
     app_log() << "ID is not grouped. Need to use IndirectID for species-dependent operations " << std::endl;
 }
 
-void
-ParticleSet::randomizeFromSource (ParticleSet &src)
-{
-  SpeciesSet& srcSpSet(src.getSpeciesSet());
-  SpeciesSet& spSet(getSpeciesSet());
-  int srcChargeIndx = srcSpSet.addAttribute("charge");
-  int srcMemberIndx = srcSpSet.addAttribute("membersize");
-  int ChargeIndex   = spSet.addAttribute("charge");
-  int MemberIndx    = spSet.addAttribute("membersize");
-  int Nsrc  = src.getTotalNum();
-  int Nptcl = getTotalNum();
-  int NumSpecies    = spSet.TotalNum;
-  int NumSrcSpecies = srcSpSet.TotalNum;
-  //Store information about charges and number of each species
-  std::vector<int> Zat, Zspec, NofSpecies, NofSrcSpecies, CurElec;
-  Zat.resize(Nsrc);
-  Zspec.resize(NumSrcSpecies);
-  NofSpecies.resize(NumSpecies);
-  CurElec.resize(NumSpecies);
-  NofSrcSpecies.resize(NumSrcSpecies);
-  for(int spec=0; spec<NumSrcSpecies; spec++)
-  {
-    Zspec[spec] = (int)round(srcSpSet(srcChargeIndx,spec));
-    NofSrcSpecies[spec] = (int)round(srcSpSet(srcMemberIndx,spec));
-  }
-  for(int spec=0; spec<NumSpecies; spec++)
-  {
-    NofSpecies[spec] = (int)round(spSet(MemberIndx,spec));
-    CurElec[spec] = first(spec);
-  }
-  int totQ=0;
-  for(int iat=0; iat<Nsrc; iat++)
-    totQ+=Zat[iat] = Zspec[src.GroupID[iat]];
-  app_log() << "  Total ion charge    = " << totQ << std::endl;
-  totQ -= Nptcl;
-  app_log() << "  Total system charge = " << totQ << std::endl;
-  // Now, loop over ions, attaching electrons to them to neutralize
-  // charge
-  int spToken = 0;
-  // This is decremented when we run out of electrons in each species
-  int spLeft = NumSpecies;
-  std::vector<PosType> gaussRand (Nptcl);
-  makeGaussRandom (gaussRand);
-  for (int iat=0; iat<Nsrc; iat++)
-  {
-    // Loop over electrons to add, selecting round-robin from the
-    // electron species
-    int z = Zat[iat];
-    while (z > 0  && spLeft)
-    {
-      int sp = spToken++ % NumSpecies;
-      if (NofSpecies[sp])
-      {
-        NofSpecies[sp]--;
-        z--;
-        int elec = CurElec[sp]++;
-        app_log() << "  Assigning " << (sp ? "down" : "up  ")
-                  << " electron " << elec << " to ion " << iat
-                  << " with charge " << z << std::endl;
-        double radius = 0.5* std::sqrt((double)Zat[iat]);
-        R[elec] = src.R[iat] + radius * gaussRand[elec];
-      }
-      else
-        spLeft--;
-    }
-  }
-  // Assign remaining electrons
-  int ion=0;
-  for (int sp=0; sp < NumSpecies; sp++)
-  {
-    for (int ie=0; ie<NofSpecies[sp]; ie++)
-    {
-      int iat = ion++ % Nsrc;
-      double radius = std::sqrt((double)Zat[iat]);
-      int elec = CurElec[sp]++;
-      R[elec] = src.R[iat] + radius * gaussRand[elec];
-    }
-  }
-}
-
 ///write to a std::ostream
 bool ParticleSet::get(std::ostream& os) const
 {
   os << "  ParticleSet " << getName() << " : ";
   for (int i=0; i<SubPtcl.size(); i++)
     os << SubPtcl[i] << " ";
-  os <<"\n\n    " << LocalNum << "\n\n";
+  os <<"\n\n    " << TotalNum << "\n\n";
   const int maxParticlesToPrint = 10;
-  int numToPrint = std::min(LocalNum, maxParticlesToPrint);
+  int numToPrint = std::min(TotalNum, maxParticlesToPrint);
 
   for (int i=0; i<numToPrint; i++)
   {
     os << "    " << mySpecies.speciesName[GroupID[i]]  << R[i] << std::endl;
   }
 
-  if (numToPrint < LocalNum)
+  if (numToPrint < TotalNum)
   {
-    os << "    (... and " << (LocalNum-numToPrint) << " more particle positions ...)" << std::endl;
+    os << "    (... and " << (TotalNum-numToPrint) << " more particle positions ...)" << std::endl;
   }
 
   return true;
@@ -343,12 +251,6 @@ bool ParticleSet::put( std::istream& is)
 void ParticleSet::reset()
 {
   app_log() << "<<<< going to set properties >>>> " << std::endl;
-}
-
-///read the particleset
-bool ParticleSet::put(xmlNodePtr cur)
-{
-  return true;
 }
 
 void ParticleSet::setBoundBox(bool yes)
@@ -729,7 +631,7 @@ void ParticleSet::acceptMove(Index_t iat)
     for (int i=0,n=DistTables.size(); i< n; i++)
       DistTables[i]->update(iat);
 
-    if(RSoA.size() != getLocalNum())
+    if(RSoA.size() != getTotalNum())
       std::cout << "Die here " << RSoA.size() << std::endl;
 
     RSoA(iat)=R[iat];
@@ -818,27 +720,6 @@ void ParticleSet::saveWalker(Walker_t& awalker)
 #endif
   //PAOps<RealType,OHMMS_DIM>::copy(G,awalker.Drift);
   //awalker.DataSet.rewind();
-}
-
-void ParticleSet::initPropertyList()
-{
-  PropertyList.clear();
-  //Need to add the default Properties according to the enumeration
-  PropertyList.add("LogPsi");
-  PropertyList.add("SignPsi");
-  PropertyList.add("UmbrellaWeight");
-  PropertyList.add("R2Accepted");
-  PropertyList.add("R2Proposed");
-  PropertyList.add("DriftScale");
-  PropertyList.add("AltEnergy");
-  PropertyList.add("LocalEnergy");
-  PropertyList.add("LocalPotential");
-  if (PropertyList.size() != NUMPROPERTIES)
-  {
-    app_error() << "The number of default properties for walkers  is not consistent." << std::endl;
-    app_error() << "NUMPROPERTIES " << NUMPROPERTIES << " size of PropertyList " << PropertyList.size() << std::endl;
-    APP_ABORT("ParticleSet::initPropertyList");
-  }
 }
 
 void ParticleSet::clearDistanceTables()

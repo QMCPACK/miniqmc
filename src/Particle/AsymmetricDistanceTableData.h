@@ -19,6 +19,8 @@
 #ifndef QMCPLUSPLUS_ASYMMETRICDISTANCETABLEDATAIMPL_H
 #define QMCPLUSPLUS_ASYMMETRICDISTANCETABLEDATAIMPL_H
 
+#include<algorithm>
+
 namespace qmcplusplus
 {
 
@@ -144,7 +146,7 @@ struct AsymmetricDTD
         ri[i].second = i;
       }
     }
-    partial_sort(ri.begin(),ri.begin()+neighbors,ri.end());
+    std::partial_sort(ri.begin(),ri.begin()+neighbors,ri.end());
   }
 
   virtual void nearest_neighbors_by_spec(int n,int neighbors,int spec_start,std::vector<ripair>& ri,bool transposed=false)
@@ -168,7 +170,7 @@ struct AsymmetricDTD
         ri[i].second = i;
       }
     }
-    partial_sort(ri.begin(),ri.begin()+neighbors,ri.end());
+    std::partial_sort(ri.begin(),ri.begin()+neighbors,ri.end());
   }
 
   ///not so useful inline but who knows
