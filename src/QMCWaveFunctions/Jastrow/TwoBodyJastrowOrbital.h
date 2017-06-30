@@ -234,10 +234,8 @@ public:
         grad_grad_psi[j] -= hess;
       }
     }
-    
-    
-	  
   }
+
   ValueType ratio(ParticleSet& P, int iat)
   {
     const DistanceTableData* d_table=P.DistTables[0];
@@ -257,31 +255,6 @@ public:
       }
     }
     return std::exp(DiffVal);
-  }
-
-  inline void evaluateRatios(VirtualParticleSet& VP, std::vector<ValueType>& ratios)
-  {
-    const int iat=VP.activePtcl;
-
-    int nat=iat*N;
-    RealType x= std::accumulate(&(U[nat]),&(U[nat+N]),0.0);
-    std::vector<RealType> myr(ratios.size(),x);
-    //vector<RealType> myr(ratios.size(),Uptcl[iat]);
-
-    const DistanceTableData* d_table=VP.DistTables[0];
-    const int* pairid(PairID[iat]);
-    for (int i=0; i<d_table->size(SourceIndex); ++i)
-    {
-      if(i!=iat)
-      {
-        FuncType* func=F[pairid[i]];
-        for (int nn=d_table->M[i],j=0; nn<d_table->M[i+1]; ++nn,++j)
-          myr[j]-=func->evaluate(d_table->r(nn));
-      }
-    }
-
-    for(int k=0; k<ratios.size(); ++k)
-      ratios[k]=std::exp(myr[k]);
   }
 
   /** evaluate the ratio

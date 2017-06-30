@@ -572,44 +572,6 @@ public:
     return G;
   }
 
-  inline void evaluateRatios(VirtualParticleSet& VP, std::vector<ValueType>& ratios)
-  {
-    const int iat=VP.activePtcl;
-    const int nk=ratios.size();
-    int nat=iat*Nelec;
-    RealType x=std::accumulate(&(U[nat]),&(U[nat+Nelec]),0.0);
-    std::vector<RealType> newval(nk,x);
-    const DistanceTableData* ee_table=VP.getVirtualTable(0);
-    const DistanceTableData* eI_table=VP.getVirtualTable(myTableIndex);
-    const DistanceTableData* eI_0=VP.getRealTable(myTableIndex);
-
-    for (int i=0,nn=0; i<Nion; i++)
-    {
-      IonData &ion = IonDataList[i];
-      int nn0=eI_0->M[i];
-      for(int k=0; k<nk; ++k, ++nn)
-      {
-        RealType r_Ii = eI_table->r(nn);
-        if (r_Ii < ion.cutoff_radius)
-        {
-          for (int j=0; j<ion.elecs_inside.size(); j++)
-          {
-            int jat = ion.elecs_inside[j];
-            if (jat != iat)
-            {
-              RealType r_ij = ee_table->r(jat*nk+k);
-              RealType r_Ij = eI_0->r(nn0+jat);
-              FT &func = *F.data()[TripletID(i, iat, jat)];
-              newval[k] -= func.evaluate(r_ij, r_Ii, r_Ij);
-            }
-          }
-        }
-      }
-    }
-    for(int k=0; k<ratios.size(); ++k)
-      ratios[k]=std::exp(newval[k]);
-  }
-
   ValueType ratio(ParticleSet& P, int iat)
   {
     const DistanceTableData* ee_table=P.DistTables[0];

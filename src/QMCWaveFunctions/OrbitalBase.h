@@ -19,7 +19,6 @@
 #define QMCPLUSPLUS_ORBITALBASE_H
 #include "Configuration.h"
 #include "Particle/ParticleSet.h"
-#include "Particle/VirtualParticleSet.h"
 #include "Particle/DistanceTableData.h"
 #include "QMCWaveFunctions/OrbitalSetTraits.h"
 #include "Particle/MCWalkerConfiguration.h"
