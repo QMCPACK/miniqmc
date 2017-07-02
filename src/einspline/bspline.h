@@ -30,11 +30,6 @@
 #include "bspline_structs.h"
 #include "multi_bspline_structs.h"
 
-// #include "bspline_eval_s.h"
-// #include "bspline_eval_c.h"
-#include "bspline_eval_d.h"
-// #include "bspline_eval_z.h"
-
 #include "bspline_create.h"
 #include "multi_bspline_create.h"
 #endif
