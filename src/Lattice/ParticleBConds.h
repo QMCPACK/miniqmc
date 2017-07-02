@@ -111,11 +111,7 @@ struct DTD_BConds
 
 }
 
-#if OHMMS_DIM == 3
 #include <Lattice/ParticleBConds3D.h>
-#elif OHMMS_DIM == 2
-#include <Lattice/ParticleBConds2D.h>
-#endif
 
 #endif // OHMMS_PARTICLE_BCONDS_H
 

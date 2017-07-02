@@ -24,13 +24,7 @@
 #include <complex>
 #include <OhmmsPETE/TinyVector.h>
 #include <OhmmsPETE/Tensor.h>
-#if OHMMS_DIM==3
 #include <Lattice/Uniform3DGridLayout.h>
-#elif OHMMS_DIM==2
-#include <Lattice/Uniform2DGridLayout.h>
-#else
-#error "Only 2D and 3D are implemented.\n"
-#endif
 #include <ParticleBase/ParticleAttrib.h>
 #include <Utilities/OhmmsInfo.h>
 #include <Message/Communicate.h>
@@ -101,13 +95,7 @@ struct QMCTraits
  */
 struct PtclOnLatticeTraits
 {
-#if OHMMS_DIM==3
   typedef Uniform3DGridLayout                          ParticleLayout_t;
-#elif OHMMS_DIM==2
-  typedef Uniform2DGridLayout                          ParticleLayout_t;
-#else
-  typedef UniformGridLayout<OHMMS_PRECISION,OHMMS_DIM> ParticleLayout_t;
-#endif
 
   typedef int                                          Index_t;
   typedef OHMMS_PRECISION_FULL                         Scalar_t;
