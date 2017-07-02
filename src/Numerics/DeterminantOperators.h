@@ -28,7 +28,6 @@
 #include <OhmmsPETE/OhmmsVector.h>
 #include <OhmmsPETE/OhmmsMatrix.h>
 #include <Numerics/OhmmsBlas.h>
-#include <config/stdlib/math.h>
 #include <simd/simd.hpp>
 #include <Numerics/determinant_operators.h>
 
