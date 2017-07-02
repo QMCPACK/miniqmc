@@ -29,7 +29,7 @@ using namespace qmcplusplus;
 int main(int argc, char** argv)
 {
 
-  //OhmmsInfo welcome(argc,argv,OHMMS::Controller->rank());
+  OhmmsInfo("einspline_spo");
 
   typedef QMCTraits::RealType           RealType;
   typedef ParticleSet::ParticlePos_t    ParticlePos_t;
@@ -83,7 +83,7 @@ int main(int argc, char** argv)
   Tensor<int,3> tmat(na,0,0,0,nb,0,0,0,nc);
 
   //turn off output
-//  if(omp_get_max_threads()>1)
+  if(omp_get_max_threads()>1)
   {
     OhmmsInfo::Log->turnoff();
     OhmmsInfo::Warn->turnoff();

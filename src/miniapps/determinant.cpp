@@ -26,7 +26,7 @@ using namespace qmcplusplus;
 int main(int argc, char** argv)
 {
 
-  //OhmmsInfo welcome(argc,argv,OHMMS::Controller->rank());
+  OhmmsInfo("determinant");
 
   //use the global generator
 

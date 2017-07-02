@@ -29,7 +29,7 @@ using namespace qmcplusplus;
 int main(int argc, char** argv)
 {
 
-  //OhmmsInfo welcome(argc,argv,OHMMS::Controller->rank());
+  OhmmsInfo("einspline_spo_nested");
 
   typedef QMCTraits::RealType           RealType;
   typedef ParticleSet::ParticlePos_t    ParticlePos_t;

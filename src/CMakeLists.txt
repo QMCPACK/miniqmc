@@ -170,9 +170,9 @@ ENDIF()
   #   ENDIF(NOT QMC_COMPLEX)
   # ENDIF(QMC_BUILD_LEVEL GREATER 2)
 
-  SET(PARTICLEIO
-    ParticleIO/ParticleIOUtility.cpp 
-    )
+  #SET(PARTICLEIO
+  #  ParticleIO/ParticleIOUtility.cpp
+  #  )
 
   ADD_LIBRARY(qmcbase ${PARTICLE}  ${PARTICLEIO}) 
 
