@@ -28,14 +28,9 @@
 #include "Particle/ParticleSet.h"
 #include "Particle/Walker.h"
 #include "Utilities/IteratorUtility.h"
-//#include "Particle/Reptile.h"
 
 namespace qmcplusplus
 {
-
-//Forward declaration
-class MultiChain;
-class Reptile;
 
 /** A set of walkers that are to be advanced by Metropolis Monte Carlo.
  *
@@ -74,7 +69,6 @@ public:
   ///const_iterator of Walker container
   typedef WalkerList_t::const_iterator   const_iterator;
  
-  typedef std::vector<Reptile*>          ReptileList_t;
    /** starting index of the walkers in a processor group
    *
    * WalkerOffsets[0]=0 and WalkerOffsets[WalkerOffsets.size()-1]=total number of walkers in a group
@@ -305,16 +299,6 @@ public:
     return LocalEnergy;
   }
 
-  inline MultiChain* getPolymer()
-  {
-    return Polymer;
-  }
-
-  inline void setPolymer(MultiChain *chain)
-  {
-    Polymer=chain;
-  }
-
   /** reset the Walkers
    */
   void reset();
@@ -375,12 +359,8 @@ public:
   ///a collection of walkers
   WalkerList_t WalkerList;
   ///a collection of reptiles contained in MCWalkerConfiguration.
-  ReptileList_t ReptileList;
-  Reptile* reptile;
 
 private:
-
-  MultiChain *Polymer;
 
   int MaxSamples;
   int CurSampleCount;

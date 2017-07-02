@@ -36,9 +36,9 @@ namespace qmcplusplus
 {
 
 MCWalkerConfiguration::MCWalkerConfiguration():
-  OwnWalkers(true),ReadyForPbyP(false),UpdateMode(Update_Walker),Polymer(0),
+  OwnWalkers(true),ReadyForPbyP(false),UpdateMode(Update_Walker),
 
-  MaxSamples(10),CurSampleCount(0),GlobalNumWalkers(0),reptile(0)
+  MaxSamples(10),CurSampleCount(0),GlobalNumWalkers(0)
 #ifdef QMC_CUDA
   ,RList_GPU("MCWalkerConfiguration::RList_GPU"),
   GradList_GPU("MCWalkerConfiguration::GradList_GPU"),
@@ -55,7 +55,7 @@ MCWalkerConfiguration::MCWalkerConfiguration():
 
 MCWalkerConfiguration::MCWalkerConfiguration(const MCWalkerConfiguration& mcw)
   : ParticleSet(mcw), OwnWalkers(true), GlobalNumWalkers(mcw.GlobalNumWalkers),
-    UpdateMode(Update_Walker), ReadyForPbyP(false), Polymer(0),
+    UpdateMode(Update_Walker), ReadyForPbyP(false),
     MaxSamples(mcw.MaxSamples), CurSampleCount(0)
 #ifdef QMC_CUDA
     ,RList_GPU("MCWalkerConfiguration::RList_GPU"),
