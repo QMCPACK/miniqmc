@@ -282,17 +282,7 @@ namespace qmcplusplus
 /** choose vgl/vgh, default MultiBsplineStd.hpp based on Ye's BGQ version
  * Only used by tests
  */
-#ifdef USE_EINSPLINE_UNROLLED
-#include <spline2/MultiBsplineStd2.hpp>
-#elif USE_EINSPLINE_STD4
-#include <spline2/MultiBsplineStd4.hpp>
-#elif USE_EINSPLINE_BASE
-#include <spline2/MultiBsplineBase.hpp>
-#elif USE_EINSPLINE_BLOCKED
-#include <spline2/MultiBsplineStd5.hpp>
-#else
 #include <spline2/MultiBsplineStd.hpp>
-#endif
 
 #endif
 /***************************************************************************
