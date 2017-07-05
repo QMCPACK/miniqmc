@@ -69,8 +69,6 @@ MCWalkerConfiguration::MCWalkerConfiguration(const MCWalkerConfiguration& mcw)
 {
   GlobalNumWalkers=mcw.GlobalNumWalkers;
   WalkerOffsets=mcw.WalkerOffsets;
-  Properties=mcw.Properties;
-  //initPropertyList();
 }
 
 ///default destructor
@@ -120,7 +118,6 @@ void MCWalkerConfiguration::createWalkers(int n)
       }
     }
   }
-  resizeWalkerHistories();
 }
 
 

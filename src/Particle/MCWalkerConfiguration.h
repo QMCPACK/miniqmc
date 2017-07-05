@@ -60,8 +60,6 @@ public:
         Update_Particle ///move a particle by particle
        };
 
-  ///container type of the Properties of a Walker
-  typedef Walker_t::PropertyContainer_t  PropertyContainer_t;
   ///container type of Walkers
   typedef std::vector<Walker_t*>         WalkerList_t;
   ///iterator of Walker container
@@ -261,9 +259,6 @@ public:
   {
     WalkerList.push_back(awalker);
   }
-
-  ///resize Walker::PropertyHistory and Walker::PHindex:
-  void resizeWalkerHistories();
 
   /** delete the last Walker_t*
    *

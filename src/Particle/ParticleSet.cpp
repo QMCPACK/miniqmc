@@ -46,7 +46,6 @@ int  ParticleSet::PtclObjectCounter = 0;
 ParticleSet::ParticleSet()
   : UseBoundBox(true), UseSphereUpdate(true), IsGrouped(true)
   , ThreadID(0), ParentTag(-1), ParentName("0")
-  , quantum_domain(classical)
 {
   initParticleSet();
 }
@@ -55,7 +54,6 @@ ParticleSet::ParticleSet(const ParticleSet& p)
   : UseBoundBox(p.UseBoundBox), UseSphereUpdate(p.UseSphereUpdate),IsGrouped(p.IsGrouped)
   , ThreadID(0), mySpecies(p.getSpeciesSet()), ParentTag(p.tag()), ParentName(p.parentName())
 {
-  set_quantum_domain(p.quantum_domain);
   //initBase();
   initParticleSet();
   assign(p); //only the base is copied, assumes that other properties are not assignable
@@ -66,8 +64,6 @@ ParticleSet::ParticleSet(const ParticleSet& p)
   o<<p.getName()<<ObjectTag;
   this->setName(o.str());
   app_log() << "  Copying a particle set " << p.getName() << " to " << this->getName() << " groups=" << groups() << std::endl;
-  PropertyHistory=p.PropertyHistory;
-  Collectables=p.Collectables;
   //construct the distance tables with the same order
   if(p.DistTables.size())
   {
@@ -129,14 +125,6 @@ void ParticleSet::create(const std::vector<int>& agroup)
     for(int j=0; j<agroup[i]; j++,loc++)
       GroupID[loc] = i;
   }
-}
-
-void ParticleSet::set_quantum_domain(quantum_domains qdomain)
-{
-  if(quantum_domain_valid(qdomain))
-    quantum_domain = qdomain;
-  else
-    APP_ABORT("ParticleSet::set_quantum_domain\n  input quantum domain is not valid for particles");
 }
 
 void ParticleSet::initParticleSet()
@@ -730,51 +718,6 @@ void ParticleSet::clearDistanceTables()
   //for(int i=0; i< DistTables.size(); i++) DistanceTable::removeTable(DistTables[i]->getName());
   //DistTables.erase(DistTables.begin(),DistTables.end());
 }
-
-int ParticleSet::addPropertyHistory(int leng)
-{
-  int newL = PropertyHistory.size();
-  std::vector<EstimatorRealType> newVecHistory=std::vector<EstimatorRealType>(leng,0.0);
-  PropertyHistory.push_back(newVecHistory);
-  PHindex.push_back(0);
-  return newL;
-}
-
-//      void ParticleSet::resetPropertyHistory( )
-//     {
-//       for(int i=0;i<PropertyHistory.size();i++)
-//       {
-//         PHindex[i]=0;
-//  for(int k=0;k<PropertyHistory[i].size();k++)
-//  {
-//    PropertyHistory[i][k]=0.0;
-//  }
-//       }
-//     }
-
-//      void ParticleSet::addPropertyHistoryPoint(int index, RealType data)
-//     {
-//       PropertyHistory[index][PHindex[index]]=(data);
-//       PHindex[index]++;
-//       if (PHindex[index]==PropertyHistory[index].size()) PHindex[index]=0;
-// //       PropertyHistory[index].pop_back();
-//     }
-
-//      void ParticleSet::rejectedMove()
-//     {
-//       for(int dindex=0;dindex<PropertyHistory.size();dindex++){
-//         int lastIndex=PHindex[dindex]-1;
-//         if (lastIndex<0) lastIndex+=PropertyHistory[dindex].size();
-//         PropertyHistory[dindex][PHindex[dindex]]=PropertyHistory[dindex][lastIndex];
-//         PHindex[dindex]++;
-//         if (PHindex[dindex]==PropertyHistory[dindex].size()) PHindex[dindex]=0;
-// //       PropertyHistory[dindex].push_front(PropertyHistory[dindex].front());
-// //       PropertyHistory[dindex].pop_back();
-//       }
-//     }
-
-
-
 
 }
 

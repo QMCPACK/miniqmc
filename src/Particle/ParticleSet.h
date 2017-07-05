@@ -73,15 +73,8 @@ class ParticleSet
 public:
   ///@typedef walker type
   typedef Walker<QMCTraits,PtclOnLatticeTraits> Walker_t;
-  ///@typedef container type to store the property
-  typedef Walker_t::PropertyContainer_t  PropertyContainer_t;
   ///@typedef buffer type for a serialized buffer
   typedef Walker_t::Buffer_t             Buffer_t;
-
-  enum quantum_domains {no_quantum_domain=0,classical,quantum};
-
-  ///quantum_domain of the particles, default = classical
-  quantum_domains quantum_domain;
 
   ///the name of the particle set.
   std::string myName;
@@ -169,27 +162,8 @@ public:
   std::vector<ComplexType>   VHXC_G[2];
   Array<RealType,OHMMS_DIM> VHXC_r[2];
 
-  /** properties of the current walker
-   *
-   * The internal order is identical to PropertyList, which holds
-   * the matching names.
-   */
-  PropertyContainer_t  Properties;
-
-  /** observables in addition to those registered in Properties/PropertyList
-   *
-   * Such observables as density, gofr, sk are not stored per walker but
-   * collected during QMC iterations.
-   */
-  Buffer_t Collectables;
-
   ///clones of this object: used by the thread pool
   std::vector<ParticleSet*> myClones;
-
-  ///Property history vector
-  std::vector<std::vector<EstimatorRealType> >  PropertyHistory;
-  std::vector<int> PHindex;
-  ///@}
 
   ///current MC step
   int current_step;
@@ -221,36 +195,6 @@ public:
   ///reset member data
   void reset();
 
-  ///specify quantum_domain of particles
-  void set_quantum_domain(quantum_domains qdomain);
-
-  void set_quantum()
-  {
-    quantum_domain=quantum;
-  }
-
-  inline bool is_classical() const
-  {
-    return quantum_domain==classical;
-  }
-
-  inline bool is_quantum() const
-  {
-    return quantum_domain==quantum;
-  }
-
-  ///check whether quantum domain is valid for particles
-  inline bool quantum_domain_valid(quantum_domains qdomain) const
-  {
-    return qdomain!=no_quantum_domain;
-  }
-
-  ///check whether quantum domain is valid for particles
-  inline bool quantum_domain_valid() const
-  {
-    return quantum_domain_valid(quantum_domain);
-  }
-
   ///set UseBoundBox
   void setBoundBox(bool yes);
 
@@ -270,13 +214,6 @@ public:
    * @param psrc source particle set
    */
   int getTable(const ParticleSet& psrc);
-
-  /** reset all the collectable quantities during a MC iteration
-   */
-  inline void resetCollectables()
-  {
-    std::fill(Collectables.begin(),Collectables.end(),0.0);
-  }
 
   /** update the internal data
    *@param skip SK update if skipSK is true
@@ -404,11 +341,6 @@ public:
     return activePos;
   }
 
-  int addPropertyHistory(int leng);
-  //        void rejectedMove();
-  //        void resetPropertyHistory( );
-  //        void addPropertyHistoryPoint(int index, RealType data);
-
   void clearDistanceTables();
   void resizeSphere(int nc);
 
@@ -446,30 +378,6 @@ public:
    *@param skip SK update if skipSK is true
    */
   void donePbyP(bool skipSK=false);
-
-  //return the address of the values of Hamiltonian terms
-  inline EstimatorRealType* restrict getPropertyBase()
-  {
-    return Properties.data();
-  }
-
-  //return the address of the values of Hamiltonian terms
-  inline const EstimatorRealType* restrict getPropertyBase() const
-  {
-    return Properties.data();
-  }
-
-  ///return the address of the i-th properties
-  inline EstimatorRealType* restrict getPropertyBase(int i)
-  {
-    return Properties[i];
-  }
-
-  ///return the address of the i-th properties
-  inline const EstimatorRealType* restrict getPropertyBase(int i) const
-  {
-    return Properties[i];
-  }
 
   inline void setTwist(SingleParticlePos_t& t)
   {

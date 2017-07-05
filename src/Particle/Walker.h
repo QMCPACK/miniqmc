@@ -95,9 +95,7 @@ struct Walker
   typedef typename p_traits::ParticleLaplacian_t ParticleLaplacian_t;
   /** typedef for value data type. */
   typedef typename p_traits::ParticleValue_t ParticleValue_t;
-
-  ///typedef for the property container, fixed size
-  typedef Matrix<EstimatorRealType>      PropertyContainer_t;
+  /** typedef for buffer. */
   typedef PooledData<RealType>  Buffer_t;
 
   ///id reserved for forward walking
@@ -132,12 +130,6 @@ struct Walker
   /** \f$ \nabla^2_i d\log \Psi for the i-th particle */
   ParticleLaplacian_t L;
 #endif
-  ///scalar properties of a walker
-  PropertyContainer_t  Properties;
-
-  ///Property history vector
-  std::vector<std::vector<EstimatorRealType> >  PropertyHistory;
-  std::vector<int> PHindex;
 
   ///buffer for the data for particle-by-particle update
   Buffer_t DataSet;
@@ -198,59 +190,8 @@ struct Walker
     Multiplicity=1.0;
     ReleasedNodeWeight=1.0;
     ReleasedNodeAge=0;
-    Properties.resize(1,NUMPROPERTIES);
     if(nptcl>0)
       resize(nptcl);
-    Properties=0.0;
-  }
-
-  inline int addPropertyHistory(int leng)
-  {
-    int newL = PropertyHistory.size();
-    std::vector<RealType> newVecHistory = std::vector<RealType>(leng,0.0);
-    PropertyHistory.push_back(newVecHistory);
-    PHindex.push_back(0);
-    return newL;
-  }
-
-  inline void deletePropertyHistory()
-  {
-    PropertyHistory.erase(PropertyHistory.begin(), PropertyHistory.end());
-  }
-
-  inline void resetPropertyHistory()
-  {
-    for (int i=0; i<PropertyHistory.size(); i++)
-    {
-      PHindex[i]=0;
-      for (int k=0; k<PropertyHistory[i].size(); k++)
-      {
-        PropertyHistory[i][k]=0.0;
-      }
-    }
-  }
-
-  inline void addPropertyHistoryPoint(int index, EstimatorRealType data)
-  {
-    PropertyHistory[index][PHindex[index]]=(data);
-    PHindex[index]++;
-    if (PHindex[index]==PropertyHistory[index].size())
-      PHindex[index]=0;
-//       PropertyHistory[index].pop_back();
-  }
-
-  inline EstimatorRealType getPropertyHistorySum(int index, int endN)
-  {
-    EstimatorRealType mean=0.0;
-    typename std::vector<EstimatorRealType>::const_iterator phStart;
-    phStart=PropertyHistory[index].begin()+PHindex[index];
-    for (int i=0; i<endN; phStart++,i++)
-    {
-      if (phStart>=PropertyHistory[index].end())
-        phStart -= PropertyHistory[index].size();
-      mean+= (*phStart);
-    }
-    return mean ;
   }
 
   inline ~Walker() { }
@@ -304,94 +245,13 @@ struct Walker
     L = a.L;
 #endif
     //Drift = a.Drift;
-    Properties.copy(a.Properties);
     DataSet=a.DataSet;
-    if (PropertyHistory.size()!=a.PropertyHistory.size())
-      PropertyHistory.resize(a.PropertyHistory.size());
-    for (int i=0; i<PropertyHistory.size(); i++)
-      PropertyHistory[i]=a.PropertyHistory[i];
-    PHindex=a.PHindex;
 #ifdef QMC_CUDA
     cuda_DataSet = a.cuda_DataSet;
     R_GPU = a.R_GPU;
     Grad_GPU = a.Grad_GPU;
     Lap_GPU = a.Lap_GPU;
 #endif
-  }
-
-  //return the address of the values of Hamiltonian terms
-  inline EstimatorRealType* restrict getPropertyBase()
-  {
-    return Properties.data();
-  }
-
-  //return the address of the values of Hamiltonian terms
-  inline const EstimatorRealType* restrict getPropertyBase() const
-  {
-    return Properties.data();
-  }
-
-  ///return the address of the i-th properties
-  inline EstimatorRealType* restrict getPropertyBase(int i)
-  {
-    return Properties[i];
-  }
-
-  ///return the address of the i-th properties
-  inline const EstimatorRealType* restrict getPropertyBase(int i) const
-  {
-    return Properties[i];
-  }
-
-
-  /** reset the property of a walker
-   *@param logpsi \f$\log |\Psi|\f$
-   *@param sigN  sign of the trial wavefunction
-   *@param ene the local energy
-   *
-   *Assign the values and reset the age
-   * but leave the weight and multiplicity
-   */
-  inline void resetProperty(EstimatorRealType logpsi, EstimatorRealType sigN, EstimatorRealType ene)
-  {
-    Age=0;
-    //Weight=1.0;
-    Properties(LOGPSI)=logpsi;
-    Properties(SIGN)=sigN;
-    Properties(LOCALENERGY) = ene;
-  }
-
-  inline void resetReleasedNodeProperty(EstimatorRealType localenergy, EstimatorRealType alternateEnergy, EstimatorRealType altR)
-  {
-    Properties(ALTERNATEENERGY)=alternateEnergy;
-    Properties(LOCALENERGY) = localenergy;
-    Properties(SIGN) = altR;
-  }
-  inline void resetReleasedNodeProperty(EstimatorRealType localenergy, EstimatorRealType alternateEnergy)
-  {
-    Properties(ALTERNATEENERGY)=alternateEnergy;
-    Properties(LOCALENERGY) = localenergy;
-  }
-  /** reset the property of a walker
-   * @param logpsi \f$\log |\Psi|\f$
-   * @param sigN  sign of the trial wavefunction
-   * @param ene the local energy
-   * @param r2a \f$r^2\f$ for the accepted moves
-   * @param r2p \f$r^2\f$ for the proposed moves
-   * @param vq \f$\bar{V}/V\f$ scaling to control node divergency in JCP 93
-   *
-   *Assign the values and reset the age
-   * but leave the weight and multiplicity
-   */
-  inline void resetProperty(EstimatorRealType logpsi, EstimatorRealType sigN, EstimatorRealType ene, EstimatorRealType r2a, EstimatorRealType r2p, EstimatorRealType vq)
-  {
-    Age=0;
-    Properties(LOGPSI)=logpsi;
-    Properties(SIGN)=sigN;
-    Properties(LOCALENERGY) = ene;
-    Properties(R2ACCEPTED) = r2a;
-    Properties(R2PROPOSED) = r2p;
-    Properties(DRIFTSCALE) = vq;
   }
 
   /** marked to die
@@ -412,12 +272,6 @@ struct Walker
     Weight=1.0e0;
   }
 
-  inline void resizeProperty(int n, int m)
-  {
-    Properties.resize(n,m);
-  }
-
-
   /** byte size for a packed message
    *
    * ID, Age, Properties, R, Drift, DataSet is packed
@@ -425,11 +279,8 @@ struct Walker
   inline int byteSize()
   {
     int numPH(0);
-    for (int iat=0; iat<PropertyHistory.size(); iat++)
-      numPH += PropertyHistory[iat].size();
     int bsize =
-      2*sizeof(long)+3*sizeof(int)+ PHindex.size()*sizeof(int)
-      +Properties.size()*sizeof(EstimatorRealType)+(numPH+1)*sizeof(RealType)+DataSet.byteSize()
+      2*sizeof(long)+3*sizeof(int)+(numPH+1)*sizeof(RealType)+DataSet.byteSize()
 #if defined(SOA_MEMORY_OPTIMIZED)
       +R.size()*(DIM*sizeof(RealType)); //R
 #else
@@ -464,14 +315,9 @@ struct Walker
 #endif
 #endif
 
-    m.Pack(Properties.data(),Properties.size());
     m.Pack(DataSet.data(),DataSet.size());
     m.Pack(DataSet.data_DP(),DataSet.size_DP());
-    //Properties.putMessage(m);
     //DataSet.putMessage(m);
-    for (int iat=0; iat<PropertyHistory.size(); iat++)
-      m.Pack(&(PropertyHistory[iat][0]),PropertyHistory[iat].size());
-    m.Pack(&(PHindex[0]),PHindex.size());
 #ifdef QMC_CUDA
     // Pack GPU data
     std::vector<CudaValueType> host_data;
@@ -521,14 +367,9 @@ struct Walker
     m.Unpack(L.first_address(),nat);
 #endif
 #endif
-    m.Unpack(Properties.data(),Properties.size());
     m.Unpack(DataSet.data(),DataSet.size());
     m.Unpack(DataSet.data_DP(),DataSet.size_DP());
-    //Properties.getMessage(m);
     //DataSet.getMessage(m);
-    for (int iat=0; iat<PropertyHistory.size(); iat++)
-      m.Unpack(&(PropertyHistory[iat][0]),PropertyHistory[iat].size());
-    m.Unpack(&(PHindex[0]),PHindex.size());
 #ifdef QMC_CUDA
     // Unpack GPU data
     std::vector<CudaValueType> host_data;
