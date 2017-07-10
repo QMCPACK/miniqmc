@@ -676,10 +676,6 @@ void ParticleSet::loadWalker(Walker_t& awalker, bool pbyp)
 #if defined(ENABLE_AA_SOA)
   RSoA.copyIn(R); 
 #endif
-#if !defined(SOA_MEMORY_OPTIMIZED)
-  G = awalker.G;
-  L = awalker.L;
-#endif
   if (pbyp)
   {
     // in certain cases, full tables must be ready
@@ -702,10 +698,6 @@ void ParticleSet::loadWalker(Walker_t* awalker)
 void ParticleSet::saveWalker(Walker_t& awalker)
 {
   awalker.R=R;
-#if !defined(SOA_MEMORY_OPTIMIZED)
-  awalker.G=G;
-  awalker.L=L;
-#endif
   //PAOps<RealType,OHMMS_DIM>::copy(G,awalker.Drift);
   //awalker.DataSet.rewind();
 }
