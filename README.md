@@ -108,9 +108,11 @@
 # Build
 
 Building miniapps at the moment requires CMake which will be replace with Makefile upon release.
+```
 cd build
 cmake -DCMAKE_C_COMPILER=mpiicc -DCMAKE_CXX_COMPILER=mpiicpc ..
 make -j 8
+```
 
 Mixed precision can be accessed through -DQMC_MIXED_PRECISION=1
 

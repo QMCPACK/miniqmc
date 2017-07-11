@@ -42,8 +42,8 @@ MESSAGE(STATUS "QMC_SYMLINK_TEST_FILES = ${QMC_SYMLINK_TEST_FILES}.  ${SYMLINK_M
 ######################################################################
 # Build level
 ######################################################################
-SET(QMC_BUILD_LEVEL 3 CACHE INTEGER 
-  "QMC Build Level: 1=bare, 2=developer, 3=experimental, 4=minimal")
+SET(QMC_BUILD_LEVEL 5 CACHE INTEGER
+  "QMC Build Level: 1=bare, 2=developer, 3=experimental, 4=minimal, 5=miniapps")
 IF ( NOT CMAKE_BUILD_TYPE AND NOT CMAKE_TOOLCHAIN_FILE)
   SET( CMAKE_BUILD_TYPE Release )
 ENDIF()
