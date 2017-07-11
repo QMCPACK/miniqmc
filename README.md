@@ -79,7 +79,7 @@
     1. Only ECP-NiO, CORAL-graphite
     2. From ~100 to ~10k electrons sizes
     3. Via command line
-2. No MPI 
+2. Minimal MPI - no MPI-based parallelization
     1. Only minimum MPI present for tools/job wrappers to interface (e.g.
        MPI_Init()/Finalize())
     2. No introduction of additional build dependency on MPI
