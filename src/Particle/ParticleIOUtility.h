@@ -10,18 +10,19 @@
 //
 // File created by: Jeongnim Kim, jeongnim.kim@gmail.com, University of Illinois at Urbana-Champaign
 //////////////////////////////////////////////////////////////////////////////////////
-    
-    
 
 
 #ifndef OHMMS_PARTICLE_INPUTOUTPUT_UTILITY_H
 #define OHMMS_PARTICLE_INPUTOUTPUT_UTILITY_H
 
-//#include "Particle/ParticleSet.h"
-
 namespace qmcplusplus
 {
 
+
+/** expand the particle set to the supercell size
+ * @param ref_ initial particle set in primitive cell
+ * @param tmat tiling matrix
+ */
 template<typename PS>
 void expandSuperCell(PS& ref_, Tensor<int,3>& tmat)
 {
@@ -70,7 +71,6 @@ void expandSuperCell(PS& ref_, Tensor<int,3>& tmat)
           {
             if(primTypes[iat]!=ns)
               continue;
-            //SingleParticlePos_t r     = primPos[iat];
             SingleParticlePos_t uPrim = primPos[iat];
             for (int i=0; i<3; i++)
               uPrim[i] -= std::floor(uPrim[i]);

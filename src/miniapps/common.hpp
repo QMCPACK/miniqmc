@@ -15,7 +15,7 @@
  * @brief Testing random number generators
  */
 #include <Utilities/Timer.h>
-#include <random/random.hpp>
+#include <Utilities/random.hpp>
 #include <vector>
 #include <getopt.h>
 
