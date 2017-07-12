@@ -105,4 +105,24 @@
  * C/C++ compilers
  * BLAS/LAPACK, numerical library, use platform-optimized libraries
  
+# Build
+
+Building miniapps at the moment requires CMake which will be replace with Makefile upon release.
+```
+cd build
+cmake -DCMAKE_C_COMPILER=mpiicc -DCMAKE_CXX_COMPILER=mpiicpc ..
+make -j 8
+```
+
+Mixed precision can be accessed through -DQMC_MIXED_PRECISION=1
+
+# Run
+
+Binaries will be generated at build/bin and you can execute them directly or by MPI launcher if necessary.
+
+# Check
+
+Most of the miniapps named as diff_XXX execute the new SoA and old AoS implementation of kernel XXX and check the values against each other.
+The error is reported at every checkpoint. Typical numerical error is less than 1e-13/1e-4 in a full/mixed precision build.
+
 # Documentation and support
