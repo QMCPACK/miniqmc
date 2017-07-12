@@ -9,7 +9,7 @@
 // File created by: Jeongnim Kim, jeongnim.kim@intel.com, Intel Corp.
 //////////////////////////////////////////////////////////////////////////////////////
 // -*- C++ -*-
-#include <ParticleIO/ParticleIOUtility.h>
+#include <Particle/ParticleIOUtility.h>
 
 namespace qmcplusplus
 {

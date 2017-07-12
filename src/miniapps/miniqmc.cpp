@@ -20,7 +20,7 @@
 #include <Particle/DistanceTable.h>
 #include <Utilities/PrimeNumberSet.h>
 #include <Utilities/Timer.h>
-#include <random/random.hpp>
+#include <Utilities/random.hpp>
 #include <miniapps/graphite.hpp>
 #include <miniapps/pseudo.hpp>
 #include <miniapps/common.hpp>
