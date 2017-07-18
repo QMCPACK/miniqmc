@@ -26,15 +26,11 @@ namespace qmcplusplus
 /** Class to manage multiple DistanceTableData objects.
  *
  * \date  2008-09-19
- * static data members are removed. DistanceTable::add functions
+ * DistanceTable::add functions
  * are kept for compatibility only. New codes should use a member function
  * of ParticleSet to add a distance table
  * int ParticleSet::addTable(const ParticleSet& source)
  *
- * \deprecated There is only one instance of the data memebers of
- * DistanceTable in an application and the data are shared by many objects.
- * Note that static data members and functions are used
- * (based on singleton and factory patterns).
  *\todo DistanceTable should work as a factory, as well, to instantiate DistanceTableData
  * subject to different boundary conditions.
  * Lattice/CrystalLattice.h and Lattice/CrystalLattice.cpp can be owned by DistanceTable

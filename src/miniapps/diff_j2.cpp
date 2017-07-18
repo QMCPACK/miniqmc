@@ -9,9 +9,39 @@
 // File created by: Jeongnim Kim, jeongnim.kim@intel.com, Intel Corp.
 //////////////////////////////////////////////////////////////////////////////////////
 // -*- C++ -*-
-/** @file j2debug.cpp
- * @brief Debugging J2OribitalSoA 
+
+/*!
+ @file diff_j2.cpp
+ @mainpage MiniQMC: miniapp for QMCPACK kernels
+
+ Implemented kernels
+   - \subpage miniqmc_jastrow "Two-body Jastrow factor"
+
+ Kernels yet to be implemented
+   - One-body Jastrow factor
+   - Single Particle Orbitals (SPO) based on splines
+   - Inverse determinant update
+   - Three-body Jastrow factor
+
+  Compares against a reference implementation for correctness.
+
  */
+
+/*!
+ \page miniqmc_jastrow Jastrow Factors
+
+  The Jastrow factor accounts for correlation between electrons and ions (one-body Jastrow),
+  and between electrons (two-body Jastrow).
+
+  The Jastrow factor is composed from two types of classes - the first is for the types of
+  particles involved (one or two body), and the second is the functional form for the radial part.
+  The classes for the first part are qmcplusplus::OneBodyJastrowOrbital and qmcplusplus::TwoBodyJastrowOrbital.
+  The second part uses B-splines and is defined in qmcplusplus::BsplineFunctor.
+
+  This miniapp only contains the B-spline functional form, since it is the most widely used.
+  The QMCPACK distribution contains other functional forms.
+ */
+
 
 #include <Configuration.h>
 #include <Particle/ParticleSet.h>

@@ -13,6 +13,12 @@
 #include <miniapps/FakeWaveFunction.h>
 #include <miniapps/graphite.hpp>
 
+/*!
+ * @file SoAWaveFunction.cpp
+   @brief Wavefunction based on Structure of Arrays (SoA) storage
+ */
+
+
 namespace qmcplusplus
 {
   SoAWaveFunction::SoAWaveFunction(ParticleSet& ions, ParticleSet& els)
