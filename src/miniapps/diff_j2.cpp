@@ -12,19 +12,7 @@
 
 /*!
  @file diff_j2.cpp
- @mainpage MiniQMC: miniapp for QMCPACK kernels
-
- Implemented kernels
-   - \subpage miniqmc_jastrow "Two-body Jastrow factor"
-
- Kernels yet to be implemented
-   - One-body Jastrow factor
-   - Single Particle Orbitals (SPO) based on splines
-   - Inverse determinant update
-   - Three-body Jastrow factor
-
-  Compares against a reference implementation for correctness.
-
+ @brief Two body Jastrow driver
  */
 
 /*!
