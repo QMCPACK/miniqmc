@@ -25,6 +25,10 @@
 #include "simd/allocator.hpp"
 #include <cstdio>
 
+/*!
+ * @file BsplineFunctor.h
+ */
+
 namespace qmcplusplus
 {
 

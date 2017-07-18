@@ -23,6 +23,10 @@
 #include "Particle/DistanceTableData.h"
 #include "Particle/DistanceTable.h"
 
+/*!
+ * @file OneBodyJastrowOrbital.h
+ */
+
 namespace qmcplusplus
 {
 

@@ -15,6 +15,11 @@
 #include <iostream>
 using namespace std;
 
+/*!
+ * @file AoSWaveFunction.cpp
+ * @brief Wavefunction based on Array of Structures (AoS) storage
+ */
+
 namespace qmcplusplus
 {
   AoSWaveFunction::AoSWaveFunction(ParticleSet& ions, ParticleSet& els)

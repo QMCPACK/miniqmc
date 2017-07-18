@@ -9,6 +9,17 @@
 // File created by: Jeongnim Kim, jeongnim.kim@intel.com, Intel Corp.
 //////////////////////////////////////////////////////////////////////////////////////
 // -*- C++ -*-
+
+
+/**
+ * @file FakeWaveFunction.h
+ * @brief Top level wavefunction container
+ *
+ * Represents a product of wavefunction components (classes based on OrbitalBase).
+ *
+ * Corresponds to QMCWaveFunction/TrialWaveFunction.h in the QMCPACK source.
+ */
+
 #ifndef QMCPLUSPLUS_FAKEWAVEFUNCTIONS_H
 #define QMCPLUSPLUS_FAKEWAVEFUNCTIONS_H
 #include <Configuration.h>
