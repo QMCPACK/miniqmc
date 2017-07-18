@@ -11,17 +11,15 @@
 // File created by: Jeongnim Kim, jeongnim.kim@intel.com, Intel Corp.
 //////////////////////////////////////////////////////////////////////////////////////
 // -*- C++ -*-
-#ifndef QMCPLUSPLUS_TWOBODYJASTROW_OPTIMIZED_SOA_H
-#define QMCPLUSPLUS_TWOBODYJASTROW_OPTIMIZED_SOA_H
+#ifndef QMCPLUSPLUS_TWOBODYJASTROW_REF_H
+#define QMCPLUSPLUS_TWOBODYJASTROW_REF_H
 #include "Configuration.h"
 #include "QMCWaveFunctions/OrbitalBase.h"
 #include "Particle/DistanceTableData.h"
-#include <simd/allocator.hpp>
-#include <simd/algorithm.hpp>
 #include <numeric>
 
 /*!
- * @file J2OrbitalSoA.h
+ * @file J2OrbitalRef.h
  */
 
 namespace qmcplusplus
@@ -34,7 +32,7 @@ namespace qmcplusplus
  * For electrons, distinct pair correlation functions are used
  * for spins up-up/down-down and up-down/down-up.
  *
- * Based on J2OrbitalSoA.h with these considerations
+ * Based on J2OrbitalRef.h with these considerations
  * - DistanceTableData using SoA containers
  * - support mixed precision: FT::real_type != OHMMS_PRECISION
  * - loops over the groups: elminated PairID
@@ -43,7 +41,7 @@ namespace qmcplusplus
  * - Memory use is O(N). 
  */
 template<class FT>
-struct  J2OrbitalSoA : public OrbitalBase
+struct  J2OrbitalRef : public OrbitalBase
 {
   ///alias FuncType
   using FuncType=FT;
@@ -81,9 +79,9 @@ struct  J2OrbitalSoA : public OrbitalBase
   ///Container for \f$F[ig*NumGroups+jg]\f$
   std::vector<FT*> F;
 
-  J2OrbitalSoA(ParticleSet& p, int tid);
-  J2OrbitalSoA(const J2OrbitalSoA& rhs)=delete;
-  ~J2OrbitalSoA();
+  J2OrbitalRef(ParticleSet& p, int tid);
+  J2OrbitalRef(const J2OrbitalRef& rhs)=delete;
+  ~J2OrbitalRef();
 
   /* initialize storage */
   void init(ParticleSet& p);
@@ -123,7 +121,6 @@ struct  J2OrbitalSoA : public OrbitalBase
       const valT* restrict dX=displ.data(idim);
       valT s=valT();
 
-      #pragma omp simd reduction(+:s) aligned(du,dX)
       for(int jat=0; jat<N; ++jat) s+=du[jat]*dX[jat];
       grad[idim]=s;
     }
@@ -137,14 +134,12 @@ struct  J2OrbitalSoA : public OrbitalBase
   {
     constexpr valT lapfac=OHMMS_DIM-RealType(1);
     lap=valT(0);
-//#pragma omp simd reduction(+:lap)
     for(int jat=0; jat<N; ++jat)
       lap+=d2u[jat]+lapfac*du[jat];
     for(int idim=0; idim<OHMMS_DIM; ++idim)
     {
       const valT* restrict dX=displ.data(idim);
       valT s=valT();
-//#pragma omp simd reduction(+:s)
       for(int jat=0; jat<N; ++jat) s+=du[jat]*dX[jat];
       grad[idim]=s;
     }
@@ -153,19 +148,19 @@ struct  J2OrbitalSoA : public OrbitalBase
 };
 
 template<typename FT>
-J2OrbitalSoA<FT>::J2OrbitalSoA(ParticleSet& p, int tid) : TaskID(tid)
+J2OrbitalRef<FT>::J2OrbitalRef(ParticleSet& p, int tid) : TaskID(tid)
 {
   init(p);
   FirstTime =true;
   KEcorr=0.0;
-  OrbitalName = "J2OrbitalSoA";
+  OrbitalName = "J2OrbitalRef";
 }
 
 template<typename FT>
-J2OrbitalSoA<FT>::~J2OrbitalSoA() {}
+J2OrbitalRef<FT>::~J2OrbitalRef() {}
 
 template<typename FT>
-void J2OrbitalSoA<FT>::init(ParticleSet& p)
+void J2OrbitalRef<FT>::init(ParticleSet& p)
 {
   N=p.getTotalNum();
   NumGroups=p.groups();
@@ -187,7 +182,7 @@ void J2OrbitalSoA<FT>::init(ParticleSet& p)
 }
 
 template<typename FT>
-void J2OrbitalSoA<FT>::addFunc(int ia, int ib, FT* j)
+void J2OrbitalRef<FT>::addFunc(int ia, int ib, FT* j)
 {
   if(ia==ib)
   {
@@ -233,7 +228,7 @@ void J2OrbitalSoA<FT>::addFunc(int ia, int ib, FT* j)
  */
 template<typename FT>
 inline void
-J2OrbitalSoA<FT>::computeU3(ParticleSet& P, int iat, const RealType* restrict dist,
+J2OrbitalRef<FT>::computeU3(ParticleSet& P, int iat, const RealType* restrict dist,
     RealType* restrict u, RealType* restrict du, RealType* restrict d2u)
 {
   constexpr valT czero(0);
@@ -255,8 +250,8 @@ J2OrbitalSoA<FT>::computeU3(ParticleSet& P, int iat, const RealType* restrict di
 }
 
 template<typename FT>
-typename  J2OrbitalSoA<FT>::ValueType 
-J2OrbitalSoA<FT>::ratio(ParticleSet& P, int iat)
+typename  J2OrbitalRef<FT>::ValueType 
+J2OrbitalRef<FT>::ratio(ParticleSet& P, int iat)
 {
   //only ratio, ready to compute it again
   UpdateMode=ORB_PBYP_RATIO;
@@ -277,21 +272,21 @@ J2OrbitalSoA<FT>::ratio(ParticleSet& P, int iat)
 }
 
 template<typename FT>
-typename  J2OrbitalSoA<FT>::GradType 
-J2OrbitalSoA<FT>::evalGrad(ParticleSet& P, int iat)
+typename  J2OrbitalRef<FT>::GradType 
+J2OrbitalRef<FT>::evalGrad(ParticleSet& P, int iat)
 {
   return GradType(dUat[iat]);
 }
 
 template<typename FT>
-typename  J2OrbitalSoA<FT>::ValueType
-J2OrbitalSoA<FT>::ratioGrad(ParticleSet& P, int iat, GradType& grad_iat)
+typename  J2OrbitalRef<FT>::ValueType
+J2OrbitalRef<FT>::ratioGrad(ParticleSet& P, int iat, GradType& grad_iat)
 {
 
   UpdateMode=ORB_PBYP_PARTIAL;
 
   computeU3(P,iat,P.DistTables[0]->Temp_r.data(), cur_u.data(),cur_du.data(),cur_d2u.data());
-  cur_Uat=simd::accumulate_n(cur_u.data(),N,valT());
+  cur_Uat=std::accumulate(cur_u.begin(),cur_u.begin()+N,valT());
   DiffVal=Uat[iat]-cur_Uat;
   grad_iat+=accumulateG(cur_du.data(),P.DistTables[0]->Temp_dr);
   return std::exp(DiffVal);
@@ -299,7 +294,7 @@ J2OrbitalSoA<FT>::ratioGrad(ParticleSet& P, int iat, GradType& grad_iat)
 
 template<typename FT>
 void
-J2OrbitalSoA<FT>::acceptMove(ParticleSet& P, int iat)
+J2OrbitalRef<FT>::acceptMove(ParticleSet& P, int iat)
 {
   // get the old u, du, d2u
   const DistanceTableData* d_table=P.DistTables[0];
@@ -335,7 +330,7 @@ J2OrbitalSoA<FT>::acceptMove(ParticleSet& P, int iat)
 
 template<typename FT>
 void
-J2OrbitalSoA<FT>::recompute(ParticleSet& P)
+J2OrbitalRef<FT>::recompute(ParticleSet& P)
 {
   const DistanceTableData* d_table=P.DistTables[0];
   for(int ig=0; ig<NumGroups; ++ig)
@@ -344,7 +339,7 @@ J2OrbitalSoA<FT>::recompute(ParticleSet& P)
     for(int iat=P.first(ig),last=P.last(ig); iat<last; ++iat)
     {
       computeU3(P,iat,d_table->Distances[iat],cur_u.data(),cur_du.data(),cur_d2u.data());
-      Uat[iat]=simd::accumulate_n(cur_u.data(),N,valT());
+      Uat[iat]=std::accumulate(cur_u.begin(),cur_u.begin()+N,valT());
       posT grad;
       valT lap;
       accumulateGL(cur_du.data(),cur_d2u.data(),d_table->Displacements[iat],grad,lap);
@@ -355,8 +350,8 @@ J2OrbitalSoA<FT>::recompute(ParticleSet& P)
 }
 
 template<typename FT>
-typename J2OrbitalSoA<FT>::RealType
-J2OrbitalSoA<FT>::evaluateLog(ParticleSet& P,
+typename J2OrbitalRef<FT>::RealType
+J2OrbitalRef<FT>::evaluateLog(ParticleSet& P,
     ParticleSet::ParticleGradient_t& dG,
     ParticleSet::ParticleLaplacian_t& dL)
 {
@@ -366,7 +361,7 @@ J2OrbitalSoA<FT>::evaluateLog(ParticleSet& P,
 
 template<typename FT>
 void
-J2OrbitalSoA<FT>::evaluateGL(ParticleSet& P,
+J2OrbitalRef<FT>::evaluateGL(ParticleSet& P,
     ParticleSet::ParticleGradient_t& G,
     ParticleSet::ParticleLaplacian_t& L, bool fromscratch)
 {

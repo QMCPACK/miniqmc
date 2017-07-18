@@ -23,9 +23,9 @@
 #ifndef QMCPLUSPLUS_FAKEWAVEFUNCTIONS_H
 #define QMCPLUSPLUS_FAKEWAVEFUNCTIONS_H
 #include <Configuration.h>
+#include <Particle/DistanceTable.h>
 #include <QMCWaveFunctions/Jastrow/BsplineFunctor.h>
-#include <QMCWaveFunctions/Jastrow/TwoBodyJastrowOrbital.h>
-#include <QMCWaveFunctions/Jastrow/BsplineFunctor.h>
+#include <QMCWaveFunctions/Jastrow/J2OrbitalRef.h>
 #include <QMCWaveFunctions/Jastrow/J2OrbitalSoA.h>
 
 namespace qmcplusplus
@@ -59,7 +59,7 @@ namespace qmcplusplus
   struct AoSWaveFunction: public FakeWaveFunctionBase
   {
 
-    using J2OrbType=TwoBodyJastrowOrbital<BsplineFunctor<valT> >;
+    using J2OrbType=J2OrbitalRef<BsplineFunctor<valT> >;
     bool FirstTime;
     J2OrbType* J2;
     PooledData<valT> Buffer;

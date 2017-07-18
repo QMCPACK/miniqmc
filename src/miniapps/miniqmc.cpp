@@ -16,30 +16,29 @@
  @mainpage MiniQMC: miniapp for QMCPACK kernels
 
  Implemented kernels
-   - \subpage miniqmc_jastrow "Two-body Jastrow factor"
+   - \subpage JastrowFactors includes one-body, two-body and three-body Jastrow factors.
 
  Kernels yet to be implemented
-   - One-body Jastrow factor
    - Single Particle Orbitals (SPO) based on splines
    - Inverse determinant update
-   - Three-body Jastrow factor
 
   Compares against a reference implementation for correctness.
 
  */
 
  /*!
- \page miniqmc_jastrow Jastrow Factors
+ \page JastrowFactors Jastrow Factors
 
-  The Jastrow factor accounts for correlation between electrons and ions (one-body Jastrow),
-  and between electrons (two-body Jastrow).
+  The Jastrow factor accounts for the correlation of electron-ion pairs (one-body Jastrow),
+  two-electron pairs (two-body Jastrow) and two-electron-one-ion trios (three-body/eeI Jastrow).
 
   The Jastrow factor is composed from two types of classes - the first is for the types of
-  particles involved (one or two body), and the second is the functional form for the radial part.
-  The classes for the first part are qmcplusplus::OneBodyJastrowOrbital and qmcplusplus::TwoBodyJastrowOrbital.
-  The second part uses B-splines and is defined in qmcplusplus::BsplineFunctor.
+  particles involved (one/two/three body), and the second is the functional form for the radial part.
+  The classes for the first part are qmcplusplus::J1OrbitalRef, qmcplusplus::J2OrbitalRef and qmcplusplus::JeeIOrbitalRef.
+  The second part uses 1D B-splines, defined in qmcplusplus::BsplineFunctor, for one and two body Jastrow
+  and polynomials, defined in qmcplusplus::PolynomialFunctor3D, for three body Jastrow.
 
-  This miniapp only contains the B-spline functional form, since it is the most widely used.
+  This miniapp only contains the B-spline and polynomial functional form, since it is the most widely used.
   The QMCPACK distribution contains other functional forms.
  */
 

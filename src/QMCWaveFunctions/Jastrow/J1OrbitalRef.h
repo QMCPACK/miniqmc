@@ -9,17 +9,14 @@
 // File created by: Jeongnim Kim, jeongnim.kim@intel.com, Intel Corp.
 //////////////////////////////////////////////////////////////////////////////////////
 // -*- C++ -*-
-#ifndef QMCPLUSPLUS_ONEBODYJASTROW_OPTIMIZED_SOA_H
-#define QMCPLUSPLUS_ONEBODYJASTROW_OPTIMIZED_SOA_H
+#ifndef QMCPLUSPLUS_ONEBODYJASTROW_REF_H
+#define QMCPLUSPLUS_ONEBODYJASTROW_REF_H
 #include "Configuration.h"
 #include "QMCWaveFunctions/OrbitalBase.h"
-#include <simd/allocator.hpp>
-#include <simd/algorithm.hpp>
-#include  <map>
 #include  <numeric>
 
 /*!
- * @file J1OrbitalSoA.h
+ * @file J1OrbitalRef.h
  */
 
 namespace qmcplusplus
@@ -29,7 +26,7 @@ namespace qmcplusplus
  *  @brief Specialization for one-body Jastrow function using multiple functors
  */
 template<class FT>
-struct  J1OrbitalSoA : public OrbitalBase
+struct  J1OrbitalRef : public OrbitalBase
 {
   ///alias FuncType
   using FuncType=FT;
@@ -65,16 +62,16 @@ struct  J1OrbitalSoA : public OrbitalBase
   ///Container for \f$F[ig*NumGroups+jg]\f$
   std::vector<FT*> F;
 
-  J1OrbitalSoA(const ParticleSet& ions, ParticleSet& els) : Ions(ions),TaskID(0)
+  J1OrbitalRef(const ParticleSet& ions, ParticleSet& els) : Ions(ions),TaskID(0)
   {
     initalize(els);
     myTableID=els.addTable(ions,DT_SOA);
-    OrbitalName = "J1OrbitalSoA";
+    OrbitalName = "J1OrbitalRef";
   }
 
-  J1OrbitalSoA(const J1OrbitalSoA& rhs)=delete;
+  J1OrbitalRef(const J1OrbitalRef& rhs)=delete;
 
-  ~J1OrbitalSoA() 
+  ~J1OrbitalRef() 
   { 
     for(int i=0; i<F.size(); ++i)
       if(F[i] != nullptr) delete F[i];
@@ -118,7 +115,7 @@ struct  J1OrbitalSoA : public OrbitalBase
     for(int iat=0; iat<n; ++iat)
     {
       computeU3(P,iat,d_ie.Distances[iat]);
-      LogValue-=Vat[iat]=simd::accumulate_n(U.data(),Nions,valT());
+      LogValue-=Vat[iat]=std::accumulate(U.begin(),U.begin()+Nions,valT());
       Lap[iat]=accumulateGL(dU.data(),d2U.data(),d_ie.Displacements[iat],Grad[iat]);
       G[iat]+=Grad[iat];
       L[iat]-=Lap[iat];
@@ -152,7 +149,7 @@ struct  J1OrbitalSoA : public OrbitalBase
     {//need to compute per atom
       computeU3(P,iat,P.DistTables[myTableID]->Distances[iat]);
       Lap[iat]=accumulateGL(dU.data(),d2U.data(),P.DistTables[myTableID]->Displacements[iat],Grad[iat]);
-      Vat[iat]=simd::accumulate_n(U.data(),Nions,valT());
+      Vat[iat]=std::accumulate(U.begin(),U.begin()+Nions,valT());
     }
 
     return std::exp(Vat[iat]-curAt);
@@ -173,14 +170,12 @@ struct  J1OrbitalSoA : public OrbitalBase
   {
     valT lap(0);
     constexpr valT lapfac=OHMMS_DIM-RealType(1);
-//#pragma omp simd reduction(+:lap)
     for(int jat=0; jat<Nions; ++jat)
       lap+=d2u[jat]+lapfac*du[jat];
     for(int idim=0; idim<OHMMS_DIM; ++idim)
     {
       const valT* restrict dX=displ.data(idim);
       valT s=valT();
-//#pragma omp simd reduction(+:s)
       for(int jat=0; jat<Nions; ++jat) s+=du[jat]*dX[jat];
       grad[idim]=s;
     }
@@ -230,7 +225,7 @@ struct  J1OrbitalSoA : public OrbitalBase
   {
     computeU3(P,iat,P.DistTables[myTableID]->Distances[iat]);
     Lap[iat]=accumulateGL(dU.data(),d2U.data(),P.DistTables[myTableID]->Displacements[iat],Grad[iat]);
-    Vat[iat]=simd::accumulate_n(U.data(),Nions,valT());
+    Vat[iat]=std::accumulate(U.begin(),U.begin()+Nions,valT());
     return GradType(Grad[iat]);
   }
 
@@ -246,7 +241,7 @@ struct  J1OrbitalSoA : public OrbitalBase
 
     computeU3(P,iat,P.DistTables[myTableID]->Temp_r.data());
     curLap=accumulateGL(dU.data(),d2U.data(),P.DistTables[myTableID]->Temp_dr,curGrad);
-    curAt=simd::accumulate_n(U.data(),Nions,valT());
+    curAt=std::accumulate(U.begin(),U.begin()+Nions,valT());
     grad_iat+=curGrad;
     return std::exp(Vat[iat]-curAt);
   }

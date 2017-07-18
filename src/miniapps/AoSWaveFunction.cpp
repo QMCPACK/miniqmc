@@ -26,8 +26,8 @@ namespace qmcplusplus
   {
     FirstTime=true;
 
-    d_ee=DistanceTable::add(els,DT_AOS);
-    d_ie=DistanceTable::add(ions,els,DT_AOS);
+    d_ee=DistanceTable::add(els,DT_SOA);
+    d_ie=DistanceTable::add(ions,els,DT_SOA);
 
     int ip=omp_get_thread_num();
     double r2_cut=std::min(6.4,double(els.Lattice.WignerSeitzRadius));
@@ -43,19 +43,12 @@ namespace qmcplusplus
   void AoSWaveFunction::evaluateLog(ParticleSet& P)
   {
     constexpr valT czero(0);
-    P.G=czero;
-    P.L=czero;
     if(FirstTime)
     {
-      Buffer.rewind();
-      LogValue=J2->registerData(P,Buffer);
+      P.G=czero;
+      P.L=czero;
+      LogValue=J2->evaluateLog(P,P.G,P.L);
       FirstTime=false;
-    }
-    else
-    {
-      P.update();
-      Buffer.rewind();
-      J2->copyFromBuffer(P,Buffer);
     }
   }
 
@@ -78,16 +71,13 @@ namespace qmcplusplus
     J2->acceptMove(P,iat);
   }
 
-  void AoSWaveFunction::restore(int iat) 
-  {
-    J2->restore(iat);
-  }
+  void AoSWaveFunction::restore(int iat) { }
 
   void AoSWaveFunction::evaluateGL(ParticleSet& P)
   {
     constexpr valT czero(0);
     P.G=czero;
     P.L=czero;
-    J2->evaluateGL(P);
+    J2->evaluateGL(P,P.G,P.L);
   }
 }
