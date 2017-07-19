@@ -18,7 +18,7 @@
 #include <Particle/DistanceTable.h>
 #include <Particle/DistanceTableData.h>
 #include <OhmmsSoA/VectorSoaContainer.h>
-#include <Utilities/random.hpp>
+#include <Utilities/RandomGenerator.h>
 #include <miniapps/graphite.hpp>
 #include <miniapps/pseudo.hpp>
 #include <Utilities/Timer.h>

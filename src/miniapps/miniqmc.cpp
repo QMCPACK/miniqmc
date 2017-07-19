@@ -48,7 +48,7 @@
 #include <Particle/DistanceTable.h>
 #include <Utilities/PrimeNumberSet.h>
 #include <Utilities/Timer.h>
-#include <Utilities/random.hpp>
+#include <Utilities/RandomGenerator.h>
 #include <miniapps/graphite.hpp>
 #include <miniapps/pseudo.hpp>
 #include <miniapps/common.hpp>
