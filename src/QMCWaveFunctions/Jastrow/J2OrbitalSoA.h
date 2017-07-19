@@ -58,8 +58,6 @@ struct  J2OrbitalSoA : public OrbitalBase
   size_t N;
   ///number of groups of the target particleset
   size_t NumGroups;
-  ///task id
-  int TaskID;
   ///Used to compute correction
   bool FirstTime;
   ///diff value
@@ -81,7 +79,7 @@ struct  J2OrbitalSoA : public OrbitalBase
   ///Container for \f$F[ig*NumGroups+jg]\f$
   std::vector<FT*> F;
 
-  J2OrbitalSoA(ParticleSet& p, int tid);
+  J2OrbitalSoA(ParticleSet& p);
   J2OrbitalSoA(const J2OrbitalSoA& rhs)=delete;
   ~J2OrbitalSoA();
 
@@ -153,7 +151,7 @@ struct  J2OrbitalSoA : public OrbitalBase
 };
 
 template<typename FT>
-J2OrbitalSoA<FT>::J2OrbitalSoA(ParticleSet& p, int tid) : TaskID(tid)
+J2OrbitalSoA<FT>::J2OrbitalSoA(ParticleSet& p)
 {
   init(p);
   FirstTime =true;

@@ -99,7 +99,7 @@ int main(int argc, char** argv)
       case 'h':
         printf("[-g \"n0 n1 n2\"]\n");
         return 1;
-      case 'd'://down to AoS distance table -- broken most likely
+      case 'd'://down to reference implemenation
         useSoA=false;
         break;
       case 'g': //tiling1 tiling2 tiling3
@@ -164,7 +164,7 @@ int main(int argc, char** argv)
     if(useSoA)
       cout << "Using SoA distance table and Jastrow + einspilne " << endl;
     else
-      cout << "Using AoS distance table and Jastrow + einspilne of the original implementation " << endl;
+      cout << "Using SoA distance table and Jastrow + einspilne of the reference implementation " << endl;
   }
 
   double tInit = 0.0;
@@ -225,7 +225,7 @@ int main(int argc, char** argv)
     if(useSoA) 
       Jastrow=new SoAWaveFunction(ions,els);
     else
-      Jastrow=new AoSWaveFunction(ions,els);
+      Jastrow=new RefWaveFunction(ions,els);
 
     //set Rmax for ion-el distance table for PP
     Jastrow->setRmax(Rmax);

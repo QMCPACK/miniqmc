@@ -154,8 +154,8 @@ int main(int argc, char** argv)
     vector<RealType> ur(nels);
     random_th.generate_uniform(ur.data(),nels);
 
-    J2OrbitalSoA<BsplineFunctor<RealType> > J(els,ip);
-    J2OrbitalRef<BsplineFunctor<RealType> > J_ref(els_ref,ip);
+    J2OrbitalSoA<BsplineFunctor<RealType> > J(els);
+    J2OrbitalRef<BsplineFunctor<RealType> > J_ref(els_ref);
 
     RealType r2_cut=std::min(RealType(6.4),els.Lattice.WignerSeitzRadius);
     buildJ2(J,r2_cut);

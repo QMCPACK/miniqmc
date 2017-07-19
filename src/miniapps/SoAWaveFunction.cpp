@@ -34,7 +34,7 @@ namespace qmcplusplus
     double r2_cut=std::min(6.4,double(els.Lattice.WignerSeitzRadius));
 
     int ip=omp_get_thread_num();
-    J2=new J2OrbType(els,ip);
+    J2=new J2OrbType(els);
     buildJ2(*J2,r2_cut);
   }
 

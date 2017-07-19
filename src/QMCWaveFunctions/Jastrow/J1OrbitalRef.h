@@ -42,8 +42,6 @@ struct  J1OrbitalRef : public OrbitalBase
   int Nions;
   ///number of groups
   int NumGroups;
-  ///task id
-  int TaskID;
   ///reference to the sources (ions)
   const ParticleSet& Ions;
 
@@ -62,7 +60,7 @@ struct  J1OrbitalRef : public OrbitalBase
   ///Container for \f$F[ig*NumGroups+jg]\f$
   std::vector<FT*> F;
 
-  J1OrbitalRef(const ParticleSet& ions, ParticleSet& els) : Ions(ions),TaskID(0)
+  J1OrbitalRef(const ParticleSet& ions, ParticleSet& els) : Ions(ions)
   {
     initalize(els);
     myTableID=els.addTable(ions,DT_SOA);

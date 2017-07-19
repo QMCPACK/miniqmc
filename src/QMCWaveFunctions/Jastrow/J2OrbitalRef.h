@@ -56,8 +56,6 @@ struct  J2OrbitalRef : public OrbitalBase
   size_t N;
   ///number of groups of the target particleset
   size_t NumGroups;
-  ///task id
-  int TaskID;
   ///Used to compute correction
   bool FirstTime;
   ///diff value
@@ -79,7 +77,7 @@ struct  J2OrbitalRef : public OrbitalBase
   ///Container for \f$F[ig*NumGroups+jg]\f$
   std::vector<FT*> F;
 
-  J2OrbitalRef(ParticleSet& p, int tid);
+  J2OrbitalRef(ParticleSet& p);
   J2OrbitalRef(const J2OrbitalRef& rhs)=delete;
   ~J2OrbitalRef();
 
@@ -148,7 +146,7 @@ struct  J2OrbitalRef : public OrbitalBase
 };
 
 template<typename FT>
-J2OrbitalRef<FT>::J2OrbitalRef(ParticleSet& p, int tid) : TaskID(tid)
+J2OrbitalRef<FT>::J2OrbitalRef(ParticleSet& p)
 {
   init(p);
   FirstTime =true;

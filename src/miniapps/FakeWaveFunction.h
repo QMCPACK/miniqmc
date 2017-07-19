@@ -56,7 +56,7 @@ namespace qmcplusplus
     virtual void evaluateGL(ParticleSet& P)=0;
   };
 
-  struct AoSWaveFunction: public FakeWaveFunctionBase
+  struct RefWaveFunction: public FakeWaveFunctionBase
   {
 
     using J2OrbType=J2OrbitalRef<BsplineFunctor<valT> >;
@@ -64,8 +64,8 @@ namespace qmcplusplus
     J2OrbType* J2;
     PooledData<valT> Buffer;
 
-    AoSWaveFunction(ParticleSet& ions, ParticleSet& els);
-    ~AoSWaveFunction();
+    RefWaveFunction(ParticleSet& ions, ParticleSet& els);
+    ~RefWaveFunction();
     void evaluateLog(ParticleSet& P);
     posT evalGrad(ParticleSet& P, int iat);
     valT ratioGrad(ParticleSet& P, int iat, posT& grad);
