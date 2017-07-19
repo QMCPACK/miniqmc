@@ -24,7 +24,7 @@
 #include <complex>
 #include <OhmmsPETE/TinyVector.h>
 #include <OhmmsPETE/Tensor.h>
-#include <Lattice/Uniform3DGridLayout.h>
+#include "Lattice/CrystalLattice.h"
 #include <ParticleBase/ParticleAttrib.h>
 #include <Utilities/OhmmsInfo.h>
 #include <Message/Communicate.h>
@@ -95,7 +95,7 @@ struct QMCTraits
  */
 struct PtclOnLatticeTraits
 {
-  typedef Uniform3DGridLayout                          ParticleLayout_t;
+  typedef CrystalLattice<OHMMS_PRECISION,3,OHMMS_ORTHO>  ParticleLayout_t;
 
   typedef int                                          Index_t;
   typedef OHMMS_PRECISION_FULL                         Scalar_t;

@@ -87,7 +87,6 @@ int main(int argc, char** argv)
 
   ions.setName("ion0");
   ions.Lattice.BoxBConds=1;
-  ions.Lattice.LR_rc=5;
   tile_graphite(ions,tmat,scale);
   ions.RSoA=ions.R; //this needs to be handled internally
 
@@ -97,7 +96,6 @@ int main(int argc, char** argv)
 
   {//create up/down electrons
     els.Lattice.BoxBConds=1;   
-    els.Lattice.LR_rc=5;
     els.Lattice.set(ions.Lattice);
     vector<int> ud(2); ud[0]=nels/2; ud[1]=nels-ud[0];
     els.create(ud);

@@ -39,23 +39,6 @@ CrystalLattice<T,D,ORTHO>::CrystalLattice()
   reset();
 }
 
-//  template<class T, unsigned D,bool ORTHO>
-//    CrystalLattice<T,D,ORTHO>::CrystalLattice(const CrystalLattice<T,D>& rhs)
-//    {
-//      BoxBConds = rhs.BoxBConds;
-//      R = rhs.R;
-//      reset();
-//    }
-
-template<class T, unsigned D,bool ORTHO>
-void CrystalLattice<T,D,ORTHO>::set(int argc, char **argv)
-{
-  std::vector<std::string> opt;
-  for(int i=0; i<argc; i++)
-    opt.push_back(argv[i]);
-  set(opt);
-}
-
 template<class T, unsigned D,bool ORTHO>
 template<class TT>
 void CrystalLattice<T,D,ORTHO>::set(const Tensor<TT,D>& lat)

@@ -81,6 +81,7 @@ template<class T, unsigned D, bool ORTHO=false>
 struct CrystalLattice
 {
 
+  enum {IsOrthogonal = OHMMS_ORTHO};
   ///enumeration for the dimension of the lattice
   enum {DIM = D};
   //@{
@@ -363,21 +364,6 @@ struct CrystalLattice
    *@return a new CrystalLattice
    */
   CrystalLattice<T,D,ORTHO>& operator*=(T sc);
-
-  /** set the lattice vector from the command-line options
-   *@param argc the number of arguments
-   *@param argv the argument lists
-   *
-   *This function is to provide a simple interface for testing.
-   */
-  void set(int argc, char **argv);
-
-  /** set the lattice vector from the command-line options stored in a vector
-   *@param argv the argument lists
-   *
-   *This function is to provide a simple interface for testing.
-   */
-  void set(std::vector<std::string>& argv);
 
   /** set the lattice vector by an array containing DxD T
    *@param sc a scalar to scale the input lattice parameters
