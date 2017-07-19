@@ -15,7 +15,7 @@
  */
 #include <Configuration.h>
 #include <Particle/ParticleSet.h>
-#include <Utilities/random.hpp>
+#include <Utilities/RandomGenerator.h>
 #include <miniapps/graphite.hpp>
 #include <miniapps/pseudo.hpp>
 #include <Utilities/Timer.h>

@@ -16,7 +16,7 @@
 #include <Particle/ParticleSet.h>
 #include <Particle/MCWalkerConfiguration.h>
 #include <Utilities/PrimeNumberSet.h>
-#include <Utilities/random.hpp>
+#include <Utilities/RandomGenerator.h>
 #include <miniapps/graphite.hpp>
 #include <Utilities/Timer.h>
 #include <miniapps/common.hpp>
