@@ -138,16 +138,22 @@ public:
     return c_offset.size()-1;
   }
 
-  void print(std::ostream& os) const;
+  void print(std::ostream& os) const
+  {
+    os << "<unitcell>" << std::endl;
+    Base_t::print(os);
+    os << "<note>" << std::endl;
+    os << "\tLong-range breakup parameters:" << std::endl;
+    os << "\trc*kc = " << LR_dim_cutoff << "; rc = " << LR_rc << "; kc = " << LR_kc << "\n" << std::endl;
+    os << "</note>" << std::endl;
+    os << "</unitcell>" << std::endl;
+  }
 
   inline void update()
   {
     for(int i=0; i<u_bc.size(); i++)
       c_bc[i]=toCart(u_bc[i]);
   }
-
-  ///Set LR_rc = radius of smallest sphere inside box and kc=dim/rc
-  void SetLRCutoffs();
 
   /** set the lattice vector with a tensor
    *@param lat a tensor representing a supercell

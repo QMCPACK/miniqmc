@@ -146,11 +146,6 @@ ENDIF()
   #ENDIF(QMC_BUILD_STATIC)
 
 
-  IF(OHMMS_DIM MATCHES 3)
-    SET(PARTICLE Lattice/Uniform3DGridLayout.cpp)
-  ENDIF(OHMMS_DIM MATCHES 3)
-
-
   ####################################
   # create libqmcbase 
   ####################################

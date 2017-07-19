@@ -21,7 +21,6 @@
 /**@file CrystalLattice.cpp
  *@brief Member function definitions of CrystalLattice<T,D>, included by CrystalLattice.h
  */
-#include "Lattice/MakeCrystalLattice.h"
 #include "Lattice/LatticeAnalyzer.h"
 
 namespace qmcplusplus
@@ -56,13 +55,6 @@ void CrystalLattice<T,D,ORTHO>::set(int argc, char **argv)
     opt.push_back(argv[i]);
   set(opt);
 }
-
-template<class T, unsigned D,bool ORTHO>
-void CrystalLattice<T,D,ORTHO>::set(std::vector<std::string>& argv)
-{
-  makelattice<CrystalLattice<T,D,ORTHO> >::apply(*this, argv);
-}
-
 
 template<class T, unsigned D,bool ORTHO>
 template<class TT>
