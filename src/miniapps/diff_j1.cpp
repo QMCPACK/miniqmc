@@ -23,7 +23,7 @@
 #include <Utilities/Timer.h>
 #include <miniapps/common.hpp>
 #include <QMCWaveFunctions/Jastrow/BsplineFunctor.h>
-#include <QMCWaveFunctions/Jastrow/OneBodyJastrowOrbital.h>
+#include <QMCWaveFunctions/Jastrow/J1OrbitalRef.h>
 #include <QMCWaveFunctions/Jastrow/J1OrbitalSoA.h>
 #include <getopt.h>
 
@@ -120,12 +120,13 @@ int main(int argc, char** argv)
       els.RSoA=els.R;
     }
 
-    ParticleSet els_aos(els);
+    ParticleSet els_ref(els);
+    els_ref.RSoA=els_ref.R;
 
     //create tables
     DistanceTableData* d_ee=DistanceTable::add(els,DT_SOA);
 
-    DistanceTableData* d_ee_aos=DistanceTable::add(els_aos,DT_AOS);
+    DistanceTableData* d_ee_ref=DistanceTable::add(els_ref,DT_SOA);
 
     ParticlePos_t delta(nels);
 
@@ -136,7 +137,7 @@ int main(int argc, char** argv)
     random_th.generate_uniform(ur.data(),nels);
 
     J1OrbitalSoA<BsplineFunctor<RealType> > J(ions,els);
-    OneBodyJastrowOrbital<BsplineFunctor<RealType> > J_aos(ions,els_aos);
+    J1OrbitalRef<BsplineFunctor<RealType> > J_ref(ions,els_ref);
 
     DistanceTableData* d_ie=DistanceTable::add(ions,els,DT_SOA);
     d_ie->setRmax(Rmax);
@@ -145,8 +146,8 @@ int main(int argc, char** argv)
 
     buildJ1(J,r1_cut);
     cout << "Done with the J1 " << endl;
-    buildJ1(J_aos,r1_cut);
-    cout << "Done with the J1_aos " << endl;
+    buildJ1(J_ref,r1_cut);
+    cout << "Done with the J1_ref " << endl;
 
     constexpr RealType czero(0);
 
@@ -154,7 +155,7 @@ int main(int argc, char** argv)
 
     //compute distance tables
     els.update();
-    els_aos.update();
+    els_ref.update();
 
     //for(int mc=0; mc<nsteps; ++mc)
     {
@@ -162,18 +163,18 @@ int main(int argc, char** argv)
       els.L=czero;
       J.evaluateLog(els,els.G,els.L);
 
-      els_aos.G=czero;
-      els_aos.L=czero;
-      J_aos.evaluateLogAndStore(els_aos,els_aos.G,els_aos.L);
+      els_ref.G=czero;
+      els_ref.L=czero;
+      J_ref.evaluateLog(els_ref,els_ref.G,els_ref.L);
 
 
       cout << "Check values " << J.LogValue << " " << els.G[0] << " " << els.L[0] << endl;
-      cout << "evaluateLog::V Error = " << (J.LogValue-J_aos.LogValue)/nels << endl;
+      cout << "evaluateLog::V Error = " << (J.LogValue-J_ref.LogValue)/nels << endl;
       {
         double g_err=0.0;
         for(int iel=0; iel<nels; ++iel)
         {
-          PosType dr= (els.G[iel]-els_aos.G[iel]);
+          PosType dr= (els.G[iel]-els_ref.G[iel]);
           RealType d=sqrt(dot(dr,dr));
           g_err += d;
         }
@@ -183,7 +184,7 @@ int main(int argc, char** argv)
         double l_err=0.0;
         for(int iel=0; iel<nels; ++iel)
         {
-          l_err += abs(els.L[iel]-els_aos.L[iel]);
+          l_err += abs(els.L[iel]-els_ref.L[iel]);
         }
         cout << "evaluateLog::L Error = " << l_err/nels << endl;
       }
@@ -201,41 +202,41 @@ int main(int argc, char** argv)
         els.setActive(iel);
         PosType grad_soa=J.evalGrad(els,iel);
 
-        els_aos.setActive(iel);
-        PosType grad_aos=J_aos.evalGrad(els_aos,iel)-grad_soa;
+        els_ref.setActive(iel);
+        PosType grad_ref=J_ref.evalGrad(els_ref,iel)-grad_soa;
 
-        g_eval+=sqrt(dot(grad_aos,grad_aos));
+        g_eval+=sqrt(dot(grad_ref,grad_ref));
 
         PosType dr=sqrttau*delta[iel];
 
         bool good_soa=els.makeMoveAndCheck(iel,dr); 
-        bool good_aos=els_aos.makeMoveAndCheck(iel,dr); 
+        bool good_ref=els_ref.makeMoveAndCheck(iel,dr); 
 
         if(!good_soa) continue; //a bad move
 
         grad_soa=0;
-        grad_aos=0;
+        grad_ref=0;
         RealType r_soa=J.ratioGrad(els,iel,grad_soa);
-        RealType r_aos=J_aos.ratioGrad(els_aos,iel,grad_aos);
+        RealType r_ref=J_ref.ratioGrad(els_ref,iel,grad_ref);
 
-        grad_aos-=grad_soa;
+        grad_ref-=grad_soa;
 
-        g_ratio+=sqrt(dot(grad_aos,grad_aos));
-        r_ratio += abs(r_soa/r_aos-1);
+        g_ratio+=sqrt(dot(grad_ref,grad_ref));
+        r_ratio += abs(r_soa/r_ref-1);
 
-        if(Random() < r_aos)
+        if(Random() < r_ref)
         {
-          els.acceptMove(iel);
           J.acceptMove(els,iel);
+          els.acceptMove(iel);
 
-          els_aos.acceptMove(iel);
-          J_aos.acceptMove(els_aos,iel);
+          J_ref.acceptMove(els_ref,iel);
+          els_ref.acceptMove(iel);
           naccepted++;
         }
         else
         {
           els.rejectMove(iel);
-          els_aos.rejectMove(iel);
+          els_ref.rejectMove(iel);
         }
       }
       cout << "Accepted " << naccepted << "/" << nels << endl;
@@ -244,21 +245,21 @@ int main(int argc, char** argv)
       cout << "ratioGrad::Ratio Error = " << r_ratio/nels << endl;
 
       els.donePbyP();
-      els_aos.donePbyP();
+      els_ref.donePbyP();
 
       els.G=czero;
       els.L=czero;
       J.evaluateGL(els);
 
-      els_aos.G=czero;
-      els_aos.L=czero;
-      J_aos.evaluateGL(els_aos);
+      els_ref.G=czero;
+      els_ref.L=czero;
+      J_ref.evaluateGL(els_ref);
 
       {
         double g_err=0.0;
         for(int iel=0; iel<nels; ++iel)
         {
-          PosType dr= (els.G[iel]-els_aos.G[iel]);
+          PosType dr= (els.G[iel]-els_ref.G[iel]);
           RealType d=sqrt(dot(dr,dr));
           g_err += d;
         }
@@ -268,7 +269,7 @@ int main(int argc, char** argv)
         double l_err=0.0;
         for(int iel=0; iel<nels; ++iel)
         {
-          l_err += abs(els.L[iel]-els_aos.L[iel]);
+          l_err += abs(els.L[iel]-els_ref.L[iel]);
         }
         cout << "evaluteGL::L Error = " << l_err/nels << endl;
       }
@@ -293,10 +294,10 @@ int main(int argc, char** argv)
               RealType r_soa=J.ratio(els,iel);
               els.rejectMove(iel);
 
-              els_aos.makeMoveOnSphere(iel,delta[k]);
-              RealType r_aos=J_aos.ratio(els_aos,iel);
-              els_aos.rejectMove(iel);
-              r_ratio += abs(r_soa/r_aos-1);
+              els_ref.makeMoveOnSphere(iel,delta[k]);
+              RealType r_ref=J_ref.ratio(els_ref,iel);
+              els_ref.rejectMove(iel);
+              r_ratio += abs(r_soa/r_ref-1);
             }
           }
         }

@@ -16,78 +16,68 @@
 using namespace std;
 
 /*!
- * @file AoSWaveFunction.cpp
- * @brief Wavefunction based on Array of Structures (AoS) storage
+ * @file RefWaveFunction.cpp
+ * @brief Wavefunction based on reference implemenation
  */
 
 namespace qmcplusplus
 {
-  AoSWaveFunction::AoSWaveFunction(ParticleSet& ions, ParticleSet& els)
+  RefWaveFunction::RefWaveFunction(ParticleSet& ions, ParticleSet& els)
   {
     FirstTime=true;
 
-    d_ee=DistanceTable::add(els,DT_AOS);
-    d_ie=DistanceTable::add(ions,els,DT_AOS);
+    d_ee=DistanceTable::add(els,DT_SOA);
+    d_ie=DistanceTable::add(ions,els,DT_SOA);
 
     int ip=omp_get_thread_num();
     double r2_cut=std::min(6.4,double(els.Lattice.WignerSeitzRadius));
-    J2=new J2OrbType(els,ip);
+    J2=new J2OrbType(els);
     buildJ2(*J2,r2_cut);
   }
 
-  AoSWaveFunction::~AoSWaveFunction()
+  RefWaveFunction::~RefWaveFunction()
   {
     delete J2;
   }
 
-  void AoSWaveFunction::evaluateLog(ParticleSet& P)
+  void RefWaveFunction::evaluateLog(ParticleSet& P)
   {
     constexpr valT czero(0);
-    P.G=czero;
-    P.L=czero;
     if(FirstTime)
     {
-      Buffer.rewind();
-      LogValue=J2->registerData(P,Buffer);
+      P.G=czero;
+      P.L=czero;
+      LogValue=J2->evaluateLog(P,P.G,P.L);
       FirstTime=false;
-    }
-    else
-    {
-      P.update();
-      Buffer.rewind();
-      J2->copyFromBuffer(P,Buffer);
     }
   }
 
-  FakeWaveFunctionBase::posT AoSWaveFunction::evalGrad(ParticleSet& P, int iat)
+  FakeWaveFunctionBase::posT RefWaveFunction::evalGrad(ParticleSet& P, int iat)
   {
     return J2->evalGrad(P,iat);
   }
 
-  FakeWaveFunctionBase::valT AoSWaveFunction::ratioGrad(ParticleSet& P, int iat, posT& grad)
+  FakeWaveFunctionBase::valT RefWaveFunction::ratioGrad(ParticleSet& P, int iat, posT& grad)
   {
     return J2->ratioGrad(P,iat,grad);
   }
 
-  FakeWaveFunctionBase::valT AoSWaveFunction::ratio(ParticleSet& P, int iat)
+  FakeWaveFunctionBase::valT RefWaveFunction::ratio(ParticleSet& P, int iat)
   {
     return J2->ratio(P,iat);
   }
-  void AoSWaveFunction::acceptMove(ParticleSet& P, int iat)
+  void RefWaveFunction::acceptMove(ParticleSet& P, int iat)
   {
     J2->acceptMove(P,iat);
   }
 
-  void AoSWaveFunction::restore(int iat) 
-  {
-    J2->restore(iat);
-  }
+  void RefWaveFunction::restore(int iat) { }
 
-  void AoSWaveFunction::evaluateGL(ParticleSet& P)
+  void RefWaveFunction::evaluateGL(ParticleSet& P)
   {
     constexpr valT czero(0);
     P.G=czero;
     P.L=czero;
-    J2->evaluateGL(P);
+    J2->evaluateGL(P,P.G,P.L);
   }
 }
