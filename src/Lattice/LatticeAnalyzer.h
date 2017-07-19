@@ -144,43 +144,6 @@ struct LatticeAnalyzer<T,3>
     return scr;
   }
 
-  inline void makeNextCells(const Tensor_t& lat, std::vector<SingleParticlePos_t>& nextcells)
-  {
-    int ic=0;
-    if(mySC == SUPERCELL_BULK)
-    {
-      nextcells.resize(26);
-      for(int i=-1; i<=1; ++i)
-        for(int j=-1; j<=1; ++j)
-          for(int k=-1; k<=1; ++k)
-          {
-            if(!(i || j || k ))
-              continue;//exclude zero
-            SingleParticlePos_t u(i,j,k);
-            nextcells[ic++]=DotProduct<SingleParticlePos_t,Tensor_t,false>::apply(u,lat);
-          }
-    }
-    else if(mySC == SUPERCELL_SLAB)
-    {
-      nextcells.resize(8);
-      int k=0;
-      for(int i=-1; i<=1; ++i)
-        for(int j=-1; j<=1; ++j)
-          if(i||j)
-          {
-            SingleParticlePos_t u(i,j,k);
-            nextcells[ic++]=DotProduct<SingleParticlePos_t,Tensor_t,false>::apply(u,lat);
-          }
-    }
-    else if(mySC == SUPERCELL_WIRE)
-    {
-      nextcells.resize(2);
-      SingleParticlePos_t um(-1,0,0);
-      nextcells[ic++]=DotProduct<SingleParticlePos_t,Tensor_t,false>::apply(um,lat);
-      SingleParticlePos_t up(1,0,0);
-      nextcells[ic++]=DotProduct<SingleParticlePos_t,Tensor_t,false>::apply(up,lat);
-    }
-  }
 };
 
 template<typename T>

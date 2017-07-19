@@ -344,18 +344,8 @@ public:
   void clearDistanceTables();
   void resizeSphere(int nc);
 
-  void convert(const ParticlePos_t& pin, ParticlePos_t& pout);
-  void convert2Unit(const ParticlePos_t& pin, ParticlePos_t& pout);
-  void convert2Cart(const ParticlePos_t& pin, ParticlePos_t& pout);
   void convert2Unit(ParticlePos_t& pout);
   void convert2Cart(ParticlePos_t& pout);
-  void convert2UnitInBox(const ParticlePos_t& pint, ParticlePos_t& pout);
-  void convert2CartInBox(const ParticlePos_t& pint, ParticlePos_t& pout);
-
-  void applyBC(const ParticlePos_t& pin, ParticlePos_t& pout);
-  void applyBC(ParticlePos_t& pos);
-  void applyBC(const ParticlePos_t& pin, ParticlePos_t& pout, int first, int last);
-  void applyMinimumImage(ParticlePos_t& pinout);
 
   /** load a Walker_t to the current ParticleSet
    * @param awalker the reference to the walker to be loaded

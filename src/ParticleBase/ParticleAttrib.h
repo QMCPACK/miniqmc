@@ -64,8 +64,6 @@ public:
 
 }
 
-#include "ParticleBase/ParticleAttrib.cpp"
-
 #endif // OHMMS_PARTICLEATTRIB_PEPE_H
 
 

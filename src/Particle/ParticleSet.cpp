@@ -686,7 +686,6 @@ void ParticleSet::loadWalker(Walker_t* awalker)
 void ParticleSet::saveWalker(Walker_t& awalker)
 {
   awalker.R=R;
-  //PAOps<RealType,OHMMS_DIM>::copy(G,awalker.Drift);
   //awalker.DataSet.rewind();
 }
 

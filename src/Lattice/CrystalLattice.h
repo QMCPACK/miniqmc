@@ -142,8 +142,6 @@ struct CrystalLattice
   //@}
   //angles between the two lattice vectors
   SingleParticlePos_t ABC;
-  //save the lattice constant of neighbor cells
-  std::vector<SingleParticlePos_t> NextUnitCells;
 
   ///default constructor, assign a huge supercell
   CrystalLattice();
@@ -173,47 +171,13 @@ struct CrystalLattice
     return Gv[i];
   }
 
-  //inline T calcWignerSeitzRadius(TinyVector<SingleParticlePos_t,2> a) const
-  //{
-  //  T rMin = 1.0e50;
-  //  for (int i=-1; i<=1; i++)
-  //    for (int j=-1; j<=1; j++)
-  //      if ((i!=0) || (j!=0)) {
-  //        SingleParticlePos_t L = ((double)i * a[0] +
-  //      			   (double)j * a[1]);
-  //        double dist = 0.5*std::abs(dot(L,L));
-  //        rMin = std::min(rMin, dist);
-  //      }
-  //  return rMin;
-  //}
-  //inline T calcWignerSeitzRadius(TinyVector<SingleParticlePos_t,3> a) const
-  //{
-  //  T rMin = 1.0e50;
-  //  for (int i=-1; i<=1; i++)
-  //    for (int j=-1; j<=1; j++)
-  //      for (int k=-1; k<=1; k++)
-  //        if ((i!=0) || (j!=0) || (k!=0)) {
-  //          SingleParticlePos_t L = ((double)i * a[0] +
-  //      			     (double)j * a[1] +
-  //      			     (double)k * a[2]);
-  //          double dist = 0.5*std::sqrt(dot(L,L));
-  //          rMin = std::min(rMin, dist);
-  //        }
-  //  return rMin;
-  //}
-
-
   /** Convert a cartesian vector to a unit vector.
    * Boundary conditions are not applied.
    */
   template<class T1>
   inline SingleParticlePos_t toUnit(const TinyVector<T1,D> &r) const
   {
-#ifdef OHMMS_LATTICEOPERATORS_H
-    return DotProduct<TinyVector<T1,D>,Tensor<T,D>,ORTHO>::apply(r,G);
-#else
     return dot(r,G);
-#endif
   }
 
   template<class T1>
@@ -235,11 +199,7 @@ struct CrystalLattice
   template<class T1>
   inline SingleParticlePos_t toCart(const TinyVector<T1,D> &c) const
   {
-#ifdef OHMMS_LATTICEOPERATORS_H
-    return DotProduct<TinyVector<T1,D>,Tensor<T,D>,ORTHO>::apply(c,R);
-#else
     return dot(c,R);
-#endif
   }
 
   inline bool isValid(const TinyVector<T,D>& u) const
@@ -291,11 +251,7 @@ struct CrystalLattice
   inline T Dot(const SingleParticlePos_t &ra,
                const SingleParticlePos_t &rb) const
   {
-#ifdef OHMMS_LATTICEOPERATORS_H
-    return CartesianNorm2<TinyVector<T,D>,Tensor<T,D>,ORTHO>::apply(ra,M,rb);
-#else
     return dot(ra,dot(M,rb));
-#endif
   }
 
   /** conversion of a reciprocal-vector
@@ -304,11 +260,7 @@ struct CrystalLattice
   */
   inline SingleParticlePos_t k_cart(const SingleParticlePos_t& kin) const
   {
-#ifdef OHMMS_LATTICEOPERATORS_H
-    return TWOPI*DotProduct<SingleParticlePos_t,Tensor_t,ORTHO>::apply(G,kin);
-#else
     return TWOPI*dot(G,kin);
-#endif
   }
 
   /** conversion of a caresian reciprocal-vector to unit k-vector
@@ -317,11 +269,7 @@ struct CrystalLattice
   */
   inline SingleParticlePos_t k_unit(const SingleParticlePos_t& kin) const
   {
-#ifdef OHMMS_LATTICEOPERATORS_H
-    return DotProduct<SingleParticlePos_t,Tensor_t,ORTHO>::apply(R,kin)/TWOPI;
-#else
     return dot(R,kin)/TWOPI;
-#endif
   }
 
   /** evaluate \f$k^2\f$
@@ -331,11 +279,7 @@ struct CrystalLattice
    */
   inline T ksq(const SingleParticlePos_t& kin) const
   {
-#ifdef OHMMS_LATTICEOPERATORS_H
-    return CartesianNorm2<TinyVector<T,D>,Tensor<T,D>,ORTHO>::apply(kin,Mg,kin);
-#else
     return dot(kin,dot(Mg,kin));
-#endif
   }
 
   ///assignment operator
@@ -386,19 +330,6 @@ struct CrystalLattice
   /** Evaluate the reciprocal vectors, volume and metric tensor
    */
   void reset();
-
-//  //@{
-//  /* Copy functions with unit conversion*/
-//  template<class PA> void convert(const PA& pin, PA& pout) const;
-//  template<class PA> void convert2Unit(const PA& pin, PA& pout) const;
-//  template<class PA> void convert2Cart(const PA& pin, PA& pout) const;
-//  template<class PA> void convert2Unit(PA& pout) const;
-//  template<class PA> void convert2Cart(PA& pout) const;
-//  //@}
-//
-//  template<class PA> void applyBC(const PA& pin, PA& pout) const;
-//  template<class PA> void applyBC(PA& pos) const;
-//  template<class PA> void applyBC(const PA& pin, PA& pout, int first, int last) const;
 
   //! Print out CrystalLattice Data
   void print(std::ostream& , int level=2) const;
