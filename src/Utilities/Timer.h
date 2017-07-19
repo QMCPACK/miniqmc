@@ -14,7 +14,7 @@
 
 
 /** @file Timer.h
- * @brief Timer class using boost::timer
+ * @brief Timer class
  */
 #ifndef QMCPLUSPLUS_TIMER_H
 #define QMCPLUSPLUS_TIMER_H
