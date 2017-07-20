@@ -206,7 +206,7 @@ SET(BUILD_FCIQMC 0 CACHE BOOL "Build with FCIQMC")
 #SET(BUILD_SANDBOX 0)
 #SET(MPIP_PROFILE 0)
 SET(QMC_BUILD_STATIC 0 CACHE BOOL "Link to static libraries")
-SET(ENABLE_TIMERS 0 CACHE BOOL "Enable internal timers")
+SET(ENABLE_TIMERS 1 CACHE BOOL "Enable internal timers")
 
 ######################################################################
 # Performance-related macros

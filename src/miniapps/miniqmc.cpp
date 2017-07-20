@@ -47,7 +47,7 @@
 #include <Particle/ParticleSet.h>
 #include <Particle/DistanceTable.h>
 #include <Utilities/PrimeNumberSet.h>
-#include <Utilities/Timer.h>
+#include <Utilities/NewTimer.h>
 #include <Utilities/RandomGenerator.h>
 #include <miniapps/graphite.hpp>
 #include <miniapps/pseudo.hpp>
@@ -58,6 +58,29 @@
 
 using namespace std;
 using namespace qmcplusplus;
+
+enum MiniQMCTimers {
+  Timer_Total,
+  Timer_Diffusion,
+  Timer_ECP,
+  Timer_Value,
+  Timer_Grad,
+  Timer_Update,
+  Timer_Jastrow,
+  Timer_SPO
+};
+
+TimerNameList_t<MiniQMCTimers> MiniQMCTimerNames =
+{
+  {Timer_Total, "Total"},
+  {Timer_Diffusion, "Diffusion"},
+  {Timer_ECP, "Pseudopotential"},
+  {Timer_Value, "Value"},
+  {Timer_Grad, "Gradient"},
+  {Timer_Update, "Update"},
+  {Timer_Jastrow, "Jastrow"},
+  {Timer_SPO, "Single-Particle Orbital"},
+};
 
 int main(int argc, char** argv)
 {
@@ -89,6 +112,7 @@ int main(int argc, char** argv)
   bool useSoA=true;
 
   PrimeNumberSet<uint32_t> myPrimes;
+
 
   char *g_opt_arg;
   int opt;
@@ -126,6 +150,10 @@ int main(int argc, char** argv)
   Random.init(0,1,iseed);
   Tensor<int,3> tmat(na,0,0,0,nb,0,0,0,nc);
 
+  TimerManager.set_timer_threshold(timer_level_coarse);
+  TimerList_t Timers;
+  setup_timers(Timers, MiniQMCTimerNames, timer_level_coarse);
+
   //turn off output
   if(omp_get_max_threads()>1)
   {
@@ -133,9 +161,10 @@ int main(int argc, char** argv)
     OhmmsInfo::Warn->turnoff();
   }
 
+  int nthreads=omp_get_max_threads();
+
   int nptcl=0;
   int nknots_copy=0;
-  double t0=0.0,t1=0.0;
   OHMMS_PRECISION ratio=0.0;
 
   using spo_type=einspline_spo<OHMMS_PRECISION>;
@@ -148,44 +177,44 @@ int main(int argc, char** argv)
     OHMMS_PRECISION scale=1.0;
     lattice_b=tile_graphite(ions,tmat,scale);
     const int nions=ions.getTotalNum();
-    const int nels=2*nions;
-    tileSize=(tileSize>0)?tileSize:nels;
-    nTiles=nels/tileSize;
+    const int norb=2*nions;
+    const int nels=4*nions;
+    const int nels3=3*nels;
+    tileSize=(tileSize>0)?tileSize:norb;
+    nTiles=norb/tileSize;
+
+    const unsigned int SPO_coeff_size = (nx+3)*(ny+3)*(nz+3)*norb*sizeof(float);
+    double SPO_coeff_size_MB = SPO_coeff_size*1.0/1024/1024;
     if(ionode) {
-      cout << "\nNumber of orbitals/splines = " << nels << " and Tile size = " << tileSize << " and Number of tiles = " << nTiles << " and Iterations = " << nsteps << endl;
-    cout << "Rmax " << Rmax << endl;
+      cout << "\nNumber of orbitals/splines = " << norb << endl;
+      cout << "Tile size = " << tileSize << endl;
+      cout << "Number of tiles = " << nTiles << endl;
+      cout << "Number of electrons = " << nels << endl;
+      cout << "Iterations = " << nsteps << endl;
+      cout << "Rmax " << Rmax << endl;
+      cout << "OpenMP threads " << nthreads << endl;
+
+      cout << "\nSPO coefficients size = " <<  SPO_coeff_size;
+      cout <<   " bytes (" << SPO_coeff_size_MB << " MB)" << endl;
     }
-    spo_main.set(nx,ny,nz,nels,nTiles);
+    spo_main.set(nx,ny,nz,norb,nTiles);
     spo_main.Lattice.set(lattice_b);
   }
 
   if(ionode) 
   {
     if(useSoA)
-      cout << "Using SoA distance table and Jastrow + einspilne " << endl;
+      cout << "Using SoA distance table and Jastrow + einspline " << endl;
     else
-      cout << "Using SoA distance table and Jastrow + einspilne of the reference implementation " << endl;
+      cout << "Using SoA distance table and Jastrow + einspline of the reference implementation " << endl;
   }
 
-  double tInit = 0.0;
-  double vgh_t=0.0, val_t=0.0, d_t0=0, d_t1=0, j_t0=0, j_t1=0, j_t2, j_t3=0, j_t4=0, j_t5=0;
   double nspheremoves=0;
   double dNumVGHCalls = 0;
 
-  const int time_array_size=7;
-  int timeIterArray[time_array_size] = {1, 5, 10, 20, 30, 40, 50 }; // c++11 array.
-  double vgh_t_iter[time_array_size] = {0}; // c++11 array.
-  double val_t_iter[time_array_size] = {0}; // c++11 array.
-
-  double t_diffusion=0.0, t_pseudo=0.0;
-
-  Timer bigClock;
-  bigClock.restart();
-#pragma omp parallel reduction(+:t0,tInit,t_diffusion,t_pseudo)
+  Timers[Timer_Total]->start();
+#pragma omp parallel
   {
-    Timer clock, clock_mc;
-    clock.restart();
-
     ParticleSet ions, els;
     const OHMMS_PRECISION scale=1.0;
 
@@ -235,6 +264,9 @@ int main(int argc, char** argv)
 
     //this is the cutoff from the non-local PP
     const int nknots(ecp.size());
+
+    // For VMC, tau is large and should result in an acceptance ratio of roughly 50%
+    // For DMC, tau is small and should result in an acceptance ratio of 99%
     const RealType tau=2.0;
 
     ParticlePos_t delta(nels);
@@ -243,53 +275,65 @@ int main(int argc, char** argv)
 #pragma omp master
     nknots_copy = nknots;
 
-    RealType sqrttau=2.0;
+    RealType sqrttau=std::sqrt(tau);
     RealType accept=0.5;
 
     aligned_vector<RealType> ur(nels);
     random_th.generate_uniform(ur.data(),nels);
-
-    double vgh_t_loc_iter[time_array_size] = {0};
-    double v_t_loc_iter[time_array_size] = {0};
 
     constexpr RealType czero(0);
 
     els.update();
     Jastrow->evaluateLog(els);
 
-    double t_diffusion_loc=0.0, t_pseudo_loc=0.0;
-    double t_init_loc= clock.elapsed();
     int my_accepted=0;
-    clock.restart();
     for(int mc=0; mc<nsteps; ++mc)
     {
       Jastrow->evaluateLog(els);
 
-      clock_mc.restart();
+      Timers[Timer_Diffusion]->start();
       for(int l=0; l<nsubsteps; ++l)//drift-and-diffusion
       {
         random_th.generate_normal(&delta[0][0],nels3);
         for(int iel=0; iel<nels; ++iel)
         {
-          //compute G[iel] with the current position to make a move
+          // Operate on electron with index iel
+          // Compute gradient at the current position
+          Timers[Timer_Grad]->start();
+          Timers[Timer_Jastrow]->start();
           els.setActive(iel);
           PosType grad_now=Jastrow->evalGrad(els,iel);
+          Timers[Timer_Jastrow]->stop();
+          Timers[Timer_Grad]->stop();
 
-          //move iel el and compute the ratio
+          // Construct trial move
           PosType dr=sqrttau*delta[iel];
           bool isValid=els.makeMoveAndCheck(iel,dr); 
 
           if(!isValid) continue;
 
+          // Compute gradient at the trial position
+          Timers[Timer_Grad]->start();
+
+          Timers[Timer_Jastrow]->start();
           PosType grad_new;
           RealType j2_ratio=Jastrow->ratioGrad(els,iel,grad_new);
+          Timers[Timer_Jastrow]->stop();
 
+          Timers[Timer_SPO]->start();
           spo.evaluate_vgh(els.R[iel]);
+          Timers[Timer_SPO]->stop();
 
+          Timers[Timer_Grad]->stop();
+
+          // Accept/reject the trial move
           if(ur[iel]>accept) //MC
           { 
+            // Update position, and update temporary storage
+            Timers[Timer_Update]->start();
             els.acceptMove(iel);           
             Jastrow->acceptMove(els,iel);
+            Timers[Timer_Update]->stop();
             my_accepted++; 
           }
           else 
@@ -299,15 +343,17 @@ int main(int argc, char** argv)
           }
         } // iel
       } //sub branch
-      t_diffusion_loc+=clock_mc.elapsed();
+      Timers[Timer_Diffusion]->stop();
 
       els.donePbyP();
       Jastrow->evaluateGL(els);
 
+      // Compute NLPP energy using integral over spherical points
+
       ecp.randomize(rOnSphere); // pick random sphere
       const DistanceTableData* d_ie=Jastrow->d_ie;
 
-      clock_mc.restart();
+      Timers[Timer_ECP]->start();
       for(int iat=0; iat<nions; ++iat)
       {
         const auto centerP=ions.R[iat];
@@ -322,53 +368,36 @@ int main(int argc, char** argv)
             {
               PosType deltar(r*rOnSphere[k]-dr);
               els.makeMoveOnSphere(iel,deltar);
+              Timers[Timer_Value]->start();
+
+              Timers[Timer_SPO]->start();
               spo.evaluate_v(els.R[iel]);
+              Timers[Timer_SPO]->stop();
+
+              Timers[Timer_Jastrow]->start();
               Jastrow->ratio(els,iel);
+              Timers[Timer_Jastrow]->stop();
+
+              Timers[Timer_Value]->stop();
               els.rejectMove(iel);
             }
           }
         }
       }
-      t_pseudo_loc+=clock_mc.elapsed();
+      Timers[Timer_ECP]->stop();
     }
-
-    t0+=clock.elapsed();
-    t_pseudo += t_pseudo_loc;
-    t_diffusion += t_diffusion_loc;
-    tInit += t_init_loc;
 
     //cleanup
     delete Jastrow;
   } //end of omp parallel
+  Timers[Timer_Total]->stop();
 
-  int nthreads=omp_get_max_threads();
-  double omp_fac=1.0/nthreads;
-
-  double global_t[]={tInit*omp_fac,t0*omp_fac,t_diffusion*omp_fac,t_pseudo*omp_fac};
-  double global_t_max[]={0.0,0.0,0.0,0.0};
-
-  //MPI_Allreduce(global_t,global_t_max,4,MPI_DOUBLE,MPI_MAX,*mycomm);
 
   if(ionode)
   {
-    tInit      =global_t_max[0];
-    t0         =global_t_max[1];
-    t_diffusion=global_t_max[2];
-    t_pseudo   =global_t_max[3];
-    //const int nmpi=mycomm->size();
-    const int nmpi=1;
-    double FOM=nmpi*nsteps*nthreads/(t_diffusion+t_pseudo);
-
     cout << "================================== " << endl;
-    cout << "miniqmc Init " << tInit  << " Tcomp " << t0
-      << " diffusion_tot " << t_diffusion << " pseudo_tot  " << t_pseudo << endl;
 
-    t_diffusion*=1.0/static_cast<double>(nsteps*nsubsteps);
-    t_pseudo   *=1.0/static_cast<double>(nsteps);
-    cout << "#per MC step steps " << nsteps << " substeps " << nsubsteps << endl;
-    cout << "diffusion_mc " << t_diffusion << " pseudo_mc  " << t_pseudo << endl;
-    cout << "#   N MPI OMP FOM  " << endl;
-    cout << "FOM " << nptcl << " " << nmpi << " " << nthreads << " " << FOM << endl << endl;
+    TimerManager.print();
   }
 
   return 0;
