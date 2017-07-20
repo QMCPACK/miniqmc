@@ -249,15 +249,15 @@ int main(int argc, char** argv)
       els.convert2Cart(els.R); // convert to Cartiesian
     }
 
-    FakeWaveFunctionBase* Jastrow;
+    FakeWaveFunctionBase* WaveFunction;
 
     if(useSoA) 
-      Jastrow=new SoAWaveFunction(ions,els);
+      WaveFunction=new SoAWaveFunction(ions,els);
     else
-      Jastrow=new RefWaveFunction(ions,els);
+      WaveFunction=new RefWaveFunction(ions,els);
 
     //set Rmax for ion-el distance table for PP
-    Jastrow->setRmax(Rmax);
+    WaveFunction->setRmax(Rmax);
 
     //create pseudopp
     NonLocalPP<OHMMS_PRECISION> ecp(random_th);
@@ -284,12 +284,12 @@ int main(int argc, char** argv)
     constexpr RealType czero(0);
 
     els.update();
-    Jastrow->evaluateLog(els);
+    WaveFunction->evaluateLog(els);
 
     int my_accepted=0;
     for(int mc=0; mc<nsteps; ++mc)
     {
-      Jastrow->evaluateLog(els);
+      WaveFunction->evaluateLog(els);
 
       Timers[Timer_Diffusion]->start();
       for(int l=0; l<nsubsteps; ++l)//drift-and-diffusion
@@ -302,7 +302,7 @@ int main(int argc, char** argv)
           Timers[Timer_Grad]->start();
           Timers[Timer_Jastrow]->start();
           els.setActive(iel);
-          PosType grad_now=Jastrow->evalGrad(els,iel);
+          PosType grad_now=WaveFunction->evalGrad(els,iel);
           Timers[Timer_Jastrow]->stop();
           Timers[Timer_Grad]->stop();
 
@@ -317,7 +317,7 @@ int main(int argc, char** argv)
 
           Timers[Timer_Jastrow]->start();
           PosType grad_new;
-          RealType j2_ratio=Jastrow->ratioGrad(els,iel,grad_new);
+          RealType j2_ratio=WaveFunction->ratioGrad(els,iel,grad_new);
           Timers[Timer_Jastrow]->stop();
 
           Timers[Timer_SPO]->start();
@@ -332,26 +332,26 @@ int main(int argc, char** argv)
             // Update position, and update temporary storage
             Timers[Timer_Update]->start();
             els.acceptMove(iel);           
-            Jastrow->acceptMove(els,iel);
+            WaveFunction->acceptMove(els,iel);
             Timers[Timer_Update]->stop();
             my_accepted++; 
           }
           else 
           { 
             els.rejectMove(iel); 
-            Jastrow->restore(iel);
+            WaveFunction->restore(iel);
           }
         } // iel
       } //sub branch
       Timers[Timer_Diffusion]->stop();
 
       els.donePbyP();
-      Jastrow->evaluateGL(els);
+      WaveFunction->evaluateGL(els);
 
       // Compute NLPP energy using integral over spherical points
 
       ecp.randomize(rOnSphere); // pick random sphere
-      const DistanceTableData* d_ie=Jastrow->d_ie;
+      const DistanceTableData* d_ie=WaveFunction->d_ie;
 
       Timers[Timer_ECP]->start();
       for(int iat=0; iat<nions; ++iat)
@@ -375,7 +375,7 @@ int main(int argc, char** argv)
               Timers[Timer_SPO]->stop();
 
               Timers[Timer_Jastrow]->start();
-              Jastrow->ratio(els,iel);
+              WaveFunction->ratio(els,iel);
               Timers[Timer_Jastrow]->stop();
 
               Timers[Timer_Value]->stop();
@@ -388,7 +388,7 @@ int main(int argc, char** argv)
     }
 
     //cleanup
-    delete Jastrow;
+    delete WaveFunction;
   } //end of omp parallel
   Timers[Timer_Total]->stop();
 
