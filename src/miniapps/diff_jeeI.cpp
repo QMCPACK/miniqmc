@@ -177,7 +177,7 @@ int main(int argc, char** argv)
       J_ref.evaluateLog(els_ref,els_ref.G,els_ref.L);
 
       cout << "Check values " << J.LogValue << " " << els.G[12] << " " << els.L[12] << endl;
-      cout << "Check values ref " << J_ref.LogValue << " " << els_ref.G[12] << " " << els_ref.L[12] << endl;
+      cout << "Check values ref " << J_ref.LogValue << " " << els_ref.G[12] << " " << els_ref.L[12] << endl << endl;
       cout << "evaluateLog::V Error = " << (J.LogValue-J_ref.LogValue)/nels<< endl;
       evaluateLog_v_err+=std::fabs((J.LogValue-J_ref.LogValue)/nels);
       {
