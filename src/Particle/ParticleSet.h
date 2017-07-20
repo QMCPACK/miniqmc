@@ -26,7 +26,6 @@
 #include <Particle/Walker.h>
 #include <Utilities/SpeciesSet.h>
 #include <Utilities/PooledData.h>
-#include <OhmmsPETE/OhmmsArray.h>
 #include <OhmmsSoA/Container.h>
 
 namespace qmcplusplus
@@ -151,16 +150,6 @@ public:
 
   ///spherical-grids for non-local PP
   std::vector<ParticlePos_t*> Sphere;
-
-  ///Particle density in G-space for MPC interaction
-  std::vector<TinyVector<int,OHMMS_DIM> > DensityReducedGvecs;
-  std::vector<ComplexType>   Density_G;
-  Array<RealType,OHMMS_DIM> Density_r;
-
-  /// DFT potential
-  std::vector<TinyVector<int,OHMMS_DIM> > VHXCReducedGvecs;
-  std::vector<ComplexType>   VHXC_G[2];
-  Array<RealType,OHMMS_DIM> VHXC_r[2];
 
   ///clones of this object: used by the thread pool
   std::vector<ParticleSet*> myClones;
