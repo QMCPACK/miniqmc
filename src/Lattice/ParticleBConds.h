@@ -23,17 +23,6 @@
 
 namespace qmcplusplus
 {
-template<int N,unsigned D>
-struct PowerOfN
-{
-  enum {value=N*PowerOfN<N,D-1>::value};
-};
-
-template<int N>
-struct PowerOfN<N,0>
-{
-  enum {value=1};
-};
 
 /** generic Boundary condition handler
  *
@@ -58,15 +47,16 @@ struct PowerOfN<N,0>
  * Specialization of DTD_BConds should implement
  * - apply_bc(TinyVector<T,D>& displ): apply BC on displ, Cartesian displacement vector, and returns |displ|^2
  * - apply_bc(dr,r,rinv): apply BC on displacements
- * - apply_bc(dr,r): apply BC without inversion calculations
- * - evaluate_rsq(dr,rr,n): apply BC on dr, and compute r*r
  */
 template<class T, unsigned D, int SC>
 struct DTD_BConds
 {
 
   /** constructor: doing nothing */
-  inline DTD_BConds(const CrystalLattice<T,D>& lat) {}
+  inline DTD_BConds(const CrystalLattice<T,D>& lat)
+  {
+    APP_ABORT("qmcplusplus::DTD_BConds default DTD_BConds is not allowed in miniQMC!\n");
+  }
 
   /** apply BC on displ and return |displ|^2
    * @param displ a displacement vector in the Cartesian coordinate
@@ -95,18 +85,6 @@ struct DTD_BConds
     simd::inv(&r[0],&rinv[0],n);
   }
 
-  inline void apply_bc(std::vector<TinyVector<T,D> >& dr
-                       , std::vector<T>& r) const
-  {
-    for(int i=0; i<dr.size(); ++i)
-      r[i]=std::sqrt(dot(dr[i],dr[i]));
-  }
-
-  inline void evaluate_rsquared(TinyVector<T,D>* restrict dr, T* restrict rr, int n)
-  {
-    for(int i=0; i<n; ++i)
-      rr[i]=dot(dr[i],dr[i]);
-  }
 };
 
 }

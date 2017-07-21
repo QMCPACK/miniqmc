@@ -13,15 +13,11 @@
 //
 // File created by: Jeongnim Kim, jeongnim.kim@gmail.com, University of Illinois at Urbana-Champaign
 //////////////////////////////////////////////////////////////////////////////////////
-    
-    
-
 
 
 /**@file CrystalLattice.cpp
  *@brief Member function definitions of CrystalLattice<T,D>, included by CrystalLattice.h
  */
-#include "Lattice/MakeCrystalLattice.h"
 #include "Lattice/LatticeAnalyzer.h"
 
 namespace qmcplusplus
@@ -39,30 +35,6 @@ CrystalLattice<T,D,ORTHO>::CrystalLattice()
   Volume = 1;
   reset();
 }
-
-//  template<class T, unsigned D,bool ORTHO>
-//    CrystalLattice<T,D,ORTHO>::CrystalLattice(const CrystalLattice<T,D>& rhs)
-//    {
-//      BoxBConds = rhs.BoxBConds;
-//      R = rhs.R;
-//      reset();
-//    }
-
-template<class T, unsigned D,bool ORTHO>
-void CrystalLattice<T,D,ORTHO>::set(int argc, char **argv)
-{
-  std::vector<std::string> opt;
-  for(int i=0; i<argc; i++)
-    opt.push_back(argv[i]);
-  set(opt);
-}
-
-template<class T, unsigned D,bool ORTHO>
-void CrystalLattice<T,D,ORTHO>::set(std::vector<std::string>& argv)
-{
-  makelattice<CrystalLattice<T,D,ORTHO> >::apply(*this, argv);
-}
-
 
 template<class T, unsigned D,bool ORTHO>
 template<class TT>
@@ -142,46 +114,7 @@ void CrystalLattice<T,D,ORTHO>::reset()
        WignerSeitzRadius-SimulationCellRadius <= WignerSeitzRadius*std::numeric_limits<float>::epsilon()*2 )
     WignerSeitzRadius = SimulationCellRadius;
   CellRadiusSq=SimulationCellRadius*SimulationCellRadius;
-  if(SuperCellEnum)
-    ldesc.makeNextCells(R,NextUnitCells);
-  //SimulationCellRadius = 1.0e50;
-  //// Compute simulation cell radius
-  //for (int i=0; i<D; i++) {
-  //  SingleParticlePos_t A = a(i);
-  //  SingleParticlePos_t B = a((i+1)%3);
-  //  SingleParticlePos_t C = a((i+2)%3);
-  //  SingleParticlePos_t BxC = cross(B,C);
-  //  T dist = 0.5*std::abs(dot(A,BxC))/std::sqrt(dot(BxC,BxC));
-  //  SimulationCellRadius = std::min(SimulationCellRadius, dist);
-  //}
 }
-
-//  /*! \fn  CrystalLattice<T,D>::operator=(const CrystalLattice<T,D>& rhs)
-//   *  \param rhs a CrystalLattice to be copied
-//   *  \brief Copy all the properties of the lattice,
-//   *   including boundary conditions and grid paritions.
-//   */
-//  template<class T, unsigned D,bool ORTHO>
-//    CrystalLattice<T,D,ORTHO>&
-//    CrystalLattice<T,D,ORTHO>::operator=(const CrystalLattice<T,D,ORTHO>& rhs)
-//    {
-//      BoxBConds = rhs.BoxBConds;
-//      R = rhs.R;
-//      reset();
-//      return *this;
-//    }
-//
-///*! \fn  CrystalLattice<T,D>::operator=(const Tensor<T,D>& rhs)
-// *  \param rhs a Tensor to be copied
-// */
-//template<class T, unsigned D,bool ORTHO>
-//  CrystalLattice<T,D,ORTHO>&
-//  CrystalLattice<T,D,ORTHO>::operator=(const Tensor<T,D>& rhs)
-//  {
-//    R = rhs;
-//    reset();
-//    return *this;
-//  }
 
 /*! \fn  CrystalLattice<T,D>::operator*=(T sc)
  *  \param sc A scaling factor.

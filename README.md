@@ -1,13 +1,13 @@
 # miniqmc - QMCPACK Miniapp
 
-## MUST be done before OpenMP and Kokkos assessment:
+## MUST be done before OpenMP and Kokkos assessment (~ 4 Aug 2017):
 1. Jastrow 2-body kernel, distance tables kernel(s), 1D bspline.
 2. 3D bspline kernel.
 3. easy to use self-checking capability (compile-time switch okay, runtime is nicer)
 4. timings for the individual kernels (not necessarily nested, not switchable - always on)
 5. shrink the codebase as much as possible - ONLY code necessary to run the kernels of interest
 
-## VERY GOOD to have before OpenMP and Kokkos assessment and required in v1 release.
+## VERY GOOD to have before OpenMP and Kokkos assessment and required in v1 release (end of FY17).
 6. inverse update kernel
 7. Jastrow 1-body, 3-body(e-e-I) kernels
 8. convert cmake->make build system

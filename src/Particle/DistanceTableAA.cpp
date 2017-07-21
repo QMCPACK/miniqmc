@@ -41,122 +41,21 @@ DistanceTableData* createDistanceTable(ParticleSet& s, int dt_type)
   o << "  Distance table for AA: source/target = " << s.getName() << " useSoA =" << useSoA << "\n";
   if(sc == SUPERCELL_BULK)
   {
-    if(s.Lattice.DiagonalOnly)
-    {
-      if(useSoA)
-      {
-        o << "    PBC=bulk Orthorhombic=yes  Using SoaDistanceTableAA<T,D,PPPO> of SoA layout " << PPPO << std::endl;
-        dt = new SoaDistanceTableAA<RealType,DIM,PPPO+SOA_OFFSET>(s);
-      }
-      else
-      {
-        o << "    PBC=bulk Orthorhombic=yes  Using SymmetricDTD<T,DIM,PPPO> " << PPPO << std::endl; 
-        dt = new SymmetricDTD<RealType,DIM,PPPO>(s,s);
-      }
-    }
-    else
-    {
-      o << "    PBC=bulk Orthorhombic=no";
-      if(s.Lattice.WignerSeitzRadius>s.Lattice.SimulationCellRadius)
-      {
-        if(useSoA)
-        {
-          o << "  Using SoaDistanceTableAA<T,D,PPPG> of SoA layout " << PPPG << std::endl;
-          dt = new SoaDistanceTableAA<RealType,DIM,PPPG+SOA_OFFSET>(s);
-        }
-        else
-        {
-          o << "  Using SymmetricDTD<T,D,PPPG> " << PPPG << std::endl;
-          dt = new  SymmetricDTD<RealType,DIM,PPPG>(s,s);
-        }
-      }
-      else
-      {
-        if(useSoA)
-        {
-          o << "  Using SoaDistanceTableAA<T,D,PPPS> of SoA layout " << PPPS << std::endl;
-          dt = new SoaDistanceTableAA<RealType,DIM,PPPS+SOA_OFFSET>(s);
-        }
-        else
-        {
-          o << "  Using SymmetricDTD<T,D,PPPS> " << PPPS << std::endl;
-          dt = new  SymmetricDTD<RealType,DIM,PPPS>(s,s);
-        }
-      }
-      o << "\n    Setting Rmax = " << s.Lattice.SimulationCellRadius;
-    }
-  }
-  else if(sc == SUPERCELL_SLAB)
-  {
-    if(s.Lattice.DiagonalOnly)
-    {
-      if(useSoA)
-      {
-        o << "    PBC=slab Orthorhombic=yes  Using SoaDistanceTableAA<T,D,PPNO> of SoA layout " << PPNO << std::endl;
-        dt = new SoaDistanceTableAA<RealType,DIM,PPNO+SOA_OFFSET>(s);
-      }
-      else
-      {
-        o << "    PBC=slab Orthorhombic=yes  Using SymmetricDTD<T,D,PPNO> " << PPNO << std::endl;
-        dt = new SymmetricDTD<RealType,DIM,PPNO>(s,s);
-      }
-    }
-    else
-    {
-      o << "    PBC=slab Orthorhombic=no";
-      if(s.Lattice.WignerSeitzRadius>s.Lattice.SimulationCellRadius)
-      {
-        if(useSoA)
-        {
-          o << "  Using SoaDistanceTableAA<T,D,PPNG> of SoA layout " << PPNG << std::endl;
-          dt = new SoaDistanceTableAA<RealType,DIM,PPNG+SOA_OFFSET>(s);
-        }
-        else
-        {
-          o << "  Using SymmetricDTD<T,D,PPNX> " << PPNX << std::endl;
-          dt = new SymmetricDTD<RealType,DIM,PPNX>(s,s);
-        }
-      }
-      else
-      {
-        if(useSoA)
-        {
-          o << "  Using SoaDistanceTableAA<T,D,PPNS> of SoA layout " << PPNS << std::endl;
-          dt = new SoaDistanceTableAA<RealType,DIM,PPNS+SOA_OFFSET>(s);
-        }
-        else
-        {
-          o << "  Using SymmetricDTD<T,D,PPNS> " << PPNS << std::endl;
-          dt = new SymmetricDTD<RealType,DIM,PPNS>(s,s);
-        }
-      }
-    }
-  }
-  else if(sc == SUPERCELL_WIRE)
-  {
     if(useSoA)
     {
-      o << "    PBC=wire Orthorhombic=NA  Using SoA layout\n";
-      dt = new SoaDistanceTableAA<RealType,DIM,SUPERCELL_WIRE+SOA_OFFSET>(s);
+      o << "  Using SoaDistanceTableAA<T,D,PPPG> of SoA layout " << PPPG << std::endl;
+      dt = new SoaDistanceTableAA<RealType,DIM,PPPG+SOA_OFFSET>(s);
     }
     else
     {
-      o << "    PBC=wire Orthorhombic=NA\n";
-      dt = new SymmetricDTD<RealType,DIM,SUPERCELL_WIRE>(s,s);
+      o << "  Using SymmetricDTD<T,D,PPPG> " << PPPG << std::endl;
+      dt = new  SymmetricDTD<RealType,DIM,PPPG>(s,s);
     }
+    o << "\n    Setting Rmax = " << s.Lattice.SimulationCellRadius;
   }
-  else  //open boundary condition
+  else
   {
-    if(useSoA)
-    {
-      o << "    PBC=open Orthorhombic=NA  Using SoA layout\n";
-      dt = new SoaDistanceTableAA<RealType,DIM,SUPERCELL_OPEN+SOA_OFFSET>(s);
-    }
-    else
-    {
-      o << "    PBC=open Orthorhombic=NA\n";
-      dt = new SymmetricDTD<RealType,DIM,SUPERCELL_OPEN>(s,s);
-    }
+    APP_ABORT("DistanceTableData::createDistanceTable Slab/Wire/Open boundary conditions are disabled in miniQMC!\n");
   }
 
   //set dt properties
@@ -166,10 +65,7 @@ DistanceTableData* createDistanceTable(ParticleSet& s, int dt_type)
   p << s.getName() << "_" << s.getName();
   dt->Name=p.str();//assign the table name
 
-  if(sc != SUPERCELL_OPEN)
-    o << " Using bounding box/reduced coordinates with ";
-  else
-    o << " using Cartesian coordinates with ";
+  o << " using Cartesian coordinates";
   if(omp_get_thread_num()==0) 
   {
     app_log() << o.str() << std::endl;
