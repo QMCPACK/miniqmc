@@ -20,7 +20,6 @@
 #ifndef QMCPLUSPLUS_SINGLEPARTICLEORBITALSETBASE_H
 #define QMCPLUSPLUS_SINGLEPARTICLEORBITALSETBASE_H
 
-#include "OhmmsPETE/OhmmsArray.h"
 #include "Particle/ParticleSet.h"
 #include "QMCWaveFunctions/OrbitalSetTraits.h"
 
@@ -43,7 +42,6 @@ public:
   typedef OrbitalSetTraits<ValueType>::HessVector_t  HessVector_t;
   typedef OrbitalSetTraits<ValueType>::HessMatrix_t  HessMatrix_t;
   typedef OrbitalSetTraits<ValueType>::HessType      HessType;
-  typedef Array<HessType,OHMMS_DIM>                  HessArray_t;
   typedef OrbitalSetTraits<ValueType>::GradHessType  GGGType;
   typedef OrbitalSetTraits<ValueType>::GradHessVector_t GGGVector_t;
   typedef OrbitalSetTraits<ValueType>::GradHessMatrix_t GGGMatrix_t;
