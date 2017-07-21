@@ -28,26 +28,33 @@ cmake -DCMAKE_C_COMPILER="mpicc" -DCMAKE_CXX_COMPILER="mpicxx" -DCMAKE_CXX_FLAGS
 
 make
 
-echo 
+echo
 echo checking J1
 echo ----------------------------------------------------
-echo 
+echo
 
 ./bin/diff_j1
 
-echo 
+echo
 echo checking J2
 echo ----------------------------------------------------
-echo 
+echo
 
 ./bin/diff_j2
 
-echo 
+echo
 echo checking JeeI
 echo ----------------------------------------------------
-echo 
+echo
 
 ./bin/diff_jeeI
+
+echo
+echo checking Spline SPO
+echo ----------------------------------------------------
+echo
+
+./bin/diff_spo
 
 EOF
 

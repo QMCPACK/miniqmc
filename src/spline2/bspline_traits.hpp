@@ -16,7 +16,9 @@
  */
 #ifndef QMCPLUSPLUS_BSPLINE_SPLINE2_TRAITS_H
 #define QMCPLUSPLUS_BSPLINE_SPLINE2_TRAITS_H
-#include <einspline/multi_bspline.h>
+
+#include <einspline/bspline.h>
+
 namespace qmcplusplus
 {
   /** trait class to map (datatype,D) to Einspline engine type */

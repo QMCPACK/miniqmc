@@ -14,7 +14,8 @@
  * Initialize the static data for float and double
  */
 
-#include <spline2/MultiBspline.hpp>
+#include "config.h"
+#include <spline2/MultiBsplineData.hpp>
 
 namespace qmcplusplus
 {
@@ -62,9 +63,3 @@ namespace qmcplusplus
      0.0, 0.0, -3.0,  1.0,
      0.0, 0.0,  1.0,  0.0 };
 }
-
-/***************************************************************************
- * $RCSfile$   $Author: jnkim $
- * $Revision: 1770 $   $Date: 2007-02-17 17:45:38 -0600 (Sat, 17 Feb 2007) $
- * $Id: OrbitalBase.h 1770 2007-02-17 23:45:38Z jnkim $ 
- ***************************************************************************/

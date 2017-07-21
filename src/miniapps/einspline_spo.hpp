@@ -23,10 +23,10 @@
 
 namespace qmcplusplus
 {
-  template<typename T>
+  template<typename T, typename spline_type=MultiBspline<T> >
     struct einspline_spo
     {
-      using spline_type=MultiBspline<T>;
+      //using spline_type=MultiBspline<T>;
       using pos_type=TinyVector<T,3>;
       using vContainer_type=aligned_vector<T>;
       using gContainer_type=VectorSoaContainer<T,3>;
