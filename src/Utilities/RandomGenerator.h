@@ -17,13 +17,15 @@
  * @brief Declare a global Random Number Generator
  *
  * Selected among
- * - boost::random
- * - sprng
- * - math::random
+ * - C++11 std::random
+ * - (other choices are in the QMCPACK distribution)
+ *
  * qmcplusplus::Random() returns a random number [0,1)
- * For OpenMP is enabled, it is important to use thread-safe boost::random. Each
- * thread uses its own random number generator with a distinct seed. This prevents
- * a use of global lock which will slow down the applications significantly.
+ *
+ * When OpenMP is enabled, it is important to make sure each thread has its
+ * own random number generator with a unique seed.  Using a global lock on
+ *  a single generator would slow down the applications significantly.
+ * 
  */
 #ifndef OHMMS_RANDOMGENERATOR
 #define OHMMS_RANDOMGENERATOR
@@ -68,22 +70,18 @@ struct BoxMuller2
   }
 };
 
-inline uint32_t make_seed(int i, int n)
+inline uint32_t MakeSeed(int i, int n)
 {
-  return static_cast<uint32_t>(std::time(0))%10474949+(i+1)*n+i;
+  const uint32_t u=1<<10;
+  return static_cast<uint32_t>(std::time(nullptr))%u+(i+1)*n+i;
 }
 
-#ifdef HAVE_LIBBOOST
-
-#include "Utilities/BoostRandom.h"
+#include "Utilities/StdRandom.h"
 namespace qmcplusplus
 {
-#if (__cplusplus>=201103L)
-template<class T> using RandomGenerator=BoostRandom<T>;
-#endif
-typedef BoostRandom<OHMMS_PRECISION_FULL> RandomGenerator_t;
+template<class T> using RandomGenerator=StdRandom<T>;
+typedef StdRandom<OHMMS_PRECISION_FULL> RandomGenerator_t;
 extern RandomGenerator_t Random;
 }
-#endif
 
 #endif

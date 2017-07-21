@@ -17,7 +17,7 @@
 #include <Configuration.h>
 #include <Utilities/PrimeNumberSet.h>
 #include <Utilities/Timer.h>
-#include <Utilities/random.hpp>
+#include <Utilities/RandomGenerator.h>
 #include <getopt.h>
 using namespace std;
 #include <miniapps/determinant.hpp>

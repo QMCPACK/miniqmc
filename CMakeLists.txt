@@ -588,30 +588,28 @@ INCLUDE(${CMAKE_ROOT}/Modules/FindThreads.cmake)
 #First check the required libraries. Abort if these are not found.
 #Changed the fall-back versions to use similar conventions to 2.8.0 and higher
 ####################################################################
-# use customized cmake file for boost so that we can deal with multiple
-# installataions
 # list of libraries to be linked with the main applications using I/O
 
 SET(QMC_UTIL_LIBS ${LAPACK_LIBRARY} ${BLAS_LIBRARY})
 
-SET( FFTW_FOUND 0 )
-IF ( HAVE_MKL )
-  IF ( HAVE_MKL_FFTW3 )
-    SET( FFTW_FOUND 1 )
-  ENDIF()
-ENDIF()
-IF ( NOT FFTW_FOUND )
-  find_package(FFTW)
-ENDIF()
-IF(FFTW_FOUND)
-  SET(HAVE_LIBFFTW 1)
-  INCLUDE_DIRECTORIES(${FFTW_INCLUDE_DIR})
-  SET(QMC_UTIL_LIBS ${QMC_UTIL_LIBS} ${FFTW_LIBRARIES})
-  MESSAGE(STATUS "Found FFTW")
-ELSE(FFTW_FOUND)
-#  MESSAGE(STATUS "Disabling FFTW")
-  MESSAGE(FATAL_ERROR "Could not find required library FFTW. Verify FFTW_HOME")
-ENDIF(FFTW_FOUND)
+#SET( FFTW_FOUND 0 )
+#IF ( HAVE_MKL )
+#  IF ( HAVE_MKL_FFTW3 )
+#    SET( FFTW_FOUND 1 )
+#  ENDIF()
+#ENDIF()
+#IF ( NOT FFTW_FOUND )
+#  find_package(FFTW)
+#ENDIF()
+#IF(FFTW_FOUND)
+#  SET(HAVE_LIBFFTW 1)
+#  INCLUDE_DIRECTORIES(${FFTW_INCLUDE_DIR})
+#  SET(QMC_UTIL_LIBS ${QMC_UTIL_LIBS} ${FFTW_LIBRARIES})
+#  MESSAGE(STATUS "Found FFTW")
+#ELSE(FFTW_FOUND)
+##  MESSAGE(STATUS "Disabling FFTW")
+#  MESSAGE(FATAL_ERROR "Could not find required library FFTW. Verify FFTW_HOME")
+#ENDIF(FFTW_FOUND)
  
 SET(QMC_UTIL_LIBS ${QMC_UTIL_LIBS} ${FORTRAN_LIBRARIES})
 
@@ -656,17 +654,6 @@ ENDIF(LIBXML2_FOUND)
 #  endif()
 #ENDIF(HDF5_FOUND)
 #
-#make sure we can find boost if it's not in /usr
-set(Boost_NO_BOOST_CMAKE on)
-find_package(Boost REQUIRED)
-IF(Boost_FOUND)
-  SET(HAVE_LIBBOOST 1)
-  INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
-  MESSAGE(STATUS "Setting Boost_INCLUDE_DIRS=${Boost_INCLUDE_DIRS}")
-ELSE()
-  MESSAGE(STATUS "Using MT engine in Utilities/MersenneTwister.h")
-  #MESSAGE(FATAL_ERROR "Require boost 1.33.x or higher. Set BOOST_ROOT")
-ENDIF()
 
 SET(HAVE_CUDA 0)
 IF(QMC_CUDA)

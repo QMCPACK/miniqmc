@@ -38,12 +38,6 @@
 /* Define to 1 if you want to use parallel hdf5 for frequent output */
 #cmakedefine ENABLE_PHDF5 @ENABLE_PHDF5@
 
-/* Define to 1 if you have the `boost' library */
-#cmakedefine HAVE_LIBBOOST @HAVE_LIBBOOST@
-
-/* Define to 1 if you have the `sprng' library (-lsprng). */
-#cmakedefine HAVE_LIBSPRNG @HAVE_LIBSPRNG@
-
 /* Define to 1 if you have the `blitz' library */
 #cmakedefine HAVE_LIBBLITZ @HAVE_LIBBLITZ@
 

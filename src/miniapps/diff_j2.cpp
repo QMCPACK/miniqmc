@@ -36,7 +36,7 @@
 #include <Particle/DistanceTable.h>
 #include <OhmmsSoA/VectorSoaContainer.h>
 #include <Utilities/PrimeNumberSet.h>
-#include <Utilities/random.hpp>
+#include <Utilities/RandomGenerator.h>
 #include <miniapps/graphite.hpp>
 #include <miniapps/pseudo.hpp>
 #include <Utilities/Timer.h>
@@ -107,9 +107,22 @@ int main(int argc, char** argv)
   double t0=0.0,t1=0.0;
   OHMMS_PRECISION ratio=0.0;
 
+  //list of accumulated errors
+  double evaluateLog_v_err=0.0;
+  double evaluateLog_g_err=0.0;
+  double evaluateLog_l_err=0.0;
+  double evalGrad_g_err=0.0;
+  double ratioGrad_r_err=0.0;
+  double ratioGrad_g_err=0.0;
+  double evaluateGL_g_err=0.0;
+  double evaluateGL_l_err=0.0;
+  double ratio_err=0.0;
+
   PrimeNumberSet<uint32_t> myPrimes;
 
-#pragma omp parallel reduction(+:t0,ratio)
+  #pragma omp parallel reduction(+:t0,ratio) \
+   reduction(+:evaluateLog_v_err,evaluateLog_g_err,evaluateLog_l_err,evalGrad_g_err) \
+   reduction(+:ratioGrad_r_err,ratioGrad_g_err,evaluateGL_g_err,evaluateGL_l_err,ratio_err)
   {
     ParticleSet ions, els;
     OHMMS_PRECISION scale=1.0;
@@ -121,12 +134,13 @@ int main(int argc, char** argv)
     RandomGenerator<RealType> random_th(myPrimes[ip]);
 
     tile_graphite(ions,tmat,scale);
+    ions.RSoA=ions.R;
 
     const int nions=ions.getTotalNum();
     const int nels=4*nions;
     const int nels3=3*nels;
 
-#pragma omp master
+    #pragma omp master
     nptcl=nels;
 
     {//create up/down electrons
@@ -165,8 +179,6 @@ int main(int argc, char** argv)
 
     constexpr RealType czero(0);
 
-    constexpr RealType small=std::numeric_limits<RealType>::epsilon();
-
     //compute distance tables
     els.update();
     els_ref.update();
@@ -182,7 +194,9 @@ int main(int argc, char** argv)
       J_ref.evaluateLog(els_ref,els_ref.G,els_ref.L);
 
       cout << "Check values " << J.LogValue << " " << els.G[0] << " " << els.L[0] << endl;
+      cout << "Check values ref " << J_ref.LogValue << " " << els_ref.G[0] << " " << els_ref.L[0] << endl << endl;
       cout << "evaluateLog::V Error = " << (J.LogValue-J_ref.LogValue)/nels<< endl;
+      evaluateLog_v_err+=std::fabs((J.LogValue-J_ref.LogValue)/nels);
       {
         double g_err=0.0;
         for(int iel=0; iel<nels; ++iel)
@@ -192,6 +206,7 @@ int main(int argc, char** argv)
           g_err += d;
         }
         cout << "evaluateLog::G Error = " << g_err/nels << endl;
+        evaluateLog_g_err+=std::fabs(g_err/nels);
       }
       {
         double l_err=0.0;
@@ -200,6 +215,7 @@ int main(int argc, char** argv)
           l_err += abs(els.L[iel]-els_ref.L[iel]);
         }
         cout << "evaluateLog::L Error = " << l_err/nels << endl;
+        evaluateLog_l_err+=std::fabs(l_err/nels);
       }
 
       random_th.generate_normal(&delta[0][0],nels3);
@@ -256,6 +272,9 @@ int main(int argc, char** argv)
       cout << "evalGrad::G      Error = " << g_eval/nels << endl;
       cout << "ratioGrad::G     Error = " << g_ratio/nels << endl;
       cout << "ratioGrad::Ratio Error = " << r_ratio/nels << endl;
+      evalGrad_g_err+=std::fabs(g_eval/nels);
+      ratioGrad_g_err+=std::fabs(g_ratio/nels);
+      ratioGrad_r_err+=std::fabs(r_ratio/nels);
 
       //nothing to do with J2 but needs for general cases
       els.donePbyP();
@@ -278,6 +297,7 @@ int main(int argc, char** argv)
           g_err += d;
         }
         cout << "evaluteGL::G Error = " << g_err/nels << endl;
+        evaluateGL_g_err+=std::fabs(g_err/nels);
       }
       {
         double l_err=0.0;
@@ -286,6 +306,7 @@ int main(int argc, char** argv)
           l_err += abs(els.L[iel]-els_ref.L[iel]);
         }
         cout << "evaluteGL::L Error = " << l_err/nels << endl;
+        evaluateGL_l_err+=std::fabs(l_err/nels);
       }
 
       //now ratio only
@@ -307,8 +328,60 @@ int main(int argc, char** argv)
         }
       }
       cout << "ratio with SphereMove  Error = " << r_ratio/(nels*nknots) << endl;
+      ratio_err+=std::fabs(r_ratio/(nels*nknots));
     }
   } //end of omp parallel
+
+  int np=omp_get_max_threads();
+  constexpr RealType small=std::numeric_limits<RealType>::epsilon()*1e4;
+  bool fail=false;
+  cout << std::endl;
+  if ( evaluateLog_v_err/np > small )
+  {
+    cout << "Fail in evaluateLog, V error =" << evaluateLog_v_err/np << std::endl;
+    fail = true;
+  }
+  if ( evaluateLog_g_err/np > small )
+  {
+    cout << "Fail in evaluateLog, G error =" << evaluateLog_g_err/np << std::endl;
+    fail = true;
+  }
+  if ( evaluateLog_l_err/np > small )
+  {
+    cout << "Fail in evaluateLog, L error =" << evaluateLog_l_err/np << std::endl;
+    fail = true;
+  }
+  if ( evalGrad_g_err/np > small )
+  {
+    cout << "Fail in evalGrad, G error =" << evalGrad_g_err/np << std::endl;
+    fail = true;
+  }
+  if ( ratioGrad_r_err/np > small )
+  {
+    cout << "Fail in ratioGrad, ratio error =" << ratioGrad_r_err/np << std::endl;
+    fail = true;
+  }
+  if ( ratioGrad_g_err/np > small )
+  {
+    cout << "Fail in ratioGrad, G error =" << ratioGrad_g_err/np << std::endl;
+    fail = true;
+  }
+  if ( evaluateGL_g_err/np > small )
+  {
+    cout << "Fail in evaluateGL, G error =" << evaluateGL_g_err/np << std::endl;
+    fail = true;
+  }
+  if ( evaluateGL_l_err/np > small )
+  {
+    cout << "Fail in evaluateGL, L error =" << evaluateGL_l_err/np << std::endl;
+    fail = true;
+  }
+  if ( ratio_err/np > small )
+  {
+    cout << "Fail in ratio, ratio error =" << ratio_err/np << std::endl;
+    fail = true;
+  }
+  if(!fail) cout << "All checking pass!" << std::endl;
 
   return 0;
 }

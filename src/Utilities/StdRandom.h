@@ -14,6 +14,7 @@
 
 #include <iterator>
 #include <random>
+#include "Message/OpenMP.h"
 
 template<typename T, typename RNG=std::mt19937>
 struct StdRandom
@@ -128,32 +129,6 @@ struct StdRandom
   {
     std::uniform_int_distribution<uint32_t> a;
     return a(myRNG);
-  }
-
-  inline void read(std::istream& rin)
-  {
-    rin >> myRNG;
-  }
-
-  inline void write(std::ostream& rout) const
-  {
-    rout << myRNG;
-  }
-
-  inline void save(std::vector<uint_type>& curstate) const
-  {
-    curstate.clear();
-    std::stringstream otemp;
-    otemp << myRNG;
-    std::copy(std::istream_iterator<uint_type>(otemp)
-        , std::istream_iterator<uint_type>(),back_inserter(curstate));
-  }
-
-  inline void load(const std::vector<uint_type>& newstate)
-  {
-    std::stringstream otemp;
-    std::copy(newstate.begin(),newstate.end(),std::ostream_iterator<uint_type>(otemp," "));
-    otemp >> myRNG;
   }
 };
 #endif
