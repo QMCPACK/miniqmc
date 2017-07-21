@@ -60,4 +60,7 @@ which python
 
 $BUILD_DIR/../../../scripts/blocking_qsub.py $BUILD_DIR $BUILD_TAG.pbs
 
-grep 'Fail' ../$BUILD_TAG.o*
+cp $BUILD_DIR/$BUILD_TAG.o* ../
+
+# fail the check if 'Fail' is found in the output
+! grep 'Fail' ../$BUILD_TAG.o*
