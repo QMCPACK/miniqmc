@@ -62,11 +62,14 @@ using namespace qmcplusplus;
 enum MiniQMCTimers {
   Timer_Total,
   Timer_Diffusion,
+  Timer_GL,
   Timer_ECP,
   Timer_Value,
-  Timer_Grad,
+  Timer_evalGrad,
+  Timer_ratioGrad,
   Timer_Update,
   Timer_Jastrow,
+  Timer_DT,
   Timer_SPO
 };
 
@@ -74,12 +77,15 @@ TimerNameList_t<MiniQMCTimers> MiniQMCTimerNames =
 {
   {Timer_Total, "Total"},
   {Timer_Diffusion, "Diffusion"},
+  {Timer_GL, "Wavefuntion GL"},
   {Timer_ECP, "Pseudopotential"},
   {Timer_Value, "Value"},
-  {Timer_Grad, "Gradient"},
+  {Timer_evalGrad, "Current Gradient"},
+  {Timer_ratioGrad, "New Gradient"},
   {Timer_Update, "Update"},
   {Timer_Jastrow, "Jastrow"},
-  {Timer_SPO, "Single-Particle Orbital"},
+  {Timer_SPO, "Single-Particle Orbitals"},
+  {Timer_DT, "Distance Tables"},
 };
 
 int main(int argc, char** argv)
@@ -183,7 +189,7 @@ int main(int argc, char** argv)
     tileSize=(tileSize>0)?tileSize:norb;
     nTiles=norb/tileSize;
 
-    const unsigned int SPO_coeff_size = (nx+3)*(ny+3)*(nz+3)*norb*sizeof(float);
+    const unsigned int SPO_coeff_size = (nx+3)*(ny+3)*(nz+3)*norb*sizeof(RealType);
     double SPO_coeff_size_MB = SPO_coeff_size*1.0/1024/1024;
     if(ionode) {
       cout << "\nNumber of orbitals/splines = " << norb << endl;
@@ -232,12 +238,13 @@ int main(int argc, char** argv)
 
     ions.Lattice.BoxBConds=1;
     tile_graphite(ions,tmat,scale);
+    ions.RSoA=ions.R; //fill the SoA
 
     const int nions=ions.getTotalNum();
     const int nels=4*nions;
     const int nels3=3*nels;
 
-#pragma omp master
+    #pragma omp master
     nptcl=nels;
 
     {//create up/down electrons
@@ -247,6 +254,7 @@ int main(int argc, char** argv)
       els.R.InUnit=1;
       random_th.generate_uniform(&els.R[0][0],nels3);
       els.convert2Cart(els.R); // convert to Cartiesian
+      els.RSoA=els.R;
     }
 
     FakeWaveFunctionBase* WaveFunction;
@@ -272,7 +280,7 @@ int main(int argc, char** argv)
     ParticlePos_t delta(nels);
     ParticlePos_t rOnSphere(nknots);
 
-#pragma omp master
+    #pragma omp master
     nknots_copy = nknots;
 
     RealType sqrttau=std::sqrt(tau);
@@ -289,8 +297,6 @@ int main(int argc, char** argv)
     int my_accepted=0;
     for(int mc=0; mc<nsteps; ++mc)
     {
-      WaveFunction->evaluateLog(els);
-
       Timers[Timer_Diffusion]->start();
       for(int l=0; l<nsubsteps; ++l)//drift-and-diffusion
       {
@@ -298,22 +304,26 @@ int main(int argc, char** argv)
         for(int iel=0; iel<nels; ++iel)
         {
           // Operate on electron with index iel
-          // Compute gradient at the current position
-          Timers[Timer_Grad]->start();
-          Timers[Timer_Jastrow]->start();
+          Timers[Timer_DT]->start();
           els.setActive(iel);
+          Timers[Timer_DT]->stop();
+          // Compute gradient at the current position
+          Timers[Timer_evalGrad]->start();
+          Timers[Timer_Jastrow]->start();
           PosType grad_now=WaveFunction->evalGrad(els,iel);
           Timers[Timer_Jastrow]->stop();
-          Timers[Timer_Grad]->stop();
+          Timers[Timer_evalGrad]->stop();
 
           // Construct trial move
           PosType dr=sqrttau*delta[iel];
+          Timers[Timer_DT]->start();
           bool isValid=els.makeMoveAndCheck(iel,dr); 
+          Timers[Timer_DT]->stop();
 
           if(!isValid) continue;
 
           // Compute gradient at the trial position
-          Timers[Timer_Grad]->start();
+          Timers[Timer_ratioGrad]->start();
 
           Timers[Timer_Jastrow]->start();
           PosType grad_new;
@@ -324,16 +334,18 @@ int main(int argc, char** argv)
           spo.evaluate_vgh(els.R[iel]);
           Timers[Timer_SPO]->stop();
 
-          Timers[Timer_Grad]->stop();
+          Timers[Timer_ratioGrad]->stop();
 
           // Accept/reject the trial move
           if(ur[iel]>accept) //MC
           { 
             // Update position, and update temporary storage
             Timers[Timer_Update]->start();
-            els.acceptMove(iel);           
             WaveFunction->acceptMove(els,iel);
             Timers[Timer_Update]->stop();
+            Timers[Timer_DT]->start();
+            els.acceptMove(iel);
+            Timers[Timer_DT]->stop();
             my_accepted++; 
           }
           else 
@@ -342,11 +354,18 @@ int main(int argc, char** argv)
             WaveFunction->restore(iel);
           }
         } // iel
-      } //sub branch
-      Timers[Timer_Diffusion]->stop();
+      } //substeps
 
+      Timers[Timer_DT]->start();
       els.donePbyP();
+      Timers[Timer_DT]->stop();
+
+      // evaluate Kinetic Energy
+      Timers[Timer_GL]->start();
       WaveFunction->evaluateGL(els);
+      Timers[Timer_GL]->stop();
+
+      Timers[Timer_Diffusion]->stop();
 
       // Compute NLPP energy using integral over spherical points
 
@@ -367,7 +386,11 @@ int main(int argc, char** argv)
             for (int k=0; k < nknots ; k++)
             {
               PosType deltar(r*rOnSphere[k]-dr);
+
+              Timers[Timer_DT]->start();
               els.makeMoveOnSphere(iel,deltar);
+              Timers[Timer_DT]->stop();
+
               Timers[Timer_Value]->start();
 
               Timers[Timer_SPO]->start();
@@ -379,6 +402,7 @@ int main(int argc, char** argv)
               Timers[Timer_Jastrow]->stop();
 
               Timers[Timer_Value]->stop();
+
               els.rejectMove(iel);
             }
           }
