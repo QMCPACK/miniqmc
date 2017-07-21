@@ -7,6 +7,7 @@
 // File developed by: Ken Esler, kpesler@gmail.com, University of Illinois at Urbana-Champaign
 //                    Jeongnim Kim, jeongnim.kim@gmail.com, University of Illinois at Urbana-Champaign
 //                    Jeremy McMinnis, jmcminis@gmail.com, University of Illinois at Urbana-Champaign
+//                    Mark Dewing, mdewing@anl.gov, Argonne National Laboratory
 //
 // File created by: Ken Esler, kpesler@gmail.com, University of Illinois at Urbana-Champaign
 //////////////////////////////////////////////////////////////////////////////////////
@@ -15,7 +16,91 @@
 
 
 /** @file NewTimer.h
- * @brief NewTimer class various high-resolution timers.
+ * @brief NewTimer class with nested timers.
+ * 
+ * These timers can handle nesting and will report inclusive and exclusive time
+ * for the timed sections.
+ *
+ * There is a global instance of TimerManagerClass (called TimerManger) for managing timers.
+ * 
+ * ### Creating a timer
+ *
+ * The most basic way is to create a timer and register it with TimerManager.
+ * @code
+ * NewTimer *timer1 = new NewTimer("Timer Name 1");
+ * TimerManager.addTimer(timer1);
+ * @endcode
+ * Timers are ultimately collated by name, not by individual objects.
+ * Separate timer objects with the same name will show only a single timer in the
+ * output.
+ *
+ *
+ * There is a convenience method to combine these operations
+ * @code
+ * NewTimer *timer1 = TimerManager.createTimer("Timer Name 1");
+ * @endcode
+ *
+ * ### Using a timer
+ *
+ * To use the timers, surround the code to be timed with calls to start/stop.
+ * @code
+ * timer1->start();
+ * // Code to be timed
+ * timer1->stop();
+ * @endcode
+ *
+ * There is also a ScopedTimer wrapper that uses the RAII idiom to stop the timer
+ * when it goes out of scope.  Useful for ensuring that stop gets called in
+ * code with multiple exit paths (such as a function with multiple returns).
+ *
+ * @code
+ * {
+ *   ScopedTimer sctimer1(timer1); // constructor calls start
+ *    // Code to be timed
+ * } // destructor calls stop
+ * @endcode
+ *
+ * ### Handling many timers
+ *
+ * Multiple timers in one part of the code can be referenced with separate variable names.
+ * However, the code can look more uniform by using an array of timers.  For code
+ * readability, the reference to each timer should be by named enum rather than
+ * by numerical index.
+ *
+ * @code
+ * // First create the enums
+ * enum MyTimers {
+     Timer_Timer1,
+     Timer_Timer2
+ * };
+ * // Create an enum->name mapping
+ * TimerNameList_t<MyTimers> MyTimerNames = 
+ * {
+    {Timer_Timer1, "Timer 1"},
+    {Timer_Timer2, "Timer 2"},
+ * }
+ * // now create the timers
+ * TimerList_t Timers;
+ * setup_timers(Timers, MyTimerNames, timer_level_coarse);
+ * @endcode
+ *
+ * Use them with
+ * @code
+ * Timers[Timer_Timer1]->start();
+ * // Code to be timed
+ * Timers[Timer_Timer1]->stop();
+ * @endcode
+ *
+ * ### Timer levels
+ *
+ * Timers can also have one of three levels: coarse, medium, or fine
+ * This adjusts the granularity/overhead of data collection at run time. 
+ * The 'fine' level is the default.
+ *
+ * The level of times that are active is set by a call to TimerManager.set_timer_threshold.
+ * The 'coarse' level is the default.
+ * Typically a command line option will be used to adjust this level.
+ *
  */
 #ifndef QMCPLUSPLUS_NEW_TIMER_H
 #define QMCPLUSPLUS_NEW_TIMER_H
