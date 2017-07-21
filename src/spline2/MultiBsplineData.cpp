@@ -14,7 +14,8 @@
  * Initialize the static data for float and double
  */
 
-#include <spline2/MultiBspline.hpp>
+#include "config.h"
+#include <spline2/MultiBsplineData.hpp>
 
 namespace qmcplusplus
 {

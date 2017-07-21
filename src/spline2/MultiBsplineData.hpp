@@ -20,27 +20,16 @@
 
 namespace qmcplusplus
 {
-  template<typename T> struct SplineBound {};
-
-  template<> struct SplineBound <double>
-  {
-    static inline void get(double x, double& dx, int& ind, int ng)
+  template<typename T>
+    struct SplineBound
     {
-      double ipart;
-      dx=modf(x,&ipart);
-      ind = std::min(std::max(int(0),static_cast<int>(ipart)),ng);
-    }
-  };
-
-  template<> struct SplineBound <float>
-  {
-    static inline void get(float x, float& dx, int& ind, int ng)
-    {
-      float ipart;
-      dx=modff(x,&ipart);
-      ind = std::min(std::max(int(0),static_cast<int>(ipart)),ng);
-    }
-  };
+      static inline void get(T x, T& dx, int& ind, int ng)
+      {
+        T ipart;
+        dx=std::modf(x,&ipart);
+        ind = std::min(std::max(int(0),static_cast<int>(ipart)),ng);
+      }
+    };
 
   template<typename T>
     struct MultiBsplineData

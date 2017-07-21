@@ -17,7 +17,7 @@
  */
 #ifndef QMCPLUSPLUS_MULTIEINSPLINE_COMMON_HPP
 #define QMCPLUSPLUS_MULTIEINSPLINE_COMMON_HPP
-#include "config.h"
+
 #include <iostream>
 #include <spline2/bspline_allocator.hpp>
 #include <spline2/MultiBsplineData.hpp>
