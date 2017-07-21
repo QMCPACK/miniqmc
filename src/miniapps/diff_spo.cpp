@@ -10,8 +10,8 @@
 // File created by: Jeongnim Kim, jeongnim.kim@intel.com, Intel Corp.
 //////////////////////////////////////////////////////////////////////////////////////
 // -*- C++ -*-
-/** @file einspline_spo.cpp
- * @brief Miniapp to capture the computation in einspline + NonLocalPP.
+/** @file diff_spo.cpp
+ * @brief Miniapp to check 3D spline implementation against the reference.
  */
 #include <Configuration.h>
 #include <Particle/ParticleSet.h>
@@ -30,7 +30,7 @@ using namespace qmcplusplus;
 int main(int argc, char** argv)
 {
 
-  OhmmsInfo("einspline_spo");
+  OhmmsInfo("diff_spo");
 
   typedef QMCTraits::RealType           RealType;
   typedef ParticleSet::ParticlePos_t    ParticlePos_t;
