@@ -17,9 +17,7 @@
 #ifndef QMCPLUSPLUS_BSPLINE_SPLINE2_TRAITS_H
 #define QMCPLUSPLUS_BSPLINE_SPLINE2_TRAITS_H
 
-#include <einspline/bspline_base.h>
-#include <einspline/bspline_structs.h>
-#include <einspline/multi_bspline_structs.h>
+#include <einspline/bspline.h>
 
 namespace qmcplusplus
 {

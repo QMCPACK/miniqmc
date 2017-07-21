@@ -99,7 +99,5 @@ typedef struct
 #ifdef __cplusplus
 extern "C"
 #endif
-void
-destroy_Bspline (void *spline);
 
 #endif

@@ -30,7 +30,6 @@ set(SRCS )
 
 SET(SRCS ${SRCS}
   bspline_create.c
-  bspline_data.c
   multi_bspline_create.c
 )
 
