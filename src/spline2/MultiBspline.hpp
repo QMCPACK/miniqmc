@@ -20,96 +20,20 @@
 #include "config.h"
 #include <iostream>
 #include <spline2/bspline_allocator.hpp>
+#include <spline2/MultiBsplineData.hpp>
 #include <stdlib.h>
 
 namespace qmcplusplus
 {
-  template<typename T> struct SplineBound {};
-
-  template<> struct SplineBound <double>
-  {
-    static inline void get(double x, double& dx, int& ind, int ng)
-    {
-      double ipart;
-      dx=modf(x,&ipart);
-      ind = std::min(std::max(int(0),static_cast<int>(ipart)),ng);
-    }
-  };
-
-  template<> struct SplineBound <float>
-  {
-    static inline void get(float x, float& dx, int& ind, int ng)
-    {
-      float ipart;
-      dx=modff(x,&ipart);
-      ind = std::min(std::max(int(0),static_cast<int>(ipart)),ng);
-    }
-  };
-
-  /** compute Trace(H*G)
-   *
-   * gg is symmetrized as
-   *  gg[0]=GG(0,0)
-   *  gg[1]=GG(0,1)+GG(1,0)
-   *  gg[2]=GG(0,2)+GG(2,0)
-   *  gg[3]=GG(1,1)
-   *  gg[4]=GG(1,2)+GG(2,1)
-   *  gg[5]=GG(2,2)
-   */
-  template<typename T>
-    inline T SymTrace(T h00, T h01, T h02, T h11, T h12, T h22, const T* restrict gg)
-    {
-      return h00*gg[0]+h01*gg[1]+h02*gg[2]+h11*gg[3]+h12*gg[4]+h22*gg[5];
-    }
-
-  template<typename T>
-    struct MultiBsplineData
-    {
-      static const T   A44[16];
-      static const T  dA44[16];
-      static const T d2A44[16];
-      static const T d3A44[16];
-
-      inline void compute_prefactors(T a[4], T tx) const
-      {
-        a[0] = ( ( A44[0]  * tx + A44[1] ) * tx + A44[2] ) * tx + A44[3];
-        a[1] = ( ( A44[4]  * tx + A44[5] ) * tx + A44[6] ) * tx + A44[7];
-        a[2] = ( ( A44[8]  * tx + A44[9] ) * tx + A44[10] ) * tx + A44[11];
-        a[3] = ( ( A44[12] * tx + A44[13] ) * tx + A44[14] ) * tx + A44[15];
-      }
-
-      inline void compute_prefactors(T a[4], T da[4], T d2a[4], T tx) const
-      {
-        a[0] = ( ( A44[0]  * tx + A44[1] ) * tx + A44[2] ) * tx + A44[3];
-        a[1] = ( ( A44[4]  * tx + A44[5] ) * tx + A44[6] ) * tx + A44[7];
-        a[2] = ( ( A44[8]  * tx + A44[9] ) * tx + A44[10] ) * tx + A44[11];
-        a[3] = ( ( A44[12] * tx + A44[13] ) * tx + A44[14] ) * tx + A44[15];
-        da[0] = ( ( dA44[0]  * tx + dA44[1] ) * tx + dA44[2] ) * tx + dA44[3];
-        da[1] = ( ( dA44[4]  * tx + dA44[5] ) * tx + dA44[6] ) * tx + dA44[7];
-        da[2] = ( ( dA44[8]  * tx + dA44[9] ) * tx + dA44[10] ) * tx + dA44[11];
-        da[3] = ( ( dA44[12] * tx + dA44[13] ) * tx + dA44[14] ) * tx + dA44[15];
-        d2a[0] = ( ( d2A44[0]  * tx + d2A44[1] ) * tx + d2A44[2] ) * tx + d2A44[3];
-        d2a[1] = ( ( d2A44[4]  * tx + d2A44[5] ) * tx + d2A44[6] ) * tx + d2A44[7];
-        d2a[2] = ( ( d2A44[8]  * tx + d2A44[9] ) * tx + d2A44[10] ) * tx + d2A44[11];
-        d2a[3] = ( ( d2A44[12] * tx + d2A44[13] ) * tx + d2A44[14] ) * tx + d2A44[15];
-      }
-    };
 
   template<typename T>
     struct MultiBspline: public MultiBsplineData<T>
     {
 
-#if (__cplusplus< 201103L)
-      ///define the einsplie object type
-      typedef  typename bspline_traits<T,3>::SplineType spliner_type;
-      ///define the real type
-      typedef typename bspline_traits<T,3>::real_type real_type;
-#else
       ///define the einsplie object type
       using spliner_type=typename bspline_traits<T,3>::SplineType;
       ///define the real type
       using real_type=typename bspline_traits<T,3>::real_type;
-#endif
       ///set to true if create is invoked
       bool own_spline;
       ///actual einspline multi-bspline object
@@ -120,16 +44,8 @@ namespace qmcplusplus
       einspline::Allocator myAllocator;
 
       MultiBspline():own_spline(false),spline_m(nullptr) {}
-#if (__cplusplus >= 201103L)
       MultiBspline(const MultiBspline& in)=delete;
       MultiBspline& operator=(const MultiBspline& in)=delete;
-#endif
-
-      //MultiBspline(const MultiBspline& in):own_spline(false),spline_m(in.splime_m),offset(in.offset)
-      //{ }
-      //MultiBspline& operator=(const MultiBspline& in)
-      //{
-      //}
 
       ~MultiBspline()
       {
@@ -209,14 +125,6 @@ namespace qmcplusplus
         myAllocator.copy(aSpline,spline_m,i,offset_,base_);
       }
 
-      /*
-      void print(std::ostream& os)
-      {
-        std::copy(A44,A44+16,std::ostream_iterator<T>(std::cout," "));
-        os << std::endl;
-      }
-      */
-
       template<typename PT, typename VT>
         void evaluate(const PT& r, VT& psi)
         {
@@ -285,8 +193,3 @@ namespace qmcplusplus
 #include <spline2/MultiBsplineStd.hpp>
 
 #endif
-/***************************************************************************
- * $RCSfile$   $Author: jnkim $
- * $Revision: 1770 $   $Date: 2007-02-17 17:45:38 -0600 (Sat, 17 Feb 2007) $
- * $Id: OrbitalBase.h 1770 2007-02-17 23:45:38Z jnkim $
- ***************************************************************************/

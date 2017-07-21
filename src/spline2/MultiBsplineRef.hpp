@@ -4,31 +4,146 @@
 //
 // Copyright (c) 2016 Jeongnim Kim and QMCPACK developers.
 //
-// File developed by: Jeongnim Kim, jeongnim.kim@intel.com, Intel Corp. 
+// File developed by: Jeongnim Kim, jeongnim.kim@intel.com, Intel Corp.
 //                    Amrita Mathuriya, amrita.mathuriya@intel.com, Intel Corp.
 //                    Ye Luo, yeluo@anl.gov, Argonne National Laboratory
 //
 // File created by: Jeongnim Kim, jeongnim.kim@intel.com, Intel Corp.
 //////////////////////////////////////////////////////////////////////////////////////
 // -*- C++ -*-
-/**@file MultiBsplineStd.hpp
+/**@file MultiBsplineRef.hpp
  *
- * Literal port of einspline/multi_bspline_eval_d_std3.cpp by Ye at ANL
- * Modified to handle both float/double and blocked operations
- * - template parameter T for the precision
- * - MUB spline object created by einspline allocators.
- * Function signatures modified anticipating its use by a class that can perform data parallel execution
- * - evaluate(...., int first, int last)
+ * Master header file to define MultiBsplineRef
  */
-#ifndef QMCPLUSPLUS_MULTIEINSPLINE_STD3_ENGINE_HPP
-#define QMCPLUSPLUS_MULTIEINSPLINE_STD3_ENGINE_HPP
+#ifndef QMCPLUSPLUS_MULTIEINSPLINE_REF_HPP
+#define QMCPLUSPLUS_MULTIEINSPLINE_REF_HPP
+#include "config.h"
+#include <iostream>
+#include <spline2/bspline_allocator.hpp>
+#include <spline2/MultiBsplineData.hpp>
+#include <stdlib.h>
 
 namespace qmcplusplus
 {
 
   template<typename T>
-    inline void 
-    MultiBspline<T>::evaluate_vgl_impl(T x, T y, T z, 
+    struct MultiBsplineRef: public MultiBsplineData<T>
+    {
+      ///define the einsplie object type
+      using spliner_type=typename bspline_traits<T,3>::SplineType;
+      ///define the real type
+      using real_type=typename bspline_traits<T,3>::real_type;
+      ///set to true if create is invoked
+      bool own_spline;
+      ///actual einspline multi-bspline object
+      spliner_type* spline_m;
+      ///use allocator
+      einspline::Allocator myAllocator;
+
+      MultiBsplineRef():own_spline(false),spline_m(nullptr) {}
+      MultiBsplineRef(const MultiBsplineRef& in)=delete;
+      MultiBsplineRef& operator=(const MultiBsplineRef& in)=delete;
+
+      ~MultiBsplineRef()
+      {
+        if(own_spline)
+        {
+          myAllocator.destroy(spline_m);
+        }
+      }
+
+      template<typename RV, typename IV>
+      void create(RV& start, RV& end, IV& ng, bc_code bc, int num_splines)
+      {
+        if(spline_m==nullptr)
+        {
+          spline_m=myAllocator.createMultiBspline(T(0),start,end,ng,bc,num_splines);
+          own_spline=true;
+        }
+      }
+
+      int num_splines() const
+      {
+        return (spline_m==nullptr)?0:spline_m->num_splines;
+      }
+
+      template<typename CT>
+      inline void set(int i, CT& data)
+      {
+        myAllocator.set(data.data(),spline_m,i);
+      }
+
+      template<typename PT, typename VT>
+        void evaluate(const PT& r, VT& psi)
+        {
+          evaluate_v_impl(r[0],r[1],r[2],psi.data(),0,psi.size());
+        }
+
+      template<typename PT, typename VT, typename GT, typename LT>
+        inline void evaluate_vgl(const PT& r, VT& psi, GT& grad, LT& lap)
+        {
+          evaluate_vgl_impl(r[0],r[1],r[2],psi.data(),grad.data(),lap.data(),0,psi.size());
+        }
+
+      template<typename PT, typename VT, typename GT, typename HT>
+        inline void evaluate_vgh(const PT& r, VT& psi, GT& grad, HT& hess)
+        {
+          evaluate_vgh_impl(r[0],r[1],r[2],psi.data(),grad.data(),hess.data(),0,psi.size());
+        }
+
+      /** compute values vals[first,last)
+       *
+       * The base address for vals, grads and lapl are set by the callers, e.g., evaluate_vgh(r,psi,grad,hess,ip).
+       */
+
+      void evaluate_v_impl(T x, T y, T z, T* restrict vals, int first, int last) const;
+
+      void evaluate_vgl_impl(T x, T y, T z, T* restrict vals, T* restrict grads, T* restrict lapl, int first, int last, size_t out_offset=0) const;
+
+      void evaluate_vgh_impl(T x, T y, T z, T* restrict vals, T* restrict grads, T* restrict hess, int first, int last, size_t out_offset=0) const;
+
+    };
+
+  template<typename T>
+    inline void
+    MultiBsplineRef<T>::evaluate_v_impl(T x, T y, T z, T* restrict vals, int first, int last) const
+    {
+      x -= spline_m->x_grid.start;
+      y -= spline_m->y_grid.start;
+      z -= spline_m->z_grid.start;
+      T tx,ty,tz;
+      int ix,iy,iz;
+      SplineBound<T>::get(x*spline_m->x_grid.delta_inv,tx,ix,spline_m->x_grid.num-1);
+      SplineBound<T>::get(y*spline_m->y_grid.delta_inv,ty,iy,spline_m->y_grid.num-1);
+      SplineBound<T>::get(z*spline_m->z_grid.delta_inv,tz,iz,spline_m->z_grid.num-1);
+      T a[4], b[4], c[4];
+
+      MultiBsplineData<T>::compute_prefactors(a, tx);
+      MultiBsplineData<T>::compute_prefactors(b, ty);
+      MultiBsplineData<T>::compute_prefactors(c, tz);
+
+      const intptr_t xs = spline_m->x_stride;
+      const intptr_t ys = spline_m->y_stride;
+      const intptr_t zs = spline_m->z_stride;
+
+      CONSTEXPR T zero(0);
+      const size_t num_splines=last-first;
+      ASSUME_ALIGNED(vals);
+      std::fill(vals,vals+num_splines,zero);
+
+      for (size_t i=0; i<4; i++)
+        for (size_t j=0; j<4; j++){
+          const T pre00 =  a[i]*b[j];
+          const T* restrict coefs = spline_m->coefs + ((ix+i)*xs + (iy+j)*ys + iz*zs)+first; ASSUME_ALIGNED(coefs);
+          for(size_t n=0; n<num_splines; n++)
+            vals[n] += pre00*(c[0]*coefs[n] + c[1]*coefs[n+zs] + c[2]*coefs[n+2*zs] + c[3]*coefs[n+3*zs]);
+        }
+
+    }
+
+  template<typename T>
+    inline void
+    MultiBsplineRef<T>::evaluate_vgl_impl(T x, T y, T z,
         T* restrict vals, T* restrict grads, T* restrict lapl, int first, int last, size_t out_offset) const
     {
       x -= spline_m->x_grid.start;
@@ -84,8 +199,6 @@ namespace qmcplusplus
           const T* restrict coefs2zs = coefs+2*zs;     ASSUME_ALIGNED(coefs2zs);
           const T* restrict coefs3zs = coefs+3*zs;     ASSUME_ALIGNED(coefs3zs);
 
-          #pragma noprefetch
-          #pragma omp simd
           for (int n=0; n<num_splines; n++) {
             const T coefsv = coefs[n];
             const T coefsvzs = coefszs[n];
@@ -113,7 +226,6 @@ namespace qmcplusplus
       const T dyInv2 = dyInv*dyInv;
       const T dzInv2 = dzInv*dzInv;
 
-      #pragma omp simd
       for (int n=0; n<num_splines; n++) 
       {
         gx[n] *= dxInv;
@@ -124,8 +236,8 @@ namespace qmcplusplus
     }
 
   template<typename T>
-    inline void 
-    MultiBspline<T>::evaluate_vgh_impl(T x, T y, T z, 
+    inline void
+    MultiBsplineRef<T>::evaluate_vgh_impl(T x, T y, T z,
         T* restrict vals, T* restrict grads, T* restrict hess, int first, int last, size_t out_offset) const
     {
 
@@ -189,7 +301,6 @@ namespace qmcplusplus
           const T pre02 =   a[i]*d2b[j];
 
           const int iSplitPoint = num_splines;
-          #pragma omp simd
           for (int n=0; n<iSplitPoint; n++) {
 
             T coefsv = coefs[n];
@@ -225,7 +336,6 @@ namespace qmcplusplus
       const T dxz=dxInv*dzInv;
       const T dyz=dyInv*dzInv;
 
-      #pragma omp simd
       for (int n=0; n<num_splines; n++)
       {
         gx[n]*=dxInv; 
