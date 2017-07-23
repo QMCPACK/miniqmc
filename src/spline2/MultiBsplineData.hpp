@@ -18,6 +18,9 @@
 #ifndef QMCPLUSPLUS_MULTIEINSPLINE_DATA_HPP
 #define QMCPLUSPLUS_MULTIEINSPLINE_DATA_HPP
 
+#include <cmath>
+#include <algorithm>
+
 namespace qmcplusplus
 {
   template<typename T>

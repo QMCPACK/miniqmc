@@ -72,7 +72,6 @@ int main(int argc, char** argv)
     }
   }
 
-//  Random.init(0,1,iseed);
   Tensor<int,3> tmat(na,0,0,0,nb,0,0,0,nc);
 
   //turn off output
@@ -205,7 +204,7 @@ int main(int argc, char** argv)
         g_ratio+=sqrt(dot(grad_ref,grad_ref));
         r_ratio += abs(r_soa/r_ref-1);
 
-        if(Random() < r_ref)
+        if(ur[iel] < r_ref)
         {
           J.acceptMove(els,iel);
           els.acceptMove(iel);
