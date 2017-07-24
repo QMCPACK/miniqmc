@@ -29,16 +29,6 @@ SET( DART_TESTING_TIMEOUT 3600 CACHE STRING "Maximum time for one test")
 ENABLE_TESTING()
 INCLUDE( CTest )
 
-SET( QMC_SYMLINK_TEST_FILES TRUE CACHE BOOL "Use symbolic links for test files to save space.  Set to false to copy files instead.")
-
-
-IF (QMC_SYMLINK_TEST_FILES)
-  SET(SYMLINK_MSG "Using symbolic links for large test files may cause test failures if the build is installed on a separate filesystem from the source.  For example, Titan at OLCF.")
-ELSE()
-  SET(SYMLINK_MSG "Copying large test files uses more disk space than using symbolic links.")
-ENDIF()
-MESSAGE(STATUS "QMC_SYMLINK_TEST_FILES = ${QMC_SYMLINK_TEST_FILES}.  ${SYMLINK_MSG}")
-
 ######################################################################
 # Build level
 ######################################################################
@@ -507,10 +497,10 @@ IF (ENABLE_GCOV)
 ENDIF(ENABLE_GCOV)
 
 # check if C++11 is needed by QMCPACK features
-SET(CXX11_NEEDED FALSE)
-IF(BUILD_LMYENGINE_INTERFACE OR BUILD_MINIAPPS OR BUILD_AFQMC OR ENABLE_AA_SOA)
+#SET(CXX11_NEEDED FALSE)
+#IF(BUILD_LMYENGINE_INTERFACE OR BUILD_MINIAPPS OR BUILD_AFQMC OR ENABLE_AA_SOA)
   SET(CXX11_NEEDED TRUE)
-ENDIF()
+#ENDIF()
 # once C++11 is needed
 IF(CXX11_NEEDED)
   SET(CXX11_FLAG "-std=c++11")
@@ -613,17 +603,17 @@ SET(QMC_UTIL_LIBS ${LAPACK_LIBRARY} ${BLAS_LIBRARY})
  
 SET(QMC_UTIL_LIBS ${QMC_UTIL_LIBS} ${FORTRAN_LIBRARIES})
 
-find_package(ZLIB)
+#find_package(ZLIB)
 #find_package(LibXml2) 
-INCLUDE(CMake/FindLibxml2QMC.cmake)
+#INCLUDE(CMake/FindLibxml2QMC.cmake)
    
-IF(LIBXML2_FOUND)
-  INCLUDE_DIRECTORIES(${LIBXML2_INCLUDE_DIR})
-  SET(HAVE_LIBXML2 1)
-  SET(QMC_UTIL_LIBS ${QMC_UTIL_LIBS} ${LIBXML2_LIBRARIES})
-ELSE()
-  MESSAGE(FATAL_ERROR "Could not find required library Libxml2")
-ENDIF(LIBXML2_FOUND)
+#IF(LIBXML2_FOUND)
+#  INCLUDE_DIRECTORIES(${LIBXML2_INCLUDE_DIR})
+#  SET(HAVE_LIBXML2 1)
+#  SET(QMC_UTIL_LIBS ${QMC_UTIL_LIBS} ${LIBXML2_LIBRARIES})
+#ELSE()
+#  MESSAGE(FATAL_ERROR "Could not find required library Libxml2")
+#ENDIF(LIBXML2_FOUND)
 
 #set(HDF5_USE_STATIC_LIBRARIES off)
 #if(QMC_BUILD_STATIC)
