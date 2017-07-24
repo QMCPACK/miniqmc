@@ -13,6 +13,7 @@
  * @brief Test boost::mpi 
  */
 #include <Configuration.h>
+#include <Kokkos_Core.hpp>
 #include <Particle/ParticleSet.h>
 #include <Particle/MCWalkerConfiguration.h>
 #include <Utilities/PrimeNumberSet.h>
@@ -66,12 +67,17 @@ namespace qmcplusplus
 
 int main(int argc, char** argv)
 {
+
   using namespace qmcplusplus;
 
   mpi::environment env(mpi::threading::funneled);
   mpi::communicator world;
   //create two MPI groups
   mpi::communicator rows=world.split(world.rank()/2);
+
+  // Initialize Kokkos and scope everything else to make sure
+  // tha reference counted objects are freed in time
+  Kokkos::initialize(argc,argv); {
 
   OhmmsInfo("walker");
 
@@ -215,6 +221,7 @@ int main(int argc, char** argv)
     for(size_t e=0; e<4; ++e)
       fout << walkers[0].R[e] << walkers[1].R[e] << endl;
   } //end of omp parallel
+  } Kokkos::finalize();
 
   return 0;
 }

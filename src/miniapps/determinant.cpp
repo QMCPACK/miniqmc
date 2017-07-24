@@ -14,6 +14,7 @@
  *
  * Using only einspine SPO part + Jastrow as a wavefunction.
  */
+#include <Kokkos_Core.hpp>
 #include <Configuration.h>
 #include <Utilities/PrimeNumberSet.h>
 #include <Utilities/Timer.h>
@@ -25,6 +26,10 @@ using namespace qmcplusplus;
 
 int main(int argc, char** argv)
 {
+
+  // Initialize Kokkos and scope everything else to make sure
+  // tha reference counted objects are freed in time
+  Kokkos::initialize(argc,argv); {
 
   OhmmsInfo("determinant");
 
@@ -154,5 +159,6 @@ int main(int argc, char** argv)
   //cout << "#per MC step steps " << nsteps << " substeps " << nsubsteps << endl;
   //cout << "diffusion_mc " << t_diffusion << " pseudo_mc  " << t_pseudo << endl;
 
+  } Kokkos::finalize();
   return 0;
 }

@@ -14,6 +14,7 @@
  * Test code for the accuracy of AoS to SoA transformation of distance tables.
  */
 #include <Configuration.h>
+#include <Kokkos_Core.hpp>
 #include <Particle/ParticleSet.h>
 #include <Particle/DistanceTable.h>
 #include <Particle/DistanceTableData.h>
@@ -30,6 +31,9 @@ using namespace qmcplusplus;
 
 int main(int argc, char** argv)
 {
+  // Initialize Kokkos and scope everything else to make sure
+  // tha reference counted objects are freed in time
+  Kokkos::initialize(argc,argv); {
 
   OhmmsInfo("distancetablelogfile");
 
@@ -293,5 +297,6 @@ int main(int argc, char** argv)
     cout << " Total number of nn = " << nn << " / " << nels*nions << endl;
   }
 
+  } Kokkos::finalize();
   return 0;
 }

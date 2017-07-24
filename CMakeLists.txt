@@ -2,7 +2,7 @@ PROJECT(qmcpack)
 
 
 #####################################################
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8.10)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.1)
 IF(COMMAND cmake_policy)
   cmake_policy(SET CMP0003 NEW)
 ENDIF(COMMAND cmake_policy)
@@ -293,6 +293,15 @@ ENDIF()
 INCLUDE(${CMAKE_ROOT}/Modules/CheckCCompilerFlag.cmake)
 INCLUDE(${CMAKE_ROOT}/Modules/CheckCXXCompilerFlag.cmake)
 
+######################################################
+#KOKKOS Interaction
+######################################################
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+SET( KOKKOS_PATH "/home/crtrott/kokkos" )
+add_subdirectory( ${KOKKOS_PATH} ${qmcpack_BINARY_DIR}/kokkos )
+include_directories(${Kokkos_INCLUDE_DIRS_RET})
+LINK_LIBRARIES(kokkos)
 
 ######################################################
 # DO NOT MODIFY BELOW

@@ -14,6 +14,7 @@
  * @brief Derived einspline_spo with nested parallelism
  */
 #include <Configuration.h>
+#include <Kokkos_Core.hpp>
 #include <Particle/ParticleSet.h>
 #include <Utilities/RandomGenerator.h>
 #include <miniapps/graphite.hpp>
@@ -28,6 +29,9 @@ using namespace qmcplusplus;
 
 int main(int argc, char** argv)
 {
+  // Initialize Kokkos and scope everything else to make sure
+  // tha reference counted objects are freed in time
+  Kokkos::initialize(argc,argv); {
 
   OhmmsInfo("einspline_spo_nested");
 
@@ -322,5 +326,6 @@ int main(int argc, char** argv)
     cout << endl; 
   }
 
+  } Kokkos::finalize();
   return 0;
 }

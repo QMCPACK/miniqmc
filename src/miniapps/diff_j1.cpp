@@ -13,6 +13,7 @@
  * @brief Debugging J2OribitalSoA 
  */
 #include <Configuration.h>
+#include <Kokkos_Core.hpp>
 #include <Particle/ParticleSet.h>
 #include <Particle/DistanceTable.h>
 #include <OhmmsSoA/VectorSoaContainer.h>
@@ -32,6 +33,9 @@ using namespace qmcplusplus;
 
 int main(int argc, char** argv)
 {
+  // Initialize Kokkos and scope everything else to make sure
+  // tha reference counted objects are freed in time
+  Kokkos::initialize(argc,argv); {
 
   OhmmsInfo("j1debuglogfile");
 
@@ -378,5 +382,6 @@ int main(int argc, char** argv)
   }
   if(!fail) cout << "All checking pass!" << std::endl;
 
+  } Kokkos::finalize();
   return 0;
 }
