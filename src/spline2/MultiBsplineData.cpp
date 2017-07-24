@@ -14,6 +14,8 @@
  * Initialize the static data for float and double
  */
 
+#include <cmath>
+#include <algorithm>
 #include "config.h"
 #include <spline2/MultiBsplineData.hpp>
 
