@@ -52,7 +52,7 @@ struct StdRandom
     nContexts(1),myContext(0),baseOffset(0)
     //, uniform(T(0),T(1)), normal(T(0),T(1))
   {
-    if(iseed<0) iseed=MakeSeed(0,1);
+    if(iseed==0) iseed=MakeSeed(0,1);
     myRNG.seed(iseed);
   }
 
