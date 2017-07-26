@@ -88,6 +88,17 @@ TimerNameList_t<MiniQMCTimers> MiniQMCTimerNames =
   {Timer_DT, "Distance Tables"},
 };
 
+void print_help()
+{
+  printf("miniqmc - QMCPACK miniapp\n");
+  printf("\n");
+  printf("Options:\n");
+  printf("-g \"n0 n1 n2\"     Tiling in x, y, and z directions (default: \"4 4 1\")\n");
+  printf("-i                Number of MC steps (default: 100)\n");
+  printf("-s                Number of substeps (default: 1)\n");
+  printf("-v                Verbose output\n");
+}
+
 int main(int argc, char** argv)
 {
 
@@ -119,15 +130,16 @@ int main(int argc, char** argv)
 
   PrimeNumberSet<uint32_t> myPrimes;
 
+  bool verbose=false;
 
   char *g_opt_arg;
   int opt;
-  while((opt = getopt(argc, argv, "hds:g:i:b:c:a:r:")) != -1)
+  while((opt = getopt(argc, argv, "hdvs:g:i:b:c:a:r:")) != -1)
   {
     switch(opt)
     {
       case 'h':
-        printf("[-g \"n0 n1 n2\"]\n");
+        print_help();
         return 1;
       case 'd'://down to reference implemenation
         useSoA=false;
@@ -150,6 +162,9 @@ int main(int argc, char** argv)
       case 'a':
         tileSize=atoi(optarg);
         break;
+      case 'v':
+        verbose=true;
+        break;
     }
   }
 
@@ -161,7 +176,7 @@ int main(int argc, char** argv)
   setup_timers(Timers, MiniQMCTimerNames, timer_level_coarse);
 
   //turn off output
-  if(omp_get_max_threads()>1)
+  if(!verbose || omp_get_max_threads() > 1)
   {
     OhmmsInfo::Log->turnoff();
     OhmmsInfo::Warn->turnoff();
