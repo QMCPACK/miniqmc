@@ -792,6 +792,27 @@ endif()
 #  ENDIF(GTKMM_FOUND)
 #ENDIF(ENABLE_GTK_GUI)
 
+
+
+#  To connect the timer regions with VTune sampling, some Task API calls
+#  are present in the code.  To enable them, set USE_VTUNE_TASKS and add the
+#  include and lib paths to VTune.
+#  An example for what needs to be added to the cmake command:
+#
+# -DUSE_VTUNE_TASKS=1 \
+# -DQMC_INCLUDE=/opt/intel/vtune_amplifier_xe/include \
+# -DQMC_EXTRA_LIBS="-L/opt/intel/vtune_amplifier_xe/lib64 -ldl"
+#
+# Some collection types may require enabling the task API with a knob.
+# For the command line:
+# amplxe-cl -collect advanced-hostpots -knob enable-user-tasks=true ./bin/miniqmc
+# For the GUI, there is an equivalent checkbox in the collection setup.
+#
+
+IF (USE_VTUNE_TASKS)
+  LINK_LIBRARIES(ittnotify)
+ENDIF()
+
 ###############################################################
 # for specific linker in the case of profiling like hpctoolkit.
 ###############################################################
