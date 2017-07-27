@@ -28,10 +28,6 @@
 #include "Utilities/IteratorUtility.h"
 #include <map>
 
-#ifdef QMC_CUDA
-#include "Particle/accept_kernel.h"
-#endif
-
 namespace qmcplusplus
 {
 
@@ -39,15 +35,6 @@ MCWalkerConfiguration::MCWalkerConfiguration():
   OwnWalkers(true),ReadyForPbyP(false),UpdateMode(Update_Walker),
 
   MaxSamples(10),CurSampleCount(0),GlobalNumWalkers(0)
-#ifdef QMC_CUDA
-  ,RList_GPU("MCWalkerConfiguration::RList_GPU"),
-  GradList_GPU("MCWalkerConfiguration::GradList_GPU"),
-  LapList_GPU("MCWalkerConfiguration::LapList_GPU"),
-  Rnew_GPU("MCWalkerConfiguration::Rnew_GPU"),
-  NLlist_GPU ("MCWalkerConfiguration::NLlist_GPU"),
-  AcceptList_GPU("MCWalkerConfiguration::AcceptList_GPU"),
-  iatList_GPU("iatList_GPU")
-#endif
 {
   //move to ParticleSet
   //initPropertyList();
@@ -57,15 +44,6 @@ MCWalkerConfiguration::MCWalkerConfiguration(const MCWalkerConfiguration& mcw)
   : ParticleSet(mcw), OwnWalkers(true), GlobalNumWalkers(mcw.GlobalNumWalkers),
     UpdateMode(Update_Walker), ReadyForPbyP(false),
     MaxSamples(mcw.MaxSamples), CurSampleCount(0)
-#ifdef QMC_CUDA
-    ,RList_GPU("MCWalkerConfiguration::RList_GPU"),
-    GradList_GPU("MCWalkerConfiguration::GradList_GPU"),
-    LapList_GPU("MCWalkerConfiguration::LapList_GPU"),
-    Rnew_GPU("MCWalkerConfiguration::Rnew_GPU"),
-    NLlist_GPU ("MCWalkerConfiguration::NLlist_GPU"),
-    AcceptList_GPU("MCWalkerConfiguration::AcceptList_GPU"),
-    iatList_GPU("iatList_GPU")
-#endif
 {
   GlobalNumWalkers=mcw.GlobalNumWalkers;
   WalkerOffsets=mcw.WalkerOffsets;

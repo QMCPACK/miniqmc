@@ -51,15 +51,7 @@ else()
 endif()
 
 
-if(HAVE_CUDA)
-  SET(SRCS  ${SRCS}
-    multi_bspline_create_cuda.cu
-    bspline_create_cuda.cu
-    )
-  CUDA_ADD_LIBRARY(einspline ${SRCS})
-else()
-  ADD_LIBRARY(einspline ${SRCS})
-endif()
+ADD_LIBRARY(einspline ${SRCS})
 
 #target_link_libraries(time_multi einspline)
 #add_dependencies(time_multi ${PROJECT_BINARY_HOME}/include/einspline/bspline.h)
