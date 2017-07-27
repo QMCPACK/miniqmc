@@ -266,11 +266,11 @@ int main(int argc, char** argv)
 
       els.G=czero;
       els.L=czero;
-      J.evaluateGL(els);
+      J.evaluateGL(els, els.G, els.L);
 
       els_ref.G=czero;
       els_ref.L=czero;
-      J_ref.evaluateGL(els_ref);
+      J_ref.evaluateGL(els_ref, els_ref.G, els_ref.L);
 
       {
         double g_err=0.0;

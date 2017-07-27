@@ -153,11 +153,12 @@ struct  J1OrbitalRef : public OrbitalBase
     return std::exp(Vat[iat]-curAt);
   }
 
-  inline void evaluateGL(ParticleSet& P)
+  inline void evaluateGL(ParticleSet& P, ParticleSet::ParticleGradient_t& G,
+                         ParticleSet::ParticleLaplacian_t& L, bool fromscratch=false)
   {
     const size_t n=P.getTotalNum();
-    for(size_t iat=0; iat<n; ++iat) P.G[iat]+=Grad[iat];
-    for(size_t iat=0; iat<n; ++iat) P.L[iat]-=Lap[iat];
+    for(size_t iat=0; iat<n; ++iat) G[iat]+=Grad[iat];
+    for(size_t iat=0; iat<n; ++iat) L[iat]-=Lap[iat];
   }
 
   /** compute gradient and lap
