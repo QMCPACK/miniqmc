@@ -113,6 +113,11 @@
 #include <map>
 #include <iostream>
 
+#ifdef USE_VTUNE_TASKS
+#include <ittnotify.h>
+#endif
+
+
 #define USE_STACK_TIMERS
 
 class Communicate;
@@ -221,9 +226,18 @@ protected:
   bool max_timers_exceeded;
   std::map<timer_id_t, std::string> timer_id_name;
   std::map<std::string, timer_id_t> timer_name_to_id;
+
 public:
+#ifdef USE_VTUNE_TASKS
+  __itt_domain *task_domain;
+#endif
+
   TimerManagerClass():timer_threshold(timer_level_coarse),max_timer_id(1),
-    max_timers_exceeded(false) {}
+    max_timers_exceeded(false) {
+#ifdef USE_VTUNE_TASKS
+      task_domain = __itt_domain_create("QMCPACK");
+#endif
+  }
   void addTimer (NewTimer* t);
   NewTimer *createTimer(const std::string& myname, timer_levels mytimer = timer_level_fine);
 
@@ -314,6 +328,11 @@ protected:
   std::map<StackKey, double> per_stack_total_time;
   std::map<StackKey, long> per_stack_num_calls;
 #endif
+
+#ifdef USE_VTUNE_TASKS
+  __itt_string_handle *task_name;
+#endif
+
 public:
 #if not(ENABLE_TIMERS)
   inline void start() {}
@@ -323,6 +342,12 @@ public:
   {
     if (active)
     {
+
+#ifdef USE_VTUNE_TASKS
+      __itt_id parent_task = __itt_null;
+      __itt_task_begin(manager->task_domain, __itt_null, parent_task, task_name);
+#endif
+
 #ifdef USE_STACK_TIMERS
       #pragma omp master
       {
@@ -360,6 +385,11 @@ public:
   {
     if (active)
     {
+
+#ifdef USE_VTUNE_TASKS
+      __itt_task_end(manager->task_domain);
+#endif
+
 #ifdef USE_STACK_TIMERS
       #pragma omp master
 #endif
@@ -448,8 +478,11 @@ public:
 #ifdef USE_STACK_TIMERS
   ,manager(NULL), parent(NULL)
 #endif
-  { }
-
+  {
+#ifdef USE_VTUNE_TASKS
+    task_name = __itt_string_handle_create(myname.c_str());
+#endif
+  }
 
 
   void set_name(const std::string& myname)
