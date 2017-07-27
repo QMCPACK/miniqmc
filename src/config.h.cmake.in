@@ -180,15 +180,6 @@
 /* Fund acml library */
 #cmakedefine HAVE_ACML @HAVE_ACML@
 
-/* Using CUDA for GPU execution */
-#cmakedefine QMC_CUDA @QMC_CUDA@
-
-/* Setting base precision for CUDA kernels */
-#cmakedefine CUDA_PRECISION @CUDA_PRECISION@
-
-/* Setting full precision for CUDA kernels */
-#cmakedefine CUDA_PRECISION_FULL @CUDA_PRECISION_FULL@
-
 /* For AFQMC compilation  */
 #cmakedefine BUILD_AFQMC @BUILD_AFQMC@
 

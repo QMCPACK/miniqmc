@@ -26,10 +26,6 @@
 
 #include "OhmmsPETE/OhmmsMatrix.h"
 #include "Utilities/PooledData.h"
-#ifdef QMC_CUDA
-#include "Utilities/PointerPool.h"
-#include "CUDA/gpu_vector.h"
-#endif
 #include <assert.h>
 #include <deque>
 namespace qmcplusplus

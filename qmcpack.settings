@@ -5,7 +5,6 @@ QMCPACK_VERSION    = @QMCPACK_VERSION@
 
 QMC_MPI                = @QMC_MPI@
 QMC_OMP                = @QMC_OMP@
-QMC_CUDA               = @QMC_CUDA@
 QMC_COMPLEX            = @QMC_COMPLEX@
 BUILD_AFQMC            = @BUILD_AFQMC@
 BUILD_FCIQMC           = @BUILD_FCIQMC@

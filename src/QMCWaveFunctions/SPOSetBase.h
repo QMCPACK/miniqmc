@@ -295,43 +295,6 @@ public:
   }
 
 
-#ifdef QMC_CUDA
-
-  /** evaluate the values of this single-particle orbital set
-   * @param P current ParticleSet
-   * @param r is the position of the particle
-   * @param psi values of the SPO
-   */
-  virtual void
-  evaluate (const ParticleSet& P, const PosType& r, std::vector<RealType> &psi);
-
-  virtual void initGPU() {  }
-
-  //////////////////////////////////////////
-  // Walker-parallel vectorized functions //
-  //////////////////////////////////////////
-  virtual void
-  reserve (PointerPool<gpu::device_vector<CudaValueType> > &pool) { }
-
-  virtual void
-  evaluate (std::vector<Walker_t*> &walkers, int iat, gpu::device_vector<CudaValueType*> &phi);
-
-  virtual void evaluate (std::vector<Walker_t*> &walkers, std::vector<PosType> &new_pos
-                         , gpu::device_vector<CudaValueType*> &phi);
-
-  virtual void
-  evaluate (std::vector<Walker_t*> &walkers,
-            std::vector<PosType> &new_pos,
-            gpu::device_vector<CudaValueType*> &phi,
-            gpu::device_vector<CudaValueType*> &grad_lapl_list,
-            int row_stride);
-
-  virtual void
-  evaluate (std::vector<PosType> &pos, gpu::device_vector<CudaRealType*> &phi);
-  virtual void
-  evaluate (std::vector<PosType> &pos, gpu::device_vector<CudaComplexType*> &phi);
-#endif
-
 protected:
   bool putOccupation(xmlNodePtr occ_ptr);
   bool putFromXML(xmlNodePtr coeff_ptr);

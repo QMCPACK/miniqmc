@@ -76,45 +76,6 @@ public:
    */
   std::vector<int> WalkerOffsets;
 
-  // Data for GPU-acceleration via CUDA
-  // These hold a list of pointers to the positions, gradients, and
-  // laplacians for each walker.  These vectors .data() is often
-  // passed to GPU kernels.
-#ifdef QMC_CUDA
-
-  gpu::device_vector<CudaRealType*>  RList_GPU;
-  gpu::device_vector<CudaValueType*> GradList_GPU, LapList_GPU;
-  // First index is the species.  The second index is the walker
-  std::vector<gpu::device_vector<CUDA_PRECISION_FULL*> > RhokLists_GPU;
-  gpu::device_vector<CudaValueType*>  DataList_GPU;
-  gpu::device_vector<CudaPosType>    Rnew_GPU;
-  gpu::host_vector<CudaPosType>      Rnew_host;
-  std::vector<PosType>                    Rnew;
-  gpu::device_vector<CudaRealType*>  NLlist_GPU;
-  gpu::host_vector<CudaRealType*>    NLlist_host;
-  gpu::host_vector<CudaRealType*>    hostlist;
-  gpu::host_vector<CudaValueType*>   hostlist_valueType;
-  gpu::host_vector<CUDA_PRECISION_FULL*> hostlist_AA; 
-  gpu::host_vector<CudaPosType>      R_host;
-  gpu::host_vector<CudaGradType>     Grad_host;
-  gpu::device_vector<int> iatList_GPU;
-  gpu::host_vector<int> iatList_host;
-  gpu::device_vector<int> AcceptList_GPU;
-  gpu::host_vector<int> AcceptList_host;
-
-  void allocateGPU(size_t buffersize);
-  void copyWalkersToGPU(bool copyGrad=false);
-  void copyWalkerGradToGPU();
-  void updateLists_GPU();
-  int CurrentParticle;
-  void proposeMove_GPU
-  (std::vector<PosType> &newPos, int iat);
-  void acceptMove_GPU(std::vector<bool> &toAccept);
-  void NLMove_GPU (std::vector<Walker_t*> &walkers,
-                   std::vector<PosType> &Rnew,
-                   std::vector<int> &iat);
-#endif
-
   ///default constructor
   MCWalkerConfiguration();
 

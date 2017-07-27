@@ -92,29 +92,6 @@ IF(OHMMS_DIM MATCHES 3)
     MolecularOrbitals/BsplineAOBuilder.cpp
     )
 
-  IF(QMC_CUDA)
-    SET(FERMION_SRCS ${FERMION_SRCS}
-      Fermion/determinant_update.cu 
-      Fermion/DiracDeterminantCUDA.cpp
-      Fermion/SlaterDetCUDA.cpp
-      TrialWaveFunction_CUDA.cpp
-      )
-    SET(JASTROW_SRCS ${JASTROW_SRCS}
-      Jastrow/BsplineJastrowCuda.cu
-      Jastrow/BsplineJastrowCudaPBC.cu
-      Jastrow/OneBodyJastrowOrbitalBspline.cpp
-      Jastrow/TwoBodyJastrowOrbitalBspline.cpp
-      )
-    IF(HAVE_EINSPLINE)
-      SET(FERMION_SRCS ${FERMION_SRCS}
-        EinsplineSet.cpp
-        EinsplineSetCuda.cpp
-        PhaseFactors.cu
-        AtomicOrbitalCuda.cu
-        )
-    ENDIF(HAVE_EINSPLINE)
-  ENDIF(QMC_CUDA)
-
 
   IF(HAVE_EINSPLINE)
     SET(FERMION_SRCS ${FERMION_SRCS}
@@ -204,11 +181,7 @@ ENDIF(NOT QMC_COMPLEX)
 ####################################
 # create libqmcwfs
 ####################################
-IF(QMC_CUDA)
-  CUDA_ADD_LIBRARY(qmcwfs ${WFBASE_SRCS} ${JASTROW_SRCS} ${FERMION_SRCS})
-ELSE(QMC_CUDA)
-  ADD_LIBRARY(qmcwfs ${WFBASE_SRCS} ${JASTROW_SRCS} ${FERMION_SRCS})
-ENDIF(QMC_CUDA)
+ADD_LIBRARY(qmcwfs ${WFBASE_SRCS} ${JASTROW_SRCS} ${FERMION_SRCS})
 #IF(QMC_BUILD_STATIC)
 #  ADD_LIBRARY(qmcwfs STATIC ${WFBASE_SRCS} ${JASTROW_SRCS} ${FERMION_SRCS})
 #ELSE(QMC_BUILD_STATIC)
