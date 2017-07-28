@@ -17,9 +17,9 @@
 
  Implemented kernels
    - \subpage JastrowFactors includes one-body, two-body and three-body Jastrow factors.
+   - Single Particle Orbitals (SPO) based on splines
 
  Kernels yet to be implemented
-   - Single Particle Orbitals (SPO) based on splines
    - Inverse determinant update
 
   Compares against a reference implementation for correctness.
