@@ -4,32 +4,15 @@
 //
 // Copyright (c) 2016 Jeongnim Kim and QMCPACK developers.
 //
-// File developed by: 
+// File developed by: Jeongnim Kim, jeongnim.kim@intel.com, Intel Corp.
+//                    Ye Luo, yeluo@anl.gov, Argonne National Laboratory
 //
-// File created by: Jeongnim Kim, jeongnim.kim@intel.com, Intel Corp.
+// File created by: Ye Luo, yeluo@anl.gov, Argonne National Laboratory
 //////////////////////////////////////////////////////////////////////////////////////
 // -*- C++ -*-
-
-/*!
- @file diff_j2.cpp
- @brief Two body Jastrow driver
+/** @file check_wfc.cpp
+ * @brief Miniapp to check individual wave function component against its reference.
  */
-
-/*!
- \page miniqmc_jastrow Jastrow Factors
-
-  The Jastrow factor accounts for correlation between electrons and ions (one-body Jastrow),
-  and between electrons (two-body Jastrow).
-
-  The Jastrow factor is composed from two types of classes - the first is for the types of
-  particles involved (one or two body), and the second is the functional form for the radial part.
-  The classes for the first part are qmcplusplus::OneBodyJastrowOrbital and qmcplusplus::J2OrbitalRef.
-  The second part uses B-splines and is defined in qmcplusplus::BsplineFunctor.
-
-  This miniapp only contains the B-spline functional form, since it is the most widely used.
-  The QMCPACK distribution contains other functional forms.
- */
-
 
 #include <Configuration.h>
 #include <Particle/ParticleSet.h>
@@ -41,7 +24,12 @@
 #include <miniapps/pseudo.hpp>
 #include <Utilities/Timer.h>
 #include <miniapps/common.hpp>
+#include <QMCWaveFunctions/Jastrow/PolynomialFunctor3D.h>
+#include <QMCWaveFunctions/Jastrow/JeeIOrbitalRef.h>
+#include <QMCWaveFunctions/Jastrow/JeeIOrbitalSoA.h>
 #include <QMCWaveFunctions/Jastrow/BsplineFunctor.h>
+#include <QMCWaveFunctions/Jastrow/J1OrbitalRef.h>
+#include <QMCWaveFunctions/Jastrow/J1OrbitalSoA.h>
 #include <QMCWaveFunctions/Jastrow/J2OrbitalRef.h>
 #include <QMCWaveFunctions/Jastrow/J2OrbitalSoA.h>
 #include <getopt.h>
@@ -52,7 +40,7 @@ using namespace qmcplusplus;
 int main(int argc, char** argv)
 {
 
-  OhmmsInfo("j2debuglogfile");
+  OhmmsInfo("CheckWaveFunctionComponents");
 
   typedef QMCTraits::RealType           RealType;
   typedef ParticleSet::ParticlePos_t    ParticlePos_t;
@@ -68,10 +56,11 @@ int main(int argc, char** argv)
   int nsteps=100;
   int iseed=11;
   RealType Rmax(1.7);
+  string wfc_name("J2");
 
   char *g_opt_arg;
   int opt;
-  while((opt = getopt(argc, argv, "hg:i:r:")) != -1)
+  while((opt = getopt(argc, argv, "hg:i:r:f:")) != -1)
   {
     switch(opt)
     {
@@ -90,7 +79,17 @@ int main(int argc, char** argv)
       case 'r'://rmax
         Rmax=atof(optarg);
         break;
+      case 'f':// Wave function component
+        wfc_name=optarg;
+        break;
     }
+  }
+
+  if(wfc_name!="J1"&&wfc_name!="J2"&&wfc_name!="JeeI")
+  {
+    cerr << "Uknown wave funciton component " << wfc_name << endl
+         << "Now supports J1 J2(default) JeeI Det(to be supported)" << endl;
+    exit(1);
   }
 
   Tensor<int,3> tmat(na,0,0,0,nb,0,0,0,nc);
@@ -133,7 +132,7 @@ int main(int argc, char** argv)
     RandomGenerator<RealType> random_th(myPrimes[ip]);
 
     tile_graphite(ions,tmat,scale);
-    ions.RSoA=ions.R;
+    ions.RSoA=ions.R; //fill the SoA
 
     const int nions=ions.getTotalNum();
     const int nels=4*nions;
@@ -158,6 +157,8 @@ int main(int argc, char** argv)
     //create tables
     DistanceTableData* d_ee=DistanceTable::add(els,DT_SOA);
     DistanceTableData* d_ee_ref=DistanceTable::add(els_ref,DT_SOA);
+    DistanceTableData* d_ie=DistanceTable::add(ions,els_ref,DT_SOA);
+    d_ie->setRmax(Rmax);
 
     ParticlePos_t delta(nels);
 
@@ -167,14 +168,44 @@ int main(int argc, char** argv)
     vector<RealType> ur(nels);
     random_th.generate_uniform(ur.data(),nels);
 
-    J2OrbitalSoA<BsplineFunctor<RealType> > J(els);
-    J2OrbitalRef<BsplineFunctor<RealType> > J_ref(els_ref);
-
-    RealType r2_cut=std::min(RealType(6.4),els.Lattice.WignerSeitzRadius);
-    buildJ2(J,r2_cut);
-    cout << "Done with the J2 " << endl;
-    buildJ2(J_ref,r2_cut);
-    cout << "Done with the J2_ref " << endl;
+    OrbitalBasePtr wfc=nullptr;
+    OrbitalBasePtr wfc_ref=nullptr;
+    if(wfc_name=="J2")
+    {
+      RealType r2_cut=std::min(RealType(6.4),els.Lattice.WignerSeitzRadius);
+      J2OrbitalSoA<BsplineFunctor<RealType> >* J=new J2OrbitalSoA<BsplineFunctor<RealType> >(els);
+      buildJ2(*J,r2_cut);
+      wfc=dynamic_cast<OrbitalBasePtr>(J);
+      cout << "Built J2" << endl;
+      J2OrbitalRef<BsplineFunctor<RealType> >* J_ref=new J2OrbitalRef<BsplineFunctor<RealType> >(els_ref);
+      buildJ2(*J_ref,r2_cut);
+      wfc_ref=dynamic_cast<OrbitalBasePtr>(J_ref);
+      cout << "Built J2_ref" << endl;
+    }
+    else if(wfc_name=="J1")
+    {
+      RealType r1_cut=std::min(RealType(6.4),els.Lattice.WignerSeitzRadius);
+      J1OrbitalSoA<BsplineFunctor<RealType> >* J=new J1OrbitalSoA<BsplineFunctor<RealType> >(ions,els);
+      buildJ1(*J,r1_cut);
+      wfc=dynamic_cast<OrbitalBasePtr>(J);
+      cout << "Built J1" << endl;
+      J1OrbitalRef<BsplineFunctor<RealType> >* J_ref=new J1OrbitalRef<BsplineFunctor<RealType> >(ions,els_ref);
+      buildJ1(*J_ref,r1_cut);
+      wfc_ref=dynamic_cast<OrbitalBasePtr>(J_ref);
+      cout << "Built J1_ref" << endl;
+    }
+    else if(wfc_name=="JeeI")
+    {
+      RealType r_cut=std::min(RealType(6.0),els.Lattice.WignerSeitzRadius);
+      JeeIOrbitalSoA<PolynomialFunctor3D>* J=new JeeIOrbitalSoA<PolynomialFunctor3D>(ions,els);
+      buildJeeI(*J,r_cut);
+      wfc=dynamic_cast<OrbitalBasePtr>(J);
+      cout << "Built JeeI" << endl;
+      JeeIOrbitalRef<PolynomialFunctor3D>* J_ref=new JeeIOrbitalRef<PolynomialFunctor3D>(ions,els_ref);
+      buildJeeI(*J_ref,r_cut);
+      wfc_ref=dynamic_cast<OrbitalBasePtr>(J_ref);
+      cout << "Built JeeI_ref" << endl;
+    }
 
     constexpr RealType czero(0);
 
@@ -186,16 +217,16 @@ int main(int argc, char** argv)
     {
       els.G=czero;
       els.L=czero;
-      J.evaluateLog(els,els.G,els.L);
+      wfc->evaluateLog(els,els.G,els.L);
 
       els_ref.G=czero;
       els_ref.L=czero;
-      J_ref.evaluateLog(els_ref,els_ref.G,els_ref.L);
+      wfc_ref->evaluateLog(els_ref,els_ref.G,els_ref.L);
 
-      cout << "Check values " << J.LogValue << " " << els.G[0] << " " << els.L[0] << endl;
-      cout << "Check values ref " << J_ref.LogValue << " " << els_ref.G[0] << " " << els_ref.L[0] << endl << endl;
-      cout << "evaluateLog::V Error = " << (J.LogValue-J_ref.LogValue)/nels<< endl;
-      evaluateLog_v_err+=std::fabs((J.LogValue-J_ref.LogValue)/nels);
+      cout << "Check values " << wfc->LogValue << " " << els.G[12] << " " << els.L[12] << endl;
+      cout << "Check values ref " << wfc_ref->LogValue << " " << els_ref.G[12] << " " << els_ref.L[12] << endl << endl;
+      cout << "evaluateLog::V Error = " << (wfc->LogValue-wfc_ref->LogValue)/nels<< endl;
+      evaluateLog_v_err+=std::fabs((wfc->LogValue-wfc_ref->LogValue)/nels);
       {
         double g_err=0.0;
         for(int iel=0; iel<nels; ++iel)
@@ -222,30 +253,27 @@ int main(int argc, char** argv)
       double r_ratio=0.0;
       double g_ratio=0.0;
 
-      els.update();
-      els_ref.update();
-
       int naccepted=0;
 
       for(int iel=0; iel<nels; ++iel)
       {
         els.setActive(iel);
-        PosType grad_soa=J.evalGrad(els,iel);
+        PosType grad_soa=wfc->evalGrad(els,iel);
 
         els_ref.setActive(iel);
-        PosType grad_ref=J_ref.evalGrad(els_ref,iel)-grad_soa;
+        PosType grad_ref=wfc_ref->evalGrad(els_ref,iel)-grad_soa;
         g_eval+=sqrt(dot(grad_ref,grad_ref));
 
         PosType dr=sqrttau*delta[iel];
         bool good_soa=els.makeMoveAndCheck(iel,dr); 
         bool good_ref=els_ref.makeMoveAndCheck(iel,dr); 
 
-        if(!good_soa) continue;
+        if(!good_ref) continue;
 
         grad_soa=0;
-        RealType r_soa=J.ratioGrad(els,iel,grad_soa);
+        RealType r_soa=wfc->ratioGrad(els,iel,grad_soa);
         grad_ref=0;
-        RealType r_ref=J_ref.ratioGrad(els_ref,iel,grad_ref);
+        RealType r_ref=wfc_ref->ratioGrad(els_ref,iel,grad_ref);
 
         grad_ref-=grad_soa;
         g_ratio+=sqrt(dot(grad_ref,grad_ref));
@@ -253,12 +281,11 @@ int main(int argc, char** argv)
 
         if(ur[iel] < r_ref)
         {
-          J.acceptMove(els,iel);
+          wfc->acceptMove(els,iel);
           els.acceptMove(iel);
 
-          J_ref.acceptMove(els_ref,iel);
+          wfc_ref->acceptMove(els_ref,iel);
           els_ref.acceptMove(iel);
-
           naccepted++;
         }
         else
@@ -281,11 +308,11 @@ int main(int argc, char** argv)
 
       els.G=czero;
       els.L=czero;
-      J.evaluateGL(els, els.G, els.L);
+      wfc->evaluateGL(els, els.G, els.L);
 
       els_ref.G=czero;
       els_ref.L=czero;
-      J_ref.evaluateGL(els, els_ref.G, els_ref.L);
+      wfc_ref->evaluateGL(els_ref,els_ref.G,els_ref.L);
 
       {
         double g_err=0.0;
@@ -311,22 +338,32 @@ int main(int argc, char** argv)
       //now ratio only
       r_ratio=0.0;
       constexpr int nknots=12;
-      for(int iel=0; iel<nels; ++iel)
+      int nsphere=0;
+      for(int iat=0; iat<nions; ++iat)
       {
-        random_th.generate_uniform(&delta[0][0],nknots*3);
-        for(int k=0; k<nknots;++k)
+        for(int nj=0, jmax=d_ie->nadj(iat); nj<jmax; ++nj)
         {
-          els.makeMoveOnSphere(iel,delta[k]);
-          RealType r_soa=J.ratio(els,iel);
-          els.rejectMove(iel);
+          const RealType r=d_ie->distance(iat,nj);
+          if(r<Rmax)
+          {
+            const int iel=d_ie->iadj(iat,nj);
+            nsphere++;
+            random_th.generate_uniform(&delta[0][0],nknots*3);
+            for(int k=0; k<nknots;++k)
+            {
+              els.makeMoveOnSphere(iel,delta[k]);
+              RealType r_soa=wfc->ratio(els,iel);
+              els.rejectMove(iel);
 
-          els_ref.makeMoveOnSphere(iel,delta[k]);
-          RealType r_ref=J_ref.ratio(els_ref,iel);
-          els_ref.rejectMove(iel);
-          r_ratio += abs(r_soa/r_ref-1);
+              els_ref.makeMoveOnSphere(iel,delta[k]);
+              RealType r_ref=wfc_ref->ratio(els_ref,iel);
+              els_ref.rejectMove(iel);
+              r_ratio += abs(r_soa/r_ref-1);
+            }
+          }
         }
       }
-      cout << "ratio with SphereMove  Error = " << r_ratio/(nels*nknots) << endl;
+      cout << "ratio with SphereMove  Error = " << r_ratio/nsphere << " # of moves =" << nsphere << endl;
       ratio_err+=std::fabs(r_ratio/(nels*nknots));
     }
   } //end of omp parallel

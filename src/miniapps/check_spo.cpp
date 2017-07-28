@@ -10,7 +10,7 @@
 // File created by: Jeongnim Kim, jeongnim.kim@intel.com, Intel Corp.
 //////////////////////////////////////////////////////////////////////////////////////
 // -*- C++ -*-
-/** @file diff_spo.cpp
+/** @file check_spo.cpp
  * @brief Miniapp to check 3D spline implementation against the reference.
  */
 #include <Configuration.h>
@@ -30,7 +30,7 @@ using namespace qmcplusplus;
 int main(int argc, char** argv)
 {
 
-  OhmmsInfo("diff_spo");
+  OhmmsInfo("check_spo");
 
   typedef QMCTraits::RealType           RealType;
   typedef ParticleSet::ParticlePos_t    ParticlePos_t;
