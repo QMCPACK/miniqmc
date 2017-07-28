@@ -155,8 +155,17 @@ struct OrbitalBase: public QMCTraits
    *
    *Specialized for particle-by-particle move.
    */
-  virtual ValueType ratio(ParticleSet& P, int iat) =0;
+  virtual ValueType ratio(ParticleSet& P, int iat) = 0;
 
+  /** compute G and L after the sweep
+   * @param P active ParticleSet
+   * @param G Gradients, \f$\nabla\ln\Psi\f$
+   * @param L Laplacians, \f$\nabla^2\ln\Psi\f$
+   * @param fromscratch, recompute internal data if true
+   *
+   */
+  virtual void evaluateGL(ParticleSet& P, ParticleSet::ParticleGradient_t& G,
+                          ParticleSet::ParticleLaplacian_t& L, bool fromscratch=false) = 0;
 };
 }
 #endif

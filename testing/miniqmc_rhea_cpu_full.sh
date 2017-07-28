@@ -33,28 +33,28 @@ echo checking J1
 echo ----------------------------------------------------
 echo
 
-./bin/diff_j1
+./bin/check_wfs -f J1
 
 echo
 echo checking J2
 echo ----------------------------------------------------
 echo
 
-./bin/diff_j2
+./bin/check_wfs -f J2
 
 echo
 echo checking JeeI
 echo ----------------------------------------------------
 echo
 
-./bin/diff_jeeI
+./bin/check_wfs -f JeeI
 
 echo
 echo checking Spline SPO
 echo ----------------------------------------------------
 echo
 
-./bin/diff_spo
+./bin/check_spo
 
 EOF
 
