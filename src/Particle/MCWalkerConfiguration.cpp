@@ -25,7 +25,6 @@
 #include "Particle/DistanceTableData.h"
 #include "Particle/DistanceTable.h"
 #include "ParticleBase/RandomSeqGenerator.h"
-#include "Utilities/IteratorUtility.h"
 #include <map>
 
 namespace qmcplusplus

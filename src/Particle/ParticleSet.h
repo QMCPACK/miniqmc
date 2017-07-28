@@ -93,10 +93,6 @@ public:
   ParticleGradient_t G;
   ///laplacians of the particles
   ParticleLaplacian_t L;
-  ///differential gradients of the particles
-  ParticleGradient_t dG;
-  ///differential laplacians of the particles
-  ParticleLaplacian_t dL;
   /** ID map that reflects species group
    *
    * IsGrouped=true, if ID==IndirectID
@@ -119,18 +115,8 @@ public:
   bool SameMass;
   /// true if all the internal state is ready for estimators
   bool Ready4Measure;
-  ///threa id
-  Index_t ThreadID;
   ///the index of the active particle for particle-by-particle moves
   Index_t activePtcl;
-  ///the group of the active particle for particle-by-particle moves
-  Index_t activeGroup;
-  ///the index of the active bead for particle-by-particle moves
-  Index_t activeBead;
-  ///the direction reptile traveling
-  Index_t direction;
-  ///pointer to the working walker
-  Walker_t*  activeWalker;
 
   /** the position of the active particle for particle-by-particle moves
    *
@@ -147,12 +133,6 @@ public:
 
   ///distance tables that need to be updated by moving this ParticleSet
   std::vector<DistanceTableData*> DistTables;
-
-  ///spherical-grids for non-local PP
-  std::vector<ParticlePos_t*> Sphere;
-
-  ///clones of this object: used by the thread pool
-  std::vector<ParticleSet*> myClones;
 
   ///current MC step
   int current_step;
@@ -187,32 +167,17 @@ public:
   ///set UseBoundBox
   void setBoundBox(bool yes);
 
-  /** check bounding box
-   * @param rb cutoff radius to check the condition
-   */
-  void checkBoundBox(RealType rb);
-
   /**  add a distance table
    * @param psrc source particle set
    *
    * Ensure that the distance for this-this is always created first.
    */
-  int  addTable(const ParticleSet& psrc, int dt_type);
-
-  /** returns index of a distance table, -1 if not present
-   * @param psrc source particle set
-   */
-  int getTable(const ParticleSet& psrc);
+  int addTable(const ParticleSet& psrc, int dt_type);
 
   /** update the internal data
    *@param skip SK update if skipSK is true
    */
   void update(bool skipSK=false);
-
-  /**update the internal data with new position
-   *@param pos position vector assigned to R
-   */
-  void update(const ParticlePos_t& pos);
 
   ///retrun the SpeciesSet of this particle set
   inline SpeciesSet& getSpeciesSet()
@@ -225,31 +190,9 @@ public:
     return mySpecies;
   }
 
-  ///return this id
-  inline int tag() const
-  {
-    return ObjectTag;
-  }
-
-  ///return parent's id
-  inline int parent() const
-  {
-    return ParentTag;
-  }
-
-  ///return parent's name
-  inline const std::string& parentName() const
-  {
-    return ParentName;
-  }
-
   inline void setName(const std::string& aname)
   {
     myName     = aname;
-    if(ParentName=="0")
-    {
-      ParentName = aname;
-    }
   }
 
   ///return the name
@@ -268,14 +211,6 @@ public:
    */
   void setActive(int iat);
   
-  /**move a particle
-   *@param iat the index of the particle to be moved
-   *@param displ random displacement of the iat-th particle
-   *
-   * Update activePos  by  R[iat]+displ
-   */
-  SingleParticlePos_t makeMove(Index_t iat, const SingleParticlePos_t& displ);
-
   /** move a particle
    * @param iat the index of the particle to be moved
    * @param displ random displacement of the iat-th particle
@@ -283,38 +218,11 @@ public:
    */
   bool makeMoveAndCheck(Index_t iat, const SingleParticlePos_t& displ);
 
-  /** move all the particles of a walker
-   * @param awalker the walker to operate
-   * @param deltaR proposed displacement
-   * @param dt  factor of deltaR
-   * @return true if all the moves are legal.
-   *
-   * If big displacements or illegal positions are detected, return false.
-   * If all good, R = awalker.R + dt* deltaR
+  /** move a particle
+   * @param iat the index of the particle to be moved
+   * @param displ random displacement of the iat-th particle
    */
-  bool makeMove(const Walker_t& awalker, const ParticlePos_t& deltaR, RealType dt);
-
-  bool makeMove(const Walker_t& awalker, const ParticlePos_t& deltaR, const std::vector<RealType>& dt);
-  /** move all the particles including the drift
-   *
-   * Otherwise, everything is the same as makeMove for a walker
-   */
-  bool makeMoveWithDrift(const Walker_t& awalker
-                         , const ParticlePos_t& drift, const ParticlePos_t& deltaR, RealType dt);
-
-  bool makeMoveWithDrift(const Walker_t& awalker
-                         , const ParticlePos_t& drift, const ParticlePos_t& deltaR, const std::vector<RealType>& dt);
-
   void makeMoveOnSphere(Index_t iat, const SingleParticlePos_t& displ);
-
-  /** Handles a virtual move for all the particles to ru.
-   * @param ru position in the reduced cordinate
-   *
-   * The data of the 0-th particle is overwritten by the new position
-   * and the rejectMove should be called for correct use.
-   * See QMCHamiltonians::MomentumEstimator
-   */
-  void makeVirtualMoves(const SingleParticlePos_t& newpos);
 
   /** accept the move
    *@param iat the index of the particle whose position and other attributes to be updated
@@ -325,13 +233,7 @@ public:
    */
   void rejectMove(Index_t iat);
 
-  inline SingleParticlePos_t getOldPos() const
-  {
-    return activePos;
-  }
-
   void clearDistanceTables();
-  void resizeSphere(int nc);
 
   void convert2Unit(ParticlePos_t& pout);
   void convert2Cart(ParticlePos_t& pout);
@@ -347,12 +249,6 @@ public:
    */
   void saveWalker(Walker_t& awalker);
 
-  /** load a walker : R <= awalker->R 
-   *
-   * No other copy is made
-   */
-  void loadWalker(Walker_t* awalker);
-
   /** update the buffer
    *@param skip SK update if skipSK is true
    */
@@ -367,47 +263,6 @@ public:
     return myTwist;
   }
 
-  /** return the ip-th clone
-   * @param ip thread number
-   *
-   * Return itself if ip==0
-   */
-  inline ParticleSet* get_clone(int ip)
-  {
-    if(ip >= myClones.size())
-      return 0;
-    return (ip)? myClones[ip]:this;
-  }
-
-  inline const ParticleSet* get_clone(int ip) const
-  {
-    if(ip >= myClones.size())
-      return 0;
-    return (ip)? myClones[ip]:this;
-  }
-
-  inline int clones_size() const
-  {
-    return myClones.size();
-  }
-
-  /** update R of its own and its clones
-   * @param rnew new position array of N
-   */
-  template<typename PAT>
-  inline void update_clones(const PAT& rnew)
-  {
-    if(R.size() != rnew.size())
-      APP_ABORT("ParticleSet::updateR failed due to different sizes");
-    R=rnew;
-    for(int ip=1; ip<myClones.size(); ++ip)
-      myClones[ip]->R=rnew;
-  }
-
-  /** reset internal data of clones including itself
-   */
-  void reset_clones();
-      
   /** get species name of particle i
    */
   inline const std::string& species_from_index(int i)
@@ -429,9 +284,7 @@ public:
     PCID.resize(numPtcl);
     GroupID.resize(numPtcl);
     G.resize(numPtcl);
-    dG.resize(numPtcl);
     L.resize(numPtcl);
-    dL.resize(numPtcl);
     Mass.resize(numPtcl);
     Z.resize(numPtcl);
     IndirectID.resize(numPtcl);
@@ -475,26 +328,14 @@ public:
   }
 
 protected:
-  ///the number of particle objects
-  static Index_t PtclObjectCounter;
-
-  ///id of this object
-  Index_t ObjectTag;
-
-  ///id of the parent
-  Index_t ParentTag;
-
   /** map to handle distance tables
    *
    * myDistTableMap[source-particle-tag]= locator in the distance table
    * myDistTableMap[ObjectTag] === 0
    */
-  std::map<int,int> myDistTableMap;
-  void initParticleSet();
+  std::map<std::string,int> myDistTableMap;
 
   SingleParticlePos_t myTwist;
-
-  std::string ParentName;
 
   ///total number of particles
   int TotalNum;

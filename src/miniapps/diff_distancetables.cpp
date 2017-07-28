@@ -84,8 +84,9 @@ int main(int argc, char** argv)
   RandomGenerator<RealType> random_th(11);
 
   ParticleSet ions, els;
+  ions.setName("ion");
+  els.setName("e");
 
-  ions.setName("ion0");
   ions.Lattice.BoxBConds=1;
   tile_graphite(ions,tmat,scale);
   ions.RSoA=ions.R; //this needs to be handled internally
@@ -103,7 +104,6 @@ int main(int argc, char** argv)
     random_th.generate_uniform(&els.R[0][0],nels3);
     els.convert2Cart(els.R); // convert to Cartiesian
     els.RSoA=els.R; //this needs to be handled internally
-    els.setName("e");
   }
 
   constexpr RealType eps=numeric_limits<float>::epsilon();
