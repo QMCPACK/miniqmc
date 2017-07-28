@@ -27,7 +27,6 @@
 #define QMCPLUSPLUS_MCWALKERCONFIGURATION_H
 #include "Particle/ParticleSet.h"
 #include "Particle/Walker.h"
-#include "Utilities/IteratorUtility.h"
 
 namespace qmcplusplus
 {
@@ -158,11 +157,6 @@ public:
   inline int getParticleNum() const
   {
     return R.size();
-  }
-
-  inline Walker_t* getWalker(size_t iw)
-  {
-    return WalkerList[iw];
   }
 
   /// return the first iterator
