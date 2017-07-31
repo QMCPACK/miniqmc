@@ -186,6 +186,7 @@ int main(int argc, char** argv)
     }
     else if(wfc_name=="J1")
     {
+      // FIXME right way to add rcut for Ni = 4.8261684030, O = 4.8261684030 ?
       RealType r1_cut=std::min(RealType(6.4),els.Lattice.WignerSeitzRadius);
       J1OrbitalSoA<BsplineFunctor<RealType> >* J=new J1OrbitalSoA<BsplineFunctor<RealType> >(ions,els);
       buildJ1(*J,r1_cut);

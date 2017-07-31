@@ -114,18 +114,18 @@ int main(int argc, char** argv)
 
   //bool ionode=(mycomm->rank() == 0);
   bool ionode=1;
-  int na=4;
-  int nb=4;
+  int na=1;
+  int nb=1;
   int nc=1;
   int nsteps=100;
   int iseed=11;
-  int nx=48,ny=48,nz=60;
+  int nx=37,ny=37,nz=37;
   //thread blocking
   //int ncrews=1; //default is 1
   int tileSize=-1;
   int ncrews=1;
   int nsubsteps=1;
-  RealType Rmax(1.7);
+  RealType Rmax(1.7); // FIXME nio
   bool useSoA=true;
 
   PrimeNumberSet<uint32_t> myPrimes;
@@ -192,13 +192,14 @@ int main(int argc, char** argv)
   spo_type spo_main;
   int nTiles=1;
 
+  // FIXME why do we init ions, etc twice (e.g. again at lines 240 - 246)?
   {
     Tensor<OHMMS_PRECISION,3> lattice_b;
     ParticleSet ions;
     OHMMS_PRECISION scale=1.0;
     lattice_b=tile_graphite(ions,tmat,scale);
     const int nions=ions.getTotalNum();
-    const int norb=2*nions;
+    const int norb=2*nions; // FIXME nio
     const int nels=4*nions;
     const int nels3=3*nels;
     tileSize=(tileSize>0)?tileSize:norb;
@@ -253,6 +254,7 @@ int main(int argc, char** argv)
     //create generator within the thread
     RandomGenerator<RealType> random_th(myPrimes[ip]);
 
+    // FIXME hopefully remove these inits
     ions.Lattice.BoxBConds=1;
     tile_graphite(ions,tmat,scale);
     ions.RSoA=ions.R; //fill the SoA
