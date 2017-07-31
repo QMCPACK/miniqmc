@@ -20,7 +20,7 @@
 #include <OhmmsSoA/VectorSoaContainer.h>
 #include <Utilities/PrimeNumberSet.h>
 #include <Utilities/RandomGenerator.h>
-#include <miniapps/graphite.hpp>
+#include <miniapps/nio.hpp>
 #include <miniapps/pseudo.hpp>
 #include <Utilities/Timer.h>
 #include <miniapps/common.hpp>

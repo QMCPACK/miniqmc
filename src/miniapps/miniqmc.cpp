@@ -49,7 +49,7 @@
 #include <Utilities/PrimeNumberSet.h>
 #include <Utilities/NewTimer.h>
 #include <Utilities/RandomGenerator.h>
-#include <miniapps/graphite.hpp>
+#include <miniapps/nio.hpp>
 #include <miniapps/pseudo.hpp>
 #include <miniapps/common.hpp>
 #include <miniapps/einspline_spo.hpp>
