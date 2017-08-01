@@ -2,8 +2,8 @@ PROJECT(miniapps)
 
 if(QMC_BUILD_LEVEL GREATER 4)
 # add apps XYZ.cpp, e.g., qmc_particles.cpp
-SET(ESTEST einspline_smp einspline_spo qmc_particles moveonsphere twobody ptclset)
-SET(ESTEST diff_distancetables check_wfc check_spo einspline_spo einspline_spo_nested determinant)
+#SET(ESTEST einspline_smp einspline_spo qmc_particles moveonsphere twobody ptclset)
+SET(ESTEST check_distancetables check_wfc check_spo einspline_spo_nested)
 
 FOREACH(p ${ESTEST})
   ADD_EXECUTABLE( ${p}  ${p}.cpp)
