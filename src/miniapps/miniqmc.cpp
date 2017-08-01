@@ -49,7 +49,7 @@
 #include <Utilities/PrimeNumberSet.h>
 #include <Utilities/NewTimer.h>
 #include <Utilities/RandomGenerator.h>
-#include <miniapps/nio.hpp>
+#include <Simulation/Simulation.hpp>
 #include <miniapps/pseudo.hpp>
 #include <miniapps/common.hpp>
 #include <miniapps/einspline_spo.hpp>
@@ -125,7 +125,8 @@ int main(int argc, char** argv)
   int tileSize=-1;
   int ncrews=1;
   int nsubsteps=1;
-  RealType Rmax(1.7); // FIXME nio
+  // Set cutoff for NLPP use.
+  RealType Rmax(1.7);
   bool useSoA=true;
 
   PrimeNumberSet<uint32_t> myPrimes;
@@ -184,7 +185,6 @@ int main(int argc, char** argv)
 
   int nthreads=omp_get_max_threads();
 
-  int nptcl=0;
   int nknots_copy=0;
   OHMMS_PRECISION ratio=0.0;
 
@@ -197,10 +197,10 @@ int main(int argc, char** argv)
     Tensor<OHMMS_PRECISION,3> lattice_b;
     ParticleSet ions;
     OHMMS_PRECISION scale=1.0;
-    lattice_b=tile_graphite(ions,tmat,scale);
+    lattice_b=tile_cell(ions,tmat,scale);
     const int nions=ions.getTotalNum();
-    const int norb=2*nions; // FIXME nio
-    const int nels=4*nions;
+    const int nels=count_electrons(ions,1);
+    const int norb=nels/2;
     const int nels3=3*nels;
     tileSize=(tileSize>0)?tileSize:norb;
     nTiles=norb/tileSize;
@@ -240,7 +240,6 @@ int main(int argc, char** argv)
     ParticleSet ions, els;
     ions.setName("ion");
     els.setName("e");
-    const OHMMS_PRECISION scale=1.0;
 
     const int np=omp_get_num_threads();
     const int ip=omp_get_thread_num();
@@ -254,17 +253,15 @@ int main(int argc, char** argv)
     //create generator within the thread
     RandomGenerator<RealType> random_th(myPrimes[ip]);
 
-    // FIXME hopefully remove these inits
     ions.Lattice.BoxBConds=1;
-    tile_graphite(ions,tmat,scale);
+    OHMMS_PRECISION scale=1.0;
+    tile_cell(ions,tmat,scale);
+    tile_cell(ions,tmat,scale);
     ions.RSoA=ions.R; //fill the SoA
 
     const int nions=ions.getTotalNum();
-    const int nels=4*nions;
+    const int nels=count_electrons(ions,1);
     const int nels3=3*nels;
-
-    #pragma omp master
-    nptcl=nels;
 
     {//create up/down electrons
       els.Lattice.BoxBConds=1;   els.Lattice.set(ions.Lattice);

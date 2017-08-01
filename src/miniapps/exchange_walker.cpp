@@ -17,7 +17,7 @@
 #include <Particle/MCWalkerConfiguration.h>
 #include <Utilities/PrimeNumberSet.h>
 #include <Utilities/RandomGenerator.h>
-#include <miniapps/graphite.hpp>
+#include <Simulation/Simulation.hpp>
 #include <Utilities/Timer.h>
 #include <miniapps/common.hpp>
 #include <boost/mpi.hpp>
@@ -141,7 +141,7 @@ int main(int argc, char** argv)
     //create generator within the thread
     RandomGenerator<RealType> random_th(myPrimes[world.rank()]);
 
-    tile_graphite(ions,tmat,scale);
+    tile_cell(ions,tmat,scale);
     ions.RSoA=ions.R; //fill the SoA
 
     const int nions=ions.getTotalNum();

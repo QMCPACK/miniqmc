@@ -20,7 +20,7 @@
 #include <OhmmsSoA/VectorSoaContainer.h>
 #include <Utilities/PrimeNumberSet.h>
 #include <Utilities/RandomGenerator.h>
-#include <miniapps/nio.hpp>
+#include <Simulation/Simulation.hpp>
 #include <miniapps/pseudo.hpp>
 #include <Utilities/Timer.h>
 #include <miniapps/common.hpp>
@@ -50,8 +50,8 @@ int main(int argc, char** argv)
 
   //use the global generator
 
-  int na=4;
-  int nb=4;
+  int na=1;
+  int nb=1;
   int nc=1;
   int nsteps=100;
   int iseed=11;
@@ -101,7 +101,6 @@ int main(int argc, char** argv)
     OhmmsInfo::Warn->turnoff();
   }
 
-  int nptcl=0;
   double t0=0.0,t1=0.0;
   OHMMS_PRECISION ratio=0.0;
 
@@ -133,15 +132,12 @@ int main(int argc, char** argv)
     //create generator within the thread
     RandomGenerator<RealType> random_th(myPrimes[ip]);
 
-    tile_graphite(ions,tmat,scale);
+    tile_cell(ions,tmat,scale);
     ions.RSoA=ions.R; //fill the SoA
 
     const int nions=ions.getTotalNum();
-    const int nels=4*nions;
+    const int nels=count_electrons(ions,1);
     const int nels3=3*nels;
-
-    #pragma omp master
-    nptcl=nels;
 
     {//create up/down electrons
       els.Lattice.BoxBConds=1;   els.Lattice.set(ions.Lattice);
@@ -174,38 +170,34 @@ int main(int argc, char** argv)
     OrbitalBasePtr wfc_ref=nullptr;
     if(wfc_name=="J2")
     {
-      RealType r2_cut=std::min(RealType(6.4),els.Lattice.WignerSeitzRadius);
       J2OrbitalSoA<BsplineFunctor<RealType> >* J=new J2OrbitalSoA<BsplineFunctor<RealType> >(els);
-      buildJ2(*J,r2_cut);
+      buildJ2(*J,els.Lattice.WignerSeitzRadius);
       wfc=dynamic_cast<OrbitalBasePtr>(J);
       cout << "Built J2" << endl;
       J2OrbitalRef<BsplineFunctor<RealType> >* J_ref=new J2OrbitalRef<BsplineFunctor<RealType> >(els_ref);
-      buildJ2(*J_ref,r2_cut);
+      buildJ2(*J_ref,els.Lattice.WignerSeitzRadius);
       wfc_ref=dynamic_cast<OrbitalBasePtr>(J_ref);
       cout << "Built J2_ref" << endl;
     }
     else if(wfc_name=="J1")
     {
-      // FIXME right way to add rcut for Ni = 4.8261684030, O = 4.8261684030 ?
-      RealType r1_cut=std::min(RealType(6.4),els.Lattice.WignerSeitzRadius);
       J1OrbitalSoA<BsplineFunctor<RealType> >* J=new J1OrbitalSoA<BsplineFunctor<RealType> >(ions,els);
-      buildJ1(*J,r1_cut);
+      buildJ1(*J,els.Lattice.WignerSeitzRadius);
       wfc=dynamic_cast<OrbitalBasePtr>(J);
       cout << "Built J1" << endl;
       J1OrbitalRef<BsplineFunctor<RealType> >* J_ref=new J1OrbitalRef<BsplineFunctor<RealType> >(ions,els_ref);
-      buildJ1(*J_ref,r1_cut);
+      buildJ1(*J_ref,els.Lattice.WignerSeitzRadius);
       wfc_ref=dynamic_cast<OrbitalBasePtr>(J_ref);
       cout << "Built J1_ref" << endl;
     }
     else if(wfc_name=="JeeI")
     {
-      RealType r_cut=std::min(RealType(6.0),els.Lattice.WignerSeitzRadius);
       JeeIOrbitalSoA<PolynomialFunctor3D>* J=new JeeIOrbitalSoA<PolynomialFunctor3D>(ions,els);
-      buildJeeI(*J,r_cut);
+      buildJeeI(*J,els.Lattice.WignerSeitzRadius);
       wfc=dynamic_cast<OrbitalBasePtr>(J);
       cout << "Built JeeI" << endl;
       JeeIOrbitalRef<PolynomialFunctor3D>* J_ref=new JeeIOrbitalRef<PolynomialFunctor3D>(ions,els_ref);
-      buildJeeI(*J_ref,r_cut);
+      buildJeeI(*J_ref,els.Lattice.WignerSeitzRadius);
       wfc_ref=dynamic_cast<OrbitalBasePtr>(J_ref);
       cout << "Built JeeI_ref" << endl;
     }

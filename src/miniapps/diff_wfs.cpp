@@ -18,7 +18,7 @@
 #include <OhmmsSoA/VectorSoaContainer.h>
 #include <Utilities/PrimeNumberSet.h>
 #include <Utilities/RandomGenerator.h>
-#include <miniapps/graphite.hpp>
+#include <Simulation/Simulation.hpp>
 #include <miniapps/pseudo.hpp>
 #include <Utilities/Timer.h>
 #include <miniapps/common.hpp>
@@ -41,8 +41,8 @@ int main(int argc, char** argv)
 
   //use the global generator
 
-  int na=4;
-  int nb=4;
+  int na=1;
+  int nb=1;
   int nc=1;
   int nsteps=100;
   int iseed=11;
@@ -99,7 +99,7 @@ int main(int argc, char** argv)
     //create generator within the thread
     RandomGenerator<RealType> random_th(myPrimes[ip]);
 
-    tile_graphite(ions,tmat,scale);
+    tile_cell(ions,tmat,scale);
     ions.RSoA=ions.R; //fill the SoA
 
     const int nions=ions.getTotalNum();

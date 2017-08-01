@@ -11,7 +11,7 @@
 // -*- C++ -*-
 #include <omp.h>
 #include <miniapps/FakeWaveFunction.h>
-#include <miniapps/graphite.hpp>
+#include <Simulation/Simulation.hpp>
 
 /*!
  * @file SoAWaveFunction.cpp
@@ -31,11 +31,9 @@ namespace qmcplusplus
     d_ee=DistanceTable::add(els,DT_SOA);
     d_ie=DistanceTable::add(ions,els,DT_SOA);
 
-    double r2_cut=std::min(6.4,double(els.Lattice.WignerSeitzRadius));
-
     int ip=omp_get_thread_num();
     J2=new J2OrbType(els);
-    buildJ2(*J2,r2_cut);
+    buildJ2(*J2,els.Lattice.WignerSeitzRadius);
   }
 
   SoAWaveFunction::~SoAWaveFunction()

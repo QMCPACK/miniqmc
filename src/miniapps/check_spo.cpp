@@ -16,7 +16,7 @@
 #include <Configuration.h>
 #include <Particle/ParticleSet.h>
 #include <Utilities/RandomGenerator.h>
-#include <miniapps/graphite.hpp>
+#include <Simulation/Simulation.hpp>
 #include <miniapps/pseudo.hpp>
 #include <Utilities/Timer.h>
 #include <miniapps/common.hpp>
@@ -42,8 +42,8 @@ int main(int argc, char** argv)
 
   //bool ionode=(mycomm->rank() == 0);
   bool ionode=1;
-  int na=4;
-  int nb=4;
+  int na=1;
+  int nb=1;
   int nc=1;
   int nsteps=100;
   int iseed=11;
@@ -104,16 +104,16 @@ int main(int argc, char** argv)
     Tensor<OHMMS_PRECISION,3> lattice_b;
     ParticleSet ions;
     OHMMS_PRECISION scale=1.0;
-    lattice_b=tile_graphite(ions,tmat,scale);
+    lattice_b=tile_cell(ions,tmat,scale);
     const int nions=ions.getTotalNum();
-    const int nels=2*nions;
-    tileSize=(tileSize>0)?tileSize:nels;
-    nTiles=nels/tileSize;
+    const int norb=count_electrons(ions,1)/2;
+    tileSize=(tileSize>0)?tileSize:norb;
+    nTiles=norb/tileSize;
     if(ionode)
-      cout << "\nNumber of orbitals/splines = " << nels << " and Tile size = " << tileSize << " and Number of tiles = " << nTiles << " and Iterations = " << nsteps << endl;
-    spo_main.set(nx,ny,nz,nels,nTiles);
+      cout << "\nNumber of orbitals/splines = " << norb << " and Tile size = " << tileSize << " and Number of tiles = " << nTiles << " and Iterations = " << nsteps << endl;
+    spo_main.set(nx,ny,nz,norb,nTiles);
     spo_main.Lattice.set(lattice_b);
-    spo_ref_main.set(nx,ny,nz,nels,nTiles);
+    spo_ref_main.set(nx,ny,nz,norb,nTiles);
     spo_ref_main.Lattice.set(lattice_b);
   }
 
@@ -139,10 +139,10 @@ int main(int argc, char** argv)
     ParticleSet ions, els;
     const OHMMS_PRECISION scale=1.0;
     ions.Lattice.BoxBConds=1;  
-    tile_graphite(ions,tmat,scale);
+    tile_cell(ions,tmat,scale);
 
     const int nions=ions.getTotalNum();
-    const int nels=4*nions;
+    const int nels=count_electrons(ions,1);
     const int nels3=3*nels;
 
     #pragma omp master

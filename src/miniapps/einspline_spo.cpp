@@ -16,7 +16,7 @@
 #include <Configuration.h>
 #include <Particle/ParticleSet.h>
 #include <Utilities/RandomGenerator.h>
-#include <miniapps/graphite.hpp>
+#include <Simulation/Simulation.hpp>
 #include <miniapps/pseudo.hpp>
 #include <Utilities/Timer.h>
 #include <miniapps/common.hpp>
@@ -41,8 +41,8 @@ int main(int argc, char** argv)
 
   //bool ionode=(mycomm->rank() == 0);
   bool ionode=1;
-  int na=4;
-  int nb=4;
+  int na=1;
+  int nb=1;
   int nc=1;
   int nsteps=100;
   int iseed=11;
@@ -102,7 +102,7 @@ int main(int argc, char** argv)
     Tensor<OHMMS_PRECISION,3> lattice_b;
     ParticleSet ions;
     OHMMS_PRECISION scale=1.0;
-    lattice_b=tile_graphite(ions,tmat,scale);
+    lattice_b=tile_cell(ions,tmat,scale);
     const int nions=ions.getTotalNum();
     const int nels=2*nions;
     tileSize=(tileSize>0)?tileSize:nels;
@@ -147,7 +147,7 @@ int main(int argc, char** argv)
     els.setName("e");
     const OHMMS_PRECISION scale=1.0;
     ions.Lattice.BoxBConds=1;  
-    tile_graphite(ions,tmat,scale);
+    tile_cell(ions,tmat,scale);
 
     const int nions=ions.getTotalNum();
     const int nels=4*nions;
