@@ -192,7 +192,8 @@ int main(int argc, char** argv)
   spo_type spo_main;
   int nTiles=1;
 
-  // FIXME why do we init ions, etc twice (e.g. again at lines 240 - 246)?
+  // Temporally create ParticleSet ions for setting splines.
+  // Per-thread ions will be created later to avoid any performance impact from shared ions.
   {
     Tensor<OHMMS_PRECISION,3> lattice_b;
     ParticleSet ions;
