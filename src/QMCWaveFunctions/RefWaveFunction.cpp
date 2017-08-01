@@ -10,23 +10,21 @@
 //////////////////////////////////////////////////////////////////////////////////////
 // -*- C++ -*-
 #include <omp.h>
-#include <miniapps/FakeWaveFunction.h>
+#include <QMCWaveFunctions/FakeWaveFunction.h>
 #include <Simulation/Simulation.hpp>
+#include <iostream>
+using namespace std;
 
 /*!
- * @file SoAWaveFunction.cpp
-   @brief Wavefunction based on Structure of Arrays (SoA) storage
+ * @file RefWaveFunction.cpp
+ * @brief Wavefunction based on reference implemenation
  */
-
 
 namespace qmcplusplus
 {
-  SoAWaveFunction::SoAWaveFunction(ParticleSet& ions, ParticleSet& els)
+  RefWaveFunction::RefWaveFunction(ParticleSet& ions, ParticleSet& els)
   {
     FirstTime=true;
-
-    ions.RSoA=ions.R;
-    els.RSoA=els.R;
 
     d_ee=DistanceTable::add(els,DT_SOA);
     d_ie=DistanceTable::add(ions,els,DT_SOA);
@@ -36,12 +34,12 @@ namespace qmcplusplus
     buildJ2(*J2,els.Lattice.WignerSeitzRadius);
   }
 
-  SoAWaveFunction::~SoAWaveFunction()
+  RefWaveFunction::~RefWaveFunction()
   {
     delete J2;
   }
 
-  void SoAWaveFunction::evaluateLog(ParticleSet& P)
+  void RefWaveFunction::evaluateLog(ParticleSet& P)
   {
     constexpr valT czero(0);
     if(FirstTime)
@@ -53,31 +51,32 @@ namespace qmcplusplus
     }
   }
 
-  FakeWaveFunctionBase::posT SoAWaveFunction::evalGrad(ParticleSet& P, int iat)
+  FakeWaveFunctionBase::posT RefWaveFunction::evalGrad(ParticleSet& P, int iat)
   {
     return J2->evalGrad(P,iat);
   }
 
-  FakeWaveFunctionBase::valT SoAWaveFunction::ratioGrad(ParticleSet& P, int iat, posT& grad)
+  FakeWaveFunctionBase::valT RefWaveFunction::ratioGrad(ParticleSet& P, int iat, posT& grad)
   {
     return J2->ratioGrad(P,iat,grad);
   }
 
-  FakeWaveFunctionBase::valT SoAWaveFunction::ratio(ParticleSet& P, int iat)
+  FakeWaveFunctionBase::valT RefWaveFunction::ratio(ParticleSet& P, int iat)
   {
     return J2->ratio(P,iat);
   }
-  void SoAWaveFunction::acceptMove(ParticleSet& P, int iat)
+  void RefWaveFunction::acceptMove(ParticleSet& P, int iat)
   {
     J2->acceptMove(P,iat);
   }
-  void SoAWaveFunction::restore(int iat) {}
 
-  void SoAWaveFunction::evaluateGL(ParticleSet& P)
+  void RefWaveFunction::restore(int iat) { }
+
+  void RefWaveFunction::evaluateGL(ParticleSet& P)
   {
     constexpr valT czero(0);
     P.G=czero;
     P.L=czero;
-    J2->evaluateGL(P, P.G, P.L);
+    J2->evaluateGL(P,P.G,P.L);
   }
 }

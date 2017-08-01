@@ -53,7 +53,7 @@
 #include <miniapps/pseudo.hpp>
 #include <miniapps/common.hpp>
 #include <miniapps/einspline_spo.hpp>
-#include <miniapps/FakeWaveFunction.h>
+#include <QMCWaveFunctions/FakeWaveFunction.h>
 #include <getopt.h>
 
 using namespace std;
