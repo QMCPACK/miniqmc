@@ -69,5 +69,5 @@ $BUILD_DIR/../../../scripts/blocking_qsub.py $BUILD_DIR $BUILD_TAG.pbs
 
 cp $BUILD_DIR/$BUILD_TAG.o* ../
 
-# fail the check if 'Fail' is found in the output
-! grep 'Fail' ../$BUILD_TAG.o*
+# get status from checks
+[ $(grep 'All checking pass!' ../$BUILD_TAG.o* | wc -l) -eq 4 ]
