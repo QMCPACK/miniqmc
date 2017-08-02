@@ -51,7 +51,6 @@
 #include <Utilities/RandomGenerator.h>
 #include <Simulation/Simulation.hpp>
 #include <miniapps/pseudo.hpp>
-#include <miniapps/common.hpp>
 #include <miniapps/einspline_spo.hpp>
 #include <QMCWaveFunctions/FakeWaveFunction.h>
 #include <getopt.h>

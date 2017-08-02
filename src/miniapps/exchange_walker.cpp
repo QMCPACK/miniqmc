@@ -19,7 +19,6 @@
 #include <Utilities/RandomGenerator.h>
 #include <Simulation/Simulation.hpp>
 #include <Utilities/Timer.h>
-#include <miniapps/common.hpp>
 #include <boost/mpi.hpp>
 #include <getopt.h>
 

@@ -22,7 +22,6 @@
 #include <Simulation/Simulation.hpp>
 #include <miniapps/pseudo.hpp>
 #include <Utilities/Timer.h>
-#include <miniapps/common.hpp>
 #include <getopt.h>
 
 using namespace std;

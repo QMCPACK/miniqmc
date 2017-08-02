@@ -23,7 +23,6 @@
 #include <Simulation/Simulation.hpp>
 #include <miniapps/pseudo.hpp>
 #include <Utilities/Timer.h>
-#include <miniapps/common.hpp>
 #include <QMCWaveFunctions/Jastrow/PolynomialFunctor3D.h>
 #include <QMCWaveFunctions/Jastrow/JeeIOrbitalRef.h>
 #include <QMCWaveFunctions/Jastrow/JeeIOrbitalSoA.h>
