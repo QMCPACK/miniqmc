@@ -40,10 +40,6 @@
 
 namespace qmcplusplus
 {
-// forward declarations
-template <class T, unsigned D> class SymTensor;
-template <class T, unsigned D> class AntiSymTensor;
-
 
 /** Tensor<T,D>  class for D by D tensor
  *
@@ -102,12 +98,6 @@ public:
     X[7] = x12;
     X[8] = x22;
   }
-
-  //constructor from SymTensor
-  Tensor(const SymTensor<T,D>&);
-
-  // constructor from AntiSymTensor
-  Tensor(const AntiSymTensor<T,D>&);
 
   // destructor
   ~Tensor() { };
@@ -555,30 +545,6 @@ std::istream& operator>>(std::istream& is, Tensor<T,D>& rhs)
   for(int i=0; i<D*D; i++)
     is >> rhs[i];
   return is;
-}
-
-}
-// include header files for SymTensor and AntiSymTensor in order
-// to define constructors for Tensor using these types
-#include "OhmmsPETE/SymTensor.h"
-#include "OhmmsPETE/AntiSymTensor.h"
-
-namespace qmcplusplus
-{
-template <class T, unsigned D>
-Tensor<T,D>::Tensor(const SymTensor<T,D>& rhs)
-{
-  for (int i=0; i<D; ++i)
-    for (int j=0; j<D; ++j)
-      (*this)(i,j) = rhs(i,j);
-}
-
-template <class T, unsigned D>
-Tensor<T,D>::Tensor(const AntiSymTensor<T,D>& rhs)
-{
-  for (int i=0; i<D; ++i)
-    for (int j=0; j<D; ++j)
-      (*this)(i,j) = rhs(i,j);
 }
 
 }

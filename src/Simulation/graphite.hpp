@@ -13,13 +13,20 @@
 
 namespace qmcplusplus
 {
+
+  template <typename T>
+  T count_electrons(const ParticleSet &ions, T scale)
+  {
+    return ions.getTotalNum()*scale*4;
+  }
+
   /** expand 4-atom graphite 
    * @param ions particle set
    * @param tmat tiling matrix
    * @param scale scaling factor
    */
   template<typename T>
-    Tensor<T,3>  tile_graphite(ParticleSet& ions, Tensor<int,3>& tmat, T scale)
+    Tensor<T,3> tile_cell(ParticleSet& ions, Tensor<int,3>& tmat, T scale)
     {
       Tensor<T,3> graphite={4.65099, 0.0, 0.0, 
                            -2.3255, 4.02788,0.0, 
@@ -121,6 +128,7 @@ namespace qmcplusplus
     {
       using Func=typename JeeIType::FuncType;
       using RealType=typename Func::real_type;
+      rcut = std::min(rcut,6.0);
       {
         std::vector<RealType> params=
         {8.227710241e-06,2.480817653e-06,-5.354068112e-06,-1.112644787e-05,
@@ -165,7 +173,7 @@ namespace qmcplusplus
       using RealType=typename Func::real_type;
       const int npts=10;
       std::string optimize("no");
-      //RealType rcut=6.4;
+      rcut = std::min(rcut,6.4);
       RealType dr=rcut/static_cast<RealType>(npts);
       std::vector<RealType> X(npts+1);
       for(int i=0; i<npts; ++i) X[i]=static_cast<RealType>(i)*dr;
@@ -199,7 +207,7 @@ namespace qmcplusplus
       using RealType=typename Func::real_type;
       const int npts=10;
       std::string optimize("no");
-      //RealType rcut=6.4;
+      rcut = std::min(rcut,6.4);
       RealType dr=rcut/static_cast<RealType>(npts);
       std::vector<RealType> X(npts+1);
       for(int i=0; i<npts; ++i) X[i]=static_cast<RealType>(i)*dr;
@@ -207,7 +215,7 @@ namespace qmcplusplus
       std::vector<RealType> Y=
       {0.4711f, 0.3478f, 0.2445f, 0.1677f, 0.1118f,
         0.0733f, 0.0462f, 0.0273f, 0.0145f, 0.0063f, 0.0f};
-      std::string suu("uu");
+      std::string suu("C");
       Func* f=new Func;
       f->initialize(npts,X,Y,-0.25,rcut,suu,optimize);
       J1.addFunc(0,f);

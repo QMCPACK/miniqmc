@@ -2,21 +2,21 @@ PROJECT(miniapps)
 
 if(QMC_BUILD_LEVEL GREATER 4)
 # add apps XYZ.cpp, e.g., qmc_particles.cpp
-SET(ESTEST einspline_smp einspline_spo qmc_particles moveonsphere twobody ptclset)
-SET(ESTEST diff_distancetables check_wfc check_spo einspline_spo einspline_spo_nested determinant)
+#SET(ESTEST einspline_smp einspline_spo qmc_particles moveonsphere twobody ptclset)
+SET(ESTEST check_distancetables check_wfc check_spo einspline_spo_nested)
 
 FOREACH(p ${ESTEST})
   ADD_EXECUTABLE( ${p}  ${p}.cpp)
   TARGET_LINK_LIBRARIES(${p} qmcbase qmcutil ${QMC_UTIL_LIBS} ${MPI_LIBRARY})
 ENDFOREACH(p ${ESTEST})
 
-ADD_LIBRARY(miniwfs RefWaveFunction.cpp SoAWaveFunction.cpp)
+ADD_LIBRARY(miniwfs ../QMCWaveFunctions/RefWaveFunction.cpp ../QMCWaveFunctions/SoAWaveFunction.cpp)
 
 ADD_EXECUTABLE(miniqmc miniqmc.cpp)
 TARGET_LINK_LIBRARIES(miniqmc miniwfs qmcbase qmcutil ${QMC_UTIL_LIBS} ${MPI_LIBRARY})
 
-ADD_EXECUTABLE(diff_wfs diff_wfs.cpp)
-TARGET_LINK_LIBRARIES(diff_wfs miniwfs qmcbase qmcutil ${QMC_UTIL_LIBS} ${MPI_LIBRARY})
+#ADD_EXECUTABLE(diff_wfs diff_wfs.cpp)
+#TARGET_LINK_LIBRARIES(diff_wfs miniwfs qmcbase qmcutil ${QMC_UTIL_LIBS} ${MPI_LIBRARY})
 
 endif()
 

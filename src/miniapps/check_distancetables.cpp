@@ -19,10 +19,9 @@
 #include <Particle/DistanceTableData.h>
 #include <OhmmsSoA/VectorSoaContainer.h>
 #include <Utilities/RandomGenerator.h>
-#include <miniapps/graphite.hpp>
+#include <Simulation/Simulation.hpp>
 #include <miniapps/pseudo.hpp>
 #include <Utilities/Timer.h>
-#include <miniapps/common.hpp>
 #include <getopt.h>
 
 using namespace std;
@@ -37,8 +36,8 @@ int main(int argc, char** argv)
 
   //bool ionode=(mycomm->rank() == 0);
   bool ionode=1;
-  int na=4;
-  int nb=4;
+  int na=1;
+  int nb=1;
   int nc=1;
   int nsteps=1;
   int iseed=11;
@@ -88,11 +87,11 @@ int main(int argc, char** argv)
   els.setName("e");
 
   ions.Lattice.BoxBConds=1;
-  tile_graphite(ions,tmat,scale);
+  tile_cell(ions,tmat,scale);
   ions.RSoA=ions.R; //this needs to be handled internally
 
   const int nions=ions.getTotalNum();
-  const int nels=4*nions;
+  const int nels=count_electrons(ions,1);
   const int nels3=3*nels;
 
   {//create up/down electrons

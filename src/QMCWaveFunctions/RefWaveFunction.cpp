@@ -10,8 +10,8 @@
 //////////////////////////////////////////////////////////////////////////////////////
 // -*- C++ -*-
 #include <omp.h>
-#include <miniapps/FakeWaveFunction.h>
-#include <miniapps/graphite.hpp>
+#include <QMCWaveFunctions/FakeWaveFunction.h>
+#include <Simulation/Simulation.hpp>
 #include <iostream>
 using namespace std;
 
@@ -30,9 +30,8 @@ namespace qmcplusplus
     d_ie=DistanceTable::add(ions,els,DT_SOA);
 
     int ip=omp_get_thread_num();
-    double r2_cut=std::min(6.4,double(els.Lattice.WignerSeitzRadius));
     J2=new J2OrbType(els);
-    buildJ2(*J2,r2_cut);
+    buildJ2(*J2,els.Lattice.WignerSeitzRadius);
   }
 
   RefWaveFunction::~RefWaveFunction()
