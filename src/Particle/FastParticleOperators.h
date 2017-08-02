@@ -21,8 +21,6 @@
 #ifndef OHMMS_FAST_PARTICLE_OPERATORS_H
 #define OHMMS_FAST_PARTICLE_OPERATORS_H
 
-#include <simd/simd.hpp>
-
 namespace qmcplusplus
 {
 /** Dummy template class to be specialized

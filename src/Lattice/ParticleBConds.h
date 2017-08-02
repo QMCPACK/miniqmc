@@ -18,7 +18,6 @@
 #define QMCPLUSPLUS_PARTICLE_BCONDS_H
 
 #include <config.h>
-#include <simd/simd.hpp>
 #include <Lattice/CrystalLattice.h>
 
 namespace qmcplusplus
@@ -79,10 +78,12 @@ struct DTD_BConds
                        , std::vector<T>& rinv) const
   {
     const int n=dr.size();
+    const T cone(1);
     for(int i=0; i<n; ++i)
-      rinv[i]=dot(dr[i],dr[i]);
-    simd::sqrt(&rinv[0],&r[0],n);
-    simd::inv(&r[0],&rinv[0],n);
+    {
+      r[i]=std::sqrt(apply_bc(dr[i]));
+      rinv[i]=cone/r[i];
+    }
   }
 
 };

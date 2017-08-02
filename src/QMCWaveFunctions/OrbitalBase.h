@@ -20,7 +20,6 @@
 #include "Configuration.h"
 #include "Particle/ParticleSet.h"
 #include "Particle/DistanceTableData.h"
-#include "QMCWaveFunctions/OrbitalSetTraits.h"
 #include "Particle/MCWalkerConfiguration.h"
 
 /**@file OrbitalBase.h
@@ -70,11 +69,6 @@ struct OrbitalBase: public QMCTraits
   typedef ParticleAttrib<GradType>  GradVectorType;
   typedef PooledData<RealType>      BufferType;
   typedef ParticleSet::Walker_t     Walker_t;
-  typedef OrbitalSetTraits<RealType>::ValueMatrix_t       RealMatrix_t;
-  typedef OrbitalSetTraits<ValueType>::ValueMatrix_t      ValueMatrix_t;
-  typedef OrbitalSetTraits<ValueType>::GradMatrix_t       GradMatrix_t;
-  typedef OrbitalSetTraits<ValueType>::HessType           HessType;
-  typedef OrbitalSetTraits<ValueType>::HessVector_t       HessVector_t;
 
   /** flag to set the optimization mode */
   bool IsOptimizing;

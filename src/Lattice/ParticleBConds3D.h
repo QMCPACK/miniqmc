@@ -107,10 +107,12 @@ struct DTD_BConds<T,3,PPPG>
                        , std::vector<T>& rinv) const
   {
     const int n=dr.size();
+    const T cone(1);
     for(int i=0; i<n; ++i)
-      rinv[i]=apply_bc(dr[i]);
-    simd::sqrt(&rinv[0],&r[0],n);
-    simd::inv(&r[0],&rinv[0],n);
+    {
+      r[i]=std::sqrt(apply_bc(dr[i]));
+      rinv[i]=cone/r[i];
+    }
   }
 
 };
