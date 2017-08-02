@@ -42,7 +42,7 @@ namespace qmcplusplus
       static const T d2A44[16];
       static const T d3A44[16];
 
-      inline void compute_prefactors(T a[4], T tx) const
+      inline static void compute_prefactors(T a[4], T tx)
       {
         a[0] = ( ( A44[0]  * tx + A44[1] ) * tx + A44[2] ) * tx + A44[3];
         a[1] = ( ( A44[4]  * tx + A44[5] ) * tx + A44[6] ) * tx + A44[7];
@@ -50,7 +50,7 @@ namespace qmcplusplus
         a[3] = ( ( A44[12] * tx + A44[13] ) * tx + A44[14] ) * tx + A44[15];
       }
 
-      inline void compute_prefactors(T a[4], T da[4], T d2a[4], T tx) const
+      inline static void compute_prefactors(T a[4], T da[4], T d2a[4], T tx)
       {
         a[0] = ( ( A44[0]  * tx + A44[1] ) * tx + A44[2] ) * tx + A44[3];
         a[1] = ( ( A44[4]  * tx + A44[5] ) * tx + A44[6] ) * tx + A44[7];
