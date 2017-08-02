@@ -256,7 +256,6 @@ int main(int argc, char** argv)
     ions.Lattice.BoxBConds=1;
     OHMMS_PRECISION scale=1.0;
     tile_cell(ions,tmat,scale);
-    tile_cell(ions,tmat,scale);
     ions.RSoA=ions.R; //fill the SoA
 
     const int nions=ions.getTotalNum();
