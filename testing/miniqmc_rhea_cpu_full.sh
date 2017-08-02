@@ -33,21 +33,21 @@ echo checking J1
 echo ----------------------------------------------------
 echo
 
-./bin/check_wfs -f J1
+./bin/check_wfc -f J1
 
 echo
 echo checking J2
 echo ----------------------------------------------------
 echo
 
-./bin/check_wfs -f J2
+./bin/check_wfc -f J2
 
 echo
 echo checking JeeI
 echo ----------------------------------------------------
 echo
 
-./bin/check_wfs -f JeeI
+./bin/check_wfc -f JeeI
 
 echo
 echo checking Spline SPO
