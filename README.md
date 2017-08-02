@@ -142,3 +142,5 @@ Most of the miniapps named as diff_XXX execute the new SoA and old AoS implement
 The error is reported at every checkpoint. Typical numerical error is less than 1e-13/1e-4 in a full/mixed precision build.
 
 # Documentation and support
+
+(coming soon)

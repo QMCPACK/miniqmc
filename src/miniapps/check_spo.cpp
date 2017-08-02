@@ -20,7 +20,7 @@
 #include <miniapps/pseudo.hpp>
 #include <Utilities/Timer.h>
 #include <spline2/MultiBsplineRef.hpp>
-#include <miniapps/einspline_spo.hpp>
+#include <QMCWaveFunctions/einspline_spo.hpp>
 #include <getopt.h>
 
 using namespace std;
