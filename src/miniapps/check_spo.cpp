@@ -31,11 +31,13 @@ int main(int argc, char** argv)
 
   OhmmsInfo("check_spo");
 
+  // clang-format off
   typedef QMCTraits::RealType           RealType;
   typedef ParticleSet::ParticlePos_t    ParticlePos_t;
   typedef ParticleSet::ParticleLayout_t LatticeType;
   typedef ParticleSet::TensorType       TensorType;
   typedef ParticleSet::PosType          PosType;
+  // clang-format on
 
   //use the global generator
 
@@ -124,8 +126,10 @@ int main(int argc, char** argv)
   double evalVGH_g_err=0.0;
   double evalVGH_h_err=0.0;
 
+  // clang-format off
   #pragma omp parallel reduction(+:t0,ratio,nspheremoves,dNumVGHCalls) \
    reduction(+:evalV_v_err,evalVGH_v_err,evalVGH_g_err,evalVGH_h_err)
+  // clang-format on
   {
     const int np=omp_get_num_threads();
     const int ip=omp_get_thread_num();

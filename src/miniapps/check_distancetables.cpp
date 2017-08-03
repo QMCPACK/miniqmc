@@ -70,11 +70,13 @@ int main(int argc, char** argv)
 
   Random.init(0,1,iseed);
 
+  // clang-format off
   typedef QMCTraits::RealType           RealType;
   typedef ParticleSet::ParticlePos_t    ParticlePos_t;
   typedef ParticleSet::ParticleLayout_t LatticeType;
   typedef ParticleSet::TensorType       TensorType;
   typedef ParticleSet::PosType          PosType;
+  // clang-format on
 
   Tensor<int,3> tmat(na,0,0,0,nb,0,0,0,nc);
   double t0=0.0,t1=0.0;

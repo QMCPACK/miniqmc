@@ -74,11 +74,13 @@ int main(int argc, char** argv)
 
   OhmmsInfo("walker");
 
+  // clang-format off
   typedef QMCTraits::RealType           RealType;
   typedef ParticleSet::ParticlePos_t    ParticlePos_t;
   typedef ParticleSet::ParticleLayout_t LatticeType;
   typedef ParticleSet::TensorType       TensorType;
   typedef ParticleSet::PosType          PosType;
+  // clang-format on
 
   //use the global generator
 

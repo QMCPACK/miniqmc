@@ -41,11 +41,13 @@ int main(int argc, char** argv)
 
   OhmmsInfo("CheckWaveFunctionComponents");
 
+  // clang-format off
   typedef QMCTraits::RealType           RealType;
   typedef ParticleSet::ParticlePos_t    ParticlePos_t;
   typedef ParticleSet::ParticleLayout_t LatticeType;
   typedef ParticleSet::TensorType       TensorType;
   typedef ParticleSet::PosType          PosType;
+  // clang-format on
 
   //use the global generator
 
@@ -116,9 +118,11 @@ int main(int argc, char** argv)
 
   PrimeNumberSet<uint32_t> myPrimes;
 
+  // clang-format off
   #pragma omp parallel reduction(+:t0,ratio) \
    reduction(+:evaluateLog_v_err,evaluateLog_g_err,evaluateLog_l_err,evalGrad_g_err) \
    reduction(+:ratioGrad_r_err,ratioGrad_g_err,evaluateGL_g_err,evaluateGL_l_err,ratio_err)
+  // clang-format on
   {
     ParticleSet ions, els;
     ions.setName("ion");

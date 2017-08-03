@@ -10,6 +10,7 @@
 // File created by: Jeongnim Kim, jeongnim.kim@intel.com, Intel Corp.
 //////////////////////////////////////////////////////////////////////////////////////
 // -*- C++ -*-
+// clang-format off
 /** @file miniqmc.cpp
     @brief Miniapp to capture the computation in particle moves.
  
@@ -41,6 +42,7 @@
   This miniapp only contains the B-spline and polynomial functional form, since it is the most widely used.
   The QMCPACK distribution contains other functional forms.
  */
+// clang-format on
 
 
 #include <Configuration.h>
