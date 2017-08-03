@@ -1,23 +1,26 @@
 //////////////////////////////////////////////////////////////////////////////////////
-// This file is distributed under the University of Illinois/NCSA Open Source License.
+// This file is distributed under the University of Illinois/NCSA Open Source
+// License.
 // See LICENSE file in top directory for details.
 //
 // Copyright (c) 2016 Jeongnim Kim and QMCPACK developers.
 //
 // File developed by: D. Das, University of Illinois at Urbana-Champaign
 //                    Bryan Clark, bclark@Princeton.edu, Princeton University
-//                    Ken Esler, kpesler@gmail.com, University of Illinois at Urbana-Champaign
-//                    Jeremy McMinnis, jmcminis@gmail.com, University of Illinois at Urbana-Champaign
-//                    Jeongnim Kim, jeongnim.kim@gmail.com, University of Illinois at Urbana-Champaign
-//                    Jaron T. Krogel, krogeljt@ornl.gov, Oak Ridge National Laboratory
-//                    Mark A. Berrill, berrillma@ornl.gov, Oak Ridge National Laboratory
+//                    Ken Esler, kpesler@gmail.com, University of Illinois at
+//                    Urbana-Champaign
+//                    Jeremy McMinnis, jmcminis@gmail.com, University of
+//                    Illinois at Urbana-Champaign
+//                    Jeongnim Kim, jeongnim.kim@gmail.com, University of
+//                    Illinois at Urbana-Champaign
+//                    Jaron T. Krogel, krogeljt@ornl.gov, Oak Ridge National
+//                    Laboratory
+//                    Mark A. Berrill, berrillma@ornl.gov, Oak Ridge National
+//                    Laboratory
 //
-// File created by: Jeongnim Kim, jeongnim.kim@gmail.com, University of Illinois at Urbana-Champaign
+// File created by: Jeongnim Kim, jeongnim.kim@gmail.com, University of Illinois
+// at Urbana-Champaign
 //////////////////////////////////////////////////////////////////////////////////////
-    
-    
-
-
 
 #ifndef QMCPLUSPLUS_PARTICLESET_H
 #define QMCPLUSPLUS_PARTICLESET_H
@@ -31,7 +34,7 @@
 namespace qmcplusplus
 {
 
-///forward declaration of DistanceTableData
+/// forward declaration of DistanceTableData
 class DistanceTableData;
 
 /** Monte Carlo Data of an ensemble
@@ -43,8 +46,7 @@ class DistanceTableData;
  * - Variance   variance
  * - LivingFraction fraction of walkers alive each step.
  */
-template<typename T>
-struct MCDataType
+template <typename T> struct MCDataType
 {
   T NumSamples;
   T RNSamples;
@@ -57,65 +59,65 @@ struct MCDataType
   T LivingFraction;
 };
 
-
 /** Specialized paritlce class for atomistic simulations
  *
- * Derived from QMCTraits, ParticleBase<PtclOnLatticeTraits> and OhmmsElementBase.
- * The ParticleLayout class represents a supercell with/without periodic boundary
- * conditions. The ParticleLayout class also takes care of spatial decompositions
+ * Derived from QMCTraits, ParticleBase<PtclOnLatticeTraits> and
+ * OhmmsElementBase.
+ * The ParticleLayout class represents a supercell with/without periodic
+ * boundary
+ * conditions. The ParticleLayout class also takes care of spatial
+ * decompositions
  * for efficient evaluations for the interactions with a finite cutoff.
  */
-class ParticleSet
-  :  public QMCTraits
-  , public PtclOnLatticeTraits
+class ParticleSet : public QMCTraits, public PtclOnLatticeTraits
 {
 public:
   ///@typedef walker type
-  typedef Walker<QMCTraits,PtclOnLatticeTraits> Walker_t;
+  typedef Walker<QMCTraits, PtclOnLatticeTraits> Walker_t;
   ///@typedef buffer type for a serialized buffer
-  typedef Walker_t::Buffer_t             Buffer_t;
+  typedef Walker_t::Buffer_t Buffer_t;
 
-  ///the name of the particle set.
+  /// the name of the particle set.
   std::string myName;
   //!< ParticleLayout
   ParticleLayout_t Lattice, PrimitiveLattice;
   //!< unique, persistent ID for each particle
   ParticleIndex_t ID;
-  ///index to the primitice cell with tiling
+  /// index to the primitice cell with tiling
   ParticleIndex_t PCID;
   //!< Species ID
   ParticleIndex_t GroupID;
   //!< Position
   ParticlePos_t R;
-  ///SoA copy of R
-  VectorSoaContainer<RealType,DIM> RSoA;
-  ///gradients of the particles
+  /// SoA copy of R
+  VectorSoaContainer<RealType, DIM> RSoA;
+  /// gradients of the particles
   ParticleGradient_t G;
-  ///laplacians of the particles
+  /// laplacians of the particles
   ParticleLaplacian_t L;
   /** ID map that reflects species group
    *
    * IsGrouped=true, if ID==IndirectID
    */
   ParticleIndex_t IndirectID;
-  ///mass of each particle
+  /// mass of each particle
   ParticleScalar_t Mass;
-  ///charge of each particle
+  /// charge of each particle
   ParticleScalar_t Z;
 
-  ///Long-range box
+  /// Long-range box
   ParticleLayout_t LRBox;
-  ///true, if a physical or local bounding box is used
+  /// true, if a physical or local bounding box is used
   bool UseBoundBox;
-  ///true if fast update for sphere moves
+  /// true if fast update for sphere moves
   bool UseSphereUpdate;
-  ///true if the particles are grouped
+  /// true if the particles are grouped
   bool IsGrouped;
-  ///true if the particles have the same mass
+  /// true if the particles have the same mass
   bool SameMass;
   /// true if all the internal state is ready for estimators
   bool Ready4Measure;
-  ///the index of the active particle for particle-by-particle moves
+  /// the index of the active particle for particle-by-particle moves
   Index_t activePtcl;
 
   /** the position of the active particle for particle-by-particle moves
@@ -128,22 +130,22 @@ public:
    */
   SingleParticlePos_t newRedPos;
 
-  ///SpeciesSet of particles
+  /// SpeciesSet of particles
   SpeciesSet mySpecies;
 
-  ///distance tables that need to be updated by moving this ParticleSet
-  std::vector<DistanceTableData*> DistTables;
+  /// distance tables that need to be updated by moving this ParticleSet
+  std::vector<DistanceTableData *> DistTables;
 
-  ///current MC step
+  /// current MC step
   int current_step;
 
-  ///default constructor
+  /// default constructor
   ParticleSet();
 
-  ///copy constructor
-  ParticleSet(const ParticleSet& p);
+  /// copy constructor
+  ParticleSet(const ParticleSet &p);
 
-  ///default destructor
+  /// default destructor
   virtual ~ParticleSet();
 
   /** create  particles
@@ -153,18 +155,18 @@ public:
   /** create grouped particles
    * @param agroup number of particles per group
    */
-  void create(const std::vector<int>& agroup);
+  void create(const std::vector<int> &agroup);
 
-  ///write to a std::ostream
-  bool get(std::ostream& ) const;
+  /// write to a std::ostream
+  bool get(std::ostream &) const;
 
-  ///read from std::istream
-  bool put( std::istream& );
+  /// read from std::istream
+  bool put(std::istream &);
 
-  ///reset member data
+  /// reset member data
   void reset();
 
-  ///set UseBoundBox
+  /// set UseBoundBox
   void setBoundBox(bool yes);
 
   /**  add a distance table
@@ -172,34 +174,22 @@ public:
    *
    * Ensure that the distance for this-this is always created first.
    */
-  int addTable(const ParticleSet& psrc, int dt_type);
+  int addTable(const ParticleSet &psrc, int dt_type);
 
   /** update the internal data
    *@param skip SK update if skipSK is true
    */
-  void update(bool skipSK=false);
+  void update(bool skipSK = false);
 
-  ///retrun the SpeciesSet of this particle set
-  inline SpeciesSet& getSpeciesSet()
-  {
-    return mySpecies;
-  }
-  ///retrun the const SpeciesSet of this particle set
-  inline const SpeciesSet& getSpeciesSet() const
-  {
-    return mySpecies;
-  }
+  /// retrun the SpeciesSet of this particle set
+  inline SpeciesSet &getSpeciesSet() { return mySpecies; }
+  /// retrun the const SpeciesSet of this particle set
+  inline const SpeciesSet &getSpeciesSet() const { return mySpecies; }
 
-  inline void setName(const std::string& aname)
-  {
-    myName     = aname;
-  }
+  inline void setName(const std::string &aname) { myName = aname; }
 
-  ///return the name
-  inline const std::string& getName() const
-  {
-    return myName;
-  }
+  /// return the name
+  inline const std::string &getName() const { return myName; }
 
   void resetGroups();
 
@@ -210,22 +200,23 @@ public:
    * Introduced to work with update-only methods.
    */
   void setActive(int iat);
-  
+
   /** move a particle
    * @param iat the index of the particle to be moved
    * @param displ random displacement of the iat-th particle
    * @return true, if the move is valid
    */
-  bool makeMoveAndCheck(Index_t iat, const SingleParticlePos_t& displ);
+  bool makeMoveAndCheck(Index_t iat, const SingleParticlePos_t &displ);
 
   /** move a particle
    * @param iat the index of the particle to be moved
    * @param displ random displacement of the iat-th particle
    */
-  void makeMoveOnSphere(Index_t iat, const SingleParticlePos_t& displ);
+  void makeMoveOnSphere(Index_t iat, const SingleParticlePos_t &displ);
 
   /** accept the move
-   *@param iat the index of the particle whose position and other attributes to be updated
+   *@param iat the index of the particle whose position and other attributes to
+   *be updated
    */
   void acceptMove(Index_t iat);
 
@@ -235,8 +226,8 @@ public:
 
   void clearDistanceTables();
 
-  void convert2Unit(ParticlePos_t& pout);
-  void convert2Cart(ParticlePos_t& pout);
+  void convert2Unit(ParticlePos_t &pout);
+  void convert2Cart(ParticlePos_t &pout);
 
   /** load a Walker_t to the current ParticleSet
    * @param awalker the reference to the walker to be loaded
@@ -244,36 +235,27 @@ public:
    *
    * PbyP requires the distance tables and Sk with awalker.R
    */
-  void loadWalker(Walker_t& awalker, bool pbyp);
+  void loadWalker(Walker_t &awalker, bool pbyp);
   /** save this to awalker
    */
-  void saveWalker(Walker_t& awalker);
+  void saveWalker(Walker_t &awalker);
 
   /** update the buffer
    *@param skip SK update if skipSK is true
    */
-  void donePbyP(bool skipSK=false);
+  void donePbyP(bool skipSK = false);
 
-  inline void setTwist(SingleParticlePos_t& t)
-  {
-    myTwist=t;
-  }
-  inline SingleParticlePos_t getTwist() const
-  {
-    return myTwist;
-  }
+  inline void setTwist(SingleParticlePos_t &t) { myTwist = t; }
+  inline SingleParticlePos_t getTwist() const { return myTwist; }
 
   /** get species name of particle i
    */
-  inline const std::string& species_from_index(int i)
+  inline const std::string &species_from_index(int i)
   {
     return mySpecies.speciesName[GroupID[i]];
   }
 
-  inline int getTotalNum() const
-  {
-    return TotalNum;
-  }
+  inline int getTotalNum() const { return TotalNum; }
 
   inline void resize(int numPtcl)
   {
@@ -292,40 +274,31 @@ public:
     RSoA.resize(numPtcl);
   }
 
-  inline void assign(const ParticleSet& ptclin)
+  inline void assign(const ParticleSet &ptclin)
   {
     TotalNum = ptclin.getTotalNum();
     resize(TotalNum);
-    Lattice = ptclin.Lattice;
+    Lattice          = ptclin.Lattice;
     PrimitiveLattice = ptclin.PrimitiveLattice;
-    R.InUnit = ptclin.R.InUnit;
-    R = ptclin.R;
-    ID = ptclin.ID;
-    GroupID = ptclin.GroupID;
-    if(ptclin.SubPtcl.size())
+    R.InUnit         = ptclin.R.InUnit;
+    R                = ptclin.R;
+    ID               = ptclin.ID;
+    GroupID          = ptclin.GroupID;
+    if (ptclin.SubPtcl.size())
     {
       SubPtcl.resize(ptclin.SubPtcl.size());
-      SubPtcl =ptclin.SubPtcl;
+      SubPtcl = ptclin.SubPtcl;
     }
   }
 
-  ///return the number of groups
-  inline int groups() const
-  {
-    return SubPtcl.size()-1;
-  }
+  /// return the number of groups
+  inline int groups() const { return SubPtcl.size() - 1; }
 
-  ///return the first index of a group i
-  inline int first(int igroup) const
-  {
-    return SubPtcl[igroup];
-  }
+  /// return the first index of a group i
+  inline int first(int igroup) const { return SubPtcl[igroup]; }
 
-  ///return the last index of a group i
-  inline int last(int igroup) const
-  {
-    return SubPtcl[igroup+1];
-  }
+  /// return the last index of a group i
+  inline int last(int igroup) const { return SubPtcl[igroup + 1]; }
 
 protected:
   /** map to handle distance tables
@@ -333,16 +306,15 @@ protected:
    * myDistTableMap[source-particle-tag]= locator in the distance table
    * myDistTableMap[ObjectTag] === 0
    */
-  std::map<std::string,int> myDistTableMap;
+  std::map<std::string, int> myDistTableMap;
 
   SingleParticlePos_t myTwist;
 
-  ///total number of particles
+  /// total number of particles
   int TotalNum;
 
-  ///array to handle a group of distinct particles per species
-  ParticleIndex_t                       SubPtcl;
-
+  /// array to handle a group of distinct particles per species
+  ParticleIndex_t SubPtcl;
 };
 }
 #endif

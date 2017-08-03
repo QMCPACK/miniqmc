@@ -1,18 +1,18 @@
 //////////////////////////////////////////////////////////////////////////////////////
-// This file is distributed under the University of Illinois/NCSA Open Source License.
+// This file is distributed under the University of Illinois/NCSA Open Source
+// License.
 // See LICENSE file in top directory for details.
 //
 // Copyright (c) 2016 Jeongnim Kim and QMCPACK developers.
 //
-// File developed by: Jeremy McMinnis, jmcminis@gmail.com, University of Illinois at Urbana-Champaign
-//                    Jeongnim Kim, jeongnim.kim@gmail.com, University of Illinois at Urbana-Champaign
+// File developed by: Jeremy McMinnis, jmcminis@gmail.com, University of
+// Illinois at Urbana-Champaign
+//                    Jeongnim Kim, jeongnim.kim@gmail.com, University of
+//                    Illinois at Urbana-Champaign
 //
-// File created by: Jeongnim Kim, jeongnim.kim@gmail.com, University of Illinois at Urbana-Champaign
+// File created by: Jeongnim Kim, jeongnim.kim@gmail.com, University of Illinois
+// at Urbana-Champaign
 //////////////////////////////////////////////////////////////////////////////////////
-    
-    
-
-
 
 #ifndef QMCPLUSPLUS_DISTANCETABLE_H
 #define QMCPLUSPLUS_DISTANCETABLE_H
@@ -31,27 +31,30 @@ namespace qmcplusplus
  * of ParticleSet to add a distance table
  * int ParticleSet::addTable(const ParticleSet& source)
  *
- *\todo DistanceTable should work as a factory, as well, to instantiate DistanceTableData
+ *\todo DistanceTable should work as a factory, as well, to instantiate
+ *DistanceTableData
  * subject to different boundary conditions.
- * Lattice/CrystalLattice.h and Lattice/CrystalLattice.cpp can be owned by DistanceTable
+ * Lattice/CrystalLattice.h and Lattice/CrystalLattice.cpp can be owned by
+ *DistanceTable
  * to generically control the crystalline structure.
  */
-//struct DistanceTable
+// struct DistanceTable
 namespace DistanceTable
 {
-  ///add a named DistanceTableData_t of Symmectric type
-  DistanceTableData* add(ParticleSet& s, int dt_type);//, const char* aname = NULL);
+/// add a named DistanceTableData_t of Symmectric type
+DistanceTableData *add(ParticleSet &s,
+                       int dt_type); //, const char* aname = NULL);
 
-  ///add a named DistanceTableData_t of Asymmectric type
-  DistanceTableData* add(const ParticleSet& s, ParticleSet& t, int dt_type);//, const char* aname = NULL);
-
+/// add a named DistanceTableData_t of Asymmectric type
+DistanceTableData *add(const ParticleSet &s, ParticleSet &t,
+                       int dt_type); //, const char* aname = NULL);
 }
 
-///free function to create a distable table of s-s
-DistanceTableData* createDistanceTable(ParticleSet& s, int dt_type);
+/// free function to create a distable table of s-s
+DistanceTableData *createDistanceTable(ParticleSet &s, int dt_type);
 
-///free function create a distable table of s-t
-DistanceTableData* createDistanceTable(const ParticleSet& s, ParticleSet& t, int dt_type);
-
+/// free function create a distable table of s-t
+DistanceTableData *createDistanceTable(const ParticleSet &s, ParticleSet &t,
+                                       int dt_type);
 }
 #endif

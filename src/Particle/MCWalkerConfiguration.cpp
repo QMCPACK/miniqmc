@@ -1,24 +1,27 @@
 //////////////////////////////////////////////////////////////////////////////////////
-// This file is distributed under the University of Illinois/NCSA Open Source License.
+// This file is distributed under the University of Illinois/NCSA Open Source
+// License.
 // See LICENSE file in top directory for details.
 //
 // Copyright (c) 2016 Jeongnim Kim and QMCPACK developers.
 //
-// File developed by: Jordan E. Vincent, University of Illinois at Urbana-Champaign
+// File developed by: Jordan E. Vincent, University of Illinois at
+// Urbana-Champaign
 //                    Bryan Clark, bclark@Princeton.edu, Princeton University
-//                    Ken Esler, kpesler@gmail.com, University of Illinois at Urbana-Champaign
-//                    Jeremy McMinnis, jmcminis@gmail.com, University of Illinois at Urbana-Champaign
-//                    Jeongnim Kim, jeongnim.kim@gmail.com, University of Illinois at Urbana-Champaign
+//                    Ken Esler, kpesler@gmail.com, University of Illinois at
+//                    Urbana-Champaign
+//                    Jeremy McMinnis, jmcminis@gmail.com, University of
+//                    Illinois at Urbana-Champaign
+//                    Jeongnim Kim, jeongnim.kim@gmail.com, University of
+//                    Illinois at Urbana-Champaign
 //                    Cynthia Gu, zg1@ornl.gov, Oak Ridge National Laboratory
 //                    Ye Luo, yeluo@anl.gov, Argonne National Laboratory
-//                    Mark A. Berrill, berrillma@ornl.gov, Oak Ridge National Laboratory
+//                    Mark A. Berrill, berrillma@ornl.gov, Oak Ridge National
+//                    Laboratory
 //
-// File created by: Jeongnim Kim, jeongnim.kim@gmail.com, University of Illinois at Urbana-Champaign
+// File created by: Jeongnim Kim, jeongnim.kim@gmail.com, University of Illinois
+// at Urbana-Champaign
 //////////////////////////////////////////////////////////////////////////////////////
-    
-    
-
-
 
 #include "Utilities/OhmmsInfo.h"
 #include "Particle/MCWalkerConfiguration.h"
@@ -30,65 +33,63 @@
 namespace qmcplusplus
 {
 
-MCWalkerConfiguration::MCWalkerConfiguration():
-  OwnWalkers(true),ReadyForPbyP(false),UpdateMode(Update_Walker),
+MCWalkerConfiguration::MCWalkerConfiguration()
+    : OwnWalkers(true), ReadyForPbyP(false), UpdateMode(Update_Walker),
 
-  MaxSamples(10),CurSampleCount(0),GlobalNumWalkers(0)
+      MaxSamples(10), CurSampleCount(0), GlobalNumWalkers(0)
 {
-  //move to ParticleSet
-  //initPropertyList();
+  // move to ParticleSet
+  // initPropertyList();
 }
 
-MCWalkerConfiguration::MCWalkerConfiguration(const MCWalkerConfiguration& mcw)
-  : ParticleSet(mcw), OwnWalkers(true), GlobalNumWalkers(mcw.GlobalNumWalkers),
-    UpdateMode(Update_Walker), ReadyForPbyP(false),
-    MaxSamples(mcw.MaxSamples), CurSampleCount(0)
+MCWalkerConfiguration::MCWalkerConfiguration(const MCWalkerConfiguration &mcw)
+    : ParticleSet(mcw), OwnWalkers(true),
+      GlobalNumWalkers(mcw.GlobalNumWalkers), UpdateMode(Update_Walker),
+      ReadyForPbyP(false), MaxSamples(mcw.MaxSamples), CurSampleCount(0)
 {
-  GlobalNumWalkers=mcw.GlobalNumWalkers;
-  WalkerOffsets=mcw.WalkerOffsets;
+  GlobalNumWalkers = mcw.GlobalNumWalkers;
+  WalkerOffsets    = mcw.WalkerOffsets;
 }
 
-///default destructor
+/// default destructor
 MCWalkerConfiguration::~MCWalkerConfiguration()
 {
-  if(OwnWalkers)
-    destroyWalkers(WalkerList.begin(), WalkerList.end());
+  if (OwnWalkers) destroyWalkers(WalkerList.begin(), WalkerList.end());
 }
-
 
 void MCWalkerConfiguration::createWalkers(int n)
 {
-  if(WalkerList.empty())
+  if (WalkerList.empty())
   {
-    while(n)
+    while (n)
     {
-      Walker_t* awalker=new Walker_t(TotalNum);
-      awalker->R = R;
+      Walker_t *awalker = new Walker_t(TotalNum);
+      awalker->R        = R;
       WalkerList.push_back(awalker);
       --n;
     }
   }
   else
   {
-    if(WalkerList.size()>=n)
+    if (WalkerList.size() >= n)
     {
-      int iw=WalkerList.size();//copy from the back
-      for(int i=0; i<n; ++i)
+      int iw = WalkerList.size(); // copy from the back
+      for (int i = 0; i < n; ++i)
       {
         WalkerList.push_back(new Walker_t(*WalkerList[--iw]));
       }
     }
     else
     {
-      int nc=n/WalkerList.size();
-      int nw0=WalkerList.size();
-      for(int iw=0; iw<nw0; ++iw)
+      int nc  = n / WalkerList.size();
+      int nw0 = WalkerList.size();
+      for (int iw = 0; iw < nw0; ++iw)
       {
-        for(int ic=0; ic<nc; ++ic)
+        for (int ic = 0; ic < nc; ++ic)
           WalkerList.push_back(new Walker_t(*WalkerList[iw]));
       }
-      n-=nc*nw0;
-      while(n>0)
+      n -= nc * nw0;
+      while (n > 0)
       {
         WalkerList.push_back(new Walker_t(*WalkerList[--nw0]));
         --n;
@@ -97,127 +98,123 @@ void MCWalkerConfiguration::createWalkers(int n)
   }
 }
 
-
 void MCWalkerConfiguration::resize(int numWalkers, int numPtcls)
 {
-  if(TotalNum && WalkerList.size())
-    app_warning() << "MCWalkerConfiguration::resize cleans up the walker list." << std::endl;
+  if (TotalNum && WalkerList.size())
+    app_warning() << "MCWalkerConfiguration::resize cleans up the walker list."
+                  << std::endl;
   ParticleSet::resize(numPtcls);
-  int dn=numWalkers-WalkerList.size();
-  if(dn>0)
-    createWalkers(dn);
-  if(dn<0)
+  int dn = numWalkers - WalkerList.size();
+  if (dn > 0) createWalkers(dn);
+  if (dn < 0)
   {
-    int nw=-dn;
-    if(nw<WalkerList.size())
+    int nw = -dn;
+    if (nw < WalkerList.size())
     {
       iterator it = WalkerList.begin();
-      while(nw)
+      while (nw)
       {
         delete *it;
         ++it;
         --nw;
       }
-      WalkerList.erase(WalkerList.begin(),WalkerList.begin()-dn);
+      WalkerList.erase(WalkerList.begin(), WalkerList.begin() - dn);
     }
   }
-  //iterator it = WalkerList.begin();
-  //while(it != WalkerList.end()) {
+  // iterator it = WalkerList.begin();
+  // while(it != WalkerList.end()) {
   //  delete *it++;
   //}
-  //WalkerList.erase(WalkerList.begin(),WalkerList.end());
-  //R.resize(np);
-  //GlobalNum = np;
-  //createWalkers(nw);
+  // WalkerList.erase(WalkerList.begin(),WalkerList.end());
+  // R.resize(np);
+  // GlobalNum = np;
+  // createWalkers(nw);
 }
 
-///returns the next valid iterator
+/// returns the next valid iterator
 MCWalkerConfiguration::iterator
 MCWalkerConfiguration::destroyWalkers(iterator first, iterator last)
 {
-  if(OwnWalkers)
+  if (OwnWalkers)
   {
     iterator it = first;
-    while(it != last)
+    while (it != last)
     {
       delete *it++;
     }
   }
-  return WalkerList.erase(first,last);
+  return WalkerList.erase(first, last);
 }
 
 void MCWalkerConfiguration::createWalkers(iterator first, iterator last)
 {
-  destroyWalkers(WalkerList.begin(),WalkerList.end());
-  OwnWalkers=true;
-  while(first != last)
+  destroyWalkers(WalkerList.begin(), WalkerList.end());
+  OwnWalkers = true;
+  while (first != last)
   {
     WalkerList.push_back(new Walker_t(**first));
     ++first;
   }
 }
 
-void
-MCWalkerConfiguration::destroyWalkers(int nw)
+void MCWalkerConfiguration::destroyWalkers(int nw)
 {
-  if(nw > WalkerList.size())
+  if (nw > WalkerList.size())
   {
-    app_warning() << "  Cannot remove walkers. Current Walkers = " << WalkerList.size() << std::endl;
+    app_warning() << "  Cannot remove walkers. Current Walkers = "
+                  << WalkerList.size() << std::endl;
     return;
   }
-  nw=WalkerList.size()-nw;
-  int iw=nw;
-  while(iw<WalkerList.size())
+  nw     = WalkerList.size() - nw;
+  int iw = nw;
+  while (iw < WalkerList.size())
   {
     delete WalkerList[iw++];
   }
-  //iterator it(WalkerList.begin()+nw),it_end(WalkerList.end());
-  //while(it != it_end)
+  // iterator it(WalkerList.begin()+nw),it_end(WalkerList.end());
+  // while(it != it_end)
   //{
   //  delete *it++;
   //}
-  WalkerList.erase(WalkerList.begin()+nw,WalkerList.end());
+  WalkerList.erase(WalkerList.begin() + nw, WalkerList.end());
 }
 
-void MCWalkerConfiguration::copyWalkers(iterator first, iterator last, iterator it)
+void MCWalkerConfiguration::copyWalkers(iterator first, iterator last,
+                                        iterator it)
 {
-  while(first != last)
+  while (first != last)
   {
     (*it++)->makeCopy(**first++);
   }
 }
 
-
-void
-MCWalkerConfiguration::copyWalkerRefs(Walker_t* head, Walker_t* tail)
+void MCWalkerConfiguration::copyWalkerRefs(Walker_t *head, Walker_t *tail)
 {
-  if(OwnWalkers)
-    //destroy the current walkers
+  if (OwnWalkers)
+  // destroy the current walkers
   {
     destroyWalkers(WalkerList.begin(), WalkerList.end());
     WalkerList.clear();
-    OwnWalkers=false;//set to false to prevent deleting the Walkers
+    OwnWalkers = false; // set to false to prevent deleting the Walkers
   }
-  if(WalkerList.size()<2)
+  if (WalkerList.size() < 2)
   {
     WalkerList.push_back(0);
     WalkerList.push_back(0);
   }
-  WalkerList[0]=head;
-  WalkerList[1]=tail;
+  WalkerList[0] = head;
+  WalkerList[1] = tail;
 }
 
 void MCWalkerConfiguration::reset()
 {
   iterator it(WalkerList.begin()), it_end(WalkerList.end());
-  while(it != it_end)
-    //(*it)->reset();++it;}
+  while (it != it_end)
+  //(*it)->reset();++it;}
   {
-    (*it)->Weight=1.0;
-    (*it)->Multiplicity=1.0;
+    (*it)->Weight       = 1.0;
+    (*it)->Multiplicity = 1.0;
     ++it;
   }
 }
-
 }
-
