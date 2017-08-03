@@ -570,12 +570,14 @@ struct OTBinary< TinyMatrix<T1,4,4> , TinyMatrix<T2,4,4>, OP >
   inline static Return_t
   apply(const TinyMatrix<T1,4,4>& lhs, const TinyMatrix<T2,4,4>& rhs, OP op)
   {
+    // clang-format off
     return Return_t(op(lhs[ 0],rhs[ 0]), op(lhs[ 1],rhs[ 1]), op(lhs[ 2],rhs[ 2]),
                     op(lhs[ 3],rhs[ 3]), op(lhs[ 4],rhs[ 4]), op(lhs[ 5],rhs[ 5]),
                     op(lhs[ 6],rhs[ 6]), op(lhs[ 7],rhs[ 7]), op(lhs[ 8],rhs[ 8]),
                     op(lhs[ 9],rhs[ 9]), op(lhs[10],rhs[10]), op(lhs[11],rhs[11]),
                     op(lhs[12],rhs[12]), op(lhs[13],rhs[13]), op(lhs[14],rhs[14]),
                     op(lhs[15],rhs[15]));
+    // clang-format on
   }
 };
 

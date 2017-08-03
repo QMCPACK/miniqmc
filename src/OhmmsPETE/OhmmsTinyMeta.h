@@ -1,21 +1,23 @@
 //////////////////////////////////////////////////////////////////////////////////////
-// This file is distributed under the University of Illinois/NCSA Open Source License.
+// This file is distributed under the University of Illinois/NCSA Open Source
+// License.
 // See LICENSE file in top directory for details.
 //
 // Copyright (c) 2016 Jeongnim Kim and QMCPACK developers.
 //
-// File developed by: Jeremy McMinnis, jmcminis@gmail.com, University of Illinois at Urbana-Champaign   
+// File developed by: Jeremy McMinnis, jmcminis@gmail.com, University of
+// Illinois at Urbana-Champaign
 //
-// File created by: Jeongnim Kim, jeongnim.kim@gmail.com, University of Illinois at Urbana-Champaign 
+// File created by: Jeongnim Kim, jeongnim.kim@gmail.com, University of Illinois
+// at Urbana-Champaign
 //////////////////////////////////////////////////////////////////////////////////////
-
 
 #ifndef OHMMS_TINY_META_H
 #define OHMMS_TINY_META_H
 
-
 namespace qmcplusplus
 {
+// clang-format off
 /* \note
  *  For optimization, operators for TinyVector and Tensor classes are specalized for D.
  *  Instead of using PETE generated operators, the operators for TinyVector, Tensor and TinyMatrix
@@ -181,6 +183,6 @@ FUNC( TENT<T1,D1,D2>& v1, const T2& v2 )                                      \
   OTAssign<TENT<T1,D1,D2>,T2,TAG>::apply(v1,v2,TAG());                        \
   return v1;                                                                  \
 }                                                                             \
- 
+// clang-format on
 #endif // OHMMS_TINY_META_H
 
