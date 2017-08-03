@@ -27,7 +27,7 @@ namespace qmcplusplus
 {
 
   template<typename T>
-    struct MultiBsplineRef: public MultiBsplineData<T>
+    struct MultiBsplineRef
     {
       ///define the einsplie object type
       using spliner_type=typename bspline_traits<T,3>::SplineType;
