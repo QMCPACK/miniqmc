@@ -1,28 +1,29 @@
 //////////////////////////////////////////////////////////////////////////////////////
-// This file is distributed under the University of Illinois/NCSA Open Source License.
+// This file is distributed under the University of Illinois/NCSA Open Source
+// License.
 // See LICENSE file in top directory for details.
 //
 // Copyright (c) 2016 Jeongnim Kim and QMCPACK developers.
 //
-// File developed by: Jeremy McMinnis, jmcminis@gmail.com, University of Illinois at Urbana-Champaign
-//                    Jeongnim Kim, jeongnim.kim@gmail.com, University of Illinois at Urbana-Champaign
+// File developed by: Jeremy McMinnis, jmcminis@gmail.com, University of
+// Illinois at Urbana-Champaign
+//                    Jeongnim Kim, jeongnim.kim@gmail.com, University of
+//                    Illinois at Urbana-Champaign
 //
-// File created by: Jeongnim Kim, jeongnim.kim@gmail.com, University of Illinois at Urbana-Champaign
+// File created by: Jeongnim Kim, jeongnim.kim@gmail.com, University of Illinois
+// at Urbana-Champaign
 //////////////////////////////////////////////////////////////////////////////////////
-    
-    
-
-
 
 #ifndef QMCPLUSPLUS_PARTICLE_BCONDS_H
 #define QMCPLUSPLUS_PARTICLE_BCONDS_H
 
-#include <config.h>
 #include <Lattice/CrystalLattice.h>
+#include <config.h>
 
 namespace qmcplusplus
 {
 
+// clang-format off
 /** generic Boundary condition handler
  *
  * @tparam T real data type
@@ -47,50 +48,46 @@ namespace qmcplusplus
  * - apply_bc(TinyVector<T,D>& displ): apply BC on displ, Cartesian displacement vector, and returns |displ|^2
  * - apply_bc(dr,r,rinv): apply BC on displacements
  */
-template<class T, unsigned D, int SC>
-struct DTD_BConds
+// clang-format on
+
+template <class T, unsigned D, int SC> struct DTD_BConds
 {
 
   /** constructor: doing nothing */
-  inline DTD_BConds(const CrystalLattice<T,D>& lat)
+  inline DTD_BConds(const CrystalLattice<T, D> &lat)
   {
-    APP_ABORT("qmcplusplus::DTD_BConds default DTD_BConds is not allowed in miniQMC!\n");
+    APP_ABORT("qmcplusplus::DTD_BConds default DTD_BConds is not allowed in "
+              "miniQMC!\n");
   }
 
   /** apply BC on displ and return |displ|^2
    * @param displ a displacement vector in the Cartesian coordinate
    * @return \f$|displ|^2\f$
    */
-  inline T apply_bc(TinyVector<T,D>& displ) const
-  {
-    return dot(displ,displ);
-  }
+  inline T apply_bc(TinyVector<T, D> &displ) const { return dot(displ, displ); }
 
   /** apply BC on dr and evaluate r and rinv
    * @param dr vector of displacements, in and out
    * @param r vector of distances
    * @param rinv vector of 1/r
    *
-   * The input displacement vectors are not modified with the open boundary conditions.
+   * The input displacement vectors are not modified with the open boundary
+   * conditions.
    */
-  inline void apply_bc(std::vector<TinyVector<T,D> >& dr
-                       , std::vector<T>& r
-                       , std::vector<T>& rinv) const
+  inline void apply_bc(std::vector<TinyVector<T, D>> &dr, std::vector<T> &r,
+                       std::vector<T> &rinv) const
   {
-    const int n=dr.size();
+    const int n = dr.size();
     const T cone(1);
-    for(int i=0; i<n; ++i)
+    for (int i = 0; i < n; ++i)
     {
-      r[i]=std::sqrt(apply_bc(dr[i]));
-      rinv[i]=cone/r[i];
+      r[i]    = std::sqrt(apply_bc(dr[i]));
+      rinv[i] = cone / r[i];
     }
   }
-
 };
-
 }
 
 #include <Lattice/ParticleBConds3D.h>
 
 #endif // OHMMS_PARTICLE_BCONDS_H
-
