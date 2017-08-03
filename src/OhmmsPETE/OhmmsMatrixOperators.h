@@ -6,10 +6,10 @@
 // Copyright (c) 2016 Jeongnim Kim and QMCPACK developers.
 //
 // File developed by: Jeremy McMinnis, jmcminis@gmail.com, University of
-// Illinois at Urbana-Champaign
+//                    Illinois at Urbana-Champaign
 //
 // File created by: Jeongnim Kim, jeongnim.kim@gmail.com, University of Illinois
-// at Urbana-Champaign
+//                  at Urbana-Champaign
 //////////////////////////////////////////////////////////////////////////////////////
 
 #ifndef OHMMS_MATRIXOPERATOR_H

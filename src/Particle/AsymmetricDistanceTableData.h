@@ -6,7 +6,7 @@
 // Copyright (c) 2016 Jeongnim Kim and QMCPACK developers.
 //
 // File developed by: Jeremy McMinnis, jmcminis@gmail.com, University of
-// Illinois at Urbana-Champaign
+//                    Illinois at Urbana-Champaign
 //                    Jeongnim Kim, jeongnim.kim@gmail.com, University of
 //                    Illinois at Urbana-Champaign
 //                    Jaron T. Krogel, krogeljt@ornl.gov, Oak Ridge National
@@ -15,7 +15,7 @@
 //                    Laboratory
 //
 // File created by: Jeongnim Kim, jeongnim.kim@gmail.com, University of Illinois
-// at Urbana-Champaign
+//                  at Urbana-Champaign
 //////////////////////////////////////////////////////////////////////////////////////
 
 #ifndef QMCPLUSPLUS_ASYMMETRICDISTANCETABLEDATAIMPL_H

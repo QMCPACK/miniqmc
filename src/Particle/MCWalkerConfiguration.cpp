@@ -6,7 +6,7 @@
 // Copyright (c) 2016 Jeongnim Kim and QMCPACK developers.
 //
 // File developed by: Jordan E. Vincent, University of Illinois at
-// Urbana-Champaign
+//                    Urbana-Champaign
 //                    Bryan Clark, bclark@Princeton.edu, Princeton University
 //                    Ken Esler, kpesler@gmail.com, University of Illinois at
 //                    Urbana-Champaign
@@ -20,7 +20,7 @@
 //                    Laboratory
 //
 // File created by: Jeongnim Kim, jeongnim.kim@gmail.com, University of Illinois
-// at Urbana-Champaign
+//                  at Urbana-Champaign
 //////////////////////////////////////////////////////////////////////////////////////
 
 #include "Utilities/OhmmsInfo.h"

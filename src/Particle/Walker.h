@@ -22,7 +22,7 @@
 //                    Jeongnim Kim, jeongnim.kim@intel.com, Intel Corp
 //
 // File created by: Jeongnim Kim, jeongnim.kim@gmail.com, University of Illinois
-// at Urbana-Champaign
+//                  at Urbana-Champaign
 //////////////////////////////////////////////////////////////////////////////////////
 
 #ifndef QMCPLUSPLUS_WALKER_H

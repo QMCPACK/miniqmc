@@ -6,7 +6,7 @@
 // Copyright (c) 2016 Jeongnim Kim and QMCPACK developers.
 //
 // File developed by: Jeongnim Kim, jeongnim.kim@gmail.com, University of
-// Illinois at Urbana-Champaign
+//                    Illinois at Urbana-Champaign
 //                    Ken Esler, kpesler@gmail.com, University of Illinois at
 //                    Urbana-Champaign
 //                    Jeremy McMinnis, jmcminis@gmail.com, University of
@@ -16,7 +16,7 @@
 //                    Ye Luo, yeluo@anl.gov, Argonne National Laboratory
 //
 // File created by: Jeongnim Kim, jeongnim.kim@gmail.com, University of Illinois
-// at Urbana-Champaign
+//                  at Urbana-Champaign
 //////////////////////////////////////////////////////////////////////////////////////
 
 #ifndef QMCPLUSPLUS_POLYNOMIAL3D_FUNCTOR_H

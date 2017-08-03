@@ -6,14 +6,14 @@
 // Copyright (c) 2016 Jeongnim Kim and QMCPACK developers.
 //
 // File developed by: Miguel Morales, moralessilva2@llnl.gov, Lawrence Livermore
-// National Laboratory
+//                    National Laboratory
 //                    Jeremy McMinnis, jmcminis@gmail.com, University of
 //                    Illinois at Urbana-Champaign
 //                    Jeongnim Kim, jeongnim.kim@gmail.com, University of
 //                    Illinois at Urbana-Champaign
 //
 // File created by: Jeongnim Kim, jeongnim.kim@gmail.com, University of Illinois
-// at Urbana-Champaign
+//                  at Urbana-Champaign
 //////////////////////////////////////////////////////////////////////////////////////
 
 /** @file OptimizableFunctorBase.h

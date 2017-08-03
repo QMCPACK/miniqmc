@@ -6,14 +6,14 @@
 // Copyright (c) 2016 Jeongnim Kim and QMCPACK developers.
 //
 // File developed by: Jeremy McMinnis, jmcminis@gmail.com, University of
-// Illinois at Urbana-Champaign
+//                    Illinois at Urbana-Champaign
 //                    Jeongnim Kim, jeongnim.kim@gmail.com, University of
 //                    Illinois at Urbana-Champaign
 //                    Raymond Clay III, j.k.rofling@gmail.com, Lawrence
 //                    Livermore National Laboratory
 //
 // File created by: Jeongnim Kim, jeongnim.kim@gmail.com, University of Illinois
-// at Urbana-Champaign
+//                  at Urbana-Champaign
 //////////////////////////////////////////////////////////////////////////////////////
 
 #ifndef OHMMS_SPECIES_SET_H

@@ -6,7 +6,7 @@
 // Copyright (c) 2016 Jeongnim Kim and QMCPACK developers.
 //
 // File developed by: John R. Gergely,  University of Illinois at
-// Urbana-Champaign
+//                    Urbana-Champaign
 //                    Ken Esler, kpesler@gmail.com, University of Illinois at
 //                    Urbana-Champaign
 //                    Miguel Morales, moralessilva2@llnl.gov, Lawrence Livermore
@@ -24,7 +24,7 @@
 //                    Amrita Mathuriya, amrita.mathuriya@intel.com, Intel Corp.
 //
 // File created by: Ken Esler, kpesler@gmail.com, University of Illinois at
-// Urbana-Champaign
+//                  Urbana-Champaign
 //////////////////////////////////////////////////////////////////////////////////////
 
 #ifndef QMCPLUSPLUS_BSPLINE_FUNCTOR_H
