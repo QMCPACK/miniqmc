@@ -426,4 +426,4 @@ inline void evaluate(Matrix<T, C> &lhs, const Op &op,
 }
 
 #include "OhmmsPETE/OhmmsMatrixOperators.h" 
-endif // OHMMS_PETE_MATRIX_H
+#endif // OHMMS_PETE_MATRIX_H
