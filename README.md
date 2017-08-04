@@ -1,4 +1,4 @@
-# miniqmc - QMCPACK Miniapp
+# miniQMC - QMCPACK Miniapp
 
 ## MUST be done before OpenMP and Kokkos assessment (~ 4 Aug 2017):
 1. Jastrow 2-body kernel, distance tables kernel(s), 1D bspline.
@@ -13,6 +13,11 @@
 8. convert cmake->make build system
 9. high-level (physics) description for each kernel (we can probably recruit help for this)
 10. doxygen comments in the code
+
+# Documentation and support
+1. Out-of-source documentation at https://github.com/QMCPACK/miniqmc/wiki
+2. In-source doxygen documentation can be created via 'doxygen Doxyfile'. The HTML pages will be in the html/ directory with the top level file in 'html/index.html'.
+3. Any issue or discussion, please use github issue.
 
 # General Principles
 
@@ -114,33 +119,3 @@
         1. No optimization into corners, magic numbers, etc.
         2. Specifics about physical realities, restrictions, etc.
     5. Contact info: support, patches, changes, etc.
-
-
-# Prerequisites
-
- * C/C++ compilers
- * BLAS/LAPACK, numerical library, use platform-optimized libraries
- 
-# Build
-
-Building miniapps at the moment requires CMake which will be replace with Makefile upon release.
-```
-cd build
-cmake -DCMAKE_C_COMPILER=mpiicc -DCMAKE_CXX_COMPILER=mpiicpc ..
-make -j 8
-```
-
-Mixed precision can be accessed through -DQMC_MIXED_PRECISION=1
-
-# Run
-
-Binaries will be generated at build/bin and you can execute them directly or by MPI launcher if necessary.
-
-# Check
-
-Most of the miniapps named as diff_XXX execute the new SoA and old AoS implementation of kernel XXX and check the values against each other.
-The error is reported at every checkpoint. Typical numerical error is less than 1e-13/1e-4 in a full/mixed precision build.
-
-# Documentation and support
-
-(coming soon)
