@@ -4,13 +4,13 @@
 //
 // Copyright (c) 2016 Jeongnim Kim and QMCPACK developers.
 //
-// File developed by: 
+// File developed by:
 // Jeongnim Kim, jeongnim.kim@intel.com,
-//    Intel Corp. 
+//    Intel Corp.
 // Amrita Mathuriya, amrita.mathuriya@intel.com,
 //    Intel Corp.
 //
-// File created by: 
+// File created by:
 // Jeongnim Kim, jeongnim.kim@intel.com,
 //    Intel Corp.
 ////////////////////////////////////////////////////////////////////////////////

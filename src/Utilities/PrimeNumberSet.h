@@ -8,7 +8,7 @@
 // Jeongnim Kim, jeongnim.kim@gmail.com,
 //    University of Illinois at Urbana-Champaign
 // Anouar Benali, benali@anl.gov,
-//    Argonne National Laboratory 
+//    Argonne National Laboratory
 // Jeremy McMinnis, jmcminis@gmail.com,
 //    University of Illinois at Urbana-Champaign
 //

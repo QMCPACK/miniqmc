@@ -4,7 +4,7 @@
 //
 // Copyright (c) 2016 Jeongnim Kim and QMCPACK developers.
 //
-// File developed by: 
+// File developed by:
 // Ken Esler, kpesler@gmail.com,
 //    University of Illinois at Urbana-Champaign
 // Jeremy McMinnis, jmcminis@gmail.com,
@@ -16,11 +16,11 @@
 // Raymond Clay III, j.k.rofling@gmail.com,
 //    Lawrence Livermore National Laboratory
 // Ye Luo, yeluo@anl.gov,
-//    Argonne National Laboratory 
+//    Argonne National Laboratory
 // Mark A. Berrill, berrillma@ornl.gov,
 //    Oak Ridge National Laboratory
 //
-// File created by: 
+// File created by:
 // Jeongnim Kim, jeongnim.kim@gmail.com,
 //    University of Illinois at Urbana-Champaign
 ////////////////////////////////////////////////////////////////////////////////

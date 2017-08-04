@@ -12,7 +12,7 @@
 // Jeremy McMinnis, jmcminis@gmail.com,
 //    University of Illinois at Urbana-Champaign
 // Ye Luo, yeluo@anl.gov,
-//    Argonne National Laboratory 
+//    Argonne National Laboratory
 // Mark A. Berrill, berrillma@ornl.gov,
 //    Oak Ridge National Laboratory
 //

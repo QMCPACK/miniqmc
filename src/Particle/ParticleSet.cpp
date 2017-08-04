@@ -16,7 +16,7 @@
 // Jaron T. Krogel, krogeljt@ornl.gov,
 //    Oak Ridge National Laboratory
 // Ye Luo, yeluo@anl.gov,
-//    Argonne National Laboratory 
+//    Argonne National Laboratory
 // Mark A. Berrill, berrillma@ornl.gov,
 //    Oak Ridge National Laboratory
 // Mark Dewing, markdewing@gmail.com,
@@ -226,7 +226,7 @@ int ParticleSet::addTable(const ParticleSet &psrc, int dt_type)
               << DistTables[0]->Name << std::endl;
     // if(!DistTables[0]->is_same_type(dt_type))
     //{//itself is special, cannot mix them: some of the users do not check the
-    //index
+    // index
     //  APP_ABORT("ParticleSet::addTable for itself Cannot mix AoS and SoA
     //  distance tables.\n");
     //}

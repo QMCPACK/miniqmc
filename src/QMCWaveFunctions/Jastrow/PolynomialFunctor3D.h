@@ -14,7 +14,7 @@
 // Mark A. Berrill, berrillma@ornl.gov,
 //    Oak Ridge National Laboratory
 // Ye Luo, yeluo@anl.gov,
-//    Argonne National Laboratory 
+//    Argonne National Laboratory
 //
 // File created by:
 // Jeongnim Kim, jeongnim.kim@gmail.com,

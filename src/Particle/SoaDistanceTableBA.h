@@ -6,13 +6,13 @@
 //
 // File developed by:
 // Jeongnim Kim, jeongnim.kim@intel.com,
-//    Intel Corp. 
+//    Intel Corp.
 // Amrita Mathuriya, amrita.mathuriya@intel.com,
 //    Intel Corp.
 //
 // File created by:
 // Jeongnim Kim, jeongnim.kim@intel.com,
-//    Intel Corp. 
+//    Intel Corp.
 ////////////////////////////////////////////////////////////////////////////////
 // -*- C++ -*-
 #ifndef QMCPLUSPLUS_DTDIMPL_BA_H

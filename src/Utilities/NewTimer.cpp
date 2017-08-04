@@ -12,7 +12,7 @@
 // Jeremy McMinnis, jmcminis@gmail.com,
 //    University of Illinois at Urbana-Champaign
 // Mark Dewing, mdewing@anl.gov,
-//    Argonne National Laboratory 
+//    Argonne National Laboratory
 //
 // File created by:
 // Ken Esler, kpesler@gmail.com,

@@ -5,12 +5,12 @@
 // Copyright (c) 2016 Jeongnim Kim and QMCPACK developers.
 //
 // File developed by:
-// Jeongnim Kim, jeongnim.kim@intel.com, Intel Corp. 
+// Jeongnim Kim, jeongnim.kim@intel.com, Intel Corp.
 // Amrita Mathuriya, amrita.mathuriya@intel.com, Intel Corp.
 // Ye Luo, yeluo@anl.gov, Argonne National Laboratory
 //
 // File created by:
-// Jeongnim Kim, jeongnim.kim@intel.com, Intel Corp. 
+// Jeongnim Kim, jeongnim.kim@intel.com, Intel Corp.
 ////////////////////////////////////////////////////////////////////////////////
 // -*- C++ -*-
 /**@file MultiBspline.hpp

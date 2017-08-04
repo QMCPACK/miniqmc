@@ -214,7 +214,7 @@ struct DistanceTableData
   inline bool is_same_type(int dt_type) const { return DTType == dt_type; }
 
   //@{access functions to the distance, inverse of the distance and directional
-  //consine vector
+  // consine vector
   inline PosType dr(int j) const { return dr_m[j]; }
   inline RealType r(int j) const { return r_m[j]; }
   inline RealType rinv(int j) const { return rinv_m[j]; }

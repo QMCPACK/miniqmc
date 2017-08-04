@@ -5,7 +5,7 @@
 // Copyright (c) 2016 Jeongnim Kim and QMCPACK developers.
 //
 // File developed by:
-// D. Das, University of Illinois at Urbana-Champaign 
+// D. Das, University of Illinois at Urbana-Champaign
 // Bryan Clark, bclark@Princeton.edu,
 //    Princeton University
 // Ken Esler, kpesler@gmail.com,
