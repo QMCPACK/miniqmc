@@ -1,17 +1,19 @@
-//////////////////////////////////////////////////////////////////////////////////////
-// This file is distributed under the University of Illinois/NCSA Open Source License.
-// See LICENSE file in top directory for details.
+////////////////////////////////////////////////////////////////////////////////
+// This file is distributed under the University of Illinois/NCSA Open Source
+// License.  See LICENSE file in top directory for details.
 //
 // Copyright (c) 2016 Jeongnim Kim and QMCPACK developers.
 //
-// File developed by: Jeongnim Kim, jeongnim.kim@gmail.com, University of Illinois at Urbana-Champaign
-//                    Jeremy McMinnis, jmcminis@gmail.com, University of Illinois at Urbana-Champaign
+// File developed by:
+// Jeongnim Kim, jeongnim.kim@gmail.com,
+//    University of Illinois at Urbana-Champaign
+// Jeremy McMinnis, jmcminis@gmail.com,
+//    University of Illinois at Urbana-Champaign
 //
-// File created by: Jeongnim Kim, jeongnim.kim@gmail.com, University of Illinois at Urbana-Champaign
-//////////////////////////////////////////////////////////////////////////////////////
-    
-    
-
+// File created by:
+// Jeongnim Kim, jeongnim.kim@gmail.com,
+//    University of Illinois at Urbana-Champaign
+////////////////////////////////////////////////////////////////////////////////
 
 #ifndef OHMMS_PARTICLEUTILITY_H
 #define OHMMS_PARTICLEUTILITY_H
@@ -23,7 +25,8 @@ namespace qmcplusplus
 //////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////
-// specialized of RandomVector in Utilities/RandomGenerator.h for TinyVector<T,D>
+// specialized of RandomVector in Utilities/RandomGenerator.h for
+// TinyVector<T,D>
 //////////////////////////////////////////////////////////
 
 // template<class T, unsigned D, class RNG>
@@ -54,7 +57,6 @@ namespace qmcplusplus
 //   RNG& RG;
 // };
 
-
 // // specialized for TinyVector<T,D>
 // template<class RNG>
 // struct RandomVector<TinyVector<double,3>, RNG> {
@@ -84,7 +86,6 @@ namespace qmcplusplus
 //     RG.bivariate(a[2], b[2]);
 //   }
 
-
 //   RNG& RG;
 // };
 
@@ -106,7 +107,6 @@ namespace qmcplusplus
 //   }
 // };
 
-
 // ///////////////////////////////////////////////////////////
 // // Functor to generate a sequence of Normalized vectors
 // ///////////////////////////////////////////////////////////
@@ -125,24 +125,24 @@ namespace qmcplusplus
 ////////////////////////////////////////////////////////////////
 // Iterator is exposed. Parallel Implementation requires special care
 ////////////////////////////////////////////////////////////////
-template<class PL, class PV>
-void convert(const PL& lat, const PV& pin, PV& pout)
+template <class PL, class PV>
+void convert(const PL &lat, const PV &pin, PV &pout)
 {
-  if(pin.InUnit == pout.InUnit)
+  if (pin.InUnit == pout.InUnit)
   {
     pout = pin;
     return;
   }
-  if(pin.InUnit)
+  if (pin.InUnit)
   {
-    for(int i=0; i<pin.size(); i++)
-      pout[i] = lat.toCart(pin[i]);
+    for (int i = 0; i < pin.size(); i++)
+      pout[i]  = lat.toCart(pin[i]);
     return;
   }
   else
   {
-    for(int i=0; i<pin.size(); i++)
-      pout[i] = lat.toUnit(pin[i]);
+    for (int i = 0; i < pin.size(); i++)
+      pout[i]  = lat.toUnit(pin[i]);
     return;
   }
 }
@@ -150,64 +150,63 @@ void convert(const PL& lat, const PV& pin, PV& pout)
 ////////////////////////////////////////////////////////////////
 // Iterator is exposed. Parallel Implementation requires special care
 ////////////////////////////////////////////////////////////////
-template<class PL, class PV>
-void convert2Cart(const PL& lat, PV& pin)
+template <class PL, class PV> void convert2Cart(const PL &lat, PV &pin)
 {
-  if(pin.InUnit)
+  if (pin.InUnit)
   {
     PV tmp(pin.size());
-    tmp = pin;
+    tmp        = pin;
     pin.InUnit = false;
-    for(int i=0; i<pin.size(); i++)
-      pin[i] = lat.toCart(pin[i]);
+    for (int i = 0; i < pin.size(); i++)
+      pin[i]   = lat.toCart(pin[i]);
   }
 }
 
-template<class PL, class PV>
-void convert2Unit(const PL& lat, PV& pin)
+template <class PL, class PV> void convert2Unit(const PL &lat, PV &pin)
 {
-  if(!pin.InUnit)
+  if (!pin.InUnit)
   {
     PV tmp(pin.size());
-    tmp = pin;
+    tmp        = pin;
     pin.InUnit = true;
-    for(int i=0; i<pin.size(); i++)
-      pin[i] = lat.toUnit(pin[i]);
+    for (int i = 0; i < pin.size(); i++)
+      pin[i]   = lat.toUnit(pin[i]);
   }
 }
 
 ////////////////////////////////////////////////////////////////
 // Apply BC conditions to put the position type in lattice box [0,1)
 ////////////////////////////////////////////////////////////////
-template<class PL, class PV>
-void wrapAroundBox(const PL& lat, const PV& pin, PV& pout)
+template <class PL, class PV>
+void wrapAroundBox(const PL &lat, const PV &pin, PV &pout)
 {
-  if(pin.InUnit)
+  if (pin.InUnit)
   {
-    if(pout.InUnit)
+    if (pout.InUnit)
     {
-      for(int i=0; i<pin.size(); i++)
+      for (int i = 0; i < pin.size(); i++)
       {
-        pout[i] = lat.BConds.wrap(pin[i]);            //unit -> unit
+        pout[i] = lat.BConds.wrap(pin[i]); // unit -> unit
       }
     }
     else
     {
-      for(int i=0; i<pin.size(); i++)
-        pout[i] = lat.toCart(lat.BConds.wrap(pin[i]));//unit -> cart
+      for (int i = 0; i < pin.size(); i++)
+        pout[i]  = lat.toCart(lat.BConds.wrap(pin[i])); // unit -> cart
     }
   }
   else
   {
-    if(pout.InUnit)
+    if (pout.InUnit)
     {
-      for(int i=0; i<pin.size(); i++)
-        pout[i] = lat.BConds.wrap(lat.toUnit(pin[i]));//cart -> unit
+      for (int i = 0; i < pin.size(); i++)
+        pout[i]  = lat.BConds.wrap(lat.toUnit(pin[i])); // cart -> unit
     }
     else
     {
-      for(int i=0; i<pin.size(); i++)
-        pout[i] = lat.toCart(lat.BConds.wrap(lat.toUnit(pin[i])));//cart -> cart
+      for (int i = 0; i < pin.size(); i++)
+        pout[i] =
+            lat.toCart(lat.BConds.wrap(lat.toUnit(pin[i]))); // cart -> cart
     }
   }
 }
@@ -219,37 +218,34 @@ void wrapAroundBox(const PL& lat, const PV& pin, PV& pout)
  * \return a dot product of an array
  */
 /////////////////////////////////////////////////////////////////
-template<typename T, unsigned D>
-inline T Dot(const ParticleAttrib<TinyVector<T, D> >& pa,
-                  const ParticleAttrib<TinyVector<T, D> >& pb)
+template <typename T, unsigned D>
+inline T Dot(const ParticleAttrib<TinyVector<T, D>> &pa,
+             const ParticleAttrib<TinyVector<T, D>> &pb)
 {
   T sum = 0;
-  for(int i=0; i<pa.size(); i++)
+  for (int i = 0; i < pa.size(); i++)
   {
-    sum += dot(pa[i],pb[i]);
+    sum += dot(pa[i], pb[i]);
   }
   return sum;
 }
 
-template<typename T>
-inline T Sum (const ParticleAttrib<T>& pa)
+template <typename T> inline T Sum(const ParticleAttrib<T> &pa)
 {
   T sum = 0;
-  for(int i=0; i<pa.size(); i++)
+  for (int i = 0; i < pa.size(); i++)
   {
     sum += pa[i];
   }
   return sum;
 }
 
-template<class T, unsigned D>
-void  normalize(ParticleAttrib<TinyVector<T, D> >& pa)
+template <class T, unsigned D>
+void normalize(ParticleAttrib<TinyVector<T, D>> &pa)
 {
-  T factor = Dot(pa,pa);
-  factor = 1.0/sqrt(factor);
+  T factor = Dot(pa, pa);
+  factor   = 1.0 / sqrt(factor);
   pa *= factor;
 }
-
 }
 #endif
-

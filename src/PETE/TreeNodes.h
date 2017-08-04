@@ -49,8 +49,7 @@ namespace qmcplusplus
 //
 //-----------------------------------------------------------------------------
 
-template<class T>
-struct Reference
+template <class T> struct Reference
 {
   //---------------------------------------------------------------------------
   // Export the type of thing we're referencing.
@@ -60,39 +59,25 @@ struct Reference
   //---------------------------------------------------------------------------
   // Reference can be created from a const ref.
 
-  inline
-  Reference(const T &reference)
-    : reference_m(reference)
-  { }
+  inline Reference(const T &reference) : reference_m(reference) {}
 
   //---------------------------------------------------------------------------
   // Copy constructor
 
-  inline
-  Reference(const Reference<T> &model)
-    : reference_m(model.reference())
-  { }
+  inline Reference(const Reference<T> &model) : reference_m(model.reference())
+  {
+  }
 
   //---------------------------------------------------------------------------
   // Reference can be converted to a const ref
 
-  inline
-  const T &reference() const
-  {
-    return reference_m;
-  }
+  inline const T &reference() const { return reference_m; }
 
   //---------------------------------------------------------------------------
   // Conversion operators.
 
-  operator const T& () const
-  {
-    return reference_m;
-  }
-  operator T& () const
-  {
-    return const_cast<T&>(reference_m);
-  }
+  operator const T &() const { return reference_m; }
+  operator T &() const { return const_cast<T &>(reference_m); }
 
   const T &reference_m;
 };
@@ -110,26 +95,18 @@ struct Reference
 //
 //-----------------------------------------------------------------------------
 
-template<class T>
-struct DeReference
+template <class T> struct DeReference
 {
   typedef const T &Return_t;
   typedef T Type_t;
-  static inline Return_t apply(const T &a)
-  {
-    return a;
-  }
+  static inline Return_t apply(const T &a) { return a; }
 };
 
-template<class T>
-struct DeReference<Reference<T> >
+template <class T> struct DeReference<Reference<T>>
 {
   typedef const T &Return_t;
   typedef T Type_t;
-  static inline Return_t apply(const Reference<T> &a)
-  {
-    return a.reference();
-  }
+  static inline Return_t apply(const Reference<T> &a) { return a.reference(); }
 };
 
 //-----------------------------------------------------------------------------
@@ -145,23 +122,15 @@ struct DeReference<Reference<T> >
 //
 //-----------------------------------------------------------------------------
 
-template<class Op, class Child>
-class UnaryNode
+template <class Op, class Child> class UnaryNode
 {
 public:
-
   //---------------------------------------------------------------------------
   // Accessors making the operation and child available to the outside.
 
-  inline
-  const Op &operation() const
-  {
-    return op_m;
-  }
+  inline const Op &operation() const { return op_m; }
 
-  inline
-  typename DeReference<Child>::Return_t
-  child() const
+  inline typename DeReference<Child>::Return_t child() const
   {
     return DeReference<Child>::apply(child_m);
   }
@@ -169,33 +138,31 @@ public:
   //---------------------------------------------------------------------------
   // Constructor using both a operation and the child.
 
-  inline
-  UnaryNode(const Op &o, const Child &c)
-    : op_m(o), child_m(c) { }
+  inline UnaryNode(const Op &o, const Child &c) : op_m(o), child_m(c) {}
 
   //---------------------------------------------------------------------------
   // Constructor using just the child.
 
-  inline
-  UnaryNode(const Child &c)
-    : child_m(c) { }
+  inline UnaryNode(const Child &c) : child_m(c) {}
 
   //---------------------------------------------------------------------------
   // Copy constructor.
 
-  inline
-  UnaryNode(const UnaryNode<Op, Child> &t)
-    : op_m(t.operation()), child_m(t.child()) { }
+  inline UnaryNode(const UnaryNode<Op, Child> &t)
+      : op_m(t.operation()), child_m(t.child())
+  {
+  }
 
   //---------------------------------------------------------------------------
   // Constructor using a UnaryNode with a different child and/or a different
   // storage tag. Note: for this to work, a Child must be constructable
   // from an OtherChild.
 
-  template<class OtherChild>
-  inline
-  UnaryNode(const UnaryNode<Op, OtherChild> &t)
-    : op_m(t.operation()), child_m(t.child()) { }
+  template <class OtherChild>
+  inline UnaryNode(const UnaryNode<Op, OtherChild> &t)
+      : op_m(t.operation()), child_m(t.child())
+  {
+  }
 
   //---------------------------------------------------------------------------
   // Constructor using a UnaryNode with a different child,
@@ -203,10 +170,11 @@ public:
   // Note: for this to work, a Child must be constructable
   // from an OtherChild and an Arg.
 
-  template<class OtherChild, class Arg>
-  inline
-  UnaryNode(const UnaryNode<Op, OtherChild> &t, const Arg &a)
-    : op_m(t.operation()), child_m(t.child(), a) { }
+  template <class OtherChild, class Arg>
+  inline UnaryNode(const UnaryNode<Op, OtherChild> &t, const Arg &a)
+      : op_m(t.operation()), child_m(t.child(), a)
+  {
+  }
 
   //---------------------------------------------------------------------------
   // Constructor using a BinaryNode with a different Child and
@@ -214,20 +182,17 @@ public:
   // Note: for this to work, a Child  must be constructable
   // from an OtherChild and an Arg1 & Arg2.
 
-  template<class OtherChild, class Arg1, class Arg2>
-  inline
-  UnaryNode(const UnaryNode<Op, OtherChild> &t,
-            const Arg1 &a1, const Arg2 &a2)
-    : op_m(t.operation()), child_m(t.child(), a1, a2)
-  { }
+  template <class OtherChild, class Arg1, class Arg2>
+  inline UnaryNode(const UnaryNode<Op, OtherChild> &t, const Arg1 &a1,
+                   const Arg2 &a2)
+      : op_m(t.operation()), child_m(t.child(), a1, a2)
+  {
+  }
 
 private:
-
-  Op    op_m;
+  Op op_m;
   Child child_m;
-
 };
-
 
 //-----------------------------------------------------------------------------
 //
@@ -243,30 +208,20 @@ private:
 //
 //-----------------------------------------------------------------------------
 
-template<class Op, class Left, class Right>
-class BinaryNode
+template <class Op, class Left, class Right> class BinaryNode
 {
 public:
-
   //---------------------------------------------------------------------------
   // Accessors making the operation and children available to the outside.
 
-  inline
-  const Op &operation() const
-  {
-    return op_m;
-  }
+  inline const Op &operation() const { return op_m; }
 
-  inline
-  typename DeReference<Left>::Return_t
-  left() const
+  inline typename DeReference<Left>::Return_t left() const
   {
     return DeReference<Left>::apply(left_m);
   }
 
-  inline
-  typename DeReference<Right>::Return_t
-  right() const
+  inline typename DeReference<Right>::Return_t right() const
   {
     return DeReference<Right>::apply(right_m);
   }
@@ -274,37 +229,34 @@ public:
   //---------------------------------------------------------------------------
   // Constructor using both the operation and the two children.
 
-  inline
-  BinaryNode(const Op &o, const Left &l, const Right &r)
-    : op_m(o), left_m(l), right_m(r)
-  { }
+  inline BinaryNode(const Op &o, const Left &l, const Right &r)
+      : op_m(o), left_m(l), right_m(r)
+  {
+  }
 
   //---------------------------------------------------------------------------
   // Constructor using just the two children.
 
-  inline
-  BinaryNode(const Left &l, const Right &r)
-    : left_m(l), right_m(r)
-  { }
+  inline BinaryNode(const Left &l, const Right &r) : left_m(l), right_m(r) {}
 
   //---------------------------------------------------------------------------
   // Copy constructor.
 
-  inline
-  BinaryNode(const BinaryNode<Op, Left, Right> &t)
-    : op_m(t.operation()), left_m(t.left()), right_m(t.right())
-  { }
+  inline BinaryNode(const BinaryNode<Op, Left, Right> &t)
+      : op_m(t.operation()), left_m(t.left()), right_m(t.right())
+  {
+  }
 
   //---------------------------------------------------------------------------
   // Constructor using a BinaryNode with a different Left/Right.
   // Note: for this to work, the Left/Right must be constructable
   // from an OtherLeft/OtherRight.
 
-  template<class OtherLeft, class OtherRight>
-  inline
-  BinaryNode(const BinaryNode<Op, OtherLeft, OtherRight> &t)
-    : op_m(t.operation()), left_m(t.left()), right_m(t.right())
-  { }
+  template <class OtherLeft, class OtherRight>
+  inline BinaryNode(const BinaryNode<Op, OtherLeft, OtherRight> &t)
+      : op_m(t.operation()), left_m(t.left()), right_m(t.right())
+  {
+  }
 
   //---------------------------------------------------------------------------
   // Constructor using a BinaryNode with a different Left/Right and
@@ -312,12 +264,12 @@ public:
   // Note: for this to work, a Left/Right must be constructable
   // from an OtherLeft/OtherRight and an Arg.
 
-  template<class OtherLeft, class OtherRight, class Arg>
-  inline
-  BinaryNode(const BinaryNode<Op, OtherLeft, OtherRight> &t,
-             const Arg &a)
-    : op_m(t.operation()), left_m(t.left(), a), right_m(t.right(), a)
-  { }
+  template <class OtherLeft, class OtherRight, class Arg>
+  inline BinaryNode(const BinaryNode<Op, OtherLeft, OtherRight> &t,
+                    const Arg &a)
+      : op_m(t.operation()), left_m(t.left(), a), right_m(t.right(), a)
+  {
+  }
 
   //---------------------------------------------------------------------------
   // Constructor using a BinaryNode with a different Left/Right and
@@ -325,26 +277,23 @@ public:
   // Note: for this to work, a Left/Right must be constructable
   // from an OtherLeft/OtherRight and an Arg1 & Arg2.
 
-  template<class OtherLeft, class OtherRight, class Arg1, class Arg2>
-  inline
-  BinaryNode(const BinaryNode<Op, OtherLeft, OtherRight> &t,
-             const Arg1 &a1, const Arg2 &a2)
-    : op_m(t.operation()),
-      left_m(t.left(), a1, a2), right_m(t.right(), a1, a2)
-  { }
+  template <class OtherLeft, class OtherRight, class Arg1, class Arg2>
+  inline BinaryNode(const BinaryNode<Op, OtherLeft, OtherRight> &t,
+                    const Arg1 &a1, const Arg2 &a2)
+      : op_m(t.operation()), left_m(t.left(), a1, a2),
+        right_m(t.right(), a1, a2)
+  {
+  }
 
 private:
-
   //---------------------------------------------------------------------------
   // The operation and left/right sub expressions stored in this node of the
   // tree.
 
-  Op    op_m;
-  Left  left_m;
+  Op op_m;
+  Left left_m;
   Right right_m;
-
 };
-
 
 //-----------------------------------------------------------------------------
 //
@@ -362,37 +311,25 @@ private:
 //
 //-----------------------------------------------------------------------------
 
-template< class Op, class Left, class Middle, class Right>
-class TrinaryNode
+template <class Op, class Left, class Middle, class Right> class TrinaryNode
 {
 public:
-
   //---------------------------------------------------------------------------
   // Accessors making the operation and children available to the outside.
 
-  inline
-  const Op &operation() const
-  {
-    return op_m;
-  }
+  inline const Op &operation() const { return op_m; }
 
-  inline
-  typename DeReference<Left>::Return_t
-  left() const
+  inline typename DeReference<Left>::Return_t left() const
   {
     return DeReference<Left>::apply(left_m);
   }
 
-  inline
-  typename DeReference<Right>::Return_t
-  right() const
+  inline typename DeReference<Right>::Return_t right() const
   {
     return DeReference<Right>::apply(right_m);
   }
 
-  inline
-  typename DeReference<Middle>::Return_t
-  middle() const
+  inline typename DeReference<Middle>::Return_t middle() const
   {
     return DeReference<Middle>::apply(middle_m);
   }
@@ -400,39 +337,41 @@ public:
   //---------------------------------------------------------------------------
   // Constructor using the operation and three children.
 
-  inline
-  TrinaryNode(const Op &o, const Left &l, const Middle &m, const Right &r)
-    : op_m(o), left_m(l), middle_m(m), right_m(r)
-  { }
+  inline TrinaryNode(const Op &o, const Left &l, const Middle &m,
+                     const Right &r)
+      : op_m(o), left_m(l), middle_m(m), right_m(r)
+  {
+  }
 
   //---------------------------------------------------------------------------
   // Constructor with just the three children.
 
-  inline
-  TrinaryNode(const Left &l, const Middle &m, const Right &r)
-    : left_m(l), middle_m(m), right_m(r)
-  { }
+  inline TrinaryNode(const Left &l, const Middle &m, const Right &r)
+      : left_m(l), middle_m(m), right_m(r)
+  {
+  }
 
   //---------------------------------------------------------------------------
   // Copy constructor.
 
-  inline
-  TrinaryNode(const TrinaryNode<Op, Left, Middle, Right> &t)
-    : op_m(t.operation()), left_m(t.left()), middle_m(t.middle()),
-      right_m(t.right())
-  { }
+  inline TrinaryNode(const TrinaryNode<Op, Left, Middle, Right> &t)
+      : op_m(t.operation()), left_m(t.left()), middle_m(t.middle()),
+        right_m(t.right())
+  {
+  }
 
   //---------------------------------------------------------------------------
   // Constructor using a TrinaryNode with a different Left/Middle/Right.
   // Note: for this to work, the Left/Middle/Right must be constructable
   // from an OtherLeft/OtherMiddle/OtherRight.
 
-  template<class OtherLeft, class OtherMiddle, class OtherRight>
-  inline
-  TrinaryNode(const TrinaryNode<Op, OtherLeft, OtherMiddle, OtherRight> & t)
-    : op_m(t.operation()), left_m(t.left()), middle_m(t.middle()),
-      right_m(t.right())
-  { }
+  template <class OtherLeft, class OtherMiddle, class OtherRight>
+  inline TrinaryNode(
+      const TrinaryNode<Op, OtherLeft, OtherMiddle, OtherRight> &t)
+      : op_m(t.operation()), left_m(t.left()), middle_m(t.middle()),
+        right_m(t.right())
+  {
+  }
 
   //---------------------------------------------------------------------------
   // Constructor using a TrinaryNode with a different Left/Middle/Right and
@@ -440,13 +379,14 @@ public:
   // Note: for this to work, a Left/Middle/Right must be constructable
   // from an OtherLeft/OtherMiddle/OtherRight and an Arg.
 
-  template<class OtherLeft, class OtherMiddle, class OtherRight, class Arg>
-  inline
-  TrinaryNode(const TrinaryNode<Op, OtherLeft, OtherMiddle, OtherRight> &t,
-              const Arg &a)
-    : op_m(t.operation()), left_m(t.left(), a), middle_m(t.middle(), a),
-      right_m(t.right(), a)
-  { }
+  template <class OtherLeft, class OtherMiddle, class OtherRight, class Arg>
+  inline TrinaryNode(
+      const TrinaryNode<Op, OtherLeft, OtherMiddle, OtherRight> &t,
+      const Arg &a)
+      : op_m(t.operation()), left_m(t.left(), a), middle_m(t.middle(), a),
+        right_m(t.right(), a)
+  {
+  }
 
   //---------------------------------------------------------------------------
   // Constructor using a TrinaryNode with a different Left/Middle/Right and
@@ -454,27 +394,25 @@ public:
   // Note: for this to work, a Left/Middle/Right must be constructable
   // from an OtherLeft/OtherMiddle/OtherRight and an Arg1 & Arg2.
 
-  template<class OtherLeft, class OtherMiddle, class OtherRight,
-           class Arg1, class Arg2>
-  inline
-  TrinaryNode(const TrinaryNode<Op, OtherLeft, OtherMiddle, OtherRight> &t,
-              const Arg1 &a1, const Arg2 &a2)
-    : op_m(t.operation()), left_m(t.left(), a1, a2),
-      middle_m(t.middle(), a1, a2) , right_m(t.right(), a1, a2)
-  { }
+  template <class OtherLeft, class OtherMiddle, class OtherRight, class Arg1,
+            class Arg2>
+  inline TrinaryNode(
+      const TrinaryNode<Op, OtherLeft, OtherMiddle, OtherRight> &t,
+      const Arg1 &a1, const Arg2 &a2)
+      : op_m(t.operation()), left_m(t.left(), a1, a2),
+        middle_m(t.middle(), a1, a2), right_m(t.right(), a1, a2)
+  {
+  }
 
 private:
-
   //---------------------------------------------------------------------------
   // The operation and left, right, and middle sub trees stored at this node.
 
-  Op     op_m;
-  Left   left_m;
+  Op op_m;
+  Left left_m;
   Middle middle_m;
-  Right  right_m;
-
+  Right right_m;
 };
-
 }
 #endif // PETE_PETE_TREENODES_H
 

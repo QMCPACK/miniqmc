@@ -82,34 +82,29 @@ namespace qmcplusplus
 //
 //-----------------------------------------------------------------------------
 
-template<class A, class Op, class Tag>
-struct Combine1
+template <class A, class Op, class Tag> struct Combine1
 {
   typedef A Type_t;
-  inline static
-  Type_t combine(const A &a, const Op &, const Tag &)
+  inline static Type_t combine(const A &a, const Op &, const Tag &)
   {
     return a;
   }
 };
 
-template<class A, class B, class Op, class Tag>
-struct Combine2
+template <class A, class B, class Op, class Tag> struct Combine2
 {
   // no default action.  It's an error to not specialize this struct.
 };
 
-template<class A,class B,class C,class Op,class Tag>
-struct Combine3
+template <class A, class B, class C, class Op, class Tag> struct Combine3
 {
   typedef typename Combine2<A, B, Op, Tag>::Type_t Type1_t;
   typedef typename Combine2<Type1_t, C, Op, Tag>::Type_t Type_t;
-  inline static
-  Type_t combine(const A& a,const B& b,const C& c,const Op& op,const Tag& t)
+  inline static Type_t combine(const A &a, const B &b, const C &c, const Op &op,
+                               const Tag &t)
   {
-    return
-      Combine2<Type1_t, C,
-      Op, Tag>::combine(Combine2<A, B, Op, Tag>::combine(a,b,op,t),c,op,t);
+    return Combine2<Type1_t, C, Op, Tag>::combine(
+        Combine2<A, B, Op, Tag>::combine(a, b, op, t), c, op, t);
   }
 };
 
@@ -130,21 +125,21 @@ struct Combine3
 //
 //-----------------------------------------------------------------------------
 
-template<class A, class Op, class Tag>
+template <class A, class Op, class Tag>
 inline typename Combine1<A, Op, Tag>::Type_t
 peteCombine(const A &a, const Op &op, const Tag &t)
 {
   return Combine1<A, Op, Tag>::combine(a, op, t);
 }
 
-template<class A, class B, class Op, class Tag>
+template <class A, class B, class Op, class Tag>
 inline typename Combine2<A, B, Op, Tag>::Type_t
 peteCombine(const A &a, const B &b, const Op &op, const Tag &t)
 {
   return Combine2<A, B, Op, Tag>::combine(a, b, op, t);
 }
 
-template<class A, class B, class C, class Op, class Tag>
+template <class A, class B, class C, class Op, class Tag>
 inline typename Combine3<A, B, C, Op, Tag>::Type_t
 peteCombine(const A &a, const B &b, const C &c, const Op &op, const Tag &t)
 {
@@ -175,41 +170,35 @@ struct TreeCombine
   PETE_EMPTY_CONSTRUCTORS(TreeCombine)
 };
 
-template<class A, class Op>
-struct Combine1<A, Op, TreeCombine >
+template <class A, class Op> struct Combine1<A, Op, TreeCombine>
 {
   typedef UnaryNode<Op, A> Type_t;
-  inline static
-  Type_t combine(const A &a, const Op &op, const TreeCombine &t)
+  inline static Type_t combine(const A &a, const Op &op, const TreeCombine &t)
   {
     return Type_t(op, a);
   }
 };
 
-template<class A, class B, class Op>
-struct Combine2<A, B, Op, TreeCombine >
+template <class A, class B, class Op> struct Combine2<A, B, Op, TreeCombine>
 {
   typedef BinaryNode<Op, A, B> Type_t;
-  inline static
-  Type_t combine(const A &a, const B &b, const Op &op,
-                 const TreeCombine &t)
+  inline static Type_t combine(const A &a, const B &b, const Op &op,
+                               const TreeCombine &t)
   {
     return Type_t(op, a, b);
   }
 };
 
-template<class A, class B, class C, class Op>
-struct Combine3<A, B, C, Op, TreeCombine >
+template <class A, class B, class C, class Op>
+struct Combine3<A, B, C, Op, TreeCombine>
 {
   typedef TrinaryNode<Op, A, B, C> Type_t;
-  inline static
-  Type_t combine(const A &a, const B &b, const C &c, const Op &op,
-                 const TreeCombine &t)
+  inline static Type_t combine(const A &a, const B &b, const C &c, const Op &op,
+                               const TreeCombine &t)
   {
     return Type_t(op, a, b, c);
   }
 };
-
 
 //-----------------------------------------------------------------------------
 //
@@ -226,39 +215,27 @@ struct OpCombine
   PETE_EMPTY_CONSTRUCTORS(OpCombine)
 };
 
-template<class A,class Op>
-struct Combine1<A, Op, OpCombine>
+template <class A, class Op> struct Combine1<A, Op, OpCombine>
 {
   typedef typename UnaryReturn<A, Op>::Type_t Type_t;
-  inline static
-  Type_t combine(A a, Op op, OpCombine)
-  {
-    return op(a);
-  }
+  inline static Type_t combine(A a, Op op, OpCombine) { return op(a); }
 };
 
-template<class A,class B,class Op>
-struct Combine2<A, B, Op, OpCombine>
+template <class A, class B, class Op> struct Combine2<A, B, Op, OpCombine>
 {
   typedef typename BinaryReturn<A, B, Op>::Type_t Type_t;
-  inline static
-  Type_t combine(A a, B b, Op op, OpCombine)
-  {
-    return op(a, b);
-  }
+  inline static Type_t combine(A a, B b, Op op, OpCombine) { return op(a, b); }
 };
 
-template<class A,class B,class C,class Op>
+template <class A, class B, class C, class Op>
 struct Combine3<A, B, C, Op, OpCombine>
 {
   typedef typename TrinaryReturn<A, B, C, Op>::Type_t Type_t;
-  inline static
-  Type_t combine(A a, B b, C c, Op op, OpCombine)
+  inline static Type_t combine(A a, B b, C c, Op op, OpCombine)
   {
     return op(a, b, c);
   }
 };
-
 
 //-----------------------------------------------------------------------------
 //
@@ -275,17 +252,14 @@ struct AndCombine
   PETE_EMPTY_CONSTRUCTORS(AndCombine)
 };
 
-template<class Op>
-struct Combine2<bool, bool, Op, AndCombine>
+template <class Op> struct Combine2<bool, bool, Op, AndCombine>
 {
   typedef bool Type_t;
-  inline static
-  Type_t combine(bool a, bool b, Op, AndCombine)
+  inline static Type_t combine(bool a, bool b, Op, AndCombine)
   {
     return (a && b);
   }
 };
-
 
 //-----------------------------------------------------------------------------
 //
@@ -302,17 +276,14 @@ struct OrCombine
   PETE_EMPTY_CONSTRUCTORS(OrCombine)
 };
 
-template<class Op>
-struct Combine2<bool, bool, Op, OrCombine>
+template <class Op> struct Combine2<bool, bool, Op, OrCombine>
 {
   typedef bool Type_t;
-  inline static
-  Type_t combine(bool a, bool b, Op, OrCombine)
+  inline static Type_t combine(bool a, bool b, Op, OrCombine)
   {
     return (a || b);
   }
 };
-
 
 //-----------------------------------------------------------------------------
 //
@@ -330,17 +301,11 @@ struct NullCombine
   PETE_EMPTY_CONSTRUCTORS(NullCombine)
 };
 
-template<class Op>
-struct Combine2<int, int, Op, NullCombine>
+template <class Op> struct Combine2<int, int, Op, NullCombine>
 {
   typedef int Type_t;
-  inline static
-  Type_t combine(int, int, Op, NullCombine)
-  {
-    return 0;
-  }
+  inline static Type_t combine(int, int, Op, NullCombine) { return 0; }
 };
-
 
 //-----------------------------------------------------------------------------
 //
@@ -357,18 +322,11 @@ struct SumCombine
   PETE_EMPTY_CONSTRUCTORS(SumCombine)
 };
 
-template<class Op>
-struct Combine2<int, int, Op, SumCombine>
+template <class Op> struct Combine2<int, int, Op, SumCombine>
 {
   typedef int Type_t;
-  inline static
-  Type_t combine(int a, int b, Op, SumCombine)
-  {
-    return a + b;
-  }
+  inline static Type_t combine(int a, int b, Op, SumCombine) { return a + b; }
 };
-
-
 }
 #endif // PETE_PETE_COMBINERS_H
 

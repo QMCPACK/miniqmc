@@ -28,8 +28,8 @@
 typedef struct
 {
   spline_code spcode;
-  type_code    tcode;
-  float* restrict coefs;
+  type_code tcode;
+  float *restrict coefs;
   Ugrid x_grid;
   BCtype_s xBC;
 } UBspline_1d_s;
@@ -37,8 +37,8 @@ typedef struct
 typedef struct
 {
   spline_code spcode;
-  type_code    tcode;
-  float* restrict coefs;
+  type_code tcode;
+  float *restrict coefs;
   int x_stride;
   Ugrid x_grid, y_grid;
   BCtype_s xBC, yBC;
@@ -47,14 +47,13 @@ typedef struct
 typedef struct
 {
   spline_code spcode;
-  type_code    tcode;
-  float* restrict coefs;
+  type_code tcode;
+  float *restrict coefs;
   int x_stride, y_stride;
   Ugrid x_grid, y_grid, z_grid;
   BCtype_s xBC, yBC, zBC;
   size_t coefs_size;
 } UBspline_3d_s;
-
 
 ///////////////////////////
 // Double precision real //
@@ -62,8 +61,8 @@ typedef struct
 typedef struct
 {
   spline_code spcode;
-  type_code    tcode;
-  double* restrict coefs;
+  type_code tcode;
+  double *restrict coefs;
   Ugrid x_grid;
   BCtype_d xBC;
 } UBspline_1d_d;
@@ -71,8 +70,8 @@ typedef struct
 typedef struct
 {
   spline_code spcode;
-  type_code    tcode;
-  double* restrict coefs;
+  type_code tcode;
+  double *restrict coefs;
   int x_stride;
   Ugrid x_grid, y_grid;
   BCtype_d xBC, yBC;
@@ -81,15 +80,13 @@ typedef struct
 typedef struct
 {
   spline_code spcode;
-  type_code    tcode;
-  double* restrict coefs;
+  type_code tcode;
+  double *restrict coefs;
   int x_stride, y_stride;
   Ugrid x_grid, y_grid, z_grid;
   BCtype_d xBC, yBC, zBC;
   size_t coefs_size;
 } UBspline_3d_d;
-
-
 
 //////////////////////////////
 // Single precision complex //
@@ -97,8 +94,8 @@ typedef struct
 typedef struct
 {
   spline_code spcode;
-  type_code    tcode;
-  complex_float* restrict coefs;
+  type_code tcode;
+  complex_float *restrict coefs;
   Ugrid x_grid;
   BCtype_c xBC;
 } UBspline_1d_c;
@@ -106,8 +103,8 @@ typedef struct
 typedef struct
 {
   spline_code spcode;
-  type_code    tcode;
-  complex_float* restrict coefs;
+  type_code tcode;
+  complex_float *restrict coefs;
   int x_stride;
   Ugrid x_grid, y_grid;
   BCtype_c xBC, yBC;
@@ -116,14 +113,13 @@ typedef struct
 typedef struct
 {
   spline_code spcode;
-  type_code    tcode;
-  complex_float* restrict coefs;
+  type_code tcode;
+  complex_float *restrict coefs;
   int x_stride, y_stride;
   Ugrid x_grid, y_grid, z_grid;
   BCtype_c xBC, yBC, zBC;
 
 } UBspline_3d_c;
-
 
 //////////////////////////////
 // Double precision complex //
@@ -131,8 +127,8 @@ typedef struct
 typedef struct
 {
   spline_code spcode;
-  type_code    tcode;
-  complex_double* restrict coefs;
+  type_code tcode;
+  complex_double *restrict coefs;
   Ugrid x_grid;
   BCtype_z xBC;
 } UBspline_1d_z;
@@ -140,8 +136,8 @@ typedef struct
 typedef struct
 {
   spline_code spcode;
-  type_code    tcode;
-  complex_double* restrict coefs;
+  type_code tcode;
+  complex_double *restrict coefs;
   int x_stride;
   Ugrid x_grid, y_grid;
   BCtype_z xBC, yBC;
@@ -150,12 +146,11 @@ typedef struct
 typedef struct
 {
   spline_code spcode;
-  type_code    tcode;
-  complex_double* restrict coefs;
+  type_code tcode;
+  complex_double *restrict coefs;
   int x_stride, y_stride;
   Ugrid x_grid, y_grid, z_grid;
   BCtype_z xBC, yBC, zBC;
 } UBspline_3d_z;
-
 
 #endif

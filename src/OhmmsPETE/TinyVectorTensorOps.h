@@ -1,14 +1,17 @@
-//////////////////////////////////////////////////////////////////////////////////////
-// This file is distributed under the University of Illinois/NCSA Open Source License.
-// See LICENSE file in top directory for details.
+////////////////////////////////////////////////////////////////////////////////
+// This file is distributed under the University of Illinois/NCSA Open Source
+// License.  See LICENSE file in top directory for details.
 //
 // Copyright (c) 2016 Jeongnim Kim and QMCPACK developers.
 //
-// File developed by: Jeremy McMinnis, jmcminis@gmail.com, University of Illinois at Urbana-Champaign   
+// File developed by:
+// Jeremy McMinnis, jmcminis@gmail.com,
+//    University of Illinois at Urbana-Champaign
 //
-// File created by: Jeongnim Kim, jeongnim.kim@gmail.com, University of Illinois at Urbana-Champaign 
-//////////////////////////////////////////////////////////////////////////////////////
-
+// File created by:
+// Jeongnim Kim, jeongnim.kim@gmail.com,
+//    University of Illinois at Urbana-Champaign
+////////////////////////////////////////////////////////////////////////////////
 
 #ifndef OHMMS_TINYVECTORTENSOR_OPERATORS_H
 #define OHMMS_TINYVECTORTENSOR_OPERATORS_H
@@ -173,76 +176,6 @@ struct OTDot< TinyVector<T1,4> , Tensor<T2,4> >
 };
 
 
-/*
-//////////////////////////////////////////////////////////////////////
-//
-// Specializations for TinyMatrix x TinyMatrix matrix multiplication
-// Matrix(D1,D2)* Matrix(D2,D3)  = Matrix(D1,D3)
-//
-//////////////////////////////////////////////////////////////////////
-template<class T1, class T2, unsigned D1, unsigned D2, unsigned D3>
-struct OTDot< TinyMatrix<T1,D1,D2> , TinyMatrix<T2,D2,D3> >
-{
-  typedef typename BinaryReturn<T1,T2,OpMultiply>::Type_t Type_t;
-  typedef TinyMatrix<Type_t, D1, D3> Return_t;
-  inline static Return_t
-  apply(const TinyMatrix<T1,D1,D2>& lhs, const TinyMatrix<T2,D2,D3>& rhs) {
-    Return_t res;
-    for(int i=0; i<D1; i++)
-      for(int j=0; j<D3; j++) {
-        Type_t tmp = 0.0e0;
-        for(int k=0; k<D2; k++)
-          tmp += lhs(i,k)*rhs(k,j);
-        res(i,j) = tmp;
-      }
-    return res;
-  }
-};
-
-template<class T1, class T2>
-struct OTDot< TinyMatrix<T1,3,3> , TinyMatrix<T2,3,3> >
-{
-  typedef typename BinaryReturn<T1,T2,OpMultiply>::Type_t Type_t;
-  typedef TinyMatrix<Type_t, 3, 3> Return_t;
-  inline static Return_t
-  apply(const TinyMatrix<T1,3,3>& lhs, const TinyMatrix<T2,3,3>& rhs) {
-    return Return_t(lhs(0,0)*rhs(0,0)+lhs(0,1)*rhs(1,0)+lhs(0,2)*rhs(2,0),
-                    lhs(0,0)*rhs(0,1)+lhs(0,1)*rhs(1,1)+lhs(0,2)*rhs(2,1),
-                    lhs(0,0)*rhs(0,2)+lhs(0,1)*rhs(1,2)+lhs(0,2)*rhs(2,2),
-                    lhs(1,0)*rhs(0,0)+lhs(1,1)*rhs(1,0)+lhs(1,2)*rhs(2,0),
-                    lhs(1,0)*rhs(0,1)+lhs(1,1)*rhs(1,1)+lhs(1,2)*rhs(2,1),
-                    lhs(1,0)*rhs(0,2)+lhs(1,1)*rhs(1,2)+lhs(1,2)*rhs(2,2),
-                    lhs(2,0)*rhs(0,0)+lhs(2,1)*rhs(1,0)+lhs(2,2)*rhs(2,0),
-                    lhs(2,0)*rhs(0,1)+lhs(2,1)*rhs(1,1)+lhs(2,2)*rhs(2,1),
-                    lhs(2,0)*rhs(0,2)+lhs(2,1)*rhs(1,2)+lhs(2,2)*rhs(2,2));
-  }
-};
-template<class T1, class T2>
-struct OTDot< TinyMatrix<T1,4,4> , TinyMatrix<T2,4,4> >
-{
-  typedef typename BinaryReturn<T1,T2,OpMultiply>::Type_t Type_t;
-  typedef TinyMatrix<Type_t, 4, 4> Return_t;
-  inline static Return_t
-  apply(const TinyMatrix<T1,4,4>& lhs, const TinyMatrix<T2,4,4>& rhs) {
-    return Return_t(lhs(0,0)*rhs(0,0)+lhs(0,1)*rhs(1,0)+lhs(0,2)*rhs(2,0)+lhs(0,3)*rhs(3,0),
-                    lhs(0,0)*rhs(0,1)+lhs(0,1)*rhs(1,1)+lhs(0,2)*rhs(2,1)+lhs(0,3)*rhs(3,1),
-                    lhs(0,0)*rhs(0,2)+lhs(0,1)*rhs(1,2)+lhs(0,2)*rhs(2,2)+lhs(0,3)*rhs(3,2),
-                    lhs(0,0)*rhs(0,3)+lhs(0,1)*rhs(1,3)+lhs(0,2)*rhs(2,3)+lhs(0,3)*rhs(3,3),
-                    lhs(1,0)*rhs(0,0)+lhs(1,1)*rhs(1,0)+lhs(1,2)*rhs(2,0)+lhs(1,3)*rhs(3,0),
-                    lhs(1,0)*rhs(0,1)+lhs(1,1)*rhs(1,1)+lhs(1,2)*rhs(2,1)+lhs(1,3)*rhs(3,1),
-                    lhs(1,0)*rhs(0,2)+lhs(1,1)*rhs(1,2)+lhs(1,2)*rhs(2,2)+lhs(1,3)*rhs(3,2),
-                    lhs(1,0)*rhs(0,3)+lhs(1,1)*rhs(1,3)+lhs(1,2)*rhs(2,3)+lhs(1,3)*rhs(3,3),
-                    lhs(2,0)*rhs(0,0)+lhs(2,1)*rhs(1,0)+lhs(2,2)*rhs(2,0)+lhs(2,3)*rhs(3,0),
-                    lhs(2,0)*rhs(0,1)+lhs(2,1)*rhs(1,1)+lhs(2,2)*rhs(2,1)+lhs(2,3)*rhs(3,1),
-                    lhs(2,0)*rhs(0,2)+lhs(2,1)*rhs(1,2)+lhs(2,2)*rhs(2,2)+lhs(2,3)*rhs(3,2),
-                    lhs(2,0)*rhs(0,3)+lhs(2,1)*rhs(1,3)+lhs(2,2)*rhs(2,3)+lhs(2,3)*rhs(3,3),
-                    lhs(3,0)*rhs(0,0)+lhs(3,1)*rhs(1,0)+lhs(3,2)*rhs(2,0)+lhs(3,3)*rhs(3,0),
-                    lhs(3,0)*rhs(0,1)+lhs(3,1)*rhs(1,1)+lhs(3,2)*rhs(2,1)+lhs(3,3)*rhs(3,1),
-                    lhs(3,0)*rhs(0,2)+lhs(3,1)*rhs(1,2)+lhs(3,2)*rhs(2,2)+lhs(3,3)*rhs(3,2),
-                    lhs(3,0)*rhs(0,3)+lhs(3,1)*rhs(1,3)+lhs(3,2)*rhs(2,3)+lhs(3,3)*rhs(3,3));
-  }
-};
-*/
 //////////////////////////////////////////////////////////////////////
 //
 // Definition of the struct OuterProduct

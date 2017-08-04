@@ -39,22 +39,19 @@ extern "C" {
 /////////////////////////////////////
 
 // Set the data for the splines, and compute spline coefficients
-  void
-  set_multi_UBspline_3d_s (multi_UBspline_3d_s *spline,
-                           int spline_num, float *data);
+void set_multi_UBspline_3d_s(multi_UBspline_3d_s *spline, int spline_num,
+                             float *data);
 
-  void
-  set_multi_UBspline_3d_s_d (multi_UBspline_3d_s *spline,
-                             int spline_num, double *data);
+void set_multi_UBspline_3d_s_d(multi_UBspline_3d_s *spline, int spline_num,
+                               double *data);
 
 /////////////////////////////////////
 // Uniform, double precision, real //
 /////////////////////////////////////
 
 // Set the data for the splines, and compute spline coefficients
-  void
-  set_multi_UBspline_3d_d (multi_UBspline_3d_d *spline,
-                           int spline_num, double *data);
+void set_multi_UBspline_3d_d(multi_UBspline_3d_d *spline, int spline_num,
+                             double *data);
 #ifdef __cplusplus
 }
 #endif

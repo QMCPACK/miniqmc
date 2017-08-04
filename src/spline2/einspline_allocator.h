@@ -30,9 +30,9 @@
 extern "C" {
 #endif
 
-void* einspline_alloc (size_t size, size_t alignment);
+void *einspline_alloc(size_t size, size_t alignment);
 
-void einspline_free (void *ptr);
+void einspline_free(void *ptr);
 
 #ifdef __cplusplus
 }
