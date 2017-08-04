@@ -396,7 +396,8 @@ struct DistanceTableData
   inline void print(std::ostream &os)
   {
     os << "Table " << Origin->getName() << std::endl;
-    for (int i = 0; i < r_m.size(); i++) os << r_m[i] << " ";
+    for (int i = 0; i < r_m.size(); i++)
+      os << r_m[i] << " ";
     os << std::endl;
   }
 

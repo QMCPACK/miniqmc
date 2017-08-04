@@ -92,7 +92,8 @@ template <typename J2Type> void buildJ2(J2Type &J2, double rcut)
   rcut        = std::min(rcut, 5.5727792532);
   RealType dr = rcut / static_cast<RealType>(npts);
   std::vector<RealType> X(npts + 1);
-  for (int i = 0; i < npts; ++i) X[i] = static_cast<RealType>(i) * dr;
+  for (int i = 0; i < npts; ++i)
+    X[i]     = static_cast<RealType>(i) * dr;
 
   { // add uu/dd
     std::vector<RealType> Y = {
@@ -132,7 +133,8 @@ template <typename J1Type> void buildJ1(J1Type &J1, double rcut)
   rcut        = std::min(rcut, 4.8261684030);
   RealType dr = rcut / static_cast<RealType>(npts);
   std::vector<RealType> X(npts + 1);
-  for (int i = 0; i < npts; ++i) X[i] = static_cast<RealType>(i) * dr;
+  for (int i = 0; i < npts; ++i)
+    X[i]     = static_cast<RealType>(i) * dr;
 
   // oxygen
   std::vector<RealType> Y = {-0.2249112633,

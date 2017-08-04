@@ -27,13 +27,15 @@ template <class T, unsigned D> struct CheckBoxConds
   inline static bool inside(const TinyVector<T, D> &u)
   {
     bool yes = (u[0] > 0.0 && u[0] < 1.0);
-    for (int i = 1; i < D; ++i) yes &= (u[i] > 0.0 && u[i] < 1.0);
+    for (int i = 1; i < D; ++i)
+      yes &= (u[i] > 0.0 && u[i] < 1.0);
     return yes;
   }
 
   inline static bool inside(const TinyVector<T, D> &u, TinyVector<T, D> &ubox)
   {
-    for (int i = 0; i < D; ++i) ubox[i] = u[i] - std::floor(u[i]);
+    for (int i = 0; i < D; ++i)
+      ubox[i]  = u[i] - std::floor(u[i]);
     return true;
   }
 };

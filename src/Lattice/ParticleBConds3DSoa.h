@@ -57,8 +57,9 @@ template <class T> struct DTD_BConds<T, 3, PPPG + SOA_OFFSET>
 
     Tensor<T, 3> rbt;
     for (int i = 0; i < 3; ++i)
-      for (int j = 0; j < 3; ++j) rbt(i, j) = rb[i][j];
-    Tensor<T, 3> g                          = inverse(rbt);
+      for (int j = 0; j < 3; ++j)
+        rbt(i, j)  = rb[i][j];
+    Tensor<T, 3> g = inverse(rbt);
     g00 = g(0);
     g10 = g(3);
     g20 = g(6);

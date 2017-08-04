@@ -186,7 +186,8 @@ struct AsymmetricDTD : public DTD_BConds<T, D, SC>, public DistanceTableData
     const int ns = N[SourceIndex];
     const int nt = N[VisitorIndex];
     for (int i = 0; i < ns; i++)
-      for (int j = 0; j < nt; j++) dr_m[i * nt + j] = P.R[j] - Origin->R[i];
+      for (int j         = 0; j < nt; j++)
+        dr_m[i * nt + j] = P.R[j] - Origin->R[i];
     DTD_BConds<T, D, SC>::apply_bc(dr_m, r_m, rinv_m);
   }
 

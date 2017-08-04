@@ -135,12 +135,14 @@ void convert(const PL &lat, const PV &pin, PV &pout)
   }
   if (pin.InUnit)
   {
-    for (int i = 0; i < pin.size(); i++) pout[i] = lat.toCart(pin[i]);
+    for (int i = 0; i < pin.size(); i++)
+      pout[i]  = lat.toCart(pin[i]);
     return;
   }
   else
   {
-    for (int i = 0; i < pin.size(); i++) pout[i] = lat.toUnit(pin[i]);
+    for (int i = 0; i < pin.size(); i++)
+      pout[i]  = lat.toUnit(pin[i]);
     return;
   }
 }
@@ -155,7 +157,8 @@ template <class PL, class PV> void convert2Cart(const PL &lat, PV &pin)
     PV tmp(pin.size());
     tmp        = pin;
     pin.InUnit = false;
-    for (int i = 0; i < pin.size(); i++) pin[i] = lat.toCart(pin[i]);
+    for (int i = 0; i < pin.size(); i++)
+      pin[i]   = lat.toCart(pin[i]);
   }
 }
 
@@ -166,7 +169,8 @@ template <class PL, class PV> void convert2Unit(const PL &lat, PV &pin)
     PV tmp(pin.size());
     tmp        = pin;
     pin.InUnit = true;
-    for (int i = 0; i < pin.size(); i++) pin[i] = lat.toUnit(pin[i]);
+    for (int i = 0; i < pin.size(); i++)
+      pin[i]   = lat.toUnit(pin[i]);
   }
 }
 
@@ -188,7 +192,7 @@ void wrapAroundBox(const PL &lat, const PV &pin, PV &pout)
     else
     {
       for (int i = 0; i < pin.size(); i++)
-        pout[i] = lat.toCart(lat.BConds.wrap(pin[i])); // unit -> cart
+        pout[i]  = lat.toCart(lat.BConds.wrap(pin[i])); // unit -> cart
     }
   }
   else
@@ -196,7 +200,7 @@ void wrapAroundBox(const PL &lat, const PV &pin, PV &pout)
     if (pout.InUnit)
     {
       for (int i = 0; i < pin.size(); i++)
-        pout[i] = lat.BConds.wrap(lat.toUnit(pin[i])); // cart -> unit
+        pout[i]  = lat.BConds.wrap(lat.toUnit(pin[i])); // cart -> unit
     }
     else
     {

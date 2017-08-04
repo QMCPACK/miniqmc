@@ -204,7 +204,8 @@ template <typename T, unsigned D> struct VectorSoaContainer
     __forceinline Accessor &operator=(const TinyVector<T, D> &rhs)
     {
 #pragma unroll(D)
-      for (size_t i = 0; i < D; ++i) *(_base + M * i) = rhs[i];
+      for (size_t i      = 0; i < D; ++i)
+        *(_base + M * i) = rhs[i];
       return *this;
     }
 
@@ -212,7 +213,8 @@ template <typename T, unsigned D> struct VectorSoaContainer
     template <typename T1> __forceinline Accessor &operator=(T1 rhs)
     {
 #pragma unroll(D)
-      for (size_t i = 0; i < D; ++i) *(_base + M * i) = rhs;
+      for (size_t i      = 0; i < D; ++i)
+        *(_base + M * i) = rhs;
       return *this;
     }
   };

@@ -134,7 +134,8 @@ struct SymmetricDTD : public DTD_BConds<T, D, SC>, public DistanceTableData
   {
     const int n = N[SourceIndex];
     for (int i = 0, ij = 0; i < n; i++)
-      for (int j = i + 1; j < n; j++, ij++) dr_m[ij] = P.R[j] - P.R[i];
+      for (int j = i + 1; j < n; j++, ij++)
+        dr_m[ij] = P.R[j] - P.R[i];
     // old with static type
     // BC::apply(Origin.Lattice,dr_m,r_m,rinv_m);
     DTD_BConds<T, D, SC>::apply_bc(dr_m, r_m, rinv_m);

@@ -223,9 +223,11 @@ void find_coefs_1d_s(Ugrid grid, BCtype_s bc, float *data, intptr_t dstride,
 
   d_data  = malloc(N * sizeof(double));
   d_coefs = malloc(N * sizeof(double));
-  for (int i = 0; i < M; i++) d_data[i] = data[i * dstride];
+  for (int i  = 0; i < M; i++)
+    d_data[i] = data[i * dstride];
   find_coefs_1d_d(grid, d_bc, d_data, 1, d_coefs, 1);
-  for (int i = 0; i < N; i++) coefs[i * cstride] = d_coefs[i];
+  for (int i           = 0; i < N; i++)
+    coefs[i * cstride] = d_coefs[i];
   free(d_data);
   free(d_coefs);
 }
@@ -307,7 +309,8 @@ void find_coefs_1d_s(Ugrid grid, BCtype_s bc, float *data, intptr_t dstride,
     }
     for (int i = 0; i < M; i++)
     {
-      for (int j = 0; j < 3; j++) bands[4 * (i + 1) + j] = basis[j];
+      for (int j               = 0; j < 3; j++)
+        bands[4 * (i + 1) + j] = basis[j];
 
       bands[4 * (i + 1) + 3] = data[i * dstride];
     }
@@ -570,7 +573,8 @@ void find_coefs_1d_d(Ugrid grid, BCtype_d bc, double *data, intptr_t dstride,
     }
     for (int i = 0; i < M; i++)
     {
-      for (int j = 0; j < 3; j++) bands[4 * (i + 1) + j] = basis[j];
+      for (int j               = 0; j < 3; j++)
+        bands[4 * (i + 1) + j] = basis[j];
 
       bands[4 * (i + 1) + 3] = data[i * dstride];
     }

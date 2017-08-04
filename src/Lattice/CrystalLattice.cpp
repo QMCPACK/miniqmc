@@ -59,7 +59,8 @@ void CrystalLattice<T, D, ORTHO>::set(T sc, T *lat)
   if (lat)
   {
     for (int i = 0; i < D; ++i)
-      for (int j = 0; j < D; ++j) R(i, j) = *lat++;
+      for (int j = 0; j < D; ++j)
+        R(i, j) = *lat++;
     R *= sc;
   }
   else
@@ -79,7 +80,8 @@ void CrystalLattice<T, D, ORTHO>::set(const CrystalLattice<T, D, ORTHO> &oldlat,
   if (uc)
   {
     for (int i = 0; i < D; ++i)
-      for (int j = 0; j < D; ++j) R(i, j) *= static_cast<T>(uc[i]);
+      for (int j = 0; j < D; ++j)
+        R(i, j) *= static_cast<T>(uc[i]);
   }
   reset();
 }
@@ -95,16 +97,19 @@ void CrystalLattice<T, D, ORTHO>::reset()
   T t = TWOPI * TWOPI;
   Mg  = t * dot(transpose(G), G);
   for (int i = 0; i < D; ++i)
-    for (int j = 0; j < D; ++j) Rv[i][j] = R(i, j);
+    for (int j = 0; j < D; ++j)
+      Rv[i][j] = R(i, j);
   for (int i = 0; i < D; ++i)
-    for (int j = 0; j < D; ++j) Gv[i][j] = G(j, i);
+    for (int j = 0; j < D; ++j)
+      Gv[i][j] = G(j, i);
   for (int i = 0; i < D; ++i)
   {
     Length[i]        = std::sqrt(dot(Rv[i], Rv[i]));
     OneOverLength[i] = 1.0 / Length[i];
   }
   Center = 0.0;
-  for (int i = 0; i < D; ++i) Center += Rv[i];
+  for (int i = 0; i < D; ++i)
+    Center += Rv[i];
   Center *= .5;
   // analysis of a lattice using LatticeAnalyzer
   LatticeAnalyzer<T, D> ldesc;
@@ -142,7 +147,8 @@ void CrystalLattice<T, D, ORTHO>::print(std::ostream &os, int level) const
    *      level == 2: + all the internal values
    */
   os << "<parameter name=\"lattice\">" << std::endl;
-  for (int i = 0; i < D; ++i) os << Rv[i] << std::endl;
+  for (int i = 0; i < D; ++i)
+    os << Rv[i] << std::endl;
   os << "</parameter>" << std::endl;
   if (level > 0)
   {

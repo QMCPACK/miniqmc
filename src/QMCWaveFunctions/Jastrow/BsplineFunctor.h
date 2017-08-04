@@ -110,7 +110,8 @@ template <class T> struct BsplineFunctor : public OptimizableFunctorBase
     int numKnots = numCoefs - 2;
     DeltaR       = cutoff_radius / (real_type)(numKnots - 1);
     DeltaRInv    = 1.0 / DeltaR;
-    for (int i = 0; i < SplineCoefs.size(); i++) SplineCoefs[i] = 0.0;
+    for (int i       = 0; i < SplineCoefs.size(); i++)
+      SplineCoefs[i] = 0.0;
     // Ensure that cusp conditions is satsified at the origin
     SplineCoefs[1] = Parameters[0];
     SplineCoefs[2] = Parameters[1];
@@ -239,7 +240,8 @@ template <class T> struct BsplineFunctor : public OptimizableFunctorBase
 
     int imin = std::max(i, 1);
     int imax = std::min(i + 4, NumParams + 1);
-    for (int n = imin; n < imax; ++n) derivs[n - 1] = SplineDerivs[n];
+    for (int n      = imin; n < imax; ++n)
+      derivs[n - 1] = SplineDerivs[n];
     derivs[1] += SplineDerivs[0];
 
     return true;
@@ -273,7 +275,8 @@ template <class T> struct BsplineFunctor : public OptimizableFunctorBase
         APP_ABORT("Error in BsplineFunctor::initialize: r > cutoff_radius.");
       }
       evaluateDerivatives(r, derivs);
-      for (int j = 0; j < NumParams; j++) basis(i, j) = derivs[j][0];
+      for (int j = 0; j < NumParams; j++)
+        basis(i, j) = derivs[j][0];
     }
     resize(NumParams);
     LinearFit(y, basis, Parameters);

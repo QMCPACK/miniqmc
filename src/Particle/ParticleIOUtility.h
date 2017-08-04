@@ -73,7 +73,8 @@ template <typename PS> void expandSuperCell(PS &ref_, Tensor<int, 3> &tmat)
           {
             if (primTypes[iat] != ns) continue;
             SingleParticlePos_t uPrim = primPos[iat];
-            for (int i = 0; i < 3; i++) uPrim[i] -= std::floor(uPrim[i]);
+            for (int i = 0; i < 3; i++)
+              uPrim[i] -= std::floor(uPrim[i]);
             SingleParticlePos_t r =
                 PrimCell.toCart(uPrim) + (double)i0 * PrimCell.a(0) +
                 (double)i1 * PrimCell.a(1) + (double)i2 * PrimCell.a(2);

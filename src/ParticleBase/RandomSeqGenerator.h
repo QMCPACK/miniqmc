@@ -67,7 +67,8 @@ inline void assignGaussRand(T *restrict a, unsigned n, RG &rng)
 template <class T, class RG>
 inline void assignUniformRand(T *restrict a, unsigned n, RG &rng)
 {
-  for (int i = 0; i < n; i++) a[i] = rng();
+  for (int i = 0; i < n; i++)
+    a[i]     = rng();
 }
 
 #if defined(HAVE_LIBBLITZ)

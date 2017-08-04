@@ -128,8 +128,9 @@ template <class FT> struct J2OrbitalSoA : public OrbitalBase
       valT s                  = valT();
 
 #pragma omp simd reduction(+ : s) aligned(du, dX)
-      for (int jat = 0; jat < N; ++jat) s += du[jat] * dX[jat];
-      grad[idim]   = s;
+      for (int jat = 0; jat < N; ++jat)
+        s += du[jat] * dX[jat];
+      grad[idim] = s;
     }
     return grad;
   }
@@ -143,14 +144,16 @@ template <class FT> struct J2OrbitalSoA : public OrbitalBase
     constexpr valT lapfac = OHMMS_DIM - RealType(1);
     lap                   = valT(0);
     //#pragma omp simd reduction(+:lap)
-    for (int jat = 0; jat < N; ++jat) lap += d2u[jat] + lapfac * du[jat];
+    for (int jat = 0; jat < N; ++jat)
+      lap += d2u[jat] + lapfac * du[jat];
     for (int idim = 0; idim < OHMMS_DIM; ++idim)
     {
       const valT *restrict dX = displ.data(idim);
       valT s                  = valT();
       //#pragma omp simd reduction(+:s)
-      for (int jat = 0; jat < N; ++jat) s += du[jat] * dX[jat];
-      grad[idim]   = s;
+      for (int jat = 0; jat < N; ++jat)
+        s += du[jat] * dX[jat];
+      grad[idim] = s;
     }
   }
 };
@@ -205,7 +208,8 @@ template <typename FT> void J2OrbitalSoA<FT>::addFunc(int ia, int ib, FT *j)
       // a very special case, 1 up + 1 down
       // uu/dd was prevented by the builder
       for (int ig = 0; ig < NumGroups; ++ig)
-        for (int jg = 0; jg < NumGroups; ++jg) F[ig * NumGroups + jg] = j;
+        for (int jg              = 0; jg < NumGroups; ++jg)
+          F[ig * NumGroups + jg] = j;
     }
     else
     {

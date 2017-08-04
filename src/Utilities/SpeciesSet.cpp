@@ -45,7 +45,8 @@ void SpeciesSet::create(unsigned m)
   {
     speciesName.insert(speciesName.end(), m, std::string("none"));
     AttribList_t::iterator dit = d_attrib.begin();
-    for (; dit != d_attrib.end(); ++dit) (*dit)->insert((*dit)->end(), m, 0);
+    for (; dit != d_attrib.end(); ++dit)
+      (*dit)->insert((*dit)->end(), m, 0);
     TotalNum += m;
   }
 }

@@ -94,7 +94,8 @@ struct PolynomialFunctor3D : public OptimizableFunctorBase
     int num = 0;
     for (int m = 0; m <= N_eI; m++)
       for (int l = m; l <= N_eI; l++)
-        for (int n = 0; n <= N_ee; n++) index(l, m, n) = index(m, l, n) = num++;
+        for (int n = 0; n <= N_ee; n++)
+          index(l, m, n) = index(m, l, n) = num++;
     assert(num == NumGamma);
     //       std::cerr << "NumGamma = " << NumGamma << std::endl;
     // Fill up contraint matrix
@@ -144,8 +145,9 @@ struct PolynomialFunctor3D : public OptimizableFunctorBase
     GammaPerm.resize(NumGamma);
     IndepVar.resize(NumGamma, false);
     // Set identity permutation
-    for (int i = 0; i < NumGamma; i++) GammaPerm[i] = i;
-    int col                                         = -1;
+    for (int i     = 0; i < NumGamma; i++)
+      GammaPerm[i] = i;
+    int col        = -1;
     for (int row = 0; row < NumConstraints; row++)
     {
       int max_loc;
@@ -179,7 +181,8 @@ struct PolynomialFunctor3D : public OptimizableFunctorBase
       ConstraintMatrix.swap_rows(row, max_loc);
 #endif
       real_type lead_inv = 1.0 / ConstraintMatrix(row, col);
-      for (int c = 0; c < NumGamma; c++) ConstraintMatrix(row, c) *= lead_inv;
+      for (int c = 0; c < NumGamma; c++)
+        ConstraintMatrix(row, c) *= lead_inv;
       // Now, eliminate column entries
       for (int ri = 0; ri < NumConstraints; ri++)
       {
@@ -191,7 +194,8 @@ struct PolynomialFunctor3D : public OptimizableFunctorBase
         }
       }
     }
-    for (int c = col + 1; c < NumGamma; c++) IndepVar[c] = true;
+    for (int c    = col + 1; c < NumGamma; c++)
+      IndepVar[c] = true;
   }
 
   void reset()
@@ -312,7 +316,8 @@ struct PolynomialFunctor3D : public OptimizableFunctorBase
       }
       r2l *= r_1I;
     }
-    for (int i = 0; i < C; i++) val *= (r_1I - L) * (r_2I - L);
+    for (int i = 0; i < C; i++)
+      val *= (r_1I - L) * (r_2I - L);
     return val;
   }
 
@@ -351,7 +356,8 @@ struct PolynomialFunctor3D : public OptimizableFunctorBase
         r2l *= r_1I;
       }
       const real_type both_minus_L = (r_2I - L) * (r_1I - L);
-      for (int i = 0; i < C; i++) val *= both_minus_L;
+      for (int i = 0; i < C; i++)
+        val *= both_minus_L;
       val_tot += val;
     }
 

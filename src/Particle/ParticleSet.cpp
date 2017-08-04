@@ -101,7 +101,8 @@ void ParticleSet::create(const std::vector<int> &agroup)
   int loc  = 0;
   for (int i = 0; i < agroup.size(); i++)
   {
-    for (int j = 0; j < agroup[i]; j++, loc++) GroupID[loc] = i;
+    for (int j     = 0; j < agroup[i]; j++, loc++)
+      GroupID[loc] = i;
   }
 }
 
@@ -119,7 +120,8 @@ void ParticleSet::resetGroups()
     app_log() << " Missing charge attribute of the SpeciesSet " << myName
               << " particleset" << std::endl;
     app_log() << " Assume neutral particles Z=0.0 " << std::endl;
-    for (int ig = 0; ig < nspecies; ig++) mySpecies(qind, ig) = 0.0;
+    for (int ig = 0; ig < nspecies; ig++)
+      mySpecies(qind, ig) = 0.0;
   }
   for (int iat = 0; iat < Z.size(); iat++)
     Z[iat]     = mySpecies(qind, GroupID[iat]);
@@ -127,7 +129,8 @@ void ParticleSet::resetGroups()
   int massind  = mySpecies.addAttribute("mass");
   if (massind == natt)
   {
-    for (int ig = 0; ig < nspecies; ig++) mySpecies(massind, ig) = 1.0;
+    for (int ig = 0; ig < nspecies; ig++)
+      mySpecies(massind, ig) = 1.0;
   }
   SameMass  = true;
   double m0 = mySpecies(massind, 0);
@@ -149,9 +152,11 @@ void ParticleSet::resetGroups()
   }
   SubPtcl.resize(nspecies + 1);
   SubPtcl[0] = 0;
-  for (int i = 0; i < nspecies; ++i) SubPtcl[i + 1] = SubPtcl[i] + ng[i];
-  int membersize = mySpecies.addAttribute("membersize");
-  for (int ig = 0; ig < nspecies; ++ig) mySpecies(membersize, ig) = ng[ig];
+  for (int i       = 0; i < nspecies; ++i)
+    SubPtcl[i + 1] = SubPtcl[i] + ng[i];
+  int membersize   = mySpecies.addAttribute("membersize");
+  for (int ig = 0; ig < nspecies; ++ig)
+    mySpecies(membersize, ig) = ng[ig];
   // orgID=ID;
   // orgGroupID=GroupID;
   int new_id = 0;
@@ -173,7 +178,8 @@ void ParticleSet::resetGroups()
 bool ParticleSet::get(std::ostream &os) const
 {
   os << "  ParticleSet " << getName() << " : ";
-  for (int i = 0; i < SubPtcl.size(); i++) os << SubPtcl[i] << " ";
+  for (int i = 0; i < SubPtcl.size(); i++)
+    os << SubPtcl[i] << " ";
   os << "\n\n    " << TotalNum << "\n\n";
   const int maxParticlesToPrint = 10;
   int numToPrint                = std::min(TotalNum, maxParticlesToPrint);
@@ -269,7 +275,8 @@ int ParticleSet::addTable(const ParticleSet &psrc, int dt_type)
 void ParticleSet::update(bool skipSK)
 {
   RSoA.copyIn(R);
-  for (int i    = 0; i < DistTables.size(); i++) DistTables[i]->evaluate(*this);
+  for (int i = 0; i < DistTables.size(); i++)
+    DistTables[i]->evaluate(*this);
   Ready4Measure = true;
 }
 
@@ -366,7 +373,8 @@ void ParticleSet::rejectMove(Index_t iat)
 {
   // restore the position by the saved activePos
   R[iat] = activePos;
-  for (int i = 0; i < DistTables.size(); ++i) DistTables[i]->activePtcl = -1;
+  for (int i                  = 0; i < DistTables.size(); ++i)
+    DistTables[i]->activePtcl = -1;
 }
 
 void ParticleSet::donePbyP(bool skipSK)

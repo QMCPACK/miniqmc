@@ -94,7 +94,8 @@ struct einspline_spo
   {
     if (psi.size()) clean();
     if (Owner)
-      for (int i = 0; i < nBlocks; ++i) delete einsplines[i];
+      for (int i = 0; i < nBlocks; ++i)
+        delete einsplines[i];
   }
 
   void clean()
@@ -177,7 +178,8 @@ struct einspline_spo
   inline void evaluate_v(const pos_type &p)
   {
     auto u = Lattice.toUnit(p);
-    for (int i = 0; i < nBlocks; ++i) einsplines[i]->evaluate(u, *psi[i]);
+    for (int i = 0; i < nBlocks; ++i)
+      einsplines[i]->evaluate(u, *psi[i]);
   }
 
   /** evaluate psi */
@@ -185,7 +187,8 @@ struct einspline_spo
   {
     auto u = Lattice.toUnit(p);
 #pragma omp for nowait
-    for (int i = 0; i < nBlocks; ++i) einsplines[i]->evaluate(u, *psi[i]);
+    for (int i = 0; i < nBlocks; ++i)
+      einsplines[i]->evaluate(u, *psi[i]);
   }
 
   /** evaluate psi, grad and lap */

@@ -69,8 +69,9 @@ template <typename T> struct MultiBspline
     // should be refined to ensure alignment with minimal waste
     int nsb = num_splines / nteams;
     offset.resize(nteams + 1);
-    for (int i = 0; i < nteams; ++i) offset[i] = i * nsb;
-    offset[nteams]                             = num_splines;
+    for (int i     = 0; i < nteams; ++i)
+      offset[i]    = i * nsb;
+    offset[nteams] = num_splines;
   }
 
   /** create the einspline as used in the builder
@@ -100,8 +101,9 @@ template <typename T> struct MultiBspline
     // should be refined to ensure alignment with minimal waste
     int nsb = num_splines / nteams;
     offset.resize(nteams + 1);
-    for (int i = 0; i < nteams; ++i) offset[i] = i * nsb;
-    offset[nteams]                             = num_splines;
+    for (int i     = 0; i < nteams; ++i)
+      offset[i]    = i * nsb;
+    offset[nteams] = num_splines;
   }
 
   void flush_zero() const

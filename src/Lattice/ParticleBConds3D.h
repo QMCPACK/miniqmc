@@ -45,8 +45,9 @@ template <class T> struct DTD_BConds<T, 3, PPPG>
     find_reduced_basis(rb);
     Tensor<T, 3> rbt;
     for (int i = 0; i < 3; ++i)
-      for (int j = 0; j < 3; ++j) rbt(i, j) = rb[i][j];
-    Tensor<T, 3> g                          = inverse(rbt);
+      for (int j = 0; j < 3; ++j)
+        rbt(i, j)  = rb[i][j];
+    Tensor<T, 3> g = inverse(rbt);
     T minusone = -1.0;
     corners.resize(8);
     corners[0] = 0.0;

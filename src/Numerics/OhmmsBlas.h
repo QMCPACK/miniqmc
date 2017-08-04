@@ -264,7 +264,8 @@ struct BLAS
   inline static T dot(int n, const T *restrict a, const T *restrict b)
   {
     T res = T(0);
-    for (int i = 0; i < n; ++i) res += a[i] * b[i];
+    for (int i = 0; i < n; ++i)
+      res += a[i] * b[i];
     return res;
   }
 
@@ -273,7 +274,8 @@ struct BLAS
                                     const T *restrict b)
   {
     std::complex<T> res = T(0);
-    for (int i = 0; i < n; ++i) res += a[i] * b[i];
+    for (int i = 0; i < n; ++i)
+      res += a[i] * b[i];
     return res;
   }
 
@@ -282,7 +284,8 @@ struct BLAS
                                     const std::complex<T> *restrict b)
   {
     std::complex<T> res = 0.0;
-    for (int i = 0; i < n; ++i) res += a[i] * b[i];
+    for (int i = 0; i < n; ++i)
+      res += a[i] * b[i];
     return res;
   }
 
@@ -291,7 +294,8 @@ struct BLAS
                                     const std::complex<T> *restrict b)
   {
     std::complex<T> res = 0.0;
-    for (int i = 0; i < n; ++i) res += a[i] * b[i];
+    for (int i = 0; i < n; ++i)
+      res += a[i] * b[i];
     return res;
   }
 
@@ -316,14 +320,16 @@ struct BLAS
   inline static void copy(int n, const std::complex<T> *restrict a,
                           T *restrict b)
   {
-    for (int i = 0; i < n; ++i) b[i] = a[i].real();
+    for (int i = 0; i < n; ++i)
+      b[i]     = a[i].real();
   }
 
   template <typename T>
   inline static void copy(int n, const T *restrict a,
                           std::complex<T> *restrict b)
   {
-    for (int i = 0; i < n; ++i) b[i] = a[i];
+    for (int i = 0; i < n; ++i)
+      b[i]     = a[i];
   }
 
   template <typename T>
@@ -331,7 +337,8 @@ struct BLAS
                           int incy)
   {
     const int xmax = incx * n;
-    for (int ic = 0, jc = 0; ic < xmax; ic += incx, jc += incy) y[jc] = x[ic];
+    for (int ic = 0, jc = 0; ic < xmax; ic += incx, jc += incy)
+      y[jc] = x[ic];
   }
 
   inline static void ger(int m, int n, double alpha, const double *x, int incx,

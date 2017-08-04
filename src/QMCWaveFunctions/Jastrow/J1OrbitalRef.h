@@ -161,8 +161,10 @@ template <class FT> struct J1OrbitalRef : public OrbitalBase
                          bool fromscratch = false)
   {
     const size_t n = P.getTotalNum();
-    for (size_t iat = 0; iat < n; ++iat) G[iat] += Grad[iat];
-    for (size_t iat = 0; iat < n; ++iat) L[iat] -= Lap[iat];
+    for (size_t iat = 0; iat < n; ++iat)
+      G[iat] += Grad[iat];
+    for (size_t iat = 0; iat < n; ++iat)
+      L[iat] -= Lap[iat];
   }
 
   /** compute gradient and lap
@@ -173,13 +175,15 @@ template <class FT> struct J1OrbitalRef : public OrbitalBase
   {
     valT lap(0);
     constexpr valT lapfac = OHMMS_DIM - RealType(1);
-    for (int jat = 0; jat < Nions; ++jat) lap += d2u[jat] + lapfac * du[jat];
+    for (int jat = 0; jat < Nions; ++jat)
+      lap += d2u[jat] + lapfac * du[jat];
     for (int idim = 0; idim < OHMMS_DIM; ++idim)
     {
       const valT *restrict dX = displ.data(idim);
       valT s                  = valT();
-      for (int jat = 0; jat < Nions; ++jat) s += du[jat] * dX[jat];
-      grad[idim]   = s;
+      for (int jat = 0; jat < Nions; ++jat)
+        s += du[jat] * dX[jat];
+      grad[idim] = s;
     }
     return lap;
   }

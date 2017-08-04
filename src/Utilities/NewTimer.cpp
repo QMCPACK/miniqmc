@@ -86,7 +86,8 @@ NewTimer *TimerManagerClass::createTimer(const std::string &myname,
 
 void TimerManagerClass::reset()
 {
-  for (int i = 0; i < TimerList.size(); i++) TimerList[i]->reset();
+  for (int i = 0; i < TimerList.size(); i++)
+    TimerList[i]->reset();
 }
 
 void TimerManagerClass::set_timer_threshold(const timer_levels threshold)

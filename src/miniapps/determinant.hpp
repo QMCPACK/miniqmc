@@ -74,7 +74,8 @@ template <typename T1, typename T2, typename T3>
 inline T3 inner_product_n(const T1 *restrict a, const T2 *restrict b, int n,
                           T3 res)
 {
-  for (int i = 0; i < n; ++i) res += a[i] * b[i];
+  for (int i = 0; i < n; ++i)
+    res += a[i] * b[i];
   return res;
 }
 
@@ -87,7 +88,8 @@ inline void transpose(const TIN *restrict in, TOUT *restrict out, int n,
                       int lda)
 {
   for (int i = 0; i < n; ++i)
-    for (int j = 0; j < n; ++j) out[i * lda + j] = in[i + j * lda];
+    for (int j         = 0; j < n; ++j)
+      out[i * lda + j] = in[i + j * lda];
 }
 
 /// used only for debugging or walker move
@@ -210,8 +212,9 @@ template <typename T, typename INVT = double> struct DiracDet
     const int nels = psiV.size();
     constexpr T shift(0.5);
     constexpr INVT czero(0);
-    for (int j = 0; j < nels; ++j) psiV[j] = myRandom() - shift;
-    curRatio = inner_product_n(psiV.data(), psiMinv[iel], nels, czero);
+    for (int j = 0; j < nels; ++j)
+      psiV[j]  = myRandom() - shift;
+    curRatio   = inner_product_n(psiV.data(), psiMinv[iel], nels, czero);
     return curRatio;
   }
 

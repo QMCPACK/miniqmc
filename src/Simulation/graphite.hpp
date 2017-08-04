@@ -170,7 +170,8 @@ template <typename J2Type> void buildJ2(J2Type &J2, double rcut)
   rcut        = std::min(rcut, 6.4);
   RealType dr = rcut / static_cast<RealType>(npts);
   std::vector<RealType> X(npts + 1);
-  for (int i = 0; i < npts; ++i) X[i] = static_cast<RealType>(i) * dr;
+  for (int i = 0; i < npts; ++i)
+    X[i]     = static_cast<RealType>(i) * dr;
 
   { // add uu/dd
     std::vector<RealType> Y = {0.4711f, 0.3478f, 0.2445f, 0.1677f,
@@ -203,7 +204,8 @@ template <typename J1Type> void buildJ1(J1Type &J1, double rcut)
   rcut        = std::min(rcut, 6.4);
   RealType dr = rcut / static_cast<RealType>(npts);
   std::vector<RealType> X(npts + 1);
-  for (int i = 0; i < npts; ++i) X[i] = static_cast<RealType>(i) * dr;
+  for (int i = 0; i < npts; ++i)
+    X[i]     = static_cast<RealType>(i) * dr;
 
   std::vector<RealType> Y = {0.4711f, 0.3478f, 0.2445f, 0.1677f,
                              0.1118f, 0.0733f, 0.0462f, 0.0273f,

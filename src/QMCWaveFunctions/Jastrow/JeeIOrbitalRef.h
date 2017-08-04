@@ -228,7 +228,8 @@ public:
     const DistanceTableData &eI_table = (*P.DistTables[myTableID]);
 
     for (int iat = 0; iat < Nion; ++iat)
-      for (int jg = 0; jg < eGroups; ++jg) elecs_inside(iat, jg).clear();
+      for (int jg = 0; jg < eGroups; ++jg)
+        elecs_inside(iat, jg).clear();
 
     for (int jg = 0; jg < eGroups; ++jg)
       for (int jel = P.first(jg); jel < P.last(jg); jel++)

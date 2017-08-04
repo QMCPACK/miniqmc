@@ -44,7 +44,8 @@ template <typename T> struct NonLocalPP
     weight_m.resize(12);
     sgridxyz_m.resize(12);
     const RealType w = RealType(1.0 / 12.0);
-    for (int i = 0; i < 12; ++i) weight_m[i] = w;
+    for (int i    = 0; i < 12; ++i)
+      weight_m[i] = w;
 
     // clang-format off
     sgridxyz_m[ 0] = PosType(           1.0,               0.0,               0.0 );
@@ -77,7 +78,8 @@ template <typename T> struct NonLocalPP
                     -sph * cth * sps + cph * cps, sth * sps, cph * sth,
                     sph * sth, cth);
     const int n = sgridxyz_m.size();
-    for (int i = 0; i < n; ++i) rrotsgrid[i] = dot(rmat, sgridxyz_m[i]);
+    for (int i     = 0; i < n; ++i)
+      rrotsgrid[i] = dot(rmat, sgridxyz_m[i]);
   }
 };
 }
