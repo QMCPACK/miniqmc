@@ -1,16 +1,17 @@
-//////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 // This file is distributed under the University of Illinois/NCSA Open Source
-// License.
-// See LICENSE file in top directory for details.
+// License.  See LICENSE file in top directory for details.
 //
 // Copyright (c) 2016 Jeongnim Kim and QMCPACK developers.
 //
-// File developed by: Jeremy McMinnis, jmcminis@gmail.com, University of
-//                    Illinois at Urbana-Champaign
+// File developed by:
+// Jeremy McMinnis, jmcminis@gmail.com,
+//    University of Illinois at Urbana-Champaign
 //
-// File created by: Jeongnim Kim, jeongnim.kim@gmail.com, University of Illinois
-//                  at Urbana-Champaign
-//////////////////////////////////////////////////////////////////////////////////////
+// File created by:
+// Jeongnim Kim, jeongnim.kim@gmail.com,
+//    University of Illinois at Urbana-Champaign
+////////////////////////////////////////////////////////////////////////////////
 
 #ifndef OHMMS_TINY_META_H
 #define OHMMS_TINY_META_H
@@ -42,8 +43,7 @@ template<class T1, class T2> struct OTDot {};
 
 ////////////////////////////////////////////////////////////////////////////////
 // TinyVectorOps.h        assignment/unary and binary operators  for TinyVector
-// TensorOps.h            assignment/unary and binary operators  for Tensors
-// TinyVectorTensorOps.h  binary operators for TinyVector and Tensor combinations
+// TensorOps.h            assignment/unary and binary operators  for Tensors TinyVectorTensorOps.h  binary operators for TinyVector and Tensor combinations
 // TinyMatrixOps.h        assignment/unary and binary operators  for TinyMatrix
 ////////////////////////////////////////////////////////////////////////////////
 #define PAssert

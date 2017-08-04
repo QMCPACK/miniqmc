@@ -1,20 +1,21 @@
-//////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 // This file is distributed under the University of Illinois/NCSA Open Source
-// License.
-// See LICENSE file in top directory for details.
+// License.  See LICENSE file in top directory for details.
 //
 // Copyright (c) 2016 Jeongnim Kim and QMCPACK developers.
 //
-// File developed by: Jeongnim Kim, jeongnim.kim@gmail.com, University of
-// Illinois at Urbana-Champaign
-//                    Ken Esler, kpesler@gmail.com, University of Illinois at
-//                    Urbana-Champaign
-//                    Jeremy McMinnis, jmcminis@gmail.com, University of
-//                    Illinois at Urbana-Champaign
+// File developed by:
+// Jeongnim Kim, jeongnim.kim@gmail.com,
+//    University of Illinois at Urbana-Champaign
+// Ken Esler, kpesler@gmail.com,
+//    University of Illinois at Urbana-Champaign
+// Jeremy McMinnis, jmcminis@gmail.com,
+//    University of Illinois at Urbana-Champaign
 //
-// File created by: Jeongnim Kim, jeongnim.kim@gmail.com, University of Illinois
-// at Urbana-Champaign
-//////////////////////////////////////////////////////////////////////////////////////
+// File created by:
+// Jeongnim Kim, jeongnim.kim@gmail.com,
+//    University of Illinois at Urbana-Champaign
+////////////////////////////////////////////////////////////////////////////////
 
 #ifndef QMCPLUSPLUS_RANDOMSEQUENCEGENERATOR_H
 #define QMCPLUSPLUS_RANDOMSEQUENCEGENERATOR_H
@@ -32,18 +33,6 @@
   *\brief Assign Gaussian distributed random numbers using Box-Mueller
   *algorithm. Called by overloaded funtions makeGaussRandom
   */
-// template<class T>
-// inline void assignGaussRand(T* restrict a, unsigned n) {
-//  for (int i=0; i+1<n; i+=2) {
-//    T temp1=1-0.9999999999*Random(), temp2=Random();
-//    a[i]  =sqrt(-2.0*log(temp1))*cos(6.283185306*temp2);
-//    a[i+1]=sqrt(-2.0*log(temp1))*sin(6.283185306*temp2);
-//  }
-//  if (n%2==1) {
-//    T temp1=1-0.9999999999*Random(), temp2=Random();
-//    a[n-1]=sqrt(-2.0*log(temp1))*cos(6.283185306*temp2);
-//  }
-//}
 
 namespace qmcplusplus
 {
@@ -75,11 +64,6 @@ inline void assignGaussRand(T *restrict a, unsigned n, RG &rng)
   *\param n the number of type T to be assigned
   *\brief Assign unifor distributed random numbers [0,1)
   */
-// template<class T>
-// inline void assignUniformRand(T* restrict a, unsigned n) {
-//  for(int i=0; i<n;i++) a[i] = Random();
-//  //generate(a,a+n,Random);
-//}
 template <class T, class RG>
 inline void assignUniformRand(T *restrict a, unsigned n, RG &rng)
 {
