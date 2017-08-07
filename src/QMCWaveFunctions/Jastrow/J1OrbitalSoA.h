@@ -12,7 +12,7 @@
 #ifndef QMCPLUSPLUS_ONEBODYJASTROW_OPTIMIZED_SOA_H
 #define QMCPLUSPLUS_ONEBODYJASTROW_OPTIMIZED_SOA_H
 #include "Configuration.h"
-#include "QMCWaveFunctions/OrbitalBase.h"
+#include "QMCWaveFunctions/WaveFunctionComponentBase.h"
 #include <simd/allocator.hpp>
 #include <simd/algorithm.hpp>
 #include <map>
@@ -25,10 +25,10 @@
 namespace qmcplusplus
 {
 
-/** @ingroup OrbitalComponent
+/** @ingroup WaveFunctionComponent
  *  @brief Specialization for one-body Jastrow function using multiple functors
  */
-template <class FT> struct J1OrbitalSoA : public OrbitalBase
+template <class FT> struct J1OrbitalSoA : public WaveFunctionComponentBase
 {
   /// alias FuncType
   using FuncType = FT;
@@ -66,7 +66,7 @@ template <class FT> struct J1OrbitalSoA : public OrbitalBase
   {
     initalize(els);
     myTableID   = els.addTable(ions, DT_SOA);
-    OrbitalName = "J1OrbitalSoA";
+    WaveFunctionComponentName = "J1OrbitalSoA";
   }
 
   J1OrbitalSoA(const J1OrbitalSoA &rhs) = delete;

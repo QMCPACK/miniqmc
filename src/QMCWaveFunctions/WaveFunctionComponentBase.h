@@ -23,25 +23,25 @@
 //    University of Illinois at Urbana-Champaign
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef QMCPLUSPLUS_ORBITALBASE_H
-#define QMCPLUSPLUS_ORBITALBASE_H
+#ifndef QMCPLUSPLUS_WAVEFUNCTIONCOMPONENTBASE_H
+#define QMCPLUSPLUS_WAVEFUNCTIONCOMPONENTBASE_H
 #include "Configuration.h"
 #include "Particle/ParticleSet.h"
 #include "Particle/DistanceTableData.h"
 #include "Particle/MCWalkerConfiguration.h"
 
-/**@file OrbitalBase.h
- *@brief Declaration of OrbitalBase
+/**@file wavefunctioncomponentbase.h
+ *@brief Declaration of WaveFunctionComponentBase
  */
 namespace qmcplusplus
 {
 
-/// forward declaration of OrbitalBase
-class OrbitalBase;
+/// forward declaration of WaveFunctionComponentBase
+class WaveFunctionComponentBase;
 
-typedef OrbitalBase *OrbitalBasePtr;
+typedef WaveFunctionComponentBase *WaveFunctionComponentBasePtr;
 
-/**@defgroup OrbitalComponent Orbital group
+/**@defgroup WaveFunctionComponent Wavefunction Component group
  * @brief Classes which constitute a many-body trial wave function
  *
  * A many-body trial wave function is
@@ -49,12 +49,12 @@ typedef OrbitalBase *OrbitalBasePtr;
  \Psi(\{ {\bf R}\}) = \prod_i \psi_{i}(\{ {\bf R}\}),
  * \f]
  * where \f$\Psi\f$s are represented by
- * the derived classes from OrbtialBase.
+ * the derived classes from WaveFunctionComponentBase.
  */
-/** @ingroup OrbitalComponent
+/** @ingroup WaveFunctionComponentComponent
  * @brief An abstract class for a component of a many-body trial wave function
  */
-struct OrbitalBase : public QMCTraits
+struct WaveFunctionComponentBase : public QMCTraits
 {
 
   /// recasting enum of DistanceTableData to maintain consistency
@@ -106,23 +106,23 @@ struct OrbitalBase : public QMCTraits
   /** A vector for \f$ \frac{\partial \nabla^2 \log\phi}{\partial \alpha} \f$
    */
   ValueVectorType d2LogPsi;
-  /** Name of this orbital
+  /** Name of this wavefunction component
    */
-  std::string OrbitalName;
+  std::string WaveFunctionComponentName;
 
   /// default constructor
-  OrbitalBase()
+  WaveFunctionComponentBase()
       : IsOptimizing(false), Optimizable(true), UpdateMode(ORB_WALKER),
-        LogValue(1.0), PhaseValue(0.0), OrbitalName("OrbitalBase")
+        LogValue(1.0), PhaseValue(0.0), WaveFunctionComponentName("WaveFunctionComponentBase")
   {
     /// store instead of computing
     Need2Compute4PbyP = false;
   }
 
   /// default destructor
-  virtual ~OrbitalBase() {}
+  virtual ~WaveFunctionComponentBase() {}
 
-  /** evaluate the value of the orbital
+  /** evaluate the value of the wavefunction
    * @param P active ParticleSet
    * @param G Gradients, \f$\nabla\ln\Psi\f$
    * @param L Laplacians, \f$\nabla^2\ln\Psi\f$
@@ -139,7 +139,7 @@ struct OrbitalBase : public QMCTraits
    */
   virtual GradType evalGrad(ParticleSet &P, int iat) = 0;
 
-  /** evaluate the ratio of the new to old orbital value
+  /** evaluate the ratio of the new to old wavefunction component value
    * @param P the active ParticleSet
    * @param iat the index of a particle
    * @param grad_iat Gradient for the active particle
@@ -153,7 +153,7 @@ struct OrbitalBase : public QMCTraits
    */
   virtual void acceptMove(ParticleSet &P, int iat) = 0;
 
-  /** evalaute the ratio of the new to old orbital value
+  /** evalaute the ratio of the new to old wavefunction component value
    *@param P the active ParticleSet
    *@param iat the index of a particle
    *@return \f$ \psi( \{ {\bf R}^{'} \} )/ \psi( \{ {\bf R}^{'}\})\f$

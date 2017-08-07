@@ -12,7 +12,7 @@
 #ifndef QMCPLUSPLUS_ONEBODYJASTROW_REF_H
 #define QMCPLUSPLUS_ONEBODYJASTROW_REF_H
 #include "Configuration.h"
-#include "QMCWaveFunctions/OrbitalBase.h"
+#include "QMCWaveFunctions/WaveFunctionComponentBase.h"
 #include <numeric>
 
 /*!
@@ -22,10 +22,10 @@
 namespace qmcplusplus
 {
 
-/** @ingroup OrbitalComponent
+/** @ingroup WaveFunctionComponent
  *  @brief Specialization for one-body Jastrow function using multiple functors
  */
-template <class FT> struct J1OrbitalRef : public OrbitalBase
+template <class FT> struct J1OrbitalRef : public WaveFunctionComponentBase
 {
   /// alias FuncType
   using FuncType = FT;
@@ -63,7 +63,7 @@ template <class FT> struct J1OrbitalRef : public OrbitalBase
   {
     initalize(els);
     myTableID   = els.addTable(ions, DT_SOA);
-    OrbitalName = "J1OrbitalRef";
+    WaveFunctionComponentName = "J1OrbitalRef";
   }
 
   J1OrbitalRef(const J1OrbitalRef &rhs) = delete;

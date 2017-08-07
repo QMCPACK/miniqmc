@@ -14,7 +14,7 @@
 #ifndef QMCPLUSPLUS_EEIJASTROW_OPTIMIZED_SOA_H
 #define QMCPLUSPLUS_EEIJASTROW_OPTIMIZED_SOA_H
 #include "Configuration.h"
-#include "QMCWaveFunctions/OrbitalBase.h"
+#include "QMCWaveFunctions/WaveFunctionComponentBase.h"
 #include "Particle/DistanceTableData.h"
 #include "OhmmsPETE/OhmmsArray.h"
 #include <map>
@@ -27,7 +27,7 @@
 namespace qmcplusplus
 {
 
-/** @ingroup OrbitalComponent
+/** @ingroup WaveFunctionComponent
  *  @brief Specialization for three-body Jastrow function using multiple
  *functors
  *
@@ -35,7 +35,7 @@ namespace qmcplusplus
  *For electrons, distinct pair correlation functions are used
  *for spins up-up/down-down and up-down/down-up.
  */
-template <class FT> class JeeIOrbitalSoA : public OrbitalBase
+template <class FT> class JeeIOrbitalSoA : public WaveFunctionComponentBase
 {
   /// type of each component U, dU, d2U;
   using valT = typename FT::real_type;
@@ -99,7 +99,7 @@ public:
                  bool is_master = false)
       : Ions(ions), NumVars(0)
   {
-    OrbitalName = "JeeIOrbitalSoA";
+    WaveFunctionComponentName = "JeeIOrbitalSoA";
     myTableID   = elecs.addTable(Ions, DT_SOA);
     elecs.DistTables[myTableID]->Need_full_table_loadWalker = true;
     init(elecs);

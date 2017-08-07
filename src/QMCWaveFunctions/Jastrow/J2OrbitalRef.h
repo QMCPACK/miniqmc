@@ -20,7 +20,7 @@
 #ifndef QMCPLUSPLUS_TWOBODYJASTROW_REF_H
 #define QMCPLUSPLUS_TWOBODYJASTROW_REF_H
 #include "Configuration.h"
-#include "QMCWaveFunctions/OrbitalBase.h"
+#include "QMCWaveFunctions/WaveFunctionComponentBase.h"
 #include "Particle/DistanceTableData.h"
 #include <numeric>
 
@@ -31,7 +31,7 @@
 namespace qmcplusplus
 {
 
-/** @ingroup OrbitalComponent
+/** @ingroup WaveFunctionComponent
  *  @brief Specialization for two-body Jastrow function using multiple functors
  *
  * Each pair-type can have distinct function \f$u(r_{ij})\f$.
@@ -46,7 +46,7 @@ namespace qmcplusplus
  * - double the loop counts
  * - Memory use is O(N).
  */
-template <class FT> struct J2OrbitalRef : public OrbitalBase
+template <class FT> struct J2OrbitalRef : public WaveFunctionComponentBase
 {
   /// alias FuncType
   using FuncType = FT;
@@ -158,7 +158,7 @@ template <typename FT> J2OrbitalRef<FT>::J2OrbitalRef(ParticleSet &p)
   init(p);
   FirstTime   = true;
   KEcorr      = 0.0;
-  OrbitalName = "J2OrbitalRef";
+  WaveFunctionComponentName = "J2OrbitalRef";
 }
 
 template <typename FT> J2OrbitalRef<FT>::~J2OrbitalRef() {}
