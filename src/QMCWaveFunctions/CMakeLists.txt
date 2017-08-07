@@ -19,7 +19,7 @@
     
     
 SET(WFBASE_SRCS
-  OrbitalBase.cpp
+  WaveFunctionComponentBase.cpp
   DiffOrbitalBase.cpp
   OrbitalBuilderBase.cpp
   BasisSetBuilder.cpp

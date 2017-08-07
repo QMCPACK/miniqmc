@@ -176,19 +176,19 @@ int main(int argc, char **argv)
     vector<RealType> ur(nels);
     random_th.generate_uniform(ur.data(), nels);
 
-    OrbitalBasePtr wfc     = nullptr;
-    OrbitalBasePtr wfc_ref = nullptr;
+    WaveFunctionComponentBasePtr wfc     = nullptr;
+    WaveFunctionComponentBasePtr wfc_ref = nullptr;
     if (wfc_name == "J2")
     {
       J2OrbitalSoA<BsplineFunctor<RealType>> *J =
           new J2OrbitalSoA<BsplineFunctor<RealType>>(els);
       buildJ2(*J, els.Lattice.WignerSeitzRadius);
-      wfc = dynamic_cast<OrbitalBasePtr>(J);
+      wfc = dynamic_cast<WaveFunctionComponentBasePtr>(J);
       cout << "Built J2" << endl;
       J2OrbitalRef<BsplineFunctor<RealType>> *J_ref =
           new J2OrbitalRef<BsplineFunctor<RealType>>(els_ref);
       buildJ2(*J_ref, els.Lattice.WignerSeitzRadius);
-      wfc_ref = dynamic_cast<OrbitalBasePtr>(J_ref);
+      wfc_ref = dynamic_cast<WaveFunctionComponentBasePtr>(J_ref);
       cout << "Built J2_ref" << endl;
     }
     else if (wfc_name == "J1")
@@ -196,12 +196,12 @@ int main(int argc, char **argv)
       J1OrbitalSoA<BsplineFunctor<RealType>> *J =
           new J1OrbitalSoA<BsplineFunctor<RealType>>(ions, els);
       buildJ1(*J, els.Lattice.WignerSeitzRadius);
-      wfc = dynamic_cast<OrbitalBasePtr>(J);
+      wfc = dynamic_cast<WaveFunctionComponentBasePtr>(J);
       cout << "Built J1" << endl;
       J1OrbitalRef<BsplineFunctor<RealType>> *J_ref =
           new J1OrbitalRef<BsplineFunctor<RealType>>(ions, els_ref);
       buildJ1(*J_ref, els.Lattice.WignerSeitzRadius);
-      wfc_ref = dynamic_cast<OrbitalBasePtr>(J_ref);
+      wfc_ref = dynamic_cast<WaveFunctionComponentBasePtr>(J_ref);
       cout << "Built J1_ref" << endl;
     }
     else if (wfc_name == "JeeI")
@@ -209,12 +209,12 @@ int main(int argc, char **argv)
       JeeIOrbitalSoA<PolynomialFunctor3D> *J =
           new JeeIOrbitalSoA<PolynomialFunctor3D>(ions, els);
       buildJeeI(*J, els.Lattice.WignerSeitzRadius);
-      wfc = dynamic_cast<OrbitalBasePtr>(J);
+      wfc = dynamic_cast<WaveFunctionComponentBasePtr>(J);
       cout << "Built JeeI" << endl;
       JeeIOrbitalRef<PolynomialFunctor3D> *J_ref =
           new JeeIOrbitalRef<PolynomialFunctor3D>(ions, els_ref);
       buildJeeI(*J_ref, els.Lattice.WignerSeitzRadius);
-      wfc_ref = dynamic_cast<OrbitalBasePtr>(J_ref);
+      wfc_ref = dynamic_cast<WaveFunctionComponentBasePtr>(J_ref);
       cout << "Built JeeI_ref" << endl;
     }
 

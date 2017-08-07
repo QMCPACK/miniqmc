@@ -15,7 +15,7 @@
  * @brief Top level wavefunction container
  *
  * Represents a product of wavefunction components (classes based on
- * OrbitalBase).
+ * WaveFunctionComponentBase).
  *
  * Corresponds to QMCWaveFunction/TrialWaveFunction.h in the QMCPACK source.
  */
