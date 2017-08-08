@@ -193,13 +193,13 @@ int main(int argc, char **argv)
     }
     else if (wfc_name == "J1")
     {
-      J1OrbitalSoA<BsplineFunctor<RealType>> *J =
-          new J1OrbitalSoA<BsplineFunctor<RealType>>(ions, els);
+      OneBodyJastrow<BsplineFunctor<RealType>> *J =
+          new OneBodyJastrow<BsplineFunctor<RealType>>(ions, els);
       buildJ1(*J, els.Lattice.WignerSeitzRadius);
       wfc = dynamic_cast<WaveFunctionComponentBasePtr>(J);
       cout << "Built J1" << endl;
-      J1OrbitalRef<BsplineFunctor<RealType>> *J_ref =
-          new J1OrbitalRef<BsplineFunctor<RealType>>(ions, els_ref);
+      OneBodyJastrowRef<BsplineFunctor<RealType>> *J_ref =
+          new OneBodyJastrowRef<BsplineFunctor<RealType>>(ions, els_ref);
       buildJ1(*J_ref, els.Lattice.WignerSeitzRadius);
       wfc_ref = dynamic_cast<WaveFunctionComponentBasePtr>(J_ref);
       cout << "Built J1_ref" << endl;
