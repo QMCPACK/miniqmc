@@ -16,7 +16,7 @@
 #include <numeric>
 
 /*!
- * @file J1OrbitalRef.h
+ * @file OneBodyJastrowRef.h
  */
 
 namespace qmcplusplus
@@ -25,7 +25,7 @@ namespace qmcplusplus
 /** @ingroup WaveFunctionComponent
  *  @brief Specialization for one-body Jastrow function using multiple functors
  */
-template <class FT> struct J1OrbitalRef : public WaveFunctionComponentBase
+template <class FT> struct OneBodyJastrowRef : public WaveFunctionComponentBase
 {
   /// alias FuncType
   using FuncType = FT;
@@ -59,16 +59,16 @@ template <class FT> struct J1OrbitalRef : public WaveFunctionComponentBase
   /// Container for \f$F[ig*NumGroups+jg]\f$
   std::vector<FT *> F;
 
-  J1OrbitalRef(const ParticleSet &ions, ParticleSet &els) : Ions(ions)
+  OneBodyJastrowRef(const ParticleSet &ions, ParticleSet &els) : Ions(ions)
   {
     initalize(els);
-    myTableID   = els.addTable(ions, DT_SOA);
-    WaveFunctionComponentName = "J1OrbitalRef";
+    myTableID                 = els.addTable(ions, DT_SOA);
+    WaveFunctionComponentName = "OneBodyJastrowRef";
   }
 
-  J1OrbitalRef(const J1OrbitalRef &rhs) = delete;
+  OneBodyJastrowRef(const OneBodyJastrowRef &rhs) = delete;
 
-  ~J1OrbitalRef()
+  ~OneBodyJastrowRef()
   {
     for (int i = 0; i < F.size(); ++i)
       if (F[i] != nullptr) delete F[i];

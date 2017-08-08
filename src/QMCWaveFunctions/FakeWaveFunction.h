@@ -25,8 +25,8 @@
 #include <Configuration.h>
 #include <Particle/DistanceTable.h>
 #include <QMCWaveFunctions/Jastrow/BsplineFunctor.h>
-#include <QMCWaveFunctions/Jastrow/J2OrbitalRef.h>
-#include <QMCWaveFunctions/Jastrow/J2OrbitalSoA.h>
+#include <QMCWaveFunctions/Jastrow/TwoBodyJastrowRef.h>
+#include <QMCWaveFunctions/Jastrow/TwoBodyJastrow.h>
 
 namespace qmcplusplus
 {
@@ -56,7 +56,7 @@ struct FakeWaveFunctionBase
 struct RefWaveFunction : public FakeWaveFunctionBase
 {
 
-  using J2OrbType = J2OrbitalRef<BsplineFunctor<valT>>;
+  using J2OrbType = TwoBodyJastrowRef<BsplineFunctor<valT>>;
   bool FirstTime;
   J2OrbType *J2;
   PooledData<valT> Buffer;
@@ -74,7 +74,7 @@ struct RefWaveFunction : public FakeWaveFunctionBase
 
 struct SoAWaveFunction : public FakeWaveFunctionBase
 {
-  using J2OrbType = J2OrbitalSoA<BsplineFunctor<valT>>;
+  using J2OrbType = TwoBodyJastrow<BsplineFunctor<valT>>;
 
   bool FirstTime;
   J2OrbType *J2;

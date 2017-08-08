@@ -22,7 +22,8 @@
  @mainpage MiniQMC: miniapp for QMCPACK kernels
 
  Implemented kernels
-   - \subpage JastrowFactors includes one-body, two-body and three-body Jastrow factors.
+   - \subpage JastrowFactors includes one-body, two-body and three-body Jastrow
+     factors.
    - Single Particle Orbitals (SPO) based on splines
 
  Kernels yet to be implemented
@@ -35,17 +36,21 @@
  /*!
  \page JastrowFactors Jastrow Factors
 
-  The Jastrow factor accounts for the correlation of electron-ion pairs (one-body Jastrow),
-  two-electron pairs (two-body Jastrow) and two-electron-one-ion trios (three-body/eeI Jastrow).
+  The Jastrow factor accounts for the correlation of electron-ion pairs
+  (one-body Jastrow), two-electron pairs (two-body Jastrow) and
+  two-electron-one-ion trios (three-body/eeI Jastrow).
 
-  The Jastrow factor is composed from two types of classes - the first is for the types of
-  particles involved (one/two/three body), and the second is the functional form for the radial part.
-  The classes for the first part are qmcplusplus::J1OrbitalRef, qmcplusplus::J2OrbitalRef and qmcplusplus::JeeIOrbitalRef.
-  The second part uses 1D B-splines, defined in qmcplusplus::BsplineFunctor, for one and two body Jastrow
-  and polynomials, defined in qmcplusplus::PolynomialFunctor3D, for three body Jastrow.
+  The Jastrow factor is composed from two types of classes - the first is for
+  the types of particles involved (one/two/three body), and the second is the
+  functional form for the radial part.  The classes for the first part are
+  qmcplusplus::OneBodyJastrowRef, qmcplusplus::TwoBodyJastrowRef and
+  qmcplusplus::ThreeBodyJastrowRef.  The second part uses 1D B-splines, defined
+  in qmcplusplus::BsplineFunctor, for one and two body Jastrow and polynomials,
+  defined in qmcplusplus::PolynomialFunctor3D, for three body Jastrow.
 
-  This miniapp only contains the B-spline and polynomial functional form, since it is the most widely used.
-  The QMCPACK distribution contains other functional forms.
+  This miniapp only contains the B-spline and polynomial functional form, since
+  it is the most widely used.  The QMCPACK distribution contains other
+  functional forms.
  */
 // clang-format on
 
