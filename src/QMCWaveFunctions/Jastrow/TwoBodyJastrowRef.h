@@ -25,7 +25,7 @@
 #include <numeric>
 
 /*!
- * @file J2OrbitalRef.h
+ * @file TwoBodyJastrowRef.h
  */
 
 namespace qmcplusplus
@@ -46,7 +46,7 @@ namespace qmcplusplus
  * - double the loop counts
  * - Memory use is O(N).
  */
-template <class FT> struct J2OrbitalRef : public WaveFunctionComponentBase
+template <class FT> struct TwoBodyJastrowRef : public WaveFunctionComponentBase
 {
   /// alias FuncType
   using FuncType = FT;
@@ -82,9 +82,9 @@ template <class FT> struct J2OrbitalRef : public WaveFunctionComponentBase
   /// Container for \f$F[ig*NumGroups+jg]\f$
   std::vector<FT *> F;
 
-  J2OrbitalRef(ParticleSet &p);
-  J2OrbitalRef(const J2OrbitalRef &rhs) = delete;
-  ~J2OrbitalRef();
+  TwoBodyJastrowRef(ParticleSet &p);
+  TwoBodyJastrowRef(const TwoBodyJastrowRef &rhs) = delete;
+  ~TwoBodyJastrowRef();
 
   /* initialize storage */
   void init(ParticleSet &p);
@@ -153,17 +153,17 @@ template <class FT> struct J2OrbitalRef : public WaveFunctionComponentBase
   }
 };
 
-template <typename FT> J2OrbitalRef<FT>::J2OrbitalRef(ParticleSet &p)
+template <typename FT> TwoBodyJastrowRef<FT>::TwoBodyJastrowRef(ParticleSet &p)
 {
   init(p);
-  FirstTime   = true;
-  KEcorr      = 0.0;
-  WaveFunctionComponentName = "J2OrbitalRef";
+  FirstTime                 = true;
+  KEcorr                    = 0.0;
+  WaveFunctionComponentName = "TwoBodyJastrowRef";
 }
 
-template <typename FT> J2OrbitalRef<FT>::~J2OrbitalRef() {}
+template <typename FT> TwoBodyJastrowRef<FT>::~TwoBodyJastrowRef() {}
 
-template <typename FT> void J2OrbitalRef<FT>::init(ParticleSet &p)
+template <typename FT> void TwoBodyJastrowRef<FT>::init(ParticleSet &p)
 {
   N         = p.getTotalNum();
   NumGroups = p.groups();
@@ -184,7 +184,8 @@ template <typename FT> void J2OrbitalRef<FT>::init(ParticleSet &p)
   DistIndice.resize(N);
 }
 
-template <typename FT> void J2OrbitalRef<FT>::addFunc(int ia, int ib, FT *j)
+template <typename FT>
+void TwoBodyJastrowRef<FT>::addFunc(int ia, int ib, FT *j)
 {
   if (ia == ib)
   {
@@ -228,10 +229,11 @@ template <typename FT> void J2OrbitalRef<FT>::addFunc(int ia, int ib, FT *j)
  * @param d2u starting second deriv
  */
 template <typename FT>
-inline void
-J2OrbitalRef<FT>::computeU3(ParticleSet &P, int iat,
-                            const RealType *restrict dist, RealType *restrict u,
-                            RealType *restrict du, RealType *restrict d2u)
+inline void TwoBodyJastrowRef<FT>::computeU3(ParticleSet &P, int iat,
+                                             const RealType *restrict dist,
+                                             RealType *restrict u,
+                                             RealType *restrict du,
+                                             RealType *restrict d2u)
 {
   constexpr valT czero(0);
   std::fill_n(u, N, czero);
@@ -253,8 +255,8 @@ J2OrbitalRef<FT>::computeU3(ParticleSet &P, int iat,
 }
 
 template <typename FT>
-typename J2OrbitalRef<FT>::ValueType J2OrbitalRef<FT>::ratio(ParticleSet &P,
-                                                             int iat)
+typename TwoBodyJastrowRef<FT>::ValueType
+TwoBodyJastrowRef<FT>::ratio(ParticleSet &P, int iat)
 {
   // only ratio, ready to compute it again
   UpdateMode = ORB_PBYP_RATIO;
@@ -275,15 +277,15 @@ typename J2OrbitalRef<FT>::ValueType J2OrbitalRef<FT>::ratio(ParticleSet &P,
 }
 
 template <typename FT>
-typename J2OrbitalRef<FT>::GradType J2OrbitalRef<FT>::evalGrad(ParticleSet &P,
-                                                               int iat)
+typename TwoBodyJastrowRef<FT>::GradType
+TwoBodyJastrowRef<FT>::evalGrad(ParticleSet &P, int iat)
 {
   return GradType(dUat[iat]);
 }
 
 template <typename FT>
-typename J2OrbitalRef<FT>::ValueType
-J2OrbitalRef<FT>::ratioGrad(ParticleSet &P, int iat, GradType &grad_iat)
+typename TwoBodyJastrowRef<FT>::ValueType
+TwoBodyJastrowRef<FT>::ratioGrad(ParticleSet &P, int iat, GradType &grad_iat)
 {
 
   UpdateMode = ORB_PBYP_PARTIAL;
@@ -297,7 +299,7 @@ J2OrbitalRef<FT>::ratioGrad(ParticleSet &P, int iat, GradType &grad_iat)
 }
 
 template <typename FT>
-void J2OrbitalRef<FT>::acceptMove(ParticleSet &P, int iat)
+void TwoBodyJastrowRef<FT>::acceptMove(ParticleSet &P, int iat)
 {
   // get the old u, du, d2u
   const DistanceTableData *d_table = P.DistTables[0];
@@ -332,7 +334,7 @@ void J2OrbitalRef<FT>::acceptMove(ParticleSet &P, int iat)
   d2Uat[iat] = cur_d2Uat;
 }
 
-template <typename FT> void J2OrbitalRef<FT>::recompute(ParticleSet &P)
+template <typename FT> void TwoBodyJastrowRef<FT>::recompute(ParticleSet &P)
 {
   const DistanceTableData *d_table = P.DistTables[0];
   for (int ig = 0; ig < NumGroups; ++ig)
@@ -354,20 +356,20 @@ template <typename FT> void J2OrbitalRef<FT>::recompute(ParticleSet &P)
 }
 
 template <typename FT>
-typename J2OrbitalRef<FT>::RealType
-J2OrbitalRef<FT>::evaluateLog(ParticleSet &P,
-                              ParticleSet::ParticleGradient_t &dG,
-                              ParticleSet::ParticleLaplacian_t &dL)
+typename TwoBodyJastrowRef<FT>::RealType
+TwoBodyJastrowRef<FT>::evaluateLog(ParticleSet &P,
+                                   ParticleSet::ParticleGradient_t &dG,
+                                   ParticleSet::ParticleLaplacian_t &dL)
 {
   evaluateGL(P, dG, dL, true);
   return LogValue;
 }
 
 template <typename FT>
-void J2OrbitalRef<FT>::evaluateGL(ParticleSet &P,
-                                  ParticleSet::ParticleGradient_t &G,
-                                  ParticleSet::ParticleLaplacian_t &L,
-                                  bool fromscratch)
+void TwoBodyJastrowRef<FT>::evaluateGL(ParticleSet &P,
+                                       ParticleSet::ParticleGradient_t &G,
+                                       ParticleSet::ParticleLaplacian_t &L,
+                                       bool fromscratch)
 {
   if (fromscratch) recompute(P);
   LogValue = valT(0);

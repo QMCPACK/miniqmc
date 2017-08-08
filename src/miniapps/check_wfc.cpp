@@ -180,13 +180,13 @@ int main(int argc, char **argv)
     WaveFunctionComponentBasePtr wfc_ref = nullptr;
     if (wfc_name == "J2")
     {
-      J2OrbitalSoA<BsplineFunctor<RealType>> *J =
-          new J2OrbitalSoA<BsplineFunctor<RealType>>(els);
+      TwoBodyJastrow<BsplineFunctor<RealType>> *J =
+          new TwoBodyJastrow<BsplineFunctor<RealType>>(els);
       buildJ2(*J, els.Lattice.WignerSeitzRadius);
       wfc = dynamic_cast<WaveFunctionComponentBasePtr>(J);
       cout << "Built J2" << endl;
-      J2OrbitalRef<BsplineFunctor<RealType>> *J_ref =
-          new J2OrbitalRef<BsplineFunctor<RealType>>(els_ref);
+      TwoBodyJastrowRef<BsplineFunctor<RealType>> *J_ref =
+          new TwoBodyJastrowRef<BsplineFunctor<RealType>>(els_ref);
       buildJ2(*J_ref, els.Lattice.WignerSeitzRadius);
       wfc_ref = dynamic_cast<WaveFunctionComponentBasePtr>(J_ref);
       cout << "Built J2_ref" << endl;
