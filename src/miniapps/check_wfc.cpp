@@ -206,13 +206,13 @@ int main(int argc, char **argv)
     }
     else if (wfc_name == "JeeI")
     {
-      JeeIOrbitalSoA<PolynomialFunctor3D> *J =
-          new JeeIOrbitalSoA<PolynomialFunctor3D>(ions, els);
+      ThreeBodyJastrow<PolynomialFunctor3D> *J =
+          new ThreeBodyJastrow<PolynomialFunctor3D>(ions, els);
       buildJeeI(*J, els.Lattice.WignerSeitzRadius);
       wfc = dynamic_cast<WaveFunctionComponentBasePtr>(J);
       cout << "Built JeeI" << endl;
-      JeeIOrbitalRef<PolynomialFunctor3D> *J_ref =
-          new JeeIOrbitalRef<PolynomialFunctor3D>(ions, els_ref);
+      ThreeBodyJastrowRef<PolynomialFunctor3D> *J_ref =
+          new ThreeBodyJastrowRef<PolynomialFunctor3D>(ions, els_ref);
       buildJeeI(*J_ref, els.Lattice.WignerSeitzRadius);
       wfc_ref = dynamic_cast<WaveFunctionComponentBasePtr>(J_ref);
       cout << "Built JeeI_ref" << endl;

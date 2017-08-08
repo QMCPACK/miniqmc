@@ -21,7 +21,7 @@
 #include <numeric>
 
 /*!
- * @file JeeIOrbitalSoA.h
+ * @file ThreeBodyJastrow.h
  */
 
 namespace qmcplusplus
@@ -35,7 +35,7 @@ namespace qmcplusplus
  *For electrons, distinct pair correlation functions are used
  *for spins up-up/down-down and up-down/down-up.
  */
-template <class FT> class JeeIOrbitalSoA : public WaveFunctionComponentBase
+template <class FT> class ThreeBodyJastrow : public WaveFunctionComponentBase
 {
   /// type of each component U, dU, d2U;
   using valT = typename FT::real_type;
@@ -95,17 +95,17 @@ public:
   /// alias FuncType
   using FuncType = FT;
 
-  JeeIOrbitalSoA(const ParticleSet &ions, ParticleSet &elecs,
-                 bool is_master = false)
+  ThreeBodyJastrow(const ParticleSet &ions, ParticleSet &elecs,
+                   bool is_master = false)
       : Ions(ions), NumVars(0)
   {
-    WaveFunctionComponentName = "JeeIOrbitalSoA";
-    myTableID   = elecs.addTable(Ions, DT_SOA);
+    WaveFunctionComponentName = "ThreeBodyJastrow";
+    myTableID                 = elecs.addTable(Ions, DT_SOA);
     elecs.DistTables[myTableID]->Need_full_table_loadWalker = true;
     init(elecs);
   }
 
-  ~JeeIOrbitalSoA() {}
+  ~ThreeBodyJastrow() {}
 
   void init(ParticleSet &p)
   {
@@ -163,7 +163,7 @@ public:
     }
     else
     {
-      APP_ABORT("JeeIOrbitalSoA::addFunc  Jastrow function pointer is NULL");
+      APP_ABORT("ThreeBodyJastrow::addFunc  Jastrow function pointer is NULL");
     }
     std::strstream aname;
     aname << iSpecies << "_" << eSpecies1 << "_" << eSpecies2;
@@ -190,8 +190,9 @@ public:
     }
     if (!complete)
     {
-      APP_ABORT("JeeIOrbitalSoA::check_complete  J3 eeI is missing correlation "
-                "components\n  see preceding messages for details");
+      APP_ABORT(
+          "ThreeBodyJastrow::check_complete  J3 eeI is missing correlation "
+          "components\n  see preceding messages for details");
     }
     // first set radii
     for (int i = 0; i < Nion; ++i)
@@ -218,8 +219,9 @@ public:
     }
     if (!all_radii_match)
     {
-      APP_ABORT("JeeIOrbitalSoA::check_radii  J3 eeI are inconsistent for some "
-                "ion species\n  see preceding messages for details");
+      APP_ABORT(
+          "ThreeBodyJastrow::check_radii  J3 eeI are inconsistent for some "
+          "ion species\n  see preceding messages for details");
     }
   }
 
