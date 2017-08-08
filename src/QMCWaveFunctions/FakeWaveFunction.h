@@ -25,8 +25,8 @@
 #include <Configuration.h>
 #include <Particle/DistanceTable.h>
 #include <QMCWaveFunctions/Jastrow/BsplineFunctor.h>
-#include <QMCWaveFunctions/Jastrow/J2OrbitalRef.h>
-#include <QMCWaveFunctions/Jastrow/J2OrbitalSoA.h>
+#include <QMCWaveFunctions/Jastrow/TwoBodyJastrowRef.h>
+#include <QMCWaveFunctions/Jastrow/TwoBodyJastrow.h>
 
 namespace qmcplusplus
 {

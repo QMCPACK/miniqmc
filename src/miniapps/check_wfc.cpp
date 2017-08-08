@@ -30,13 +30,13 @@
 #include <miniapps/pseudo.hpp>
 #include <Utilities/Timer.h>
 #include <QMCWaveFunctions/Jastrow/PolynomialFunctor3D.h>
-#include <QMCWaveFunctions/Jastrow/JeeIOrbitalRef.h>
-#include <QMCWaveFunctions/Jastrow/JeeIOrbitalSoA.h>
+#include <QMCWaveFunctions/Jastrow/ThreeBodyJastrowRef.h>
+#include <QMCWaveFunctions/Jastrow/ThreeBodyJastrow.h>
 #include <QMCWaveFunctions/Jastrow/BsplineFunctor.h>
-#include <QMCWaveFunctions/Jastrow/J1OrbitalRef.h>
-#include <QMCWaveFunctions/Jastrow/J1OrbitalSoA.h>
-#include <QMCWaveFunctions/Jastrow/J2OrbitalRef.h>
-#include <QMCWaveFunctions/Jastrow/J2OrbitalSoA.h>
+#include <QMCWaveFunctions/Jastrow/OneBodyJastrowRef.h>
+#include <QMCWaveFunctions/Jastrow/OneBodyJastrow.h>
+#include <QMCWaveFunctions/Jastrow/TwoBodyJastrowRef.h>
+#include <QMCWaveFunctions/Jastrow/TwoBodyJastrow.h>
 #include <getopt.h>
 
 using namespace std;
