@@ -153,7 +153,6 @@ ENDIF()
   SET(PARTICLE ${PARTICLE}
     Particle/ParticleSet.cpp 
     Particle/ParticleSet.BC.cpp 
-    Particle/MCWalkerConfiguration.cpp 
     Particle/DistanceTableAA.cpp
     Particle/DistanceTableAB.cpp
     Particle/DistanceTable.cpp

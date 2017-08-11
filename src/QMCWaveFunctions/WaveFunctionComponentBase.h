@@ -28,7 +28,6 @@
 #include "Configuration.h"
 #include "Particle/ParticleSet.h"
 #include "Particle/DistanceTableData.h"
-#include "Particle/MCWalkerConfiguration.h"
 
 /**@file wavefunctioncomponentbase.h
  *@brief Declaration of WaveFunctionComponentBase
