@@ -33,7 +33,6 @@
 #include "Particle/DistanceTableData.h"
 #include "Particle/DistanceTable.h"
 #include "Utilities/RandomGenerator.h"
-#include "ParticleBase/RandomSeqGenerator.h"
 
 //#define PACK_DISTANCETABLES
 

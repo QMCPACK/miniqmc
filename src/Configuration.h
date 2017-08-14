@@ -28,7 +28,7 @@
 #include <OhmmsPETE/TinyVector.h>
 #include <OhmmsPETE/Tensor.h>
 #include "Lattice/CrystalLattice.h"
-#include <ParticleBase/ParticleAttrib.h>
+#include <Particle/ParticleAttrib.h>
 #include <Utilities/OhmmsInfo.h>
 
 #define APP_ABORT(msg)                                            \
