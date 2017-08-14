@@ -28,7 +28,6 @@
 #include "Particle/AsymmetricDistanceTableData.h"
 #include "simd/algorithm.hpp"
 #include "Particle/SoaDistanceTableBA.h"
-#include "Message/OpenMP.h"
 
 namespace qmcplusplus
 {

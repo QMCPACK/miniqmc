@@ -14,7 +14,7 @@
 
 #include <iterator>
 #include <random>
-#include "Message/OpenMP.h"
+#include "Configuration.h"
 
 template <typename T, typename RNG = std::mt19937> struct StdRandom
 {
