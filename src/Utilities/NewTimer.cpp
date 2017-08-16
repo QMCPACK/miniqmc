@@ -22,11 +22,8 @@
 /** @file NewTimer.cpp
  * @brief Implements TimerManager
  */
-//#include <libxml/xmlwriter.h>
 #include "Configuration.h"
 #include "Utilities/NewTimer.h"
-#include "Message/Communicate.h"
-//#include "Message/CommOperators.h"
 #include <map>
 #include <limits>
 #include <cstdio>

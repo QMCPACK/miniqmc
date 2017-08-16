@@ -20,10 +20,9 @@
 #ifndef QMCPLUSPLUS_CLOCK_H
 #define QMCPLUSPLUS_CLOCK_H
 
-#include "Message/OpenMP.h"
-
 #include <sys/time.h>
 #include <stddef.h>
+#include "Configuration.h"
 
 namespace qmcplusplus
 {

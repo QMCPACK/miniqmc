@@ -27,10 +27,7 @@
 #include "Lattice/ParticleBConds.h"
 #include "Particle/AsymmetricDistanceTableData.h"
 #include "simd/algorithm.hpp"
-#include "Lattice/ParticleBConds3DSoa.h"
 #include "Particle/SoaDistanceTableBA.h"
-#include "Lattice/ParticleBConds3DSoa.h"
-#include "Message/OpenMP.h"
 
 namespace qmcplusplus
 {

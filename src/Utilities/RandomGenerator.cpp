@@ -16,6 +16,5 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "Utilities/RandomGenerator.h"
-#include "Message/Communicate.h"
 
 qmcplusplus::RandomGenerator_t qmcplusplus::Random;

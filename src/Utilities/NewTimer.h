@@ -116,7 +116,6 @@
 #define QMCPLUSPLUS_NEW_TIMER_H
 
 #include <Utilities/Clock.h>
-//#include <OhmmsData/Libxml2Doc.h>
 #include <vector>
 #include <string>
 #include <algorithm>

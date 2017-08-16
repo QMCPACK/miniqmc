@@ -28,7 +28,6 @@
 #include <Utilities/RandomGenerator.h>
 #include <Simulation/Simulation.hpp>
 #include <miniapps/pseudo.hpp>
-#include <Utilities/Timer.h>
 #include <QMCWaveFunctions/Jastrow/PolynomialFunctor3D.h>
 #include <QMCWaveFunctions/Jastrow/ThreeBodyJastrowRef.h>
 #include <QMCWaveFunctions/Jastrow/ThreeBodyJastrow.h>
