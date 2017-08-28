@@ -180,15 +180,6 @@
 /* Fund acml library */
 #cmakedefine HAVE_ACML @HAVE_ACML@
 
-/* Using CUDA for GPU execution */
-#cmakedefine QMC_CUDA @QMC_CUDA@
-
-/* Setting base precision for CUDA kernels */
-#cmakedefine CUDA_PRECISION @CUDA_PRECISION@
-
-/* Setting full precision for CUDA kernels */
-#cmakedefine CUDA_PRECISION_FULL @CUDA_PRECISION_FULL@
-
 /* For AFQMC compilation  */
 #cmakedefine BUILD_AFQMC @BUILD_AFQMC@
 
@@ -217,7 +208,7 @@
       #define QMC_ALIGNAS alignas(32)
       #define ASSUME_ALIGNED(x) __assume_aligned(x,32)
     #endif
-  #elif __GNUC__
+  #elif defined(__GNUC__) && !defined(__ibmxl__)
     #if defined(__AVX512F__)
       #define QMC_CLINE 64
       #define QMC_ALIGNAS alignas(64)
@@ -250,6 +241,10 @@
 
 /* Internal timers */
 #cmakedefine ENABLE_TIMERS @ENABLE_TIMERS@
+
+/* Use VTune Task API with timers */
+#cmakedefine USE_VTUNE_TASKS @USE_VTUNE_TASKS@
+
 
 #endif // QMCPLUSPLUS_CONFIGURATION_H
 

@@ -76,30 +76,15 @@ SET(OHMMS_DIM 3 CACHE INTEGER "Select physical dimension")
 SET(OHMMS_INDEXTYPE int)
 MESSAGE(STATUS "defining the float point precision")
 SET(OHMMS_PRECISION_FULL double)
-IF(QMC_CUDA)
-  SET(QMC_MIXED_PRECISION 1 CACHE BOOL "Enable/disable mixed precision")
+SET(QMC_MIXED_PRECISION 0 CACHE BOOL "Enable/disable mixed precision")
+IF(QMC_MIXED_PRECISION)
+  SET(OHMMS_PRECISION float)
+  SET(MIXED_PRECISION 1)
+ELSE(QMC_MIXED_PRECISION)
   SET(OHMMS_PRECISION double)
-  SET(CUDA_PRECISION_FULL double)
-  IF(QMC_MIXED_PRECISION)
-    SET(CUDA_PRECISION float)
-  ELSE(QMC_MIXED_PRECISION)
-    SET(CUDA_PRECISION double)
-  ENDIF(QMC_MIXED_PRECISION)
-  MESSAGE("   Base precision = ${OHMMS_PRECISION}")
-  MESSAGE("   Full precision = ${OHMMS_PRECISION_FULL}")
-  MESSAGE("   CUDA base precision = ${CUDA_PRECISION}")
-  MESSAGE("   CUDA full precision = ${CUDA_PRECISION_FULL}")
-ELSE(QMC_CUDA)
-  SET(QMC_MIXED_PRECISION 0 CACHE BOOL "Enable/disable mixed precision")
-  IF(QMC_MIXED_PRECISION)
-    SET(OHMMS_PRECISION float)
-    SET(MIXED_PRECISION 1)
-  ELSE(QMC_MIXED_PRECISION)
-    SET(OHMMS_PRECISION double)
-  ENDIF(QMC_MIXED_PRECISION)
-  MESSAGE("   Base precision = ${OHMMS_PRECISION}")
-  MESSAGE("   Full precision = ${OHMMS_PRECISION_FULL}")
-ENDIF(QMC_CUDA)
+ENDIF(QMC_MIXED_PRECISION)
+MESSAGE("   Base precision = ${OHMMS_PRECISION}")
+MESSAGE("   Full precision = ${OHMMS_PRECISION_FULL}")
 
 # Code coverage
 SET(GCOV_SUPPORTED FALSE)
@@ -113,7 +98,6 @@ SET(QMC_OMP 1 CACHE BOOL "Enable/disable OpenMP")
 SET(QMC_BITS 64 CACHE INTEGER "Select OS bit")
 SET(QMC_COMPLEX 0 CACHE INTEGER "Build for complex binary")
 SET(PRINT_DEBUG 0 CACHE BOOL "Enable/disable debug printing")
-SET(QMC_CUDA 0 CACHE BOOL "Build with GPU support through CUDA")
 
 ######################################################################
 # set debug printout
@@ -160,8 +144,6 @@ CHECK_FUNCTION_EXISTS(posix_memalign HAVE_POSIX_MEMALIGN)
 CHECK_INCLUDE_FILE(dlfcn.h HAVE_DLFCN_H)
 CHECK_INCLUDE_FILE(inttypes.h HAVE_INTTYPES_H)
 CHECK_INCLUDE_FILE(memory.h HAVE_MEMORY_H)
-CHECK_INCLUDE_FILE(pmmintrin.h HAVE_PMMINTRIN_H)
-CHECK_INCLUDE_FILE(emmintrin.h HAVE_EMMINTRIN_H)
 CHECK_INCLUDE_FILE(sys/stat.h HAVE_SYS_STAT_H)
 CHECK_INCLUDE_FILE(sys/time.h HAVE_SYS_TIME_H)
 CHECK_INCLUDE_FILE(sys/types.h HAVE_SYS_TYPES_H)
@@ -179,11 +161,7 @@ SET(QMC_ADIOS 0 CACHE BOOL "Build with ADIOS")
 SET(BUILD_UNIT_TESTS 1 CACHE BOOL "Build unit tests")
 SET(BUILD_MINIAPPS 1 CACHE BOOL "Build miniapps")
 SET(BUILD_LMYENGINE_INTERFACE 1 CACHE BOOL "Build LMY engine")
-IF (QMC_CUDA AND BUILD_LMYENGINE_INTERFACE)
-  MESSAGE(STATUS "LMY engine is not compatiable with CUDA build! Disabling LMY engine")
-  SET(BUILD_LMYENGINE_INTERFACE 0)
-ENDIF()
-IF(MIXED_PRECISION AND BUILD_LMYENGINE_INTERFACE)
+iF(MIXED_PRECISION AND BUILD_LMYENGINE_INTERFACE)
   MESSAGE(STATUS "LMY engine is not compatiable with CPU mixed precision build! Disabling LMY engine")
   SET(BUILD_LMYENGINE_INTERFACE 0)
 ENDIF()
@@ -196,7 +174,7 @@ SET(BUILD_FCIQMC 0 CACHE BOOL "Build with FCIQMC")
 #SET(BUILD_SANDBOX 0)
 #SET(MPIP_PROFILE 0)
 SET(QMC_BUILD_STATIC 0 CACHE BOOL "Link to static libraries")
-SET(ENABLE_TIMERS 0 CACHE BOOL "Enable internal timers")
+SET(ENABLE_TIMERS 1 CACHE BOOL "Enable internal timers")
 
 ######################################################################
 # Performance-related macros
@@ -310,10 +288,6 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
   SET(HAVE_MKL 0)
   SET(HAVE_MKL_VML 0)
   SET(HAVE_ACML 0)
-  SET(HAVE_SSE 0)
-  SET(HAVE_SSE2 0)
-  SET(HAVE_SSE3 0)
-  SET(HAVE_SSSE3 0)
   SET(USE_PREFETCH 0)
   SET(PREFETCH_AHEAD 12)
   SET(HAVE_C_VARARRAYS 1)
@@ -340,27 +314,20 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
     ENDIF(NOT MPIEXEC)
     SET(MPIEXEC_NUMPROC_FLAG "-n")
 
-    IF(QMC_CUDA)
-      IF(QMC_BUILD_STATIC)
-        MESSAGE(FATAL_ERROR "Static linking is not supported with CUDA build. Set QMC_BUILD_STATIC=0 (default)!")
-      ENDIF(QMC_BUILD_STATIC)
-      MESSAGE(STATUS "Building GPU code. Linking dynamically.")
-    ELSE(QMC_CUDA)
-      IF(QMC_BUILD_STATIC)
-        MESSAGE(STATUS "Building CPU code. Linking statically.")
-        SET(BUILD_SHARED_LIBS off)
-        SET(CMAKE_FIND_LIBRARY_SUFFIXES .a)
-        FOREACH(type SHARED_LIBRARY SHARED_MODULE EXE)
-          SET(CMAKE_${type}_LINK_STATIC_C_FLAGS "-Wl,-Bstatic")
-          SET(CMAKE_${type}_LINK_DYNAMIC_C_FLAGS "-static")
-          SET(CMAKE_${type}_LINK_STATIC_CXX_FLAGS "-Wl,-Bstatic")
-          SET(CMAKE_${type}_LINK_DYNAMIC_CXX_FLAGS "-static")
-        ENDFOREACH(type)
-      ELSE(QMC_BUILD_STATIC)
-        MESSAGE(STATUS "Building CPU code. Linking dynamically.")
-        SET(CMAKE_EXE_LINKER_FLAGS "-dynamic")
-      ENDIF(QMC_BUILD_STATIC)
-    ENDIF(QMC_CUDA)
+    IF(QMC_BUILD_STATIC)
+      MESSAGE(STATUS "Building CPU code. Linking statically.")
+      SET(BUILD_SHARED_LIBS off)
+      SET(CMAKE_FIND_LIBRARY_SUFFIXES .a)
+      FOREACH(type SHARED_LIBRARY SHARED_MODULE EXE)
+        SET(CMAKE_${type}_LINK_STATIC_C_FLAGS "-Wl,-Bstatic")
+        SET(CMAKE_${type}_LINK_DYNAMIC_C_FLAGS "-static")
+        SET(CMAKE_${type}_LINK_STATIC_CXX_FLAGS "-Wl,-Bstatic")
+        SET(CMAKE_${type}_LINK_DYNAMIC_CXX_FLAGS "-static")
+      ENDFOREACH(type)
+    ELSE(QMC_BUILD_STATIC)
+      MESSAGE(STATUS "Building CPU code. Linking dynamically.")
+      SET(CMAKE_EXE_LINKER_FLAGS "-dynamic")
+    ENDIF(QMC_BUILD_STATIC)
   ENDIF($ENV{CRAYPE_VERSION} MATCHES ".")
 
   #------------------------------------
@@ -452,7 +419,11 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
           MESSAGE(STATUS "MPI is disabled")
           SET(HAVE_MPI 0)
           SET(HAVE_OOMPI 0)
+          SET(MPI_LIBRARY "")
         ENDIF(MPI_WORKS)
+      ELSE(MPI_FOUND)
+        MESSAGE(STATUS "MPI not found")
+        SET(MPI_LIBRARY "")
       ENDIF(MPI_FOUND)
     ENDIF()
   ENDIF(QMC_MPI)
@@ -654,37 +625,6 @@ SET(QMC_UTIL_LIBS ${QMC_UTIL_LIBS} ${FORTRAN_LIBRARIES})
 #ENDIF(HDF5_FOUND)
 #
 
-SET(HAVE_CUDA 0)
-IF(QMC_CUDA)
-  set(CUDA_PROPAGATE_HOST_FLAGS OFF)
-  FIND_PACKAGE(CUDA REQUIRED)
-  #set(CUDA_NVCC_FLAGS
-  #  "-arch=sm_20;-Drestrict=__restrict__;-DNO_CUDA_MAIN;-O3;-use_fast_math")
-  if(CUDA_NVCC_FLAGS MATCHES "arch")
-    # User defined NVCC flags
-    MESSAGE(STATUS "Setting CUDA FLAGS=${CUDA_NVCC_FLAGS}")
-  else(CUDA_NVCC_FLAGS MATCHES "arch")
-    # Automatically set the default NVCC flags
-    SET(CUDA_NVCC_FLAGS "-Drestrict=__restrict__;-DNO_CUDA_MAIN")
-    if (QMC_COMPLEX)
-      SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-DQMC_COMPLEX")
-    endif()
-    if ( CMAKE_BUILD_TYPE STREQUAL "DEBUG" )
-      SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-g;-G")
-    else()
-      # Temporarily disable fast_math because it causes multiple test failures
-      # SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-O3;-use_fast_math")
-      SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS};-O3")
-    ENDIF()
-    SET( CUDA_ARCH sm_35 CACHE STRING "CUDA architecture sm_XX")
-    SET(CUDA_NVCC_FLAGS "-arch=${CUDA_ARCH};${CUDA_NVCC_FLAGS}")
-  endif(CUDA_NVCC_FLAGS MATCHES "arch")
-  set(HAVE_CUDA 1)
-  MESSAGE("   CUDA_NVCC_FLAGS=${CUDA_NVCC_FLAGS}")
-ELSE(QMC_CUDA)
-  MESSAGE(STATUS "Disabling CUDA")
-ENDIF(QMC_CUDA)
-
 #INCLUDE(${PROJECT_CMAKE}/FindPkgConfig.cmake)
 ##################################################################
 # TODO:use profile tools
@@ -800,6 +740,27 @@ endif()
 #   LINK_LIBRARIES(${GTKMM_LIBRARIES})
 #  ENDIF(GTKMM_FOUND)
 #ENDIF(ENABLE_GTK_GUI)
+
+
+
+#  To connect the timer regions with VTune sampling, some Task API calls
+#  are present in the code.  To enable them, set USE_VTUNE_TASKS and add the
+#  include and lib paths to VTune.
+#  An example for what needs to be added to the cmake command:
+#
+# -DUSE_VTUNE_TASKS=1 \
+# -DQMC_INCLUDE=/opt/intel/vtune_amplifier_xe/include \
+# -DQMC_EXTRA_LIBS="-L/opt/intel/vtune_amplifier_xe/lib64 -ldl"
+#
+# Some collection types may require enabling the task API with a knob.
+# For the command line:
+# amplxe-cl -collect advanced-hostpots -knob enable-user-tasks=true ./bin/miniqmc
+# For the GUI, there is an equivalent checkbox in the collection setup.
+#
+
+IF (USE_VTUNE_TASKS)
+  LINK_LIBRARIES(ittnotify)
+ENDIF()
 
 ###############################################################
 # for specific linker in the case of profiling like hpctoolkit.

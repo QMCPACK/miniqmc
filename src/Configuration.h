@@ -1,18 +1,21 @@
-//////////////////////////////////////////////////////////////////////////////////////
-// This file is distributed under the University of Illinois/NCSA Open Source License.
-// See LICENSE file in top directory for details.
+////////////////////////////////////////////////////////////////////////////////
+// This file is distributed under the University of Illinois/NCSA Open Source
+// License.  See LICENSE file in top directory for details.
 //
 // Copyright (c) 2016 Jeongnim Kim and QMCPACK developers.
 //
-// File developed by: Ken Esler, kpesler@gmail.com, University of Illinois at Urbana-Champaign
-//                    Jeongnim Kim, jeongnim.kim@gmail.com, University of Illinois at Urbana-Champaign
-//                    Jeremy McMinnis, jmcminis@gmail.com, University of Illinois at Urbana-Champaign
+// File developed by:
+// Ken Esler, kpesler@gmail.com,
+//    University of Illinois at Urbana-Champaign
+// Jeongnim Kim, jeongnim.kim@gmail.com,
+//    University of Illinois at Urbana-Champaign
+// Jeremy McMinnis, jmcminis@gmail.com,
+//    University of Illinois at Urbana-Champaign
 //
-// File created by: Jeongnim Kim, jeongnim.kim@gmail.com, University of Illinois at Urbana-Champaign
-//////////////////////////////////////////////////////////////////////////////////////
-    
-    
-
+// File created by:
+// Jeongnim Kim, jeongnim.kim@gmail.com,
+//    University of Illinois at Urbana-Champaign
+////////////////////////////////////////////////////////////////////////////////
 
 #ifndef QMCPLUSPLUS_TRAITS_H
 #define QMCPLUSPLUS_TRAITS_H
@@ -25,19 +28,35 @@
 #include <OhmmsPETE/TinyVector.h>
 #include <OhmmsPETE/Tensor.h>
 #include "Lattice/CrystalLattice.h"
-#include <ParticleBase/ParticleAttrib.h>
+#include <Particle/ParticleAttrib.h>
 #include <Utilities/OhmmsInfo.h>
-#include <Message/Communicate.h>
 
-//define empty DEBUG_MEMORY
+#define APP_ABORT(msg)                                            \
+  {                                                               \
+    std::cerr << "Fatal Error. Aborting at " << msg << std::endl; \
+    exit(1);                                                      \
+  }
+
+#if defined(ENABLE_OPENMP)
+#include <omp.h>
+#else
+typedef int omp_int_t;
+inline omp_int_t omp_get_thread_num() { return 0; }
+inline omp_int_t omp_get_max_threads() { return 1; }
+inline omp_int_t omp_get_num_threads() { return 1; }
+#endif
+
+// define empty DEBUG_MEMORY
 #define DEBUG_MEMORY(msg)
-//uncomment this out to trace the call tree of destructors
+// uncomment this out to trace the call tree of destructors
 //#define DEBUG_MEMORY(msg) std::cerr << "<<<< " << msg << std::endl;
 
 #if defined(DEBUG_PSIBUFFER_ON)
-#define DEBUG_PSIBUFFER(who,msg) std::cerr << "PSIBUFFER " << who << " " << msg << std::endl; std::cerr.flush();
+#define DEBUG_PSIBUFFER(who, msg)                              \
+  std::cerr << "PSIBUFFER " << who << " " << msg << std::endl; \
+  std::cerr.flush();
 #else
-#define DEBUG_PSIBUFFER(who,msg)
+#define DEBUG_PSIBUFFER(who, msg)
 #endif
 
 namespace qmcplusplus
@@ -49,14 +68,14 @@ namespace qmcplusplus
  */
 struct PtclAttribTraits
 {
+  // clang-format off
   typedef int                                                     Index_t;
   typedef ParticleAttrib<Index_t>                                 ParticleIndex_t;
   typedef ParticleAttrib<OHMMS_PRECISION>                         ParticleScalar_t;
   typedef ParticleAttrib<TinyVector<OHMMS_PRECISION, OHMMS_DIM> > ParticlePos_t;
   typedef ParticleAttrib<Tensor<OHMMS_PRECISION, OHMMS_DIM> >     ParticleTensor_t;
-
+  // clang-format on
 };
-
 
 /** traits for QMC variables
  *
@@ -64,37 +83,28 @@ struct PtclAttribTraits
  */
 struct QMCTraits
 {
+  // clang-format off
   enum {DIM = OHMMS_DIM};
   typedef OHMMS_INDEXTYPE                IndexType;
   typedef OHMMS_PRECISION                RealType;
   typedef OHMMS_PRECISION_FULL           EstimatorRealType;
 #if defined(QMC_COMPLEX)
   typedef std::complex<OHMMS_PRECISION>  ValueType;
-#ifdef QMC_CUDA
-  typedef std::complex<CUDA_PRECISION>   CudaValueType;
-#endif
 #else
   typedef OHMMS_PRECISION                ValueType;
-#ifdef QMC_CUDA
-  typedef CUDA_PRECISION                 CudaValueType;
-#endif
 #endif
   typedef std::complex<RealType>         ComplexType;
   typedef TinyVector<RealType,DIM>       PosType;
   typedef TinyVector<ValueType,DIM>      GradType;
   typedef Tensor<RealType,DIM>           TensorType;
-#ifdef QMC_CUDA
-  typedef CUDA_PRECISION                 CudaRealType;
-  typedef TinyVector<CudaValueType,DIM>  CudaGradType;
-  typedef TinyVector<CudaRealType,DIM>   CudaPosType;
-  typedef std::complex<CUDA_PRECISION>   CudaComplexType;
-#endif
+  // clang-format on
 };
 
 /** Particle traits to use UniformGridLayout for the ParticleLayout.
  */
 struct PtclOnLatticeTraits
 {
+  // clang-format off
   typedef CrystalLattice<OHMMS_PRECISION,3,OHMMS_ORTHO>  ParticleLayout_t;
 
   typedef int                                          Index_t;
@@ -119,30 +129,24 @@ struct PtclOnLatticeTraits
   typedef ParticleAttrib<Scalar_t>                       ParticleLaplacian_t;
   typedef Scalar_t                                       ParticleValue_t;
 #endif
+  // clang-format on
 };
 
-inline std::ostream& app_log()
-{
-  return  OhmmsInfo::Log->getStream();
-}
+inline std::ostream &app_log() { return OhmmsInfo::Log->getStream(); }
 
-inline std::ostream& app_error()
+inline std::ostream &app_error()
 {
   OhmmsInfo::Log->getStream() << "ERROR ";
   return OhmmsInfo::Error->getStream();
 }
 
-inline std::ostream& app_warning()
+inline std::ostream &app_warning()
 {
   OhmmsInfo::Log->getStream() << "WARNING ";
   return OhmmsInfo::Warn->getStream();
 }
 
-inline std::ostream& app_debug()
-{
-  return OhmmsInfo::Debug->getStream();
-}
-
+inline std::ostream &app_debug() { return OhmmsInfo::Debug->getStream(); }
 }
 
 #endif

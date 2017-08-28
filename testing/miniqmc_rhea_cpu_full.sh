@@ -15,7 +15,8 @@ cd $BUILD_DIR
 
 source /sw/rhea/environment-modules/3.2.10/rhel6.7_gnu4.4.7/init/bash
 
-module swap PE-intel PE-gnu/5.3.0-1.10.2
+module unload PE-intel 
+module load PE-gnu/5.3.0-1.10.2
 module load git
 
 env
@@ -33,28 +34,28 @@ echo checking J1
 echo ----------------------------------------------------
 echo
 
-./bin/diff_j1
+./bin/check_wfc -f J1
 
 echo
 echo checking J2
 echo ----------------------------------------------------
 echo
 
-./bin/diff_j2
+./bin/check_wfc -f J2
 
 echo
 echo checking JeeI
 echo ----------------------------------------------------
 echo
 
-./bin/diff_jeeI
+./bin/check_wfc -f JeeI
 
 echo
 echo checking Spline SPO
 echo ----------------------------------------------------
 echo
 
-./bin/diff_spo
+./bin/check_spo
 
 EOF
 
@@ -69,5 +70,5 @@ $BUILD_DIR/../../../scripts/blocking_qsub.py $BUILD_DIR $BUILD_TAG.pbs
 
 cp $BUILD_DIR/$BUILD_TAG.o* ../
 
-# fail the check if 'Fail' is found in the output
-! grep 'Fail' ../$BUILD_TAG.o*
+# get status from checks
+[ $(grep 'All checking pass!' ../$BUILD_TAG.o* | wc -l) -eq 4 ]
