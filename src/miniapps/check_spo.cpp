@@ -210,9 +210,8 @@ int main(int argc, char **argv)
       for (int iel = 0; iel < nels; ++iel)
       {
         PosType pos = els.R[iel] + sqrttau * delta[iel];
-        ;
-        spo.evaluate_vgh(els.R[iel]);
-        spo_ref.evaluate_vgh(els.R[iel]);
+        spo.evaluate_vgh(pos);
+        spo_ref.evaluate_vgh(pos);
         // accumulate error
         for (int ib = 0; ib < spo.nBlocks; ib++)
           for (int n = 0; n < spo.nSplinesPerBlock; n++)
