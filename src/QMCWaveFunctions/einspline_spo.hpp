@@ -21,6 +21,7 @@
 #define QMCPLUSPLUS_EINSPLINE_SPO_HPP
 #include <Configuration.h>
 #include <Particle/ParticleSet.h>
+#include <spline2/bspline_allocator.hpp>
 #include <spline2/MultiBspline.hpp>
 #include <simd/allocator.hpp>
 #include "OhmmsPETE/OhmmsArray.h"
@@ -51,6 +52,8 @@ struct einspline_spo
   /// if true, responsible for cleaning up einsplines
   bool Owner;
   lattice_type Lattice;
+  /// use allocator
+  einspline::Allocator myAllocator;
 
   aligned_vector<spline_type *> einsplines;
   aligned_vector<vContainer_type *> psi;
@@ -95,7 +98,10 @@ struct einspline_spo
     if (psi.size()) clean();
     if (Owner)
       for (int i = 0; i < nBlocks; ++i)
+      {
+        myAllocator.destroy(einsplines[i]->spline_m);
         delete einsplines[i];
+      }
   }
 
   void clean()
@@ -165,10 +171,10 @@ struct einspline_spo
       for (int i = 0; i < nBlocks; ++i)
       {
         einsplines[i] = new spline_type;
-        einsplines[i]->create(start, end, ng, PERIODIC, nSplinesPerBlock);
+        einsplines[i]->spline_m = myAllocator.createMultiBspline(T(0), start, end, ng, PERIODIC, nSplinesPerBlock);
         if (init_random)
           for (int j = 0; j < nSplinesPerBlock; ++j)
-            einsplines[i]->set(j, data);
+            myAllocator.set(data.data(), einsplines[i]->spline_m, j);
       }
     }
     resize();

@@ -92,7 +92,6 @@ int main(int argc, char **argv)
 
   int nptcl             = 0;
   int nknots_copy       = 0;
-  double t0             = 0.0;
   OHMMS_PRECISION ratio = 0.0;
 
   using spo_type =
@@ -132,7 +131,7 @@ int main(int argc, char **argv)
   double evalVGH_h_err = 0.0;
 
 // clang-format off
-  #pragma omp parallel reduction(+:t0,ratio,nspheremoves,dNumVGHCalls) \
+  #pragma omp parallel reduction(+:ratio,nspheremoves,dNumVGHCalls) \
    reduction(+:evalV_v_err,evalVGH_v_err,evalVGH_g_err,evalVGH_h_err)
   // clang-format on
   {

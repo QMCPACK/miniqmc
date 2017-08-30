@@ -34,45 +34,12 @@ template <typename T> struct MultiBsplineRef
   using spliner_type = typename bspline_traits<T, 3>::SplineType;
   /// define the real type
   using real_type = typename bspline_traits<T, 3>::real_type;
-  /// set to true if create is invoked
-  bool own_spline;
   /// actual einspline multi-bspline object
   spliner_type *spline_m;
-  /// use allocator
-  einspline::Allocator myAllocator;
 
-  MultiBsplineRef() : own_spline(false), spline_m(nullptr) {}
+  MultiBsplineRef() : spline_m(nullptr) {}
   MultiBsplineRef(const MultiBsplineRef &in) = delete;
   MultiBsplineRef &operator=(const MultiBsplineRef &in) = delete;
-
-  ~MultiBsplineRef()
-  {
-    if (own_spline)
-    {
-      myAllocator.destroy(spline_m);
-    }
-  }
-
-  template <typename RV, typename IV>
-  void create(RV &start, RV &end, IV &ng, bc_code bc, int num_splines)
-  {
-    if (spline_m == nullptr)
-    {
-      spline_m =
-          myAllocator.createMultiBspline(T(0), start, end, ng, bc, num_splines);
-      own_spline = true;
-    }
-  }
-
-  int num_splines() const
-  {
-    return (spline_m == nullptr) ? 0 : spline_m->num_splines;
-  }
-
-  template <typename CT> inline void set(int i, CT &data)
-  {
-    myAllocator.set(data.data(), spline_m, i);
-  }
 
   template <typename PT, typename VT> void evaluate(const PT &r, VT &psi)
   {
