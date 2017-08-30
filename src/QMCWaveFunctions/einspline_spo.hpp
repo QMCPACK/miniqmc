@@ -29,10 +29,11 @@
 
 namespace qmcplusplus
 {
-template <typename T, typename spline_type = MultiBspline<T>>
+template <typename T, typename compute_engine_type = MultiBspline<T> >
 struct einspline_spo
 {
-  // using spline_type=MultiBspline<T>;
+  /// define the einsplie data object type
+  using spline_type = typename bspline_traits<T, 3>::SplineType;
   using pos_type        = TinyVector<T, 3>;
   using vContainer_type = aligned_vector<T>;
   using gContainer_type = VectorSoaContainer<T, 3>;
@@ -54,6 +55,8 @@ struct einspline_spo
   lattice_type Lattice;
   /// use allocator
   einspline::Allocator myAllocator;
+  /// compute engine
+  compute_engine_type compute_engine;
 
   aligned_vector<spline_type *> einsplines;
   aligned_vector<vContainer_type *> psi;
@@ -98,10 +101,7 @@ struct einspline_spo
     if (psi.size()) clean();
     if (Owner)
       for (int i = 0; i < nBlocks; ++i)
-      {
-        myAllocator.destroy(einsplines[i]->spline_m);
-        delete einsplines[i];
-      }
+        myAllocator.destroy(einsplines[i]);
   }
 
   void clean()
@@ -113,20 +113,6 @@ struct einspline_spo
       delete grad[i];
       delete hess[i];
     }
-  }
-
-  ///** this needs to be refined. Now, only works with magic numbers */
-  // void set_range(int n_crew, int crew_id)
-  //{
-  //  int nbpcrew=nBlocks/n_crew;
-  //  firstBlock=nbpcrew*crew_id;
-  //  lastBlock=nbpcrew*(crew_id+1);
-  //}
-
-  template <typename VT> void assign(int i, VT &data)
-  {
-    int ib = i / nSplinesPerBlock - firstBlock;
-    einsplines[ib]->set(i - ib * nSplinesPerBlock, data);
   }
 
   /// resize the containers
@@ -170,11 +156,10 @@ struct einspline_spo
       myrandom.generate_uniform(data.data(), data.size());
       for (int i = 0; i < nBlocks; ++i)
       {
-        einsplines[i] = new spline_type;
-        einsplines[i]->spline_m = myAllocator.createMultiBspline(T(0), start, end, ng, PERIODIC, nSplinesPerBlock);
+        einsplines[i] = myAllocator.createMultiBspline(T(0), start, end, ng, PERIODIC, nSplinesPerBlock);
         if (init_random)
           for (int j = 0; j < nSplinesPerBlock; ++j)
-            myAllocator.set(data.data(), einsplines[i]->spline_m, j);
+            myAllocator.set(data.data(), einsplines[i], j);
       }
     }
     resize();
@@ -185,16 +170,16 @@ struct einspline_spo
   {
     auto u = Lattice.toUnit(p);
     for (int i = 0; i < nBlocks; ++i)
-      einsplines[i]->evaluate(u, *psi[i]);
+      compute_engine.evaluate_v(einsplines[i], u[0], u[1], u[2], psi[i]->data(), psi[i]->size());
   }
 
   /** evaluate psi */
   inline void evaluate_v_pfor(const pos_type &p)
   {
     auto u = Lattice.toUnit(p);
-#pragma omp for nowait
+    #pragma omp for nowait
     for (int i = 0; i < nBlocks; ++i)
-      einsplines[i]->evaluate(u, *psi[i]);
+      compute_engine.evaluate_v(einsplines[i], u[0], u[1], u[2], psi[i]->data(), psi[i]->size());
   }
 
   /** evaluate psi, grad and lap */
@@ -202,16 +187,20 @@ struct einspline_spo
   {
     auto u = Lattice.toUnit(p);
     for (int i = 0; i < nBlocks; ++i)
-      einsplines[i]->evaluate_vgl(u, *psi[i], *grad[i], *hess[i]);
+      compute_engine.evaluate_vgl(einsplines[i], u[0], u[1], u[2],
+                                  psi[i]->data(), grad[i]->data(), hess[i]->data(),
+                                  psi[i]->size());
   }
 
   /** evaluate psi, grad and lap */
   inline void evaluate_vgl_pfor(const pos_type &p)
   {
     auto u = Lattice.toUnit(p);
-#pragma omp for nowait
+    #pragma omp for nowait
     for (int i = 0; i < nBlocks; ++i)
-      einsplines[i]->evaluate_vgl(u, *psi[i], *grad[i], *hess[i]);
+      compute_engine.evaluate_vgl(einsplines[i], u[0], u[1], u[2],
+                                  psi[i]->data(), grad[i]->data(), hess[i]->data(),
+                                  psi[i]->size());
   }
 
   /** evaluate psi, grad and hess */
@@ -219,16 +208,20 @@ struct einspline_spo
   {
     auto u = Lattice.toUnit(p);
     for (int i = 0; i < nBlocks; ++i)
-      einsplines[i]->evaluate_vgh(u, *psi[i], *grad[i], *hess[i]);
+      compute_engine.evaluate_vgh(einsplines[i], u[0], u[1], u[2],
+                                  psi[i]->data(), grad[i]->data(), hess[i]->data(),
+                                  psi[i]->size());
   }
 
   /** evaluate psi, grad and hess */
   inline void evaluate_vgh_pfor(const pos_type &p)
   {
     auto u = Lattice.toUnit(p);
-#pragma omp for nowait
+    #pragma omp for nowait
     for (int i = 0; i < nBlocks; ++i)
-      einsplines[i]->evaluate_vgh(u, *psi[i], *grad[i], *hess[i]);
+      compute_engine.evaluate_vgh(einsplines[i], u[0], u[1], u[2],
+                                  psi[i]->data(), grad[i]->data(), hess[i]->data(),
+                                  psi[i]->size());
   }
 
   void print(std::ostream &os)

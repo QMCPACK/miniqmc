@@ -32,33 +32,10 @@ template <typename T> struct MultiBsplineRef
 {
   /// define the einsplie object type
   using spliner_type = typename bspline_traits<T, 3>::SplineType;
-  /// define the real type
-  using real_type = typename bspline_traits<T, 3>::real_type;
-  /// actual einspline multi-bspline object
-  spliner_type *spline_m;
 
-  MultiBsplineRef() : spline_m(nullptr) {}
+  MultiBsplineRef() {}
   MultiBsplineRef(const MultiBsplineRef &in) = delete;
   MultiBsplineRef &operator=(const MultiBsplineRef &in) = delete;
-
-  template <typename PT, typename VT> void evaluate(const PT &r, VT &psi)
-  {
-    evaluate_v_impl(r[0], r[1], r[2], psi.data(), psi.size());
-  }
-
-  template <typename PT, typename VT, typename GT, typename LT>
-  inline void evaluate_vgl(const PT &r, VT &psi, GT &grad, LT &lap)
-  {
-    evaluate_vgl_impl(r[0], r[1], r[2], psi.data(), grad.data(), lap.data(),
-                      psi.size());
-  }
-
-  template <typename PT, typename VT, typename GT, typename HT>
-  inline void evaluate_vgh(const PT &r, VT &psi, GT &grad, HT &hess)
-  {
-    evaluate_vgh_impl(r[0], r[1], r[2], psi.data(), grad.data(), hess.data(),
-                      psi.size());
-  }
 
   /** compute values vals[0,num_splines)
    *
@@ -66,19 +43,20 @@ template <typename T> struct MultiBsplineRef
    * evaluate_vgh(r,psi,grad,hess,ip).
    */
 
-  void evaluate_v_impl(T x, T y, T z, T *restrict vals,
-                       size_t num_splines) const;
+  void evaluate_v(spliner_type *restrict spline_m, T x, T y, T z, T *restrict vals,
+                  size_t num_splines) const;
 
-  void evaluate_vgl_impl(T x, T y, T z, T *restrict vals, T *restrict grads,
-                         T *restrict lapl, size_t num_splines) const;
+  void evaluate_vgl(spliner_type *restrict spline_m, T x, T y, T z, T *restrict vals, T *restrict grads,
+                    T *restrict lapl, size_t num_splines) const;
 
-  void evaluate_vgh_impl(T x, T y, T z, T *restrict vals, T *restrict grads,
-                         T *restrict hess, size_t num_splines) const;
+  void evaluate_vgh(spliner_type *restrict spline_m, T x, T y, T z, T *restrict vals, T *restrict grads,
+                    T *restrict hess, size_t num_splines) const;
 };
 
 template <typename T>
-inline void MultiBsplineRef<T>::evaluate_v_impl(T x, T y, T z, T *restrict vals,
-                                                size_t num_splines) const
+inline void MultiBsplineRef<T>::evaluate_v(spliner_type *restrict spline_m,
+                                           T x, T y, T z, T *restrict vals,
+                                           size_t num_splines) const
 {
   x -= spline_m->x_grid.start;
   y -= spline_m->y_grid.start;
@@ -119,9 +97,10 @@ inline void MultiBsplineRef<T>::evaluate_v_impl(T x, T y, T z, T *restrict vals,
 
 template <typename T>
 inline void
-MultiBsplineRef<T>::evaluate_vgl_impl(T x, T y, T z, T *restrict vals,
-                                      T *restrict grads, T *restrict lapl,
-                                      size_t num_splines) const
+MultiBsplineRef<T>::evaluate_vgl(spliner_type *restrict spline_m,
+                                 T x, T y, T z, T *restrict vals,
+                                 T *restrict grads, T *restrict lapl,
+                                 size_t num_splines) const
 {
   x -= spline_m->x_grid.start;
   y -= spline_m->y_grid.start;
@@ -221,9 +200,10 @@ MultiBsplineRef<T>::evaluate_vgl_impl(T x, T y, T z, T *restrict vals,
 
 template <typename T>
 inline void
-MultiBsplineRef<T>::evaluate_vgh_impl(T x, T y, T z, T *restrict vals,
-                                      T *restrict grads, T *restrict hess,
-                                      size_t num_splines) const
+MultiBsplineRef<T>::evaluate_vgh(spliner_type *restrict spline_m,
+                                 T x, T y, T z, T *restrict vals,
+                                 T *restrict grads, T *restrict hess,
+                                 size_t num_splines) const
 {
 
   int ix, iy, iz;
