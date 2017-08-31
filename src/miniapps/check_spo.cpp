@@ -53,10 +53,7 @@ int main(int argc, char **argv)
   int nsteps  = 100;
   int iseed   = 11;
   int nx = 48, ny = 48, nz = 60;
-  // thread blocking
-  // int ncrews=1; //default is 1
   int tileSize = -1;
-  int ncrews   = 1;
 
   char *g_opt_arg;
   int opt;
@@ -74,9 +71,6 @@ int main(int argc, char **argv)
     case 's': // random seed
       iseed = atoi(optarg);
       break;
-    case 'c': // number of crews per team
-      ncrews = atoi(optarg);
-      break;
     case 'a': tileSize = atoi(optarg); break;
     }
   }
@@ -90,27 +84,23 @@ int main(int argc, char **argv)
     OhmmsInfo::Warn->turnoff();
   }
 
-  int nptcl             = 0;
-  int nknots_copy       = 0;
-  OHMMS_PRECISION ratio = 0.0;
-
   using spo_type =
-      einspline_spo<OHMMS_PRECISION, MultiBspline<OHMMS_PRECISION>>;
+      einspline_spo<RealType, MultiBspline<RealType> >;
   spo_type spo_main;
   using spo_ref_type =
-      einspline_spo<OHMMS_PRECISION, MultiBsplineRef<OHMMS_PRECISION>>;
+      einspline_spo<RealType, MultiBsplineRef<RealType> >;
   spo_ref_type spo_ref_main;
   int nTiles = 1;
 
   {
-    Tensor<OHMMS_PRECISION, 3> lattice_b;
+    Tensor<RealType, 3> lattice_b;
     ParticleSet ions;
-    OHMMS_PRECISION scale = 1.0;
-    lattice_b             = tile_cell(ions, tmat, scale);
-    const int nions       = ions.getTotalNum();
-    const int norb        = count_electrons(ions, 1) / 2;
-    tileSize              = (tileSize > 0) ? tileSize : norb;
-    nTiles                = norb / tileSize;
+    RealType scale  = 1.0;
+    lattice_b       = tile_cell(ions, tmat, scale);
+    const int nions = ions.getTotalNum();
+    const int norb  = count_electrons(ions, 1) / 2;
+    tileSize        = (tileSize > 0) ? tileSize : norb;
+    nTiles          = norb / tileSize;
     if (ionode)
       cout << "\nNumber of orbitals/splines = " << norb
            << " and Tile size = " << tileSize
@@ -122,63 +112,88 @@ int main(int argc, char **argv)
     spo_ref_main.Lattice.set(lattice_b);
   }
 
-  double nspheremoves = 0;
-  double dNumVGHCalls = 0;
+  // construct ion particles
+  ParticleSet ions;
+  const RealType scale = 1.0;
+  ions.Lattice.BoxBConds      = 1;
+  tile_cell(ions, tmat, scale);
+  ions.update();
+  const int nions = ions.getTotalNum();
+  const int nels  = count_electrons(ions, 1);
+  const int nels3 = 3 * nels;
 
+  std::vector<RandomGenerator<RealType> *> rng_list;
+  std::vector<ParticleSet *>               els_list;
+  std::vector<spo_type *>                  spo_list;
+  std::vector<spo_ref_type *>              spo_ref_list;
+  std::vector<NonLocalPP<RealType> *>      nlpp_list;
+
+  #pragma omp parallel
+  {
+    const int np = omp_get_num_threads();
+    const int ip = omp_get_thread_num();
+
+    #pragma omp single
+    {
+      rng_list.resize(np);
+      els_list.resize(np);
+      spo_list.resize(np);
+      spo_ref_list.resize(np);
+      nlpp_list.resize(np);
+    }
+
+    // create RNG within the thread
+    rng_list[ip] = new RandomGenerator<RealType>(MakeSeed(ip, np));
+    RandomGenerator<RealType> &random_th = *rng_list[ip];
+
+    // create elecs within the thread
+    els_list[ip]     = new ParticleSet;
+    ParticleSet &els = *els_list[ip];
+
+    // create up/down electrons
+    els.Lattice.BoxBConds = 1;
+    els.Lattice.set(ions.Lattice);
+    vector<int> ud(2);
+    ud[0] = nels / 2;
+    ud[1] = nels - ud[0];
+    els.create(ud);
+    els.R.InUnit = 1;
+    random_th.generate_uniform(&els.R[0][0], nels3);
+    els.convert2Cart(els.R); // convert to Cartiesian
+    // update content: compute distance tables and structure factor
+    els.update();
+
+    // create spo per thread
+    spo_list[ip] = new spo_type(spo_main, 1, 0);
+    spo_type &spo = *spo_list[ip];
+    spo_ref_list[ip] = new spo_ref_type(spo_ref_main, 1, 0);
+    spo_ref_type &spo_ref = *spo_ref_list[ip];
+
+    // create pseudopp per thread
+    nlpp_list[ip]             = new NonLocalPP<RealType>(random_th);
+    NonLocalPP<RealType> &ecp = *nlpp_list[ip];
+  }
+
+  double ratio         = 0.0;
+  double nspheremoves  = 0.0;
+  double dNumVGHCalls  = 0.0;
   double evalV_v_err   = 0.0;
   double evalVGH_v_err = 0.0;
   double evalVGH_g_err = 0.0;
   double evalVGH_h_err = 0.0;
 
 // clang-format off
-  #pragma omp parallel reduction(+:ratio,nspheremoves,dNumVGHCalls) \
+  #pragma omp parallel for reduction(+:ratio,nspheremoves,dNumVGHCalls) \
    reduction(+:evalV_v_err,evalVGH_v_err,evalVGH_g_err,evalVGH_h_err)
   // clang-format on
+  for(size_t iw=0; iw<els_list.size(); iw++)
   {
-    const int np     = omp_get_num_threads();
-    const int ip     = omp_get_thread_num();
-    const int teamID = ip / ncrews;
-    const int crewID = ip % ncrews;
-
-    // create generator within the thread
-    RandomGenerator<RealType> random_th(MakeSeed(teamID, np));
-
-    ParticleSet ions, els;
-    const OHMMS_PRECISION scale = 1.0;
-    ions.Lattice.BoxBConds      = 1;
-    tile_cell(ions, tmat, scale);
-
-    const int nions = ions.getTotalNum();
-    const int nels  = count_electrons(ions, 1);
-    const int nels3 = 3 * nels;
-
-#pragma omp master
-    nptcl = nels;
-
-    { // create up/down electrons
-      els.Lattice.BoxBConds = 1;
-      els.Lattice.set(ions.Lattice);
-      vector<int> ud(2);
-      ud[0] = nels / 2;
-      ud[1] = nels - ud[0];
-      els.create(ud);
-      els.R.InUnit = 1;
-      random_th.generate_uniform(&els.R[0][0], nels3);
-      els.convert2Cart(els.R); // convert to Cartiesian
-    }
-
-    // update content: compute distance tables and structure factor
-    els.update();
-    ions.update();
-
-    // create pseudopp
-    NonLocalPP<OHMMS_PRECISION> ecp(random_th);
-    // create spo per thread
-    spo_type spo(spo_main, ncrews, crewID);
-    spo_ref_type spo_ref(spo_ref_main, ncrews, crewID);
-
-    // use teams
-    // if(ncrews>1 && ncrews>=nTiles ) spo.set_range(ncrews,ip%ncrews);
+    // load a walker
+    RandomGenerator<RealType> &random_th = *rng_list[iw];
+    ParticleSet                     &els = *els_list[iw];
+    spo_type                        &spo = *spo_list[iw];
+    spo_ref_type                &spo_ref = *spo_ref_list[iw];
+    NonLocalPP<RealType>            &ecp = *nlpp_list[iw];
 
     // this is the cutoff from the non-local PP
     const RealType Rmax(1.7);
@@ -187,9 +202,6 @@ int main(int argc, char **argv)
 
     ParticlePos_t delta(nels);
     ParticlePos_t rOnSphere(nknots);
-
-#pragma omp master
-    nknots_copy = nknots;
 
     RealType sqrttau = 2.0;
     RealType accept  = 0.5;
