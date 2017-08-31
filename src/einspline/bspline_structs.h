@@ -20,7 +20,7 @@
 
 #ifndef BSPLINE_STRUCTS_STD_H
 #define BSPLINE_STRUCTS_STD_H
-#include <stdlib.h>
+#include <cstdlib>
 
 ///////////////////////////
 // Single precision real //

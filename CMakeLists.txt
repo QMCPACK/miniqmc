@@ -266,7 +266,7 @@ INCLUDE(${CMAKE_ROOT}/Modules/CheckCXXCompilerFlag.cmake)
 ######################################################
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-SET( KOKKOS_PATH "/home/crtrott/kokkos" )
+SET( KOKKOS_PATH "/home/crtrott/Kokkos/kokkos" )
 add_subdirectory( ${KOKKOS_PATH} ${qmcpack_BINARY_DIR}/kokkos )
 include_directories(${Kokkos_INCLUDE_DIRS_RET})
 LINK_LIBRARIES(kokkos)

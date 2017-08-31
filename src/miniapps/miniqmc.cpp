@@ -252,14 +252,22 @@ int main(int argc, char **argv)
   double dNumVGHCalls = 0;
 
   Timers[Timer_Total]->start();
-#pragma omp parallel
+  //#pragma omp parallel
+  auto main_function = [&] (int partition_id, int num_partitions)
   {
     ParticleSet ions, els;
     ions.setName("ion");
     els.setName("e");
 
-    const int np = omp_get_num_threads();
-    const int ip = omp_get_thread_num();
+
+    omp_set_num_threads(Kokkos::OpenMP::thread_pool_size());
+    printf("Start Running: %i %i %i\n",num_partitions,partition_id,omp_get_max_threads());
+    #pragma omp parallel //num_threads(3)
+    {
+       printf("Partition: %i %i %i %i\n",num_partitions,partition_id,omp_get_num_threads(),omp_get_thread_num());
+    }
+    const int np = num_partitions;//omp_get_num_threads();
+    const int ip = partition_id;//omp_get_thread_num();
 
     const int teamID = ip / ncrews;
     const int crewID = ip % ncrews;
@@ -316,7 +324,7 @@ int main(int argc, char **argv)
     ParticlePos_t delta(nels);
     ParticlePos_t rOnSphere(nknots);
 
-#pragma omp master
+//#pragma omp master
     nknots_copy = nknots;
 
     RealType sqrttau = std::sqrt(tau);
@@ -449,7 +457,14 @@ int main(int argc, char **argv)
 
     // cleanup
     delete WaveFunction;
-  } // end of omp parallel
+  }; // end of main_master
+
+#if defined(KOKKOS_ENABLE_OPENMP) && !defined(KOKKOS_ENABLE_CUDA)
+  printf("Partitioning\n");
+  Kokkos::OpenMP::partition_master(main_function,4,6);
+#else
+  main_function(0,1);
+#endif
   Timers[Timer_Total]->stop();
 
   if (ionode)

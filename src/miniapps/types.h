@@ -10,18 +10,18 @@ define T_INT int
 #endif
 
 // Define Kokkos View Types (incomplete list of all arrays below)
-typedef Kokkos::View<int*>      ViewVectorType_int;
-typedef Kokkos::View<double*>   ViewVectorType_double;
-typedef Kokkos::View<int**>     ViewMatrixType_int;
-typedef Kokkos::View<double**>  ViewMatrixType_double;
+typedef Kokkos::View<T_INT*>      IntVectorType_t;
+typedef Kokkos::View<T_FLOAT*>   FloatViewVector_t;
+typedef Kokkos::View<T_INT**>     IntMatrixType_t;
+typedef Kokkos::View<T_FLOAT**>  FloatMatrixType_t;
 
-ViewMatrixType_int tmat("tmat", D, D); // src/miniapps/einspline_spo.cpp: Tensor<int,3> tmat(na,0,0,0,nb,0,0,0,nc), D=3;
-ViewMatrixType_int X("X", D, D); // src/OhmmsPete/Tensor.h: Tensor<int,3> tmat(na,0,0,0,nb,0,0,0,nc), D=3;
+/*IntMatrixType_t tmat("tmat", D, D); // src/miniapps/einspline_spo.cpp: Tensor<int,3> tmat(na,0,0,0,nb,0,0,0,nc), D=3;
+ViewMatrixType_t X("X", D, D); // src/OhmmsPete/Tensor.h: Tensor<int,3> tmat(na,0,0,0,nb,0,0,0,nc), D=3;
 ViewMatrixType_double lattice_b("lattice_b", D, D); 
 ViewMatrixType_double tile_graphite("tile_graphite", D, D); //src/miniapps/einspline_spo.cpp: Tensor<T,3>  tile_graphite(ParticleSet& ions, Tensor<int,3>& tmat, T scale), D=3;
 ViewMatrixType_double R("R", numPtcl, D); //graphite.hpp: 29: ions.create(4), numPtcl=4, D=3;
 ViewMatrixType_int I("I", D, D); // src/Particle/ParticleIOUtility.h: Tensor<int,3> I(1,0,0,0,1,0,0,0,1);
-
+*/
 
 // These need to be appended to Kokkos View Types
 // List of all data structures called from einspline_spo.cpp

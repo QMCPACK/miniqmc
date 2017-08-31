@@ -26,25 +26,6 @@ void set_multi_UBspline_3d_d(multi_UBspline_3d_d *spline, int spline_num,
 void set_multi_UBspline_3d_s(multi_UBspline_3d_s *spline, int spline_num,
                              float *data);
 
-multi_UBspline_3d_s *
-einspline_create_multi_UBspline_3d_s(Ugrid x_grid, Ugrid y_grid, Ugrid z_grid,
-                                     BCtype_s xBC, BCtype_s yBC, BCtype_s zBC,
-                                     int num_splines);
-
-UBspline_3d_s *einspline_create_UBspline_3d_s(Ugrid x_grid, Ugrid y_grid,
-                                              Ugrid z_grid, BCtype_s xBC,
-                                              BCtype_s yBC, BCtype_s zBC,
-                                              float *data);
-
-multi_UBspline_3d_d *
-einspline_create_multi_UBspline_3d_d(Ugrid x_grid, Ugrid y_grid, Ugrid z_grid,
-                                     BCtype_d xBC, BCtype_d yBC, BCtype_d zBC,
-                                     int num_splines);
-
-UBspline_3d_d *einspline_create_UBspline_3d_d(Ugrid x_grid, Ugrid y_grid,
-                                              Ugrid z_grid, BCtype_d xBC,
-                                              BCtype_d yBC, BCtype_d zBC,
-                                              double *data);
 }
 
 namespace qmcplusplus
@@ -117,7 +98,7 @@ void Allocator::set(double *indata, multi_UBspline_3d_s *spline, int i)
       spline->x_grid, spline->y_grid, spline->z_grid, xBC_d, yBC_d, zBC_d,
       indata);
   copy(singleS, spline, i, BaseOffset, BaseN);
-  einspline_free(singleS->coefs);
+  einspline_free((void*)singleS->coefs);
   free(singleS);
 }
 

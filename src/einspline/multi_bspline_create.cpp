@@ -26,7 +26,7 @@
 #ifndef __USE_XOPEN2K
 #define __USE_XOPEN2K
 #endif
-#include <inttypes.h>
+#include <cinttypes>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -132,7 +132,7 @@ void set_multi_UBspline_3d_s_d(multi_UBspline_3d_s *spline, int num,
   else
     Nz = Mz + 2;
 
-  double *spline_tmp = malloc(sizeof(double) * Nx * Ny * Nz);
+  double *spline_tmp = (double*) malloc(sizeof(double) * Nx * Ny * Nz);
 
 // First, solve in the X-direction
 #pragma omp parallel for
@@ -246,3 +246,4 @@ void destroy_multi_UBspline(Bspline *spline)
   free(spline->coefs);
   free(spline);
 }
+

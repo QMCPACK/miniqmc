@@ -21,8 +21,9 @@
 #ifndef MULTI_BSPLINE_STRUCTS_STD_H
 #define MULTI_BSPLINE_STRUCTS_STD_H
 
-#include <inttypes.h>
-#include <stdlib.h>
+#include <Kokkos_Core.hpp>
+#include <cinttypes>
+#include <cstdlib>
 
 ///////////////////////////
 // Single precision real //
@@ -90,9 +91,11 @@ typedef struct
 
 typedef struct
 {
+  typedef Kokkos::View<double****, Kokkos::LayoutRight> coefs_view_t;
   spline_code spcode;
   type_code tcode;
   double *restrict coefs;
+  coefs_view_t coefs_view;
   intptr_t x_stride, y_stride, z_stride;
   Ugrid x_grid, y_grid, z_grid;
   BCtype_d xBC, yBC, zBC;

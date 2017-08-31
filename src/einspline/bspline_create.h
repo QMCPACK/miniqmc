@@ -23,7 +23,7 @@
 
 #include "bspline_base.h"
 #include "bspline_structs.h"
-#include <inttypes.h>
+#include <cinttypes>
 
 #ifdef __cplusplus
 extern "C" {

@@ -28,15 +28,16 @@
 #include "config.h"
 #include "einspline/bspline.h"
 #include "spline2/einspline_allocator.h"
+#include <Kokkos_Core.hpp>
 
 #if defined(__INTEL_COMPILER)
 
-inline void *einspline_alloc(size_t size, size_t alignment)
+void *einspline_alloc(size_t size, size_t alignment)
 {
   return _mm_malloc(size, alignment);
 }
 
-inline void einspline_free(void *ptr) { _mm_free(ptr); }
+void einspline_free(void *ptr) { _mm_free(ptr); }
 
 #elif defined(HAVE_POSIX_MEMALIGN)
 
@@ -49,11 +50,11 @@ inline void *einspline_alloc(size_t size, size_t alignment)
   return ptr;
 }
 
-inline void einspline_free(void *ptr) { free(ptr); }
+void einspline_free(void *ptr) { free(ptr); }
 
 #else
 
-inline void *einspline_alloc(size_t size, size_t alignment)
+void *einspline_alloc(size_t size, size_t alignment)
 {
   size += (alignment - 1) + sizeof(void *);
   void *ptr = malloc(size);
@@ -70,7 +71,7 @@ inline void *einspline_alloc(size_t size, size_t alignment)
   }
 }
 
-inline void einspline_free(void *aligned)
+void einspline_free(void *aligned)
 {
   void *ptr = *((void **)aligned - 1);
   free(ptr);
@@ -83,7 +84,7 @@ einspline_create_multi_UBspline_3d_s(Ugrid x_grid, Ugrid y_grid, Ugrid z_grid,
                                      int num_splines)
 {
   // Create new spline
-  multi_UBspline_3d_s *restrict spline = malloc(sizeof(multi_UBspline_3d_s));
+  multi_UBspline_3d_s *restrict spline = (multi_UBspline_3d_s *)malloc(sizeof(multi_UBspline_3d_s));
   if (!spline)
   {
     fprintf(stderr,
@@ -173,7 +174,7 @@ einspline_create_multi_UBspline_3d_d(Ugrid x_grid, Ugrid y_grid, Ugrid z_grid,
                                      int num_splines)
 {
   // Create new spline
-  multi_UBspline_3d_d *restrict spline = malloc(sizeof(multi_UBspline_3d_d));
+  multi_UBspline_3d_d *restrict spline = new multi_UBspline_3d_d;//(multi_UBspline_3d_d *)malloc(sizeof(multi_UBspline_3d_d));
 
   if (!spline)
   {
@@ -227,8 +228,23 @@ einspline_create_multi_UBspline_3d_d(Ugrid x_grid, Ugrid y_grid, Ugrid z_grid,
   spline->z_stride = N;
 
   spline->coefs_size = (size_t)Nx * spline->x_stride;
-  spline->coefs =
-      (double *)einspline_alloc(sizeof(double) * spline->coefs_size, QMC_CLINE);
+  // Create KokkosView
+  spline->coefs_view = multi_UBspline_3d_d::coefs_view_t("Multi_UBspline_3d_d",Nx,Ny,Nz,N);
+
+  // Check data layout is as expected
+  int strides[4];
+  spline->coefs_view.stride(strides);
+  if(spline->x_stride!=strides[0] ||
+     spline->y_stride!=strides[1] ||
+     spline->z_stride!=strides[2] ||
+     1!=strides[3])
+    fprintf(stderr, "Kokkos View has non-compatible strides %i %i | %i %i | %i %i\n",
+        spline->x_stride,strides[0],
+        spline->y_stride,strides[1],
+        spline->z_stride,strides[2]
+        );
+
+  spline->coefs = spline->coefs_view.data();
 
   if (!spline->coefs)
   {
@@ -246,7 +262,7 @@ UBspline_3d_d *einspline_create_UBspline_3d_d(Ugrid x_grid, Ugrid y_grid,
                                               double *data)
 {
   // Create new spline
-  UBspline_3d_d *restrict spline = malloc(sizeof(UBspline_3d_d));
+  UBspline_3d_d *restrict spline = (UBspline_3d_d *)malloc(sizeof(UBspline_3d_d));
   spline->spcode                 = U3D;
   spline->tcode                  = DOUBLE_REAL;
   spline->xBC                    = xBC;
@@ -335,7 +351,7 @@ UBspline_3d_s *einspline_create_UBspline_3d_s(Ugrid x_grid, Ugrid y_grid,
                                               float *data)
 {
   // Create new spline
-  UBspline_3d_s *spline = malloc(sizeof(UBspline_3d_s));
+  UBspline_3d_s *spline = (UBspline_3d_s *)malloc(sizeof(UBspline_3d_s));
   spline->spcode        = U3D;
   spline->tcode         = SINGLE_REAL;
   spline->xBC           = xBC;
