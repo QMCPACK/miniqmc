@@ -1,0 +1,1 @@
+mpicxx -std=c++11 -fopenmp -fopenmp-targets=nvptx64-nvidia-cuda --cuda-path=${OLCF_CUDA_ROOT} map_structure.cpp
