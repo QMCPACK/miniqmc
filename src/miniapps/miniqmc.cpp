@@ -134,9 +134,9 @@ int main(int argc, char **argv)
   int iseed   = 11;
   int nx = 37, ny = 37, nz = 37;
   // thread blocking
-  // int ncrews=1; //default is 1
+  // int team_size=1; //default is 1
   int tileSize  = -1;
-  int ncrews    = 1;
+  int team_size    = 1;
   int nsubsteps = 1;
   // Set cutoff for NLPP use.
   RealType Rmax(1.7);
@@ -165,8 +165,8 @@ int main(int argc, char **argv)
     case 's': // the number of sub steps for drift/diffusion
       nsubsteps = atoi(optarg);
       break;
-    case 'c': // number of crews per team
-      ncrews = atoi(optarg);
+    case 'c': // number of members per team
+      team_size = atoi(optarg);
       break;
     case 'r': // rmax
       Rmax = atof(optarg);
@@ -257,11 +257,11 @@ int main(int argc, char **argv)
     const int np = omp_get_num_threads();
     const int ip = omp_get_thread_num();
 
-    const int teamID = ip / ncrews;
-    const int crewID = ip % ncrews;
+    const int team_id = ip / team_size;
+    const int member_id = ip % team_size;
 
     // create spo per thread
-    spo_type spo(spo_main, ncrews, crewID);
+    spo_type spo(spo_main, team_size, member_id);
 
     // create generator within the thread
     RandomGenerator<RealType> random_th(myPrimes[ip]);
