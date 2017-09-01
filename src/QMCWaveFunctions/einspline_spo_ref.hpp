@@ -17,9 +17,8 @@
 // -*- C++ -*-
 /** @file einspline_spo.hpp
  */
-#ifndef QMCPLUSPLUS_EINSPLINE_SPO_HPP
-#define QMCPLUSPLUS_EINSPLINE_SPO_HPP
-#include <QMCWaveFunctions/einspline_spo_ref.hpp>
+#ifndef QMCPLUSPLUS_EINSPLINE_SPO_REF_HPP
+#define QMCPLUSPLUS_EINSPLINE_SPO_REF_HPP
 #include <Configuration.h>
 #include <Particle/ParticleSet.h>
 #include <spline2/bspline_allocator.hpp>
@@ -31,14 +30,8 @@
 namespace qmcplusplus
 {
 template <typename T, typename compute_engine_type = MultiBspline<T> >
-struct einspline_spo
+struct einspline_spo_ref
 {
-  struct EvaluateVGHTag {};
-  typedef Kokkos::TeamPolicy<EvaluateVGHTag> policy_vgh_t;
-
-  typedef typename Kokkos::TeamPolicy<>::member_type team_t;
-
-  // using spline_type=MultiBspline<T>;
   /// define the einsplie data object type
   using spline_type = typename bspline_traits<T, 3>::SplineType;
   using pos_type        = TinyVector<T, 3>;
@@ -65,25 +58,20 @@ struct einspline_spo
   /// compute engine
   compute_engine_type compute_engine;
 
-  // Needed to be stored in class since we use it as the functor
-  pos_type pos;
-
-  // mark instance as copy
-  bool is_copy;
-
   aligned_vector<spline_type *> einsplines;
   aligned_vector<vContainer_type *> psi;
   aligned_vector<gContainer_type *> grad;
   aligned_vector<hContainer_type *> hess;
 
   /// default constructor
-  einspline_spo()
-      : nBlocks(0), nSplines(0), firstBlock(0), lastBlock(0), Owner(false), is_copy(false)
+  einspline_spo_ref()
+      : nBlocks(0), nSplines(0), firstBlock(0), lastBlock(0), Owner(false)
   {
   }
   /// disable copy constructor
-  // einspline_spo(const einspline_spo &in) = delete;
+  einspline_spo_ref(const einspline_spo_ref &in) = delete;
   /// disable copy operator
+  einspline_spo_ref &operator=(const einspline_spo_ref &in) = delete;
 
   /** copy constructor
    * @param in einspline_spo
@@ -92,8 +80,8 @@ struct einspline_spo
    *
    * Create a view of the big object. A simple blocking & padding  method.
    */
-  einspline_spo(einspline_spo &in, int ncrews, int crewID)
-      : Owner(false), Lattice(in.Lattice), is_copy(false)
+  einspline_spo_ref(einspline_spo_ref &in, int ncrews, int crewID)
+      : Owner(false), Lattice(in.Lattice)
   {
     nSplines         = in.nSplines;
     nSplinesPerBlock = in.nSplinesPerBlock;
@@ -106,32 +94,14 @@ struct einspline_spo
       einsplines[i] = in.einsplines[t];
     resize();
   }
-
-  einspline_spo(einspline_spo_ref<T,compute_engine_type> &in, int ncrews, int crewID)
-      : Owner(false), Lattice(in.Lattice), is_copy(false)
-  {
-    nSplines         = in.nSplines;
-    nSplinesPerBlock = in.nSplinesPerBlock;
-    nBlocks          = (in.nBlocks + ncrews - 1) / ncrews;
-    firstBlock       = nBlocks * crewID;
-    lastBlock        = std::min(in.nBlocks, nBlocks * (crewID + 1));
-    nBlocks          = lastBlock - firstBlock;
-    einsplines.resize(nBlocks);
-    for (int i = 0, t = firstBlock; i < nBlocks; ++i, ++t)
-      einsplines[i] = in.einsplines[t];
-    resize();
-  }
-
 
   /// destructors
-  ~einspline_spo()
+  ~einspline_spo_ref()
   {
-    if(! is_copy) {
     if (psi.size()) clean();
     if (Owner)
       for (int i = 0; i < nBlocks; ++i)
         myAllocator.destroy(einsplines[i]);
-    }
   }
 
   void clean()
@@ -236,22 +206,11 @@ struct einspline_spo
   /** evaluate psi, grad and hess */
   inline void evaluate_vgh(const pos_type &p)
   {
-    pos = p;
-    is_copy = true;
-    /*auto u = Lattice.toUnit(p);
+    auto u = Lattice.toUnit(p);
     for (int i = 0; i < nBlocks; ++i)
-      einsplines[i]->evaluate_vgh(u, *psi[i], *grad[i], *hess[i]);*/
-    Kokkos::parallel_for(policy_vgh_t(nBlocks,1),*this);
-    is_copy = false;
-  }
-
-  KOKKOS_INLINE_FUNCTION
-  void operator() (const EvaluateVGHTag&, const team_t& team ) const {
-    int block = team.league_rank();
-    auto u = Lattice.toUnit(pos);
-      compute_engine.evaluate_vgh(einsplines[block], u[0], u[1], u[2],
-                                  psi[block]->data(), grad[block]->data(), hess[block]->data(),
-                                  psi[block]->size());
+      compute_engine.evaluate_vgh(einsplines[i], u[0], u[1], u[2],
+                                  psi[i]->data(), grad[i]->data(), hess[i]->data(),
+                                  psi[i]->size());
   }
 
   /** evaluate psi, grad and hess */

@@ -34,7 +34,7 @@ template <typename T> struct MultiBsplineRef
   using spliner_type = typename bspline_traits<T, 3>::SplineType;
 
   MultiBsplineRef() {}
-  MultiBsplineRef(const MultiBsplineRef &in) = delete;
+  //MultiBsplineRef(const MultiBsplineRef &in) = delete;
   MultiBsplineRef &operator=(const MultiBsplineRef &in) = delete;
 
   /** compute values vals[0,num_splines)

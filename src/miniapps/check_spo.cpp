@@ -24,6 +24,7 @@
 #include <Simulation/Simulation.hpp>
 #include <miniapps/pseudo.hpp>
 #include <spline2/MultiBsplineRef.hpp>
+#include <QMCWaveFunctions/einspline_spo_ref.hpp>
 #include <QMCWaveFunctions/einspline_spo.hpp>
 #include <getopt.h>
 
@@ -98,7 +99,7 @@ int main(int argc, char **argv)
       einspline_spo<OHMMS_PRECISION, MultiBspline<OHMMS_PRECISION>>;
   spo_type spo_main;
   using spo_ref_type =
-      einspline_spo<OHMMS_PRECISION, MultiBsplineRef<OHMMS_PRECISION>>;
+      einspline_spo_ref<OHMMS_PRECISION, MultiBsplineRef<OHMMS_PRECISION>>;
   spo_ref_type spo_ref_main;
   int nTiles = 1;
 
@@ -287,7 +288,6 @@ int main(int argc, char **argv)
     nspheremoves += RealType(my_vals) / RealType(nsteps);
     dNumVGHCalls += nels;
 
-    t0_p[partition_id] = t0;
     ratio_p[partition_id] = ratio;
     nspheremoves_p[partition_id] = nspheremoves;
     dNumVGHCalls_p[partition_id] = dNumVGHCalls;
@@ -298,7 +298,14 @@ int main(int argc, char **argv)
     evalVGH_h_err_p[partition_id] = evalVGH_h_err;
   }; // end of omp parallel
 
-  double t0             = 0.0;
+#if defined(KOKKOS_ENABLE_OPENMP) && !defined(KOKKOS_ENABLE_CUDA)
+  int num_threads = Kokkos::OpenMP::thread_pool_size();
+  printf("Partitioning\n");
+  Kokkos::OpenMP::partition_master(main_function,num_threads/ncrews,ncrews);
+#else
+  main_function(0,1);
+#endif
+
   OHMMS_PRECISION ratio = 0.0;
   double nspheremoves = 0;
   double dNumVGHCalls = 0;
@@ -308,7 +315,15 @@ int main(int argc, char **argv)
   double evalVGH_g_err = 0.0;
   double evalVGH_h_err = 0.0;
 
-  for(int i=0; i<)
+  for(int i =0; i<num_threads/ncrews; i++) {
+    ratio += ratio_p[i];
+    nspheremoves += nspheremoves_p[i];
+    dNumVGHCalls += dNumVGHCalls_p[i];
+    evalV_v_err  += evalV_v_err_p[i];
+    evalVGH_v_err += evalVGH_v_err_p[i];
+    evalVGH_g_err += evalVGH_g_err_p[i];
+    evalVGH_h_err += evalVGH_h_err_p[i];
+  }
   evalV_v_err /= nspheremoves;
   evalVGH_v_err /= dNumVGHCalls;
   evalVGH_g_err /= dNumVGHCalls;
