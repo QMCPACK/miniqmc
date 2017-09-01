@@ -122,7 +122,6 @@ int main(int argc, char **argv)
     spo_ref_main.Lattice.set(lattice_b);
   }
 
-  double* t0_p             = new double[omp_get_max_threads()];
   OHMMS_PRECISION* ratio_p = new OHMMS_PRECISION[omp_get_max_threads()];
   double* nspheremoves_p = new double[omp_get_max_threads()];
   double* dNumVGHCalls_p = new double[omp_get_max_threads()];
@@ -134,12 +133,11 @@ int main(int argc, char **argv)
 
 
 // clang-format off
-//  #pragma omp parallel reduction(+:t0,ratio,nspheremoves,dNumVGHCalls) \
+//  #pragma omp parallel reduction(+:ratio,nspheremoves,dNumVGHCalls) \
 //   reduction(+:evalV_v_err,evalVGH_v_err,evalVGH_g_err,evalVGH_h_err)
   // clang-format on
   auto main_function = [&] (int partition_id, int num_partitions)
   {
-    double t0             = 0.0;
     OHMMS_PRECISION ratio = 0.0;
     double nspheremoves = 0;
     double dNumVGHCalls = 0;
@@ -221,9 +219,8 @@ int main(int argc, char **argv)
       for (int iel = 0; iel < nels; ++iel)
       {
         PosType pos = els.R[iel] + sqrttau * delta[iel];
-        ;
-        spo.evaluate_vgh(els.R[iel]);
-        spo_ref.evaluate_vgh(els.R[iel]);
+        spo.evaluate_vgh(pos);
+        spo_ref.evaluate_vgh(pos);
         // accumulate error
         for (int ib = 0; ib < spo.nBlocks; ib++)
           for (int n = 0; n < spo.nSplinesPerBlock; n++)
