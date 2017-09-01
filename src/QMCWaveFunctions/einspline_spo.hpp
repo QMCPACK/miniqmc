@@ -75,19 +75,19 @@ struct einspline_spo
 
   /** copy constructor
    * @param in einspline_spo
-   * @param ncrews number of crews of a team
-   * @param crewID id of this crew in a team
+   * @param team_size number of members in a team
+   * @param member_id id of this member in a team
    *
    * Create a view of the big object. A simple blocking & padding  method.
    */
-  einspline_spo(einspline_spo &in, int ncrews, int crewID)
+  einspline_spo(einspline_spo &in, int team_size, int member_id)
       : Owner(false), Lattice(in.Lattice)
   {
     nSplines         = in.nSplines;
     nSplinesPerBlock = in.nSplinesPerBlock;
-    nBlocks          = (in.nBlocks + ncrews - 1) / ncrews;
-    firstBlock       = nBlocks * crewID;
-    lastBlock        = std::min(in.nBlocks, nBlocks * (crewID + 1));
+    nBlocks          = (in.nBlocks + team_size - 1) / team_size;
+    firstBlock       = nBlocks * member_id;
+    lastBlock        = std::min(in.nBlocks, nBlocks * (member_id + 1));
     nBlocks          = lastBlock - firstBlock;
     einsplines.resize(nBlocks);
     for (int i = 0, t = firstBlock; i < nBlocks; ++i, ++t)
@@ -124,7 +124,6 @@ struct einspline_spo
       psi.resize(nBlocks);
       grad.resize(nBlocks);
       hess.resize(nBlocks);
-#pragma omp parallel for
       for (int i = 0; i < nBlocks; ++i)
       {
         psi[i]  = new vContainer_type(nSplinesPerBlock);
