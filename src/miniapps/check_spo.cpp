@@ -33,6 +33,7 @@ using namespace qmcplusplus;
 int main(int argc, char **argv)
 {
 
+  Kokkos::initialize(argc,argv);
   OhmmsInfo("check_spo");
 
   // clang-format off
@@ -92,8 +93,6 @@ int main(int argc, char **argv)
 
   int nptcl             = 0;
   int nknots_copy       = 0;
-  double t0             = 0.0;
-  OHMMS_PRECISION ratio = 0.0;
 
   using spo_type =
       einspline_spo<OHMMS_PRECISION, MultiBspline<OHMMS_PRECISION>>;
@@ -123,26 +122,37 @@ int main(int argc, char **argv)
     spo_ref_main.Lattice.set(lattice_b);
   }
 
-  double nspheremoves = 0;
-  double dNumVGHCalls = 0;
+  double* t0_p             = new double[omp_get_max_threads()];
+  OHMMS_PRECISION* ratio_p = new OHMMS_PRECISION[omp_get_max_threads()];
+  double* nspheremoves_p = new double[omp_get_max_threads()];
+  double* dNumVGHCalls_p = new double[omp_get_max_threads()];
 
-  double evalV_v_err   = 0.0;
-  double evalVGH_v_err = 0.0;
-  double evalVGH_g_err = 0.0;
-  double evalVGH_h_err = 0.0;
+  double* evalV_v_err_p   = new double[omp_get_max_threads()];
+  double* evalVGH_v_err_p = new double[omp_get_max_threads()];
+  double* evalVGH_g_err_p = new double[omp_get_max_threads()];
+  double* evalVGH_h_err_p = new double[omp_get_max_threads()];
+
 
 // clang-format off
-  #pragma omp parallel reduction(+:t0,ratio,nspheremoves,dNumVGHCalls) \
-   reduction(+:evalV_v_err,evalVGH_v_err,evalVGH_g_err,evalVGH_h_err)
+//  #pragma omp parallel reduction(+:t0,ratio,nspheremoves,dNumVGHCalls) \
+//   reduction(+:evalV_v_err,evalVGH_v_err,evalVGH_g_err,evalVGH_h_err)
   // clang-format on
+  auto main_function = [&] (int partition_id, int num_partitions)
   {
-    const int np     = omp_get_num_threads();
-    const int ip     = omp_get_thread_num();
-    const int teamID = ip / ncrews;
-    const int crewID = ip % ncrews;
+    double t0             = 0.0;
+    OHMMS_PRECISION ratio = 0.0;
+    double nspheremoves = 0;
+    double dNumVGHCalls = 0;
+
+    double evalV_v_err   = 0.0;
+    double evalVGH_v_err = 0.0;
+    double evalVGH_g_err = 0.0;
+    double evalVGH_h_err = 0.0;
+
+    const int teamID = partition_id; // Walker ID
 
     // create generator within the thread
-    RandomGenerator<RealType> random_th(MakeSeed(teamID, np));
+    RandomGenerator<RealType> random_th(MakeSeed(teamID, num_partitions));
 
     ParticleSet ions, els;
     const OHMMS_PRECISION scale = 1.0;
@@ -153,7 +163,7 @@ int main(int argc, char **argv)
     const int nels  = count_electrons(ions, 1);
     const int nels3 = 3 * nels;
 
-#pragma omp master
+//#pragma omp master
     nptcl = nels;
 
     { // create up/down electrons
@@ -175,8 +185,8 @@ int main(int argc, char **argv)
     // create pseudopp
     NonLocalPP<OHMMS_PRECISION> ecp(random_th);
     // create spo per thread
-    spo_type spo(spo_main, ncrews, crewID);
-    spo_ref_type spo_ref(spo_ref_main, ncrews, crewID);
+    spo_type spo(spo_main, 1, 0);
+    spo_ref_type spo_ref(spo_ref_main, 1, 0);
 
     // use teams
     // if(ncrews>1 && ncrews>=nTiles ) spo.set_range(ncrews,ip%ncrews);
@@ -189,7 +199,7 @@ int main(int argc, char **argv)
     ParticlePos_t delta(nels);
     ParticlePos_t rOnSphere(nknots);
 
-#pragma omp master
+//#pragma omp master
     nknots_copy = nknots;
 
     RealType sqrttau = 2.0;
@@ -280,8 +290,28 @@ int main(int argc, char **argv)
     nspheremoves += RealType(my_vals) / RealType(nsteps);
     dNumVGHCalls += nels;
 
-  } // end of omp parallel
+    t0_p[partition_id] = t0;
+    ratio_p[partition_id] = ratio;
+    nspheremoves_p[partition_id] = nspheremoves;
+    dNumVGHCalls_p[partition_id] = dNumVGHCalls;
 
+    evalV_v_err_p[partition_id] = evalV_v_err;
+    evalVGH_v_err_p[partition_id] = evalVGH_v_err;
+    evalVGH_g_err_p[partition_id] = evalVGH_g_err;
+    evalVGH_h_err_p[partition_id] = evalVGH_h_err;
+  }; // end of omp parallel
+
+  double t0             = 0.0;
+  OHMMS_PRECISION ratio = 0.0;
+  double nspheremoves = 0;
+  double dNumVGHCalls = 0;
+
+  double evalV_v_err   = 0.0;
+  double evalVGH_v_err = 0.0;
+  double evalVGH_g_err = 0.0;
+  double evalVGH_h_err = 0.0;
+
+  for(int i=0; i<)
   evalV_v_err /= nspheremoves;
   evalVGH_v_err /= dNumVGHCalls;
   evalVGH_g_err /= dNumVGHCalls;
@@ -318,5 +348,6 @@ int main(int argc, char **argv)
   }
   if (!fail) cout << "All checking pass!" << std::endl;
 
+  Kokkos::finalize();
   return 0;
 }

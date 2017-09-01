@@ -266,17 +266,14 @@ int main(int argc, char **argv)
     {
        printf("Partition: %i %i %i %i\n",num_partitions,partition_id,omp_get_num_threads(),omp_get_thread_num());
     }
-    const int np = num_partitions;//omp_get_num_threads();
-    const int ip = partition_id;//omp_get_thread_num();
 
-    const int teamID = ip / ncrews;
-    const int crewID = ip % ncrews;
+    const int teamID = partition_id; // Walker ID
 
     // create spo per thread
-    spo_type spo(spo_main, ncrews, crewID);
+    spo_type spo(spo_main, 1, 0);
 
     // create generator within the thread
-    RandomGenerator<RealType> random_th(myPrimes[ip]);
+    RandomGenerator<RealType> random_th(myPrimes[partition_id]);
 
     ions.Lattice.BoxBConds = 1;
     OHMMS_PRECISION scale  = 1.0;
@@ -460,8 +457,9 @@ int main(int argc, char **argv)
   }; // end of main_master
 
 #if defined(KOKKOS_ENABLE_OPENMP) && !defined(KOKKOS_ENABLE_CUDA)
+  int num_threads = Kokkos::OpenMP::thread_pool_size();
   printf("Partitioning\n");
-  Kokkos::OpenMP::partition_master(main_function,4,6);
+  Kokkos::OpenMP::partition_master(main_function,num_threads/ncrews,ncrews);
 #else
   main_function(0,1);
 #endif
