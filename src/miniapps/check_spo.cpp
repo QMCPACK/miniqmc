@@ -54,9 +54,9 @@ int main(int argc, char **argv)
   int iseed   = 11;
   int nx = 48, ny = 48, nz = 60;
   // thread blocking
-  // int ncrews=1; //default is 1
+  // int team_size=1; //default is 1
   int tileSize = -1;
-  int ncrews   = 1;
+  int team_size   = 1;
 
   char *g_opt_arg;
   int opt;
@@ -74,8 +74,8 @@ int main(int argc, char **argv)
     case 's': // random seed
       iseed = atoi(optarg);
       break;
-    case 'c': // number of crews per team
-      ncrews = atoi(optarg);
+    case 'c': // number of members per team
+      team_size = atoi(optarg);
       break;
     case 'a': tileSize = atoi(optarg); break;
     }
@@ -137,11 +137,11 @@ int main(int argc, char **argv)
   {
     const int np     = omp_get_num_threads();
     const int ip     = omp_get_thread_num();
-    const int teamID = ip / ncrews;
-    const int crewID = ip % ncrews;
+    const int team_id = ip / team_size;
+    const int member_id = ip % team_size;
 
     // create generator within the thread
-    RandomGenerator<RealType> random_th(MakeSeed(teamID, np));
+    RandomGenerator<RealType> random_th(MakeSeed(team_id, np));
 
     ParticleSet ions, els;
     const OHMMS_PRECISION scale = 1.0;
@@ -174,11 +174,11 @@ int main(int argc, char **argv)
     // create pseudopp
     NonLocalPP<OHMMS_PRECISION> ecp(random_th);
     // create spo per thread
-    spo_type spo(spo_main, ncrews, crewID);
-    spo_ref_type spo_ref(spo_ref_main, ncrews, crewID);
+    spo_type spo(spo_main, team_size, member_id);
+    spo_ref_type spo_ref(spo_ref_main, team_size, member_id);
 
     // use teams
-    // if(ncrews>1 && ncrews>=nTiles ) spo.set_range(ncrews,ip%ncrews);
+    // if(team_size>1 && team_size>=nTiles ) spo.set_range(team_size,ip%team_size);
 
     // this is the cutoff from the non-local PP
     const RealType Rmax(1.7);
