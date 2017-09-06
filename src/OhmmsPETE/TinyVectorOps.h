@@ -16,6 +16,7 @@
 #ifndef OHMMS_TINYVECTOR_OPERATORS_H
 #define OHMMS_TINYVECTOR_OPERATORS_H
 #include <complex>
+#include <Kokkos_Core.hpp>
 
 namespace qmcplusplus
 {
@@ -45,7 +46,7 @@ struct BinaryReturn<std::complex<T1>, T1, OpMultiply >
 template<class T1, class T2, class OP, unsigned D>
 struct OTAssign< TinyVector<T1,D> , TinyVector<T2,D> , OP >
 {
-  inline static void
+  KOKKOS_INLINE_FUNCTION static void
   apply( TinyVector<T1,D>& lhs, const TinyVector<T2,D>& rhs, OP op)
   {
     for (unsigned d=0; d<D; ++d)
@@ -56,7 +57,7 @@ struct OTAssign< TinyVector<T1,D> , TinyVector<T2,D> , OP >
 template<class T1, class T2, class OP, unsigned D>
 struct OTAssign< TinyVector<T1,D> , T2 , OP >
 {
-  inline static void
+  KOKKOS_INLINE_FUNCTION static void
   apply( TinyVector<T1,D>& lhs, const T2& rhs, OP op )
   {
     for (unsigned d=0; d<D; ++d)
@@ -71,7 +72,7 @@ struct OTAssign< TinyVector<T1,D> , T2 , OP >
 template<class T1, class T2, class OP>
 struct OTAssign< TinyVector<T1,1> , TinyVector<T2,1> , OP >
 {
-  inline static void
+  KOKKOS_INLINE_FUNCTION static void
   apply( TinyVector<T1,1>& lhs, const TinyVector<T2,1>& rhs, OP op)
   {
     op(lhs[0] , rhs[0] );
@@ -81,7 +82,7 @@ struct OTAssign< TinyVector<T1,1> , TinyVector<T2,1> , OP >
 template<class T1, class T2, class OP>
 struct OTAssign< TinyVector<T1,1> , T2 , OP >
 {
-  inline static void
+  KOKKOS_INLINE_FUNCTION static void
   apply( TinyVector<T1,1>& lhs, const T2& rhs, OP op )
   {
     op(lhs[0] , rhs );
@@ -95,7 +96,7 @@ struct OTAssign< TinyVector<T1,1> , T2 , OP >
 template<class T1, class T2, class OP>
 struct OTAssign< TinyVector<T1,2> , TinyVector<T2,2> , OP >
 {
-  inline static void
+  KOKKOS_INLINE_FUNCTION static void
   apply( TinyVector<T1,2>& lhs, const TinyVector<T2,2>& rhs, OP op)
   {
     op(lhs[0] , rhs[0] );
@@ -106,7 +107,7 @@ struct OTAssign< TinyVector<T1,2> , TinyVector<T2,2> , OP >
 template<class T1, class T2, class OP>
 struct OTAssign< TinyVector<T1,2> , T2 , OP >
 {
-  inline static void
+  KOKKOS_INLINE_FUNCTION static void
   apply( TinyVector<T1,2>& lhs, const T2& rhs, OP op )
   {
     op(lhs[0] , rhs);
@@ -121,7 +122,7 @@ struct OTAssign< TinyVector<T1,2> , T2 , OP >
 template<class T1, class T2, class OP>
 struct OTAssign< TinyVector<T1,3> , TinyVector<T2,3> , OP >
 {
-  inline static void
+  KOKKOS_INLINE_FUNCTION static void
   apply( TinyVector<T1,3>& lhs, const TinyVector<T2,3>& rhs, OP op)
   {
     op(lhs[0] , rhs[0] );
@@ -133,7 +134,7 @@ struct OTAssign< TinyVector<T1,3> , TinyVector<T2,3> , OP >
 template<class T1, class T2, class OP>
 struct OTAssign< TinyVector<T1,3> , TinyVector<std::complex<T2>,3> , OP >
 {
-  inline static void
+  KOKKOS_INLINE_FUNCTION static void
   apply( TinyVector<T1,3>& lhs, const TinyVector<std::complex<T2>,3>& rhs, OP op)
   {
     op(lhs[0] , rhs[0].real() );
@@ -145,7 +146,7 @@ struct OTAssign< TinyVector<T1,3> , TinyVector<std::complex<T2>,3> , OP >
 template<class T1, class T2, class OP>
 struct OTAssign< TinyVector<std::complex<T1>,3> , TinyVector<std::complex<T2>,3> , OP >
 {
-  inline static void
+  KOKKOS_INLINE_FUNCTION static void
   apply( TinyVector<std::complex<T1>,3>& lhs, const TinyVector<std::complex<T2>,3>& rhs, OP op)
   {
     op(lhs[0] , rhs[0] );
@@ -157,7 +158,7 @@ struct OTAssign< TinyVector<std::complex<T1>,3> , TinyVector<std::complex<T2>,3>
 template<class T1, class T2, class OP>
 struct OTAssign< TinyVector<T1,3> , T2 , OP >
 {
-  inline static void
+  KOKKOS_INLINE_FUNCTION static void
   apply( TinyVector<T1,3>& lhs, const T2& rhs, OP op )
   {
     op(lhs[0] , rhs );
@@ -181,7 +182,7 @@ template<class T1, class T2, class OP, unsigned D>
 struct OTBinary< TinyVector<T1,D> , TinyVector<T2,D> , OP >
 {
   typedef typename BinaryReturn<T1,T2,OP>::Type_t Type_t;
-  inline static TinyVector<Type_t,D>
+  KOKKOS_INLINE_FUNCTION static TinyVector<Type_t,D>
   apply(const TinyVector<T1,D>& lhs, const TinyVector<T2,D>& rhs, OP op)
   {
     TinyVector<Type_t,D> ret;
@@ -195,7 +196,7 @@ template<class T1, class T2, class OP, unsigned D>
 struct OTBinary< TinyVector<T1,D> , T2 , OP >
 {
   typedef typename BinaryReturn<T1,T2,OP>::Type_t Type_t;
-  inline static TinyVector<Type_t,D>
+  KOKKOS_INLINE_FUNCTION static TinyVector<Type_t,D>
   apply(const TinyVector<T1,D>& lhs, const T2& rhs, OP op)
   {
     TinyVector<Type_t,D> ret;
@@ -209,7 +210,7 @@ template<class T1, class T2, class OP, unsigned D>
 struct OTBinary< T1, TinyVector<T2,D> , OP >
 {
   typedef typename BinaryReturn<T1,T2,OP>::Type_t Type_t;
-  inline static TinyVector<Type_t,D>
+  KOKKOS_INLINE_FUNCTION static TinyVector<Type_t,D>
   apply(const T1& lhs, const TinyVector<T2,D>& rhs, OP op)
   {
     TinyVector<Type_t,D> ret;
@@ -227,7 +228,7 @@ template<class T1, class T2, class OP>
 struct OTBinary< TinyVector<T1,1> , TinyVector<T2,1> , OP >
 {
   typedef typename BinaryReturn<T1,T2,OP>::Type_t Type_t;
-  inline static TinyVector<Type_t,1>
+  KOKKOS_INLINE_FUNCTION static TinyVector<Type_t,1>
   apply(const TinyVector<T1,1>& lhs, const TinyVector<T2,1>& rhs, OP op)
   {
     return TinyVector<Type_t,1>( op(lhs[0], rhs[0] ) );
@@ -238,7 +239,7 @@ template<class T1, class T2, class OP>
 struct OTBinary< TinyVector<T1,1> , T2 , OP >
 {
   typedef typename BinaryReturn<T1,T2,OP>::Type_t Type_t;
-  inline static TinyVector<Type_t,1>
+  KOKKOS_INLINE_FUNCTION static TinyVector<Type_t,1>
   apply(const TinyVector<T1,1>& lhs, const T2& rhs, OP op)
   {
     return TinyVector<Type_t,1>( op(lhs[0], rhs ) );
@@ -249,7 +250,7 @@ template<class T1, class T2, class OP>
 struct OTBinary< T1, TinyVector<T2,1> , OP >
 {
   typedef typename BinaryReturn<T1,T2,OP>::Type_t Type_t;
-  inline static TinyVector<Type_t,1>
+  KOKKOS_INLINE_FUNCTION static TinyVector<Type_t,1>
   apply(const T1& lhs, const TinyVector<T2,1>& rhs, OP op)
   {
     return TinyVector<Type_t,1>( op(lhs, rhs[0] ) );
@@ -264,7 +265,7 @@ template<class T1, class T2, class OP>
 struct OTBinary< TinyVector<T1,2> , TinyVector<T2,2> , OP >
 {
   typedef typename BinaryReturn<T1,T2,OP>::Type_t Type_t;
-  inline static TinyVector<Type_t,2>
+  KOKKOS_INLINE_FUNCTION static TinyVector<Type_t,2>
   apply(const TinyVector<T1,2>& lhs, const TinyVector<T2,2>& rhs, OP op)
   {
     return TinyVector<Type_t,2>( op(lhs[0], rhs[0]),op(lhs[1], rhs[1] ) );
@@ -275,7 +276,7 @@ template<class T1, class T2, class OP>
 struct OTBinary< TinyVector<T1,2> , T2 , OP >
 {
   typedef typename BinaryReturn<T1,T2,OP>::Type_t Type_t;
-  inline static TinyVector<Type_t,2>
+  KOKKOS_INLINE_FUNCTION static TinyVector<Type_t,2>
   apply(const TinyVector<T1,2>& lhs, const T2& rhs, OP op)
   {
     return TinyVector<Type_t,2>( op(lhs[0], rhs ) ,op(lhs[1], rhs));
@@ -286,7 +287,7 @@ template<class T1, class T2, class OP>
 struct OTBinary< T1, TinyVector<T2,2> , OP >
 {
   typedef typename BinaryReturn<T1,T2,OP>::Type_t Type_t;
-  inline static TinyVector<Type_t,2>
+  KOKKOS_INLINE_FUNCTION static TinyVector<Type_t,2>
   apply(const T1& lhs, const TinyVector<T2,2>& rhs, OP op)
   {
     return TinyVector<Type_t,2>( op(lhs, rhs[0] ) ,op(lhs, rhs[1] ) );
@@ -301,7 +302,7 @@ template<class T1, class T2, class OP>
 struct OTBinary< TinyVector<T1,3> , TinyVector<T2,3> , OP >
 {
   typedef typename BinaryReturn<T1,T2,OP>::Type_t Type_t;
-  inline static TinyVector<Type_t,3>
+  KOKKOS_INLINE_FUNCTION static TinyVector<Type_t,3>
   apply(const TinyVector<T1,3>& lhs, const TinyVector<T2,3>& rhs, OP op)
   {
     return TinyVector<Type_t,3>( op(lhs[0], rhs[0] ) ,
@@ -314,7 +315,7 @@ template<class T1, class T2, class OP>
 struct OTBinary< TinyVector<T1,3> , T2 , OP >
 {
   typedef typename BinaryReturn<T1,T2,OP>::Type_t Type_t;
-  inline static TinyVector<Type_t,3>
+  KOKKOS_INLINE_FUNCTION static TinyVector<Type_t,3>
   apply(const TinyVector<T1,3>& lhs, const T2& rhs, OP op)
   {
     return TinyVector<Type_t,3>( op(lhs[0], rhs ) ,
@@ -327,7 +328,7 @@ template<class T1, class T2, class OP>
 struct OTBinary< T1, TinyVector<T2,3> , OP >
 {
   typedef typename BinaryReturn<T1,T2,OP>::Type_t Type_t;
-  inline static TinyVector<Type_t,3>
+  KOKKOS_INLINE_FUNCTION static TinyVector<Type_t,3>
   apply(const T1& lhs, const TinyVector<T2,3>& rhs, OP op)
   {
     return TinyVector<Type_t,3>( op( lhs, rhs[0] ) ,
@@ -346,7 +347,7 @@ template<class T1, class T2, unsigned D>
 struct OTDot< TinyVector<T1,D> , TinyVector<T2,D> >
 {
   typedef typename BinaryReturn<T1,T2,OpMultiply>::Type_t Type_t;
-  inline static Type_t
+  KOKKOS_INLINE_FUNCTION static Type_t
   apply(const TinyVector<T1,D>& lhs, const TinyVector<T2,D>& rhs)
   {
     Type_t res = lhs[0]*rhs[0];
@@ -360,7 +361,7 @@ template<class T1, class T2>
 struct OTDot< TinyVector<T1,1> , TinyVector<T2,1> >
 {
   typedef typename BinaryReturn<T1,T2,OpMultiply>::Type_t Type_t;
-  inline static Type_t
+  KOKKOS_INLINE_FUNCTION static Type_t
   apply(const TinyVector<T1,1>& lhs, const TinyVector<T2,1>& rhs)
   {
     return lhs[0]*rhs[0];
@@ -371,7 +372,7 @@ template<class T1, class T2>
 struct OTDot< TinyVector<T1,2> , TinyVector<T2,2> >
 {
   typedef typename BinaryReturn<T1,T2,OpMultiply>::Type_t Type_t;
-  inline static Type_t
+  KOKKOS_INLINE_FUNCTION static Type_t
   apply(const TinyVector<T1,2>& lhs, const TinyVector<T2,2>& rhs)
   {
     return lhs[0]*rhs[0] + lhs[1]*rhs[1];
@@ -382,7 +383,7 @@ template<class T1, class T2>
 struct OTDot< TinyVector<T1,3> , TinyVector<T2,3> >
 {
   typedef typename BinaryReturn<T1,T2,OpMultiply>::Type_t Type_t;
-  inline static Type_t
+  KOKKOS_INLINE_FUNCTION static Type_t
   apply(const TinyVector<T1,3>& lhs, const TinyVector<T2,3>& rhs)
   {
     return lhs[0]*rhs[0] + lhs[1]*rhs[1] + lhs[2]*rhs[2];
@@ -393,7 +394,7 @@ template<class T1, class T2>
 struct OTDot< TinyVector<T1,4> , TinyVector<T2,4> >
 {
   typedef typename BinaryReturn<T1,T2,OpMultiply>::Type_t Type_t;
-  inline static Type_t
+  KOKKOS_INLINE_FUNCTION static Type_t
   apply(const TinyVector<T1,4>& lhs, const TinyVector<T2,4>& rhs)
   {
     return lhs[0]*rhs[0] + lhs[1]*rhs[1] + lhs[2]*rhs[2] + lhs[3]*rhs[3];
@@ -405,7 +406,7 @@ template<class T1>
 struct OTDot< TinyVector<T1,3> , TinyVector<std::complex<T1>,3> >
 {
   typedef T1 Type_t;
-  inline static Type_t
+  KOKKOS_INLINE_FUNCTION static Type_t
   apply(const TinyVector<T1,3>& lhs, const TinyVector<std::complex<T1>,3>& rhs)
   {
     return lhs[0]*rhs[0].real() + lhs[1]*rhs[1].real() + lhs[2]*rhs[2].real();
@@ -417,7 +418,7 @@ template<class T1, class T2>
 struct OTDot< TinyVector<std::complex<T1>,3> , TinyVector<T2,3> >
 {
   typedef T1 Type_t;
-  inline static Type_t
+  KOKKOS_INLINE_FUNCTION static Type_t
   apply(const TinyVector<std::complex<T1>,3>& lhs, const TinyVector<T2,3>& rhs)
   {
     return lhs[0].real()*rhs[0] + lhs[1].real()*rhs[1] + lhs[2].real()*rhs[2];
@@ -429,7 +430,7 @@ template<class T1, class T2>
 struct OTDot< TinyVector<std::complex<T1>,3> , TinyVector<std::complex<T2>,3> >
 {
   typedef typename BinaryReturn<std::complex<T1>, std::complex<T2>, OpMultiply>::Type_t Type_t;
-  inline static Type_t
+  KOKKOS_INLINE_FUNCTION static Type_t
   apply(const TinyVector<std::complex<T1>,3>& lhs, const TinyVector<std::complex<T2>,3>& rhs)
   {
     return std::complex<T1>(lhs[0].real()*rhs[0].real() - lhs[0].imag()*rhs[0].imag() + 
@@ -459,7 +460,7 @@ template<class T1, class T2, unsigned D>
 struct OTCross< TinyVector<T1,D> , TinyVector<T2,D> >
 {
   typedef typename BinaryReturn<T1,T2,OpMultiply>::Type_t Type_t;
-  inline static TinyVector<Type_t,D>
+  KOKKOS_INLINE_FUNCTION static TinyVector<Type_t,D>
   apply(const TinyVector<T1,D>& a, const TinyVector<T2,D>& b)
   {
     TinyVector<Type_t,D> bogusCross(-99999);
@@ -471,7 +472,7 @@ template<class T1, class T2>
 struct OTCross< TinyVector<T1,3> , TinyVector<T2,3> >
 {
   typedef typename BinaryReturn<T1,T2,OpMultiply>::Type_t Type_t;
-  inline static TinyVector<Type_t,3>
+  KOKKOS_INLINE_FUNCTION static TinyVector<Type_t,3>
   apply(const TinyVector<T1,3>& a, const TinyVector<T2,3>& b)
   {
     TinyVector<Type_t,3> cross;

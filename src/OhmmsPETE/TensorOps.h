@@ -24,7 +24,7 @@ namespace qmcplusplus
 template <class T1, class T2, class OP, unsigned D>
 struct OTAssign<Tensor<T1, D>, Tensor<T2, D>, OP>
 {
-  inline static void apply(Tensor<T1, D> &lhs, const Tensor<T2, D> &rhs, OP op)
+  KOKKOS_INLINE_FUNCTION static void apply(Tensor<T1, D> &lhs, const Tensor<T2, D> &rhs, OP op)
   {
     for (unsigned d = 0; d < D * D; ++d) op(lhs[d], rhs[d]);
   }
@@ -33,7 +33,7 @@ struct OTAssign<Tensor<T1, D>, Tensor<T2, D>, OP>
 template <class T1, class T2, class OP, unsigned D>
 struct OTAssign<Tensor<T1, D>, T2, OP>
 {
-  inline static void apply(Tensor<T1, D> &lhs, T2 rhs, OP op)
+  KOKKOS_INLINE_FUNCTION static void apply(Tensor<T1, D> &lhs, T2 rhs, OP op)
   {
     for (unsigned d = 0; d < D * D; ++d) op(lhs[d], rhs);
   }
@@ -48,7 +48,7 @@ struct OTAssign<Tensor<T1, D>, T2, OP>
 template <class T1, class T2, class OP>
 struct OTAssign<Tensor<T1, 1>, Tensor<T2, 1>, OP>
 {
-  inline static void apply(Tensor<T1, 1> &lhs, const Tensor<T2, 1> &rhs, OP op)
+  KOKKOS_INLINE_FUNCTION static void apply(Tensor<T1, 1> &lhs, const Tensor<T2, 1> &rhs, OP op)
   {
     op(lhs[0], rhs[0]);
   }
@@ -56,7 +56,7 @@ struct OTAssign<Tensor<T1, 1>, Tensor<T2, 1>, OP>
 
 template <class T1, class T2, class OP> struct OTAssign<Tensor<T1, 1>, T2, OP>
 {
-  inline static void apply(Tensor<T1, 1> &lhs, T2 rhs, OP op)
+  KOKKOS_INLINE_FUNCTION static void apply(Tensor<T1, 1> &lhs, T2 rhs, OP op)
   {
     op(lhs[0], rhs);
   }
@@ -71,7 +71,7 @@ template <class T1, class T2, class OP> struct OTAssign<Tensor<T1, 1>, T2, OP>
 template <class T1, class T2, class OP>
 struct OTAssign<Tensor<T1, 2>, Tensor<T2, 2>, OP>
 {
-  inline static void apply(Tensor<T1, 2> &lhs, const Tensor<T2, 2> &rhs, OP op)
+  KOKKOS_INLINE_FUNCTION static void apply(Tensor<T1, 2> &lhs, const Tensor<T2, 2> &rhs, OP op)
   {
     op(lhs[0], rhs[0]);
     op(lhs[1], rhs[1]);
@@ -82,7 +82,7 @@ struct OTAssign<Tensor<T1, 2>, Tensor<T2, 2>, OP>
 
 template <class T1, class T2, class OP> struct OTAssign<Tensor<T1, 2>, T2, OP>
 {
-  inline static void apply(Tensor<T1, 2> &lhs, T2 rhs, OP op)
+  KOKKOS_INLINE_FUNCTION static void apply(Tensor<T1, 2> &lhs, T2 rhs, OP op)
   {
     op(lhs[0], rhs);
     op(lhs[1], rhs);
@@ -100,7 +100,7 @@ template <class T1, class T2, class OP> struct OTAssign<Tensor<T1, 2>, T2, OP>
 template <class T1, class T2, class OP>
 struct OTAssign<Tensor<T1, 3>, Tensor<T2, 3>, OP>
 {
-  inline static void apply(Tensor<T1, 3> &lhs, const Tensor<T2, 3> &rhs, OP op)
+  KOKKOS_INLINE_FUNCTION static void apply(Tensor<T1, 3> &lhs, const Tensor<T2, 3> &rhs, OP op)
   {
     op(lhs[0], rhs[0]);
     op(lhs[1], rhs[1]);
@@ -116,7 +116,7 @@ struct OTAssign<Tensor<T1, 3>, Tensor<T2, 3>, OP>
 
 template <class T1, class T2, class OP> struct OTAssign<Tensor<T1, 3>, T2, OP>
 {
-  inline static void apply(Tensor<T1, 3> &lhs, T2 rhs, OP op)
+  KOKKOS_INLINE_FUNCTION static void apply(Tensor<T1, 3> &lhs, T2 rhs, OP op)
   {
     op(lhs[0], rhs);
     op(lhs[1], rhs);
@@ -140,7 +140,7 @@ template <class T1, class T2, class OP, unsigned D>
 struct OTBinary<Tensor<T1, D>, Tensor<T2, D>, OP>
 {
   typedef typename BinaryReturn<T1, T2, OP>::Type_t Type_t;
-  inline static Tensor<Type_t, D> apply(const Tensor<T1, D> &lhs,
+  KOKKOS_INLINE_FUNCTION static Tensor<Type_t, D> apply(const Tensor<T1, D> &lhs,
                                         const Tensor<T2, D> &rhs, OP op)
   {
     Tensor<Type_t, D> ret;
@@ -153,7 +153,7 @@ template <class T1, class T2, class OP, unsigned D>
 struct OTBinary<Tensor<T1, D>, T2, OP>
 {
   typedef typename BinaryReturn<T1, T2, OP>::Type_t Type_t;
-  inline static Tensor<Type_t, D> apply(const Tensor<T1, D> &lhs, T2 rhs, OP op)
+  KOKKOS_INLINE_FUNCTION static Tensor<Type_t, D> apply(const Tensor<T1, D> &lhs, T2 rhs, OP op)
   {
     Tensor<Type_t, D> ret;
     for (unsigned d = 0; d < D * D; ++d) ret[d] = op(lhs[d], rhs);
@@ -165,7 +165,7 @@ template <class T1, class T2, class OP, unsigned D>
 struct OTBinary<T1, Tensor<T2, D>, OP>
 {
   typedef typename BinaryReturn<T1, T2, OP>::Type_t Type_t;
-  inline static Tensor<Type_t, D> apply(T1 lhs, const Tensor<T2, D> &rhs, OP op)
+  KOKKOS_INLINE_FUNCTION static Tensor<Type_t, D> apply(T1 lhs, const Tensor<T2, D> &rhs, OP op)
   {
     Tensor<Type_t, D> ret;
     for (unsigned d = 0; d < D * D; ++d) ret[d] = op(lhs, rhs[d]);
@@ -183,7 +183,7 @@ template <class T1, class T2, class OP>
 struct OTBinary<Tensor<T1, 1>, Tensor<T2, 1>, OP>
 {
   typedef typename BinaryReturn<T1, T2, OP>::Type_t Type_t;
-  inline static Tensor<Type_t, 1> apply(const Tensor<T1, 1> &lhs,
+  KOKKOS_INLINE_FUNCTION static Tensor<Type_t, 1> apply(const Tensor<T1, 1> &lhs,
                                         const Tensor<T2, 1> &rhs, OP op)
   {
     return Tensor<Type_t, 1>(op(lhs[0], rhs[0]));
@@ -193,7 +193,7 @@ struct OTBinary<Tensor<T1, 1>, Tensor<T2, 1>, OP>
 template <class T1, class T2, class OP> struct OTBinary<Tensor<T1, 1>, T2, OP>
 {
   typedef typename BinaryReturn<T1, T2, OP>::Type_t Type_t;
-  inline static Tensor<Type_t, 1> apply(const Tensor<T1, 1> &lhs, T2 rhs, OP op)
+  KOKKOS_INLINE_FUNCTION static Tensor<Type_t, 1> apply(const Tensor<T1, 1> &lhs, T2 rhs, OP op)
   {
     return Tensor<Type_t, 1>(op(lhs[0], rhs));
   }
@@ -202,7 +202,7 @@ template <class T1, class T2, class OP> struct OTBinary<Tensor<T1, 1>, T2, OP>
 template <class T1, class T2, class OP> struct OTBinary<T1, Tensor<T2, 1>, OP>
 {
   typedef typename BinaryReturn<T1, T2, OP>::Type_t Type_t;
-  inline static Tensor<Type_t, 1> apply(T1 lhs, const Tensor<T2, 1> &rhs, OP op)
+  KOKKOS_INLINE_FUNCTION static Tensor<Type_t, 1> apply(T1 lhs, const Tensor<T2, 1> &rhs, OP op)
   {
     return Tensor<Type_t, 1>(op(lhs, rhs[0]));
   }
@@ -218,7 +218,7 @@ template <class T1, class T2, class OP>
 struct OTBinary<Tensor<T1, 2>, Tensor<T2, 2>, OP>
 {
   typedef typename BinaryReturn<T1, T2, OP>::Type_t Type_t;
-  inline static Tensor<Type_t, 2> apply(const Tensor<T1, 2> &lhs,
+  KOKKOS_INLINE_FUNCTION static Tensor<Type_t, 2> apply(const Tensor<T1, 2> &lhs,
                                         const Tensor<T2, 2> &rhs, OP op)
   {
     return Tensor<Type_t, 2>(op(lhs[0], rhs[0]), op(lhs[1], rhs[1]),
@@ -229,7 +229,7 @@ struct OTBinary<Tensor<T1, 2>, Tensor<T2, 2>, OP>
 template <class T1, class T2, class OP> struct OTBinary<Tensor<T1, 2>, T2, OP>
 {
   typedef typename BinaryReturn<T1, T2, OP>::Type_t Type_t;
-  inline static Tensor<Type_t, 2> apply(const Tensor<T1, 2> &lhs, T2 rhs, OP op)
+  KOKKOS_INLINE_FUNCTION static Tensor<Type_t, 2> apply(const Tensor<T1, 2> &lhs, T2 rhs, OP op)
   {
     return Tensor<Type_t, 2>(op(lhs[0], rhs), op(lhs[1], rhs), op(lhs[2], rhs),
                              op(lhs[3], rhs));
@@ -239,7 +239,7 @@ template <class T1, class T2, class OP> struct OTBinary<Tensor<T1, 2>, T2, OP>
 template <class T1, class T2, class OP> struct OTBinary<T1, Tensor<T2, 2>, OP>
 {
   typedef typename BinaryReturn<T1, T2, OP>::Type_t Type_t;
-  inline static Tensor<Type_t, 2> apply(T1 lhs, const Tensor<T2, 2> &rhs, OP op)
+  KOKKOS_INLINE_FUNCTION static Tensor<Type_t, 2> apply(T1 lhs, const Tensor<T2, 2> &rhs, OP op)
   {
     return Tensor<Type_t, 2>(op(lhs, rhs[0]), op(lhs, rhs[1]), op(lhs, rhs[2]),
                              op(lhs, rhs[3]));
@@ -256,7 +256,7 @@ template <class T1, class T2, class OP>
 struct OTBinary<Tensor<T1, 3>, Tensor<T2, 3>, OP>
 {
   typedef typename BinaryReturn<T1, T2, OP>::Type_t Type_t;
-  inline static Tensor<Type_t, 3> apply(const Tensor<T1, 3> &lhs,
+  KOKKOS_INLINE_FUNCTION static Tensor<Type_t, 3> apply(const Tensor<T1, 3> &lhs,
                                         const Tensor<T2, 3> &rhs, OP op)
   {
     return Tensor<Type_t, 3>(
@@ -269,7 +269,7 @@ struct OTBinary<Tensor<T1, 3>, Tensor<T2, 3>, OP>
 template <class T1, class T2, class OP> struct OTBinary<Tensor<T1, 3>, T2, OP>
 {
   typedef typename BinaryReturn<T1, T2, OP>::Type_t Type_t;
-  inline static Tensor<Type_t, 3> apply(const Tensor<T1, 3> &lhs, T2 rhs, OP op)
+  KOKKOS_INLINE_FUNCTION static Tensor<Type_t, 3> apply(const Tensor<T1, 3> &lhs, T2 rhs, OP op)
   {
     return Tensor<Type_t, 3>(op(lhs[0], rhs), op(lhs[1], rhs), op(lhs[2], rhs),
                              op(lhs[3], rhs), op(lhs[4], rhs), op(lhs[5], rhs),
@@ -280,7 +280,7 @@ template <class T1, class T2, class OP> struct OTBinary<Tensor<T1, 3>, T2, OP>
 template <class T1, class T2, class OP> struct OTBinary<T1, Tensor<T2, 3>, OP>
 {
   typedef typename BinaryReturn<T1, T2, OP>::Type_t Type_t;
-  inline static Tensor<Type_t, 3> apply(T1 lhs, const Tensor<T2, 3> &rhs, OP op)
+  KOKKOS_INLINE_FUNCTION static Tensor<Type_t, 3> apply(T1 lhs, const Tensor<T2, 3> &rhs, OP op)
   {
     return Tensor<Type_t, 3>(op(lhs, rhs[0]), op(lhs, rhs[1]), op(lhs, rhs[2]),
                              op(lhs, rhs[3]), op(lhs, rhs[4]), op(lhs, rhs[5]),
@@ -294,7 +294,7 @@ template <class T1, class T2, class OP> struct OTBinary<T1, Tensor<T2, 3>, OP>
 //
 //////////////////////////////////////////////////////
 template <class T, unsigned D>
-inline typename Tensor<T, D>::Type_t det(const Tensor<T, D> &a)
+KOKKOS_INLINE_FUNCTION typename Tensor<T, D>::Type_t det(const Tensor<T, D> &a)
 {
   // to implement the general case here
   return 0;
@@ -304,7 +304,7 @@ inline typename Tensor<T, D>::Type_t det(const Tensor<T, D> &a)
 // specialized for D=1
 //////////////////////////////////////////////////////
 template <class T>
-inline typename Tensor<T, 1>::Type_t det(const Tensor<T, 1> &a)
+KOKKOS_INLINE_FUNCTION typename Tensor<T, 1>::Type_t det(const Tensor<T, 1> &a)
 {
   return a(0, 0);
 }
@@ -313,7 +313,7 @@ inline typename Tensor<T, 1>::Type_t det(const Tensor<T, 1> &a)
 // specialized for D=2
 //////////////////////////////////////////////////////
 template <class T>
-inline typename Tensor<T, 2>::Type_t det(const Tensor<T, 2> &a)
+KOKKOS_INLINE_FUNCTION typename Tensor<T, 2>::Type_t det(const Tensor<T, 2> &a)
 {
   return a(0, 0) * a(1, 1) - a(0, 1) * a(1, 0);
 }
@@ -322,7 +322,7 @@ inline typename Tensor<T, 2>::Type_t det(const Tensor<T, 2> &a)
 // specialized for D=3
 //////////////////////////////////////////////////////
 template <class T>
-inline typename Tensor<T, 3>::Type_t det(const Tensor<T, 3> &a)
+KOKKOS_INLINE_FUNCTION typename Tensor<T, 3>::Type_t det(const Tensor<T, 3> &a)
 {
   return a(0, 0) * (a(1, 1) * a(2, 2) - a(1, 2) * a(2, 1)) +
          a(0, 1) * (a(1, 2) * a(2, 0) - a(1, 0) * a(2, 2)) +
@@ -336,7 +336,7 @@ inline typename Tensor<T, 3>::Type_t det(const Tensor<T, 3> &a)
 //
 //////////////////////////////////////////////////////
 template <class T, unsigned D>
-inline Tensor<T, D> inverse(const Tensor<T, D> &a)
+KOKKOS_INLINE_FUNCTION Tensor<T, D> inverse(const Tensor<T, D> &a)
 {
   return Tensor<T, D>();
 }
@@ -344,7 +344,7 @@ inline Tensor<T, D> inverse(const Tensor<T, D> &a)
 //////////////////////////////////////////////////////
 // specialized for D=1
 //////////////////////////////////////////////////////
-template <class T> inline Tensor<T, 1> inverse(const Tensor<T, 1> &a)
+template <class T> KOKKOS_INLINE_FUNCTION Tensor<T, 1> inverse(const Tensor<T, 1> &a)
 {
   return Tensor<T, 1>(1.0 / a(0, 0));
 }
@@ -352,7 +352,7 @@ template <class T> inline Tensor<T, 1> inverse(const Tensor<T, 1> &a)
 //////////////////////////////////////////////////////
 // specialized for D=2
 //////////////////////////////////////////////////////
-template <class T> inline Tensor<T, 2> inverse(const Tensor<T, 2> &a)
+template <class T> KOKKOS_INLINE_FUNCTION Tensor<T, 2> inverse(const Tensor<T, 2> &a)
 {
   T vinv = 1 / det(a);
   return Tensor<T, 2>(vinv * a(1, 1), -vinv * a(0, 1), -vinv * a(1, 0),
@@ -362,7 +362,7 @@ template <class T> inline Tensor<T, 2> inverse(const Tensor<T, 2> &a)
 //////////////////////////////////////////////////////
 // specialized for D=3
 //////////////////////////////////////////////////////
-template <class T> inline Tensor<T, 3> inverse(const Tensor<T, 3> &a)
+template <class T> KOKKOS_INLINE_FUNCTION Tensor<T, 3> inverse(const Tensor<T, 3> &a)
 {
   T vinv = 1 / det(a);
   return Tensor<T, 3>(vinv * (a(1, 1) * a(2, 2) - a(1, 2) * a(2, 1)),
@@ -386,7 +386,7 @@ template <class T1, class T2, unsigned D>
 struct OTDot<Tensor<T1, D>, Tensor<T2, D>>
 {
   typedef typename BinaryReturn<T1, T2, OpMultiply>::Type_t Type_t;
-  inline static Tensor<Type_t, D> apply(const Tensor<T1, D> &lhs,
+  KOKKOS_INLINE_FUNCTION static Tensor<Type_t, D> apply(const Tensor<T1, D> &lhs,
                                         const Tensor<T2, D> &rhs)
   {
     Tensor<Type_t, D> res = Tensor<Type_t, D>::DontInitialize();
@@ -404,7 +404,7 @@ struct OTDot<Tensor<T1, D>, Tensor<T2, D>>
 template <class T1, class T2> struct OTDot<Tensor<T1, 1>, Tensor<T2, 1>>
 {
   typedef typename BinaryReturn<T1, T2, OpMultiply>::Type_t Type_t;
-  inline static Tensor<Type_t, 1> apply(const Tensor<T1, 1> &lhs,
+  KOKKOS_INLINE_FUNCTION static Tensor<Type_t, 1> apply(const Tensor<T1, 1> &lhs,
                                         const Tensor<T2, 1> &rhs)
   {
     return Tensor<Type_t, 1>(lhs[0] * rhs[0]);
@@ -414,7 +414,7 @@ template <class T1, class T2> struct OTDot<Tensor<T1, 1>, Tensor<T2, 1>>
 template <class T1, class T2> struct OTDot<Tensor<T1, 2>, Tensor<T2, 2>>
 {
   typedef typename BinaryReturn<T1, T2, OpMultiply>::Type_t Type_t;
-  inline static Tensor<Type_t, 2> apply(const Tensor<T1, 2> &lhs,
+  KOKKOS_INLINE_FUNCTION static Tensor<Type_t, 2> apply(const Tensor<T1, 2> &lhs,
                                         const Tensor<T2, 2> &rhs)
   {
     return Tensor<Type_t, 2>(lhs(0, 0) * rhs(0, 0) + lhs(0, 1) * rhs(1, 0),
@@ -427,7 +427,7 @@ template <class T1, class T2> struct OTDot<Tensor<T1, 2>, Tensor<T2, 2>>
 template <class T1, class T2> struct OTDot<Tensor<T1, 3>, Tensor<T2, 3>>
 {
   typedef typename BinaryReturn<T1, T2, OpMultiply>::Type_t Type_t;
-  inline static Tensor<Type_t, 3> apply(const Tensor<T1, 3> &lhs,
+  KOKKOS_INLINE_FUNCTION static Tensor<Type_t, 3> apply(const Tensor<T1, 3> &lhs,
                                         const Tensor<T2, 3> &rhs)
   {
     return Tensor<Type_t, 3>(

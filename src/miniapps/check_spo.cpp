@@ -35,6 +35,7 @@ int main(int argc, char **argv)
 {
 
   Kokkos::initialize(argc,argv);
+  {
   OhmmsInfo("check_spo");
 
   // clang-format off
@@ -303,6 +304,7 @@ int main(int argc, char **argv)
   printf("Partitioning\n");
   Kokkos::OpenMP::partition_master(main_function,num_threads/ncrews,ncrews);
 #else
+  int num_threads=ncrews;
   main_function(0,1);
 #endif
 
@@ -359,7 +361,7 @@ int main(int argc, char **argv)
     fail = true;
   }
   if (!fail) cout << "All checking pass!" << std::endl;
-
+}
   Kokkos::finalize();
   return 0;
 }
