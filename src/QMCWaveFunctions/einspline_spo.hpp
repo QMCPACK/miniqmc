@@ -44,9 +44,9 @@ struct einspline_spo
   /// define the einsplie data object type
   using spline_type = typename bspline_traits<T, 3>::SplineType;
   using pos_type        = TinyVector<T, 3>;
-  using vContainer_type = aligned_vector<T>;
-  using gContainer_type = VectorSoaContainer<T, 3>;
-  using hContainer_type = VectorSoaContainer<T, 6>;
+  using vContainer_type = Kokkos::View<T**>;
+  using gContainer_type = Kokkos::View<T***,Kokkos::LayoutRight>;
+  using hContainer_type = Kokkos::View<T***,Kokkos::LayoutRight>;
   using lattice_type    = CrystalLattice<T, 3>;
 
   /// number of blocks
@@ -73,10 +73,10 @@ struct einspline_spo
   // mark instance as copy
   bool is_copy;
 
-  aligned_vector<spline_type *> einsplines;
-  aligned_vector<vContainer_type *> psi;
-  aligned_vector<gContainer_type *> grad;
-  aligned_vector<hContainer_type *> hess;
+  Kokkos::View<spline_type *> einsplines;
+  vContainer_type psi;
+  gContainer_type grad;
+  hContainer_type hess;
 
   /// default constructor
   einspline_spo()
@@ -103,7 +103,7 @@ struct einspline_spo
     firstBlock       = nBlocks * crewID;
     lastBlock        = std::min(in.nBlocks, nBlocks * (crewID + 1));
     nBlocks          = lastBlock - firstBlock;
-    einsplines.resize(nBlocks);
+    einsplines       = Kokkos::View<spline_type*>("einsplines",nBlocks);
     for (int i = 0, t = firstBlock; i < nBlocks; ++i, ++t)
       einsplines[i] = in.einsplines[t];
     resize();
@@ -118,7 +118,7 @@ struct einspline_spo
     firstBlock       = nBlocks * crewID;
     lastBlock        = std::min(in.nBlocks, nBlocks * (crewID + 1));
     nBlocks          = lastBlock - firstBlock;
-    einsplines.resize(nBlocks);
+    einsplines       = Kokkos::View<spline_type*>("einsplines",nBlocks);
     for (int i = 0, t = firstBlock; i < nBlocks; ++i, ++t)
       einsplines[i] = in.einsplines[t];
     resize();
@@ -129,22 +129,16 @@ struct einspline_spo
   ~einspline_spo()
   {
     if(! is_copy) {
-    if (psi.size()) clean();
-    if (Owner)
-      for (int i = 0; i < nBlocks; ++i)
-        myAllocator.destroy(einsplines[i]);
+      if (psi.extent(0)) clean();
+      einsplines = Kokkos::View<spline_type *>() ;
     }
   }
 
   void clean()
   {
-    const int n = psi.size();
-    for (int i = 0; i < n; ++i)
-    {
-      delete psi[i];
-      delete grad[i];
-      delete hess[i];
-    }
+    psi = vContainer_type()  ;
+    grad = gContainer_type()  ;
+    hess = hContainer_type() ;
   }
 
   /// resize the containers
@@ -153,16 +147,9 @@ struct einspline_spo
     if (nBlocks > psi.size())
     {
       clean();
-      psi.resize(nBlocks);
-      grad.resize(nBlocks);
-      hess.resize(nBlocks);
-#pragma omp parallel for
-      for (int i = 0; i < nBlocks; ++i)
-      {
-        psi[i]  = new vContainer_type(nSplinesPerBlock);
-        grad[i] = new gContainer_type(nSplinesPerBlock);
-        hess[i] = new hContainer_type(nSplinesPerBlock);
-      }
+      psi = vContainer_type("Psi",nBlocks,nSplinesPerBlock) ;
+      grad = gContainer_type("Grad",nBlocks,3,nSplinesPerBlock) ;
+      hess = hContainer_type("Hess",nBlocks,6,nSplinesPerBlock);
     }
   }
 
@@ -175,23 +162,23 @@ struct einspline_spo
     nSplinesPerBlock = num_splines / nblocks;
     firstBlock       = 0;
     lastBlock        = nBlocks;
-    if (einsplines.empty())
+    if (einsplines.extent(0)==0)
     {
       Owner = true;
       TinyVector<int, 3> ng(nx, ny, nz);
       pos_type start(0);
       pos_type end(1);
-      einsplines.resize(nBlocks);
+      einsplines       = Kokkos::View<spline_type*>("einsplines",nBlocks);
       RandomGenerator<T> myrandom(11);
       Array<T, 3> data(nx, ny, nz);
       std::fill(data.begin(), data.end(), T());
       myrandom.generate_uniform(data.data(), data.size());
       for (int i = 0; i < nBlocks; ++i)
       {
-        einsplines[i] = myAllocator.createMultiBspline(T(0), start, end, ng, PERIODIC, nSplinesPerBlock);
+        einsplines[i] = *myAllocator.createMultiBspline(T(0), start, end, ng, PERIODIC, nSplinesPerBlock);
         if (init_random)
           for (int j = 0; j < nSplinesPerBlock; ++j)
-            myAllocator.set(data.data(), einsplines[i], j);
+            myAllocator.set(data.data(), &einsplines[i], j);
       }
     }
     resize();
@@ -209,8 +196,8 @@ struct einspline_spo
   void operator() (const EvaluateVTag&, const team_t& team ) const {
     int block = team.league_rank();
     auto u = Lattice.toUnit(pos);
-    compute_engine.evaluate_v(einsplines[block], u[0], u[1], u[2],
-                              psi[block]->data(), psi[block]->size());
+    compute_engine.evaluate_v(&einsplines[block], u[0], u[1], u[2],
+                              &psi(block,0), psi.extent(1));
   }
 
   /** evaluate psi */
@@ -219,7 +206,7 @@ struct einspline_spo
     auto u = Lattice.toUnit(p);
     #pragma omp for nowait
     for (int i = 0; i < nBlocks; ++i)
-      compute_engine.evaluate_v(einsplines[i], u[0], u[1], u[2], psi[i]->data(), psi[i]->size());
+      compute_engine.evaluate_v(&einsplines[i], u[0], u[1], u[2], &psi(i,0), psi.extent(0));
   }
 
   /** evaluate psi, grad and lap */
@@ -227,9 +214,9 @@ struct einspline_spo
   {
     auto u = Lattice.toUnit(p);
     for (int i = 0; i < nBlocks; ++i)
-      compute_engine.evaluate_vgl(einsplines[i], u[0], u[1], u[2],
-                                  psi[i]->data(), grad[i]->data(), hess[i]->data(),
-                                  psi[i]->size());
+      compute_engine.evaluate_vgl(&einsplines[i], u[0], u[1], u[2],
+                                  &psi(i,0), &grad(i,0,0), &hess(i,0,0),
+                                  psi.extent(1));
   }
 
   /** evaluate psi, grad and lap */
@@ -238,9 +225,9 @@ struct einspline_spo
     auto u = Lattice.toUnit(p);
     #pragma omp for nowait
     for (int i = 0; i < nBlocks; ++i)
-      compute_engine.evaluate_vgl(einsplines[i], u[0], u[1], u[2],
-                                  psi[i]->data(), grad[i]->data(), hess[i]->data(),
-                                  psi[i]->size());
+      compute_engine.evaluate_vgl(&einsplines[i], u[0], u[1], u[2],
+                                  &psi(i,0), &grad(i,0,0), &hess(i,0,0),
+                                   psi.extent(1));
   }
 
   /** evaluate psi, grad and hess */
@@ -256,9 +243,9 @@ struct einspline_spo
   void operator() (const EvaluateVGHTag&, const team_t& team ) const {
     int block = team.league_rank();
     auto u = Lattice.toUnit(pos);
-    compute_engine.evaluate_vgh(einsplines[block], u[0], u[1], u[2],
-                                psi[block]->data(), grad[block]->data(), hess[block]->data(),
-                                psi[block]->size());
+    compute_engine.evaluate_vgh(&einsplines[block], u[0], u[1], u[2],
+                                &psi(block,0), &grad(block,0,0), &hess(block,0,0),
+                                 psi.extent(1));
   }
 
   /** evaluate psi, grad and hess */
@@ -267,9 +254,9 @@ struct einspline_spo
     auto u = Lattice.toUnit(p);
     #pragma omp for nowait
     for (int i = 0; i < nBlocks; ++i)
-      compute_engine.evaluate_vgh(einsplines[i], u[0], u[1], u[2],
-                                  psi[i]->data(), grad[i]->data(), hess[i]->data(),
-                                  psi[i]->size());
+      compute_engine.evaluate_vgh(&einsplines[i], u[0], u[1], u[2],
+                                  &psi(i,0), &grad(i,0,0), &hess(i,0,0),
+                                   psi.extent(1));
   }
 
   void print(std::ostream &os)

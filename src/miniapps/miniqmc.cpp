@@ -218,7 +218,7 @@ int main(int argc, char **argv)
     tileSize              = (tileSize > 0) ? tileSize : norb;
     nTiles                = norb / tileSize;
 
-    const unsigned int SPO_coeff_size =
+    const unsigned long int SPO_coeff_size =
         (nx + 3) * (ny + 3) * (nz + 3) * norb * sizeof(RealType);
     double SPO_coeff_size_MB = SPO_coeff_size * 1.0 / 1024 / 1024;
     if (ionode)

@@ -41,6 +41,7 @@ template <typename T> struct SplineBound
 
 template <typename T> struct MultiBsplineData
 {
+  // This can't be static const ...
   static const T A44[16];
   static const T dA44[16];
   static const T d2A44[16];
