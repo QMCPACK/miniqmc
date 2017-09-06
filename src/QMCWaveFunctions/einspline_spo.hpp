@@ -190,7 +190,7 @@ struct einspline_spo
     pos = p;
     is_copy = true;
     compute_engine.copy_A44();
-    Kokkos::parallel_for(policy_v_t(nBlocks,1),*this);
+    Kokkos::parallel_for("EinsplineSPO::evalute_v",policy_v_t(nBlocks,1,32),*this);
     is_copy = false;
   }
   KOKKOS_INLINE_FUNCTION
@@ -199,7 +199,7 @@ struct einspline_spo
     // Need KokkosInlineFunction on Tensor and TinyVector ....
     auto u = Lattice.toUnit(pos);
 
-    compute_engine.evaluate_v(&einsplines[block], u[0], u[1], u[2],
+    compute_engine.evaluate_v(team,&einsplines[block], u[0], u[1], u[2],
                               &psi(block,0), psi.extent(1));
   }
 
@@ -239,7 +239,7 @@ struct einspline_spo
     pos = p;
     is_copy = true;
     compute_engine.copy_A44();
-    Kokkos::parallel_for(policy_vgh_t(nBlocks,1),*this);
+    Kokkos::parallel_for("EinsplineSPO::evalute_vgh",policy_vgh_t(nBlocks,1,32),*this);
     is_copy = false;
   }
 
@@ -247,7 +247,7 @@ struct einspline_spo
   void operator() (const EvaluateVGHTag&, const team_t& team ) const {
     int block = team.league_rank();
     auto u = Lattice.toUnit(pos);
-    compute_engine.evaluate_vgh(&einsplines[block], u[0], u[1], u[2],
+    compute_engine.evaluate_vgh(team,&einsplines[block], u[0], u[1], u[2],
                                 &psi(block,0), &grad(block,0,0), &hess(block,0,0),
                                  psi.extent(1));
   }
