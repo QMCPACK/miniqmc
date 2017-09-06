@@ -34,7 +34,9 @@ template <typename T, typename compute_engine_type = MultiBspline<T> >
 struct einspline_spo
 {
   struct EvaluateVGHTag {};
+  struct EvaluateVTag {};
   typedef Kokkos::TeamPolicy<EvaluateVGHTag> policy_vgh_t;
+  typedef Kokkos::TeamPolicy<EvaluateVTag> policy_v_t;
 
   typedef typename Kokkos::TeamPolicy<>::member_type team_t;
 
@@ -198,9 +200,17 @@ struct einspline_spo
   /** evaluate psi */
   inline void evaluate_v(const pos_type &p)
   {
-    auto u = Lattice.toUnit(p);
-    for (int i = 0; i < nBlocks; ++i)
-      compute_engine.evaluate_v(einsplines[i], u[0], u[1], u[2], psi[i]->data(), psi[i]->size());
+    pos = p;
+    is_copy = true;
+    Kokkos::parallel_for(policy_v_t(nBlocks,1),*this);
+    is_copy = false;
+  }
+  KOKKOS_INLINE_FUNCTION
+  void operator() (const EvaluateVTag&, const team_t& team ) const {
+    int block = team.league_rank();
+    auto u = Lattice.toUnit(pos);
+    compute_engine.evaluate_v(einsplines[block], u[0], u[1], u[2],
+                              psi[block]->data(), psi[block]->size());
   }
 
   /** evaluate psi */
@@ -238,9 +248,6 @@ struct einspline_spo
   {
     pos = p;
     is_copy = true;
-    /*auto u = Lattice.toUnit(p);
-    for (int i = 0; i < nBlocks; ++i)
-      einsplines[i]->evaluate_vgh(u, *psi[i], *grad[i], *hess[i]);*/
     Kokkos::parallel_for(policy_vgh_t(nBlocks,1),*this);
     is_copy = false;
   }
@@ -249,9 +256,9 @@ struct einspline_spo
   void operator() (const EvaluateVGHTag&, const team_t& team ) const {
     int block = team.league_rank();
     auto u = Lattice.toUnit(pos);
-      compute_engine.evaluate_vgh(einsplines[block], u[0], u[1], u[2],
-                                  psi[block]->data(), grad[block]->data(), hess[block]->data(),
-                                  psi[block]->size());
+    compute_engine.evaluate_vgh(einsplines[block], u[0], u[1], u[2],
+                                psi[block]->data(), grad[block]->data(), hess[block]->data(),
+                                psi[block]->size());
   }
 
   /** evaluate psi, grad and hess */

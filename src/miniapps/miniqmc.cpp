@@ -261,11 +261,6 @@ int main(int argc, char **argv)
 
 
     omp_set_num_threads(Kokkos::OpenMP::thread_pool_size());
-    printf("Start Running: %i %i %i\n",num_partitions,partition_id,omp_get_max_threads());
-    #pragma omp parallel //num_threads(3)
-    {
-       printf("Partition: %i %i %i %i\n",num_partitions,partition_id,omp_get_num_threads(),omp_get_thread_num());
-    }
 
     const int teamID = partition_id; // Walker ID
 
