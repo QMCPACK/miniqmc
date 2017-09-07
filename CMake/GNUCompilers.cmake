@@ -30,22 +30,24 @@ SET( CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -ffast-ma
 #------------------------
 # Not on Cray's machine
 #------------------------
-IF(NOT $ENV{CRAYPE_VERSION} MATCHES ".")
+#IF(NOT $ENV{CRAYPE_VERSION} MATCHES ".")
+
+# This doesn't work on our Power systems, where march is not a valid option for GCC 
 
 #check if the user has already specified -march=XXXX option for cross-compiling.
-if(CMAKE_CXX_FLAGS MATCHES "-march=" OR CMAKE_C_FLAGS MATCHES "-march=")
-  # make sure that the user specifies -march= for both CMAKE_CXX_FLAGS and CMAKE_C_FLAGS.
-  if(CMAKE_CXX_FLAGS MATCHES "-march=" AND CMAKE_C_FLAGS MATCHES "-march=")
-  else() #(CMAKE_CXX_FLAGS MATCHES "-march=" AND CMAKE_C_FLAGS MATCHES "-march=")
-    MESSAGE(FATAL_ERROR "if -march=ARCH is specified by the user, it should be added in both CMAKE_CXX_FLAGS and CMAKE_C_FLAGS!")
-  endif() #(CMAKE_CXX_FLAGS MATCHES "-march=" AND CMAKE_C_FLAGS MATCHES "-march=")
-else() #(CMAKE_CXX_FLAGS MATCHES "-march=" OR CMAKE_C_FLAGS MATCHES "-march=")
-  # use -march=native
-  SET(CMAKE_C_FLAGS     "${CMAKE_C_FLAGS} -march=native")
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
-endif() #(CMAKE_CXX_FLAGS MATCHES "-march=" OR CMAKE_C_FLAGS MATCHES "-march=")
+#if(CMAKE_CXX_FLAGS MATCHES "-march=" OR CMAKE_C_FLAGS MATCHES "-march=")
+#  # make sure that the user specifies -march= for both CMAKE_CXX_FLAGS and CMAKE_C_FLAGS.
+#  if(CMAKE_CXX_FLAGS MATCHES "-march=" AND CMAKE_C_FLAGS MATCHES "-march=")
+#  else() #(CMAKE_CXX_FLAGS MATCHES "-march=" AND CMAKE_C_FLAGS MATCHES "-march=")
+#    MESSAGE(FATAL_ERROR "if -march=ARCH is specified by the user, it should be added in both CMAKE_CXX_FLAGS and CMAKE_C_FLAGS!")
+#  endif() #(CMAKE_CXX_FLAGS MATCHES "-march=" AND CMAKE_C_FLAGS MATCHES "-march=")
+#else() #(CMAKE_CXX_FLAGS MATCHES "-march=" OR CMAKE_C_FLAGS MATCHES "-march=")
+#  # use -march=native
+#  SET(CMAKE_C_FLAGS     "${CMAKE_C_FLAGS} -march=native")
+#  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
+#endif() #(CMAKE_CXX_FLAGS MATCHES "-march=" OR CMAKE_C_FLAGS MATCHES "-march=")
 
-ENDIF(NOT $ENV{CRAYPE_VERSION} MATCHES ".")
+#ENDIF(NOT $ENV{CRAYPE_VERSION} MATCHES ".")
 
 # Add static flags if necessary
 IF(QMC_BUILD_STATIC)
