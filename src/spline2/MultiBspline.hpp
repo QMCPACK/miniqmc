@@ -36,6 +36,7 @@ template <typename T> struct MultiBspline
 {
 
   typedef Kokkos::TeamPolicy<>::member_type team_t;
+  typedef Kokkos::TeamPolicy<Kokkos::Serial>::member_type team_v_t;
   /// define the einsplie object type
   using spliner_type = typename bspline_traits<T, 3>::SplineType;
 
@@ -98,7 +99,7 @@ template <typename T> struct MultiBspline
    * evaluate_vgh(r,psi,grad,hess,ip).
    */
   KOKKOS_INLINE_FUNCTION
-  void evaluate_v(const team_t& team, const spliner_type *restrict spline_m, T x, T y, T z, T *restrict vals, size_t num_splines) const;
+  void evaluate_v(const team_v_t& team, const spliner_type *restrict spline_m, T x, T y, T z, T *restrict vals, size_t num_splines) const;
 
   KOKKOS_INLINE_FUNCTION
   void evaluate_vgl(const spliner_type *restrict spline_m, T x, T y, T z, T *restrict vals, T *restrict grads,
@@ -111,7 +112,7 @@ template <typename T> struct MultiBspline
 
 template <typename T>
 KOKKOS_INLINE_FUNCTION
-void MultiBspline<T>::evaluate_v(const team_t& team, const spliner_type *restrict spline_m,
+void MultiBspline<T>::evaluate_v(const team_v_t& team, const spliner_type *restrict spline_m,
                                         T x, T y, T z, T *restrict vals,
                                         size_t num_splines) const
 {

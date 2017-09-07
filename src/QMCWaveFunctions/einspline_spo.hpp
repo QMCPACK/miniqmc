@@ -36,9 +36,10 @@ struct einspline_spo
   struct EvaluateVGHTag {};
   struct EvaluateVTag {};
   typedef Kokkos::TeamPolicy<EvaluateVGHTag> policy_vgh_t;
-  typedef Kokkos::TeamPolicy<EvaluateVTag> policy_v_t;
+  typedef Kokkos::TeamPolicy<Kokkos::Serial,EvaluateVTag> policy_v_t;
 
   typedef typename Kokkos::TeamPolicy<>::member_type team_t;
+  typedef typename policy_v_t::member_type team_v_t;
 
   // using spline_type=MultiBspline<T>;
   /// define the einsplie data object type
@@ -204,7 +205,7 @@ struct einspline_spo
     is_copy = false;
   }
   KOKKOS_INLINE_FUNCTION
-  void operator() (const EvaluateVTag&, const team_t& team ) const {
+  void operator() (const EvaluateVTag&, const team_v_t& team ) const {
     int block = team.league_rank();
     // Need KokkosInlineFunction on Tensor and TinyVector ....
     auto u = Lattice.toUnit(pos);
