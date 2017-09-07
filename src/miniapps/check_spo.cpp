@@ -229,26 +229,26 @@ int main(int argc, char **argv)
           {
             // value
             evalVGH_v_err +=
-                std::fabs(spo.psi(ib,n) - (*spo_ref.psi[ib])[n]);
+                std::fabs(spo.psi(ib)(n) - (*spo_ref.psi[ib])[n]);
             // grad
-            evalVGH_g_err += std::fabs(spo.grad(ib,0,n) -
+            evalVGH_g_err += std::fabs(spo.grad(ib)(n,0) -
                                        spo_ref.grad[ib]->data(0)[n]);
-            evalVGH_g_err += std::fabs(spo.grad(ib,1,n) -
+            evalVGH_g_err += std::fabs(spo.grad(ib)(n,1) -
                                        spo_ref.grad[ib]->data(1)[n]);
-            evalVGH_g_err += std::fabs(spo.grad(ib,2,n) -
+            evalVGH_g_err += std::fabs(spo.grad(ib)(n,2) -
                                        spo_ref.grad[ib]->data(2)[n]);
             // hess
-            evalVGH_h_err += std::fabs(spo.hess(ib,0,n) -
+            evalVGH_h_err += std::fabs(spo.hess(ib)(n,0) -
                                        spo_ref.hess[ib]->data(0)[n]);
-            evalVGH_h_err += std::fabs(spo.hess(ib,1,n) -
+            evalVGH_h_err += std::fabs(spo.hess(ib)(n,1) -
                                        spo_ref.hess[ib]->data(1)[n]);
-            evalVGH_h_err += std::fabs(spo.hess(ib,2,n) -
+            evalVGH_h_err += std::fabs(spo.hess(ib)(n,2) -
                                        spo_ref.hess[ib]->data(2)[n]);
-            evalVGH_h_err += std::fabs(spo.hess(ib,3,n) -
+            evalVGH_h_err += std::fabs(spo.hess(ib)(n,3) -
                                        spo_ref.hess[ib]->data(3)[n]);
-            evalVGH_h_err += std::fabs(spo.hess(ib,4,n) -
+            evalVGH_h_err += std::fabs(spo.hess(ib)(n,4) -
                                        spo_ref.hess[ib]->data(4)[n]);
-            evalVGH_h_err += std::fabs(spo.hess(ib,5,n) -
+            evalVGH_h_err += std::fabs(spo.hess(ib)(n,5) -
                                        spo_ref.hess[ib]->data(5)[n]);
           }
         if (ur[iel] > accept)
@@ -278,7 +278,7 @@ int main(int argc, char **argv)
             for (int ib = 0; ib < spo.nBlocks; ib++)
               for (int n = 0; n < spo.nSplinesPerBlock; n++)
                 evalV_v_err +=
-                    std::fabs(spo.psi(ib,n) - (*spo_ref.psi[ib])[n]);
+                    std::fabs(spo.psi(ib)(n) - (*spo_ref.psi[ib])[n]);
           }
         } // els
       }   // ions

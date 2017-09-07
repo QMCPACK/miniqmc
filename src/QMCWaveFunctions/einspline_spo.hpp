@@ -44,9 +44,9 @@ struct einspline_spo
   /// define the einsplie data object type
   using spline_type = typename bspline_traits<T, 3>::SplineType;
   using pos_type        = TinyVector<T, 3>;
-  using vContainer_type = Kokkos::View<T**>;
-  using gContainer_type = Kokkos::View<T***,Kokkos::LayoutRight>;
-  using hContainer_type = Kokkos::View<T***,Kokkos::LayoutRight>;
+  using vContainer_type = Kokkos::View<T*>;
+  using gContainer_type = Kokkos::View<T*[3],Kokkos::LayoutLeft>;
+  using hContainer_type = Kokkos::View<T*[6],Kokkos::LayoutLeft>;
   using lattice_type    = CrystalLattice<T, 3>;
 
   /// number of blocks
@@ -74,9 +74,9 @@ struct einspline_spo
   bool is_copy;
 
   Kokkos::View<spline_type *> einsplines;
-  vContainer_type psi;
-  gContainer_type grad;
-  hContainer_type hess;
+  Kokkos::View<vContainer_type*> psi;
+  Kokkos::View<gContainer_type*> grad;
+  Kokkos::View<hContainer_type*> hess;
 
   /// default constructor
   einspline_spo()
@@ -136,20 +136,30 @@ struct einspline_spo
 
   void clean()
   {
-    psi = vContainer_type()  ;
-    grad = gContainer_type()  ;
-    hess = hContainer_type() ;
+    for(int i=0; i<psi.extent(0); i++) {
+      psi(i) = vContainer_type();
+      grad(i) = gContainer_type();
+      hess(i) = hContainer_type();
+    }
+    psi = Kokkos::View<vContainer_type*>()  ;
+    grad = Kokkos::View<gContainer_type*>()  ;
+    hess = Kokkos::View<hContainer_type*>() ;
   }
 
   /// resize the containers
   void resize()
   {
-    if (nBlocks > psi.size())
+    if (nBlocks > psi.extent(0))
     {
       clean();
-      psi = vContainer_type("Psi",nBlocks,nSplinesPerBlock) ;
-      grad = gContainer_type("Grad",nBlocks,3,nSplinesPerBlock) ;
-      hess = hContainer_type("Hess",nBlocks,6,nSplinesPerBlock);
+      psi = Kokkos::View<vContainer_type*>("Psi",nBlocks) ;
+      grad = Kokkos::View<gContainer_type*>("Grad",nBlocks) ;
+      hess = Kokkos::View<hContainer_type*>("Hess",nBlocks);
+      for(int i=0; i<psi.extent(0); i++) {
+        new (&psi(i)) vContainer_type("Psi_i",nSplinesPerBlock);
+        new (&grad(i)) gContainer_type("Grad_i",nSplinesPerBlock);
+        new (&hess(i)) hContainer_type("Hess_i",nSplinesPerBlock);
+      }
     }
   }
 
@@ -200,7 +210,7 @@ struct einspline_spo
     auto u = Lattice.toUnit(pos);
 
     compute_engine.evaluate_v(team,&einsplines[block], u[0], u[1], u[2],
-                              &psi(block,0), psi.extent(1));
+                              psi(block).data(), psi(block).extent(0));
   }
 
   /** evaluate psi */
@@ -218,8 +228,8 @@ struct einspline_spo
     auto u = Lattice.toUnit(p);
     for (int i = 0; i < nBlocks; ++i)
       compute_engine.evaluate_vgl(&einsplines[i], u[0], u[1], u[2],
-                                  &psi(i,0), &grad(i,0,0), &hess(i,0,0),
-                                  psi.extent(1));
+                                   psi(i).data(), grad(i).data(), hess(i).data(),
+                                   psi(i).extent(0));
   }
 
   /** evaluate psi, grad and lap */
@@ -229,8 +239,8 @@ struct einspline_spo
     #pragma omp for nowait
     for (int i = 0; i < nBlocks; ++i)
       compute_engine.evaluate_vgl(&einsplines[i], u[0], u[1], u[2],
-                                  &psi(i,0), &grad(i,0,0), &hess(i,0,0),
-                                   psi.extent(1));
+                                   psi(i).data(), grad(i).data(), hess(i).data(),
+                                   psi(i).extent(0));
   }
 
   /** evaluate psi, grad and hess */
@@ -248,8 +258,8 @@ struct einspline_spo
     int block = team.league_rank();
     auto u = Lattice.toUnit(pos);
     compute_engine.evaluate_vgh(team,&einsplines[block], u[0], u[1], u[2],
-                                &psi(block,0), &grad(block,0,0), &hess(block,0,0),
-                                 psi.extent(1));
+                                      psi(block).data(), grad(block).data(), hess(block).data(),
+                                      psi(block).extent(0));
   }
 
   /** evaluate psi, grad and hess */
@@ -259,8 +269,8 @@ struct einspline_spo
     #pragma omp for nowait
     for (int i = 0; i < nBlocks; ++i)
       compute_engine.evaluate_vgh(&einsplines[i], u[0], u[1], u[2],
-                                  &psi(i,0), &grad(i,0,0), &hess(i,0,0),
-                                   psi.extent(1));
+                                   psi(i).data(), grad(i).data(), hess(i).data(),
+                                   psi(i).extent(0));
   }
 
   void print(std::ostream &os)
