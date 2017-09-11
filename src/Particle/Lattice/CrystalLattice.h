@@ -30,7 +30,7 @@
  */
 #ifndef OHMMS_CRYSTALLATTICE_H
 #define OHMMS_CRYSTALLATTICE_H
-#include <Lattice/LatticeOperations.h>
+#include <Particle/Lattice/LatticeOperations.h>
 #include <Numerics/OhmmsPETE/Tensor.h>
 #include <Numerics/OhmmsPETE/TinyVector.h>
 #include <limits>
@@ -326,6 +326,6 @@ template <class T, unsigned D, bool ORTHO = false> struct CrystalLattice
 };
 }
 // including the definitions of the member functions
-#include "Lattice/CrystalLattice.cpp"
+#include "Particle/Lattice/CrystalLattice.cpp"
 
 #endif

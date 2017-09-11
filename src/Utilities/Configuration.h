@@ -27,7 +27,7 @@
 #include <complex>
 #include <Numerics/OhmmsPETE/TinyVector.h>
 #include <Numerics/OhmmsPETE/Tensor.h>
-#include "Lattice/CrystalLattice.h"
+#include "Particle/Lattice/CrystalLattice.h"
 #include <Particle/ParticleAttrib.h>
 #include <Utilities/OhmmsInfo.h>
 

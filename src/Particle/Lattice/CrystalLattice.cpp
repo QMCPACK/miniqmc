@@ -27,7 +27,7 @@
  *@brief Member function definitions of CrystalLattice<T,D>, included by
  *CrystalLattice.h
  */
-#include "Lattice/LatticeAnalyzer.h"
+#include "Particle/Lattice/LatticeAnalyzer.h"
 
 namespace qmcplusplus
 {

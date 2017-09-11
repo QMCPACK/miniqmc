@@ -24,7 +24,7 @@
 #include "Utilities/OhmmsInfo.h"
 #include "Particle/DistanceTable.h"
 #include "Particle/DistanceTableData.h"
-#include "Lattice/ParticleBConds.h"
+#include "Particle/Lattice/ParticleBConds.h"
 #include "Particle/SymmetricDistanceTableData.h"
 #include "Particle/SoaDistanceTableAA.h"
 

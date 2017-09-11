@@ -20,7 +20,7 @@
 #ifndef QMCPLUSPLUS_PARTICLE_BCONDS_H
 #define QMCPLUSPLUS_PARTICLE_BCONDS_H
 
-#include <Lattice/CrystalLattice.h>
+#include <Particle/Lattice/CrystalLattice.h>
 #include <Numerics/OhmmsSoA/VectorSoaContainer.h>
 #include <algorithm>
 #include <config.h>
