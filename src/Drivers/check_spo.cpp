@@ -22,7 +22,7 @@
 #include <Particle/ParticleSet.h>
 #include <Utilities/RandomGenerator.h>
 #include <Input/Input.hpp>
-#include <Numerics/einspline/spline2/MultiBsplineRef.hpp>
+#include <Numerics/Einspline/Spline2/MultiBsplineRef.hpp>
 #include <QMCWaveFunctions/einspline_spo.hpp>
 #include <getopt.h>
 

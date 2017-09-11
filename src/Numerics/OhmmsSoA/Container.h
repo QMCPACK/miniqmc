@@ -20,7 +20,7 @@
 #include <config.h>
 #include <Numerics/OhmmsPETE/TinyVector.h>
 #include <Numerics/OhmmsPETE/Tensor.h>
-#include <Utilities/simd/allocator.hpp>
+#include <Utilities/SIMD/allocator.hpp>
 #include <Numerics/OhmmsSoA/PosTransformer.h>
 #include <Numerics/OhmmsSoA/VectorSoaContainer.h>
 #endif

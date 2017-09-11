@@ -18,7 +18,7 @@
 #include <vector>
 #include <cstdlib>
 
-#include "Utilities/simd/Mallocator.hpp"
+#include "Utilities/SIMD/Mallocator.hpp"
 
 namespace qmcplusplus
 {

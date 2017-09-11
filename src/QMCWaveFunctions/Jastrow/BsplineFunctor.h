@@ -32,7 +32,7 @@
 #define QMCPLUSPLUS_BSPLINE_FUNCTOR_H
 #include "Numerics/OptimizableFunctorBase.h"
 #include "Numerics/LinearFit.h"
-#include "Utilities/simd/allocator.hpp"
+#include "Utilities/SIMD/allocator.hpp"
 #include <cstdio>
 
 /*!

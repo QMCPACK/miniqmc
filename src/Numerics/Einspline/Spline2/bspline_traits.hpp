@@ -17,7 +17,7 @@
 #ifndef QMCPLUSPLUS_BSPLINE_SPLINE2_TRAITS_H
 #define QMCPLUSPLUS_BSPLINE_SPLINE2_TRAITS_H
 
-#include <Numerics/einspline/bspline.h>
+#include <Numerics/Einspline/bspline.h>
 
 namespace qmcplusplus
 {

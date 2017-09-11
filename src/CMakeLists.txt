@@ -123,9 +123,9 @@ ENDIF()
     Utilities/OhmmsInform.cpp 
     Utilities/OhmmsInfo.cpp 
     Utilities/NewTimer.cpp
-    Numerics/einspline/spline2/einspline_allocator.c
-    Numerics/einspline/spline2/bspline_allocator.cpp
-    Numerics/einspline/spline2/MultiBsplineData.cpp
+    Numerics/Einspline/Spline2/einspline_allocator.c
+    Numerics/Einspline/Spline2/bspline_allocator.cpp
+    Numerics/Einspline/Spline2/MultiBsplineData.cpp
     ${GITREV_TMP}
     )
 
@@ -181,7 +181,7 @@ ENDIF()
   if(QMC_BUILD_LEVEL GREATER 4)
 
     MESSAGE(STATUS "Minimal build: only minapp drivers")
-    SUBDIRS(drivers)
+    SUBDIRS(Drivers)
 
   else() #{{{
 
