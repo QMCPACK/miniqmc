@@ -26,8 +26,7 @@
 #include <Numerics/OhmmsSoA/VectorSoaContainer.h>
 #include <Utilities/PrimeNumberSet.h>
 #include <Utilities/RandomGenerator.h>
-#include <Simulation/Simulation.hpp>
-#include <Simulation/pseudo.hpp>
+#include <Input/Input.hpp>
 #include <QMCWaveFunctions/Jastrow/PolynomialFunctor3D.h>
 #include <QMCWaveFunctions/Jastrow/ThreeBodyJastrowRef.h>
 #include <QMCWaveFunctions/Jastrow/ThreeBodyJastrow.h>

@@ -16,6 +16,9 @@
  */
 #ifndef QMCPLUSPLUS_MINIAPPS_PSEUDO_H
 #define QMCPLUSPLUS_MINIAPPS_PSEUDO_H
+
+#include <Utilities/RandomGenerator.h>
+
 namespace qmcplusplus
 {
 template <typename T> struct NonLocalPP
