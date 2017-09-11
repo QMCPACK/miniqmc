@@ -19,12 +19,8 @@
  * @brief Miniapp to check 3D spline implementation against the reference.
  */
 #include <Configuration.h>
-#include <Particle/ParticleSet.h>
-#include <Utilities/RandomGenerator.h>
+#include <miniapps/Mover.hpp>
 #include <Simulation/Simulation.hpp>
-#include <miniapps/pseudo.hpp>
-#include <spline2/MultiBsplineRef.hpp>
-#include <QMCWaveFunctions/einspline_spo.hpp>
 #include <getopt.h>
 
 using namespace std;
@@ -84,11 +80,9 @@ int main(int argc, char **argv)
     OhmmsInfo::Warn->turnoff();
   }
 
-  using spo_type =
-      einspline_spo<RealType, MultiBspline<RealType> >;
+  using spo_type = Mover::spo_type;
   spo_type spo_main;
-  using spo_ref_type =
-      einspline_spo<RealType, MultiBsplineRef<RealType> >;
+  using spo_ref_type = Mover::spo_ref_type;
   spo_ref_type spo_ref_main;
   int nTiles = 1;
 
@@ -122,33 +116,20 @@ int main(int argc, char **argv)
   const int nels  = count_electrons(ions, 1);
   const int nels3 = 3 * nels;
 
-  std::vector<RandomGenerator<RealType> *> rng_list;
-  std::vector<ParticleSet *>               els_list;
-  std::vector<spo_type *>                  spo_list;
-  std::vector<spo_ref_type *>              spo_ref_list;
-  std::vector<NonLocalPP<RealType> *>      nlpp_list;
+  // construct a list of movers
+  std::vector<Mover> mover_list(omp_get_max_threads());
 
   #pragma omp parallel
+  for(size_t iw=0; iw<mover_list.size(); iw++)
   {
-    const int np = omp_get_num_threads();
-    const int ip = omp_get_thread_num();
-
-    #pragma omp single
-    {
-      rng_list.resize(np);
-      els_list.resize(np);
-      spo_list.resize(np);
-      spo_ref_list.resize(np);
-      nlpp_list.resize(np);
-    }
-
+    auto &mover = mover_list[iw];
     // create RNG within the thread
-    rng_list[ip] = new RandomGenerator<RealType>(MakeSeed(ip, np));
-    RandomGenerator<RealType> &random_th = *rng_list[ip];
+    mover.rng = new RandomGenerator<RealType>(MakeSeed(iw, mover_list.size()));
+    RandomGenerator<RealType> &random_th = *mover.rng;
 
     // create elecs within the thread
-    els_list[ip]     = new ParticleSet;
-    ParticleSet &els = *els_list[ip];
+    mover.els     = new ParticleSet;
+    ParticleSet &els = *mover.els;
 
     // create up/down electrons
     els.Lattice.BoxBConds = 1;
@@ -164,14 +145,11 @@ int main(int argc, char **argv)
     els.update();
 
     // create spo per thread
-    spo_list[ip] = new spo_type(spo_main, 1, 0);
-    spo_type &spo = *spo_list[ip];
-    spo_ref_list[ip] = new spo_ref_type(spo_ref_main, 1, 0);
-    spo_ref_type &spo_ref = *spo_ref_list[ip];
+    mover.spo = new spo_type(spo_main, 1, 0);
+    mover.spo_ref = new spo_ref_type(spo_ref_main, 1, 0);
 
     // create pseudopp per thread
-    nlpp_list[ip]             = new NonLocalPP<RealType>(random_th);
-    NonLocalPP<RealType> &ecp = *nlpp_list[ip];
+    mover.nlpp             = new NonLocalPP<RealType>(random_th);
   }
 
   double ratio         = 0.0;
@@ -186,14 +164,15 @@ int main(int argc, char **argv)
   #pragma omp parallel for reduction(+:ratio,nspheremoves,dNumVGHCalls) \
    reduction(+:evalV_v_err,evalVGH_v_err,evalVGH_g_err,evalVGH_h_err)
   // clang-format on
-  for(size_t iw=0; iw<els_list.size(); iw++)
+  for(size_t iw=0; iw<mover_list.size(); iw++)
   {
-    // load a walker
-    RandomGenerator<RealType> &random_th = *rng_list[iw];
-    ParticleSet                     &els = *els_list[iw];
-    spo_type                        &spo = *spo_list[iw];
-    spo_ref_type                &spo_ref = *spo_ref_list[iw];
-    NonLocalPP<RealType>            &ecp = *nlpp_list[iw];
+    // load a mover
+    auto &mover = mover_list[iw];
+    RandomGenerator<RealType> &random_th = *mover.rng;
+    ParticleSet                     &els = *mover.els;
+    spo_type                        &spo = *mover.spo;
+    spo_ref_type                &spo_ref = *mover.spo_ref;
+    NonLocalPP<RealType>            &ecp = *mover.nlpp;
 
     // this is the cutoff from the non-local PP
     const RealType Rmax(1.7);
@@ -297,7 +276,7 @@ int main(int argc, char **argv)
   evalVGH_g_err /= dNumVGHCalls;
   evalVGH_h_err /= dNumVGHCalls;
 
-  int np                     = omp_get_max_threads();
+  int np                     = mover_list.size();
   constexpr RealType small_v = std::numeric_limits<RealType>::epsilon() * 1e4;
   constexpr RealType small_g = std::numeric_limits<RealType>::epsilon() * 3e6;
   constexpr RealType small_h = std::numeric_limits<RealType>::epsilon() * 6e8;
