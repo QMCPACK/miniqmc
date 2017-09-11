@@ -61,7 +61,7 @@
 #include <Utilities/NewTimer.h>
 #include <Utilities/RandomGenerator.h>
 #include <Simulation/Simulation.hpp>
-#include <miniapps/pseudo.hpp>
+#include <Simulation/pseudo.hpp>
 #include <QMCWaveFunctions/einspline_spo.hpp>
 #include <QMCWaveFunctions/FakeWaveFunction.h>
 #include <getopt.h>

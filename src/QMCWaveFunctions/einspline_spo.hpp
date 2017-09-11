@@ -23,7 +23,7 @@
 #include <Particle/ParticleSet.h>
 #include <spline2/bspline_allocator.hpp>
 #include <spline2/MultiBspline.hpp>
-#include <simd/allocator.hpp>
+#include <Utilities/simd/allocator.hpp>
 #include "OhmmsPETE/OhmmsArray.h"
 #include <iostream>
 

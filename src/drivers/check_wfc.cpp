@@ -27,7 +27,7 @@
 #include <Utilities/PrimeNumberSet.h>
 #include <Utilities/RandomGenerator.h>
 #include <Simulation/Simulation.hpp>
-#include <miniapps/pseudo.hpp>
+#include <Simulation/pseudo.hpp>
 #include <QMCWaveFunctions/Jastrow/PolynomialFunctor3D.h>
 #include <QMCWaveFunctions/Jastrow/ThreeBodyJastrowRef.h>
 #include <QMCWaveFunctions/Jastrow/ThreeBodyJastrow.h>

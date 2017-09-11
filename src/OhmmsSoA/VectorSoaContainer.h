@@ -18,8 +18,8 @@
  */
 #ifndef QMCPLUSPLUS_VECTOR_SOA_H
 #define QMCPLUSPLUS_VECTOR_SOA_H
-#include <simd/allocator.hpp>
-#include <simd/algorithm.hpp>
+#include <Utilities/simd/allocator.hpp>
+#include <Utilities/simd/algorithm.hpp>
 
 namespace qmcplusplus
 {

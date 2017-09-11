@@ -13,8 +13,8 @@
 #define QMCPLUSPLUS_ONEBODYJASTROW_OPTIMIZED_SOA_H
 #include "Utilities/Configuration.h"
 #include "QMCWaveFunctions/WaveFunctionComponentBase.h"
-#include <simd/allocator.hpp>
-#include <simd/algorithm.hpp>
+#include <Utilities/simd/allocator.hpp>
+#include <Utilities/simd/algorithm.hpp>
 #include <map>
 #include <numeric>
 

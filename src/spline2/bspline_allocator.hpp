@@ -15,7 +15,7 @@
 #ifndef QMCPLUSPLUS_EINSPLINE_BSPLINE_ALLOCATOR_H
 #define QMCPLUSPLUS_EINSPLINE_BSPLINE_ALLOCATOR_H
 
-#include <simd/allocator.hpp>
+#include <Utilities/simd/allocator.hpp>
 #include <spline2/bspline_traits.hpp>
 #include "spline2/einspline_allocator.h"
 
