@@ -124,9 +124,10 @@ int main(int argc, char **argv)
   std::vector<ParticlePos_t> rOnSphere_list(nmovers);
   std::vector<std::vector<RealType> > ur_list(nmovers);
   std::vector<int> my_accepted_list(nmovers), my_vals_list(nmovers);
+  ParticlePos_t pos_list(nmovers);
 
   #pragma omp parallel
-  for(size_t iw=0; iw<mover_list.size(); iw++)
+  for(size_t iw = 0; iw < mover_list.size(); iw++)
   {
     auto &mover = mover_list[iw];
     // create RNG within the thread
@@ -183,39 +184,44 @@ int main(int argc, char **argv)
   double evalVGH_g_err = 0.0;
   double evalVGH_h_err = 0.0;
 
-// clang-format off
-  #pragma omp parallel for reduction(+:ratio,nspheremoves,dNumVGHCalls) \
-   reduction(+:evalV_v_err,evalVGH_v_err,evalVGH_g_err,evalVGH_h_err)
-  // clang-format on
-  for(size_t iw=0; iw<mover_list.size(); iw++)
+  for (int mc = 0; mc < nsteps; ++mc)
   {
-    // load a mover
-    auto &mover = mover_list[iw];
-    RandomGenerator<RealType> &random_th = *mover.rng;
-    ParticleSet                     &els = *mover.els;
-    spo_type                        &spo = *mover.spo;
-    spo_ref_type                &spo_ref = *mover.spo_ref;
-    NonLocalPP<RealType>            &ecp = *mover.nlpp;
-
-    auto &delta = delta_list[iw];
-    auto &rOnSphere = rOnSphere_list[iw];
-    auto &ur = ur_list[iw];
-
-    auto &my_accepted = my_accepted_list[iw];
-    auto &my_vals = my_vals_list[iw];
-
-    my_accepted = my_vals = 0;
-
-    for (int mc = 0; mc < nsteps; ++mc)
+    for(size_t iw = 0; iw < mover_list.size(); iw++)
     {
+      auto &mover = mover_list[iw];
+      auto &random_th = *mover.rng;
+      auto &delta = delta_list[iw];
+      auto &ur = ur_list[iw];
+
       random_th.generate_normal(&delta[0][0], nels3);
       random_th.generate_uniform(ur.data(), nels);
+    }
 
-      // VMC
-      for (int iel = 0; iel < nels; ++iel)
+    // VMC
+    for (int iel = 0; iel < nels; ++iel)
+    {
+      #pragma omp parallel for
+      for(size_t iw = 0; iw < mover_list.size(); iw++)
       {
-        PosType pos = els.R[iel] + sqrttau * delta[iel];
+        auto &mover = mover_list[iw];
+        auto &els = *mover.els;
+        auto &spo = *mover.spo;
+        auto &delta = delta_list[iw];
+        auto &pos = pos_list[iw];
+        pos = els.R[iel] + sqrttau * delta[iel];
         spo.evaluate_vgh(pos);
+      }
+
+      #pragma omp parallel for reduction(+:evalVGH_v_err,evalVGH_g_err,evalVGH_h_err)
+      for(size_t iw = 0; iw < mover_list.size(); iw++)
+      {
+        auto &mover = mover_list[iw];
+        auto &spo = *mover.spo;
+        auto &spo_ref = *mover.spo_ref;
+        auto &pos = pos_list[iw];
+        auto &els = *mover.els;
+        auto &ur = ur_list[iw];
+        auto &my_accepted = my_accepted_list[iw];
         spo_ref.evaluate_vgh(pos);
         // accumulate error
         for (int ib = 0; ib < spo.nBlocks; ib++)
@@ -251,7 +257,14 @@ int main(int argc, char **argv)
           my_accepted++;
         }
       }
+    }
 
+#if 0
+        #pragma omp parallel for reduction(+:evalV_v_err)
+        for(size_t iw = 0; iw < mover_list.size(); iw++)
+      // TODO: move in mover loop
+      auto &my_vals = my_vals_list[iw];
+      my_vals = 0
       random_th.generate_uniform(ur.data(), nels);
       ecp.randomize(rOnSphere); // pick random sphere
       for (int iat = 0, kat = 0; iat < nions; ++iat)
@@ -276,16 +289,18 @@ int main(int argc, char **argv)
           }
         } // els
       } // ions
+#endif
 
-    } // steps.
+  } // steps.
 
-    ratio += RealType(my_accepted) / RealType(nels * nsteps);
-    nspheremoves += RealType(my_vals) / RealType(nsteps);
+  for(size_t iw = 0; iw < mover_list.size(); iw++)
+  {
+    ratio += RealType(my_accepted_list[iw]) / RealType(nels * nsteps);
+    nspheremoves += RealType(my_vals_list[iw]) / RealType(nsteps);
     dNumVGHCalls += nels;
+  }
 
-  } // end of omp parallel
-
-  evalV_v_err /= nspheremoves;
+  //evalV_v_err /= nspheremoves;
   evalVGH_v_err /= dNumVGHCalls;
   evalVGH_g_err /= dNumVGHCalls;
   evalVGH_h_err /= dNumVGHCalls;
