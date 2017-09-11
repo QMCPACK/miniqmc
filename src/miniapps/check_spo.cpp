@@ -18,7 +18,7 @@
 /** @file check_spo.cpp
  * @brief Miniapp to check 3D spline implementation against the reference.
  */
-#include <Configuration.h>
+#include <Utilities/Configuration.h>
 #include <Particle/ParticleSet.h>
 #include <Utilities/RandomGenerator.h>
 #include <Simulation/Simulation.hpp>

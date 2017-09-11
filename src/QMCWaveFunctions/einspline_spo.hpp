@@ -19,7 +19,7 @@
  */
 #ifndef QMCPLUSPLUS_EINSPLINE_SPO_HPP
 #define QMCPLUSPLUS_EINSPLINE_SPO_HPP
-#include <Configuration.h>
+#include <Utilities/Configuration.h>
 #include <Particle/ParticleSet.h>
 #include <spline2/bspline_allocator.hpp>
 #include <spline2/MultiBspline.hpp>

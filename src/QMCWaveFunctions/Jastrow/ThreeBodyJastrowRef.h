@@ -13,7 +13,7 @@
 
 #ifndef QMCPLUSPLUS_EEIJASTROW_REF_H
 #define QMCPLUSPLUS_EEIJASTROW_REF_H
-#include "Configuration.h"
+#include "Utilities/Configuration.h"
 #include "QMCWaveFunctions/WaveFunctionComponentBase.h"
 #include "Particle/DistanceTableData.h"
 #include "OhmmsPETE/OhmmsArray.h"

@@ -14,7 +14,7 @@
 
 #include <iterator>
 #include <random>
-#include "Configuration.h"
+#include "Utilities/Configuration.h"
 
 template <typename T, typename RNG = std::mt19937> struct StdRandom
 {

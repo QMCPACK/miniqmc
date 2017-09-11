@@ -54,7 +54,7 @@
  */
 // clang-format on
 
-#include <Configuration.h>
+#include <Utilities/Configuration.h>
 #include <Particle/ParticleSet.h>
 #include <Particle/DistanceTable.h>
 #include <Utilities/PrimeNumberSet.h>
