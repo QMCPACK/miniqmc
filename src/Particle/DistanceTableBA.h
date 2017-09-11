@@ -25,14 +25,14 @@ namespace qmcplusplus
  * transposed form
  */
 template <typename T, unsigned D, int SC>
-struct SoaDistanceTableBA : public DTD_BConds<T, D, SC>,
+struct DistanceTableBA : public DTD_BConds<T, D, SC>,
                             public DistanceTableData
 {
   int Nsources;
   int Ntargets;
   int BlockSize;
 
-  SoaDistanceTableBA(const ParticleSet &source, ParticleSet &target)
+  DistanceTableBA(const ParticleSet &source, ParticleSet &target)
       : DTD_BConds<T, D, SC>(source.Lattice), DistanceTableData(source, target)
   {
     resize(source.getTotalNum(), target.getTotalNum());
@@ -67,10 +67,10 @@ struct SoaDistanceTableBA : public DTD_BConds<T, D, SC>,
   }
 
 #if (__cplusplus >= 201103L)
-  SoaDistanceTableBA()                           = delete;
-  SoaDistanceTableBA(const SoaDistanceTableBA &) = delete;
+  DistanceTableBA()                           = delete;
+  DistanceTableBA(const DistanceTableBA &) = delete;
 #endif
-  ~SoaDistanceTableBA() {}
+  ~DistanceTableBA() {}
 
   /** evaluate the full table */
   inline void evaluate(ParticleSet &P)

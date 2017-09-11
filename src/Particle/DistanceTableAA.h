@@ -26,7 +26,7 @@ namespace qmcplusplus
  * @brief A derived classe from DistacneTableData, specialized for dense case
  */
 template <typename T, unsigned D, int SC>
-struct SoaDistanceTableAA : public DTD_BConds<T, D, SC>,
+struct DistanceTableAA : public DTD_BConds<T, D, SC>,
                             public DistanceTableData
 {
 
@@ -34,17 +34,17 @@ struct SoaDistanceTableAA : public DTD_BConds<T, D, SC>,
   int Ntargets_padded;
   int BlockSize;
 
-  SoaDistanceTableAA(ParticleSet &target)
+  DistanceTableAA(ParticleSet &target)
       : DTD_BConds<T, D, SC>(target.Lattice), DistanceTableData(target, target)
   {
     resize(target.getTotalNum());
   }
 
 #if (__cplusplus >= 201103L)
-  SoaDistanceTableAA()                           = delete;
-  SoaDistanceTableAA(const SoaDistanceTableAA &) = delete;
+  DistanceTableAA()                           = delete;
+  DistanceTableAA(const DistanceTableAA &) = delete;
 #endif
-  ~SoaDistanceTableAA() {}
+  ~DistanceTableAA() {}
 
   void resize(int n)
   {
