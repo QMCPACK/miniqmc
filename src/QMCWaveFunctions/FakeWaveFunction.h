@@ -72,15 +72,15 @@ struct RefWaveFunction : public FakeWaveFunctionBase
   void evaluateGL(ParticleSet &P);
 };
 
-struct SoAWaveFunction : public FakeWaveFunctionBase
+struct WaveFunction : public FakeWaveFunctionBase
 {
   using J2OrbType = TwoBodyJastrow<BsplineFunctor<valT>>;
 
   bool FirstTime;
   J2OrbType *J2;
 
-  SoAWaveFunction(ParticleSet &ions, ParticleSet &els);
-  ~SoAWaveFunction();
+  WaveFunction(ParticleSet &ions, ParticleSet &els);
+  ~WaveFunction();
   void evaluateLog(ParticleSet &P);
   posT evalGrad(ParticleSet &P, int iat);
   valT ratioGrad(ParticleSet &P, int iat, posT &grad);

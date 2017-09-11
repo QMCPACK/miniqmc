@@ -287,15 +287,15 @@ int main(int argc, char **argv)
       els.RSoA = els.R;
     }
 
-    FakeWaveFunctionBase *WaveFunction;
+    FakeWaveFunctionBase *wavefunction;
 
     if (useSoA)
-      WaveFunction = new SoAWaveFunction(ions, els);
+      wavefunction = new WaveFunction(ions, els);
     else
-      WaveFunction = new RefWaveFunction(ions, els);
+      wavefunction = new RefWaveFunction(ions, els);
 
     // set Rmax for ion-el distance table for PP
-    WaveFunction->setRmax(Rmax);
+    wavefunction->setRmax(Rmax);
 
     // create pseudopp
     NonLocalPP<OHMMS_PRECISION> ecp(random_th);
@@ -323,7 +323,7 @@ int main(int argc, char **argv)
     constexpr RealType czero(0);
 
     els.update();
-    WaveFunction->evaluateLog(els);
+    wavefunction->evaluateLog(els);
 
     int my_accepted = 0;
     for (int mc = 0; mc < nsteps; ++mc)
@@ -341,7 +341,7 @@ int main(int argc, char **argv)
           // Compute gradient at the current position
           Timers[Timer_evalGrad]->start();
           Timers[Timer_Jastrow]->start();
-          PosType grad_now = WaveFunction->evalGrad(els, iel);
+          PosType grad_now = wavefunction->evalGrad(els, iel);
           Timers[Timer_Jastrow]->stop();
           Timers[Timer_evalGrad]->stop();
 
@@ -358,7 +358,7 @@ int main(int argc, char **argv)
 
           Timers[Timer_Jastrow]->start();
           PosType grad_new;
-          RealType j2_ratio = WaveFunction->ratioGrad(els, iel, grad_new);
+          RealType j2_ratio = wavefunction->ratioGrad(els, iel, grad_new);
           Timers[Timer_Jastrow]->stop();
 
           Timers[Timer_SPO]->start();
@@ -372,7 +372,7 @@ int main(int argc, char **argv)
           {
             // Update position, and update temporary storage
             Timers[Timer_Update]->start();
-            WaveFunction->acceptMove(els, iel);
+            wavefunction->acceptMove(els, iel);
             Timers[Timer_Update]->stop();
             Timers[Timer_DT]->start();
             els.acceptMove(iel);
@@ -382,7 +382,7 @@ int main(int argc, char **argv)
           else
           {
             els.rejectMove(iel);
-            WaveFunction->restore(iel);
+            wavefunction->restore(iel);
           }
         } // iel
       }   // substeps
@@ -393,7 +393,7 @@ int main(int argc, char **argv)
 
       // evaluate Kinetic Energy
       Timers[Timer_GL]->start();
-      WaveFunction->evaluateGL(els);
+      wavefunction->evaluateGL(els);
       Timers[Timer_GL]->stop();
 
       Timers[Timer_Diffusion]->stop();
@@ -401,7 +401,7 @@ int main(int argc, char **argv)
       // Compute NLPP energy using integral over spherical points
 
       ecp.randomize(rOnSphere); // pick random sphere
-      const DistanceTableData *d_ie = WaveFunction->d_ie;
+      const DistanceTableData *d_ie = wavefunction->d_ie;
 
       Timers[Timer_ECP]->start();
       for (int iat = 0; iat < nions; ++iat)
@@ -429,7 +429,7 @@ int main(int argc, char **argv)
               Timers[Timer_SPO]->stop();
 
               Timers[Timer_Jastrow]->start();
-              WaveFunction->ratio(els, iel);
+              wavefunction->ratio(els, iel);
               Timers[Timer_Jastrow]->stop();
 
               Timers[Timer_Value]->stop();
@@ -443,7 +443,7 @@ int main(int argc, char **argv)
     }
 
     // cleanup
-    delete WaveFunction;
+    delete wavefunction;
   } // end of omp parallel
   Timers[Timer_Total]->stop();
 

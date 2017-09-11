@@ -20,7 +20,7 @@
 
 namespace qmcplusplus
 {
-SoAWaveFunction::SoAWaveFunction(ParticleSet &ions, ParticleSet &els)
+WaveFunction::WaveFunction(ParticleSet &ions, ParticleSet &els)
 {
   FirstTime = true;
 
@@ -35,9 +35,9 @@ SoAWaveFunction::SoAWaveFunction(ParticleSet &ions, ParticleSet &els)
   buildJ2(*J2, els.Lattice.WignerSeitzRadius);
 }
 
-SoAWaveFunction::~SoAWaveFunction() { delete J2; }
+WaveFunction::~WaveFunction() { delete J2; }
 
-void SoAWaveFunction::evaluateLog(ParticleSet &P)
+void WaveFunction::evaluateLog(ParticleSet &P)
 {
   constexpr valT czero(0);
   if (FirstTime)
@@ -49,28 +49,28 @@ void SoAWaveFunction::evaluateLog(ParticleSet &P)
   }
 }
 
-FakeWaveFunctionBase::posT SoAWaveFunction::evalGrad(ParticleSet &P, int iat)
+FakeWaveFunctionBase::posT WaveFunction::evalGrad(ParticleSet &P, int iat)
 {
   return J2->evalGrad(P, iat);
 }
 
-FakeWaveFunctionBase::valT SoAWaveFunction::ratioGrad(ParticleSet &P, int iat,
+FakeWaveFunctionBase::valT WaveFunction::ratioGrad(ParticleSet &P, int iat,
                                                       posT &grad)
 {
   return J2->ratioGrad(P, iat, grad);
 }
 
-FakeWaveFunctionBase::valT SoAWaveFunction::ratio(ParticleSet &P, int iat)
+FakeWaveFunctionBase::valT WaveFunction::ratio(ParticleSet &P, int iat)
 {
   return J2->ratio(P, iat);
 }
-void SoAWaveFunction::acceptMove(ParticleSet &P, int iat)
+void WaveFunction::acceptMove(ParticleSet &P, int iat)
 {
   J2->acceptMove(P, iat);
 }
-void SoAWaveFunction::restore(int iat) {}
+void WaveFunction::restore(int iat) {}
 
-void SoAWaveFunction::evaluateGL(ParticleSet &P)
+void WaveFunction::evaluateGL(ParticleSet &P)
 {
   constexpr valT czero(0);
   P.G = czero;
