@@ -123,9 +123,9 @@ ENDIF()
     Utilities/OhmmsInform.cpp 
     Utilities/OhmmsInfo.cpp 
     Utilities/NewTimer.cpp
-    spline2/einspline_allocator.c
-    spline2/bspline_allocator.cpp
-    spline2/MultiBsplineData.cpp
+    einspline/spline2/einspline_allocator.c
+    einspline/spline2/bspline_allocator.cpp
+    einspline/spline2/MultiBsplineData.cpp
     ${GITREV_TMP}
     )
 

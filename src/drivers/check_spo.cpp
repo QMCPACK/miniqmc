@@ -23,7 +23,7 @@
 #include <Utilities/RandomGenerator.h>
 #include <Simulation/Simulation.hpp>
 #include <Simulation/pseudo.hpp>
-#include <spline2/MultiBsplineRef.hpp>
+#include <einspline/spline2/MultiBsplineRef.hpp>
 #include <QMCWaveFunctions/einspline_spo.hpp>
 #include <getopt.h>
 

@@ -15,8 +15,8 @@
  * Allocator::Policy is not defined precisely yet but is intended to select
  * the specialized allocator.
  */
-#include "spline2/bspline_allocator.hpp"
-#include "spline2/einspline_allocator.h"
+#include "einspline/spline2/bspline_allocator.hpp"
+#include "einspline/spline2/einspline_allocator.h"
 
 extern "C" {
 
