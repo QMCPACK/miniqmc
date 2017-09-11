@@ -31,8 +31,8 @@
 #ifndef OHMMS_CRYSTALLATTICE_H
 #define OHMMS_CRYSTALLATTICE_H
 #include <Lattice/LatticeOperations.h>
-#include <OhmmsPETE/Tensor.h>
-#include <OhmmsPETE/TinyVector.h>
+#include <Numerics/OhmmsPETE/Tensor.h>
+#include <Numerics/OhmmsPETE/TinyVector.h>
 #include <limits>
 
 #ifndef TWOPI

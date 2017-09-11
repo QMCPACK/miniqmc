@@ -24,7 +24,7 @@
 
 #ifndef OHMMS_NEW_VECTOR_H
 #define OHMMS_NEW_VECTOR_H
-#include "PETE/PETE.h"
+#include "Numerics/PETE/PETE.h"
 #include <algorithm>
 #include <vector>
 #include <iostream>
@@ -160,7 +160,7 @@ private:
 
 } // end-of qmcplusplus
 
-#include "OhmmsPETE/OhmmsVectorOperators.h"
+#include "Numerics/OhmmsPETE/OhmmsVectorOperators.h"
 
 namespace qmcplusplus
 {

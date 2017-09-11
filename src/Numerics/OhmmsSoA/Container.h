@@ -18,9 +18,9 @@
 #ifndef QMCPLUSPLUS_SOA_CONTAINER_H
 #define QMCPLUSPLUS_SOA_CONTAINER_H
 #include <config.h>
-#include <OhmmsPETE/TinyVector.h>
-#include <OhmmsPETE/Tensor.h>
+#include <Numerics/OhmmsPETE/TinyVector.h>
+#include <Numerics/OhmmsPETE/Tensor.h>
 #include <Utilities/simd/allocator.hpp>
-#include <OhmmsSoA/PosTransformer.h>
-#include <OhmmsSoA/VectorSoaContainer.h>
+#include <Numerics/OhmmsSoA/PosTransformer.h>
+#include <Numerics/OhmmsSoA/VectorSoaContainer.h>
 #endif

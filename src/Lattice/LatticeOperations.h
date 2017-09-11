@@ -17,7 +17,7 @@
 
 #ifndef OHMMS_LATTICEOPERATIONS_H
 #define OHMMS_LATTICEOPERATIONS_H
-#include "OhmmsPETE/TinyVector.h"
+#include "Numerics/OhmmsPETE/TinyVector.h"
 
 namespace qmcplusplus
 {

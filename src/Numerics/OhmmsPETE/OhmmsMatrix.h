@@ -20,7 +20,7 @@
 #ifndef OHMMS_PETE_MATRIX_H
 #define OHMMS_PETE_MATRIX_H
 
-#include "PETE/PETE.h"
+#include "Numerics/PETE/PETE.h"
 #include <cstdlib>
 #include <vector>
 #include <iostream>
@@ -425,5 +425,5 @@ inline void evaluate(Matrix<T, C> &lhs, const Op &op,
 }
 }
 
-#include "OhmmsPETE/OhmmsMatrixOperators.h" 
+#include "Numerics/OhmmsPETE/OhmmsMatrixOperators.h" 
 #endif // OHMMS_PETE_MATRIX_H

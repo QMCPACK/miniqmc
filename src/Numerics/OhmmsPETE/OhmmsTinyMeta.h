@@ -47,10 +47,10 @@ template<class T1, class T2> struct OTDot {};
 // TinyMatrixOps.h        assignment/unary and binary operators  for TinyMatrix
 ////////////////////////////////////////////////////////////////////////////////
 #define PAssert
-#include "OhmmsPETE/TinyVectorOps.h"
-#include "OhmmsPETE/TensorOps.h"
-#include "OhmmsPETE/TinyVectorTensorOps.h"
-#include "OhmmsPETE/TinyMatrixOps.h"
+#include "Numerics/OhmmsPETE/TinyVectorOps.h"
+#include "Numerics/OhmmsPETE/TensorOps.h"
+#include "Numerics/OhmmsPETE/TinyVectorTensorOps.h"
+#include "Numerics/OhmmsPETE/TinyMatrixOps.h"
 
 // macros to generate a set of binary and unary combintions for each operator
 // e.g., OHMMS_META_BINARY_OPERATORS(TinyVector,operator+,OpAdd)

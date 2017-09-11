@@ -21,8 +21,8 @@
 #define LINEAR_FIT_H
 
 #include <vector>
-#include "OhmmsPETE/TinyVector.h"
-#include "OhmmsPETE/OhmmsMatrix.h"
+#include "Numerics/OhmmsPETE/TinyVector.h"
+#include "Numerics/OhmmsPETE/OhmmsMatrix.h"
 #include "Numerics/DeterminantOperators.h"
 
 namespace qmcplusplus

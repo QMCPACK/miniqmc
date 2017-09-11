@@ -16,7 +16,7 @@
 #include "Utilities/Configuration.h"
 #include "QMCWaveFunctions/WaveFunctionComponentBase.h"
 #include "Particle/DistanceTableData.h"
-#include "OhmmsPETE/OhmmsArray.h"
+#include "Numerics/OhmmsPETE/OhmmsArray.h"
 #include <map>
 #include <numeric>
 

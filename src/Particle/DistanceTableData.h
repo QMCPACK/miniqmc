@@ -24,10 +24,10 @@
 
 #include "Particle/ParticleSet.h"
 #include "Utilities/PooledData.h"
-#include "OhmmsPETE/OhmmsVector.h"
-#include "OhmmsPETE/OhmmsMatrix.h"
+#include "Numerics/OhmmsPETE/OhmmsVector.h"
+#include "Numerics/OhmmsPETE/OhmmsMatrix.h"
 #include "Utilities/simd/allocator.hpp"
-#include <OhmmsSoA/VectorSoaContainer.h>
+#include <Numerics/OhmmsSoA/VectorSoaContainer.h>
 #include <limits>
 #include <bitset>
 

@@ -60,14 +60,14 @@
 
 #endif
 
-#include "PETE/Scalar.h"
-#include "PETE/TypeComputations.h"
-#include "PETE/TreeNodes.h"
-#include "PETE/OperatorTags.h"
-#include "PETE/Functors.h"
-#include "PETE/Combiners.h"
-#include "PETE/ForEach.h"
-#include "PETE/CreateLeaf.h"
+#include "Numerics/PETE/Scalar.h"
+#include "Numerics/PETE/TypeComputations.h"
+#include "Numerics/PETE/TreeNodes.h"
+#include "Numerics/PETE/OperatorTags.h"
+#include "Numerics/PETE/Functors.h"
+#include "Numerics/PETE/Combiners.h"
+#include "Numerics/PETE/ForEach.h"
+#include "Numerics/PETE/CreateLeaf.h"
 
 // Some useful PETE definitions.
 

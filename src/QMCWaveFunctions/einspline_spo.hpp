@@ -24,7 +24,7 @@
 #include <einspline/spline2/bspline_allocator.hpp>
 #include <einspline/spline2/MultiBspline.hpp>
 #include <Utilities/simd/allocator.hpp>
-#include "OhmmsPETE/OhmmsArray.h"
+#include "Numerics/OhmmsPETE/OhmmsArray.h"
 #include <iostream>
 
 namespace qmcplusplus

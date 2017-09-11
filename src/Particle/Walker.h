@@ -31,7 +31,7 @@
 #ifndef QMCPLUSPLUS_WALKER_H
 #define QMCPLUSPLUS_WALKER_H
 
-#include "OhmmsPETE/OhmmsMatrix.h"
+#include "Numerics/OhmmsPETE/OhmmsMatrix.h"
 #include "Utilities/PooledData.h"
 #include <assert.h>
 #include <deque>

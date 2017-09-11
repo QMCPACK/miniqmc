@@ -31,7 +31,7 @@
 #include <Particle/Walker.h>
 #include <Utilities/SpeciesSet.h>
 #include <Utilities/PooledData.h>
-#include <OhmmsSoA/Container.h>
+#include <Numerics/OhmmsSoA/Container.h>
 
 namespace qmcplusplus
 {

@@ -23,7 +23,7 @@
 #include <Utilities/Configuration.h>
 #include <Particle/ParticleSet.h>
 #include <Particle/DistanceTable.h>
-#include <OhmmsSoA/VectorSoaContainer.h>
+#include <Numerics/OhmmsSoA/VectorSoaContainer.h>
 #include <Utilities/PrimeNumberSet.h>
 #include <Utilities/RandomGenerator.h>
 #include <Simulation/Simulation.hpp>
