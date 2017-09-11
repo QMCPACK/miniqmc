@@ -124,7 +124,6 @@ struct einspline_spo
       psi.resize(nBlocks);
       grad.resize(nBlocks);
       hess.resize(nBlocks);
-#pragma omp parallel for
       for (int i = 0; i < nBlocks; ++i)
       {
         psi[i]  = new vContainer_type(nSplinesPerBlock);
