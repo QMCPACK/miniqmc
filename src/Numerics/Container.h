@@ -21,7 +21,7 @@
 #include <Numerics/OhmmsPETE/TinyVector.h>
 #include <Numerics/OhmmsPETE/Tensor.h>
 #include <Utilities/SIMD/allocator.hpp>
-#include <Numerics/OhmmsSoA/PosTransformer.h>
+#include <Numerics/PosTransformer.h>
 
 /* Soa Container for D-dim vectors
  *
