@@ -1,14 +1,16 @@
+There is some "structure of array" specific support here as well
+
 ParticleAttribSoA
 =================
 Experimental pacakage implements classes to facilitate SIMD algorithms.
 * SoaContainer.h
-* VectorSoaContainer.h : replacing container<TinyVector<T,3>>
+* Container.h : replacing container<TinyVector<T,3>>
 * TensorSoaContainer.h : replacing container<Tensor<T,3>>
 
-VectorSoaContainer
+Container
 ---------------
 \code
-VectorSoaContainer<double,3> R;
+Container<double,3> R;
 auto r=R[i];                       //get the value of the i-th position
 R(i)=0;                            //assign to the i-th position
 R(i)=TinyVector<double,3>(-1,2,3); //assign  to the i-th position
