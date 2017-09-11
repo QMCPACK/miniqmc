@@ -117,7 +117,13 @@ int main(int argc, char **argv)
   const int nels3 = 3 * nels;
 
   // construct a list of movers
-  std::vector<Mover> mover_list(omp_get_max_threads());
+  const size_t nmovers=omp_get_max_threads();
+  std::vector<Mover> mover_list(nmovers);
+  // per mover data
+  std::vector<ParticlePos_t> delta_list(nmovers);
+  std::vector<ParticlePos_t> rOnSphere_list(nmovers);
+  std::vector<std::vector<RealType> > ur_list(nmovers);
+  std::vector<int> my_accepted_list(nmovers), my_vals_list(nmovers);
 
   #pragma omp parallel
   for(size_t iw=0; iw<mover_list.size(); iw++)
@@ -125,11 +131,11 @@ int main(int argc, char **argv)
     auto &mover = mover_list[iw];
     // create RNG within the thread
     mover.rng = new RandomGenerator<RealType>(MakeSeed(iw, mover_list.size()));
-    RandomGenerator<RealType> &random_th = *mover.rng;
+    auto &random_th = *mover.rng;
 
     // create elecs within the thread
     mover.els     = new ParticleSet;
-    ParticleSet &els = *mover.els;
+    auto &els = *mover.els;
 
     // create up/down electrons
     els.Lattice.BoxBConds = 1;
@@ -149,8 +155,25 @@ int main(int argc, char **argv)
     mover.spo_ref = new spo_ref_type(spo_ref_main, 1, 0);
 
     // create pseudopp per thread
-    mover.nlpp             = new NonLocalPP<RealType>(random_th);
+    mover.nlpp = new NonLocalPP<RealType>(random_th);
+    auto &ecp = *mover.nlpp;
+
+    // temporal data during walking
+    delta_list[iw].resize(nels);
+    rOnSphere_list[iw].resize(ecp.size());
+    ur_list[iw].resize(nels);
   }
+
+  // setup some parameters
+  // this is the cutoff from the non-local PP
+  const RealType Rmax(1.7);
+  const RealType tau = 2.0;
+
+  RealType sqrttau = 2.0;
+  RealType accept  = 0.5;
+
+  const double zval =
+      1.0 * static_cast<double>(nels) / static_cast<double>(nions);
 
   double ratio         = 0.0;
   double nspheremoves  = 0.0;
@@ -174,23 +197,14 @@ int main(int argc, char **argv)
     spo_ref_type                &spo_ref = *mover.spo_ref;
     NonLocalPP<RealType>            &ecp = *mover.nlpp;
 
-    // this is the cutoff from the non-local PP
-    const RealType Rmax(1.7);
-    const int nknots(ecp.size());
-    const RealType tau = 2.0;
+    auto &delta = delta_list[iw];
+    auto &rOnSphere = rOnSphere_list[iw];
+    auto &ur = ur_list[iw];
 
-    ParticlePos_t delta(nels);
-    ParticlePos_t rOnSphere(nknots);
+    auto &my_accepted = my_accepted_list[iw];
+    auto &my_vals = my_vals_list[iw];
 
-    RealType sqrttau = 2.0;
-    RealType accept  = 0.5;
-
-    vector<RealType> ur(nels);
-    random_th.generate_uniform(ur.data(), nels);
-    const double zval =
-        1.0 * static_cast<double>(nels) / static_cast<double>(nions);
-
-    int my_accepted = 0, my_vals = 0;
+    my_accepted = my_vals = 0;
 
     for (int mc = 0; mc < nsteps; ++mc)
     {
@@ -245,11 +259,11 @@ int main(int argc, char **argv)
         const int nnF = static_cast<int>(ur[kat++] * zval);
         RealType r    = Rmax * ur[kat++];
         auto centerP  = ions.R[iat];
-        my_vals += (nnF * nknots);
+        my_vals += (nnF * ecp.size());
 
         for (int nn = 0; nn < nnF; ++nn)
         {
-          for (int k = 0; k < nknots; k++)
+          for (int k = 0; k < ecp.size(); k++)
           {
             PosType pos = centerP + r * rOnSphere[k];
             spo.evaluate_v(pos);
@@ -261,7 +275,7 @@ int main(int argc, char **argv)
                     std::fabs((*spo.psi[ib])[n] - (*spo_ref.psi[ib])[n]);
           }
         } // els
-      }   // ions
+      } // ions
 
     } // steps.
 
