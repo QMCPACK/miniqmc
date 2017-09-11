@@ -26,8 +26,8 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include "config.h"
-#include "einspline/bspline.h"
-#include "einspline/spline2/einspline_allocator.h"
+#include "Numerics/einspline/bspline.h"
+#include "Numerics/einspline/spline2/einspline_allocator.h"
 
 #if defined(__INTEL_COMPILER)
 

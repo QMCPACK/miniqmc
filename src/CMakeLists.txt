@@ -123,9 +123,9 @@ ENDIF()
     Utilities/OhmmsInform.cpp 
     Utilities/OhmmsInfo.cpp 
     Utilities/NewTimer.cpp
-    einspline/spline2/einspline_allocator.c
-    einspline/spline2/bspline_allocator.cpp
-    einspline/spline2/MultiBsplineData.cpp
+    Numerics/einspline/spline2/einspline_allocator.c
+    Numerics/einspline/spline2/bspline_allocator.cpp
+    Numerics/einspline/spline2/MultiBsplineData.cpp
     ${GITREV_TMP}
     )
 
@@ -229,7 +229,7 @@ ENDIF()
     SUBDIRS(OhmmsPETE/tests)
     SUBDIRS(Numerics/tests)
     SUBDIRS(Utilities/tests)
-    SUBDIRS(einspline/tests)
+    SUBDIRS(Numerics/einspline/tests)
     SUBDIRS(OhmmsData/tests)
     SUBDIRS(Lattice/tests)
     SUBDIRS(Particle/tests)
