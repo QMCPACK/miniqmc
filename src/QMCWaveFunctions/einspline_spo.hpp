@@ -25,6 +25,7 @@
 #include <spline2/MultiBspline.hpp>
 #include <simd/allocator.hpp>
 #include "OhmmsPETE/OhmmsArray.h"
+#include "OMP_target_test/OMPTinyVector.h"
 #include <iostream>
 
 namespace qmcplusplus
@@ -68,7 +69,7 @@ struct einspline_spo
   std::vector<T*> psi_shadows;
   std::vector<T*> grad_shadows;
   std::vector<T*> hess_shadows;
-  std::vector<pos_type> u_shadows;
+  std::vector<OMPTinyVector<T, 3> > u_shadows;
 
   /// default constructor
   einspline_spo()
