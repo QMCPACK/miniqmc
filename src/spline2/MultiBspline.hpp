@@ -35,8 +35,6 @@ namespace qmcplusplus
 template <typename T> struct MultiBspline
 {
 
-  typedef Kokkos::TeamPolicy<>::member_type team_t;
-  typedef Kokkos::TeamPolicy<Kokkos::Serial>::member_type team_v_t;
   /// define the einsplie object type
   using spliner_type = typename bspline_traits<T, 3>::SplineType;
 
@@ -98,21 +96,24 @@ template <typename T> struct MultiBspline
    * The base address for vals, grads and lapl are set by the callers, e.g.,
    * evaluate_vgh(r,psi,grad,hess,ip).
    */
+  template<class TeamType>
   KOKKOS_INLINE_FUNCTION
-  void evaluate_v(const team_v_t& team, const spliner_type *restrict spline_m, T x, T y, T z, T *restrict vals, size_t num_splines) const;
+  void evaluate_v(const TeamType& team, const spliner_type *restrict spline_m, T x, T y, T z, T *restrict vals, size_t num_splines) const;
 
   KOKKOS_INLINE_FUNCTION
   void evaluate_vgl(const spliner_type *restrict spline_m, T x, T y, T z, T *restrict vals, T *restrict grads,
                     T *restrict lapl, size_t num_splines) const;
 
+  template<class TeamType>
   KOKKOS_INLINE_FUNCTION
-  void evaluate_vgh(const team_t& team, const spliner_type *restrict spline_m, T x, T y, T z, T *restrict vals, T *restrict grads,
+  void evaluate_vgh(const TeamType& team, const spliner_type *restrict spline_m, T x, T y, T z, T *restrict vals, T *restrict grads,
                     T *restrict hess, size_t num_splines) const;
 };
 
 template <typename T>
+template<class TeamType>
 KOKKOS_INLINE_FUNCTION
-void MultiBspline<T>::evaluate_v(const team_v_t& team, const spliner_type *restrict spline_m,
+void MultiBspline<T>::evaluate_v(const TeamType& team, const spliner_type *restrict spline_m,
                                         T x, T y, T z, T *restrict vals,
                                         size_t num_splines) const
 {
@@ -281,8 +282,9 @@ void MultiBspline<T>::evaluate_vgl(const spliner_type *restrict spline_m,
 }
 
 template <typename T>
+template<class TeamType>
 KOKKOS_INLINE_FUNCTION
-void MultiBspline<T>::evaluate_vgh(const team_t& team, const spliner_type *restrict spline_m,
+void MultiBspline<T>::evaluate_vgh(const TeamType& team, const spliner_type *restrict spline_m,
                               T x, T y, T z, T *restrict vals,
                               T *restrict grads, T *restrict hess,
                               size_t num_splines) const

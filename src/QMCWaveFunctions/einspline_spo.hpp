@@ -35,11 +35,19 @@ struct einspline_spo
 {
   struct EvaluateVGHTag {};
   struct EvaluateVTag {};
-  typedef Kokkos::TeamPolicy<EvaluateVGHTag> policy_vgh_t;
-  typedef Kokkos::TeamPolicy<Kokkos::Serial,EvaluateVTag> policy_v_t;
+  typedef Kokkos::TeamPolicy<Kokkos::Serial,EvaluateVGHTag> policy_vgh_serial_t;
+  typedef Kokkos::TeamPolicy<EvaluateVGHTag> policy_vgh_parallel_t;
+  typedef Kokkos::TeamPolicy<Kokkos::Serial,EvaluateVTag> policy_v_serial_t;
+  typedef Kokkos::TeamPolicy<EvaluateVTag> policy_v_parallel_t;
 
-  typedef typename Kokkos::TeamPolicy<>::member_type team_t;
-  typedef typename policy_v_t::member_type team_v_t;
+  typedef typename policy_vgh_serial_t::member_type team_vgh_serial_t;
+  typedef typename policy_vgh_parallel_t::member_type team_vgh_parallel_t;
+  typedef typename policy_v_serial_t::member_type team_v_serial_t;
+  typedef typename policy_v_parallel_t::member_type team_v_parallel_t;
+
+  // Whether to use Serial evaluation or not
+  int nSplinesSerialThreshold_V;
+  int nSplinesSerialThreshold_VGH;
 
   // using spline_type=MultiBspline<T>;
   /// define the einsplie data object type
@@ -81,7 +89,7 @@ struct einspline_spo
 
   /// default constructor
   einspline_spo()
-      : nBlocks(0), nSplines(0), firstBlock(0), lastBlock(0), Owner(false), is_copy(false)
+      : nSplinesSerialThreshold_V(512),nSplinesSerialThreshold_VGH(128),nBlocks(0), nSplines(0), firstBlock(0), lastBlock(0), Owner(false), is_copy(false)
   {
   }
   /// disable copy constructor
@@ -98,6 +106,8 @@ struct einspline_spo
   einspline_spo(einspline_spo &in, int ncrews, int crewID)
       : Owner(false), Lattice(in.Lattice), is_copy(false)
   {
+    nSplinesSerialThreshold_V = in.nSplinesSerialThreshold_V;
+    nSplinesSerialThreshold_VGH = in.nSplinesSerialThreshold_VGH;
     nSplines         = in.nSplines;
     nSplinesPerBlock = in.nSplinesPerBlock;
     nBlocks          = (in.nBlocks + ncrews - 1) / ncrews;
@@ -113,6 +123,8 @@ struct einspline_spo
   einspline_spo(einspline_spo_ref<T,compute_engine_type> &in, int ncrews, int crewID)
       : Owner(false), Lattice(in.Lattice), is_copy(false)
   {
+    nSplinesSerialThreshold_V = 512;
+    nSplinesSerialThreshold_VGH = 128;
     nSplines         = in.nSplines;
     nSplinesPerBlock = in.nSplinesPerBlock;
     nBlocks          = (in.nBlocks + ncrews - 1) / ncrews;
@@ -201,11 +213,24 @@ struct einspline_spo
     pos = p;
     is_copy = true;
     compute_engine.copy_A44();
-    Kokkos::parallel_for("EinsplineSPO::evalute_v",policy_v_t(nBlocks,1,32),*this);
+    if(nSplines > nSplinesSerialThreshold_V)
+      Kokkos::parallel_for("EinsplineSPO::evalute_v_parallel",policy_v_parallel_t(nBlocks,1,32),*this);
+    else
+      Kokkos::parallel_for("EinsplineSPO::evalute_v_serial",policy_v_serial_t(nBlocks,1,32),*this);
     is_copy = false;
   }
   KOKKOS_INLINE_FUNCTION
-  void operator() (const EvaluateVTag&, const team_v_t& team ) const {
+  void operator() (const EvaluateVTag&, const team_v_serial_t& team ) const {
+    int block = team.league_rank();
+    // Need KokkosInlineFunction on Tensor and TinyVector ....
+    auto u = Lattice.toUnit(pos);
+
+    compute_engine.evaluate_v(team,&einsplines[block], u[0], u[1], u[2],
+                              psi(block).data(), psi(block).extent(0));
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  void operator() (const EvaluateVTag&, const team_v_parallel_t& team ) const {
     int block = team.league_rank();
     // Need KokkosInlineFunction on Tensor and TinyVector ....
     auto u = Lattice.toUnit(pos);
@@ -250,12 +275,25 @@ struct einspline_spo
     pos = p;
     is_copy = true;
     compute_engine.copy_A44();
-    Kokkos::parallel_for("EinsplineSPO::evalute_vgh",policy_vgh_t(nBlocks,1,32),*this);
+
+    if(nSplines > nSplinesSerialThreshold_VGH)
+      Kokkos::parallel_for("EinsplineSPO::evalute_vgh",policy_vgh_parallel_t(nBlocks,1,32),*this);
+    else
+      Kokkos::parallel_for("EinsplineSPO::evalute_vgh",policy_vgh_serial_t(nBlocks,1,32),*this);
     is_copy = false;
   }
 
   KOKKOS_INLINE_FUNCTION
-  void operator() (const EvaluateVGHTag&, const team_t& team ) const {
+  void operator() (const EvaluateVGHTag&, const team_vgh_parallel_t& team ) const {
+    int block = team.league_rank();
+    auto u = Lattice.toUnit(pos);
+    compute_engine.evaluate_vgh(team,&einsplines[block], u[0], u[1], u[2],
+                                      psi(block).data(), grad(block).data(), hess(block).data(),
+                                      psi(block).extent(0));
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  void operator() (const EvaluateVGHTag&, const team_vgh_serial_t& team ) const {
     int block = team.league_rank();
     auto u = Lattice.toUnit(pos);
     compute_engine.evaluate_vgh(team,&einsplines[block], u[0], u[1], u[2],
