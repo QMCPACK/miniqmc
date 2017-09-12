@@ -7,7 +7,7 @@
 namespace qmcplusplus
 {
 
-template<typename T>
+template<typename T, class C = std::vector<T>>
 class OMPVector
 {
   private:
@@ -15,7 +15,7 @@ class OMPVector
   T * vec_ptr;
 
   public:
-  std::vector<T> vec;
+  C vec;
   inline OMPVector(size_t size = 0, size_t id = 0): device_id(id), vec_ptr(nullptr)
   {
     resize(size);
