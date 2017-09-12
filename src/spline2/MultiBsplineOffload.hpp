@@ -28,6 +28,7 @@
 namespace qmcplusplus
 {
 
+#pragma omp declare target
 template <typename T> struct MultiBsplineOffload
 {
   /// define the einsplie object type
@@ -320,6 +321,7 @@ MultiBsplineOffload<T>::evaluate_vgh(const spliner_type *restrict spline_m,
     hyz[n] *= dyz;
   }
 }
+#pragma omp end declare target
 
 } /** qmcplusplus namespace */
 #endif
