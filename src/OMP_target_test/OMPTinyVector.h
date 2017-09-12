@@ -13,8 +13,8 @@
 //    University of Illinois at Urbana-Champaign
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef OHMMS_OMPTINYVECTOR_H
-#define OHMMS_OMPTINYVECTOR_H
+#ifndef OHMMS_OMP_TINYVECTOR_H
+#define OHMMS_OMP_TINYVECTOR_H
 
 // include files
 #include <iomanip>

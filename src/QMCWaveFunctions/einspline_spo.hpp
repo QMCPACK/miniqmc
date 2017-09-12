@@ -26,6 +26,8 @@
 #include <simd/allocator.hpp>
 #include "OhmmsPETE/OhmmsArray.h"
 #include "OMP_target_test/OMPTinyVector.h"
+#include "OMP_target_test/OMPVector.h"
+#include "OMP_target_test/OMPVectorSoaContainer.h"
 #include <iostream>
 
 namespace qmcplusplus
@@ -37,9 +39,9 @@ struct einspline_spo
   using self_type = einspline_spo<T, compute_engine_type>;
   using spline_type = typename bspline_traits<T, 3>::SplineType;
   using pos_type        = TinyVector<T, 3>;
-  using vContainer_type = aligned_vector<T>;
-  using gContainer_type = VectorSoaContainer<T, 3>;
-  using hContainer_type = VectorSoaContainer<T, 6>;
+  using vContainer_type = OMPVector<T, aligned_vector<T> >;
+  using gContainer_type = OMPVectorSoaContainer<T, 3>;
+  using hContainer_type = OMPVectorSoaContainer<T, 6>;
   using lattice_type    = CrystalLattice<T, 3>;
 
   /// number of blocks
@@ -233,6 +235,7 @@ struct einspline_spo
         psi_shadows[iw*nBlocks+i] = shadow.psi[i].data();
         grad_shadows[iw*nBlocks+i] = shadow.grad[i].data();
         hess_shadows[iw*nBlocks+i] = shadow.hess[i].data();
+        std::cout << "mapped already? " << omp_target_is_present(psi_shadows[iw*nBlocks+i],0) << std::endl;
       }
     }
 

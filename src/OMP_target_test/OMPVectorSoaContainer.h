@@ -9,56 +9,60 @@
 //// File created by: Ye Luo, yeluo@anl.gov, Argonne National Laboratory.
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef QMCPLUSPLUS_OMP_VECTOR_HPP
-#define QMCPLUSPLUS_OMP_VECTOR_HPP
+#ifndef QMCPLUSPLUS_OMP_VECTOR_SOA_HPP
+#define QMCPLUSPLUS_OMP_VECTOR_SOA_HPP
 
-#include <vector>
+#include "OhmmsSoA/VectorSoaContainer.h"
 
 namespace qmcplusplus
 {
 
-template<typename T, class Container = std::vector<T>>
-class OMPVector:public Container
+template<typename T,  unsigned D>
+class OMPVectorSoaContainer:public VectorSoaContainer<T,D>
 {
+  typedef VectorSoaContainer<T,D> __base;
+
   private:
   size_t device_id;
   T * vec_ptr;
 
   public:
-  inline OMPVector(size_t size = 0, size_t id = 0): device_id(id), vec_ptr(nullptr)
+  inline OMPVectorSoaContainer(size_t size = 0, size_t id = 0): device_id(id), vec_ptr(nullptr)
   {
     resize(size);
   }
 
   inline void resize(size_t size)
   {
-    if(size!=Container::size())
+    if(size!=__base::size())
     {
-      if(Container::size()!=0)
+      if(__base::size()!=0)
       {
         #pragma omp target exit data map(delete:vec_ptr) device(device_id)
         vec_ptr = nullptr;
       }
-      Container::resize(size);
+      __base::resize(size);
       if(size>0)
       {
-        vec_ptr = Container::data();
-        #pragma omp target enter data map(alloc:vec_ptr[0:size]) device(device_id)
+        vec_ptr = __base::data();
+        #pragma omp target enter data map(alloc:vec_ptr[0:__base::nAllocated]) device(device_id)
+        std::cout << "mapped already? " << omp_target_is_present(vec_ptr,0) << " address " << vec_ptr << " size " << __base::nAllocated << std::endl;
+        exit(1);
       }
     }
   }
 
   inline void update_to_device() const
   {
-    #pragma omp target update to(vec_ptr[0:Container::size()]) device(device_id)
+    #pragma omp target update to(vec_ptr[0:__base::nAllocated]) device(device_id)
   }
 
   inline void update_from_device() const 
   {
-    #pragma omp target update from(vec_ptr[0:Container::size()]) device(device_id)
+    #pragma omp target update from(vec_ptr[0:__base::nAllocated]) device(device_id)
   }
 
-  inline ~OMPVector()
+  inline ~OMPVectorSoaContainer()
   {
     #pragma omp target exit data map(delete:vec_ptr) device(device_id)
   }
