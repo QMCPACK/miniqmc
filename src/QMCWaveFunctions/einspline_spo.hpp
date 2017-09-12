@@ -59,10 +59,16 @@ struct einspline_spo
   /// compute engine
   compute_engine_type compute_engine;
 
-  aligned_vector<spline_type *> einsplines;
-  aligned_vector<vContainer_type *> psi;
-  aligned_vector<gContainer_type *> grad;
-  aligned_vector<hContainer_type *> hess;
+  std::vector<spline_type *> einsplines;
+  std::vector<vContainer_type *> psi;
+  std::vector<gContainer_type *> grad;
+  std::vector<hContainer_type *> hess;
+
+  // for shadows
+  std::vector<T*> psi_shadows;
+  std::vector<T*> grad_shadows;
+  std::vector<T*> hess_shadows;
+  std::vector<pos_type> u_shadows;
 
   /// default constructor
   einspline_spo()
@@ -225,17 +231,31 @@ struct einspline_spo
   }
 
   /** evaluate psi, grad and hess */
-  inline void evaluate_multi_vgh(const std::vector<pos_type> &p, std::vector<self_type *> &shadows) const
+  inline void evaluate_multi_vgh(const std::vector<pos_type> &p, std::vector<self_type *> &shadows)
   {
-    for(size_t iw = 0; iw < p.size(); iw++)
+    const size_t nw = p.size();
+    psi_shadows.resize(nw*nBlocks);
+    grad_shadows.resize(nw*nBlocks);
+    hess_shadows.resize(nw*nBlocks);
+    u_shadows.resize(nw);
+
+    for(size_t iw = 0; iw < nw; iw++)
     {
-      auto u = Lattice.toUnit(p[iw]);
+      u_shadows[iw] = Lattice.toUnit(p[iw]);
       auto &shadow = *shadows[iw];
       for (int i = 0; i < nBlocks; ++i)
-        compute_engine.evaluate_vgh(shadow.einsplines[i], u[0], u[1], u[2],
-                                    shadow.psi[i]->data(), shadow.grad[i]->data(), shadow.hess[i]->data(),
-                                    shadow.psi[i]->size());
+      {
+        psi_shadows[iw*nBlocks+i] = shadow.psi[i]->data();
+        grad_shadows[iw*nBlocks+i] = shadow.grad[i]->data();
+        hess_shadows[iw*nBlocks+i] = shadow.hess[i]->data();
+      }
     }
+
+    for(size_t iw = 0; iw < nw; iw++)
+      for (size_t i = 0; i < nBlocks; ++i)
+        compute_engine.evaluate_vgh(einsplines[i], u_shadows[iw][0], u_shadows[iw][1], u_shadows[iw][2],
+                                    psi_shadows[iw*nBlocks+i], grad_shadows[iw*nBlocks+i],
+                                    hess_shadows[iw*nBlocks+i], nSplinesPerBlock);
   }
 
   void print(std::ostream &os)
