@@ -92,7 +92,7 @@ public:
   //!< Position
   ParticlePos_t R;
   /// SoA copy of R
-  Container<RealType, DIM> RSoA;
+  VectorSoAContainer<RealType, DIM> RSoA;
   /// gradients of the particles
   ParticleGradient_t G;
   /// laplacians of the particles

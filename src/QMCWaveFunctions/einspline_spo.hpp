@@ -36,8 +36,8 @@ struct einspline_spo
   using spline_type = typename bspline_traits<T, 3>::SplineType;
   using pos_type        = TinyVector<T, 3>;
   using vContainer_type = aligned_vector<T>;
-  using gContainer_type = Container<T, 3>;
-  using hContainer_type = Container<T, 6>;
+  using gContainer_type = VectorSoAContainer<T, 3>;
+  using hContainer_type = VectorSoAContainer<T, 6>;
   using lattice_type    = CrystalLattice<T, 3>;
 
   /// number of blocks

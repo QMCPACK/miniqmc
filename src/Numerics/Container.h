@@ -35,7 +35,7 @@ namespace qmcplusplus
 /** SoA adaptor class for ParticleAttrib<TinyVector<T,D> >
  * @tparm T data type, float, double, complex<float>, complex<double>
  */
-template <typename T, unsigned D> struct Container
+template <typename T, unsigned D> struct VectorSoAContainer
 {
 #if (__cplusplus >= 201103L)
   using Type_t    = TinyVector<T, D>;
@@ -57,15 +57,15 @@ template <typename T, unsigned D> struct Container
   /// allocator
   aligned_allocator<T> myAlloc;
   /// default constructor
-  Container() { setDefaults(); }
+  VectorSoAContainer() { setDefaults(); }
   /// destructor
-  ~Container()
+  ~VectorSoAContainer()
   {
     if (nAllocated > 0) myAlloc.deallocate(myData, nAllocated);
   }
 
   /// default copy constructor
-  Container(const Container &in)
+  VectorSoAContainer(const VectorSoAContainer &in)
   {
     setDefaults();
     resize(in.nLocal);
@@ -73,7 +73,7 @@ template <typename T, unsigned D> struct Container
   }
 
   /// default copy operator
-  Container &operator=(const Container &in)
+  VectorSoAContainer &operator=(const VectorSoAContainer &in)
   {
     if (myData != in.myData)
     {
@@ -85,7 +85,7 @@ template <typename T, unsigned D> struct Container
 
 #if (__cplusplus >= 201103L)
   /// move constructor
-  Container(Container &&in)
+  VectorSoAContainer(VectorSoAContainer &&in)
       : nLocal(in.nLocal), nGhosts(in.nGhosts)
   {
     nAllocated    = in.nAllocated;
@@ -98,7 +98,7 @@ template <typename T, unsigned D> struct Container
 
   /** constructor with size n  without initialization
    */
-  explicit Container(size_t n)
+  explicit VectorSoAContainer(size_t n)
   {
     setDefaults();
     resize(n);
@@ -106,7 +106,7 @@ template <typename T, unsigned D> struct Container
 
   /** constructor with ParticleAttrib<T1,D> */
   template <typename T1>
-  Container(const ParticleAttrib<TinyVector<T1, D>> &in)
+  VectorSoAContainer(const ParticleAttrib<TinyVector<T1, D>> &in)
   {
     setDefaults();
     resize(in.size());
@@ -114,7 +114,7 @@ template <typename T, unsigned D> struct Container
   }
 
   template <typename T1>
-  Container &operator=(const ParticleAttrib<TinyVector<T1, D>> &in)
+  VectorSoAContainer &operator=(const ParticleAttrib<TinyVector<T1, D>> &in)
   {
     if (nLocal != in.size()) resize(in.size());
     copyIn(in);
@@ -123,7 +123,7 @@ template <typename T, unsigned D> struct Container
 
   /** need A=0.0;
    */
-  template <typename T1> Container &operator=(T1 in)
+  template <typename T1> VectorSoAContainer &operator=(T1 in)
   {
     std::fill(myData, myData + nGhosts * D, static_cast<T>(in));
     return *this;

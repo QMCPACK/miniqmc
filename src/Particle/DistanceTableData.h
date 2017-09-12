@@ -103,7 +103,7 @@ struct DistanceTableData
   using IndexVectorType = aligned_vector<IndexType>;
   using TempDistType    = TempDisplacement<RealType, DIM>;
   using ripair          = std::pair<RealType, IndexType>;
-  using RowContainer    = Container<RealType, DIM>;
+  using RowContainer    = VectorSoAContainer<RealType, DIM>;
 #else
   typedef QMCTraits::IndexType IndexType;
   typedef QMCTraits::RealType RealType;
