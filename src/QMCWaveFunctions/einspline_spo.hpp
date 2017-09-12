@@ -22,7 +22,7 @@
 #include <Configuration.h>
 #include <Particle/ParticleSet.h>
 #include <spline2/bspline_allocator.hpp>
-#include <spline2/MultiBspline.hpp>
+#include <spline2/MultiBsplineRef.hpp>
 #include <simd/allocator.hpp>
 #include "OhmmsPETE/OhmmsArray.h"
 #include "OMP_target_test/OMPTinyVector.h"
@@ -32,7 +32,7 @@
 
 namespace qmcplusplus
 {
-template <typename T, typename compute_engine_type = MultiBspline<T> >
+template <typename T, typename compute_engine_type = MultiBsplineRef<T> >
 struct einspline_spo
 {
   /// define the einsplie data object type
