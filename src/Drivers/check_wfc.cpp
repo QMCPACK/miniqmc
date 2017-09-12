@@ -23,7 +23,7 @@
 #include <Utilities/Configuration.h>
 #include <Particle/ParticleSet.h>
 #include <Particle/DistanceTable.h>
-#include <Numerics/Container.h>
+#include <Numerics/Containers.h>
 #include <Utilities/PrimeNumberSet.h>
 #include <Utilities/RandomGenerator.h>
 #include <Input/Input.hpp>

@@ -21,7 +21,7 @@
 #define QMCPLUSPLUS_PARTICLE_BCONDS_H
 
 #include <Particle/Lattice/CrystalLattice.h>
-#include <Numerics/Container.h>
+#include <Numerics/Containers.h>
 #include <algorithm>
 #include <config.h>
 

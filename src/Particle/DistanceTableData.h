@@ -27,7 +27,7 @@
 #include "Numerics/OhmmsPETE/OhmmsVector.h"
 #include "Numerics/OhmmsPETE/OhmmsMatrix.h"
 #include "Utilities/SIMD/allocator.hpp"
-#include <Numerics/Container.h>
+#include <Numerics/Containers.h>
 #include <limits>
 #include <bitset>
 
