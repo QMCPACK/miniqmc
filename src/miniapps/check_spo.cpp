@@ -124,7 +124,8 @@ int main(int argc, char **argv)
   std::vector<ParticlePos_t> rOnSphere_list(nmovers);
   std::vector<std::vector<RealType> > ur_list(nmovers);
   std::vector<int> my_accepted_list(nmovers), my_vals_list(nmovers);
-  ParticlePos_t pos_list(nmovers);
+  std::vector<PosType> pos_list(nmovers);
+  std::vector<spo_type *> spo_shadows(nmovers);
 
   #pragma omp parallel
   for(size_t iw = 0; iw < mover_list.size(); iw++)
@@ -153,6 +154,7 @@ int main(int argc, char **argv)
 
     // create spo per thread
     mover.spo = new spo_type(spo_main, 1, 0);
+    spo_shadows[iw] = mover.spo;
     mover.spo_ref = new spo_ref_type(spo_ref_main, 1, 0);
 
     // create pseudopp per thread
@@ -200,7 +202,6 @@ int main(int argc, char **argv)
     // VMC
     for (int iel = 0; iel < nels; ++iel)
     {
-      #pragma omp parallel for
       for(size_t iw = 0; iw < mover_list.size(); iw++)
       {
         auto &mover = mover_list[iw];
@@ -209,8 +210,9 @@ int main(int argc, char **argv)
         auto &delta = delta_list[iw];
         auto &pos = pos_list[iw];
         pos = els.R[iel] + sqrttau * delta[iel];
-        spo.evaluate_vgh(pos);
       }
+
+      mover_list[0].spo->evaluate_multi_vgh(pos_list, spo_shadows);
 
       #pragma omp parallel for reduction(+:evalVGH_v_err,evalVGH_g_err,evalVGH_h_err)
       for(size_t iw = 0; iw < mover_list.size(); iw++)

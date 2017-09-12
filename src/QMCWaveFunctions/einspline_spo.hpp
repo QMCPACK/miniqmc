@@ -33,6 +33,7 @@ template <typename T, typename compute_engine_type = MultiBspline<T> >
 struct einspline_spo
 {
   /// define the einsplie data object type
+  using self_type = einspline_spo<T, compute_engine_type>;
   using spline_type = typename bspline_traits<T, 3>::SplineType;
   using pos_type        = TinyVector<T, 3>;
   using vContainer_type = aligned_vector<T>;
@@ -221,6 +222,20 @@ struct einspline_spo
       compute_engine.evaluate_vgh(einsplines[i], u[0], u[1], u[2],
                                   psi[i]->data(), grad[i]->data(), hess[i]->data(),
                                   psi[i]->size());
+  }
+
+  /** evaluate psi, grad and hess */
+  inline void evaluate_multi_vgh(const std::vector<pos_type> &p, std::vector<self_type *> &shadows) const
+  {
+    for(size_t iw = 0; iw < p.size(); iw++)
+    {
+      auto u = Lattice.toUnit(p[iw]);
+      auto &shadow = *shadows[iw];
+      for (int i = 0; i < nBlocks; ++i)
+        compute_engine.evaluate_vgh(shadow.einsplines[i], u[0], u[1], u[2],
+                                    shadow.psi[i]->data(), shadow.grad[i]->data(), shadow.hess[i]->data(),
+                                    shadow.psi[i]->size());
+    }
   }
 
   void print(std::ostream &os)
