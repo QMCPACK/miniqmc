@@ -66,4 +66,16 @@ class OMPVector:public Container
 };
 
 }
+
+namespace OMPstd
+{
+#pragma omp declare target
+  template <typename T>
+  inline void fill_n(T *x, size_t count, const T& value)
+  {
+    for(size_t id=0; id<count; id++)
+      x[id]=value;
+  }
+#pragma omp end declare target
+}
 #endif

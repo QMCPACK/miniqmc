@@ -23,6 +23,7 @@
 #include <iostream>
 #include <spline2/bspline_allocator.hpp>
 #include <spline2/MultiBsplineData.hpp>
+#include <OMP_target_test/OMPVector.h>
 #include <stdlib.h>
 
 namespace qmcplusplus
@@ -81,7 +82,7 @@ inline void MultiBsplineOffload<T>::evaluate_v(const spliner_type *restrict spli
   const intptr_t zs = spline_m->z_stride;
 
   CONSTEXPR T zero(0);
-  std::fill(vals, vals + num_splines, zero);
+  OMPstd::fill_n(vals, num_splines, zero);
 
   for (size_t i = 0; i < 4; i++)
     for (size_t j = 0; j < 4; j++)
@@ -134,13 +135,13 @@ MultiBsplineOffload<T>::evaluate_vgl(const spliner_type *restrict spline_m,
   T *restrict ly = lapl + out_offset;
   T *restrict lz = lapl + 2 * out_offset;
 
-  std::fill(vals, vals + num_splines, T());
-  std::fill(gx, gx + num_splines, T());
-  std::fill(gy, gy + num_splines, T());
-  std::fill(gz, gz + num_splines, T());
-  std::fill(lx, lx + num_splines, T());
-  std::fill(ly, ly + num_splines, T());
-  std::fill(lz, lz + num_splines, T());
+  OMPstd::fill_n(vals, num_splines, T());
+  OMPstd::fill_n(gx, num_splines, T());
+  OMPstd::fill_n(gy, num_splines, T());
+  OMPstd::fill_n(gz, num_splines, T());
+  OMPstd::fill_n(lx, num_splines, T());
+  OMPstd::fill_n(ly, num_splines, T());
+  OMPstd::fill_n(lz, num_splines, T());
 
   for (int i = 0; i < 4; i++)
     for (int j = 0; j < 4; j++)
@@ -242,16 +243,16 @@ MultiBsplineOffload<T>::evaluate_vgh(const spliner_type *restrict spline_m,
   T *restrict hyz = hess + 4 * out_offset;
   T *restrict hzz = hess + 5 * out_offset;
 
-  std::fill(vals, vals + num_splines, T());
-  std::fill(gx, gx + num_splines, T());
-  std::fill(gy, gy + num_splines, T());
-  std::fill(gz, gz + num_splines, T());
-  std::fill(hxx, hxx + num_splines, T());
-  std::fill(hxy, hxy + num_splines, T());
-  std::fill(hxz, hxz + num_splines, T());
-  std::fill(hyy, hyy + num_splines, T());
-  std::fill(hyz, hyz + num_splines, T());
-  std::fill(hzz, hzz + num_splines, T());
+  OMPstd::fill_n(vals, num_splines, T());
+  OMPstd::fill_n(gx, num_splines, T());
+  OMPstd::fill_n(gy, num_splines, T());
+  OMPstd::fill_n(gz, num_splines, T());
+  OMPstd::fill_n(hxx, num_splines, T());
+  OMPstd::fill_n(hxy, num_splines, T());
+  OMPstd::fill_n(hxz, num_splines, T());
+  OMPstd::fill_n(hyy, num_splines, T());
+  OMPstd::fill_n(hyz, num_splines, T());
+  OMPstd::fill_n(hzz, num_splines, T());
 
   for (int i = 0; i < 4; i++)
     for (int j = 0; j < 4; j++)
