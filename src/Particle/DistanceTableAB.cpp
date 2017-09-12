@@ -27,7 +27,7 @@
 #include "Particle/Lattice/ParticleBConds.h"
 #include "Particle/AsymmetricDistanceTableData.h"
 #include "Utilities/SIMD/algorithm.hpp"
-#include "Particle/SoaDistanceTableBA.h"
+#include "Particle/DistanceTableBA.h"
 
 namespace qmcplusplus
 {
@@ -57,7 +57,7 @@ DistanceTableData *createDistanceTable(const ParticleSet &s, ParticleSet &t,
     {
       o << "  Using SoaDistanceTableBA<T,D,PPPG> of SoA layout " << PPPG
         << std::endl;
-      dt = new SoaDistanceTableBA<RealType, DIM, PPPG + SOA_OFFSET>(s, t);
+      dt = new DistanceTableBA<RealType, DIM, PPPG + SOA_OFFSET>(s, t);
     }
     else
     {

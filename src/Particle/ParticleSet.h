@@ -31,7 +31,7 @@
 #include <Particle/Walker.h>
 #include <Utilities/SpeciesSet.h>
 #include <Utilities/PooledData.h>
-#include <Numerics/OhmmsSoA/Container.h>
+#include <Numerics/Containers.h>
 
 namespace qmcplusplus
 {
@@ -92,7 +92,7 @@ public:
   //!< Position
   ParticlePos_t R;
   /// SoA copy of R
-  VectorSoaContainer<RealType, DIM> RSoA;
+  VectorSoAContainer<RealType, DIM> RSoA;
   /// gradients of the particles
   ParticleGradient_t G;
   /// laplacians of the particles

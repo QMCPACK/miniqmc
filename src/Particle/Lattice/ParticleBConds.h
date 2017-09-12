@@ -21,7 +21,7 @@
 #define QMCPLUSPLUS_PARTICLE_BCONDS_H
 
 #include <Particle/Lattice/CrystalLattice.h>
-#include <Numerics/OhmmsSoA/VectorSoaContainer.h>
+#include <Numerics/Containers.h>
 #include <algorithm>
 #include <config.h>
 
@@ -103,7 +103,7 @@ template <class T> struct DTD_BConds<T, 3, PPPG + SOA_OFFSET>
 {
   T g00, g10, g20, g01, g11, g21, g02, g12, g22;
   T r00, r10, r20, r01, r11, r21, r02, r12, r22;
-  VectorSoaContainer<T, 3> corners;
+  VectorSoAContainer<T, 3> corners;
 
   DTD_BConds(const CrystalLattice<T, 3> &lat)
   {

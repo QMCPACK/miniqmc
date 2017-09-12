@@ -11,13 +11,22 @@
 //    Intel Corp.
 ////////////////////////////////////////////////////////////////////////////////
 // -*- C++ -*-
-/** @file VectorSoaContainer.h
- * Soa Container for D-dim vectors
+/** @file Container.h
+ *
+ * Master header to support SoA containers
+ */
+#ifndef QMCPLUSPLUS_SOA_CONTAINER_H
+#define QMCPLUSPLUS_SOA_CONTAINER_H
+#include <config.h>
+#include <Numerics/OhmmsPETE/TinyVector.h>
+#include <Numerics/OhmmsPETE/Tensor.h>
+#include <Utilities/SIMD/allocator.hpp>
+#include <Numerics/PosTransformer.h>
+
+/* Soa Container for D-dim vectors
  *
  * Alternative to Container<TinyVector<T,D> > to support SoA algorithms
  */
-#ifndef QMCPLUSPLUS_VECTOR_SOA_H
-#define QMCPLUSPLUS_VECTOR_SOA_H
 #include <Utilities/SIMD/allocator.hpp>
 #include <Utilities/SIMD/algorithm.hpp>
 
@@ -26,7 +35,7 @@ namespace qmcplusplus
 /** SoA adaptor class for ParticleAttrib<TinyVector<T,D> >
  * @tparm T data type, float, double, complex<float>, complex<double>
  */
-template <typename T, unsigned D> struct VectorSoaContainer
+template <typename T, unsigned D> struct VectorSoAContainer
 {
 #if (__cplusplus >= 201103L)
   using Type_t    = TinyVector<T, D>;
@@ -48,15 +57,15 @@ template <typename T, unsigned D> struct VectorSoaContainer
   /// allocator
   aligned_allocator<T> myAlloc;
   /// default constructor
-  VectorSoaContainer() { setDefaults(); }
+  VectorSoAContainer() { setDefaults(); }
   /// destructor
-  ~VectorSoaContainer()
+  ~VectorSoAContainer()
   {
     if (nAllocated > 0) myAlloc.deallocate(myData, nAllocated);
   }
 
   /// default copy constructor
-  VectorSoaContainer(const VectorSoaContainer &in)
+  VectorSoAContainer(const VectorSoAContainer &in)
   {
     setDefaults();
     resize(in.nLocal);
@@ -64,7 +73,7 @@ template <typename T, unsigned D> struct VectorSoaContainer
   }
 
   /// default copy operator
-  VectorSoaContainer &operator=(const VectorSoaContainer &in)
+  VectorSoAContainer &operator=(const VectorSoAContainer &in)
   {
     if (myData != in.myData)
     {
@@ -76,7 +85,7 @@ template <typename T, unsigned D> struct VectorSoaContainer
 
 #if (__cplusplus >= 201103L)
   /// move constructor
-  VectorSoaContainer(VectorSoaContainer &&in)
+  VectorSoAContainer(VectorSoAContainer &&in)
       : nLocal(in.nLocal), nGhosts(in.nGhosts)
   {
     nAllocated    = in.nAllocated;
@@ -89,7 +98,7 @@ template <typename T, unsigned D> struct VectorSoaContainer
 
   /** constructor with size n  without initialization
    */
-  explicit VectorSoaContainer(size_t n)
+  explicit VectorSoAContainer(size_t n)
   {
     setDefaults();
     resize(n);
@@ -97,7 +106,7 @@ template <typename T, unsigned D> struct VectorSoaContainer
 
   /** constructor with ParticleAttrib<T1,D> */
   template <typename T1>
-  VectorSoaContainer(const ParticleAttrib<TinyVector<T1, D>> &in)
+  VectorSoAContainer(const ParticleAttrib<TinyVector<T1, D>> &in)
   {
     setDefaults();
     resize(in.size());
@@ -105,7 +114,7 @@ template <typename T, unsigned D> struct VectorSoaContainer
   }
 
   template <typename T1>
-  VectorSoaContainer &operator=(const ParticleAttrib<TinyVector<T1, D>> &in)
+  VectorSoAContainer &operator=(const ParticleAttrib<TinyVector<T1, D>> &in)
   {
     if (nLocal != in.size()) resize(in.size());
     copyIn(in);
@@ -114,7 +123,7 @@ template <typename T, unsigned D> struct VectorSoaContainer
 
   /** need A=0.0;
    */
-  template <typename T1> VectorSoaContainer &operator=(T1 in)
+  template <typename T1> VectorSoAContainer &operator=(T1 in)
   {
     std::fill(myData, myData + nGhosts * D, static_cast<T>(in));
     return *this;
@@ -251,5 +260,4 @@ template <typename T, unsigned D> struct VectorSoaContainer
 // BOOST_CLASS_TRACKING(Pos3DSoA<double,3>, boost::serialization::track_never)
 // BOOST_CLASS_TRACKING(Pos3DSoA<float,3>, boost::serialization::track_never)
 }
-
 #endif
