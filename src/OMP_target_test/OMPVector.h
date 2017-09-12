@@ -41,15 +41,16 @@ class OMPVector
     #pragma omp target update from(vec_ptr[0:vec.size()]) device(device_id)
   }
 
-  inline T * data() const
-  {
-    return vec_ptr;
-  }
-
   inline ~OMPVector()
   {
     #pragma omp target exit data map(delete:vec_ptr) device(device_id)
   }
+
+  // Get and Set Operations
+  inline T &operator[](size_t i) { return vec_ptr[i]; }
+  inline const T &operator[](size_t i) const { return vec_ptr[i]; }
+  inline T * data() const { return vec_ptr; }
+
 };
 
 }
