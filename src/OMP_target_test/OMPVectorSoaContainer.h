@@ -46,8 +46,6 @@ class OMPVectorSoaContainer:public VectorSoaContainer<T,D>
       {
         vec_ptr = __base::data();
         #pragma omp target enter data map(alloc:vec_ptr[0:__base::nAllocated]) device(device_id)
-        std::cout << "mapped already? " << omp_target_is_present(vec_ptr,0) << " address " << vec_ptr << " size " << __base::nAllocated << std::endl;
-        exit(1);
       }
     }
   }

@@ -235,7 +235,6 @@ struct einspline_spo
         psi_shadows[iw*nBlocks+i] = shadow.psi[i].data();
         grad_shadows[iw*nBlocks+i] = shadow.grad[i].data();
         hess_shadows[iw*nBlocks+i] = shadow.hess[i].data();
-        std::cout << "mapped already? " << omp_target_is_present(psi_shadows[iw*nBlocks+i],0) << std::endl;
       }
     }
 
