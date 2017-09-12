@@ -27,11 +27,11 @@
 #ifndef QMCPLUSPLUS_PARTICLESET_H
 #define QMCPLUSPLUS_PARTICLESET_H
 
-#include <Configuration.h>
+#include <Utilities/Configuration.h>
 #include <Particle/Walker.h>
 #include <Utilities/SpeciesSet.h>
 #include <Utilities/PooledData.h>
-#include <OhmmsSoA/Container.h>
+#include <Numerics/OhmmsSoA/Container.h>
 
 namespace qmcplusplus
 {

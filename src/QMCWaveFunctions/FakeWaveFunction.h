@@ -22,7 +22,7 @@
 
 #ifndef QMCPLUSPLUS_FAKEWAVEFUNCTIONS_H
 #define QMCPLUSPLUS_FAKEWAVEFUNCTIONS_H
-#include <Configuration.h>
+#include <Utilities/Configuration.h>
 #include <Particle/DistanceTable.h>
 #include <QMCWaveFunctions/Jastrow/BsplineFunctor.h>
 #include <QMCWaveFunctions/Jastrow/TwoBodyJastrowRef.h>

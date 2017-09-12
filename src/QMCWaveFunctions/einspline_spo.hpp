@@ -19,12 +19,12 @@
  */
 #ifndef QMCPLUSPLUS_EINSPLINE_SPO_HPP
 #define QMCPLUSPLUS_EINSPLINE_SPO_HPP
-#include <Configuration.h>
+#include <Utilities/Configuration.h>
 #include <Particle/ParticleSet.h>
-#include <spline2/bspline_allocator.hpp>
-#include <spline2/MultiBspline.hpp>
-#include <simd/allocator.hpp>
-#include "OhmmsPETE/OhmmsArray.h"
+#include <Numerics/Spline2/bspline_allocator.hpp>
+#include <Numerics/Spline2/MultiBspline.hpp>
+#include <Utilities/SIMD/allocator.hpp>
+#include "Numerics/OhmmsPETE/OhmmsArray.h"
 #include <iostream>
 
 namespace qmcplusplus

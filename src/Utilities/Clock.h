@@ -22,7 +22,7 @@
 
 #include <sys/time.h>
 #include <stddef.h>
-#include "Configuration.h"
+#include "Utilities/Configuration.h"
 
 namespace qmcplusplus
 {

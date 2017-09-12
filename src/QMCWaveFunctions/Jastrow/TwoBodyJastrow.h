@@ -19,11 +19,11 @@
 // -*- C++ -*-
 #ifndef QMCPLUSPLUS_TWOBODYJASTROW_OPTIMIZED_SOA_H
 #define QMCPLUSPLUS_TWOBODYJASTROW_OPTIMIZED_SOA_H
-#include "Configuration.h"
+#include "Utilities/Configuration.h"
 #include "QMCWaveFunctions/WaveFunctionComponentBase.h"
 #include "Particle/DistanceTableData.h"
-#include <simd/allocator.hpp>
-#include <simd/algorithm.hpp>
+#include <Utilities/SIMD/allocator.hpp>
+#include <Utilities/SIMD/algorithm.hpp>
 #include <numeric>
 
 /*!

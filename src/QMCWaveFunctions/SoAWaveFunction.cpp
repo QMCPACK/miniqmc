@@ -11,7 +11,7 @@
 // -*- C++ -*-
 #include <omp.h>
 #include <QMCWaveFunctions/FakeWaveFunction.h>
-#include <Simulation/Simulation.hpp>
+#include <Input/Input.hpp>
 
 /*!
  * @file SoAWaveFunction.cpp
