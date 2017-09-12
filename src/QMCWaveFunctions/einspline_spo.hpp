@@ -62,16 +62,16 @@ struct einspline_spo
   /// compute engine
   compute_engine_type compute_engine;
 
-  std::vector<spline_type *> einsplines;
+  OMPVector<spline_type *> einsplines;
   std::vector<vContainer_type> psi;
   std::vector<gContainer_type> grad;
   std::vector<hContainer_type> hess;
 
   // for shadows
-  std::vector<T*> psi_shadows;
-  std::vector<T*> grad_shadows;
-  std::vector<T*> hess_shadows;
-  std::vector<OMPTinyVector<T, 3> > u_shadows;
+  OMPVector<T*> psi_shadows;
+  OMPVector<T*> grad_shadows;
+  OMPVector<T*> hess_shadows;
+  OMPVector<OMPTinyVector<T, 3> > u_shadows;
 
   /// default constructor
   einspline_spo()
@@ -237,12 +237,22 @@ struct einspline_spo
         hess_shadows[iw*nBlocks+i] = shadow.hess[i].data();
       }
     }
+    //std::cout << "mapped already? " << omp_target_is_present(u_shadows.data(),0) << std::endl;
+    u_shadows.update_to_device();
 
+    T **psi_shadows_ptr=psi_shadows.data();
+    T **grad_shadows_ptr=grad_shadows.data();
+    T **hess_shadows_ptr=hess_shadows.data();
+    spline_type **einsplines_ptr=einsplines.data();
+    OMPTinyVector<T, 3> *u_shadows_ptr=u_shadows.data();
+
+    #pragma omp target teams distribute collapse(2)
     for(size_t iw = 0; iw < nw; iw++)
       for (size_t i = 0; i < nBlocks; ++i)
-        compute_engine.evaluate_vgh(einsplines[i], u_shadows[iw][0], u_shadows[iw][1], u_shadows[iw][2],
-                                    psi_shadows[iw*nBlocks+i], grad_shadows[iw*nBlocks+i],
-                                    hess_shadows[iw*nBlocks+i], nSplinesPerBlock);
+        //#pragma omp parallel
+        compute_engine.evaluate_vgh(einsplines_ptr[i], u_shadows_ptr[iw][0], u_shadows_ptr[iw][1], u_shadows_ptr[iw][2],
+                                    psi_shadows_ptr[iw*nBlocks+i], grad_shadows_ptr[iw*nBlocks+i],
+                                    hess_shadows_ptr[iw*nBlocks+i], nSplinesPerBlock);
   }
 
   void print(std::ostream &os)
