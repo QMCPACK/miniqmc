@@ -15,7 +15,7 @@
  */
 
 #include "config.h"
-#include <Numerics/Einspline/Spline2/MultiBsplineData.hpp>
+#include <Numerics/Spline2/MultiBsplineData.hpp>
 
 namespace qmcplusplus
 {

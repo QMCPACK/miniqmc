@@ -21,7 +21,7 @@
 #define QMCPLUSPLUS_MULTIEINSPLINE_COMMON_HPP
 
 #include <iostream>
-#include <Numerics/Einspline/Spline2/MultiBsplineData.hpp>
+#include <Numerics/Spline2/MultiBsplineData.hpp>
 #include <stdlib.h>
 
 namespace qmcplusplus
