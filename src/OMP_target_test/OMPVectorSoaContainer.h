@@ -45,6 +45,7 @@ class OMPVectorSoaContainer:public VectorSoaContainer<T,D>
       if(size>0)
       {
         vec_ptr = __base::data();
+        //std::cout << "YYYY resize OMPVectorSoAContainer " << __base::nAllocated << std::endl;
         #pragma omp target enter data map(alloc:vec_ptr[0:__base::nAllocated]) device(device_id)
       }
     }

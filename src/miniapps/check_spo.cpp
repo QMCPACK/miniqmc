@@ -188,6 +188,7 @@ int main(int argc, char **argv)
 
   for (int mc = 0; mc < nsteps; ++mc)
   {
+    std::cout << "mc = " << mc << std::endl;
     for(size_t iw = 0; iw < mover_list.size(); iw++)
     {
       auto &mover = mover_list[iw];

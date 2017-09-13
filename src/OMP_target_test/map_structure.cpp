@@ -18,7 +18,7 @@ int main()
   myvec.update_to_device();
   #pragma omp target teams distribute parallel for
   for(size_t i=0; i<len; i++)
-    vec_ptr[i] = vec_ptr[i] * 2;
+    vec_ptr[i] = vec_ptr[i] * omp_get_team_num();
   myvec.update_from_device();
   // print value
   for(size_t i=0; i<len; i++)
@@ -37,4 +37,37 @@ int main()
   // print value
   for(size_t i=0; i<len; i++)
     std::cout << "i=" << i << " value=" << my_tinyvec[i] << std::endl;
+
+  std::vector<OMPVector<int> > vec_th(omp_get_max_threads());
+  OMPVector<int *> shadow(omp_get_max_threads());
+  #pragma omp parallel
+  vec_th[omp_get_thread_num()].resize(len);
+
+  int **restrict shadows_ptr=shadow.data();
+  for(size_t tid=0; tid<shadow.size(); tid++)
+  {
+    int *restrict vec_ptr=vec_th[tid].data();
+    #pragma omp target
+    {
+      shadows_ptr[tid]=vec_ptr;
+    }
+  }
+
+  const size_t nt=shadow.size();
+  #pragma omp target teams distribute
+  for(size_t iw=0; iw<nt; iw++)
+  {
+    #pragma omp parallel for
+    for(size_t iel=0; iel<len; iel++)
+      shadows_ptr[iw][iel] = iel+iw;
+  }
+
+  for(size_t tid=0; tid<shadow.size(); tid++)
+  {
+    vec_th[tid].update_from_device();
+    std::cout << "iw = " << tid << " : ";
+    for(size_t iel=0; iel<len; iel++)
+      std::cout << "  " << vec_th[tid][iel];
+    std::cout << std::endl;
+  }
 }

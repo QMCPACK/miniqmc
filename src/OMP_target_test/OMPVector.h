@@ -43,6 +43,7 @@ class OMPVector:public Container
       if(size>0)
       {
         vec_ptr = Container::data();
+        //std::cout << "YYYY resize OMPVector " << Container::size() << std::endl;
         #pragma omp target enter data map(alloc:vec_ptr[0:size]) device(device_id)
       }
     }

@@ -153,6 +153,18 @@ struct einspline_spo
         if (init_random)
           for (int j = 0; j < nSplinesPerBlock; ++j)
             myAllocator.set(data.data(), einsplines[i], j);
+        // attach pointers
+        spline_type **restrict einsplines_ptr=einsplines.data();
+        spline_type *restrict &tile_ptr=einsplines[i];
+        T *restrict &coefs_ptr=einsplines[i]->coefs;
+        #pragma omp target enter data map(to:tile_ptr[0:1],coefs_ptr[0:einsplines[i]->coefs_size]) device(0)
+        //std::cout << "YYYY offload size = " << einsplines[i]->coefs_size << std::endl;
+        #pragma omp target device(0)
+        {
+          einsplines_ptr[i]=tile_ptr;
+          einsplines_ptr[i]->coefs=coefs_ptr;
+        }
+        //std::cout << "YYYY end of spline offloading" << std::endl;
       }
     }
     resize();
@@ -221,38 +233,56 @@ struct einspline_spo
   inline void evaluate_multi_vgh(const std::vector<pos_type> &p, std::vector<self_type *> &shadows)
   {
     const size_t nw = p.size();
-    psi_shadows.resize(nw*nBlocks);
-    grad_shadows.resize(nw*nBlocks);
-    hess_shadows.resize(nw*nBlocks);
-    u_shadows.resize(nw);
-
-    for(size_t iw = 0; iw < nw; iw++)
+    if(nw!=psi_shadows.size())
     {
-      u_shadows[iw] = Lattice.toUnit(p[iw]);
-      auto &shadow = *shadows[iw];
-      for (int i = 0; i < nBlocks; ++i)
+      psi_shadows.resize(nw*nBlocks);
+      grad_shadows.resize(nw*nBlocks);
+      hess_shadows.resize(nw*nBlocks);
+
+      T ** restrict psi_shadows_ptr=psi_shadows.data();
+      T ** restrict grad_shadows_ptr=grad_shadows.data();
+      T ** restrict hess_shadows_ptr=hess_shadows.data();
+      for(size_t iw = 0; iw < nw; iw++)
       {
-        psi_shadows[iw*nBlocks+i] = shadow.psi[i].data();
-        grad_shadows[iw*nBlocks+i] = shadow.grad[i].data();
-        hess_shadows[iw*nBlocks+i] = shadow.hess[i].data();
+        auto &shadow = *shadows[iw];
+        for (int i = 0; i < nBlocks; ++i)
+        {
+          T *restrict psi_ptr=shadow.psi[i].data();
+          T *restrict grad_ptr=shadow.grad[i].data();
+          T *restrict hess_ptr=shadow.hess[i].data();
+          //std::cout << "psi_shadows_ptr mapped already? " << omp_target_is_present(psi_shadows_ptr,0) << std::endl;
+          //std::cout << "psi_ptr mapped already? " << omp_target_is_present(psi_ptr,0) << std::endl;
+          #pragma omp target device(0)
+          {
+            psi_shadows_ptr[iw*nBlocks+i] = psi_ptr;
+            grad_shadows_ptr[iw*nBlocks+i] = grad_ptr;
+            hess_shadows_ptr[iw*nBlocks+i] = hess_ptr;
+          }
+        }
       }
     }
+
+    u_shadows.resize(nw);
+    for(size_t iw = 0; iw < nw; iw++)
+      u_shadows[iw] = Lattice.toUnit(p[iw]);
     //std::cout << "mapped already? " << omp_target_is_present(u_shadows.data(),0) << std::endl;
     u_shadows.update_to_device();
 
-    T **psi_shadows_ptr=psi_shadows.data();
-    T **grad_shadows_ptr=grad_shadows.data();
-    T **hess_shadows_ptr=hess_shadows.data();
+    T ** restrict psi_shadows_ptr=psi_shadows.data();
+    T ** restrict grad_shadows_ptr=grad_shadows.data();
+    T ** restrict hess_shadows_ptr=hess_shadows.data();
     spline_type **einsplines_ptr=einsplines.data();
     OMPTinyVector<T, 3> *u_shadows_ptr=u_shadows.data();
 
-    #pragma omp target teams distribute collapse(2)
+    #pragma omp target teams distribute collapse(2) device(0)
     for(size_t iw = 0; iw < nw; iw++)
       for (size_t i = 0; i < nBlocks; ++i)
+      {
         //#pragma omp parallel
         compute_engine.evaluate_vgh(einsplines_ptr[i], u_shadows_ptr[iw][0], u_shadows_ptr[iw][1], u_shadows_ptr[iw][2],
                                     psi_shadows_ptr[iw*nBlocks+i], grad_shadows_ptr[iw*nBlocks+i],
                                     hess_shadows_ptr[iw*nBlocks+i], nSplinesPerBlock);
+      }
   }
 
   void print(std::ostream &os)
