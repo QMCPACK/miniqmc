@@ -3,7 +3,7 @@ PROJECT(miniapps)
 if(QMC_BUILD_LEVEL GREATER 4)
 # add apps XYZ.cpp, e.g., qmc_particles.cpp
 #SET(ESTEST einspline_smp einspline_spo qmc_particles moveonsphere twobody ptclset)
-SET(ESTEST check_wfc check_spo)
+SET(ESTEST check_wfc check_spo omp4offload)
 
 FOREACH(p ${ESTEST})
   ADD_EXECUTABLE( ${p}  ${p}.cpp)
