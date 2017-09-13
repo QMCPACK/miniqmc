@@ -175,6 +175,7 @@ SET(BUILD_FCIQMC 0 CACHE BOOL "Build with FCIQMC")
 #SET(MPIP_PROFILE 0)
 SET(QMC_BUILD_STATIC 0 CACHE BOOL "Link to static libraries")
 SET(ENABLE_TIMERS 1 CACHE BOOL "Enable internal timers")
+SET(ENABLE_OFFLOAD 0 CACHE BOOL "Enable OpenMP offload")
 
 ######################################################################
 # Performance-related macros
@@ -440,7 +441,7 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
     MESSAGE(STATUS "Assuming Cray libsci or other BLAS/LAPACK will be linked by compiler wrappers")
   ELSE()	 
     # Search for Blas/Lapack
-    find_package(LAPACK)
+    #find_package(LAPACK)
     # When cmake finds and sets up the MKL libraries with a non-Intel compiler, set the flag
     # This should be tidied up when FindMKL.cmake supports non-Intel compilers.
     IF("${LAPACK_LIBRARIES}" MATCHES "mkl")
@@ -449,13 +450,13 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
       SET( HAVE_MKL 1 )
     ENDIF()
   ENDIF()
-  IF(LAPACK_FOUND)
-    MESSAGE(STATUS "LAPACK libraries: ${LAPACK_LIBRARIES}")
-    MESSAGE(STATUS "LAPACK linker flags: ${LAPACK_LINKER_FLAGS}")
-    SET(LAPACK_LIBRARY ${LAPACK_LIBRARIES} ${LAPACK_LINKER_FLAGS})
-  ELSE()
-    MESSAGE(FATAL_ERROR "Could not find required libraries LAPACK &/or BLAS") 
-  ENDIF()
+  #IF(LAPACK_FOUND)
+  #  MESSAGE(STATUS "LAPACK libraries: ${LAPACK_LIBRARIES}")
+  #  MESSAGE(STATUS "LAPACK linker flags: ${LAPACK_LINKER_FLAGS}")
+  #  SET(LAPACK_LIBRARY ${LAPACK_LIBRARIES} ${LAPACK_LINKER_FLAGS})
+  #ELSE()
+  #  MESSAGE(FATAL_ERROR "Could not find required libraries LAPACK &/or BLAS") 
+  #ENDIF()
 
   INCLUDE(CMake/FindVectorMath.cmake)
 

@@ -41,7 +41,7 @@ inline void LUFactorization(int n, int m, double *restrict a, int n0,
                             int *restrict piv)
 {
   int status;
-  dgetrf(n, m, a, n0, piv, status);
+  //dgetrf(n, m, a, n0, piv, status);
 }
 
 /** LU factorization of float */
@@ -73,7 +73,7 @@ inline void InvertLU(int n, double *restrict a, int n0, int *restrict piv,
                      double *restrict work, int n1)
 {
   int status;
-  dgetri(n, a, n0, piv, work, n1, status);
+  //dgetri(n, a, n0, piv, work, n1, status);
 }
 
 /** Inversion of a float matrix after LU factorization*/
