@@ -38,12 +38,18 @@ int main()
   for(size_t i=0; i<len; i++)
     std::cout << "i=" << i << " value=" << my_tinyvec[i] << std::endl;
 
-  std::vector<OMPVector<int> > vec_th(omp_get_max_threads());
-  OMPVector<int *> shadow(omp_get_max_threads());
-  std::cout << "omp_get_max_threads() returns "
-            << omp_get_max_threads() << std::endl;
+  std::vector<OMPVector<int> > vec_th;
+  OMPVector<int *> shadow;
   #pragma omp parallel
-  vec_th[omp_get_thread_num()].resize(len);
+  {
+    #pragma omp single
+    {
+      const size_t nt=omp_get_num_threads();
+      vec_th.resize(nt);
+      shadow.resize(nt);
+    }
+    vec_th[omp_get_thread_num()].resize(len);
+  }
 
   int **restrict shadows_ptr=shadow.data();
   for(size_t tid=0; tid<shadow.size(); tid++)
