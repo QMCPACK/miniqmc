@@ -299,16 +299,18 @@ struct einspline_spo
                                              hess_shadows_ptr[iw*nBlocks+i],
                                              nSplinesPerBlock);
         */
-        //#pragma omp parallel
+        int dummy0 = nBlocks;
+        int dummy1 = nSplinesPerBlock;
+        #pragma omp parallel
         {
           const spline_type *restrict spline_m = einsplines_ptr[i];
           T                                  x = u_shadows_ptr[iw][0];
           T                                  y = u_shadows_ptr[iw][1];
           T                                  z = u_shadows_ptr[iw][2];
-          T *restrict                     vals = psi_shadows_ptr[iw*nBlocks+i];
-          T *restrict                    grads = grad_shadows_ptr[iw*nBlocks+i];
-          T *restrict                     hess = hess_shadows_ptr[iw*nBlocks+i];
-          const size_t             num_splines = nSplinesPerBlock;
+          T *restrict                     vals = psi_shadows_ptr[iw*dummy0+i];
+          T *restrict                    grads = grad_shadows_ptr[iw*dummy0+i];
+          T *restrict                     hess = hess_shadows_ptr[iw*dummy0+i];
+          const size_t             num_splines = dummy1;
 
           int ix, iy, iz;
           T tx, ty, tz;
@@ -365,7 +367,7 @@ struct einspline_spo
               const T pre01 = a[i] * db[j];
               const T pre02 = a[i] * d2b[j];
 
-              //#pragma omp for nowait
+              #pragma omp for nowait
               for (int n = 0; n < num_splines; n++)
               {
 
@@ -404,7 +406,7 @@ struct einspline_spo
           const T dxz   = dxInv * dzInv;
           const T dyz   = dyInv * dzInv;
 
-          //#pragma omp for nowait
+          #pragma omp for nowait
           for (int n = 0; n < num_splines; n++)
           {
             gx[n] *= dxInv;
