@@ -301,14 +301,14 @@ struct einspline_spo
         */
         //#pragma omp parallel
         {
-          const spline_type *restrict  spline_m = einsplines_ptr[i];
-          T                                  &x = u_shadows_ptr[iw][0];
-          T                                  &y = u_shadows_ptr[iw][1];
-          T                                  &z = u_shadows_ptr[iw][2];
-          T *restrict                     &vals = psi_shadows_ptr[iw*nBlocks+i];
-          T *restrict                    &grads = grad_shadows_ptr[iw*nBlocks+i];
-          T *restrict                     &hess = hess_shadows_ptr[iw*nBlocks+i];
-          const size_t             &num_splines = nSplinesPerBlock;
+          const spline_type *restrict spline_m = einsplines_ptr[i];
+          T                                  x = u_shadows_ptr[iw][0];
+          T                                  y = u_shadows_ptr[iw][1];
+          T                                  z = u_shadows_ptr[iw][2];
+          T *restrict                     vals = psi_shadows_ptr[iw*nBlocks+i];
+          T *restrict                    grads = grad_shadows_ptr[iw*nBlocks+i];
+          T *restrict                     hess = hess_shadows_ptr[iw*nBlocks+i];
+          const size_t             num_splines = nSplinesPerBlock;
 
           int ix, iy, iz;
           T tx, ty, tz;
