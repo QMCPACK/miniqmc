@@ -281,7 +281,7 @@ struct einspline_spo
     T ** restrict psi_shadows_ptr=psi_shadows.data();
     T ** restrict grad_shadows_ptr=grad_shadows.data();
     T ** restrict hess_shadows_ptr=hess_shadows.data();
-    spline_type **einsplines_ptr=einsplines.data();
+    spline_type **restrict einsplines_ptr=einsplines.data();
     OMPTinyVector<T, 3> *u_shadows_ptr=u_shadows.data();
 
     #pragma omp target teams distribute collapse(2) map(to:nw,nBlocks,nSplinesPerBlock) device(0)
@@ -299,15 +299,16 @@ struct einspline_spo
                                              hess_shadows_ptr[iw*nBlocks+i],
                                              nSplinesPerBlock);
         */
-        const spline_type *restrict spline_m = einsplines_ptr[i];
-        T                                  x = u_shadows_ptr[iw][0];
-        T                                  y = u_shadows_ptr[iw][1];
-        T                                  z = u_shadows_ptr[iw][2];
-        T *restrict                     vals = psi_shadows_ptr[iw*nBlocks+i];
-        T *restrict                    grads = grad_shadows_ptr[iw*nBlocks+i];
-        T *restrict                     hess = hess_shadows_ptr[iw*nBlocks+i];
-        size_t                   num_splines = nSplinesPerBlock;
+        //#pragma omp parallel
         {
+          const spline_type *restrict  spline_m = einsplines_ptr[i];
+          T                                  &x = u_shadows_ptr[iw][0];
+          T                                  &y = u_shadows_ptr[iw][1];
+          T                                  &z = u_shadows_ptr[iw][2];
+          T *restrict                     &vals = psi_shadows_ptr[iw*nBlocks+i];
+          T *restrict                    &grads = grad_shadows_ptr[iw*nBlocks+i];
+          T *restrict                     &hess = hess_shadows_ptr[iw*nBlocks+i];
+          const size_t             &num_splines = nSplinesPerBlock;
 
           int ix, iy, iz;
           T tx, ty, tz;
@@ -364,8 +365,8 @@ struct einspline_spo
               const T pre01 = a[i] * db[j];
               const T pre02 = a[i] * d2b[j];
 
-              const int iSplitPoint = num_splines;
-              for (int n = 0; n < iSplitPoint; n++)
+              //#pragma omp for nowait
+              for (int n = 0; n < num_splines; n++)
               {
 
                 T coefsv    = coefs[n];
@@ -403,6 +404,7 @@ struct einspline_spo
           const T dxz   = dxInv * dzInv;
           const T dyz   = dyInv * dzInv;
 
+          //#pragma omp for nowait
           for (int n = 0; n < num_splines; n++)
           {
             gx[n] *= dxInv;

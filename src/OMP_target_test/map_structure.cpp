@@ -68,9 +68,12 @@ int main()
   #pragma omp target teams distribute map(to:nt)
   for(size_t iw=0; iw<nt; iw++)
   {
-    #pragma omp parallel for
-    for(size_t iel=0; iel<len; iel++)
-      shadows_ptr[iw][iel] = iel+iw;
+    #pragma omp parallel
+    {
+      #pragma omp for nowait
+      for(size_t iel=0; iel<len; iel++)
+        shadows_ptr[iw][iel] = iel+iw;
+    }
   }
 
   for(size_t tid=0; tid<shadow.size(); tid++)
