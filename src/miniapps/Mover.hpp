@@ -5,7 +5,7 @@
 #include <Particle/ParticleSet.h>
 #include <Utilities/RandomGenerator.h>
 #include <miniapps/pseudo.hpp>
-#include <spline2/MultiBsplineOffload.hpp>
+#include <spline2/MultiBspline.hpp>
 #include <spline2/MultiBsplineRef.hpp>
 #include <QMCWaveFunctions/einspline_spo.hpp>
 
@@ -14,7 +14,7 @@ namespace qmcplusplus
   struct Mover
   {
     using RealType = QMCTraits::RealType;
-    using spo_type = einspline_spo<RealType, MultiBsplineOffload<RealType> >;
+    using spo_type = einspline_spo<RealType, MultiBspline<RealType> >;
     using spo_ref_type = einspline_spo<RealType, MultiBsplineRef<RealType> >;
 
     RandomGenerator<RealType> *rng;
