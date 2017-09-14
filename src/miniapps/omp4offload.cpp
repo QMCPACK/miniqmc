@@ -40,14 +40,14 @@ int main(int argc, char **argv)
   for(size_t tid=0; tid<shadow.size(); tid++)
   {
     int *restrict vec_ptr=vec_th[tid].data();
-    #pragma omp target
+    #pragma omp target map(to:tid)
     {
       shadows_ptr[tid]=vec_ptr;
     }
   }
 
   const size_t nt=shadow.size();
-  #pragma omp target teams distribute
+  #pragma omp target teams distribute map(to:nt)
   for(size_t iw=0; iw<nt; iw++)
   {
     #pragma omp parallel for
