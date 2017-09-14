@@ -101,8 +101,16 @@ struct einspline_spo
     lastBlock        = std::min(in.nBlocks, nBlocks * (crewID + 1));
     nBlocks          = lastBlock - firstBlock;
     einsplines.resize(nBlocks);
+    spline_type **restrict einsplines_ptr=einsplines.data();
     for (int i = 0, t = firstBlock; i < nBlocks; ++i, ++t)
+    {
       einsplines[i] = in.einsplines[t];
+      spline_type *restrict &tile_ptr=in.einsplines[t];
+      #pragma omp target map(to:i) device(0)
+      {
+        einsplines_ptr[i]=tile_ptr;
+      }
+    }
     resize();
   }
 
@@ -144,6 +152,7 @@ struct einspline_spo
       pos_type start(0);
       pos_type end(1);
       einsplines.resize(nBlocks);
+      spline_type **restrict einsplines_ptr=einsplines.data();
       RandomGenerator<T> myrandom(11);
       Array<T, 3> data(nx, ny, nz);
       std::fill(data.begin(), data.end(), T());
@@ -155,7 +164,6 @@ struct einspline_spo
           for (int j = 0; j < nSplinesPerBlock; ++j)
             myAllocator.set(data.data(), einsplines[i], j);
         // attach pointers
-        spline_type **restrict einsplines_ptr=einsplines.data();
         spline_type *restrict &tile_ptr=einsplines[i];
         T *restrict &coefs_ptr=einsplines[i]->coefs;
         #pragma omp target enter data map(to:tile_ptr[0:1],coefs_ptr[0:einsplines[i]->coefs_size]) device(0)
@@ -234,7 +242,7 @@ struct einspline_spo
   inline void evaluate_multi_vgh(const std::vector<pos_type> &p, std::vector<self_type *> &shadows)
   {
     const size_t nw = p.size();
-    if(nw!=psi_shadows.size())
+    if(nw*nBlocks!=psi_shadows.size())
     {
       psi_shadows.resize(nw*nBlocks);
       grad_shadows.resize(nw*nBlocks);
@@ -276,7 +284,6 @@ struct einspline_spo
     spline_type **einsplines_ptr=einsplines.data();
     OMPTinyVector<T, 3> *u_shadows_ptr=u_shadows.data();
 
-    //std::cout << "here" << std::endl;
     #pragma omp target teams distribute collapse(2) map(to:nw,nBlocks,nSplinesPerBlock) device(0)
     for(size_t iw = 0; iw < nw; iw++)
       for (int i = 0; i < nBlocks; ++i)
@@ -337,16 +344,9 @@ struct einspline_spo
           T *restrict hyz = hess + 4 * out_offset;
           T *restrict hzz = hess + 5 * out_offset;
 
-          OMPstd::fill_n(vals, num_splines, T());
-          OMPstd::fill_n(gx, num_splines, T());
-          OMPstd::fill_n(gy, num_splines, T());
-          OMPstd::fill_n(gz, num_splines, T());
-          OMPstd::fill_n(hxx, num_splines, T());
-          OMPstd::fill_n(hxy, num_splines, T());
-          OMPstd::fill_n(hxz, num_splines, T());
-          OMPstd::fill_n(hyy, num_splines, T());
-          OMPstd::fill_n(hyz, num_splines, T());
-          OMPstd::fill_n(hzz, num_splines, T());
+          OMPstd::fill_n(vals,  out_offset  , T());
+          OMPstd::fill_n(grads, out_offset*3, T());
+          OMPstd::fill_n(hess,  out_offset*6, T());
 
           for (int i = 0; i < 4; i++)
             for (int j = 0; j < 4; j++)
@@ -417,6 +417,16 @@ struct einspline_spo
           }
         }
       }
+    for(size_t iw = 0; iw < nw; iw++)
+    {
+      auto &shadow = *shadows[iw];
+      for (int i = 0; i < nBlocks; ++i)
+      {
+        shadow.psi[i].update_from_device();
+        shadow.grad[i].update_from_device();
+        shadow.hess[i].update_from_device();
+      }
+    }
   }
 
   void print(std::ostream &os)
