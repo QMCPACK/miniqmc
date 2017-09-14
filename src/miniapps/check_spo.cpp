@@ -119,6 +119,7 @@ int main(int argc, char **argv)
   // construct a list of movers
   const size_t nmovers=omp_get_max_threads();
   std::vector<Mover> mover_list(nmovers);
+  std::cout << "Constructing " << nmovers << " movers!" << std::endl;
   // per mover data
   std::vector<ParticlePos_t> delta_list(nmovers);
   std::vector<ParticlePos_t> rOnSphere_list(nmovers);
@@ -127,7 +128,7 @@ int main(int argc, char **argv)
   std::vector<PosType> pos_list(nmovers);
   std::vector<spo_type *> spo_shadows(nmovers);
 
-  #pragma omp parallel
+  #pragma omp parallel for
   for(size_t iw = 0; iw < mover_list.size(); iw++)
   {
     auto &mover = mover_list[iw];
