@@ -372,6 +372,7 @@ int main(int argc, char **argv)
 
           Timers[Timer_ratioGrad]->stop();
 
+          Kokkos::fence();
           // Accept/reject the trial move
           if (ur[iel] > accept) // MC
           {
@@ -379,18 +380,22 @@ int main(int argc, char **argv)
             Timers[Timer_Update]->start();
             WaveFunction->acceptMove(els, iel);
             Timers[Timer_Update]->stop();
+            Kokkos::fence();
             Timers[Timer_DT]->start();
             els.acceptMove(iel);
             Timers[Timer_DT]->stop();
             my_accepted++;
+
           }
           else
           {
+
             els.rejectMove(iel);
             WaveFunction->restore(iel);
           }
         } // iel
       }   // substeps
+
 
       Timers[Timer_DT]->start();
       els.donePbyP();
@@ -440,6 +445,7 @@ int main(int argc, char **argv)
               Timers[Timer_Value]->stop();
 
               els.rejectMove(iel);
+
             }
           }
         }
@@ -448,7 +454,8 @@ int main(int argc, char **argv)
     }
 
     // cleanup
-    delete WaveFunction;
+    // Now we are probably leaking memory ...
+    //delete WaveFunction;
   }; // end of main_master
 
 #if defined(KOKKOS_ENABLE_OPENMP) && !defined(KOKKOS_ENABLE_CUDA)

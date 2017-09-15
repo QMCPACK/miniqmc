@@ -171,6 +171,7 @@ void MultiBspline<T>::evaluate_vgl(const spliner_type *restrict spline_m,
                               T *restrict grads, T *restrict lapl,
                               size_t num_splines) const
 {
+  printf("Error\n");
   /*x -= spline_m->x_grid.start;
   y -= spline_m->y_grid.start;
   z -= spline_m->z_grid.start;

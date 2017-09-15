@@ -30,6 +30,7 @@
 
 namespace qmcplusplus
 {
+
 template <typename T, typename compute_engine_type = MultiBspline<T> >
 struct einspline_spo
 {

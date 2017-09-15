@@ -28,13 +28,12 @@
 //    University of Illinois at Urbana-Champaign
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef QMCPLUSPLUS_BSPLINE_FUNCTOR_H
-#define QMCPLUSPLUS_BSPLINE_FUNCTOR_H
+#ifndef QMCPLUSPLUS_BSPLINE_FUNCTOR_REF_H
+#define QMCPLUSPLUS_BSPLINE_FUNCTOR_REF_H
 #include "Numerics/OptimizableFunctorBase.h"
 #include "Numerics/LinearFit.h"
 #include "simd/allocator.hpp"
 #include <cstdio>
-#include <Kokkos_Vector.hpp>
 
 /*!
  * @file BsplineFunctor.h
@@ -43,13 +42,13 @@
 namespace qmcplusplus
 {
 
-template <class T> struct BsplineFunctor : public OptimizableFunctorBase
+template <class T> struct BsplineFunctorRef : public OptimizableFunctorBase
 {
   typedef real_type value_type;
   int NumParams;
   int Dummy;
-  TinyVector<real_type, 16> A, dA, d2A, d3A;
-  Kokkos::vector<real_type> SplineCoefs;
+  const TinyVector<real_type, 16> A, dA, d2A, d3A;
+  aligned_vector<real_type> SplineCoefs;
 
   // static const real_type A[16], dA[16], d2A[16];
   real_type DeltaR, DeltaRInv;
@@ -57,9 +56,9 @@ template <class T> struct BsplineFunctor : public OptimizableFunctorBase
   real_type Y, dY, d2Y;
   // Stores the derivatives w.r.t. SplineCoefs
   // of the u, du/dr, and d2u/dr2
-  Kokkos::vector<TinyVector<real_type, 3>> SplineDerivs;
-  Kokkos::vector<real_type> Parameters;
-  Kokkos::vector<std::string> ParameterNames;
+  std::vector<TinyVector<real_type, 3>> SplineDerivs;
+  std::vector<real_type> Parameters;
+  std::vector<std::string> ParameterNames;
   std::string elementType, pairType;
   std::string fileName;
 
@@ -67,19 +66,9 @@ template <class T> struct BsplineFunctor : public OptimizableFunctorBase
   bool notOpt;
   bool periodic;
 
-  /*KOKKOS_INLINE_FUNCTION
-  void operator= (const BsplineFunctor& rhs) {
-    NumParams = rhs.NumParams;
-    Dummy = rhs.Dummy;
-    A = rhs.A;
-    dA = rhs.dA;
-    d2A = rhs.d2A;
-    d3A = rhs.d3A;
-
-  }*/
   /// constructor
   // clang-format off
-  BsplineFunctor(real_type cusp=0.0) :
+  BsplineFunctorRef(real_type cusp=0.0) :
     NumParams(0),
     A(-1.0/6.0,  3.0/6.0, -3.0/6.0, 1.0/6.0,
       3.0/6.0, -6.0/6.0,  0.0/6.0, 4.0/6.0,
@@ -142,8 +131,7 @@ template <class T> struct BsplineFunctor : public OptimizableFunctorBase
    * @param distIndices temp storage for the compressed index
    */
   // clang-format off
-  template <typename TeamType>
-  void evaluateVGL(const TeamType& team, const int iStart, const int iEnd,
+  void evaluateVGL(const int iStart, const int iEnd,
       const T* _distArray,  
       T* restrict _valArray,
       T* restrict _gradArray, 
@@ -318,7 +306,7 @@ template <class T> struct BsplineFunctor : public OptimizableFunctorBase
 };
 
 template <typename T>
-inline T BsplineFunctor<T>::evaluateV(const int iStart, const int iEnd,
+inline T BsplineFunctorRef<T>::evaluateV(const int iStart, const int iEnd,
                                       const T *restrict _distArray,
                                       T *restrict distArrayCompressed) const
 {
@@ -361,12 +349,12 @@ inline T BsplineFunctor<T>::evaluateV(const int iStart, const int iEnd,
 }
 
 template <typename T>
-template <typename TeamType>
-KOKKOS_INLINE_FUNCTION void BsplineFunctor<T>::evaluateVGL( const TeamType& team,
+inline void BsplineFunctorRef<T>::evaluateVGL(
     const int iStart, const int iEnd, const T *_distArray,
     T *restrict _valArray, T *restrict _gradArray, T *restrict _laplArray,
     T *restrict distArrayCompressed, int *restrict distIndices) const
 {
+
   real_type dSquareDeltaRinv = DeltaRInv * DeltaRInv;
   constexpr real_type cZero(0);
   constexpr real_type cOne(1);
@@ -374,8 +362,8 @@ KOKKOS_INLINE_FUNCTION void BsplineFunctor<T>::evaluateVGL( const TeamType& team
 
   //    START_MARK_FIRST();
 
-  //ASSUME_ALIGNED(distIndices);
-  //ASSUME_ALIGNED(distArrayCompressed);
+  ASSUME_ALIGNED(distIndices);
+  ASSUME_ALIGNED(distArrayCompressed);
   int iCount                 = 0;
   int iLimit                 = iEnd - iStart;
   const real_type *distArray = _distArray + iStart;
@@ -383,24 +371,22 @@ KOKKOS_INLINE_FUNCTION void BsplineFunctor<T>::evaluateVGL( const TeamType& team
   real_type *gradArray       = _gradArray + iStart;
   real_type *laplArray       = _laplArray + iStart;
 
-  Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(team,iLimit), [&] (const int& jat, int& count) {
-    if(distArray[jat]<cutoff_radius) count++;
-  },iCount);
-
-  Kokkos::parallel_scan(Kokkos::ThreadVectorRange(team,iLimit), [&] (const int& jat, int& count, const bool& final) {
+#pragma vector always
+  for (int jat = 0; jat < iLimit; jat++)
+  {
     real_type r = distArray[jat];
     if (r < cutoff_radius)
     {
-      if(final) {
-        distIndices[count]         = jat;
-        distArrayCompressed[count] = r;
-      }
-      count++;
+      distIndices[iCount]         = jat;
+      distArrayCompressed[iCount] = r;
+      iCount++;
     }
-  });
+  }
 
-  //printf("%i %i %p %p %p %p\n",iCount,iStart, _distArray, distArray,distIndices,distArrayCompressed);
-  Kokkos::parallel_for(Kokkos::ThreadVectorRange(team,iCount), [&] (const int& j) {
+  printf("ILimit: %i ICount: %i\n",iLimit,iCount);
+#pragma omp simd
+  for (int j = 0; j < iCount; j++)
+  {
 
     real_type r    = distArrayCompressed[j];
     int iScatter   = distIndices[j];
@@ -435,7 +421,7 @@ KOKKOS_INLINE_FUNCTION void BsplineFunctor<T>::evaluateVGL( const TeamType& team
         sCoef2*(A[ 8]*tp0 + A[ 9]*tp1 + A[10]*tp2 + A[11])+
         sCoef3*(A[12]*tp0 + A[13]*tp1 + A[14]*tp2 + A[15]));
     // clang-format on
-  });
+  }
 }
 }
 #endif

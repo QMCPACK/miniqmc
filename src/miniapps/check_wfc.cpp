@@ -32,6 +32,7 @@
 #include <QMCWaveFunctions/Jastrow/ThreeBodyJastrowRef.h>
 #include <QMCWaveFunctions/Jastrow/ThreeBodyJastrow.h>
 #include <QMCWaveFunctions/Jastrow/BsplineFunctor.h>
+#include <QMCWaveFunctions/Jastrow/BsplineFunctorRef.h>
 #include <QMCWaveFunctions/Jastrow/OneBodyJastrowRef.h>
 #include <QMCWaveFunctions/Jastrow/OneBodyJastrow.h>
 #include <QMCWaveFunctions/Jastrow/TwoBodyJastrowRef.h>
@@ -44,6 +45,9 @@ using namespace qmcplusplus;
 int main(int argc, char **argv)
 {
 
+  Kokkos::initialize(argc,argv);
+  // Scope all allocations etc. for Kokkos
+  {
   OhmmsInfo("CheckWaveFunctionComponents");
 
   // clang-format off
@@ -184,21 +188,21 @@ int main(int argc, char **argv)
       buildJ2(*J, els.Lattice.WignerSeitzRadius);
       wfc = dynamic_cast<WaveFunctionComponentBasePtr>(J);
       cout << "Built J2" << endl;
-      TwoBodyJastrowRef<BsplineFunctor<RealType>> *J_ref =
-          new TwoBodyJastrowRef<BsplineFunctor<RealType>>(els_ref);
+      TwoBodyJastrowRef<BsplineFunctorRef<RealType>> *J_ref =
+          new TwoBodyJastrowRef<BsplineFunctorRef<RealType>>(els_ref);
       buildJ2(*J_ref, els.Lattice.WignerSeitzRadius);
       wfc_ref = dynamic_cast<WaveFunctionComponentBasePtr>(J_ref);
       cout << "Built J2_ref" << endl;
     }
     else if (wfc_name == "J1")
     {
-      OneBodyJastrow<BsplineFunctor<RealType>> *J =
-          new OneBodyJastrow<BsplineFunctor<RealType>>(ions, els);
+      OneBodyJastrow<BsplineFunctorRef<RealType>> *J =
+          new OneBodyJastrow<BsplineFunctorRef<RealType>>(ions, els);
       buildJ1(*J, els.Lattice.WignerSeitzRadius);
       wfc = dynamic_cast<WaveFunctionComponentBasePtr>(J);
       cout << "Built J1" << endl;
-      OneBodyJastrowRef<BsplineFunctor<RealType>> *J_ref =
-          new OneBodyJastrowRef<BsplineFunctor<RealType>>(ions, els_ref);
+      OneBodyJastrowRef<BsplineFunctorRef<RealType>> *J_ref =
+          new OneBodyJastrowRef<BsplineFunctorRef<RealType>>(ions, els_ref);
       buildJ1(*J_ref, els.Lattice.WignerSeitzRadius);
       wfc_ref = dynamic_cast<WaveFunctionComponentBasePtr>(J_ref);
       cout << "Built J1_ref" << endl;
@@ -441,5 +445,7 @@ int main(int argc, char **argv)
   }
   if (!fail) cout << "All checking pass!" << std::endl;
 
+  }
+  Kokkos::finalize();
   return 0;
 }
