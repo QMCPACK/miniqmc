@@ -379,11 +379,14 @@ inline void BsplineFunctorRef<T>::evaluateVGL(
     {
       distIndices[iCount]         = jat;
       distArrayCompressed[iCount] = r;
+      printf("ISTART_DIST_REF: %i %i %i %i %lf\n",iStart,iLimit,jat,iCount,r);
+
       iCount++;
     }
   }
 
-  printf("ILimit: %i ICount: %i\n",iLimit,iCount);
+  printf("BSPLINE_EVALUATE_VGL_REF: %i %i %lf %lf %lf\n",iCount,iLimit,distArray[0],distArray[131],cutoff_radius);
+
 #pragma omp simd
   for (int j = 0; j < iCount; j++)
   {
@@ -420,6 +423,9 @@ inline void BsplineFunctorRef<T>::evaluateVGL(
         sCoef1*(A[ 4]*tp0 + A[ 5]*tp1 + A[ 6]*tp2 + A[ 7])+
         sCoef2*(A[ 8]*tp0 + A[ 9]*tp1 + A[10]*tp2 + A[11])+
         sCoef3*(A[12]*tp0 + A[13]*tp1 + A[14]*tp2 + A[15]));
+    printf("VALARRAY_REF: %i %i %lf %lf %lf %lf %lf  || %lf %p\n",
+        iStart,iScatter,sCoef0,A[0],tp0,A[1],tp1,valArray[iScatter],&valArray[iScatter]);
+
     // clang-format on
   }
 }

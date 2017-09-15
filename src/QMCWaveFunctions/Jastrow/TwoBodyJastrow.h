@@ -82,9 +82,13 @@ template <class FT> struct TwoBodyJastrow : public WaveFunctionComponentBase
   Kokkos::View<valT*> DistCompressed;
   Kokkos::View<int*> DistIndice;
   /// Container for \f$F[ig*NumGroups+jg]\f$
-  Kokkos::View<FT*> F;
+  typedef Kokkos::Device<
+            Kokkos::DefaultHostExecutionSpace,
+            typename Kokkos::DefaultExecutionSpace::memory_space>
+     F_device_type;
+  Kokkos::View<FT*,F_device_type> F;
 
-  int iat, igt;
+  int iat, igt, jg_hack;
   const RealType* dist;
   RealType* u;
   RealType* du;
@@ -175,11 +179,12 @@ template <typename FT> TwoBodyJastrow<FT>::TwoBodyJastrow(ParticleSet &p)
 }
 
 template <typename FT> TwoBodyJastrow<FT>::~TwoBodyJastrow() {
-  if(F.use_count()==1) {
-    for(int i=0; i<NumGroups*NumGroups; i++) {
+  /*if(F.use_count()==1) {
+    printf("Deallocate\n");
+   for(int i=0; i<NumGroups*NumGroups; i++) {
       F(i) = FT();
     }
-  }
+  }*/
 }
 
 template <typename FT> void TwoBodyJastrow<FT>::init(ParticleSet &p)
@@ -198,7 +203,7 @@ template <typename FT> void TwoBodyJastrow<FT>::init(ParticleSet &p)
   old_u = Kokkos::View<valT*>("old_u",N);
   old_du = Kokkos::View<valT*>("old_du",N);
   old_d2u = Kokkos::View<valT*>("old_d2u",N);
-  F = Kokkos::View<FT*>("FT",NumGroups * NumGroups);
+  F = Kokkos::View<FT*,F_device_type>("FT",NumGroups * NumGroups);
   for(int i=0; i<NumGroups*NumGroups; i++) {
     new (&F(i)) FT();
   }
@@ -214,8 +219,10 @@ template <typename FT> void TwoBodyJastrow<FT>::addFunc(int ia, int ib, FT *j)
     {
       int ij = 0;
       for (int ig = 0; ig < NumGroups; ++ig)
-        for (int jg                   = 0; jg < NumGroups; ++jg, ++ij)
+        for (int jg = 0; jg < NumGroups; ++jg, ++ij) {
           F[ij] = *j;
+          printf("CUTOFF: %i %lf\n",ij,F[ij].cutoff_radius);
+        }
     }
   }
   else
@@ -225,14 +232,17 @@ template <typename FT> void TwoBodyJastrow<FT>::addFunc(int ia, int ib, FT *j)
       // a very special case, 1 up + 1 down
       // uu/dd was prevented by the builder
       for (int ig = 0; ig < NumGroups; ++ig)
-        for (int jg              = 0; jg < NumGroups; ++jg)
+        for (int jg = 0; jg < NumGroups; ++jg) {
           F[ig * NumGroups + jg] = *j;
+          printf("CUTOFF_N2: %i %lf\n",ig * NumGroups + jg,F[ig * NumGroups + jg].cutoff_radius);
+        }
     }
     else
     {
       // generic case
       F[ia * NumGroups + ib]              = *j;
       if (ia < ib) F[ib * NumGroups + ia] = *j;
+      printf("CUTOFF_GEN: %i %lf\n",ia * NumGroups + ib,F[ia * NumGroups + ib].cutoff_radius);
     }
   }
   std::stringstream aname;
@@ -262,19 +272,27 @@ inline void TwoBodyJastrow<FT>::computeU3(ParticleSet &P, int iat_,
   du = du_;
   d2u = d2u_;
 
-  for (int jg = 0; jg < NumGroups; ++jg)
-  {
-    first[jg] = P.first(jg);
-    last[jg]  = P.last(jg);
-  }
-
   constexpr valT czero(0);
   std::fill_n(u, N, czero);
   std::fill_n(du, N, czero);
   std::fill_n(d2u, N, czero);
 
+  Kokkos::fence();
+  // Actually we need one u, du and d2u etc. per group in flight.
   igt = P.GroupID[iat] * NumGroups;
-  Kokkos::parallel_for(Kokkos::TeamPolicy<>(NumGroups,1,32), *this);
+  for (int jg = 0; jg < NumGroups; ++jg)
+  {
+    first[jg] = P.first(jg);
+    last[jg]  = P.last(jg);
+    ///EVIL HACK
+    jg_hack = jg;
+    Kokkos::parallel_for(Kokkos::TeamPolicy<>(1,1,32), *this);
+    Kokkos::fence();
+  }
+  for(int i=0;i<10;i++)
+  printf("COMPUTEU3 %i %lf\n",i,u[i]);
+
+
   //for (int jg = 0; jg < NumGroups; ++jg)
   //{
   //}
@@ -282,12 +300,15 @@ inline void TwoBodyJastrow<FT>::computeU3(ParticleSet &P, int iat_,
 
 template<typename FT>
 KOKKOS_INLINE_FUNCTION void TwoBodyJastrow<FT>::operator() (const typename Kokkos::TeamPolicy<>::member_type& team) const {
-  const int jg = team.league_rank();
+  //const int jg = team.league_rank();
   //const FuncType f2(*F[igt + jg]);
+  ///EVIL HACK
+  int jg = jg_hack;
   int iStart = first[jg];
   int iEnd   = last[jg];
   F[igt + jg].evaluateVGL(team,iStart, iEnd, dist, u, du, d2u, DistCompressed.data(),
                  DistIndice.data());
+  printf("CUTOFF_OPERATOR: %i %lf\n",igt+jg,F[igt + jg].cutoff_radius);
 }
 
 template <typename FT>
@@ -382,17 +403,20 @@ template <typename FT> void TwoBodyJastrow<FT>::recompute(ParticleSet &P)
     const int igt = ig * NumGroups;
     for (int iat = P.first(ig), last = P.last(ig); iat < last; ++iat)
     {
-      printf("Recompute: computeU3 %i\n",iat);
+      printf("UAT_RECOMPUTEA: %i %lf %i %lf %lf %p %i\n",iat,Uat[iat],N,cur_u[1],F[1].cutoff_radius,&F[1].cutoff_radius,(int)F.use_count());
       computeU3(P, iat, d_table->Distances[iat], cur_u.data(), cur_du.data(),
                 cur_d2u.data());
       Kokkos::fence();
+      printf("UAT_RECOMPUTEB: %i %lf %i %p %lf %p\n",iat,Uat[iat],N,cur_u.data(),F[1].cutoff_radius,&F[1].cutoff_radius);
       Uat[iat] = simd::accumulate_n(cur_u.data(), N, valT());
+      printf("UAT_RECOMPUTEC: %i %lf %i %p %lf %p\n",iat,Uat[iat],N,cur_u.data(),F[1].cutoff_radius,&F[1].cutoff_radius);
       posT grad;
       valT lap;
       accumulateGL(cur_du.data(), cur_d2u.data(), d_table->Displacements[iat],
                    grad, lap);
       dUat[iat]  = grad;
       d2Uat[iat] = -lap;
+      printf("UAT_RECOMPUTED: %i %lf %i %p %lf %p\n",iat,Uat[iat],N,cur_u.data(),F[1].cutoff_radius,&F[1].cutoff_radius);
     }
   }
 }
@@ -421,6 +445,7 @@ void TwoBodyJastrow<FT>::evaluateGL(ParticleSet &P,
   LogValue = valT(0);
   for (int iat = 0; iat < N; ++iat)
   {
+    printf("%i %lf\n",iat,Uat[iat]);
     LogValue += Uat[iat];
     G[iat] += dUat[iat];
     L[iat] += d2Uat[iat];
