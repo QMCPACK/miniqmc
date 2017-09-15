@@ -45,20 +45,20 @@ template <typename T> struct MultiBsplineOffload
    * evaluate_vgh(r,psi,grad,hess,ip).
    */
 
-  void evaluate_v(const spliner_type *restrict spline_m, T x, T y, T z, T *restrict vals,
-                  size_t num_splines) const;
+  static void evaluate_v(const spliner_type *restrict spline_m, T x, T y, T z, T *restrict vals,
+                  size_t num_splines);
 
-  void evaluate_vgl(const spliner_type *restrict spline_m, T x, T y, T z, T *restrict vals, T *restrict grads,
-                    T *restrict lapl, size_t num_splines) const;
+  static void evaluate_vgl(const spliner_type *restrict spline_m, T x, T y, T z, T *restrict vals, T *restrict grads,
+                    T *restrict lapl, size_t num_splines);
 
-  void evaluate_vgh(const spliner_type *restrict spline_m, T x, T y, T z, T *restrict vals, T *restrict grads,
-                    T *restrict hess, size_t num_splines) const;
+  static void evaluate_vgh(const spliner_type *restrict spline_m, T x, T y, T z, T *restrict vals, T *restrict grads,
+                    T *restrict hess, size_t num_splines);
 };
 
 template <typename T>
 inline void MultiBsplineOffload<T>::evaluate_v(const spliner_type *restrict spline_m,
                                            T x, T y, T z, T *restrict vals,
-                                           size_t num_splines) const
+                                           size_t num_splines)
 {
   x -= spline_m->x_grid.start;
   y -= spline_m->y_grid.start;
@@ -102,7 +102,7 @@ inline void
 MultiBsplineOffload<T>::evaluate_vgl(const spliner_type *restrict spline_m,
                                  T x, T y, T z, T *restrict vals,
                                  T *restrict grads, T *restrict lapl,
-                                 size_t num_splines) const
+                                 size_t num_splines)
 {
   x -= spline_m->x_grid.start;
   y -= spline_m->y_grid.start;
@@ -135,13 +135,9 @@ MultiBsplineOffload<T>::evaluate_vgl(const spliner_type *restrict spline_m,
   T *restrict ly = lapl + out_offset;
   T *restrict lz = lapl + 2 * out_offset;
 
-  OMPstd::fill_n(vals, num_splines, T());
-  OMPstd::fill_n(gx, num_splines, T());
-  OMPstd::fill_n(gy, num_splines, T());
-  OMPstd::fill_n(gz, num_splines, T());
-  OMPstd::fill_n(lx, num_splines, T());
-  OMPstd::fill_n(ly, num_splines, T());
-  OMPstd::fill_n(lz, num_splines, T());
+  OMPstd::fill_n(vals,  out_offset  , T());
+  OMPstd::fill_n(grads, out_offset*3, T());
+  OMPstd::fill_n(lapl,  out_offset*3, T());
 
   for (int i = 0; i < 4; i++)
     for (int j = 0; j < 4; j++)
@@ -205,7 +201,7 @@ inline void
 MultiBsplineOffload<T>::evaluate_vgh(const spliner_type *restrict spline_m,
                                  T x, T y, T z, T *restrict vals,
                                  T *restrict grads, T *restrict hess,
-                                 size_t num_splines) const
+                                 size_t num_splines)
 {
 
   int ix, iy, iz;
@@ -243,16 +239,9 @@ MultiBsplineOffload<T>::evaluate_vgh(const spliner_type *restrict spline_m,
   T *restrict hyz = hess + 4 * out_offset;
   T *restrict hzz = hess + 5 * out_offset;
 
-  OMPstd::fill_n(vals, num_splines, T());
-  OMPstd::fill_n(gx, num_splines, T());
-  OMPstd::fill_n(gy, num_splines, T());
-  OMPstd::fill_n(gz, num_splines, T());
-  OMPstd::fill_n(hxx, num_splines, T());
-  OMPstd::fill_n(hxy, num_splines, T());
-  OMPstd::fill_n(hxz, num_splines, T());
-  OMPstd::fill_n(hyy, num_splines, T());
-  OMPstd::fill_n(hyz, num_splines, T());
-  OMPstd::fill_n(hzz, num_splines, T());
+  OMPstd::fill_n(vals,  out_offset  , T());
+  OMPstd::fill_n(grads, out_offset*3, T());
+  OMPstd::fill_n(hess,  out_offset*6, T());
 
   for (int i = 0; i < 4; i++)
     for (int j = 0; j < 4; j++)
@@ -270,8 +259,8 @@ MultiBsplineOffload<T>::evaluate_vgh(const spliner_type *restrict spline_m,
       const T pre01 = a[i] * db[j];
       const T pre02 = a[i] * d2b[j];
 
-      const int iSplitPoint = num_splines;
-      for (int n = 0; n < iSplitPoint; n++)
+      #pragma omp for nowait
+      for (int n = 0; n < num_splines; n++)
       {
 
         T coefsv    = coefs[n];
@@ -309,6 +298,7 @@ MultiBsplineOffload<T>::evaluate_vgh(const spliner_type *restrict spline_m,
   const T dxz   = dxInv * dzInv;
   const T dyz   = dyInv * dzInv;
 
+  #pragma omp for nowait
   for (int n = 0; n < num_splines; n++)
   {
     gx[n] *= dxInv;

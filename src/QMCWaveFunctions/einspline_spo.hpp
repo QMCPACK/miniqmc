@@ -23,7 +23,7 @@
 #include <Particle/ParticleSet.h>
 #include <spline2/bspline_allocator.hpp>
 #include <spline2/MultiBsplineRef.hpp>
-//#include <spline2/MultiBsplineOffload.hpp>
+#include <spline2/MultiBsplineOffload.hpp>
 #include <simd/allocator.hpp>
 #include "OhmmsPETE/OhmmsArray.h"
 #include "OMP_target_test/OMPTinyVector.h"
@@ -288,139 +288,19 @@ struct einspline_spo
     for(size_t iw = 0; iw < nw; iw++)
       for (int i = 0; i < nBlocks; ++i)
       {
-        //#pragma omp parallel
-        /*
+        int dummy0 = nBlocks;
+        int dummy1 = nSplinesPerBlock;
+        #pragma omp parallel
         MultiBsplineOffload<T>::evaluate_vgh(einsplines_ptr[i],
                                              u_shadows_ptr[iw][0],
                                              u_shadows_ptr[iw][1],
                                              u_shadows_ptr[iw][2],
-                                             psi_shadows_ptr[iw*nBlocks+i],
-                                             grad_shadows_ptr[iw*nBlocks+i],
-                                             hess_shadows_ptr[iw*nBlocks+i],
-                                             nSplinesPerBlock);
-        */
-        int dummy0 = nBlocks;
-        int dummy1 = nSplinesPerBlock;
-        #pragma omp parallel
-        {
-          const spline_type *restrict spline_m = einsplines_ptr[i];
-          T                                  x = u_shadows_ptr[iw][0];
-          T                                  y = u_shadows_ptr[iw][1];
-          T                                  z = u_shadows_ptr[iw][2];
-          T *restrict                     vals = psi_shadows_ptr[iw*dummy0+i];
-          T *restrict                    grads = grad_shadows_ptr[iw*dummy0+i];
-          T *restrict                     hess = hess_shadows_ptr[iw*dummy0+i];
-          const size_t             num_splines = dummy1;
-
-          int ix, iy, iz;
-          T tx, ty, tz;
-          T a[4], b[4], c[4], da[4], db[4], dc[4], d2a[4], d2b[4], d2c[4];
-
-          x -= spline_m->x_grid.start;
-          y -= spline_m->y_grid.start;
-          z -= spline_m->z_grid.start;
-          SplineBound<T>::get(x * spline_m->x_grid.delta_inv, tx, ix,
-                              spline_m->x_grid.num - 1);
-          SplineBound<T>::get(y * spline_m->y_grid.delta_inv, ty, iy,
-                              spline_m->y_grid.num - 1);
-          SplineBound<T>::get(z * spline_m->z_grid.delta_inv, tz, iz,
-                              spline_m->z_grid.num - 1);
-
-          MultiBsplineData<T>::compute_prefactors(a, da, d2a, tx);
-          MultiBsplineData<T>::compute_prefactors(b, db, d2b, ty);
-          MultiBsplineData<T>::compute_prefactors(c, dc, d2c, tz);
-
-          const intptr_t xs = spline_m->x_stride;
-          const intptr_t ys = spline_m->y_stride;
-          const intptr_t zs = spline_m->z_stride;
-
-          const size_t out_offset = spline_m->num_splines;
-
-          T *restrict gx = grads;
-          T *restrict gy = grads + out_offset;
-          T *restrict gz = grads + 2 * out_offset;
-
-          T *restrict hxx = hess;
-          T *restrict hxy = hess + out_offset;
-          T *restrict hxz = hess + 2 * out_offset;
-          T *restrict hyy = hess + 3 * out_offset;
-          T *restrict hyz = hess + 4 * out_offset;
-          T *restrict hzz = hess + 5 * out_offset;
-
-          OMPstd::fill_n(vals,  out_offset  , T());
-          OMPstd::fill_n(grads, out_offset*3, T());
-          OMPstd::fill_n(hess,  out_offset*6, T());
-
-          for (int i = 0; i < 4; i++)
-            for (int j = 0; j < 4; j++)
-            {
-              const T *restrict coefs =
-                  spline_m->coefs + (ix + i) * xs + (iy + j) * ys + iz * zs;
-              const T *restrict coefszs  = coefs + zs;
-              const T *restrict coefs2zs = coefs + 2 * zs;
-              const T *restrict coefs3zs = coefs + 3 * zs;
-
-              const T pre20 = d2a[i] * b[j];
-              const T pre10 = da[i] * b[j];
-              const T pre00 = a[i] * b[j];
-              const T pre11 = da[i] * db[j];
-              const T pre01 = a[i] * db[j];
-              const T pre02 = a[i] * d2b[j];
-
-              #pragma omp for nowait
-              for (int n = 0; n < num_splines; n++)
-              {
-
-                T coefsv    = coefs[n];
-                T coefsvzs  = coefszs[n];
-                T coefsv2zs = coefs2zs[n];
-                T coefsv3zs = coefs3zs[n];
-
-                T sum0 = c[0] * coefsv + c[1] * coefsvzs + c[2] * coefsv2zs +
-                         c[3] * coefsv3zs;
-                T sum1 = dc[0] * coefsv + dc[1] * coefsvzs + dc[2] * coefsv2zs +
-                         dc[3] * coefsv3zs;
-                T sum2 = d2c[0] * coefsv + d2c[1] * coefsvzs + d2c[2] * coefsv2zs +
-                         d2c[3] * coefsv3zs;
-
-                hxx[n] += pre20 * sum0;
-                hxy[n] += pre11 * sum0;
-                hxz[n] += pre10 * sum1;
-                hyy[n] += pre02 * sum0;
-                hyz[n] += pre01 * sum1;
-                hzz[n] += pre00 * sum2;
-                gx[n] += pre10 * sum0;
-                gy[n] += pre01 * sum0;
-                gz[n] += pre00 * sum1;
-                vals[n] += pre00 * sum0;
-              }
-            }
-
-          const T dxInv = spline_m->x_grid.delta_inv;
-          const T dyInv = spline_m->y_grid.delta_inv;
-          const T dzInv = spline_m->z_grid.delta_inv;
-          const T dxx   = dxInv * dxInv;
-          const T dyy   = dyInv * dyInv;
-          const T dzz   = dzInv * dzInv;
-          const T dxy   = dxInv * dyInv;
-          const T dxz   = dxInv * dzInv;
-          const T dyz   = dyInv * dzInv;
-
-          #pragma omp for nowait
-          for (int n = 0; n < num_splines; n++)
-          {
-            gx[n] *= dxInv;
-            gy[n] *= dyInv;
-            gz[n] *= dzInv;
-            hxx[n] *= dxx;
-            hyy[n] *= dyy;
-            hzz[n] *= dzz;
-            hxy[n] *= dxy;
-            hxz[n] *= dxz;
-            hyz[n] *= dyz;
-          }
-        }
+                                             psi_shadows_ptr[iw*dummy0+i],
+                                             grad_shadows_ptr[iw*dummy0+i],
+                                             hess_shadows_ptr[iw*dummy0+i],
+                                             dummy1);
       }
+
     if(need_transfer)
     {
       for(size_t iw = 0; iw < nw; iw++)
