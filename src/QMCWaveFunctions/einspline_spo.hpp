@@ -284,13 +284,19 @@ struct einspline_spo
     spline_type **restrict einsplines_ptr=einsplines.data();
     OMPTinyVector<T, 3> *u_shadows_ptr=u_shadows.data();
 
+#ifdef ENABLE_OFFLOAD
     #pragma omp target teams distribute collapse(2) map(to:nw,nBlocks,nSplinesPerBlock) device(0)
+#else
+    #pragma omp parallel for collapse(2)
+#endif
     for(size_t iw = 0; iw < nw; iw++)
       for (int i = 0; i < nBlocks; ++i)
       {
         int dummy0 = nBlocks;
         int dummy1 = nSplinesPerBlock;
+#ifdef ENABLE_OFFLOAD
         #pragma omp parallel
+#endif
         MultiBsplineOffload<T>::evaluate_vgh(einsplines_ptr[i],
                                              u_shadows_ptr[iw][0],
                                              u_shadows_ptr[iw][1],

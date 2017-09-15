@@ -259,7 +259,11 @@ MultiBsplineOffload<T>::evaluate_vgh(const spliner_type *restrict spline_m,
       const T pre01 = a[i] * db[j];
       const T pre02 = a[i] * d2b[j];
 
+#ifdef ENABLE_OFFLOAD
       #pragma omp for nowait
+#else
+      #pragma omp simd aligned(coefs,coefszs,coefs2zs,coefs3zs,vals,gx,gy,gz,hxx,hyy,hzz,hxy,hxz,hyz)
+#endif
       for (int n = 0; n < num_splines; n++)
       {
 
@@ -298,7 +302,11 @@ MultiBsplineOffload<T>::evaluate_vgh(const spliner_type *restrict spline_m,
   const T dxz   = dxInv * dzInv;
   const T dyz   = dyInv * dzInv;
 
+#ifdef ENABLE_OFFLOAD
   #pragma omp for nowait
+#else
+  #pragma omp simd aligned(gx,gy,gz,hxx,hyy,hzz,hxy,hxz,hyz)
+#endif
   for (int n = 0; n < num_splines; n++)
   {
     gx[n] *= dxInv;

@@ -4,15 +4,9 @@
 //
 // Copyright (c) 2016 Jeongnim Kim and QMCPACK developers.
 //
-// File developed by:
-// Jeongnim Kim, jeongnim.kim@intel.com,
-//    Intel Corp.
-// Amrita Mathuriya, amrita.mathuriya@intel.com,
-//    Intel Corp.
+// File developed by: Ye Luo, yeluo@anl.gov, Argonne National Laboratory.
 //
-// File created by:
-// Jeongnim Kim, jeongnim.kim@intel.com,
-//    Intel Corp.
+// File created by: Ye Luo, yeluo@anl.gov, Argonne National Laboratory.
 ////////////////////////////////////////////////////////////////////////////////
 // -*- C++ -*-
 /** @file check_spo.cpp
@@ -28,7 +22,10 @@ using namespace qmcplusplus;
 int main(int argc, char **argv)
 {
 
-  OhmmsInfo("check_spo");
+  OhmmsInfo("omp4offload");
+
+#ifdef ENABLE_OFFLOAD
+
   const int len = 12;
 
   std::vector<OMPVector<int> > vec_th(omp_get_max_threads());
@@ -63,6 +60,8 @@ int main(int argc, char **argv)
       std::cout << "  " << vec_th[tid][iel];
     std::cout << std::endl;
   }
+
+#endif
 
   return 0;
 }
