@@ -295,9 +295,9 @@ struct einspline_spo
         int dummy0 = nBlocks;
         int dummy1 = nSplinesPerBlock;
 #ifdef ENABLE_OFFLOAD
-        #pragma omp parallel
+        #pragma omp parallel num_threads(nSplinesPerBlock)
 #endif
-        MultiBsplineOffload<T>::evaluate_vgh(einsplines_ptr[i],
+        MultiBsplineOffload<T>::evaluate_vgh_v2(einsplines_ptr[i],
                                              u_shadows_ptr[iw][0],
                                              u_shadows_ptr[iw][1],
                                              u_shadows_ptr[iw][2],
