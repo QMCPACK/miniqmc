@@ -285,7 +285,7 @@ struct einspline_spo
     OMPTinyVector<T, 3> *u_shadows_ptr=u_shadows.data();
 
 #ifdef ENABLE_OFFLOAD
-    #pragma omp target teams distribute collapse(2) map(to:nw,nBlocks,nSplinesPerBlock) device(0)
+    #pragma omp target teams distribute collapse(2) map(to:nw,nBlocks,nSplinesPerBlock) num_teams(nw*nBlocks) device(0)
 #else
     #pragma omp parallel for collapse(2)
 #endif
