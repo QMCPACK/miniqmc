@@ -21,10 +21,30 @@
 #include <Configuration.h>
 #include <miniapps/Mover.hpp>
 #include <Simulation/Simulation.hpp>
+#include <Utilities/NewTimer.h>
 #include <getopt.h>
 
 using namespace std;
 using namespace qmcplusplus;
+
+enum CheckSPOTimers
+{
+  Timer_Total,
+  Timer_Init,
+  Timer_SPO_v,
+  Timer_SPO_vgh,
+  Timer_SPO_ref_v,
+  Timer_SPO_ref_vgh
+};
+
+TimerNameList_t<CheckSPOTimers> CheckSPOTimerNames = {
+    {Timer_Total, "Total"},
+    {Timer_Init, "Initialization"},
+    {Timer_SPO_v, "SPO_v"},
+    {Timer_SPO_vgh, "SPO_vgh"},
+    {Timer_SPO_ref_v, "SPO_ref_v"},
+    {Timer_SPO_ref_vgh, "SPO_ref_vgh"},
+};
 
 int main(int argc, char **argv)
 {
@@ -50,14 +70,19 @@ int main(int argc, char **argv)
   int iseed   = 11;
   int nx = 48, ny = 48, nz = 60;
   int tileSize = -1;
+  bool transfer = true;
 
   char *g_opt_arg;
   int opt;
-  while ((opt = getopt(argc, argv, "hsg:i:b:c:a:")) != -1)
+  while ((opt = getopt(argc, argv, "hfs:g:i:b:c:a:")) != -1)
   {
     switch (opt)
     {
     case 'h': printf("[-g \"n0 n1 n2\"]\n"); return 1;
+    case 'f': // forward only, no transfer back to host
+      printf("Results are not transferred back. Checking is expected to fail when offloading is effective.\n");
+      transfer = false;
+      break;
     case 'g': // tiling1 tiling2 tiling3
       sscanf(optarg, "%d %d %d", &na, &nb, &nc);
       break;
@@ -72,6 +97,13 @@ int main(int argc, char **argv)
   }
 
   Tensor<int, 3> tmat(na, 0, 0, 0, nb, 0, 0, 0, nc);
+
+  TimerManager.set_timer_threshold(timer_level_coarse);
+  TimerList_t Timers;
+  setup_timers(Timers, CheckSPOTimerNames, timer_level_coarse);
+
+  Timers[Timer_Total]->start();
+  Timers[Timer_Init]->start();
 
   // turn off output
   if (omp_get_max_threads() > 1)
@@ -168,6 +200,8 @@ int main(int argc, char **argv)
     ur_list[iw].resize(nels);
   }
 
+  Timers[Timer_Init]->stop();
+
   // setup some parameters
   // this is the cutoff from the non-local PP
   const RealType Rmax(1.7);
@@ -214,8 +248,11 @@ int main(int argc, char **argv)
         pos = els.R[iel] + sqrttau * delta[iel];
       }
 
-      mover_list[0].spo->evaluate_multi_vgh(pos_list, spo_shadows);
+      Timers[Timer_SPO_vgh]->start();
+      mover_list[0].spo->evaluate_multi_vgh(pos_list, spo_shadows, transfer);
+      Timers[Timer_SPO_vgh]->stop();
 
+      Timers[Timer_SPO_ref_vgh]->start();
       #pragma omp parallel for reduction(+:evalVGH_v_err,evalVGH_g_err,evalVGH_h_err)
       for(size_t iw = 0; iw < mover_list.size(); iw++)
       {
@@ -261,6 +298,7 @@ int main(int argc, char **argv)
           my_accepted++;
         }
       }
+      Timers[Timer_SPO_ref_vgh]->stop();
     }
 
 #if 0
@@ -296,6 +334,15 @@ int main(int argc, char **argv)
 #endif
 
   } // steps.
+
+  Timers[Timer_Total]->stop();
+
+  if (ionode)
+  {
+    cout << "================================== " << endl;
+    TimerManager.print();
+    cout << "================================== " << endl;
+  }
 
   for(size_t iw = 0; iw < mover_list.size(); iw++)
   {

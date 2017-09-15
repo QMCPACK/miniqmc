@@ -239,7 +239,7 @@ struct einspline_spo
   }
 
   /** evaluate psi, grad and hess */
-  inline void evaluate_multi_vgh(const std::vector<pos_type> &p, std::vector<self_type *> &shadows)
+  inline void evaluate_multi_vgh(const std::vector<pos_type> &p, std::vector<self_type *> &shadows, bool need_transfer=false)
   {
     const size_t nw = p.size();
     if(nw*nBlocks!=psi_shadows.size())
@@ -421,14 +421,17 @@ struct einspline_spo
           }
         }
       }
-    for(size_t iw = 0; iw < nw; iw++)
+    if(need_transfer)
     {
-      auto &shadow = *shadows[iw];
-      for (int i = 0; i < nBlocks; ++i)
+      for(size_t iw = 0; iw < nw; iw++)
       {
-        shadow.psi[i].update_from_device();
-        shadow.grad[i].update_from_device();
-        shadow.hess[i].update_from_device();
+        auto &shadow = *shadows[iw];
+        for (int i = 0; i < nBlocks; ++i)
+        {
+          shadow.psi[i].update_from_device();
+          shadow.grad[i].update_from_device();
+          shadow.hess[i].update_from_device();
+        }
       }
     }
   }
