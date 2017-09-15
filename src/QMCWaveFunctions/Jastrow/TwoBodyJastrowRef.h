@@ -195,7 +195,6 @@ void TwoBodyJastrowRef<FT>::addFunc(int ia, int ib, FT *j)
       for (int ig = 0; ig < NumGroups; ++ig)
         for (int jg                   = 0; jg < NumGroups; ++jg, ++ij) {
           if (F[ij] == nullptr) F[ij] = j;
-        printf("CUTOFF_REF: %i %lf\n",ij,F[ij]->cutoff_radius);
       }
 
     }
@@ -209,7 +208,6 @@ void TwoBodyJastrowRef<FT>::addFunc(int ia, int ib, FT *j)
       for (int ig = 0; ig < NumGroups; ++ig)
         for (int jg              = 0; jg < NumGroups; ++jg) {
           F[ig * NumGroups + jg] = j;
-          printf("CUTOFF_REF_N2: %i %lf\n",ig * NumGroups + jg,F[ig * NumGroups + jg]->cutoff_radius);
         }
     }
     else
@@ -217,7 +215,6 @@ void TwoBodyJastrowRef<FT>::addFunc(int ia, int ib, FT *j)
       // generic case
       F[ia * NumGroups + ib]              = j;
       if (ia < ib) F[ib * NumGroups + ia] = j;
-      printf("CUTOFF_REF_GEN: %i %lf\n",ia * NumGroups + ib,F[ia * NumGroups + ib]->cutoff_radius);
     }
   }
   std::stringstream aname;
@@ -246,7 +243,6 @@ inline void TwoBodyJastrowRef<FT>::computeU3(ParticleSet &P, int iat,
   std::fill_n(du, N, czero);
   std::fill_n(d2u, N, czero);
 
-  printf("COMPUTEU3_REF\n");
   const int igt = P.GroupID[iat] * NumGroups;
   for (int jg = 0; jg < NumGroups; ++jg)
   {
@@ -257,8 +253,6 @@ inline void TwoBodyJastrowRef<FT>::computeU3(ParticleSet &P, int iat,
                    DistIndice.data());
   }
 
-  for(int i=0;i<10;i++)
-  printf("COMPUTEU3_REF %i %lf\n",i,u[i]);
   // u[iat]=czero;
   // du[iat]=czero;
   // d2u[iat]=czero;
@@ -352,19 +346,15 @@ template <typename FT> void TwoBodyJastrowRef<FT>::recompute(ParticleSet &P)
     const int igt = ig * NumGroups;
     for (int iat = P.first(ig), last = P.last(ig); iat < last; ++iat)
     {
-      printf("UAT_RECOMPUTEA_REF: %i %lf %i %lf\n",iat,Uat[iat],N,*cur_u.begin());
       computeU3(P, iat, d_table->Distances[iat], cur_u.data(), cur_du.data(),
                 cur_d2u.data());
-      printf("UAT_RECOMPUTEB_REF: %i %lf %i %lf\n",iat,Uat[iat],N,*(cur_u.begin()+1));
       Uat[iat] = std::accumulate(cur_u.begin(), cur_u.begin() + N, valT());
-      printf("UAT_RECOMPUTEC_REF: %i %lf %i %lf\n",iat,Uat[iat],N,*(cur_u.begin()+1));
       posT grad;
       valT lap;
       accumulateGL(cur_du.data(), cur_d2u.data(), d_table->Displacements[iat],
                    grad, lap);
       dUat[iat]  = grad;
       d2Uat[iat] = -lap;
-      printf("UAT_RECOMPUTED_REF: %i %lf %i %lf\n",iat,Uat[iat],N,*(cur_u.begin()+1));
     }
   }
 }
@@ -390,7 +380,6 @@ void TwoBodyJastrowRef<FT>::evaluateGL(ParticleSet &P,
   for (int iat = 0; iat < N; ++iat)
   {
     LogValue += Uat[iat];
-    printf("Ref: %i %lf\n",iat,Uat[iat]);
     G[iat] += dUat[iat];
     L[iat] += d2Uat[iat];
   }

@@ -394,14 +394,11 @@ KOKKOS_INLINE_FUNCTION void BsplineFunctor<T>::evaluateVGL( const TeamType& team
       if(final) {
         distIndices[count]         = jat;
         distArrayCompressed[count] = r;
-        printf("ISTART_DIST: %i %i %i %i %lf\n",iStart,iLimit,jat,count,r);
       }
       count++;
     }
   });
 
-  printf("BSPLINE_EVALUATE_VGL: %i %i %lf %lf %lf\n",iCount,iLimit,iCount>0?distArray[0]:0.0,iCount>131?distArray[131]:0.0,cutoff_radius);
-  //printf("%i %i %p %p %p %p\n",iCount,iStart, _distArray, distArray,distIndices,distArrayCompressed);
   Kokkos::parallel_for(Kokkos::ThreadVectorRange(team,iCount), [&] (const int& j) {
 
     real_type r    = distArrayCompressed[j];
@@ -436,8 +433,6 @@ KOKKOS_INLINE_FUNCTION void BsplineFunctor<T>::evaluateVGL( const TeamType& team
         sCoef1*(A[ 4]*tp0 + A[ 5]*tp1 + A[ 6]*tp2 + A[ 7])+
         sCoef2*(A[ 8]*tp0 + A[ 9]*tp1 + A[10]*tp2 + A[11])+
         sCoef3*(A[12]*tp0 + A[13]*tp1 + A[14]*tp2 + A[15]));
-    printf("VALARRAY: %i %i %lf %lf %lf %lf %lf  || %lf %p\n",
-        iStart,iScatter,sCoef0,A[0],tp0,A[1],tp1,valArray[iScatter],&valArray[iScatter]);
     // clang-format on
   });
 }

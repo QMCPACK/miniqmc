@@ -245,6 +245,8 @@
 /* Use VTune Task API with timers */
 #cmakedefine USE_VTUNE_TASKS @USE_VTUNE_TASKS@
 
+/* Kokkos specific options */
+#cmakedefine QMC_KOKKOS_FORCE_PARALLEL_JASTROW @QMC_KOKKOS_FORCE_PARALLEL_JASTROW@ 
 
 #endif // QMCPLUSPLUS_CONFIGURATION_H
 
