@@ -65,14 +65,15 @@ int main()
   const size_t nt=shadow.size();
   std::cout << "shadow size = " << nt << std::endl;
   // the explicit mapping is a workaround for a compiler bug
-  #pragma omp target teams distribute map(to:nt)
+  #pragma omp target teams distribute map(to:nt,len)
   for(size_t iw=0; iw<nt; iw++)
   {
     #pragma omp parallel
     {
+      int *restrict one_ptr=shadows_ptr[iw];
       #pragma omp for nowait
       for(size_t iel=0; iel<len; iel++)
-        shadows_ptr[iw][iel] = iel+iw;
+        one_ptr[iel] = iel+iw;
     }
   }
 

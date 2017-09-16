@@ -26,6 +26,9 @@ int main(int argc, char **argv)
 
 #ifdef ENABLE_OFFLOAD
 
+  std::cout << "Current number of devices " << omp_get_num_devices() << std::endl;
+  std::cout << "Default device " << omp_get_default_device() << std::endl;
+
   const int len = 12;
 
   std::vector<OMPVector<int> > vec_th(omp_get_max_threads());
