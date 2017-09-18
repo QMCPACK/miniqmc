@@ -259,9 +259,6 @@ int main(int argc, char **argv)
     ions.setName("ion");
     els.setName("e");
 
-
-    omp_set_num_threads(Kokkos::OpenMP::thread_pool_size());
-
     const int teamID = partition_id; // Walker ID
 
     // create spo per thread

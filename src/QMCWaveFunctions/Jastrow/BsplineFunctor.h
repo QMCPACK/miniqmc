@@ -49,7 +49,7 @@ template <class T> struct BsplineFunctor : public OptimizableFunctorBase
   int NumParams;
   int Dummy;
   TinyVector<real_type, 16> A, dA, d2A, d3A;
-  Kokkos::vector<real_type> SplineCoefs;
+  Kokkos::View<real_type*> SplineCoefs;
 
   // static const real_type A[16], dA[16], d2A[16];
   real_type DeltaR, DeltaRInv;
@@ -57,9 +57,9 @@ template <class T> struct BsplineFunctor : public OptimizableFunctorBase
   real_type Y, dY, d2Y;
   // Stores the derivatives w.r.t. SplineCoefs
   // of the u, du/dr, and d2u/dr2
-  Kokkos::vector<TinyVector<real_type, 3>> SplineDerivs;
-  Kokkos::vector<real_type> Parameters;
-  Kokkos::vector<std::string> ParameterNames;
+  Kokkos::View<TinyVector<real_type, 3>*> SplineDerivs;
+  Kokkos::View<real_type*> Parameters;
+  std::vector<std::string> ParameterNames;
   std::string elementType, pairType;
   std::string fileName;
 
@@ -110,9 +110,9 @@ template <class T> struct BsplineFunctor : public OptimizableFunctorBase
     int numKnots = numCoefs - 2;
     DeltaR       = cutoff_radius / (real_type)(numKnots - 1);
     DeltaRInv    = 1.0 / DeltaR;
-    Parameters.resize(n);
-    SplineCoefs.resize(numCoefs);
-    SplineDerivs.resize(numCoefs);
+    Parameters = Kokkos::View<real_type*>("Parameters",n);
+    SplineCoefs = Kokkos::View<real_type*>("SplineCoefs",numCoefs);
+    SplineDerivs = Kokkos::View<TinyVector<real_type, 3>*>("SplineDerivs",numCoefs);
   }
 
   void reset()

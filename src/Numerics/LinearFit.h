@@ -24,7 +24,7 @@
 #include "OhmmsPETE/TinyVector.h"
 #include "OhmmsPETE/OhmmsMatrix.h"
 #include "Numerics/DeterminantOperators.h"
-#include <Kokkos_Vector.hpp>
+#include <Kokkos_Core.hpp>
 namespace qmcplusplus
 {
 
@@ -58,7 +58,7 @@ inline void LinearFit(std::vector<T> &y, Matrix<T> &A, std::vector<T> &coefs)
       coefs[i] += alpha(i, j) * beta[j];
 }
 template <typename T>
-inline void LinearFit(std::vector<T> &y, Matrix<T> &A, Kokkos::vector<T> &coefs)
+inline void LinearFit(std::vector<T> &y, Matrix<T> &A, Kokkos::View<T*> &coefs)
 {
   int N = A.size(0);
   int M = A.size(1);
@@ -81,7 +81,7 @@ inline void LinearFit(std::vector<T> &y, Matrix<T> &A, Kokkos::vector<T> &coefs)
     for (int i = 0; i < N; i++)
       beta[k] += y[i] * A(i, k);
   invert_matrix(alpha, false);
-  coefs.resize(M, 0.0);
+  coefs = Kokkos::View<T*>("Coefs",M);
   for (int i = 0; i < M; i++)
     for (int j = 0; j < M; j++)
       coefs[i] += alpha(i, j) * beta[j];
