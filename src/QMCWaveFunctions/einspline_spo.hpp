@@ -276,7 +276,7 @@ struct einspline_spo
     for(size_t iw = 0; iw < nw; iw++)
       u_shadows[iw] = Lattice.toUnit_floor(p[iw]);
     //std::cout << "mapped already? " << omp_target_is_present(u_shadows.data(),0) << std::endl;
-    u_shadows.update_to_device();
+    //u_shadows.update_to_device();
 
     T ** restrict psi_shadows_ptr=psi_shadows.data();
     T ** restrict grad_shadows_ptr=grad_shadows.data();
@@ -285,7 +285,8 @@ struct einspline_spo
     OMPTinyVector<T, 3> *u_shadows_ptr=u_shadows.data();
 
 #ifdef ENABLE_OFFLOAD
-    #pragma omp target teams distribute collapse(2) map(to:nw,nBlocks,nSplinesPerBlock) num_teams(nw*nBlocks) device(0)
+    #pragma omp target teams distribute collapse(2) num_teams(nw*nBlocks) device(0) \
+                map(to:nw,nBlocks,nSplinesPerBlock) map(always,to:u_shadows_ptr[0:u_shadows.size()])
 #else
     #pragma omp parallel for collapse(2)
 #endif
