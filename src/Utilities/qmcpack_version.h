@@ -17,4 +17,6 @@
 #define QMCPACK_GIT_COMMIT_SUBJECT GIT_COMMIT_SUBJECT_RAW
 #endif
 
+void print_version(bool verbose);
+
 #endif
