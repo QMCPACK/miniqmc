@@ -259,9 +259,6 @@ int main(int argc, char **argv)
     ions.setName("ion");
     els.setName("e");
 
-
-    omp_set_num_threads(Kokkos::OpenMP::thread_pool_size());
-
     const int teamID = partition_id; // Walker ID
 
     // create spo per thread
@@ -372,7 +369,7 @@ int main(int argc, char **argv)
 
           Timers[Timer_ratioGrad]->stop();
 
-          Kokkos::fence();
+          //Kokkos::fence();
           // Accept/reject the trial move
           if (ur[iel] > accept) // MC
           {
@@ -380,7 +377,7 @@ int main(int argc, char **argv)
             Timers[Timer_Update]->start();
             WaveFunction->acceptMove(els, iel);
             Timers[Timer_Update]->stop();
-            Kokkos::fence();
+            //Kokkos::fence();
             Timers[Timer_DT]->start();
             els.acceptMove(iel);
             Timers[Timer_DT]->stop();

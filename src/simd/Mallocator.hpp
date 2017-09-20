@@ -40,11 +40,11 @@ namespace qmcplusplus
       return static_cast<T*>(pt);
 #endif*/
      void* pt = Kokkos::kokkos_malloc<>(n*sizeof(T));
-     Kokkos::fence();
+//     Kokkos::fence();
      return static_cast<T*>(pt);
     }
     void deallocate(T* p, std::size_t) {
-      Kokkos::fence();
+//      Kokkos::fence();
       Kokkos::kokkos_free(p);
     }
   };

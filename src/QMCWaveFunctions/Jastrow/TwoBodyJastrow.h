@@ -275,7 +275,7 @@ inline void TwoBodyJastrow<FT>::computeU3(ParticleSet &P, int iat_,
   std::fill_n(du, N, czero);
   std::fill_n(d2u, N, czero);
 
-  Kokkos::fence();
+//  Kokkos::fence();
   // Actually we need one u, du and d2u etc. per group in flight.
   igt = P.GroupID[iat] * NumGroups;
   for (int jg = 0; jg < NumGroups; ++jg)
@@ -285,7 +285,7 @@ inline void TwoBodyJastrow<FT>::computeU3(ParticleSet &P, int iat_,
     ///EVIL HACK
     jg_hack = jg;
     Kokkos::parallel_for(policy_t(1,1,32), *this);
-    Kokkos::fence();
+//    Kokkos::fence();
   }
 
 
@@ -338,12 +338,12 @@ TwoBodyJastrow<FT>::ratioGrad(ParticleSet &P, int iat, GradType &grad_iat)
 
   computeU3(P, iat, P.DistTables[0]->Temp_r.data(), cur_u.data(), cur_du.data(),
             cur_d2u.data());
-  Kokkos::fence();
+//  Kokkos::fence();
   cur_Uat = simd::accumulate_n(cur_u.data(), N, valT());
-  Kokkos::fence();
+//  Kokkos::fence();
   DiffVal = Uat[iat] - cur_Uat;
   grad_iat += accumulateG(cur_du.data(), P.DistTables[0]->Temp_dr);
-  Kokkos::fence();
+//  Kokkos::fence();
   return std::exp(DiffVal);
 }
 
@@ -354,12 +354,12 @@ void TwoBodyJastrow<FT>::acceptMove(ParticleSet &P, int iat)
   const DistanceTableData *d_table = P.DistTables[0];
   computeU3(P, iat, d_table->Distances[iat], old_u.data(), old_du.data(),
             old_d2u.data());
-  Kokkos::fence();
+//  Kokkos::fence();
   if (UpdateMode == ORB_PBYP_RATIO)
   { // ratio-only during the move; need to compute derivatives
     const auto dist = d_table->Temp_r.data();
     computeU3(P, iat, dist, cur_u.data(), cur_du.data(), cur_d2u.data());
-    Kokkos::fence();
+//    Kokkos::fence();
   }
 
   valT cur_d2Uat(0);
@@ -395,7 +395,7 @@ template <typename FT> void TwoBodyJastrow<FT>::recompute(ParticleSet &P)
     {
       computeU3(P, iat, d_table->Distances[iat], cur_u.data(), cur_du.data(),
                 cur_d2u.data());
-      Kokkos::fence();
+//      Kokkos::fence();
       Uat[iat] = simd::accumulate_n(cur_u.data(), N, valT());
       posT grad;
       valT lap;
@@ -423,9 +423,9 @@ void TwoBodyJastrow<FT>::evaluateGL(ParticleSet &P,
                                     ParticleSet::ParticleLaplacian_t &L,
                                     bool fromscratch)
 {
-  Kokkos::fence();
+//  Kokkos::fence();
   if (fromscratch) recompute(P);
-  Kokkos::fence();
+//  Kokkos::fence();
   LogValue = valT(0);
   for (int iat = 0; iat < N; ++iat)
   {
