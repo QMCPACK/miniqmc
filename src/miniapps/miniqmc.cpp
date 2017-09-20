@@ -369,7 +369,7 @@ int main(int argc, char **argv)
 
           Timers[Timer_ratioGrad]->stop();
 
-          Kokkos::fence();
+          //Kokkos::fence();
           // Accept/reject the trial move
           if (ur[iel] > accept) // MC
           {
@@ -377,7 +377,7 @@ int main(int argc, char **argv)
             Timers[Timer_Update]->start();
             WaveFunction->acceptMove(els, iel);
             Timers[Timer_Update]->stop();
-            Kokkos::fence();
+            //Kokkos::fence();
             Timers[Timer_DT]->start();
             els.acceptMove(iel);
             Timers[Timer_DT]->stop();
