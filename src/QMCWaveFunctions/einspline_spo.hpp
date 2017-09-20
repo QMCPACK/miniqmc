@@ -238,7 +238,71 @@ struct einspline_spo
                                   nSplinesPerBlock);
   }
 
-  /** evaluate psi, grad and hess */
+  /** evaluate psi, grad and hess with offload */
+  inline void evaluate_vgh_offload(const pos_type &p, bool need_transfer=false)
+  {
+    if(nBlocks!=psi_shadows.size())
+    {
+      psi_shadows.resize(nBlocks);
+      grad_shadows.resize(nBlocks);
+      hess_shadows.resize(nBlocks);
+
+      T ** restrict psi_shadows_ptr=psi_shadows.data();
+      T ** restrict grad_shadows_ptr=grad_shadows.data();
+      T ** restrict hess_shadows_ptr=hess_shadows.data();
+      for (int i = 0; i < nBlocks; ++i)
+      {
+        T *restrict psi_ptr=psi[i].data();
+        T *restrict grad_ptr=grad[i].data();
+        T *restrict hess_ptr=hess[i].data();
+        #pragma omp target map(to:i) device(0)
+        {
+          psi_shadows_ptr[i] = psi_ptr;
+          grad_shadows_ptr[i] = grad_ptr;
+          hess_shadows_ptr[i] = hess_ptr;
+        }
+      }
+    }
+
+    OMPTinyVector<T,3> u=Lattice.toUnit_floor(p);
+
+    T ** restrict psi_shadows_ptr=psi_shadows.data();
+    T ** restrict grad_shadows_ptr=grad_shadows.data();
+    T ** restrict hess_shadows_ptr=hess_shadows.data();
+    spline_type **restrict einsplines_ptr=einsplines.data();
+
+#ifdef ENABLE_OFFLOAD
+    #pragma omp target teams distribute num_teams(nBlocks) device(0) \
+                map(to:nBlocks,nSplinesPerBlock) map(always,to:u)
+#else
+    #pragma omp parallel for
+#endif
+    for (int i = 0; i < nBlocks; ++i)
+    {
+      int dummy1 = nSplinesPerBlock;
+#ifdef ENABLE_OFFLOAD
+        #pragma omp parallel num_threads(nSplinesPerBlock)
+#endif
+      MultiBsplineOffload<T>::evaluate_vgh_v2(einsplines_ptr[i],
+                                           u[0], u[1], u[2],
+                                           psi_shadows_ptr[i],
+                                           grad_shadows_ptr[i],
+                                           hess_shadows_ptr[i],
+                                           dummy1);
+    }
+
+    if(need_transfer)
+    {
+      for (int i = 0; i < nBlocks; ++i)
+      {
+        psi[i].update_from_device();
+        grad[i].update_from_device();
+        hess[i].update_from_device();
+      }
+    }
+  }
+
+  /** evaluate psi, grad and hess of multiple walkers with offload */
   inline void evaluate_multi_vgh(const std::vector<pos_type> &p, std::vector<self_type *> &shadows, bool need_transfer=false)
   {
     const size_t nw = p.size();
