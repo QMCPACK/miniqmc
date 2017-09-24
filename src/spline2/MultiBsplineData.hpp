@@ -29,7 +29,7 @@
 
 namespace qmcplusplus
 {
-#pragma omp declare target
+PRAGMA_OMP("omp declare target")
 template <typename T> struct SplineBound
 {
   static inline void get(T x, T &dx, int &ind, int ng)
@@ -106,6 +106,6 @@ template <>
 QMC_ALIGNAS const double MultiBsplineData<double>::d2A44[16] = {
     0.0, 0.0, -1.0, 1.0, 0.0, 0.0, 3.0, -2.0,
     0.0, 0.0, -3.0, 1.0, 0.0, 0.0, 1.0, 0.0};
-#pragma omp end declare target
+PRAGMA_OMP("omp end declare target")
 } /** qmcplusplus namespace */
 #endif

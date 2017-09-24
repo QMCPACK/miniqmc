@@ -101,15 +101,17 @@ struct einspline_spo
     lastBlock        = std::min(in.nBlocks, nBlocks * (crewID + 1));
     nBlocks          = lastBlock - firstBlock;
     einsplines.resize(nBlocks);
-    spline_type **restrict einsplines_ptr=einsplines.data();
     for (int i = 0, t = firstBlock; i < nBlocks; ++i, ++t)
     {
       einsplines[i] = in.einsplines[t];
+#ifdef ENABLE_OFFLOAD
+      spline_type **restrict einsplines_ptr=einsplines.data();
       spline_type *restrict &tile_ptr=in.einsplines[t];
       #pragma omp target map(to:i) device(0)
       {
         einsplines_ptr[i]=tile_ptr;
       }
+#endif
     }
     resize();
   }
@@ -152,7 +154,6 @@ struct einspline_spo
       pos_type start(0);
       pos_type end(1);
       einsplines.resize(nBlocks);
-      spline_type **restrict einsplines_ptr=einsplines.data();
       RandomGenerator<T> myrandom(11);
       Array<T, 3> data(nx, ny, nz);
       std::fill(data.begin(), data.end(), T());
@@ -163,7 +164,9 @@ struct einspline_spo
         if (init_random)
           for (int j = 0; j < nSplinesPerBlock; ++j)
             myAllocator.set(data.data(), einsplines[i], j);
+#ifdef ENABLE_OFFLOAD
         // attach pointers
+        spline_type **restrict einsplines_ptr=einsplines.data();
         spline_type *restrict &tile_ptr=einsplines[i];
         T *restrict &coefs_ptr=einsplines[i]->coefs;
         #pragma omp target enter data map(to:tile_ptr[0:1],coefs_ptr[0:einsplines[i]->coefs_size]) device(0)
@@ -174,6 +177,7 @@ struct einspline_spo
           einsplines_ptr[i]->coefs=coefs_ptr;
         }
         //std::cout << "YYYY end of spline offloading" << std::endl;
+#endif
       }
     }
     resize();
@@ -320,13 +324,15 @@ struct einspline_spo
         auto &shadow = *shadows[iw];
         for (int i = 0; i < nBlocks; ++i)
         {
+          const size_t idx = iw*nBlocks+i;
           T *restrict psi_ptr=shadow.psi[i].data();
           T *restrict grad_ptr=shadow.grad[i].data();
           T *restrict hess_ptr=shadow.hess[i].data();
+#ifdef ENABLE_OFFLOAD
           //std::cout << "psi_shadows_ptr mapped already? " << omp_target_is_present(psi_shadows_ptr,0) << std::endl;
           //std::cout << "psi_ptr mapped already? " << omp_target_is_present(psi_ptr,0) << std::endl;
-          const size_t idx = iw*nBlocks+i;
           #pragma omp target map(to:idx) device(0)
+#endif
           {
             psi_shadows_ptr[idx] = psi_ptr;
             grad_shadows_ptr[idx] = grad_ptr;
