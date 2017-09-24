@@ -38,7 +38,9 @@ class OMPVectorSoaContainer:public VectorSoaContainer<T,D>
     {
       if(__base::size()!=0)
       {
+#ifdef ENABLE_OFFLOAD
         #pragma omp target exit data map(delete:vec_ptr) device(device_id)
+#endif
         vec_ptr = nullptr;
       }
       __base::resize(size);
@@ -46,24 +48,32 @@ class OMPVectorSoaContainer:public VectorSoaContainer<T,D>
       {
         vec_ptr = __base::data();
         //std::cout << "YYYY resize OMPVectorSoAContainer " << __base::nAllocated << std::endl;
+#ifdef ENABLE_OFFLOAD
         #pragma omp target enter data map(alloc:vec_ptr[0:__base::nAllocated]) device(device_id)
+#endif
       }
     }
   }
 
   inline void update_to_device() const
   {
+#ifdef ENABLE_OFFLOAD
     #pragma omp target update to(vec_ptr[0:__base::nAllocated]) device(device_id)
+#endif
   }
 
   inline void update_from_device() const 
   {
+#ifdef ENABLE_OFFLOAD
     #pragma omp target update from(vec_ptr[0:__base::nAllocated]) device(device_id)
+#endif
   }
 
   inline ~OMPVectorSoaContainer()
   {
+#ifdef ENABLE_OFFLOAD
     #pragma omp target exit data map(delete:vec_ptr) device(device_id)
+#endif
   }
 
 };

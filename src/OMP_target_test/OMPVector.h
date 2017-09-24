@@ -36,7 +36,9 @@ class OMPVector:public Container
     {
       if(Container::size()!=0)
       {
+#ifdef ENABLE_OFFLOAD
         #pragma omp target exit data map(delete:vec_ptr) device(device_id)
+#endif
         vec_ptr = nullptr;
       }
       Container::resize(size);
@@ -44,24 +46,32 @@ class OMPVector:public Container
       {
         vec_ptr = Container::data();
         //std::cout << "YYYY resize OMPVector " << Container::size() << std::endl;
+#ifdef ENABLE_OFFLOAD
         #pragma omp target enter data map(alloc:vec_ptr[0:size]) device(device_id)
+#endif
       }
     }
   }
 
   inline void update_to_device() const
   {
+#ifdef ENABLE_OFFLOAD
     #pragma omp target update to(vec_ptr[0:Container::size()]) device(device_id)
+#endif
   }
 
   inline void update_from_device() const 
   {
+#ifdef ENABLE_OFFLOAD
     #pragma omp target update from(vec_ptr[0:Container::size()]) device(device_id)
+#endif
   }
 
   inline ~OMPVector()
   {
+#ifdef ENABLE_OFFLOAD
     #pragma omp target exit data map(delete:vec_ptr) device(device_id)
+#endif
   }
 
 };
@@ -70,7 +80,7 @@ class OMPVector:public Container
 
 namespace OMPstd
 {
-#pragma omp declare target
+PRAGMA_OMP("omp declare target")
   template <typename T>
   inline void fill_n(T *x, size_t count, const T& value)
   {
@@ -80,6 +90,6 @@ namespace OMPstd
     for(size_t id=0; id<count; id++)
       x[id]=value;
   }
-#pragma omp end declare target
+PRAGMA_OMP("omp end declare target")
 }
 #endif
