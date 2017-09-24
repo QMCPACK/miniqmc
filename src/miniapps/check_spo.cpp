@@ -67,24 +67,28 @@ int main(int argc, char **argv)
   int nb      = 1;
   int nc      = 1;
   int nsteps  = 100;
+  int nmovers = omp_get_max_threads();
   int iseed   = 11;
-  int nx = 48, ny = 48, nz = 60;
+  int nx = 37, ny = 37, nz = 37;
   int tileSize = -1;
   bool transfer = true;
 
   char *g_opt_arg;
   int opt;
-  while ((opt = getopt(argc, argv, "hfs:g:i:b:c:a:")) != -1)
+  while ((opt = getopt(argc, argv, "hfs:g:i:b:c:a:w:")) != -1)
   {
     switch (opt)
     {
     case 'h': printf("[-g \"n0 n1 n2\"]\n"); return 1;
     case 'f': // forward only, no transfer back to host
-      printf("Results are not transferred back. Checking is expected to fail when offloading is effective.\n");
+      printf("Results are not transferred back. Checking report should be ignored.\n");
       transfer = false;
       break;
     case 'g': // tiling1 tiling2 tiling3
       sscanf(optarg, "%d %d %d", &na, &nb, &nc);
+      break;
+    case 'w': // number of nmovers
+      nmovers = atoi(optarg);
       break;
     case 'i': // number of MC steps
       nsteps = atoi(optarg);
@@ -149,7 +153,6 @@ int main(int argc, char **argv)
   const int nels3 = 3 * nels;
 
   // construct a list of movers
-  const size_t nmovers=omp_get_max_threads();
   std::vector<Mover> mover_list(nmovers);
   std::cout << "Constructing " << nmovers << " movers!" << std::endl;
   // per mover data
@@ -263,7 +266,7 @@ int main(int argc, char **argv)
         auto &els = *mover.els;
         auto &ur = ur_list[iw];
         auto &my_accepted = my_accepted_list[iw];
-        spo_ref.evaluate_vgh(pos);
+        if(transfer) spo_ref.evaluate_vgh(pos);
         // accumulate error
         for (int ib = 0; ib < spo.nBlocks; ib++)
           for (int n = 0; n < spo.nSplinesPerBlock; n++)
