@@ -51,7 +51,7 @@ int main(int argc, char **argv)
   int nc      = 1;
   int nsteps  = 100;
   int iseed   = 11;
-  int nx = 48, ny = 48, nz = 60;
+  int nx = 37, ny = 37, nz = 37;
   // thread blocking
   // int team_size=1; //default is 1
   int tileSize = -1;
