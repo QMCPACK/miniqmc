@@ -148,8 +148,6 @@ int main(int argc, char **argv)
 
   bool verbose = false;
 
-  bool version_only = false;
-
   char *g_opt_arg;
   int opt;
   while ((opt = getopt(argc, argv, "hdvVs:g:i:b:c:a:r:")) != -1)
@@ -178,10 +176,9 @@ int main(int argc, char **argv)
     case 'a': tileSize = atoi(optarg); break;
     case 'v': verbose  = true; break;
     case 'V':
-      version_only=true;
-      verbose=true;
+      print_version(true);
+      return 1;
       break;
-
     }
   }
 
@@ -193,7 +190,6 @@ int main(int argc, char **argv)
   setup_timers(Timers, MiniQMCTimerNames, timer_level_coarse);
 
   print_version(verbose);
-  if (version_only) return 1;
 
   // turn off output
   if (!verbose || omp_get_max_threads() > 1)

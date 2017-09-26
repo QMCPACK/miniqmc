@@ -5,16 +5,29 @@
 // Copyright (c) 2017 Jeongnim Kim and QMCPACK developers.
 //
 // File developed by:
-// Mark Dewing, mdewing@anl.gov,
-//    Argonne National Laboratory
+// Mark Dewing, mdewing@anl.gov, Argonne National Laboratory
 //
 // File created by:
-// Mark Dewing, mdewing@anl.gov,
-//    Argonne National Laboratory
+// Mark Dewing, mdewing@anl.gov, Argonne National Laboratory
 ////////////////////////////////////////////////////////////////////////////////
 
 #include <Utilities/qmcpack_version.h>
 #include <iostream>
+
+#define STR_EXPAND(x) #x
+#define STR(x) STR_EXPAND(x)
+
+// Wrapper around the auto-generated Git repository revision
+// information file (git-rev.h)
+// If not building from a git repository, the git-rev.h file is empty
+#include "git-rev.h"
+
+#ifdef GIT_BRANCH_RAW
+#define QMCPACK_GIT_BRANCH STR(GIT_BRANCH_RAW)
+#define QMCPACK_GIT_HASH STR(GIT_HASH_RAW)
+#define QMCPACK_GIT_COMMIT_LAST_CHANGED STR(GIT_COMMIT_LAST_CHANGED_RAW)
+#define QMCPACK_GIT_COMMIT_SUBJECT GIT_COMMIT_SUBJECT_RAW
+#endif
 
 using std::cout;
 using std::endl;
@@ -32,4 +45,5 @@ void print_version(bool verbose)
 #else
   cout << "miniqmc not built from git repository" << endl;
 #endif
+  cout << endl;
 }

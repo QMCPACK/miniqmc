@@ -35,6 +35,7 @@
 #include <QMCWaveFunctions/Jastrow/OneBodyJastrow.h>
 #include <QMCWaveFunctions/Jastrow/TwoBodyJastrowRef.h>
 #include <QMCWaveFunctions/Jastrow/TwoBodyJastrow.h>
+#include <Utilities/qmcpack_version.h>
 #include <getopt.h>
 
 using namespace std;
@@ -63,9 +64,11 @@ int main(int argc, char **argv)
   RealType Rmax(1.7);
   string wfc_name("J2");
 
+  bool verbose = false;
+
   char *g_opt_arg;
   int opt;
-  while ((opt = getopt(argc, argv, "hg:i:r:f:")) != -1)
+  while ((opt = getopt(argc, argv, "hvVs:g:i:r:f:")) != -1)
   {
     switch (opt)
     {
@@ -85,8 +88,15 @@ int main(int argc, char **argv)
     case 'f': // Wave function component
       wfc_name = optarg;
       break;
+    case 'v': verbose  = true; break;
+    case 'V':
+      print_version(true);
+      return 1;
+      break;
     }
   }
+
+  print_version(verbose);
 
   if (wfc_name != "J1" && wfc_name != "J2" && wfc_name != "JeeI")
   {
