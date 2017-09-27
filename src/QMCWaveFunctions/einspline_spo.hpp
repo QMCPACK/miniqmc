@@ -167,7 +167,7 @@ struct einspline_spo
   /** evaluate psi */
   inline void evaluate_v(const pos_type &p)
   {
-    auto u = Lattice.toUnit(p);
+    auto u = Lattice.toUnit_floor(p);
     for (int i = 0; i < nBlocks; ++i)
       compute_engine.evaluate_v(einsplines[i], u[0], u[1], u[2], psi[i]->data(), psi[i]->size());
   }
@@ -175,7 +175,7 @@ struct einspline_spo
   /** evaluate psi */
   inline void evaluate_v_pfor(const pos_type &p)
   {
-    auto u = Lattice.toUnit(p);
+    auto u = Lattice.toUnit_floor(p);
     #pragma omp for nowait
     for (int i = 0; i < nBlocks; ++i)
       compute_engine.evaluate_v(einsplines[i], u[0], u[1], u[2], psi[i]->data(), psi[i]->size());
@@ -184,7 +184,7 @@ struct einspline_spo
   /** evaluate psi, grad and lap */
   inline void evaluate_vgl(const pos_type &p)
   {
-    auto u = Lattice.toUnit(p);
+    auto u = Lattice.toUnit_floor(p);
     for (int i = 0; i < nBlocks; ++i)
       compute_engine.evaluate_vgl(einsplines[i], u[0], u[1], u[2],
                                   psi[i]->data(), grad[i]->data(), hess[i]->data(),
@@ -194,7 +194,7 @@ struct einspline_spo
   /** evaluate psi, grad and lap */
   inline void evaluate_vgl_pfor(const pos_type &p)
   {
-    auto u = Lattice.toUnit(p);
+    auto u = Lattice.toUnit_floor(p);
     #pragma omp for nowait
     for (int i = 0; i < nBlocks; ++i)
       compute_engine.evaluate_vgl(einsplines[i], u[0], u[1], u[2],
@@ -205,7 +205,7 @@ struct einspline_spo
   /** evaluate psi, grad and hess */
   inline void evaluate_vgh(const pos_type &p)
   {
-    auto u = Lattice.toUnit(p);
+    auto u = Lattice.toUnit_floor(p);
     for (int i = 0; i < nBlocks; ++i)
       compute_engine.evaluate_vgh(einsplines[i], u[0], u[1], u[2],
                                   psi[i]->data(), grad[i]->data(), hess[i]->data(),
@@ -215,7 +215,7 @@ struct einspline_spo
   /** evaluate psi, grad and hess */
   inline void evaluate_vgh_pfor(const pos_type &p)
   {
-    auto u = Lattice.toUnit(p);
+    auto u = Lattice.toUnit_floor(p);
     #pragma omp for nowait
     for (int i = 0; i < nBlocks; ++i)
       compute_engine.evaluate_vgh(einsplines[i], u[0], u[1], u[2],
