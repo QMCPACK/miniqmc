@@ -24,6 +24,7 @@
 #include <Input/Input.hpp>
 #include <Numerics/Spline2/MultiBsplineRef.hpp>
 #include <QMCWaveFunctions/einspline_spo.hpp>
+#include <Utilities/qmcpack_version.h>
 #include <getopt.h>
 
 using namespace std;
@@ -57,9 +58,11 @@ int main(int argc, char **argv)
   int tileSize = -1;
   int team_size   = 1;
 
+  bool verbose = false;
+
   char *g_opt_arg;
   int opt;
-  while ((opt = getopt(argc, argv, "hsg:i:b:c:a:")) != -1)
+  while ((opt = getopt(argc, argv, "hvVs:g:i:b:c:a:")) != -1)
   {
     switch (opt)
     {
@@ -77,8 +80,15 @@ int main(int argc, char **argv)
       team_size = atoi(optarg);
       break;
     case 'a': tileSize = atoi(optarg); break;
+    case 'v': verbose  = true; break;
+    case 'V':
+      print_version(true);
+      return 1;
+      break;
     }
   }
+
+  print_version(verbose);
 
   Tensor<int, 3> tmat(na, 0, 0, 0, nb, 0, 0, 0, nc);
 

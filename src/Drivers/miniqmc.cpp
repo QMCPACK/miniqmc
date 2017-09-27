@@ -60,6 +60,7 @@
 #include <Utilities/PrimeNumberSet.h>
 #include <Utilities/NewTimer.h>
 #include <Utilities/RandomGenerator.h>
+#include <Utilities/qmcpack_version.h>
 #include <Input/Input.hpp>
 #include <QMCWaveFunctions/einspline_spo.hpp>
 #include <QMCWaveFunctions/FakeWaveFunction.h>
@@ -107,7 +108,9 @@ void print_help()
   printf("-i                Number of MC steps (default: 100)\n");
   printf("-s                Number of substeps (default: 1)\n");
   printf("-v                Verbose output\n");
+  printf("-V                Print version information and exit\n");
 }
+
 
 int main(int argc, char **argv)
 {
@@ -147,7 +150,7 @@ int main(int argc, char **argv)
 
   char *g_opt_arg;
   int opt;
-  while ((opt = getopt(argc, argv, "hdvs:g:i:b:c:a:r:")) != -1)
+  while ((opt = getopt(argc, argv, "hdvVs:g:i:b:c:a:r:")) != -1)
   {
     switch (opt)
     {
@@ -172,6 +175,10 @@ int main(int argc, char **argv)
       break;
     case 'a': tileSize = atoi(optarg); break;
     case 'v': verbose  = true; break;
+    case 'V':
+      print_version(true);
+      return 1;
+      break;
     }
   }
 
@@ -181,6 +188,8 @@ int main(int argc, char **argv)
   TimerManager.set_timer_threshold(timer_level_coarse);
   TimerList_t Timers;
   setup_timers(Timers, MiniQMCTimerNames, timer_level_coarse);
+
+  print_version(verbose);
 
   // turn off output
   if (!verbose || omp_get_max_threads() > 1)
