@@ -166,7 +166,7 @@ public:
       APP_ABORT(
           "ThreeBodyJastrowRef::addFunc  Jastrow function pointer is NULL");
     }
-    std::strstream aname;
+    std::stringstream aname;
     aname << iSpecies << "_" << eSpecies1 << "_" << eSpecies2;
     J3Unique[aname.str()] = j;
   }
