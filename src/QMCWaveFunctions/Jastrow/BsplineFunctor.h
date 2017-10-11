@@ -31,7 +31,6 @@
 #ifndef QMCPLUSPLUS_BSPLINE_FUNCTOR_H
 #define QMCPLUSPLUS_BSPLINE_FUNCTOR_H
 #include "Numerics/OptimizableFunctorBase.h"
-#include "Numerics/LinearFit.h"
 #include "Utilities/SIMD/allocator.hpp"
 #include <cstdio>
 
@@ -118,6 +117,17 @@ template <class T> struct BsplineFunctor : public OptimizableFunctorBase
     SplineCoefs[0] = Parameters[1] - 2.0 * DeltaR * CuspValue;
     for (int i           = 2; i < Parameters.size(); i++)
       SplineCoefs[i + 1] = Parameters[i];
+  }
+
+  void setupParameters(int n, real_type rcut, real_type cusp, std::vector<real_type> &params)
+  {
+    CuspValue = cusp;
+    cutoff_radius = rcut;
+    resize(n);
+    for (int i = 0; i < n; i++) {
+      Parameters[i] = params[i];
+    }
+    reset();
   }
 
   /** compute value, gradient and laplacian for [iStart, iEnd) pairs
@@ -245,63 +255,6 @@ template <class T> struct BsplineFunctor : public OptimizableFunctorBase
     derivs[1] += SplineDerivs[0];
 
     return true;
-  }
-
-  void initialize(int numPoints, std::vector<real_type> &x,
-                  std::vector<real_type> &y, real_type cusp, real_type rcut,
-                  std::string &id, std::string &optimize)
-  {
-    NumParams     = numPoints;
-    cutoff_radius = rcut;
-    CuspValue     = cusp;
-    if (NumParams == 0)
-    {
-      APP_ABORT("You must specify a positive number of parameters for the "
-                "Bspline jastrow function.");
-    }
-    app_log() << "Initializing BsplineFunctor from array. \n";
-    app_log() << " size = " << NumParams << " parameters " << std::endl;
-    app_log() << " cusp = " << CuspValue << std::endl;
-    app_log() << " rcut = " << cutoff_radius << std::endl;
-    resize(NumParams);
-    int npts = x.size();
-    Matrix<real_type> basis(npts, NumParams);
-    std::vector<TinyVector<real_type, 3>> derivs(NumParams);
-    for (int i = 0; i < npts; i++)
-    {
-      real_type r = x[i];
-      if (r > cutoff_radius)
-      {
-        APP_ABORT("Error in BsplineFunctor::initialize: r > cutoff_radius.");
-      }
-      evaluateDerivatives(r, derivs);
-      for (int j = 0; j < NumParams; j++)
-        basis(i, j) = derivs[j][0];
-    }
-    resize(NumParams);
-    LinearFit(y, basis, Parameters);
-    app_log() << "New parameters are:\n";
-    for (int i = 0; i < Parameters.size(); i++)
-      app_log() << "   " << Parameters[i] << std::endl;
-#if QMC_BUILD_LEVEL < 5
-    if (optimize == "yes")
-    {
-      // Setup parameter names
-      for (int i = 0; i < NumParams; i++)
-      {
-        std::stringstream sstr;
-        sstr << id << "_" << i;
-      }
-      app_log() << "Parameter     Name      Value\n";
-    }
-    else
-#endif
-    {
-      notOpt = true;
-      app_log() << "Parameters of BsplineFunctor id:" << id
-                << " are not being optimized.\n";
-    }
-    reset();
   }
 };
 
