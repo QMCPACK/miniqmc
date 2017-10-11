@@ -90,10 +90,6 @@ template <typename J2Type> void buildJ2(J2Type &J2, double rcut)
   const int npts = 10;
   std::string optimize("no");
   rcut        = std::min(rcut, 5.5727792532);
-  RealType dr = rcut / static_cast<RealType>(npts);
-  std::vector<RealType> X(npts + 1);
-  for (int i = 0; i < npts; ++i)
-    X[i]     = static_cast<RealType>(i) * dr;
 
   { // add uu/dd
     std::vector<RealType> Y = {
@@ -102,7 +98,7 @@ template <typename J2Type> void buildJ2(J2Type &J2, double rcut)
         0.006601006996, 0.00278714433, 0.0};
     std::string suu("uu");
     Func *f = new Func;
-    f->initialize(npts, X, Y, 0.0, rcut, suu, optimize);
+    f->setupParameters(npts, rcut, 0.0, Y);
     J2.addFunc(0, 0, f);
   }
   { // add ud/du
@@ -119,7 +115,7 @@ template <typename J2Type> void buildJ2(J2Type &J2, double rcut)
                                0.0};
     std::string suu("ud");
     Func *f = new Func;
-    f->initialize(npts, X, Y, 0.0, rcut, suu, optimize);
+    f->setupParameters(npts, rcut, 0.0, Y);
     J2.addFunc(0, 1, f);
   }
 }
@@ -131,10 +127,6 @@ template <typename J1Type> void buildJ1(J1Type &J1, double rcut)
   const int npts = 10;
   std::string optimize("no");
   rcut        = std::min(rcut, 4.8261684030);
-  RealType dr = rcut / static_cast<RealType>(npts);
-  std::vector<RealType> X(npts + 1);
-  for (int i = 0; i < npts; ++i)
-    X[i]     = static_cast<RealType>(i) * dr;
 
   // oxygen
   std::vector<RealType> Y = {-0.2249112633,
@@ -150,7 +142,7 @@ template <typename J1Type> void buildJ1(J1Type &J1, double rcut)
                              0.0};
   std::string suu("O");
   Func *f = new Func;
-  f->initialize(npts, X, Y, -0.25, rcut, suu, optimize);
+  f->setupParameters(npts, rcut, -0.25, Y);
   J1.addFunc(0, f);
 
   // nickel
@@ -167,7 +159,7 @@ template <typename J1Type> void buildJ1(J1Type &J1, double rcut)
        0.0};
   suu = "Ni";
   f   = new Func;
-  f->initialize(npts, X, Y, -0.25, rcut, suu, optimize);
+  f->setupParameters(npts, rcut, -0.25, Y);
   J1.addFunc(1, f);
 }
 
