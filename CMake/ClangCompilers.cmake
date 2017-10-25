@@ -7,6 +7,8 @@ ENDIF()
 # Set the std
 SET(CMAKE_C_FLAGS     "${CMAKE_C_FLAGS} -std=c99")
 
+SET( CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -lm -lstdc++" )
+
 # Enable OpenMP
 SET(ENABLE_OPENMP 1)
 IF ( ENABLE_OPENMP )
