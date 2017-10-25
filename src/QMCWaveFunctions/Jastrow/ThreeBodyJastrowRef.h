@@ -13,10 +13,10 @@
 
 #ifndef QMCPLUSPLUS_EEIJASTROW_REF_H
 #define QMCPLUSPLUS_EEIJASTROW_REF_H
-#include "Configuration.h"
+#include "Utilities/Configuration.h"
 #include "QMCWaveFunctions/WaveFunctionComponentBase.h"
 #include "Particle/DistanceTableData.h"
-#include "OhmmsPETE/OhmmsArray.h"
+#include "Numerics/OhmmsPETE/OhmmsArray.h"
 #include <map>
 #include <numeric>
 
@@ -45,7 +45,7 @@ template <class FT> class ThreeBodyJastrowRef : public WaveFunctionComponentBase
   using RowContainer = DistanceTableData::RowContainer;
   /// define container types
   using vContainer_type = aligned_vector<valT>;
-  using gContainer_type = VectorSoaContainer<valT, OHMMS_DIM>;
+  using gContainer_type = VectorSoAContainer<valT, OHMMS_DIM>;
   /// table index for i-el, el-el is always zero
   int myTableID;
   // nuber of particles
@@ -85,7 +85,7 @@ template <class FT> class ThreeBodyJastrowRef : public WaveFunctionComponentBase
   aligned_vector<valT> Distjk_Compressed, DistkI_Compressed;
   std::vector<int> DistIndice;
 
-  using VGL_type = VectorSoaContainer<valT, 9>;
+  using VGL_type = VectorSoAContainer<valT, 9>;
   VGL_type mVGL;
 
   // Used for evaluating derivatives with respect to the parameters

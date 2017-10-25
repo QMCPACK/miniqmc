@@ -24,10 +24,10 @@
 
 #include "Particle/ParticleSet.h"
 #include "Utilities/PooledData.h"
-#include "OhmmsPETE/OhmmsVector.h"
-#include "OhmmsPETE/OhmmsMatrix.h"
-#include "simd/allocator.hpp"
-#include <OhmmsSoA/VectorSoaContainer.h>
+#include "Numerics/OhmmsPETE/OhmmsVector.h"
+#include "Numerics/OhmmsPETE/OhmmsMatrix.h"
+#include "Utilities/SIMD/allocator.hpp"
+#include <Numerics/Containers.h>
 #include <limits>
 #include <bitset>
 
@@ -103,7 +103,7 @@ struct DistanceTableData
   using IndexVectorType = aligned_vector<IndexType>;
   using TempDistType    = TempDisplacement<RealType, DIM>;
   using ripair          = std::pair<RealType, IndexType>;
-  using RowContainer    = VectorSoaContainer<RealType, DIM>;
+  using RowContainer    = VectorSoAContainer<RealType, DIM>;
 #else
   typedef QMCTraits::IndexType IndexType;
   typedef QMCTraits::RealType RealType;
@@ -111,7 +111,7 @@ struct DistanceTableData
   typedef aligned_vector<IndexType> IndexVectorType;
   typedef TempDisplacement<RealType, DIM> TempDistType;
   typedef std::pair<RealType, IndexType> ripair;
-  typedef VectorSoaContainer<RealType, DIM> RowContainer;
+  typedef Container<RealType, DIM> RowContainer;
 #endif
 
   /// type of cell

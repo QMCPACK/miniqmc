@@ -18,7 +18,7 @@
 
 // include files
 #include <iomanip>
-#include "OhmmsPETE/TinyVector.h"
+#include "Numerics/OhmmsPETE/TinyVector.h"
 
 namespace qmcplusplus
 {

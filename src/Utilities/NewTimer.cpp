@@ -22,7 +22,7 @@
 /** @file NewTimer.cpp
  * @brief Implements TimerManager
  */
-#include "Configuration.h"
+#include "Utilities/Configuration.h"
 #include "Utilities/NewTimer.h"
 #include <map>
 #include <limits>

@@ -25,7 +25,7 @@
 
 #ifndef QMCPLUSPLUS_WAVEFUNCTIONCOMPONENTBASE_H
 #define QMCPLUSPLUS_WAVEFUNCTIONCOMPONENTBASE_H
-#include "Configuration.h"
+#include "Utilities/Configuration.h"
 #include "Particle/ParticleSet.h"
 #include "Particle/DistanceTableData.h"
 

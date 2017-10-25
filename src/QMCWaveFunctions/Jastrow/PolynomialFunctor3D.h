@@ -25,7 +25,7 @@
 #define QMCPLUSPLUS_POLYNOMIAL3D_FUNCTOR_H
 #include "Numerics/OptimizableFunctorBase.h"
 #include "Numerics/DeterminantOperators.h"
-#include "OhmmsPETE/OhmmsArray.h"
+#include "Numerics/OhmmsPETE/OhmmsArray.h"
 #include <cstdio>
 #include <algorithm>
 

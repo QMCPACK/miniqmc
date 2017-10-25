@@ -19,16 +19,16 @@
  */
 #ifndef QMCPLUSPLUS_EINSPLINE_SPO_HPP
 #define QMCPLUSPLUS_EINSPLINE_SPO_HPP
-#include <Configuration.h>
+#include <Utilities/Configuration.h>
 #include <Particle/ParticleSet.h>
-#include <spline2/bspline_allocator.hpp>
-#include <spline2/MultiBsplineRef.hpp>
-#include <spline2/MultiBsplineOffload.hpp>
-#include <simd/allocator.hpp>
-#include "OhmmsPETE/OhmmsArray.h"
+#include <Numerics/Spline2/bspline_allocator.hpp>
+#include <Numerics/Spline2/MultiBsplineRef.hpp>
+#include <Numerics/Spline2/MultiBsplineOffload.hpp>
+#include <Utilities/SIMD/allocator.hpp>
+#include "Numerics/OhmmsPETE/OhmmsArray.h"
 #include "OMP_target_test/OMPTinyVector.h"
 #include "OMP_target_test/OMPVector.h"
-#include "OMP_target_test/OMPVectorSoaContainer.h"
+#include "OMP_target_test/OMPVectorSoAContainer.h"
 #include <iostream>
 
 namespace qmcplusplus
@@ -41,8 +41,8 @@ struct einspline_spo
   using spline_type = typename bspline_traits<T, 3>::SplineType;
   using pos_type        = TinyVector<T, 3>;
   using vContainer_type = OMPVector<T, aligned_vector<T> >;
-  using gContainer_type = OMPVectorSoaContainer<T, 3>;
-  using hContainer_type = OMPVectorSoaContainer<T, 6>;
+  using gContainer_type = OMPVectorSoAContainer<T, 3>;
+  using hContainer_type = OMPVectorSoAContainer<T, 6>;
   using lattice_type    = CrystalLattice<T, 3>;
 
   /// number of blocks
@@ -86,19 +86,19 @@ struct einspline_spo
 
   /** copy constructor
    * @param in einspline_spo
-   * @param ncrews number of crews of a team
-   * @param crewID id of this crew in a team
+   * @param team_size number of members in a team
+   * @param member_id id of this member in a team
    *
    * Create a view of the big object. A simple blocking & padding  method.
    */
-  einspline_spo(einspline_spo &in, int ncrews, int crewID)
+  einspline_spo(einspline_spo &in, int team_size, int member_id)
       : Owner(false), Lattice(in.Lattice)
   {
     nSplines         = in.nSplines;
     nSplinesPerBlock = in.nSplinesPerBlock;
-    nBlocks          = (in.nBlocks + ncrews - 1) / ncrews;
-    firstBlock       = nBlocks * crewID;
-    lastBlock        = std::min(in.nBlocks, nBlocks * (crewID + 1));
+    nBlocks          = (in.nBlocks + team_size - 1) / team_size;
+    firstBlock       = nBlocks * member_id;
+    lastBlock        = std::min(in.nBlocks, nBlocks * (member_id + 1));
     nBlocks          = lastBlock - firstBlock;
     einsplines.resize(nBlocks);
     for (int i = 0, t = firstBlock; i < nBlocks; ++i, ++t)

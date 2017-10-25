@@ -27,11 +27,11 @@
 #ifndef QMCPLUSPLUS_PARTICLESET_H
 #define QMCPLUSPLUS_PARTICLESET_H
 
-#include <Configuration.h>
+#include <Utilities/Configuration.h>
 #include <Particle/Walker.h>
 #include <Utilities/SpeciesSet.h>
 #include <Utilities/PooledData.h>
-#include <OhmmsSoA/Container.h>
+#include <Numerics/Containers.h>
 
 namespace qmcplusplus
 {
@@ -92,7 +92,7 @@ public:
   //!< Position
   ParticlePos_t R;
   /// SoA copy of R
-  VectorSoaContainer<RealType, DIM> RSoA;
+  VectorSoAContainer<RealType, DIM> RSoA;
   /// gradients of the particles
   ParticleGradient_t G;
   /// laplacians of the particles

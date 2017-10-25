@@ -28,9 +28,9 @@
 #define OHMMS_NUMERIC_DETERMINANT_H
 
 #include <algorithm>
-#include <OhmmsPETE/TinyVector.h>
-#include <OhmmsPETE/OhmmsVector.h>
-#include <OhmmsPETE/OhmmsMatrix.h>
+#include <Numerics/OhmmsPETE/TinyVector.h>
+#include <Numerics/OhmmsPETE/OhmmsVector.h>
+#include <Numerics/OhmmsPETE/OhmmsMatrix.h>
 #include <Numerics/OhmmsBlas.h>
 
 namespace qmcplusplus

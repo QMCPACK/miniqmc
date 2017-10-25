@@ -11,7 +11,7 @@
 // -*- C++ -*-
 #ifndef QMCPLUSPLUS_ONEBODYJASTROW_REF_H
 #define QMCPLUSPLUS_ONEBODYJASTROW_REF_H
-#include "Configuration.h"
+#include "Utilities/Configuration.h"
 #include "QMCWaveFunctions/WaveFunctionComponentBase.h"
 #include <numeric>
 

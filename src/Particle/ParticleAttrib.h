@@ -17,7 +17,7 @@
 #ifndef OHMMS_NEW_PARTICLEATTRIB_PEPE_H
 #define OHMMS_NEW_PARTICLEATTRIB_PEPE_H
 
-#include <OhmmsPETE/OhmmsVector.h>
+#include <Numerics/OhmmsPETE/OhmmsVector.h>
 
 namespace qmcplusplus
 {
