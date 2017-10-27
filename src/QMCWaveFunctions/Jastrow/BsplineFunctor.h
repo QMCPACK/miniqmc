@@ -269,7 +269,7 @@ inline T BsplineFunctor<T>::evaluateV(const int iStart, const int iEnd,
   int iCount       = 0;
   const int iLimit = iEnd - iStart;
 
-#pragma vector always
+  #pragma vector always
   for (int jat = 0; jat < iLimit; jat++)
   {
     real_type r                                          = distArray[jat];
@@ -277,7 +277,7 @@ inline T BsplineFunctor<T>::evaluateV(const int iStart, const int iEnd,
   }
 
   real_type d = 0.0;
-#pragma simd reduction(+ : d)
+  #pragma omp simd reduction(+:d)
   for (int jat = 0; jat < iCount; jat++)
   {
     real_type r = distArrayCompressed[jat];
@@ -324,7 +324,7 @@ inline void BsplineFunctor<T>::evaluateVGL(
   real_type *gradArray       = _gradArray + iStart;
   real_type *laplArray       = _laplArray + iStart;
 
-#pragma vector always
+  #pragma vector always
   for (int jat = 0; jat < iLimit; jat++)
   {
     real_type r = distArray[jat];
@@ -336,7 +336,7 @@ inline void BsplineFunctor<T>::evaluateVGL(
     }
   }
 
-#pragma omp simd
+  #pragma omp simd
   for (int j = 0; j < iCount; j++)
   {
 
