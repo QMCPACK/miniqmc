@@ -18,7 +18,7 @@
 // clang-format off
 /** @file miniqmc.cpp
     @brief Miniapp to capture the computation in particle moves.
- 
+
  @mainpage MiniQMC: miniapp for QMCPACK kernels
 
  Implemented kernels
@@ -64,6 +64,7 @@
 #include <Input/Input.hpp>
 #include <QMCWaveFunctions/einspline_spo.hpp>
 #include <QMCWaveFunctions/FakeWaveFunction.h>
+#include <QMCWaveFunctions/DeterminantRef.h>
 #include <getopt.h>
 
 using namespace std;
@@ -80,6 +81,7 @@ enum MiniQMCTimers
   Timer_ratioGrad,
   Timer_Update,
   Timer_Jastrow,
+  Timer_Determinant,
   Timer_DT,
   Timer_SPO
 };
@@ -94,6 +96,7 @@ TimerNameList_t<MiniQMCTimers> MiniQMCTimerNames = {
     {Timer_ratioGrad, "New Gradient"},
     {Timer_Update, "Update"},
     {Timer_Jastrow, "Jastrow"},
+    {Timer_Determinant, "Determinant"},
     {Timer_SPO, "Single-Particle Orbitals"},
     {Timer_DT, "Distance Tables"},
 };
@@ -298,6 +301,8 @@ int main(int argc, char **argv)
 
     FakeWaveFunctionBase *wavefunction;
 
+    DiracDeterminant determinant(nels);
+
     if (useSoA)
       wavefunction = new WaveFunction(ions, els);
     else
@@ -341,6 +346,9 @@ int main(int argc, char **argv)
       for (int l = 0; l < nsubsteps; ++l) // drift-and-diffusion
       {
         random_th.generate_normal(&delta[0][0], nels3);
+        Timers[Timer_Determinant]->start();
+        determinant.recompute();
+        Timers[Timer_Determinant]->stop();
         for (int iel = 0; iel < nels; ++iel)
         {
           // Operate on electron with index iel
@@ -376,6 +384,10 @@ int main(int argc, char **argv)
 
           Timers[Timer_ratioGrad]->stop();
 
+          Timers[Timer_Determinant]->start();
+          determinant.ratio(iel);
+          Timers[Timer_Determinant]->stop();
+
           // Accept/reject the trial move
           if (ur[iel] > accept) // MC
           {
@@ -386,6 +398,9 @@ int main(int argc, char **argv)
             Timers[Timer_DT]->start();
             els.acceptMove(iel);
             Timers[Timer_DT]->stop();
+            Timers[Timer_Determinant]->start();
+            determinant.accept(iel);
+            Timers[Timer_Determinant]->stop();
             my_accepted++;
           }
           else
