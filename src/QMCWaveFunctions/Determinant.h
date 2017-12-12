@@ -147,9 +147,9 @@ void checkDiff(const MT1 &a, const MT2 &b, const std::string &tag)
   std::cout << tag << " diff Error = " << error / nrows / nrows << std::endl;
 }
 
-struct DiracDeterminantRef
+struct DiracDeterminant
 {
-  DiracDeterminantRef(int nels, RandomGenerator<double> RNG)
+  DiracDeterminant(int nels, RandomGenerator<double> RNG)
   {
     psiMinv.resize(nels, nels);
     psiV.resize(nels);
@@ -212,7 +212,7 @@ struct DiracDeterminantRef
   {
     const int nels=psiV.size();
     inverseRowUpdate(psiMinv.data(),psiV.data(),nels,nels,iel,curRatio);
-    std::copy_n(psiV.data(),nels,psiMsave[iel]);
+    std::copy_n(psiV.data(), nels, psiMsave[iel]);
   }
 
 private:

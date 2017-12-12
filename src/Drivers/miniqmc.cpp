@@ -64,7 +64,7 @@
 #include <Input/Input.hpp>
 #include <QMCWaveFunctions/einspline_spo.hpp>
 #include <QMCWaveFunctions/FakeWaveFunction.h>
-#include <QMCWaveFunctions/DeterminantRef.h>
+#include <QMCWaveFunctions/Determinant.h>
 #include <getopt.h>
 
 using namespace std;
@@ -301,7 +301,7 @@ int main(int argc, char **argv)
 
     FakeWaveFunctionBase *wavefunction;
 
-    DiracDeterminant determinant(nels);
+    DiracDeterminant determinant(nels, random_th);
 
     if (useSoA)
       wavefunction = new WaveFunction(ions, els);
@@ -343,12 +343,12 @@ int main(int argc, char **argv)
     for (int mc = 0; mc < nsteps; ++mc)
     {
       Timers[Timer_Diffusion]->start();
+      Timers[Timer_Determinant]->start();
+      determinant.recompute();
+      Timers[Timer_Determinant]->stop();
       for (int l = 0; l < nsubsteps; ++l) // drift-and-diffusion
       {
         random_th.generate_normal(&delta[0][0], nels3);
-        Timers[Timer_Determinant]->start();
-        determinant.recompute();
-        Timers[Timer_Determinant]->stop();
         for (int iel = 0; iel < nels; ++iel)
         {
           // Operate on electron with index iel
