@@ -4,15 +4,9 @@
 //
 // Copyright (c) 2016 Jeongnim Kim and QMCPACK developers.
 //
-// File developed by:
-// Jeongnim Kim, jeongnim.kim@intel.com,
-//    Intel Corp.
-// Amrita Mathuriya, amrita.mathuriya@intel.com,
-//    Intel Corp.
+// File developed by: M. Graham Lopez, Oak Ridge National Lab
 //
-// File created by:
-// Jeongnim Kim, jeongnim.kim@intel.com,
-//    Intel Corp.
+// File created by: M. Graham Lopez, Oak Ridge National Lab
 ////////////////////////////////////////////////////////////////////////////////
 // -*- C++ -*-
 // clang-format off
@@ -65,41 +59,11 @@
 #include <QMCWaveFunctions/einspline_spo.hpp>
 #include <QMCWaveFunctions/FakeWaveFunction.h>
 #include <QMCWaveFunctions/Determinant.h>
+#include <QMCWaveFunctions/DeterminantRef.h>
 #include <getopt.h>
 
 using namespace std;
 using namespace qmcplusplus;
-
-enum MiniQMCTimers
-{
-  Timer_Total,
-  Timer_Diffusion,
-  Timer_GL,
-  Timer_ECP,
-  Timer_Value,
-  Timer_evalGrad,
-  Timer_ratioGrad,
-  Timer_Update,
-  Timer_Jastrow,
-  Timer_Determinant,
-  Timer_DT,
-  Timer_SPO
-};
-
-TimerNameList_t<MiniQMCTimers> MiniQMCTimerNames = {
-    {Timer_Total, "Total"},
-    {Timer_Diffusion, "Diffusion"},
-    {Timer_GL, "Wavefuntion GL"},
-    {Timer_ECP, "Pseudopotential"},
-    {Timer_Value, "Value"},
-    {Timer_evalGrad, "Current Gradient"},
-    {Timer_ratioGrad, "New Gradient"},
-    {Timer_Update, "Update"},
-    {Timer_Jastrow, "Jastrow"},
-    {Timer_Determinant, "Determinant"},
-    {Timer_SPO, "Single-Particle Orbitals"},
-    {Timer_DT, "Distance Tables"},
-};
 
 void print_help()
 {
@@ -188,10 +152,6 @@ int main(int argc, char **argv)
   Random.init(0, 1, iseed);
   Tensor<int, 3> tmat(na, 0, 0, 0, nb, 0, 0, 0, nc);
 
-  TimerManager.set_timer_threshold(timer_level_coarse);
-  TimerList_t Timers;
-  setup_timers(Timers, MiniQMCTimerNames, timer_level_coarse);
-
   print_version(verbose);
 
   // turn off output
@@ -258,7 +218,6 @@ int main(int argc, char **argv)
   double nspheremoves = 0;
   double dNumVGHCalls = 0;
 
-  Timers[Timer_Total]->start();
 #pragma omp parallel
   {
     ParticleSet ions, els;
@@ -299,23 +258,8 @@ int main(int argc, char **argv)
       els.RSoA = els.R;
     }
 
-    FakeWaveFunctionBase *wavefunction;
-
+    DiracDeterminantRef determinant_ref(nels, random_th);
     DiracDeterminant determinant(nels, random_th);
-
-    if (useSoA)
-      wavefunction = new WaveFunction(ions, els);
-    else
-      wavefunction = new RefWaveFunction(ions, els);
-
-    // set Rmax for ion-el distance table for PP
-    wavefunction->setRmax(Rmax);
-
-    // create pseudopp
-    NonLocalPP<OHMMS_PRECISION> ecp(random_th);
-
-    // this is the cutoff from the non-local PP
-    const int nknots(ecp.size());
 
     // For VMC, tau is large and should result in an acceptance ratio of roughly
     // 50%
@@ -323,10 +267,6 @@ int main(int argc, char **argv)
     const RealType tau = 2.0;
 
     ParticlePos_t delta(nels);
-    ParticlePos_t rOnSphere(nknots);
-
-#pragma omp master
-    nknots_copy = nknots;
 
     RealType sqrttau = std::sqrt(tau);
     RealType accept  = 0.5;
@@ -337,146 +277,55 @@ int main(int argc, char **argv)
     constexpr RealType czero(0);
 
     els.update();
-    wavefunction->evaluateLog(els);
 
     int my_accepted = 0;
     for (int mc = 0; mc < nsteps; ++mc)
     {
-      Timers[Timer_Diffusion]->start();
-      Timers[Timer_Determinant]->start();
+      determinant_ref.recompute();
       determinant.recompute();
-      Timers[Timer_Determinant]->stop();
       for (int l = 0; l < nsubsteps; ++l) // drift-and-diffusion
       {
         random_th.generate_normal(&delta[0][0], nels3);
         for (int iel = 0; iel < nels; ++iel)
         {
           // Operate on electron with index iel
-          Timers[Timer_DT]->start();
           els.setActive(iel);
-          Timers[Timer_DT]->stop();
-          // Compute gradient at the current position
-          Timers[Timer_evalGrad]->start();
-          Timers[Timer_Jastrow]->start();
-          PosType grad_now = wavefunction->evalGrad(els, iel);
-          Timers[Timer_Jastrow]->stop();
-          Timers[Timer_evalGrad]->stop();
 
           // Construct trial move
           PosType dr = sqrttau * delta[iel];
-          Timers[Timer_DT]->start();
           bool isValid = els.makeMoveAndCheck(iel, dr);
-          Timers[Timer_DT]->stop();
 
           if (!isValid) continue;
 
           // Compute gradient at the trial position
-          Timers[Timer_ratioGrad]->start();
 
-          Timers[Timer_Jastrow]->start();
-          PosType grad_new;
-          RealType j2_ratio = wavefunction->ratioGrad(els, iel, grad_new);
-          Timers[Timer_Jastrow]->stop();
-
-          Timers[Timer_SPO]->start();
-          spo.evaluate_vgh(els.R[iel]);
-          Timers[Timer_SPO]->stop();
-
-          Timers[Timer_ratioGrad]->stop();
-
-          Timers[Timer_Determinant]->start();
+          determinant_ref.ratio(iel);
           determinant.ratio(iel);
-          Timers[Timer_Determinant]->stop();
 
           // Accept/reject the trial move
           if (ur[iel] > accept) // MC
           {
             // Update position, and update temporary storage
-            Timers[Timer_Update]->start();
-            wavefunction->acceptMove(els, iel);
-            Timers[Timer_Update]->stop();
-            Timers[Timer_DT]->start();
             els.acceptMove(iel);
-            Timers[Timer_DT]->stop();
-            Timers[Timer_Determinant]->start();
+            determinant_ref.accept(iel);
             determinant.accept(iel);
-            Timers[Timer_Determinant]->stop();
             my_accepted++;
           }
           else
           {
             els.rejectMove(iel);
-            wavefunction->restore(iel);
           }
         } // iel
       }   // substeps
 
-      Timers[Timer_DT]->start();
       els.donePbyP();
-      Timers[Timer_DT]->stop();
-
-      // evaluate Kinetic Energy
-      Timers[Timer_GL]->start();
-      wavefunction->evaluateGL(els);
-      Timers[Timer_GL]->stop();
-
-      Timers[Timer_Diffusion]->stop();
-
-      // Compute NLPP energy using integral over spherical points
-
-      ecp.randomize(rOnSphere); // pick random sphere
-      const DistanceTableData *d_ie = wavefunction->d_ie;
-
-      Timers[Timer_ECP]->start();
-      for (int iat = 0; iat < nions; ++iat)
-      {
-        const auto centerP = ions.R[iat];
-        for (int nj = 0, jmax = d_ie->nadj(iat); nj < jmax; ++nj)
-        {
-          const auto r = d_ie->distance(iat, nj);
-          if (r < Rmax)
-          {
-            const int iel = d_ie->iadj(iat, nj);
-            const auto dr = d_ie->displacement(iat, nj);
-            for (int k = 0; k < nknots; k++)
-            {
-              PosType deltar(r * rOnSphere[k] - dr);
-
-              Timers[Timer_DT]->start();
-              els.makeMoveOnSphere(iel, deltar);
-              Timers[Timer_DT]->stop();
-
-              Timers[Timer_Value]->start();
-
-              Timers[Timer_SPO]->start();
-              spo.evaluate_v(els.R[iel]);
-              Timers[Timer_SPO]->stop();
-
-              Timers[Timer_Jastrow]->start();
-              wavefunction->ratio(els, iel);
-              Timers[Timer_Jastrow]->stop();
-
-              Timers[Timer_Value]->stop();
-
-              els.rejectMove(iel);
-            }
-          }
-        }
-      }
-      Timers[Timer_ECP]->stop();
-
-    } // nsteps
-
-    // cleanup
-    delete wavefunction;
+    }
   } // end of omp parallel
-  Timers[Timer_Total]->stop();
 
   if (ionode)
   {
     cout << "================================== " << endl;
 
-    TimerManager.print();
   }
 
   return 0;

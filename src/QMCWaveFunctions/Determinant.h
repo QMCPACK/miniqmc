@@ -11,12 +11,12 @@
 // -*- C++ -*-
 
 /**
- * @file DeterminantRef.h
+ * @file Determinant.h
  * @brief Determinant piece of the wave function
  */
 
-#ifndef QMCPLUSPLUS_DETERMINANTREF_H
-#define QMCPLUSPLUS_DETERMINANTREF_H
+#ifndef QMCPLUSPLUS_DETERMINANT_H
+#define QMCPLUSPLUS_DETERMINANT_H
 #include "Numerics/OhmmsPETE/OhmmsMatrix.h"
 #include "Numerics/DeterminantOperators.h"
 

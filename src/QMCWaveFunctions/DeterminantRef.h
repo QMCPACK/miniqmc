@@ -13,6 +13,8 @@
 /**
  * @file DeterminantRef.h
  * @brief Determinant piece of the wave function
+ *
+ * This is the reference implementation - DO NOT MODIFY
  */
 
 #ifndef QMCPLUSPLUS_DETERMINANTREF_H
