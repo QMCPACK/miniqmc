@@ -22,8 +22,9 @@
 #include "Numerics/OhmmsPETE/OhmmsMatrix.h"
 #include "Numerics/DeterminantOperators.h"
 
-namespace qmcplusplus
+namespace miniqmcreference
 {
+
 /**@{Determinant utilities */
 /** Inversion of a double matrix after LU factorization*/
 inline void getri(int n, double *restrict a, int lda, int *restrict piv,
@@ -63,7 +64,7 @@ inline T InvertWithLog(T *restrict x, int n, int lda, T *restrict work,
                        int lwork, int *restrict pivot, T &phase)
 {
   T logdet(0.0);
-  LUFactorization(n, n, x, lda, pivot);
+  qmcplusplus::LUFactorization(n, n, x, lda, pivot);
   int sign_det = 1;
   for (int i = 0; i < n; i++)
   {
@@ -91,7 +92,7 @@ template <class T>
 inline void InvertOnly(T *restrict x, int n, int lda, T *restrict work,
                        int *restrict pivot, int lwork)
 {
-  LUFactorization(n, n, x, lda, pivot);
+  qmcplusplus::LUFactorization(n, n, x, lda, pivot);
   getri(n, x, lda, pivot, work, lwork);
 }
 
@@ -151,7 +152,7 @@ void checkDiff(const MT1 &a, const MT2 &b, const std::string &tag)
 
 struct DiracDeterminantRef
 {
-  DiracDeterminantRef(int nels, RandomGenerator<double> RNG)
+  DiracDeterminantRef(int nels, qmcplusplus::RandomGenerator<double> RNG)
   {
     psiMinv.resize(nels, nels);
     psiV.resize(nels);
@@ -180,9 +181,10 @@ struct DiracDeterminantRef
 
     if (omp_get_num_threads() == 1)
     {
-      checkIdentity(psiMsave, psiM, "Psi_0 * psiM(double)");
-      checkIdentity(psiMsave, psiMinv, "Psi_0 * psiMinv(T)");
-      checkDiff(psiM, psiMinv, "psiM(double)-psiMinv(T)");
+      // qualified invocation to defeat ADL
+      miniqmcreference::checkIdentity(psiMsave, psiM, "Psi_0 * psiM(double)");
+      miniqmcreference::checkIdentity(psiMsave, psiMinv, "Psi_0 * psiMinv(T)");
+      miniqmcreference::checkDiff(psiM, psiMinv, "psiM(double)-psiMinv(T)");
     }
   }
 
@@ -190,7 +192,6 @@ struct DiracDeterminantRef
   inline void recompute()
   {
     const int nels=psiV.size();
-    double phase;
     transpose(psiMsave.data(),psiM.data(),nels,nels);
     InvertOnly(psiM.data(),nels,nels,work.data(),pivot.data(),LWork);
     std::copy_n(psiM.data(),nels*nels,psiMinv.data());
@@ -225,19 +226,19 @@ private:
   /// workspace size
   int LWork;
   /// inverse matrix to be update
-  Matrix<double> psiMinv;
+  qmcplusplus::Matrix<double> psiMinv;
   /// a SPO set for the row update
-  aligned_vector<double> psiV;
+  qmcplusplus::aligned_vector<double> psiV;
   /// internal storage to perform inversion correctly
-  Matrix<double> psiM; // matrix to be inverted
+  qmcplusplus::Matrix<double> psiM; // matrix to be inverted
   /// random number generator for testing
-  RandomGenerator<double> myRandom;
+  qmcplusplus::RandomGenerator<double> myRandom;
 
   // temporary workspace for inversion
-  aligned_vector<int> pivot;
-  aligned_vector<double> work;
-  Matrix<double> psiMsave;
+  qmcplusplus::aligned_vector<int> pivot;
+  qmcplusplus::aligned_vector<double> work;
+  qmcplusplus::Matrix<double> psiMsave;
 };
-}
+} // miniqmcreference
 
 #endif

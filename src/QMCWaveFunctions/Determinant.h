@@ -188,7 +188,6 @@ struct DiracDeterminant
   inline void recompute()
   {
     const int nels=psiV.size();
-    double phase;
     transpose(psiMsave.data(),psiM.data(),nels,nels);
     InvertOnly(psiM.data(),nels,nels,work.data(),pivot.data(),LWork);
     std::copy_n(psiM.data(),nels*nels,psiMinv.data());
