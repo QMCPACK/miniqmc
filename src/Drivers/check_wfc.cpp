@@ -41,6 +41,27 @@
 using namespace std;
 using namespace qmcplusplus;
 
+void print_help()
+{
+  //clang-format off
+  cout << "usage:" << '\n';
+  cout << "  check_wfc [-hvV] [-f wfc_component] [-g n0 n1 n2]"         << '\n';
+  cout << "            [-i steps] [-r rmax] [-s seed]"                  << '\n';
+  cout << "options:"                                                    << '\n';
+  cout << "  -f  specify wavefunction component to check"               << '\n';
+  cout << "      one of: J1, J2, J3.            default: J2"            << '\n';
+  cout << "  -g  set the 3D tiling.             default: 1 1 1"         << '\n';
+  cout << "  -h  print help and exit"                                   << '\n';
+  cout << "  -i  number of Monte Carlo steps.   default: 100"           << '\n';
+  cout << "  -r  set the Rmax.                  default: 1.7"           << '\n';
+  cout << "  -s  set the random seed.           default: 11"            << '\n';
+  cout << "  -v  verbose output"                                        << '\n';
+  cout << "  -V  print version information"                             << '\n';
+  //clang-format on
+
+  exit(1); // print help and exit
+}
+
 int main(int argc, char **argv)
 {
 
@@ -68,41 +89,51 @@ int main(int argc, char **argv)
 
   char *g_opt_arg;
   int opt;
-  while ((opt = getopt(argc, argv, "hvVs:g:i:r:f:")) != -1)
+  while(optind < argc)
   {
-    switch (opt)
+    if ((opt = getopt(argc, argv, "hvVs:g:i:r:f:")) != -1)
     {
-    case 'h': printf("[-g \"n0 n1 n2\"]\n"); return 1;
-    case 'g': // tiling1 tiling2 tiling3
-      sscanf(optarg, "%d %d %d", &na, &nb, &nc);
-      break;
-    case 'i': // number of MC steps
-      nsteps = atoi(optarg);
-      break;
-    case 's': // random seed
-      iseed = atoi(optarg);
-      break;
-    case 'r': // rmax
-      Rmax = atof(optarg);
-      break;
-    case 'f': // Wave function component
-      wfc_name = optarg;
-      break;
-    case 'v': verbose  = true; break;
-    case 'V':
-      print_version(true);
-      return 1;
-      break;
+      switch (opt)
+      {
+      case 'f': // Wave function component
+        wfc_name = optarg;
+        break;
+      case 'g': // tiling1 tiling2 tiling3
+        sscanf(optarg, "%d %d %d", &na, &nb, &nc);
+        break;
+      case 'h': print_help(); break;
+      case 'i': // number of MC steps
+        nsteps = atoi(optarg);
+        break;
+      case 'r': // rmax
+        Rmax = atof(optarg);
+        break;
+      case 's': // random seed
+        iseed = atoi(optarg);
+        break;
+      case 'v': verbose = true; break;
+      case 'V':
+        print_version(true);
+        return 1;
+        break;
+      default:
+        print_help();
+      }
+    }
+    else // disallow non-option arguments
+    {
+      cerr << "Non-option arguments not allowed" << endl;
+      print_help();
     }
   }
 
   print_version(verbose);
 
-  if (wfc_name != "J1" && wfc_name != "J2" && wfc_name != "JeeI")
+  if (wfc_name != "J1" && wfc_name != "J2" && wfc_name != "J3" &&
+      wfc_name != "JeeI")
   {
-    cerr << "Uknown wave funciton component " << wfc_name << endl
-         << "Now supports J1 J2(default) JeeI Det(to be supported)" << endl;
-    exit(1);
+    cerr << "Uknown wave funciton component:  " << wfc_name << endl << endl;
+    print_help();
   }
 
   Tensor<int, 3> tmat(na, 0, 0, 0, nb, 0, 0, 0, nc);
@@ -130,7 +161,7 @@ int main(int argc, char **argv)
 
   PrimeNumberSet<uint32_t> myPrimes;
 
-// clang-format off
+  // clang-format off
   #pragma omp parallel reduction(+:t0,ratio) \
    reduction(+:evaluateLog_v_err,evaluateLog_g_err,evaluateLog_l_err,evalGrad_g_err) \
    reduction(+:ratioGrad_r_err,ratioGrad_g_err,evaluateGL_g_err,evaluateGL_l_err,ratio_err)
@@ -212,7 +243,7 @@ int main(int argc, char **argv)
       wfc_ref = dynamic_cast<WaveFunctionComponentBasePtr>(J_ref);
       cout << "Built J1_ref" << endl;
     }
-    else if (wfc_name == "JeeI")
+    else if (wfc_name == "JeeI" || wfc_name == "J3")
     {
       ThreeBodyJastrow<PolynomialFunctor3D> *J =
           new ThreeBodyJastrow<PolynomialFunctor3D>(ions, els);
