@@ -107,7 +107,8 @@ int main(int argc, char **argv)
       einspline_spo<OHMMS_PRECISION, MultiBspline<OHMMS_PRECISION>>;
   spo_type spo_main;
   using spo_ref_type =
-      einspline_spo<OHMMS_PRECISION, MultiBsplineRef<OHMMS_PRECISION>>;
+      einspline_spo<OHMMS_PRECISION,
+                    miniqmcreference::MultiBsplineRef<OHMMS_PRECISION>>;
   spo_ref_type spo_ref_main;
   int nTiles = 1;
 
