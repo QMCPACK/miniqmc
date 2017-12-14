@@ -224,8 +224,9 @@ int main(int argc, char **argv)
       buildJ2(*J, els.Lattice.WignerSeitzRadius);
       wfc = dynamic_cast<WaveFunctionComponentBasePtr>(J);
       cout << "Built J2" << endl;
-      TwoBodyJastrowRef<BsplineFunctor<RealType>> *J_ref =
-          new TwoBodyJastrowRef<BsplineFunctor<RealType>>(els_ref);
+      miniqmcreference::TwoBodyJastrowRef<BsplineFunctor<RealType>> *J_ref =
+          new miniqmcreference::TwoBodyJastrowRef<BsplineFunctor<RealType>>(
+              els_ref);
       buildJ2(*J_ref, els.Lattice.WignerSeitzRadius);
       wfc_ref = dynamic_cast<WaveFunctionComponentBasePtr>(J_ref);
       cout << "Built J2_ref" << endl;
@@ -237,8 +238,9 @@ int main(int argc, char **argv)
       buildJ1(*J, els.Lattice.WignerSeitzRadius);
       wfc = dynamic_cast<WaveFunctionComponentBasePtr>(J);
       cout << "Built J1" << endl;
-      OneBodyJastrowRef<BsplineFunctor<RealType>> *J_ref =
-          new OneBodyJastrowRef<BsplineFunctor<RealType>>(ions, els_ref);
+      miniqmcreference::OneBodyJastrowRef<BsplineFunctor<RealType>> *J_ref =
+          new miniqmcreference::OneBodyJastrowRef<BsplineFunctor<RealType>>(
+              ions, els_ref);
       buildJ1(*J_ref, els.Lattice.WignerSeitzRadius);
       wfc_ref = dynamic_cast<WaveFunctionComponentBasePtr>(J_ref);
       cout << "Built J1_ref" << endl;
@@ -250,8 +252,9 @@ int main(int argc, char **argv)
       buildJeeI(*J, els.Lattice.WignerSeitzRadius);
       wfc = dynamic_cast<WaveFunctionComponentBasePtr>(J);
       cout << "Built JeeI" << endl;
-      ThreeBodyJastrowRef<PolynomialFunctor3D> *J_ref =
-          new ThreeBodyJastrowRef<PolynomialFunctor3D>(ions, els_ref);
+      miniqmcreference::ThreeBodyJastrowRef<PolynomialFunctor3D> *J_ref =
+          new miniqmcreference::ThreeBodyJastrowRef<PolynomialFunctor3D>(
+              ions, els_ref);
       buildJeeI(*J_ref, els.Lattice.WignerSeitzRadius);
       wfc_ref = dynamic_cast<WaveFunctionComponentBasePtr>(J_ref);
       cout << "Built JeeI_ref" << endl;

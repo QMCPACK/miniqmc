@@ -28,8 +28,10 @@
  * @file TwoBodyJastrowRef.h
  */
 
-namespace qmcplusplus
+namespace miniqmcreference
 {
+
+using namespace qmcplusplus;
 
 /** @ingroup WaveFunctionComponent
  *  @brief Specialization for two-body Jastrow function using multiple functors
@@ -109,7 +111,7 @@ template <class FT> struct TwoBodyJastrowRef : public WaveFunctionComponentBase
                   ParticleSet::ParticleLaplacian_t &L,
                   bool fromscratch = false);
 
-  /*@{ internal compute engines*/
+  /*@ internal compute engines*/
   inline void computeU3(ParticleSet &P, int iat, const RealType *restrict dist,
                         RealType *restrict u, RealType *restrict du,
                         RealType *restrict d2u);
@@ -151,7 +153,7 @@ template <class FT> struct TwoBodyJastrowRef : public WaveFunctionComponentBase
       grad[idim] = s;
     }
   }
-};
+}; // struct TwoBodyJastrowRef
 
 template <typename FT> TwoBodyJastrowRef<FT>::TwoBodyJastrowRef(ParticleSet &p)
 {
@@ -193,7 +195,7 @@ void TwoBodyJastrowRef<FT>::addFunc(int ia, int ib, FT *j)
     {
       int ij = 0;
       for (int ig = 0; ig < NumGroups; ++ig)
-        for (int jg                   = 0; jg < NumGroups; ++jg, ++ij)
+        for (int jg = 0; jg < NumGroups; ++jg, ++ij)
           if (F[ij] == nullptr) F[ij] = j;
     }
   }
@@ -204,13 +206,13 @@ void TwoBodyJastrowRef<FT>::addFunc(int ia, int ib, FT *j)
       // a very special case, 1 up + 1 down
       // uu/dd was prevented by the builder
       for (int ig = 0; ig < NumGroups; ++ig)
-        for (int jg              = 0; jg < NumGroups; ++jg)
+        for (int jg = 0; jg < NumGroups; ++jg)
           F[ig * NumGroups + jg] = j;
     }
     else
     {
       // generic case
-      F[ia * NumGroups + ib]              = j;
+      F[ia * NumGroups + ib] = j;
       if (ia < ib) F[ib * NumGroups + ia] = j;
     }
   }
@@ -383,5 +385,5 @@ void TwoBodyJastrowRef<FT>::evaluateGL(ParticleSet &P,
   constexpr valT mhalf(-0.5);
   LogValue = mhalf * LogValue;
 }
-}
+} // miniqmcreference
 #endif

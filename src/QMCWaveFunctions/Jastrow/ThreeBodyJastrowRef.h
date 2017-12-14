@@ -24,8 +24,10 @@
  * @file ThreeBodyJastrowRef.h
  */
 
-namespace qmcplusplus
+namespace miniqmcreference
 {
+
+using namespace qmcplusplus;
 
 /** @ingroup WaveFunctionComponent
  *  @brief Specialization for three-body Jastrow function using multiple
@@ -480,6 +482,6 @@ public:
     constexpr valT mhalf(-0.5);
     LogValue = mhalf * LogValue;
   }
-};
-}
+}; // class ThreeBodyJastrowRef
+} // miniqmcreference
 #endif

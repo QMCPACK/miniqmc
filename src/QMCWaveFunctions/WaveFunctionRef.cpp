@@ -20,8 +20,10 @@ using namespace std;
  * @brief Wavefunction based on reference implemenation
  */
 
-namespace qmcplusplus
+namespace miniqmcreference
 {
+using namespace qmcplusplus;
+
 WaveFunctionRef::WaveFunctionRef(ParticleSet &ions, ParticleSet &els)
 {
   FirstTime = true;
@@ -77,4 +79,4 @@ void WaveFunctionRef::evaluateGL(ParticleSet &P)
   P.L = czero;
   J2->evaluateGL(P, P.G, P.L);
 }
-}
+} // miniqmcreferencce
