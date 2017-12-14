@@ -95,8 +95,8 @@ inline void InvertOnly(T *restrict x, int n, int lda, T *restrict work,
 
 /** update Row as implemented in the full code */
 template <typename T, typename RT>
-inline void inverseRowUpdate(T *restrict pinv, const T *restrict tv, int m,
-                             int lda, int rowchanged, RT c_ratio_in)
+inline void updateRow(T *restrict pinv, const T *restrict tv, int m, int lda,
+                      int rowchanged, RT c_ratio_in)
 {
   constexpr T cone(1);
   constexpr T czero(0);
@@ -108,7 +108,6 @@ inline void inverseRowUpdate(T *restrict pinv, const T *restrict tv, int m,
   BLAS::ger(m, m, -cone, rcopy, 1, temp, 1, pinv, m);
 }
 /**@}*/
-
 
 // FIXME do we want to keep this in the miniapp?
 template <typename MT1, typename MT2>
@@ -187,10 +186,10 @@ struct DiracDeterminant
   /// recompute the inverse
   inline void recompute()
   {
-    const int nels=psiV.size();
-    transpose(psiMsave.data(),psiM.data(),nels,nels);
-    InvertOnly(psiM.data(),nels,nels,work.data(),pivot.data(),LWork);
-    std::copy_n(psiM.data(),nels*nels,psiMinv.data());
+    const int nels = psiV.size();
+    transpose(psiMsave.data(), psiM.data(), nels, nels);
+    InvertOnly(psiM.data(), nels, nels, work.data(), pivot.data(), LWork);
+    std::copy_n(psiM.data(), nels * nels, psiMinv.data());
   }
 
   /** return determinant ratio for the row replacement
@@ -198,19 +197,20 @@ struct DiracDeterminant
    */
   inline double ratio(int iel)
   {
-    const int nels=psiV.size();
+    const int nels = psiV.size();
     constexpr double shift(0.5);
     constexpr double czero(0);
-    for(int j=0; j<nels; ++j) psiV[j]=myRandom()-shift;
-    curRatio=inner_product_n(psiV.data(),psiMinv[iel],nels,czero);
+    for (int j = 0; j < nels; ++j)
+      psiV[j] = myRandom() - shift;
+    curRatio = inner_product_n(psiV.data(), psiMinv[iel], nels, czero);
     return curRatio;
   }
 
   /** accept the row and update the inverse */
-  inline void accept(int iel)
+  inline void acceptMove(int iel)
   {
-    const int nels=psiV.size();
-    inverseRowUpdate(psiMinv.data(),psiV.data(),nels,nels,iel,curRatio);
+    const int nels = psiV.size();
+    updateRow(psiMinv.data(), psiV.data(), nels, nels, iel, curRatio);
     std::copy_n(psiV.data(), nels, psiMsave[iel]);
   }
 

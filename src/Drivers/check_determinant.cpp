@@ -170,8 +170,8 @@ int main(int argc, char **argv)
           {
             // Update position, and update temporary storage
             els.acceptMove(iel);
-            determinant_ref.accept(iel);
-            determinant.accept(iel);
+            determinant_ref.acceptMove(iel);
+            determinant.acceptMove(iel);
             my_accepted++;
           }
           else

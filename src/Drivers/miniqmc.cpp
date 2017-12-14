@@ -399,7 +399,7 @@ int main(int argc, char **argv)
             els.acceptMove(iel);
             Timers[Timer_DT]->stop();
             Timers[Timer_Determinant]->start();
-            determinant.accept(iel);
+            determinant.acceptMove(iel);
             Timers[Timer_Determinant]->stop();
             my_accepted++;
           }
