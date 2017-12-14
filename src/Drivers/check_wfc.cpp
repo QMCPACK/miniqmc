@@ -431,55 +431,58 @@ int main(int argc, char **argv)
   if (evaluateLog_v_err / np > small)
   {
     cout << "Fail in evaluateLog, V error =" << evaluateLog_v_err / np
-         << std::endl;
+         << " for " << wfc_name << std::endl;
     fail = true;
   }
   if (evaluateLog_g_err / np > small)
   {
     cout << "Fail in evaluateLog, G error =" << evaluateLog_g_err / np
-         << std::endl;
+         << " for " << wfc_name << std::endl;
     fail = true;
   }
   if (evaluateLog_l_err / np > small)
   {
     cout << "Fail in evaluateLog, L error =" << evaluateLog_l_err / np
-         << std::endl;
+         << " for " << wfc_name << std::endl;
     fail = true;
   }
   if (evalGrad_g_err / np > small)
   {
-    cout << "Fail in evalGrad, G error =" << evalGrad_g_err / np << std::endl;
+    cout << "Fail in evalGrad, G error =" << evalGrad_g_err / np << " for "
+         << wfc_name << std::endl;
     fail = true;
   }
   if (ratioGrad_r_err / np > small)
   {
     cout << "Fail in ratioGrad, ratio error =" << ratioGrad_r_err / np
-         << std::endl;
+         << " for " << wfc_name << std::endl;
     fail = true;
   }
   if (ratioGrad_g_err / np > small)
   {
-    cout << "Fail in ratioGrad, G error =" << ratioGrad_g_err / np << std::endl;
+    cout << "Fail in ratioGrad, G error =" << ratioGrad_g_err / np << " for "
+         << wfc_name << std::endl;
     fail = true;
   }
   if (evaluateGL_g_err / np > small)
   {
     cout << "Fail in evaluateGL, G error =" << evaluateGL_g_err / np
-         << std::endl;
+         << " for " << wfc_name << std::endl;
     fail = true;
   }
   if (evaluateGL_l_err / np > small)
   {
     cout << "Fail in evaluateGL, L error =" << evaluateGL_l_err / np
-         << std::endl;
+         << " for " << wfc_name << std::endl;
     fail = true;
   }
   if (ratio_err / np > small)
   {
-    cout << "Fail in ratio, ratio error =" << ratio_err / np << std::endl;
+    cout << "Fail in ratio, ratio error =" << ratio_err / np << " for "
+         << wfc_name << std::endl;
     fail = true;
   }
-  if (!fail) cout << "All checking pass!" << std::endl;
+  if (!fail) cout << "All checking pass for " << wfc_name << std::endl;
 
   return 0;
 }
