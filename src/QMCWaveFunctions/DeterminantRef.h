@@ -218,6 +218,10 @@ struct DiracDeterminantRef
     std::copy_n(psiV.data(), nels, psiMsave[iel]);
   }
 
+  /** accessor functions for checking */
+  inline double operator()(int i) const { return psiMinv(i); }
+  inline int size() const { return psiMinv.size(); }
+
 private:
   /// log|det|
   double LogValue;

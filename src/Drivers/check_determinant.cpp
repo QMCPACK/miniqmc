@@ -185,10 +185,19 @@ int main(int argc, char **argv)
     }
   } // end of omp parallel
 
-  if (ionode)
-  {
-
-  }
+//  int errors = 0;
+//  for (int i = 0; i < determinant_ref.size(); i++)
+//  {
+//    if (determinant_ref(i) != determinant(i)) ++errors;
+//  }
+//  if (errors)
+//  {
+//    cout << "Checking failed for " << errors << " elements" << '\n';
+//    return 1;
+//  }
+//  else
+//    cout << "All checking passed for determinant" << '\n';
 
   return 0;
+
 }
