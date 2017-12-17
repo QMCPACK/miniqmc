@@ -482,7 +482,7 @@ int main(int argc, char **argv)
          << wfc_name << std::endl;
     fail = true;
   }
-  if (!fail) cout << "All checking pass for " << wfc_name << std::endl;
+  if (!fail) cout << "All checks passed for " << wfc_name << std::endl;
 
   return 0;
 }

@@ -197,7 +197,7 @@ int main(int argc, char **argv)
     return 1;
   }
   else
-    cout << "All checking passed for determinant" << '\n';
+    cout << "All checks passed for determinant" << '\n';
 
   return 0;
 }

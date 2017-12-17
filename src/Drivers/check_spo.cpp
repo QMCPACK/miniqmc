@@ -323,7 +323,7 @@ int main(int argc, char **argv)
          << std::endl;
     fail = true;
   }
-  if (!fail) cout << "All checking pass for spo" << std::endl;
+  if (!fail) cout << "All checks passed for spo" << std::endl;
 
   return 0;
 }
