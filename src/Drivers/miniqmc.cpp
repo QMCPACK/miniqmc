@@ -63,7 +63,11 @@
 #include <Utilities/qmcpack_version.h>
 #include <Input/Input.hpp>
 #include <QMCWaveFunctions/einspline_spo.hpp>
-#include <QMCWaveFunctions/FakeWaveFunction.h>
+#include <QMCWaveFunctions/Jastrow/PolynomialFunctor3D.h>
+#include <QMCWaveFunctions/Jastrow/BsplineFunctor.h>
+#include <QMCWaveFunctions/Jastrow/OneBodyJastrow.h>
+#include <QMCWaveFunctions/Jastrow/TwoBodyJastrow.h>
+#include <QMCWaveFunctions/Jastrow/ThreeBodyJastrow.h>
 #include <getopt.h>
 
 using namespace std;
@@ -111,7 +115,6 @@ void print_help()
   printf("-V                Print version information and exit\n");
 }
 
-
 int main(int argc, char **argv)
 {
 
@@ -138,11 +141,10 @@ int main(int argc, char **argv)
   // thread blocking
   // int team_size=1; //default is 1
   int tileSize  = -1;
-  int team_size    = 1;
+  int team_size = 1;
   int nsubsteps = 1;
   // Set cutoff for NLPP use.
   RealType Rmax(1.7);
-  bool useSoA = true;
 
   PrimeNumberSet<uint32_t> myPrimes;
 
@@ -155,9 +157,6 @@ int main(int argc, char **argv)
     switch (opt)
     {
     case 'h': print_help(); return 1;
-    case 'd': // down to reference implemenation
-      useSoA = false;
-      break;
     case 'g': // tiling1 tiling2 tiling3
       sscanf(optarg, "%d %d %d", &na, &nb, &nc);
       break;
@@ -174,7 +173,7 @@ int main(int argc, char **argv)
       Rmax = atof(optarg);
       break;
     case 'a': tileSize = atoi(optarg); break;
-    case 'v': verbose  = true; break;
+    case 'v': verbose = true; break;
     case 'V':
       print_version(true);
       return 1;
@@ -242,16 +241,6 @@ int main(int argc, char **argv)
     spo_main.Lattice.set(lattice_b);
   }
 
-  if (ionode)
-  {
-    if (useSoA)
-      cout << "Using SoA distance table and Jastrow + einspline " << endl;
-    else
-      cout << "Using SoA distance table and Jastrow + einspline of the "
-              "reference implementation "
-           << endl;
-  }
-
   double nspheremoves = 0;
   double dNumVGHCalls = 0;
 
@@ -265,7 +254,7 @@ int main(int argc, char **argv)
     const int np = omp_get_num_threads();
     const int ip = omp_get_thread_num();
 
-    const int team_id = ip / team_size;
+    const int team_id   = ip / team_size;
     const int member_id = ip % team_size;
 
     // create spo per thread
@@ -296,15 +285,15 @@ int main(int argc, char **argv)
       els.RSoA = els.R;
     }
 
-    FakeWaveFunctionBase *wavefunction;
-
-    if (useSoA)
-      wavefunction = new WaveFunction(ions, els);
-    else
-      wavefunction = new RefWaveFunction(ions, els);
-
-    // set Rmax for ion-el distance table for PP
-    wavefunction->setRmax(Rmax);
+    // J!
+    OneBodyJastrow<BsplineFunctor<RealType>> J1_component(ions, els);
+    buildJ1(J1_component, els.Lattice.WignerSeitzRadius);
+    // J2
+    TwoBodyJastrow<BsplineFunctor<RealType>> J2_component(els);
+    buildJ2(J2_component, els.Lattice.WignerSeitzRadius);
+    // J3
+    ThreeBodyJastrow<PolynomialFunctor3D> J3_component(ions, els);
+    buildJeeI(J3_component, els.Lattice.WignerSeitzRadius);
 
     // create pseudopp
     NonLocalPP<OHMMS_PRECISION> ecp(random_th);
@@ -332,7 +321,9 @@ int main(int argc, char **argv)
     constexpr RealType czero(0);
 
     els.update();
-    wavefunction->evaluateLog(els);
+    J1_component.evaluateLog(els, els.G, els.L);
+    J2_component.evaluateLog(els, els.G, els.L);
+    J3_component.evaluateLog(els, els.G, els.L);
 
     int my_accepted = 0;
     for (int mc = 0; mc < nsteps; ++mc)
@@ -350,7 +341,9 @@ int main(int argc, char **argv)
           // Compute gradient at the current position
           Timers[Timer_evalGrad]->start();
           Timers[Timer_Jastrow]->start();
-          PosType grad_now = wavefunction->evalGrad(els, iel);
+          PosType j1_grad = J1_component.evalGrad(els, iel);
+          PosType j2_grad = J2_component.evalGrad(els, iel);
+          PosType j3_grad = J3_component.evalGrad(els, iel);
           Timers[Timer_Jastrow]->stop();
           Timers[Timer_evalGrad]->stop();
 
@@ -367,7 +360,9 @@ int main(int argc, char **argv)
 
           Timers[Timer_Jastrow]->start();
           PosType grad_new;
-          RealType j2_ratio = wavefunction->ratioGrad(els, iel, grad_new);
+          RealType j1_ratio = J1_component.ratioGrad(els, iel, j1_grad);
+          RealType j2_ratio = J2_component.ratioGrad(els, iel, j2_grad);
+          RealType j3_ratio = J3_component.ratioGrad(els, iel, j3_grad);
           Timers[Timer_Jastrow]->stop();
 
           Timers[Timer_SPO]->start();
@@ -381,7 +376,9 @@ int main(int argc, char **argv)
           {
             // Update position, and update temporary storage
             Timers[Timer_Update]->start();
-            wavefunction->acceptMove(els, iel);
+            J1_component.acceptMove(els, iel);
+            J2_component.acceptMove(els, iel);
+            J3_component.acceptMove(els, iel);
             Timers[Timer_Update]->stop();
             Timers[Timer_DT]->start();
             els.acceptMove(iel);
@@ -391,7 +388,6 @@ int main(int argc, char **argv)
           else
           {
             els.rejectMove(iel);
-            wavefunction->restore(iel);
           }
         } // iel
       }   // substeps
@@ -402,7 +398,9 @@ int main(int argc, char **argv)
 
       // evaluate Kinetic Energy
       Timers[Timer_GL]->start();
-      wavefunction->evaluateGL(els);
+      J1_component.evaluateGL(els, els.G, els.L);
+      J2_component.evaluateGL(els, els.G, els.L);
+      J3_component.evaluateGL(els, els.G, els.L);
       Timers[Timer_GL]->stop();
 
       Timers[Timer_Diffusion]->stop();
@@ -410,7 +408,9 @@ int main(int argc, char **argv)
       // Compute NLPP energy using integral over spherical points
 
       ecp.randomize(rOnSphere); // pick random sphere
-      const DistanceTableData *d_ie = wavefunction->d_ie;
+      // set Rmax for ion-el distance table for PP
+      DistanceTableData *d_ie = DistanceTable::add(ions, els, DT_SOA);
+      d_ie->setRmax(Rmax);
 
       Timers[Timer_ECP]->start();
       for (int iat = 0; iat < nions; ++iat)
@@ -438,7 +438,9 @@ int main(int argc, char **argv)
               Timers[Timer_SPO]->stop();
 
               Timers[Timer_Jastrow]->start();
-              wavefunction->ratio(els, iel);
+              J1_component.ratio(els, iel);
+              J2_component.ratio(els, iel);
+              J3_component.ratio(els, iel);
               Timers[Timer_Jastrow]->stop();
 
               Timers[Timer_Value]->stop();
@@ -451,8 +453,6 @@ int main(int argc, char **argv)
       Timers[Timer_ECP]->stop();
     }
 
-    // cleanup
-    delete wavefunction;
   } // end of omp parallel
   Timers[Timer_Total]->stop();
 
