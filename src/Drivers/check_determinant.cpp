@@ -34,9 +34,8 @@ using namespace qmcplusplus;
 
 void print_help()
 {
-  //FIXME
+  // FIXME
 }
-
 
 int main(int argc, char **argv)
 {
@@ -52,9 +51,12 @@ int main(int argc, char **argv)
   // use the global generator
 
   // bool ionode=(mycomm->rank() == 0);
-  bool ionode = 1;
-  int nsteps  = 100;
-  int iseed   = 11;
+  bool ionode   = 1;
+  int na        = 1;
+  int nb        = 1;
+  int nc        = 1;
+  int nsteps    = 100;
+  int iseed     = 11;
   int nsubsteps = 1;
   // Set cutoff for NLPP use.
 
@@ -63,7 +65,7 @@ int main(int argc, char **argv)
   bool verbose = false;
 
   int opt;
-  while ((opt = getopt(argc, argv, "hdvVs:g:i:b:c:a:r:")) != -1)
+  while ((opt = getopt(argc, argv, "hvVs:i:")) != -1)
   {
     switch (opt)
     {
@@ -74,7 +76,7 @@ int main(int argc, char **argv)
     case 's': // the number of sub steps for drift/diffusion
       nsubsteps = atoi(optarg);
       break;
-    case 'v': verbose  = true; break;
+    case 'v': verbose = true; break;
     case 'V':
       print_version(true);
       return 1;
@@ -83,6 +85,7 @@ int main(int argc, char **argv)
   }
 
   Random.init(0, 1, iseed);
+  Tensor<int, 3> tmat(na, 0, 0, 0, nb, 0, 0, 0, nc);
 
   print_version(verbose);
 
@@ -93,111 +96,108 @@ int main(int argc, char **argv)
     OhmmsInfo::Warn->turnoff();
   }
 
-#pragma omp parallel
+  Tensor<OHMMS_PRECISION, 3> lattice_b;
+  ParticleSet ions, els;
+  OHMMS_PRECISION scale = 1.0;
+  lattice_b             = tile_cell(ions, tmat, scale);
+  ions.setName("ion");
+  els.setName("e");
+
+  // create generator within the thread
+  RandomGenerator<RealType> random_th(myPrimes[0]);
+
+  ions.Lattice.BoxBConds = 1;
+  ions.RSoA              = ions.R; // fill the SoA
+
+  const int nels  = count_electrons(ions, 1);
+  const int nels3 = 3 * nels;
+
+  { // create up/down electrons
+    els.Lattice.BoxBConds = 1;
+    els.Lattice.set(ions.Lattice);
+    vector<int> ud(2);
+    ud[0] = nels / 2;
+    ud[1] = nels - ud[0];
+    els.create(ud);
+    els.R.InUnit = 1;
+    random_th.generate_uniform(&els.R[0][0], nels3);
+    els.convert2Cart(els.R); // convert to Cartiesian
+    els.RSoA = els.R;
+  }
+
+  miniqmcreference::DiracDeterminantRef determinant_ref(nels, random_th);
+  DiracDeterminant determinant(nels, random_th);
+
+  // For VMC, tau is large and should result in an acceptance ratio of roughly
+  // 50%
+  // For DMC, tau is small and should result in an acceptance ratio of 99%
+  const RealType tau = 2.0;
+
+  ParticlePos_t delta(nels);
+
+  RealType sqrttau = std::sqrt(tau);
+  RealType accept  = 0.5;
+
+  aligned_vector<RealType> ur(nels);
+  random_th.generate_uniform(ur.data(), nels);
+
+  els.update();
+
+  int my_accepted = 0;
+  for (int mc = 0; mc < nsteps; ++mc)
   {
-    ParticleSet ions, els;
-    ions.setName("ion");
-    els.setName("e");
-
-    const int ip = omp_get_thread_num();
-
-    // create generator within the thread
-    RandomGenerator<RealType> random_th(myPrimes[ip]);
-
-    ions.Lattice.BoxBConds = 1;
-    ions.RSoA = ions.R; // fill the SoA
-
-    const int nels  = count_electrons(ions, 1);
-    const int nels3 = 3 * nels;
-
-    { // create up/down electrons
-      els.Lattice.BoxBConds = 1;
-      els.Lattice.set(ions.Lattice);
-      vector<int> ud(2);
-      ud[0] = nels / 2;
-      ud[1] = nels - ud[0];
-      els.create(ud);
-      els.R.InUnit = 1;
-      random_th.generate_uniform(&els.R[0][0], nels3);
-      els.convert2Cart(els.R); // convert to Cartiesian
-      els.RSoA = els.R;
-    }
-
-    miniqmcreference::DiracDeterminantRef determinant_ref(nels, random_th);
-    DiracDeterminant determinant(nels, random_th);
-
-    // For VMC, tau is large and should result in an acceptance ratio of roughly
-    // 50%
-    // For DMC, tau is small and should result in an acceptance ratio of 99%
-    const RealType tau = 2.0;
-
-    ParticlePos_t delta(nels);
-
-    RealType sqrttau = std::sqrt(tau);
-    RealType accept  = 0.5;
-
-    aligned_vector<RealType> ur(nels);
-    random_th.generate_uniform(ur.data(), nels);
-
-    els.update();
-
-    int my_accepted = 0;
-    for (int mc = 0; mc < nsteps; ++mc)
+    determinant_ref.recompute();
+    determinant.recompute();
+    for (int l = 0; l < nsubsteps; ++l) // drift-and-diffusion
     {
-      determinant_ref.recompute();
-      determinant.recompute();
-      for (int l = 0; l < nsubsteps; ++l) // drift-and-diffusion
+      random_th.generate_normal(&delta[0][0], nels3);
+      for (int iel = 0; iel < nels; ++iel)
       {
-        random_th.generate_normal(&delta[0][0], nels3);
-        for (int iel = 0; iel < nels; ++iel)
+        // Operate on electron with index iel
+        els.setActive(iel);
+
+        // Construct trial move
+        PosType dr   = sqrttau * delta[iel];
+        bool isValid = els.makeMoveAndCheck(iel, dr);
+
+        if (!isValid) continue;
+
+        // Compute gradient at the trial position
+
+        determinant_ref.ratio(iel);
+        determinant.ratio(iel);
+
+        // Accept/reject the trial move
+        if (ur[iel] > accept) // MC
         {
-          // Operate on electron with index iel
-          els.setActive(iel);
+          // Update position, and update temporary storage
+          els.acceptMove(iel);
+          determinant_ref.acceptMove(iel);
+          determinant.acceptMove(iel);
+          my_accepted++;
+        }
+        else
+        {
+          els.rejectMove(iel);
+        }
+      } // iel
+    }   // substeps
 
-          // Construct trial move
-          PosType dr = sqrttau * delta[iel];
-          bool isValid = els.makeMoveAndCheck(iel, dr);
+    els.donePbyP();
+  }
 
-          if (!isValid) continue;
-
-          // Compute gradient at the trial position
-
-          determinant_ref.ratio(iel);
-          determinant.ratio(iel);
-
-          // Accept/reject the trial move
-          if (ur[iel] > accept) // MC
-          {
-            // Update position, and update temporary storage
-            els.acceptMove(iel);
-            determinant_ref.acceptMove(iel);
-            determinant.acceptMove(iel);
-            my_accepted++;
-          }
-          else
-          {
-            els.rejectMove(iel);
-          }
-        } // iel
-      }   // substeps
-
-      els.donePbyP();
-    }
-  } // end of omp parallel
-
-//  int errors = 0;
-//  for (int i = 0; i < determinant_ref.size(); i++)
-//  {
-//    if (determinant_ref(i) != determinant(i)) ++errors;
-//  }
-//  if (errors)
-//  {
-//    cout << "Checking failed for " << errors << " elements" << '\n';
-//    return 1;
-//  }
-//  else
-//    cout << "All checking passed for determinant" << '\n';
+  int errors = 0;
+  for (int i = 0; i < determinant_ref.size(); i++)
+  {
+    if (determinant_ref(i) != determinant(i)) ++errors;
+  }
+  if (errors)
+  {
+    cout << "Checking failed for " << errors << " elements" << '\n';
+    return 1;
+  }
+  else
+    cout << "All checking passed for determinant" << '\n';
 
   return 0;
-
 }
