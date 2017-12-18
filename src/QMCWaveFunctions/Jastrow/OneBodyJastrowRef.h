@@ -19,9 +19,10 @@
  * @file OneBodyJastrowRef.h
  */
 
-namespace qmcplusplus
+namespace miniqmcreference
 {
 
+using namespace qmcplusplus;
 /** @ingroup WaveFunctionComponent
  *  @brief Specialization for one-body Jastrow function using multiple functors
  */
@@ -273,6 +274,6 @@ template <class FT> struct OneBodyJastrowRef : public WaveFunctionComponentBase
     Grad[iat] = curGrad;
     Lap[iat]  = curLap;
   }
-};
-}
+}; // class OneBodyJastrowRef
+} // miniqmcreferencce
 #endif
