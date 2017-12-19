@@ -21,6 +21,8 @@
 #define QMCPLUSPLUS_DETERMINANTREF_H
 #include "Numerics/OhmmsPETE/OhmmsMatrix.h"
 #include "Numerics/DeterminantOperators.h"
+#include "QMCWaveFunctions/DiracDeterminantBase.h"
+
 
 namespace miniqmcreference
 {
@@ -149,7 +151,7 @@ void checkDiff(const MT1 &a, const MT2 &b, const std::string &tag)
   std::cout << tag << " diff Error = " << error / nrows / nrows << std::endl;
 }
 
-struct DiracDeterminantRef
+struct DiracDeterminantRef : public qmcplusplus::DiracDeterminantBase
 {
   DiracDeterminantRef(int nels, qmcplusplus::RandomGenerator<double> RNG)
   {

@@ -19,6 +19,7 @@
 #define QMCPLUSPLUS_DETERMINANT_H
 #include "Numerics/OhmmsPETE/OhmmsMatrix.h"
 #include "Numerics/DeterminantOperators.h"
+#include "QMCWaveFunctions/DiracDeterminantBase.h"
 
 namespace qmcplusplus
 {
@@ -146,7 +147,7 @@ void checkDiff(const MT1 &a, const MT2 &b, const std::string &tag)
   std::cout << tag << " diff Error = " << error / nrows / nrows << std::endl;
 }
 
-struct DiracDeterminant
+struct DiracDeterminant : public DiracDeterminantBase
 {
   DiracDeterminant(int nels, RandomGenerator<double> RNG)
   {

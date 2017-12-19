@@ -65,6 +65,7 @@
 #include <QMCWaveFunctions/einspline_spo.hpp>
 #include <QMCWaveFunctions/FakeWaveFunction.h>
 #include <QMCWaveFunctions/Determinant.h>
+#include <QMCWaveFunctions/DeterminantRef.h>
 #include <getopt.h>
 
 using namespace std;
@@ -114,7 +115,6 @@ void print_help()
   printf("-V                Print version information and exit\n");
 }
 
-
 int main(int argc, char **argv)
 {
 
@@ -141,11 +141,11 @@ int main(int argc, char **argv)
   // thread blocking
   // int team_size=1; //default is 1
   int tileSize  = -1;
-  int team_size    = 1;
+  int team_size = 1;
   int nsubsteps = 1;
   // Set cutoff for NLPP use.
   RealType Rmax(1.7);
-  bool useSoA = true;
+  bool useRef = false;
 
   PrimeNumberSet<uint32_t> myPrimes;
 
@@ -159,7 +159,7 @@ int main(int argc, char **argv)
     {
     case 'h': print_help(); return 1;
     case 'd': // down to reference implemenation
-      useSoA = false;
+      useRef = true;
       break;
     case 'g': // tiling1 tiling2 tiling3
       sscanf(optarg, "%d %d %d", &na, &nb, &nc);
@@ -177,7 +177,7 @@ int main(int argc, char **argv)
       Rmax = atof(optarg);
       break;
     case 'a': tileSize = atoi(optarg); break;
-    case 'v': verbose  = true; break;
+    case 'v': verbose = true; break;
     case 'V':
       print_version(true);
       return 1;
@@ -247,12 +247,14 @@ int main(int argc, char **argv)
 
   if (ionode)
   {
-    if (useSoA)
-      cout << "Using SoA distance table and Jastrow + einspline " << endl;
+    if (!useRef)
+      cout << "Using SoA distance table, Jastrow + einspline, " << endl
+           << "and determinant update." << endl;
     else
-      cout << "Using SoA distance table and Jastrow + einspline of the "
-              "reference implementation "
-           << endl;
+      cout << "Using the reference implementation for Jastrow, " << endl
+           << "determinant update, and distance table + einspline of the "
+           << endl
+           << "reference implementation " << endl;
   }
 
   double nspheremoves = 0;
@@ -268,7 +270,7 @@ int main(int argc, char **argv)
     const int np = omp_get_num_threads();
     const int ip = omp_get_thread_num();
 
-    const int team_id = ip / team_size;
+    const int team_id   = ip / team_size;
     const int member_id = ip % team_size;
 
     // create spo per thread
@@ -300,13 +302,18 @@ int main(int argc, char **argv)
     }
 
     FakeWaveFunctionBase *wavefunction;
+    DiracDeterminantBase *determinant;
 
-    DiracDeterminant determinant(nels, random_th);
-
-    if (useSoA)
-      wavefunction = new WaveFunction(ions, els);
-    else
+    if (useRef)
+    {
       wavefunction = new miniqmcreference::WaveFunctionRef(ions, els);
+      determinant  = new miniqmcreference::DiracDeterminantRef(nels, random_th);
+    }
+    else
+    {
+      wavefunction = new WaveFunction(ions, els);
+      determinant  = new DiracDeterminant(nels, random_th);
+    }
 
     // set Rmax for ion-el distance table for PP
     wavefunction->setRmax(Rmax);
@@ -344,7 +351,7 @@ int main(int argc, char **argv)
     {
       Timers[Timer_Diffusion]->start();
       Timers[Timer_Determinant]->start();
-      determinant.recompute();
+      determinant->recompute();
       Timers[Timer_Determinant]->stop();
       for (int l = 0; l < nsubsteps; ++l) // drift-and-diffusion
       {
@@ -385,7 +392,7 @@ int main(int argc, char **argv)
           Timers[Timer_ratioGrad]->stop();
 
           Timers[Timer_Determinant]->start();
-          determinant.ratio(iel);
+          determinant->ratio(iel);
           Timers[Timer_Determinant]->stop();
 
           // Accept/reject the trial move
@@ -399,7 +406,7 @@ int main(int argc, char **argv)
             els.acceptMove(iel);
             Timers[Timer_DT]->stop();
             Timers[Timer_Determinant]->start();
-            determinant.acceptMove(iel);
+            determinant->acceptMove(iel);
             Timers[Timer_Determinant]->stop();
             my_accepted++;
           }
@@ -469,6 +476,7 @@ int main(int argc, char **argv)
 
     // cleanup
     delete wavefunction;
+    delete determinant;
   } // end of omp parallel
   Timers[Timer_Total]->stop();
 
