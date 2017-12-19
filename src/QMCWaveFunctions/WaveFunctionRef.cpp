@@ -16,13 +16,15 @@
 using namespace std;
 
 /*!
- * @file RefWaveFunction.cpp
+ * @file WaveFunctionRef.cpp
  * @brief Wavefunction based on reference implemenation
  */
 
-namespace qmcplusplus
+namespace miniqmcreference
 {
-RefWaveFunction::RefWaveFunction(ParticleSet &ions, ParticleSet &els)
+using namespace qmcplusplus;
+
+WaveFunctionRef::WaveFunctionRef(ParticleSet &ions, ParticleSet &els)
 {
   FirstTime = true;
 
@@ -34,9 +36,9 @@ RefWaveFunction::RefWaveFunction(ParticleSet &ions, ParticleSet &els)
   buildJ2(*J2, els.Lattice.WignerSeitzRadius);
 }
 
-RefWaveFunction::~RefWaveFunction() { delete J2; }
+WaveFunctionRef::~WaveFunctionRef() { delete J2; }
 
-void RefWaveFunction::evaluateLog(ParticleSet &P)
+void WaveFunctionRef::evaluateLog(ParticleSet &P)
 {
   constexpr valT czero(0);
   if (FirstTime)
@@ -48,33 +50,33 @@ void RefWaveFunction::evaluateLog(ParticleSet &P)
   }
 }
 
-FakeWaveFunctionBase::posT RefWaveFunction::evalGrad(ParticleSet &P, int iat)
+FakeWaveFunctionBase::posT WaveFunctionRef::evalGrad(ParticleSet &P, int iat)
 {
   return J2->evalGrad(P, iat);
 }
 
-FakeWaveFunctionBase::valT RefWaveFunction::ratioGrad(ParticleSet &P, int iat,
+FakeWaveFunctionBase::valT WaveFunctionRef::ratioGrad(ParticleSet &P, int iat,
                                                       posT &grad)
 {
   return J2->ratioGrad(P, iat, grad);
 }
 
-FakeWaveFunctionBase::valT RefWaveFunction::ratio(ParticleSet &P, int iat)
+FakeWaveFunctionBase::valT WaveFunctionRef::ratio(ParticleSet &P, int iat)
 {
   return J2->ratio(P, iat);
 }
-void RefWaveFunction::acceptMove(ParticleSet &P, int iat)
+void WaveFunctionRef::acceptMove(ParticleSet &P, int iat)
 {
   J2->acceptMove(P, iat);
 }
 
-void RefWaveFunction::restore(int iat) {}
+void WaveFunctionRef::restore(int iat) {}
 
-void RefWaveFunction::evaluateGL(ParticleSet &P)
+void WaveFunctionRef::evaluateGL(ParticleSet &P)
 {
   constexpr valT czero(0);
   P.G = czero;
   P.L = czero;
   J2->evaluateGL(P, P.G, P.L);
 }
-}
+} // miniqmcreferencce

@@ -306,7 +306,7 @@ int main(int argc, char **argv)
     if (useSoA)
       wavefunction = new WaveFunction(ions, els);
     else
-      wavefunction = new RefWaveFunction(ions, els);
+      wavefunction = new miniqmcreference::WaveFunctionRef(ions, els);
 
     // set Rmax for ion-el distance table for PP
     wavefunction->setRmax(Rmax);

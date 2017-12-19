@@ -25,8 +25,10 @@
 #include <Numerics/Spline2/MultiBsplineData.hpp>
 #include <stdlib.h>
 
-namespace qmcplusplus
+namespace miniqmcreference
 {
+
+using namespace qmcplusplus;
 
 template <typename T> struct MultiBsplineRef
 {

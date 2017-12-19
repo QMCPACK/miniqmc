@@ -53,25 +53,6 @@ struct FakeWaveFunctionBase
   virtual void evaluateGL(ParticleSet &P) = 0;
 };
 
-struct RefWaveFunction : public FakeWaveFunctionBase
-{
-
-  using J2OrbType = TwoBodyJastrowRef<BsplineFunctor<valT>>;
-  bool FirstTime;
-  J2OrbType *J2;
-  PooledData<valT> Buffer;
-
-  RefWaveFunction(ParticleSet &ions, ParticleSet &els);
-  ~RefWaveFunction();
-  void evaluateLog(ParticleSet &P);
-  posT evalGrad(ParticleSet &P, int iat);
-  valT ratioGrad(ParticleSet &P, int iat, posT &grad);
-  valT ratio(ParticleSet &P, int iat);
-  void acceptMove(ParticleSet &P, int iat);
-  void restore(int iat);
-  void evaluateGL(ParticleSet &P);
-};
-
 struct WaveFunction : public FakeWaveFunctionBase
 {
   using J2OrbType = TwoBodyJastrow<BsplineFunctor<valT>>;
@@ -89,5 +70,31 @@ struct WaveFunction : public FakeWaveFunctionBase
   void restore(int iat);
   void evaluateGL(ParticleSet &P);
 };
-}
+} // qmcplusplus
+
+namespace miniqmcreference
+{
+/** A minimial TrialWaveFunction - the reference version.
+ */
+using namespace qmcplusplus;
+struct WaveFunctionRef : public FakeWaveFunctionBase
+{
+
+  using J2OrbType = TwoBodyJastrowRef<BsplineFunctor<valT>>;
+  bool FirstTime;
+  J2OrbType *J2;
+  PooledData<valT> Buffer;
+
+  WaveFunctionRef(ParticleSet &ions, ParticleSet &els);
+  ~WaveFunctionRef();
+  void evaluateLog(ParticleSet &P);
+  posT evalGrad(ParticleSet &P, int iat);
+  valT ratioGrad(ParticleSet &P, int iat, posT &grad);
+  valT ratio(ParticleSet &P, int iat);
+  void acceptMove(ParticleSet &P, int iat);
+  void restore(int iat);
+  void evaluateGL(ParticleSet &P);
+};
+} // miniqmcreference
+
 #endif
