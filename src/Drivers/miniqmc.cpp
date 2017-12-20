@@ -18,18 +18,17 @@
 // clang-format off
 /** @file miniqmc.cpp
     @brief Miniapp to capture the computation in particle moves.
- 
+
  @mainpage MiniQMC: miniapp for QMCPACK kernels
 
  Implemented kernels
    - \subpage JastrowFactors includes one-body, two-body and three-body Jastrow
      factors.
    - Single Particle Orbitals (SPO) based on splines
-
- Kernels yet to be implemented
    - Inverse determinant update
 
   Compares against a reference implementation for correctness.
+  (separate drivers)
 
  */
 
@@ -63,7 +62,7 @@
 #include <Utilities/qmcpack_version.h>
 #include <Input/Input.hpp>
 #include <QMCWaveFunctions/einspline_spo.hpp>
-#include <QMCWaveFunctions/FakeWaveFunction.h>
+#include <QMCWaveFunctions/WaveFunction.h>
 #include <getopt.h>
 
 using namespace std;
@@ -79,7 +78,7 @@ enum MiniQMCTimers
   Timer_evalGrad,
   Timer_ratioGrad,
   Timer_Update,
-  Timer_Jastrow,
+  Timer_Wavefunction,
   Timer_DT,
   Timer_SPO
 };
@@ -93,7 +92,7 @@ TimerNameList_t<MiniQMCTimers> MiniQMCTimerNames = {
     {Timer_evalGrad, "Current Gradient"},
     {Timer_ratioGrad, "New Gradient"},
     {Timer_Update, "Update"},
-    {Timer_Jastrow, "Jastrow"},
+    {Timer_Wavefunction, "Wavefunction"},
     {Timer_SPO, "Single-Particle Orbitals"},
     {Timer_DT, "Distance Tables"},
 };
@@ -110,7 +109,6 @@ void print_help()
   printf("-v                Verbose output\n");
   printf("-V                Print version information and exit\n");
 }
-
 
 int main(int argc, char **argv)
 {
@@ -138,11 +136,11 @@ int main(int argc, char **argv)
   // thread blocking
   // int team_size=1; //default is 1
   int tileSize  = -1;
-  int team_size    = 1;
+  int team_size = 1;
   int nsubsteps = 1;
   // Set cutoff for NLPP use.
   RealType Rmax(1.7);
-  bool useSoA = true;
+  bool useRef = false;
 
   PrimeNumberSet<uint32_t> myPrimes;
 
@@ -156,7 +154,7 @@ int main(int argc, char **argv)
     {
     case 'h': print_help(); return 1;
     case 'd': // down to reference implemenation
-      useSoA = false;
+      useRef = true;
       break;
     case 'g': // tiling1 tiling2 tiling3
       sscanf(optarg, "%d %d %d", &na, &nb, &nc);
@@ -174,7 +172,7 @@ int main(int argc, char **argv)
       Rmax = atof(optarg);
       break;
     case 'a': tileSize = atoi(optarg); break;
-    case 'v': verbose  = true; break;
+    case 'v': verbose = true; break;
     case 'V':
       print_version(true);
       return 1;
@@ -244,12 +242,14 @@ int main(int argc, char **argv)
 
   if (ionode)
   {
-    if (useSoA)
-      cout << "Using SoA distance table and Jastrow + einspline " << endl;
+    if (!useRef)
+      cout << "Using SoA distance table, Jastrow + einspline, " << endl
+           << "and determinant update." << endl;
     else
-      cout << "Using SoA distance table and Jastrow + einspline of the "
-              "reference implementation "
-           << endl;
+      cout << "Using the reference implementation for Jastrow, " << endl
+           << "determinant update, and distance table + einspline of the "
+           << endl
+           << "reference implementation " << endl;
   }
 
   double nspheremoves = 0;
@@ -265,7 +265,7 @@ int main(int argc, char **argv)
     const int np = omp_get_num_threads();
     const int ip = omp_get_thread_num();
 
-    const int team_id = ip / team_size;
+    const int team_id   = ip / team_size;
     const int member_id = ip % team_size;
 
     // create spo per thread
@@ -296,12 +296,17 @@ int main(int argc, char **argv)
       els.RSoA = els.R;
     }
 
-    FakeWaveFunctionBase *wavefunction;
+    WaveFunctionBase *wavefunction;
 
-    if (useSoA)
-      wavefunction = new WaveFunction(ions, els);
+    if (useRef)
+    {
+      wavefunction =
+          new miniqmcreference::WaveFunctionRef(ions, els, random_th);
+    }
     else
-      wavefunction = new miniqmcreference::WaveFunctionRef(ions, els);
+    {
+      wavefunction = new WaveFunction(ions, els, random_th);
+    }
 
     // set Rmax for ion-el distance table for PP
     wavefunction->setRmax(Rmax);
@@ -349,9 +354,9 @@ int main(int argc, char **argv)
           Timers[Timer_DT]->stop();
           // Compute gradient at the current position
           Timers[Timer_evalGrad]->start();
-          Timers[Timer_Jastrow]->start();
+          Timers[Timer_Wavefunction]->start();
           PosType grad_now = wavefunction->evalGrad(els, iel);
-          Timers[Timer_Jastrow]->stop();
+          Timers[Timer_Wavefunction]->stop();
           Timers[Timer_evalGrad]->stop();
 
           // Construct trial move
@@ -365,10 +370,10 @@ int main(int argc, char **argv)
           // Compute gradient at the trial position
           Timers[Timer_ratioGrad]->start();
 
-          Timers[Timer_Jastrow]->start();
+          Timers[Timer_Wavefunction]->start();
           PosType grad_new;
           RealType j2_ratio = wavefunction->ratioGrad(els, iel, grad_new);
-          Timers[Timer_Jastrow]->stop();
+          Timers[Timer_Wavefunction]->stop();
 
           Timers[Timer_SPO]->start();
           spo.evaluate_vgh(els.R[iel]);
@@ -437,9 +442,9 @@ int main(int argc, char **argv)
               spo.evaluate_v(els.R[iel]);
               Timers[Timer_SPO]->stop();
 
-              Timers[Timer_Jastrow]->start();
+              Timers[Timer_Wavefunction]->start();
               wavefunction->ratio(els, iel);
-              Timers[Timer_Jastrow]->stop();
+              Timers[Timer_Wavefunction]->stop();
 
               Timers[Timer_Value]->stop();
 
@@ -449,7 +454,8 @@ int main(int argc, char **argv)
         }
       }
       Timers[Timer_ECP]->stop();
-    }
+
+    } // nsteps
 
     // cleanup
     delete wavefunction;

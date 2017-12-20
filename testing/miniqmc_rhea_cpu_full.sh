@@ -57,6 +57,13 @@ echo
 
 ./bin/check_spo
 
+echo
+echo checking Determinant update
+echo ----------------------------------------------------
+echo
+
+./bin/check_determinant
+
 EOF
 
 cp $BUILD_TAG.pbs $BUILD_DIR
@@ -71,4 +78,4 @@ $BUILD_DIR/../../../scripts/blocking_qsub.py $BUILD_DIR $BUILD_TAG.pbs
 cp $BUILD_DIR/$BUILD_TAG.o* ../
 
 # get status from checks
-[ $(grep -e 'All checking pass for J[123]' -e 'All checking pass for spo' ../$BUILD_TAG.o* | wc -l) -eq 4 ]
+[ $(grep -e 'All checks passed for J[123]' -e 'All checks passed for spo' -e 'All checks passed for determinant' ../$BUILD_TAG.o* | wc -l) -eq 5 ]

@@ -100,6 +100,7 @@ int main(int argc, char **argv)
         break;
       case 'g': // tiling1 tiling2 tiling3
         sscanf(optarg, "%d %d %d", &na, &nb, &nc);
+        optind += 2;
         break;
       case 'h': print_help(); break;
       case 'i': // number of MC steps
@@ -485,7 +486,7 @@ int main(int argc, char **argv)
          << wfc_name << std::endl;
     fail = true;
   }
-  if (!fail) cout << "All checking pass for " << wfc_name << std::endl;
+  if (!fail) cout << "All checks passed for " << wfc_name << std::endl;
 
   return 0;
 }
