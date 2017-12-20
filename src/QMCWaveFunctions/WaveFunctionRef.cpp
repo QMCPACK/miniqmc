@@ -23,7 +23,7 @@ namespace miniqmcreference
 using namespace qmcplusplus;
 
 WaveFunctionRef::WaveFunctionRef(ParticleSet &ions, ParticleSet &els,
-                                 RandomGenerator<double> RNG)
+                                 RandomGenerator<RealType> RNG)
 {
   FirstTime = true;
 

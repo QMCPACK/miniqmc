@@ -32,6 +32,33 @@ inline void getri(int n, double *restrict a, int lda, int *restrict piv,
   dgetri(n, a, lda, piv, work, lwork, status);
 }
 
+/** Inversion of a float matrix after LU factorization*/
+inline void getri(int n, float *restrict a, int lda, int *restrict piv,
+                  float *restrict work, int &lwork)
+{
+  int status;
+  sgetri(n, a, lda, piv, work, lwork, status);
+}
+
+/** Inversion of a std::complex<double> matrix after LU factorization*/
+inline void getri(int n, std::complex<double> *restrict a, int lda,
+                  int *restrict piv, std::complex<double> *restrict work,
+                  int &lwork)
+{
+  int status;
+  zgetri(n, a, lda, piv, work, lwork, status);
+}
+
+/** Inversion of a complex<float> matrix after LU factorization*/
+inline void getri(int n, std::complex<float> *restrict a, int lda,
+                  int *restrict piv, std::complex<float> *restrict work,
+                  int &lwork)
+{
+  int status;
+  cgetri(n, a, lda, piv, work, lwork, status);
+}
+
+
 /** query the size of workspace for Xgetri after LU decompisiton */
 template <class T>
 inline int getGetriWorkspace(T *restrict x, int n, int lda, int *restrict pivot)
@@ -235,24 +262,24 @@ struct DiracDeterminant : public WaveFunctionComponentBase
 
 private:
   /// log|det|
-  RealType LogValue;
+  double LogValue;
   /// current ratio
-  RealType curRatio;
+  double curRatio;
   /// workspace size
   int LWork;
   /// inverse matrix to be update
-  Matrix<double> psiMinv;
+  Matrix<RealType> psiMinv;
   /// a SPO set for the row update
-  aligned_vector<double> psiV;
+  aligned_vector<RealType> psiV;
   /// internal storage to perform inversion correctly
   Matrix<double> psiM; // matrix to be inverted
   /// random number generator for testing
-  RandomGenerator<double> myRandom;
+  RandomGenerator<RealType> myRandom;
 
   // temporary workspace for inversion
   aligned_vector<int> pivot;
   aligned_vector<double> work;
-  Matrix<double> psiMsave;
+  Matrix<RealType> psiMsave;
 };
 }
 

@@ -39,6 +39,7 @@ struct WaveFunctionBase
 {
   using valT = OHMMS_PRECISION;
   using posT = TinyVector<OHMMS_PRECISION, OHMMS_DIM>;
+  typedef OHMMS_PRECISION RealType;
 
   valT LogValue;
   DistanceTableData *d_ee;
@@ -66,7 +67,7 @@ struct WaveFunction : public WaveFunctionBase
   DetType *Det;
 
   WaveFunction(ParticleSet &ions, ParticleSet &els,
-               RandomGenerator<double> RNG);
+               RandomGenerator<RealType> RNG);
   ~WaveFunction();
   void evaluateLog(ParticleSet &P);
   posT evalGrad(ParticleSet &P, int iat);
@@ -96,7 +97,7 @@ struct WaveFunctionRef : public qmcplusplus::WaveFunctionBase
   PooledData<valT> Buffer;
 
   WaveFunctionRef(ParticleSet &ions, ParticleSet &els,
-                  RandomGenerator<double> RNG);
+                  RandomGenerator<RealType> RNG);
   ~WaveFunctionRef();
   void evaluateLog(ParticleSet &P);
   posT evalGrad(ParticleSet &P, int iat);
