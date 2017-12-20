@@ -10,7 +10,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // -*- C++ -*-
 #include <omp.h>
-#include <QMCWaveFunctions/FakeWaveFunction.h>
+#include <QMCWaveFunctions/WaveFunction.h>
 #include <Input/Input.hpp>
 
 /*!
@@ -49,18 +49,18 @@ void WaveFunction::evaluateLog(ParticleSet &P)
   }
 }
 
-FakeWaveFunctionBase::posT WaveFunction::evalGrad(ParticleSet &P, int iat)
+WaveFunctionBase::posT WaveFunction::evalGrad(ParticleSet &P, int iat)
 {
   return J2->evalGrad(P, iat);
 }
 
-FakeWaveFunctionBase::valT WaveFunction::ratioGrad(ParticleSet &P, int iat,
+WaveFunctionBase::valT WaveFunction::ratioGrad(ParticleSet &P, int iat,
                                                       posT &grad)
 {
   return J2->ratioGrad(P, iat, grad);
 }
 
-FakeWaveFunctionBase::valT WaveFunction::ratio(ParticleSet &P, int iat)
+WaveFunctionBase::valT WaveFunction::ratio(ParticleSet &P, int iat)
 {
   return J2->ratio(P, iat);
 }

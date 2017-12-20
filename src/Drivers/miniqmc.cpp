@@ -25,11 +25,10 @@
    - \subpage JastrowFactors includes one-body, two-body and three-body Jastrow
      factors.
    - Single Particle Orbitals (SPO) based on splines
-
- Kernels yet to be implemented
    - Inverse determinant update
 
   Compares against a reference implementation for correctness.
+  (separate drivers)
 
  */
 
@@ -63,9 +62,7 @@
 #include <Utilities/qmcpack_version.h>
 #include <Input/Input.hpp>
 #include <QMCWaveFunctions/einspline_spo.hpp>
-#include <QMCWaveFunctions/FakeWaveFunction.h>
-#include <QMCWaveFunctions/Determinant.h>
-#include <QMCWaveFunctions/DeterminantRef.h>
+#include <QMCWaveFunctions/WaveFunction.h>
 #include <getopt.h>
 
 using namespace std;
@@ -81,8 +78,7 @@ enum MiniQMCTimers
   Timer_evalGrad,
   Timer_ratioGrad,
   Timer_Update,
-  Timer_Jastrow,
-  Timer_Determinant,
+  Timer_Wavefunction,
   Timer_DT,
   Timer_SPO
 };
@@ -96,8 +92,7 @@ TimerNameList_t<MiniQMCTimers> MiniQMCTimerNames = {
     {Timer_evalGrad, "Current Gradient"},
     {Timer_ratioGrad, "New Gradient"},
     {Timer_Update, "Update"},
-    {Timer_Jastrow, "Jastrow"},
-    {Timer_Determinant, "Determinant"},
+    {Timer_Wavefunction, "Wavefunction"},
     {Timer_SPO, "Single-Particle Orbitals"},
     {Timer_DT, "Distance Tables"},
 };
@@ -301,18 +296,15 @@ int main(int argc, char **argv)
       els.RSoA = els.R;
     }
 
-    FakeWaveFunctionBase *wavefunction;
-    DiracDeterminantBase *determinant;
+    WaveFunctionBase *wavefunction;
 
     if (useRef)
     {
       wavefunction = new miniqmcreference::WaveFunctionRef(ions, els);
-      determinant  = new miniqmcreference::DiracDeterminantRef(nels, random_th);
     }
     else
     {
       wavefunction = new WaveFunction(ions, els);
-      determinant  = new DiracDeterminant(nels, random_th);
     }
 
     // set Rmax for ion-el distance table for PP
@@ -343,16 +335,12 @@ int main(int argc, char **argv)
 
     constexpr RealType czero(0);
 
-    els.update();
-    wavefunction->evaluateLog(els);
-
     int my_accepted = 0;
     for (int mc = 0; mc < nsteps; ++mc)
     {
       Timers[Timer_Diffusion]->start();
-      Timers[Timer_Determinant]->start();
-      determinant->recompute();
-      Timers[Timer_Determinant]->stop();
+      els.update();
+      wavefunction->evaluateLog(els);
       for (int l = 0; l < nsubsteps; ++l) // drift-and-diffusion
       {
         random_th.generate_normal(&delta[0][0], nels3);
@@ -364,9 +352,9 @@ int main(int argc, char **argv)
           Timers[Timer_DT]->stop();
           // Compute gradient at the current position
           Timers[Timer_evalGrad]->start();
-          Timers[Timer_Jastrow]->start();
+          Timers[Timer_Wavefunction]->start();
           PosType grad_now = wavefunction->evalGrad(els, iel);
-          Timers[Timer_Jastrow]->stop();
+          Timers[Timer_Wavefunction]->stop();
           Timers[Timer_evalGrad]->stop();
 
           // Construct trial move
@@ -380,20 +368,16 @@ int main(int argc, char **argv)
           // Compute gradient at the trial position
           Timers[Timer_ratioGrad]->start();
 
-          Timers[Timer_Jastrow]->start();
+          Timers[Timer_Wavefunction]->start();
           PosType grad_new;
           RealType j2_ratio = wavefunction->ratioGrad(els, iel, grad_new);
-          Timers[Timer_Jastrow]->stop();
+          Timers[Timer_Wavefunction]->stop();
 
           Timers[Timer_SPO]->start();
           spo.evaluate_vgh(els.R[iel]);
           Timers[Timer_SPO]->stop();
 
           Timers[Timer_ratioGrad]->stop();
-
-          Timers[Timer_Determinant]->start();
-          determinant->ratio(iel);
-          Timers[Timer_Determinant]->stop();
 
           // Accept/reject the trial move
           if (ur[iel] > accept) // MC
@@ -405,9 +389,6 @@ int main(int argc, char **argv)
             Timers[Timer_DT]->start();
             els.acceptMove(iel);
             Timers[Timer_DT]->stop();
-            Timers[Timer_Determinant]->start();
-            determinant->acceptMove(iel);
-            Timers[Timer_Determinant]->stop();
             my_accepted++;
           }
           else
@@ -459,9 +440,9 @@ int main(int argc, char **argv)
               spo.evaluate_v(els.R[iel]);
               Timers[Timer_SPO]->stop();
 
-              Timers[Timer_Jastrow]->start();
+              Timers[Timer_Wavefunction]->start();
               wavefunction->ratio(els, iel);
-              Timers[Timer_Jastrow]->stop();
+              Timers[Timer_Wavefunction]->stop();
 
               Timers[Timer_Value]->stop();
 
@@ -476,7 +457,6 @@ int main(int argc, char **argv)
 
     // cleanup
     delete wavefunction;
-    delete determinant;
   } // end of omp parallel
   Timers[Timer_Total]->stop();
 

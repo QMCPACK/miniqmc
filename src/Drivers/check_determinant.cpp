@@ -6,7 +6,7 @@
 //
 // File developed by: M. Graham Lopez, Oak Ridge National Lab
 //
-// File created by: M. Graham Lopez, Oak Ridge National Lab
+// File created by: Jeongnim Kim, Intel
 ////////////////////////////////////////////////////////////////////////////////
 // -*- C++ -*-
 // clang-format off
@@ -170,16 +170,16 @@ int main(int argc, char **argv)
 
           // Compute gradient at the trial position
 
-          determinant_ref.ratio(iel);
-          determinant.ratio(iel);
+          determinant_ref.ratio(els, iel);
+          determinant.ratio(els, iel);
 
           // Accept/reject the trial move
           if (ur[iel] > accept) // MC
           {
             // Update position, and update temporary storage
             els.acceptMove(iel);
-            determinant_ref.acceptMove(iel);
-            determinant.acceptMove(iel);
+            determinant_ref.acceptMove(els, iel);
+            determinant.acceptMove(els, iel);
             my_accepted++;
           }
           else

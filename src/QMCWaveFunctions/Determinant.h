@@ -19,7 +19,7 @@
 #define QMCPLUSPLUS_DETERMINANT_H
 #include "Numerics/OhmmsPETE/OhmmsMatrix.h"
 #include "Numerics/DeterminantOperators.h"
-#include "QMCWaveFunctions/DiracDeterminantBase.h"
+#include "QMCWaveFunctions/WaveFunction.h"
 
 namespace qmcplusplus
 {
@@ -147,7 +147,7 @@ void checkDiff(const MT1 &a, const MT2 &b, const std::string &tag)
   std::cout << tag << " diff Error = " << error / nrows / nrows << std::endl;
 }
 
-struct DiracDeterminant : public DiracDeterminantBase
+struct DiracDeterminant : public WaveFunctionComponentBase
 {
   DiracDeterminant(int nels, RandomGenerator<double> RNG)
   {
@@ -184,6 +184,17 @@ struct DiracDeterminant : public DiracDeterminantBase
     }
   }
 
+  RealType evaluateLog(ParticleSet &P, ParticleSet::ParticleGradient_t &G,
+                       ParticleSet::ParticleLaplacian_t &L)
+  {
+    recompute();
+    // FIXME do we want remainder of evaluateLog?
+  }
+  GradType evalGrad(ParticleSet &P, int iat) {}
+  ValueType ratioGrad(ParticleSet &P, int iat, GradType &grad) {}
+  void evaluateGL(ParticleSet &P, ParticleSet::ParticleGradient_t &G,
+                  ParticleSet::ParticleLaplacian_t &L, bool fromscratch = false) {}
+
   /// recompute the inverse
   inline void recompute()
   {
@@ -196,7 +207,7 @@ struct DiracDeterminant : public DiracDeterminantBase
   /** return determinant ratio for the row replacement
    * @param iel the row (active particle) index
    */
-  inline double ratio(int iel)
+  inline ValueType ratio(ParticleSet &P, int iel)
   {
     const int nels = psiV.size();
     constexpr double shift(0.5);
@@ -208,7 +219,7 @@ struct DiracDeterminant : public DiracDeterminantBase
   }
 
   /** accept the row and update the inverse */
-  inline void acceptMove(int iel)
+  inline void acceptMove(ParticleSet &P, int iel)
   {
     const int nels = psiV.size();
     updateRow(psiMinv.data(), psiV.data(), nels, nels, iel, curRatio);
@@ -221,9 +232,9 @@ struct DiracDeterminant : public DiracDeterminantBase
 
 private:
   /// log|det|
-  double LogValue;
+  RealType LogValue;
   /// current ratio
-  double curRatio;
+  RealType curRatio;
   /// workspace size
   int LWork;
   /// inverse matrix to be update

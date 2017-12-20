@@ -11,7 +11,7 @@
 // -*- C++ -*-
 
 /**
- * @file FakeWaveFunction.h
+ * @file WaveFunction.h
  * @brief Top level wavefunction container
  *
  * Represents a product of wavefunction components (classes based on
@@ -20,8 +20,8 @@
  * Corresponds to QMCWaveFunction/TrialWaveFunction.h in the QMCPACK source.
  */
 
-#ifndef QMCPLUSPLUS_FAKEWAVEFUNCTIONS_H
-#define QMCPLUSPLUS_FAKEWAVEFUNCTIONS_H
+#ifndef QMCPLUSPLUS_WAVEFUNCTIONS_H
+#define QMCPLUSPLUS_WAVEFUNCTIONS_H
 #include <Utilities/Configuration.h>
 #include <Particle/DistanceTable.h>
 #include <QMCWaveFunctions/Jastrow/BsplineFunctor.h>
@@ -32,7 +32,7 @@ namespace qmcplusplus
 {
 /** A minimal TrialWavefunction
  */
-struct FakeWaveFunctionBase
+struct WaveFunctionBase
 {
   using valT = OHMMS_PRECISION;
   using posT = TinyVector<OHMMS_PRECISION, OHMMS_DIM>;
@@ -43,17 +43,17 @@ struct FakeWaveFunctionBase
 
   inline void setRmax(valT x) { d_ie->setRmax(x); }
 
-  virtual ~FakeWaveFunctionBase() {}
-  virtual void evaluateLog(ParticleSet &P) = 0;
-  virtual posT evalGrad(ParticleSet &P, int iat) = 0;
+  virtual ~WaveFunctionBase() {}
+  virtual void evaluateLog(ParticleSet &P)                    = 0;
+  virtual posT evalGrad(ParticleSet &P, int iat)              = 0;
   virtual valT ratioGrad(ParticleSet &P, int iat, posT &grad) = 0;
-  virtual valT ratio(ParticleSet &P, int iat)      = 0;
-  virtual void acceptMove(ParticleSet &P, int iat) = 0;
-  virtual void restore(int iat)           = 0;
-  virtual void evaluateGL(ParticleSet &P) = 0;
+  virtual valT ratio(ParticleSet &P, int iat)                 = 0;
+  virtual void acceptMove(ParticleSet &P, int iat)            = 0;
+  virtual void restore(int iat)                               = 0;
+  virtual void evaluateGL(ParticleSet &P)                     = 0;
 };
 
-struct WaveFunction : public FakeWaveFunctionBase
+struct WaveFunction : public WaveFunctionBase
 {
   using J2OrbType = TwoBodyJastrow<BsplineFunctor<valT>>;
 
@@ -70,6 +70,7 @@ struct WaveFunction : public FakeWaveFunctionBase
   void restore(int iat);
   void evaluateGL(ParticleSet &P);
 };
+
 } // qmcplusplus
 
 namespace miniqmcreference
@@ -77,7 +78,7 @@ namespace miniqmcreference
 /** A minimial TrialWaveFunction - the reference version.
  */
 using namespace qmcplusplus;
-struct WaveFunctionRef : public FakeWaveFunctionBase
+struct WaveFunctionRef : public qmcplusplus::WaveFunctionBase
 {
 
   using J2OrbType = TwoBodyJastrowRef<BsplineFunctor<valT>>;
