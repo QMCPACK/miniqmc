@@ -186,11 +186,14 @@ template <typename JeeIType> void buildJeeI(JeeIType &JeeI, double rcut)
         0.001465337212,  0.02026982926,    -0.03528735393,
         0.04594087928,   -0.008776410679,  -0.001552528476,
         -0.005554407743, 0.001858594451,   0.002001634408,
-        0.0009302256139, -0.0006304447229, 0.0};
+        0.0009302256139, -0.0006304447229};
     std::string suu("uuNi");
     Func *f = new Func;
-    f->setupParameters(npts, rcut, 0.0, Y);
-    J3.addFunc(0, 0, 0, f);
+    f->cutoff_radius = rcut;
+    f->resize(3, 3);
+    f->Parameters = Y;
+    f->reset_gamma();
+    JeeI.addFunc(0, 0, 0, f);
   }
   { // add udNi
     std::vector<RealType> Y = {
@@ -202,11 +205,14 @@ template <typename JeeIType> void buildJeeI(JeeIType &JeeI, double rcut)
         0.002186590944,  0.03350196472,    -0.05677253817,
         0.07810604648,   -0.009629896208,  -0.006372643712,
         -0.01056861605,  0.002485188615,   0.008392442289,
-        1.073423014e-05, -0.0004812466328, 0.0};
+        1.073423014e-05, -0.0004812466328};
     std::string suu("udNi");
     Func *f = new Func;
-    f->setupParameters(npts, rcut, 0.0, Y);
-    J3.addFunc(0, 0, 1, f);
+    f->cutoff_radius = rcut;
+    f->resize(3, 3);
+    f->Parameters = Y;
+    f->reset_gamma();
+    JeeI.addFunc(0, 0, 1, f);
   }
   { // add uuO
     std::vector<RealType> Y = {
@@ -218,11 +224,14 @@ template <typename JeeIType> void buildJeeI(JeeIType &JeeI, double rcut)
         0.001838601199,   0.02570154203,    -0.0675325214,
         0.1080671614,     -0.01258358969,   0.001839834045,
         -0.02422400426,   0.005154953014,   0.003510582598,
-        0.007464427016,   -0.002454817757,  0.0};
+        0.007464427016,   -0.002454817757};
     std::string suu("uuO");
     Func *f = new Func;
-    f->setupParameters(npts, rcut, 0.0, Y);
-    J3.addFunc(1, 0, 0, f);
+    f->cutoff_radius = rcut;
+    f->resize(3, 3);
+    f->Parameters = Y;
+    f->reset_gamma();
+    JeeI.addFunc(1, 0, 0, f);
   }
   { // add udO
     std::vector<RealType> Y = {-0.009590393593, 0.002498010871, 0.04225872633,
@@ -233,11 +242,14 @@ template <typename JeeIType> void buildJeeI(JeeIType &JeeI, double rcut)
                                0.003372676617,  0.03915277249,  -0.02680556816,
                                0.08648136635,   0.01499088063,  -0.02231984329,
                                -0.02399792096,  0.001105720128, 0.02196005181,
-                               0.003162638982,  -0.00119645772, 0.0};
+                               0.003162638982,  -0.00119645772};
     std::string suu("udO");
     Func *f = new Func;
-    f->setupParameters(npts, rcut, 0.0, Y);
-    J3.addFunc(1, 0, 1, f);
+    f->cutoff_radius = rcut;
+    f->resize(3, 3);
+    f->Parameters = Y;
+    f->reset_gamma();
+    JeeI.addFunc(1, 0, 1, f);
   }
 }
 }

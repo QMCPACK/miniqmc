@@ -25,11 +25,16 @@
 #include <Utilities/Configuration.h>
 #include <Utilities/RandomGenerator.h>
 #include <Particle/DistanceTable.h>
-#include <QMCWaveFunctions/Jastrow/BsplineFunctor.h>
-#include <QMCWaveFunctions/Jastrow/TwoBodyJastrowRef.h>
-#include <QMCWaveFunctions/Jastrow/TwoBodyJastrow.h>
 #include <QMCWaveFunctions/Determinant.h>
 #include <QMCWaveFunctions/DeterminantRef.h>
+#include <QMCWaveFunctions/Jastrow/BsplineFunctor.h>
+#include <QMCWaveFunctions/Jastrow/PolynomialFunctor3D.h>
+#include <QMCWaveFunctions/Jastrow/OneBodyJastrowRef.h>
+#include <QMCWaveFunctions/Jastrow/OneBodyJastrow.h>
+#include <QMCWaveFunctions/Jastrow/TwoBodyJastrowRef.h>
+#include <QMCWaveFunctions/Jastrow/TwoBodyJastrow.h>
+#include <QMCWaveFunctions/Jastrow/ThreeBodyJastrowRef.h>
+#include <QMCWaveFunctions/Jastrow/ThreeBodyJastrow.h>
 
 namespace qmcplusplus
 {
@@ -59,11 +64,15 @@ struct WaveFunctionBase
 
 struct WaveFunction : public WaveFunctionBase
 {
+  using J1OrbType = OneBodyJastrow<BsplineFunctor<valT>>;
   using J2OrbType = TwoBodyJastrow<BsplineFunctor<valT>>;
+  using J3OrbType = ThreeBodyJastrow<PolynomialFunctor3D>;
   using DetType   = DiracDeterminant;
 
   bool FirstTime;
+  J1OrbType *J1;
   J2OrbType *J2;
+  J3OrbType *J3;
   DetType *Det;
 
   WaveFunction(ParticleSet &ions, ParticleSet &els,
@@ -88,11 +97,15 @@ using namespace qmcplusplus;
 struct WaveFunctionRef : public qmcplusplus::WaveFunctionBase
 {
 
-  using J2OrbType = TwoBodyJastrowRef<BsplineFunctor<valT>>;
+  using J1OrbType = OneBodyJastrow<BsplineFunctor<valT>>;
+  using J2OrbType = TwoBodyJastrow<BsplineFunctor<valT>>;
+  using J3OrbType = ThreeBodyJastrow<PolynomialFunctor3D>;
   using DetType   = DiracDeterminantRef;
 
   bool FirstTime;
+  J1OrbType *J1;
   J2OrbType *J2;
+  J3OrbType *J3;
   DetType *Det;
   PooledData<valT> Buffer;
 
