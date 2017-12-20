@@ -19,7 +19,7 @@
 #define QMCPLUSPLUS_DETERMINANT_H
 #include "Numerics/OhmmsPETE/OhmmsMatrix.h"
 #include "Numerics/DeterminantOperators.h"
-#include "QMCWaveFunctions/WaveFunction.h"
+#include "QMCWaveFunctions/WaveFunctionComponentBase.h"
 
 namespace qmcplusplus
 {
@@ -149,7 +149,7 @@ void checkDiff(const MT1 &a, const MT2 &b, const std::string &tag)
 
 struct DiracDeterminant : public WaveFunctionComponentBase
 {
-  DiracDeterminant(int nels, RandomGenerator<double> RNG)
+  DiracDeterminant(int nels, RandomGenerator<RealType> RNG)
   {
     psiMinv.resize(nels, nels);
     psiV.resize(nels);
@@ -190,8 +190,11 @@ struct DiracDeterminant : public WaveFunctionComponentBase
     recompute();
     // FIXME do we want remainder of evaluateLog?
   }
+
   GradType evalGrad(ParticleSet &P, int iat) {}
+
   ValueType ratioGrad(ParticleSet &P, int iat, GradType &grad) {}
+
   void evaluateGL(ParticleSet &P, ParticleSet::ParticleGradient_t &G,
                   ParticleSet::ParticleLaplacian_t &L, bool fromscratch = false) {}
 

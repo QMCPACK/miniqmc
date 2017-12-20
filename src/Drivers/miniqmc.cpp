@@ -300,11 +300,12 @@ int main(int argc, char **argv)
 
     if (useRef)
     {
-      wavefunction = new miniqmcreference::WaveFunctionRef(ions, els);
+      wavefunction =
+          new miniqmcreference::WaveFunctionRef(ions, els, random_th);
     }
     else
     {
-      wavefunction = new WaveFunction(ions, els);
+      wavefunction = new WaveFunction(ions, els, random_th);
     }
 
     // set Rmax for ion-el distance table for PP
@@ -335,12 +336,13 @@ int main(int argc, char **argv)
 
     constexpr RealType czero(0);
 
+    els.update();
+    wavefunction->evaluateLog(els);
+
     int my_accepted = 0;
     for (int mc = 0; mc < nsteps; ++mc)
     {
       Timers[Timer_Diffusion]->start();
-      els.update();
-      wavefunction->evaluateLog(els);
       for (int l = 0; l < nsubsteps; ++l) // drift-and-diffusion
       {
         random_th.generate_normal(&delta[0][0], nels3);

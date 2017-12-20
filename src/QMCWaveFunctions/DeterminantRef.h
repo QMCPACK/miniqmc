@@ -21,7 +21,8 @@
 #define QMCPLUSPLUS_DETERMINANTREF_H
 #include "Numerics/OhmmsPETE/OhmmsMatrix.h"
 #include "Numerics/DeterminantOperators.h"
-#include "QMCWaveFunctions/WaveFunction.h"
+#include "Particle/ParticleSet.h"
+#include "QMCWaveFunctions/WaveFunctionComponentBase.h"
 
 
 namespace miniqmcreference
@@ -153,7 +154,9 @@ void checkDiff(const MT1 &a, const MT2 &b, const std::string &tag)
 
 struct DiracDeterminantRef : public qmcplusplus::WaveFunctionComponentBase
 {
-  DiracDeterminantRef(int nels, qmcplusplus::RandomGenerator<double> RNG)
+  using ParticleSet = qmcplusplus::ParticleSet;
+
+  DiracDeterminantRef(int nels, qmcplusplus::RandomGenerator<RealType> RNG)
   {
     psiMinv.resize(nels, nels);
     psiV.resize(nels);

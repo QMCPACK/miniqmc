@@ -23,10 +23,13 @@
 #ifndef QMCPLUSPLUS_WAVEFUNCTIONS_H
 #define QMCPLUSPLUS_WAVEFUNCTIONS_H
 #include <Utilities/Configuration.h>
+#include <Utilities/RandomGenerator.h>
 #include <Particle/DistanceTable.h>
 #include <QMCWaveFunctions/Jastrow/BsplineFunctor.h>
 #include <QMCWaveFunctions/Jastrow/TwoBodyJastrowRef.h>
 #include <QMCWaveFunctions/Jastrow/TwoBodyJastrow.h>
+#include <QMCWaveFunctions/Determinant.h>
+#include <QMCWaveFunctions/DeterminantRef.h>
 
 namespace qmcplusplus
 {
@@ -56,11 +59,14 @@ struct WaveFunctionBase
 struct WaveFunction : public WaveFunctionBase
 {
   using J2OrbType = TwoBodyJastrow<BsplineFunctor<valT>>;
+  using DetType   = DiracDeterminant;
 
   bool FirstTime;
   J2OrbType *J2;
+  DetType *Det;
 
-  WaveFunction(ParticleSet &ions, ParticleSet &els);
+  WaveFunction(ParticleSet &ions, ParticleSet &els,
+               RandomGenerator<double> RNG);
   ~WaveFunction();
   void evaluateLog(ParticleSet &P);
   posT evalGrad(ParticleSet &P, int iat);
@@ -82,11 +88,15 @@ struct WaveFunctionRef : public qmcplusplus::WaveFunctionBase
 {
 
   using J2OrbType = TwoBodyJastrowRef<BsplineFunctor<valT>>;
+  using DetType   = DiracDeterminantRef;
+
   bool FirstTime;
   J2OrbType *J2;
+  DetType *Det;
   PooledData<valT> Buffer;
 
-  WaveFunctionRef(ParticleSet &ions, ParticleSet &els);
+  WaveFunctionRef(ParticleSet &ions, ParticleSet &els,
+                  RandomGenerator<double> RNG);
   ~WaveFunctionRef();
   void evaluateLog(ParticleSet &P);
   posT evalGrad(ParticleSet &P, int iat);
