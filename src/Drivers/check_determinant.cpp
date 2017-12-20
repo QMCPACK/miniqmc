@@ -34,7 +34,20 @@ using namespace qmcplusplus;
 
 void print_help()
 {
-  // FIXME
+  //clang-format off
+  cout << "usage:" << '\n';
+  cout << "  check_determinant [-hvV] [-g n0 n1 n2] [-i steps]  [-s seed]"
+       << '\n';
+  cout << "options:"                                                    << '\n';
+  cout << "  -g  set the 3D tiling.             default: 1 1 1"         << '\n';
+  cout << "  -h  print help and exit"                                   << '\n';
+  cout << "  -i  number of Monte Carlo steps.   default: 100"           << '\n';
+  cout << "  -s  set the random seed.           default: 11"            << '\n';
+  cout << "  -v  verbose output"                                        << '\n';
+  cout << "  -V  print version information"                             << '\n';
+  //clang-format on
+
+  exit(1); // print help and exit
 }
 
 int main(int argc, char **argv)
@@ -66,22 +79,34 @@ int main(int argc, char **argv)
   bool verbose = false;
 
   int opt;
-  while ((opt = getopt(argc, argv, "hvVs:i:")) != -1)
+  while (optind < argc)
   {
-    switch (opt)
+    if ((opt = getopt(argc, argv, "hvVg:s:i:")) != -1)
     {
-    case 'h': print_help(); return 1;
-    case 'i': // number of MC steps
-      nsteps = atoi(optarg);
-      break;
-    case 's': // the number of sub steps for drift/diffusion
-      nsubsteps = atoi(optarg);
-      break;
-    case 'v': verbose = true; break;
-    case 'V':
-      print_version(true);
-      return 1;
-      break;
+      switch (opt)
+      {
+      case 'g': // tiling1 tiling2 tiling3
+        sscanf(optarg, "%d %d %d", &na, &nb, &nc);
+        optind += 2;
+        break;
+      case 'h': print_help(); return 1;
+      case 'i': // number of MC steps
+        nsteps = atoi(optarg);
+        break;
+      case 's': // the number of sub steps for drift/diffusion
+        nsubsteps = atoi(optarg);
+        break;
+      case 'v': verbose = true; break;
+      case 'V':
+        print_version(true);
+        return 1;
+        break;
+      }
+    }
+    else // disallow non-option arguments
+    {
+      cerr << "Non-option arguments not allowed" << endl;
+      print_help();
     }
   }
 
@@ -99,7 +124,7 @@ int main(int argc, char **argv)
 
   double accumulated_error = 0.0;
 
-// #pragma omp parallel reduction(+:accumulated_error)
+#pragma omp parallel reduction(+:accumulated_error)
   {
     ParticleSet ions, els;
     ions.setName("ion");

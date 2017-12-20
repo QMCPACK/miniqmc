@@ -100,6 +100,7 @@ int main(int argc, char **argv)
         break;
       case 'g': // tiling1 tiling2 tiling3
         sscanf(optarg, "%d %d %d", &na, &nb, &nc);
+        optind += 2;
         break;
       case 'h': print_help(); break;
       case 'i': // number of MC steps
