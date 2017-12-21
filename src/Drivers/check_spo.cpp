@@ -38,8 +38,6 @@ int main(int argc, char **argv)
   // clang-format off
   typedef QMCTraits::RealType           RealType;
   typedef ParticleSet::ParticlePos_t    ParticlePos_t;
-  typedef ParticleSet::ParticleLayout_t LatticeType;
-  typedef ParticleSet::TensorType       TensorType;
   typedef ParticleSet::PosType          PosType;
   // clang-format on
 
@@ -51,7 +49,6 @@ int main(int argc, char **argv)
   int nb      = 1;
   int nc      = 1;
   int nsteps  = 100;
-  int iseed   = 11;
   int nx = 37, ny = 37, nz = 37;
   // thread blocking
   // int team_size=1; //default is 1
@@ -60,9 +57,8 @@ int main(int argc, char **argv)
 
   bool verbose = false;
 
-  char *g_opt_arg;
   int opt;
-  while ((opt = getopt(argc, argv, "hvVs:g:i:b:c:a:")) != -1)
+  while ((opt = getopt(argc, argv, "hvVg:i:b:c:a:")) != -1)
   {
     switch (opt)
     {
@@ -72,9 +68,6 @@ int main(int argc, char **argv)
       break;
     case 'i': // number of MC steps
       nsteps = atoi(optarg);
-      break;
-    case 's': // random seed
-      iseed = atoi(optarg);
       break;
     case 'c': // number of members per team
       team_size = atoi(optarg);
@@ -99,8 +92,6 @@ int main(int argc, char **argv)
     OhmmsInfo::Warn->turnoff();
   }
 
-  int nptcl             = 0;
-  int nknots_copy       = 0;
   OHMMS_PRECISION ratio = 0.0;
 
   using spo_type =
@@ -117,7 +108,6 @@ int main(int argc, char **argv)
     ParticleSet ions;
     OHMMS_PRECISION scale = 1.0;
     lattice_b             = tile_cell(ions, tmat, scale);
-    const int nions       = ions.getTotalNum();
     const int norb        = count_electrons(ions, 1) / 2;
     tileSize              = (tileSize > 0) ? tileSize : norb;
     nTiles                = norb / tileSize;
@@ -162,9 +152,6 @@ int main(int argc, char **argv)
     const int nels  = count_electrons(ions, 1);
     const int nels3 = 3 * nels;
 
-#pragma omp master
-    nptcl = nels;
-
     { // create up/down electrons
       els.Lattice.BoxBConds = 1;
       els.Lattice.set(ions.Lattice);
@@ -193,13 +180,9 @@ int main(int argc, char **argv)
     // this is the cutoff from the non-local PP
     const RealType Rmax(1.7);
     const int nknots(ecp.size());
-    const RealType tau = 2.0;
 
     ParticlePos_t delta(nels);
     ParticlePos_t rOnSphere(nknots);
-
-#pragma omp master
-    nknots_copy = nknots;
 
     RealType sqrttau = 2.0;
     RealType accept  = 0.5;

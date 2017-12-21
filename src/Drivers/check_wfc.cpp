@@ -52,9 +52,7 @@ void print_help()
   cout << "      one of: J1, J2, J3.            default: J2"            << '\n';
   cout << "  -g  set the 3D tiling.             default: 1 1 1"         << '\n';
   cout << "  -h  print help and exit"                                   << '\n';
-  cout << "  -i  number of Monte Carlo steps.   default: 100"           << '\n';
   cout << "  -r  set the Rmax.                  default: 1.7"           << '\n';
-  cout << "  -s  set the random seed.           default: 11"            << '\n';
   cout << "  -v  verbose output"                                        << '\n';
   cout << "  -V  print version information"                             << '\n';
   //clang-format on
@@ -70,8 +68,6 @@ int main(int argc, char **argv)
   // clang-format off
   typedef QMCTraits::RealType           RealType;
   typedef ParticleSet::ParticlePos_t    ParticlePos_t;
-  typedef ParticleSet::ParticleLayout_t LatticeType;
-  typedef ParticleSet::TensorType       TensorType;
   typedef ParticleSet::PosType          PosType;
   // clang-format on
 
@@ -80,18 +76,15 @@ int main(int argc, char **argv)
   int na     = 1;
   int nb     = 1;
   int nc     = 1;
-  int nsteps = 100;
-  int iseed  = 11;
   RealType Rmax(1.7);
   string wfc_name("J2");
 
   bool verbose = false;
 
-  char *g_opt_arg;
   int opt;
   while(optind < argc)
   {
-    if ((opt = getopt(argc, argv, "hvVs:g:i:r:f:")) != -1)
+    if ((opt = getopt(argc, argv, "hvVg:r:f:")) != -1)
     {
       switch (opt)
       {
@@ -103,14 +96,8 @@ int main(int argc, char **argv)
         optind += 2;
         break;
       case 'h': print_help(); break;
-      case 'i': // number of MC steps
-        nsteps = atoi(optarg);
-        break;
       case 'r': // rmax
         Rmax = atof(optarg);
-        break;
-      case 's': // random seed
-        iseed = atoi(optarg);
         break;
       case 'v': verbose = true; break;
       case 'V':
@@ -146,9 +133,6 @@ int main(int argc, char **argv)
     OhmmsInfo::Warn->turnoff();
   }
 
-  double t0 = 0.0, t1 = 0.0;
-  OHMMS_PRECISION ratio = 0.0;
-
   // list of accumulated errors
   double evaluateLog_v_err = 0.0;
   double evaluateLog_g_err = 0.0;
@@ -163,8 +147,7 @@ int main(int argc, char **argv)
   PrimeNumberSet<uint32_t> myPrimes;
 
   // clang-format off
-  #pragma omp parallel reduction(+:t0,ratio) \
-   reduction(+:evaluateLog_v_err,evaluateLog_g_err,evaluateLog_l_err,evalGrad_g_err) \
+  #pragma omp parallel reduction(+:evaluateLog_v_err,evaluateLog_g_err,evaluateLog_l_err,evalGrad_g_err) \
    reduction(+:ratioGrad_r_err,ratioGrad_g_err,evaluateGL_g_err,evaluateGL_l_err,ratio_err)
   // clang-format on
   {
@@ -173,7 +156,6 @@ int main(int argc, char **argv)
     els.setName("e");
     OHMMS_PRECISION scale = 1.0;
 
-    int np = omp_get_num_threads();
     int ip = omp_get_thread_num();
 
     // create generator within the thread
@@ -203,15 +185,14 @@ int main(int argc, char **argv)
     els_ref.RSoA = els_ref.R;
 
     // create tables
-    DistanceTableData *d_ee     = DistanceTable::add(els, DT_SOA);
-    DistanceTableData *d_ee_ref = DistanceTable::add(els_ref, DT_SOA);
-    DistanceTableData *d_ie     = DistanceTable::add(ions, els_ref, DT_SOA);
+    DistanceTable::add(els, DT_SOA);
+    DistanceTable::add(els_ref, DT_SOA);
+    DistanceTableData *d_ie = DistanceTable::add(ions, els_ref, DT_SOA);
     d_ie->setRmax(Rmax);
 
     ParticlePos_t delta(nels);
 
     RealType sqrttau = 2.0;
-    RealType accept  = 0.5;
 
     vector<RealType> ur(nels);
     random_th.generate_uniform(ur.data(), nels);
@@ -324,7 +305,7 @@ int main(int argc, char **argv)
         g_eval += sqrt(dot(grad_ref, grad_ref));
 
         PosType dr    = sqrttau * delta[iel];
-        bool good_soa = els.makeMoveAndCheck(iel, dr);
+        els.makeMoveAndCheck(iel, dr);
         bool good_ref = els_ref.makeMoveAndCheck(iel, dr);
 
         if (!good_ref) continue;

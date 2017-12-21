@@ -29,7 +29,6 @@ WaveFunctionRef::WaveFunctionRef(ParticleSet &ions, ParticleSet &els,
 
   ions.RSoA = ions.R;
   els.RSoA  = els.R;
-  int ip = omp_get_thread_num();
 
   // distance tables
   d_ee = DistanceTable::add(els, DT_SOA);

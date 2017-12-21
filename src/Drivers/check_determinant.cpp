@@ -61,10 +61,6 @@ int main(int argc, char **argv)
   typedef ParticleSet::PosType          PosType;
   // clang-format on
 
-  // use the global generator
-
-  // bool ionode=(mycomm->rank() == 0);
-  bool ionode   = 1;
   int na        = 1;
   int nb        = 1;
   int nc        = 1;
@@ -72,7 +68,6 @@ int main(int argc, char **argv)
   int iseed     = 11;
   int nsubsteps = 1;
   int np        = omp_get_max_threads();
-  // Set cutoff for NLPP use.
 
   PrimeNumberSet<uint32_t> myPrimes;
 

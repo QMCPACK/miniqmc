@@ -118,8 +118,6 @@ int main(int argc, char **argv)
   // clang-format off
   typedef QMCTraits::RealType           RealType;
   typedef ParticleSet::ParticlePos_t    ParticlePos_t;
-  typedef ParticleSet::ParticleLayout_t LatticeType;
-  typedef ParticleSet::TensorType       TensorType;
   typedef ParticleSet::PosType          PosType;
   // clang-format on
 
@@ -146,7 +144,6 @@ int main(int argc, char **argv)
 
   bool verbose = false;
 
-  char *g_opt_arg;
   int opt;
   while ((opt = getopt(argc, argv, "hdvVs:g:i:b:c:a:r:")) != -1)
   {
@@ -158,6 +155,7 @@ int main(int argc, char **argv)
       break;
     case 'g': // tiling1 tiling2 tiling3
       sscanf(optarg, "%d %d %d", &na, &nb, &nc);
+      optind += 2;
       break;
     case 'i': // number of MC steps
       nsteps = atoi(optarg);
@@ -198,9 +196,6 @@ int main(int argc, char **argv)
 
   int nthreads = omp_get_max_threads();
 
-  int nknots_copy       = 0;
-  OHMMS_PRECISION ratio = 0.0;
-
   using spo_type = einspline_spo<OHMMS_PRECISION>;
   spo_type spo_main;
   int nTiles = 1;
@@ -213,10 +208,8 @@ int main(int argc, char **argv)
     ParticleSet ions;
     OHMMS_PRECISION scale = 1.0;
     lattice_b             = tile_cell(ions, tmat, scale);
-    const int nions       = ions.getTotalNum();
     const int nels        = count_electrons(ions, 1);
     const int norb        = nels / 2;
-    const int nels3       = 3 * nels;
     tileSize              = (tileSize > 0) ? tileSize : norb;
     nTiles                = norb / tileSize;
 
@@ -252,9 +245,6 @@ int main(int argc, char **argv)
            << "reference implementation " << endl;
   }
 
-  double nspheremoves = 0;
-  double dNumVGHCalls = 0;
-
   Timers[Timer_Total]->start();
 #pragma omp parallel
   {
@@ -262,10 +252,8 @@ int main(int argc, char **argv)
     ions.setName("ion");
     els.setName("e");
 
-    const int np = omp_get_num_threads();
     const int ip = omp_get_thread_num();
 
-    const int team_id   = ip / team_size;
     const int member_id = ip % team_size;
 
     // create spo per thread
@@ -325,16 +313,11 @@ int main(int argc, char **argv)
     ParticlePos_t delta(nels);
     ParticlePos_t rOnSphere(nknots);
 
-#pragma omp master
-    nknots_copy = nknots;
-
     RealType sqrttau = std::sqrt(tau);
     RealType accept  = 0.5;
 
     aligned_vector<RealType> ur(nels);
     random_th.generate_uniform(ur.data(), nels);
-
-    constexpr RealType czero(0);
 
     els.update();
     wavefunction->evaluateLog(els);
@@ -372,7 +355,7 @@ int main(int argc, char **argv)
 
           Timers[Timer_Wavefunction]->start();
           PosType grad_new;
-          RealType j2_ratio = wavefunction->ratioGrad(els, iel, grad_new);
+          wavefunction->ratioGrad(els, iel, grad_new);
           Timers[Timer_Wavefunction]->stop();
 
           Timers[Timer_SPO]->start();
