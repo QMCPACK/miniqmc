@@ -70,7 +70,6 @@ Tensor<T, 3> tile_cell(ParticleSet &ions, Tensor<int, 3> &tmat, T scale)
   ions.R[31] = {0.75, 0.75, 0.75};
 
   SpeciesSet &species(ions.getSpeciesSet());
-  int icharge = species.addAttribute("charge"); // charge_tag);
   species.addSpecies("O");
   species.addSpecies("Ni");
 
@@ -172,7 +171,6 @@ template <typename JeeIType> void buildJeeI(JeeIType &JeeI, double rcut)
 {
   using Func     = typename JeeIType::FuncType;
   using RealType = typename Func::real_type;
-  const int npts = 10;
   std::string optimize("no");
   rcut = std::min(rcut, 4.8261684030);
 

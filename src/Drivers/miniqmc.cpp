@@ -99,15 +99,22 @@ TimerNameList_t<MiniQMCTimers> MiniQMCTimerNames = {
 
 void print_help()
 {
-  printf("miniqmc - QMCPACK miniapp\n");
-  printf("\n");
-  printf("Options:\n");
-  printf("-g \"n0 n1 n2\"     Tiling in x, y, and z directions (default: \"4 4 "
-         "1\")\n");
-  printf("-i                Number of MC steps (default: 100)\n");
-  printf("-s                Number of substeps (default: 1)\n");
-  printf("-v                Verbose output\n");
-  printf("-V                Print version information and exit\n");
+  //clang-format off
+  cout << "usage:" << '\n';
+  cout << "  miniqmc   [-hvV] [-g \"n0 n1 n2\"] [-n steps]"             << '\n';
+  cout << "            [-N substeps] [-r rmax] [-s seed]"               << '\n';
+  cout << "options:"                                                    << '\n';
+  cout << "  -g  set the 3D tiling.             default: 1 1 1"         << '\n';
+  cout << "  -h  print help and exit"                                   << '\n';
+  cout << "  -n  number of MC steps             default: 100"           << '\n';
+  cout << "  -N  number of MC substeps          default: 1"             << '\n';
+  cout << "  -r  set the Rmax.                  default: 1.7"           << '\n';
+  cout << "  -s  set the random seed.           default: 11"            << '\n';
+  cout << "  -v  verbose output"                                        << '\n';
+  cout << "  -V  print version information and exit"                    << '\n';
+  //clang-format on
+
+  exit(1); // print help and exit
 }
 
 int main(int argc, char **argv)
@@ -118,8 +125,6 @@ int main(int argc, char **argv)
   // clang-format off
   typedef QMCTraits::RealType           RealType;
   typedef ParticleSet::ParticlePos_t    ParticlePos_t;
-  typedef ParticleSet::ParticleLayout_t LatticeType;
-  typedef ParticleSet::TensorType       TensorType;
   typedef ParticleSet::PosType          PosType;
   // clang-format on
 
@@ -146,37 +151,46 @@ int main(int argc, char **argv)
 
   bool verbose = false;
 
-  char *g_opt_arg;
   int opt;
-  while ((opt = getopt(argc, argv, "hdvVs:g:i:b:c:a:r:")) != -1)
+  while(optind < argc)
   {
-    switch (opt)
+    if ((opt = getopt(argc, argv, "hvVa:c:g:n:N:r:s:")) != -1)
     {
-    case 'h': print_help(); return 1;
-    case 'd': // down to reference implemenation
-      useRef = true;
-      break;
-    case 'g': // tiling1 tiling2 tiling3
-      sscanf(optarg, "%d %d %d", &na, &nb, &nc);
-      break;
-    case 'i': // number of MC steps
-      nsteps = atoi(optarg);
-      break;
-    case 's': // the number of sub steps for drift/diffusion
-      nsubsteps = atoi(optarg);
-      break;
-    case 'c': // number of members per team
-      team_size = atoi(optarg);
-      break;
-    case 'r': // rmax
-      Rmax = atof(optarg);
-      break;
-    case 'a': tileSize = atoi(optarg); break;
-    case 'v': verbose = true; break;
-    case 'V':
-      print_version(true);
-      return 1;
-      break;
+      switch (opt)
+      {
+      case 'a': tileSize = atoi(optarg); break;
+      case 'c': // number of members per team
+        team_size = atoi(optarg);
+        break;
+      case 'g': // tiling1 tiling2 tiling3
+        sscanf(optarg, "%d %d %d", &na, &nb, &nc);
+        break;
+      case 'h': print_help(); break;
+      case 'n':
+        nsteps = atoi(optarg);
+        break;
+      case 'N':
+        nsubsteps = atoi(optarg);
+        break;
+      case 'r': // rmax
+        Rmax = atof(optarg);
+        break;
+      case 's':
+        iseed = atoi(optarg);
+        break;
+      case 'v': verbose = true; break;
+      case 'V':
+        print_version(true);
+        return 1;
+        break;
+      default:
+        print_help();
+      }
+    }
+    else // disallow non-option arguments
+    {
+      cerr << "Non-option arguments not allowed" << endl;
+      print_help();
     }
   }
 
@@ -198,9 +212,6 @@ int main(int argc, char **argv)
 
   int nthreads = omp_get_max_threads();
 
-  int nknots_copy       = 0;
-  OHMMS_PRECISION ratio = 0.0;
-
   using spo_type = einspline_spo<OHMMS_PRECISION>;
   spo_type spo_main;
   int nTiles = 1;
@@ -213,10 +224,8 @@ int main(int argc, char **argv)
     ParticleSet ions;
     OHMMS_PRECISION scale = 1.0;
     lattice_b             = tile_cell(ions, tmat, scale);
-    const int nions       = ions.getTotalNum();
     const int nels        = count_electrons(ions, 1);
     const int norb        = nels / 2;
-    const int nels3       = 3 * nels;
     tileSize              = (tileSize > 0) ? tileSize : norb;
     nTiles                = norb / tileSize;
 
@@ -252,9 +261,6 @@ int main(int argc, char **argv)
            << "reference implementation " << endl;
   }
 
-  double nspheremoves = 0;
-  double dNumVGHCalls = 0;
-
   Timers[Timer_Total]->start();
 #pragma omp parallel
   {
@@ -262,10 +268,8 @@ int main(int argc, char **argv)
     ions.setName("ion");
     els.setName("e");
 
-    const int np = omp_get_num_threads();
     const int ip = omp_get_thread_num();
 
-    const int team_id   = ip / team_size;
     const int member_id = ip % team_size;
 
     // create spo per thread
@@ -325,16 +329,11 @@ int main(int argc, char **argv)
     ParticlePos_t delta(nels);
     ParticlePos_t rOnSphere(nknots);
 
-#pragma omp master
-    nknots_copy = nknots;
-
     RealType sqrttau = std::sqrt(tau);
     RealType accept  = 0.5;
 
     aligned_vector<RealType> ur(nels);
     random_th.generate_uniform(ur.data(), nels);
-
-    constexpr RealType czero(0);
 
     els.update();
     wavefunction->evaluateLog(els);
@@ -372,7 +371,7 @@ int main(int argc, char **argv)
 
           Timers[Timer_Wavefunction]->start();
           PosType grad_new;
-          RealType j2_ratio = wavefunction->ratioGrad(els, iel, grad_new);
+          wavefunction->ratioGrad(els, iel, grad_new);
           Timers[Timer_Wavefunction]->stop();
 
           Timers[Timer_SPO]->start();
