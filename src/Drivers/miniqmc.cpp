@@ -99,15 +99,22 @@ TimerNameList_t<MiniQMCTimers> MiniQMCTimerNames = {
 
 void print_help()
 {
-  printf("miniqmc - QMCPACK miniapp\n");
-  printf("\n");
-  printf("Options:\n");
-  printf("-g \"n0 n1 n2\"     Tiling in x, y, and z directions (default: \"4 4 "
-         "1\")\n");
-  printf("-i                Number of MC steps (default: 100)\n");
-  printf("-s                Number of substeps (default: 1)\n");
-  printf("-v                Verbose output\n");
-  printf("-V                Print version information and exit\n");
+  //clang-format off
+  cout << "usage:" << '\n';
+  cout << "  miniqmc   [-hvV] [-g \"n0 n1 n2\"] [-n steps]"             << '\n';
+  cout << "            [-N substeps] [-r rmax] [-s seed]"               << '\n';
+  cout << "options:"                                                    << '\n';
+  cout << "  -g  set the 3D tiling.             default: 1 1 1"         << '\n';
+  cout << "  -h  print help and exit"                                   << '\n';
+  cout << "  -n  number of MC steps             default: 100"           << '\n';
+  cout << "  -N  number of MC substeps          default: 1"             << '\n';
+  cout << "  -r  set the Rmax.                  default: 1.7"           << '\n';
+  cout << "  -s  set the random seed.           default: 11"            << '\n';
+  cout << "  -v  verbose output"                                        << '\n';
+  cout << "  -V  print version information and exit"                    << '\n';
+  //clang-format on
+
+  exit(1); // print help and exit
 }
 
 int main(int argc, char **argv)
@@ -145,36 +152,45 @@ int main(int argc, char **argv)
   bool verbose = false;
 
   int opt;
-  while ((opt = getopt(argc, argv, "hdvVs:g:i:b:c:a:r:")) != -1)
+  while(optind < argc)
   {
-    switch (opt)
+    if ((opt = getopt(argc, argv, "hvVa:c:g:n:N:r:s:")) != -1)
     {
-    case 'h': print_help(); return 1;
-    case 'd': // down to reference implemenation
-      useRef = true;
-      break;
-    case 'g': // tiling1 tiling2 tiling3
-      sscanf(optarg, "%d %d %d", &na, &nb, &nc);
-      optind += 2;
-      break;
-    case 'i': // number of MC steps
-      nsteps = atoi(optarg);
-      break;
-    case 's': // the number of sub steps for drift/diffusion
-      nsubsteps = atoi(optarg);
-      break;
-    case 'c': // number of members per team
-      team_size = atoi(optarg);
-      break;
-    case 'r': // rmax
-      Rmax = atof(optarg);
-      break;
-    case 'a': tileSize = atoi(optarg); break;
-    case 'v': verbose = true; break;
-    case 'V':
-      print_version(true);
-      return 1;
-      break;
+      switch (opt)
+      {
+      case 'a': tileSize = atoi(optarg); break;
+      case 'c': // number of members per team
+        team_size = atoi(optarg);
+        break;
+      case 'g': // tiling1 tiling2 tiling3
+        sscanf(optarg, "%d %d %d", &na, &nb, &nc);
+        break;
+      case 'h': print_help(); break;
+      case 'n':
+        nsteps = atoi(optarg);
+        break;
+      case 'N':
+        nsubsteps = atoi(optarg);
+        break;
+      case 'r': // rmax
+        Rmax = atof(optarg);
+        break;
+      case 's':
+        iseed = atoi(optarg);
+        break;
+      case 'v': verbose = true; break;
+      case 'V':
+        print_version(true);
+        return 1;
+        break;
+      default:
+        print_help();
+      }
+    }
+    else // disallow non-option arguments
+    {
+      cerr << "Non-option arguments not allowed" << endl;
+      print_help();
     }
   }
 

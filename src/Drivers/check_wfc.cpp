@@ -45,16 +45,17 @@ void print_help()
 {
   //clang-format off
   cout << "usage:" << '\n';
-  cout << "  check_wfc [-hvV] [-f wfc_component] [-g n0 n1 n2]"         << '\n';
-  cout << "            [-i steps] [-r rmax] [-s seed]"                  << '\n';
+  cout << "  check_wfc [-hvV] [-f wfc_component] [-g \"n0 n1 n2\"]"     << '\n';
+  cout << "            [-r rmax] [-s seed]"                             << '\n';
   cout << "options:"                                                    << '\n';
   cout << "  -f  specify wavefunction component to check"               << '\n';
   cout << "      one of: J1, J2, J3.            default: J2"            << '\n';
   cout << "  -g  set the 3D tiling.             default: 1 1 1"         << '\n';
   cout << "  -h  print help and exit"                                   << '\n';
   cout << "  -r  set the Rmax.                  default: 1.7"           << '\n';
+  cout << "  -s  set the random seed.           default: 11"            << '\n';
   cout << "  -v  verbose output"                                        << '\n';
-  cout << "  -V  print version information"                             << '\n';
+  cout << "  -V  print version information and exit"                    << '\n';
   //clang-format on
 
   exit(1); // print help and exit
@@ -76,6 +77,7 @@ int main(int argc, char **argv)
   int na     = 1;
   int nb     = 1;
   int nc     = 1;
+  int iseed   = 11;
   RealType Rmax(1.7);
   string wfc_name("J2");
 
@@ -84,7 +86,7 @@ int main(int argc, char **argv)
   int opt;
   while(optind < argc)
   {
-    if ((opt = getopt(argc, argv, "hvVg:r:f:")) != -1)
+    if ((opt = getopt(argc, argv, "hvVf:g:r:s:")) != -1)
     {
       switch (opt)
       {
@@ -93,11 +95,13 @@ int main(int argc, char **argv)
         break;
       case 'g': // tiling1 tiling2 tiling3
         sscanf(optarg, "%d %d %d", &na, &nb, &nc);
-        optind += 2;
         break;
       case 'h': print_help(); break;
       case 'r': // rmax
         Rmax = atof(optarg);
+        break;
+      case 's':
+        iseed = atoi(optarg);
         break;
       case 'v': verbose = true; break;
       case 'V':
@@ -124,6 +128,7 @@ int main(int argc, char **argv)
     print_help();
   }
 
+  Random.init(0, 1, iseed);
   Tensor<int, 3> tmat(na, 0, 0, 0, nb, 0, 0, 0, nc);
 
   // turn off output
@@ -159,6 +164,7 @@ int main(int argc, char **argv)
     int ip = omp_get_thread_num();
 
     // create generator within the thread
+    Random.init(0, 1, iseed);
     RandomGenerator<RealType> random_th(myPrimes[ip]);
 
     tile_cell(ions, tmat, scale);
@@ -248,7 +254,6 @@ int main(int argc, char **argv)
     els.update();
     els_ref.update();
 
-    // for(int mc=0; mc<nsteps; ++mc)
     {
       els.G = czero;
       els.L = czero;

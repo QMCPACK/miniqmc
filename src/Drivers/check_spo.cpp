@@ -30,6 +30,25 @@
 using namespace std;
 using namespace qmcplusplus;
 
+void print_help()
+{
+  //clang-format off
+  cout << "usage:" << '\n';
+  cout << "  check_spo [-hvV] [-g \"n0 n1 n2\"] [-n steps]"             << '\n';
+  cout << "             [-r rmax] [-s seed]"                            << '\n';
+  cout << "options:"                                                    << '\n';
+  cout << "  -g  set the 3D tiling.             default: 1 1 1"         << '\n';
+  cout << "  -h  print help and exit"                                   << '\n';
+  cout << "  -n  number of MC steps             default: 100"           << '\n';
+  cout << "  -r  set the Rmax.                  default: 1.7"           << '\n';
+  cout << "  -s  set the random seed.           default: 11"            << '\n';
+  cout << "  -v  verbose output"                                        << '\n';
+  cout << "  -V  print version information and exit"                    << '\n';
+  //clang-format on
+
+  exit(1); // print help and exit
+}
+
 int main(int argc, char **argv)
 {
 
@@ -49,6 +68,8 @@ int main(int argc, char **argv)
   int nb      = 1;
   int nc      = 1;
   int nsteps  = 100;
+  int iseed   = 11;
+  RealType Rmax(1.7);
   int nx = 37, ny = 37, nz = 37;
   // thread blocking
   // int team_size=1; //default is 1
@@ -58,31 +79,48 @@ int main(int argc, char **argv)
   bool verbose = false;
 
   int opt;
-  while ((opt = getopt(argc, argv, "hvVg:i:b:c:a:")) != -1)
+  while(optind < argc)
   {
-    switch (opt)
+    if ((opt = getopt(argc, argv, "hvVa:c:f:g:n:r:s:")) != -1)
     {
-    case 'h': printf("[-g \"n0 n1 n2\"]\n"); return 1;
-    case 'g': // tiling1 tiling2 tiling3
-      sscanf(optarg, "%d %d %d", &na, &nb, &nc);
-      break;
-    case 'i': // number of MC steps
-      nsteps = atoi(optarg);
-      break;
-    case 'c': // number of members per team
-      team_size = atoi(optarg);
-      break;
-    case 'a': tileSize = atoi(optarg); break;
-    case 'v': verbose  = true; break;
-    case 'V':
-      print_version(true);
-      return 1;
-      break;
+      switch (opt)
+      {
+      case 'a': tileSize = atoi(optarg); break;
+      case 'c': // number of members per team
+        team_size = atoi(optarg);
+        break;
+      case 'g': // tiling1 tiling2 tiling3
+        sscanf(optarg, "%d %d %d", &na, &nb, &nc);
+        break;
+      case 'h': print_help(); break;
+      case 'n':
+        nsteps = atoi(optarg);
+        break;
+      case 'r': // rmax
+        Rmax = atof(optarg);
+        break;
+      case 's':
+        iseed = atoi(optarg);
+        break;
+      case 'v': verbose = true; break;
+      case 'V':
+        print_version(true);
+        return 1;
+        break;
+      default:
+        print_help();
+      }
+    }
+    else // disallow non-option arguments
+    {
+      cerr << "Non-option arguments not allowed" << endl;
+      print_help();
     }
   }
 
   print_version(verbose);
 
+  Random.init(0, 1, iseed);
   Tensor<int, 3> tmat(na, 0, 0, 0, nb, 0, 0, 0, nc);
 
   // turn off output
@@ -178,7 +216,6 @@ int main(int argc, char **argv)
     // if(team_size>1 && team_size>=nTiles ) spo.set_range(team_size,ip%team_size);
 
     // this is the cutoff from the non-local PP
-    const RealType Rmax(1.7);
     const int nknots(ecp.size());
 
     ParticlePos_t delta(nels);
