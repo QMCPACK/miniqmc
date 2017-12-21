@@ -25,7 +25,6 @@
 #include "Particle/DistanceTable.h"
 #include "Particle/DistanceTableData.h"
 #include "Particle/Lattice/ParticleBConds.h"
-#include "Particle/SymmetricDistanceTableData.h"
 #include "Particle/DistanceTableAA.h"
 
 namespace qmcplusplus
@@ -50,17 +49,9 @@ DistanceTableData *createDistanceTable(ParticleSet &s, int dt_type)
     << " useSoA =" << useSoA << "\n";
   if (sc == SUPERCELL_BULK)
   {
-    if (useSoA)
-    {
-      o << "  Using SoaDistanceTableAA<T,D,PPPG> of SoA layout " << PPPG
-        << std::endl;
-      dt = new DistanceTableAA<RealType, DIM, PPPG + SOA_OFFSET>(s);
-    }
-    else
-    {
-      o << "  Using SymmetricDTD<T,D,PPPG> " << PPPG << std::endl;
-      dt = new SymmetricDTD<RealType, DIM, PPPG>(s, s);
-    }
+    o << "  Using SoaDistanceTableAA<T,D,PPPG> of SoA layout " << PPPG
+      << std::endl;
+    dt = new DistanceTableAA<RealType, DIM, PPPG + SOA_OFFSET>(s);
     o << "\n    Setting Rmax = " << s.Lattice.SimulationCellRadius;
   }
   else
@@ -71,7 +62,7 @@ DistanceTableData *createDistanceTable(ParticleSet &s, int dt_type)
 
   // set dt properties
   dt->CellType = sc;
-  dt->DTType   = (useSoA) ? DT_SOA : DT_AOS;
+  dt->DTType   = DT_SOA;
   std::ostringstream p;
   p << s.getName() << "_" << s.getName();
   dt->Name = p.str(); // assign the table name
