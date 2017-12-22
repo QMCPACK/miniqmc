@@ -64,107 +64,6 @@ struct OTAssign< TinyVector<T1,D> , T2 , OP >
   }
 };
 
-//////////////////////////////////////////////////////////////////////
-// Specializations for TinyVectors with D=1.
-//////////////////////////////////////////////////////////////////////
-
-template<class T1, class T2, class OP>
-struct OTAssign< TinyVector<T1,1> , TinyVector<T2,1> , OP >
-{
-  inline static void
-  apply( TinyVector<T1,1>& lhs, const TinyVector<T2,1>& rhs, OP op)
-  {
-    op(lhs[0] , rhs[0] );
-  }
-};
-
-template<class T1, class T2, class OP>
-struct OTAssign< TinyVector<T1,1> , T2 , OP >
-{
-  inline static void
-  apply( TinyVector<T1,1>& lhs, const T2& rhs, OP op )
-  {
-    op(lhs[0] , rhs );
-  }
-};
-
-//////////////////////////////////////////////////////////////////////
-// Specializations for TinyVectors with D=2.
-//////////////////////////////////////////////////////////////////////
-
-template<class T1, class T2, class OP>
-struct OTAssign< TinyVector<T1,2> , TinyVector<T2,2> , OP >
-{
-  inline static void
-  apply( TinyVector<T1,2>& lhs, const TinyVector<T2,2>& rhs, OP op)
-  {
-    op(lhs[0] , rhs[0] );
-    op(lhs[1] , rhs[1] );
-  }
-};
-
-template<class T1, class T2, class OP>
-struct OTAssign< TinyVector<T1,2> , T2 , OP >
-{
-  inline static void
-  apply( TinyVector<T1,2>& lhs, const T2& rhs, OP op )
-  {
-    op(lhs[0] , rhs);
-    op(lhs[1] , rhs);
-  }
-};
-
-//////////////////////////////////////////////////////////////////////
-// Specializations for TinyVectors with D=3.
-//////////////////////////////////////////////////////////////////////
-
-template<class T1, class T2, class OP>
-struct OTAssign< TinyVector<T1,3> , TinyVector<T2,3> , OP >
-{
-  inline static void
-  apply( TinyVector<T1,3>& lhs, const TinyVector<T2,3>& rhs, OP op)
-  {
-    op(lhs[0] , rhs[0] );
-    op(lhs[1] , rhs[1] );
-    op(lhs[2] , rhs[2] );
-  }
-};
-
-template<class T1, class T2, class OP>
-struct OTAssign< TinyVector<T1,3> , TinyVector<std::complex<T2>,3> , OP >
-{
-  inline static void
-  apply( TinyVector<T1,3>& lhs, const TinyVector<std::complex<T2>,3>& rhs, OP op)
-  {
-    op(lhs[0] , rhs[0].real() );
-    op(lhs[1] , rhs[1].real() );
-    op(lhs[2] , rhs[2].real() );
-  }
-};
-
-template<class T1, class T2, class OP>
-struct OTAssign< TinyVector<std::complex<T1>,3> , TinyVector<std::complex<T2>,3> , OP >
-{
-  inline static void
-  apply( TinyVector<std::complex<T1>,3>& lhs, const TinyVector<std::complex<T2>,3>& rhs, OP op)
-  {
-    op(lhs[0] , rhs[0] );
-    op(lhs[1] , rhs[1] );
-    op(lhs[2] , rhs[2] );
-  }
-};
-
-template<class T1, class T2, class OP>
-struct OTAssign< TinyVector<T1,3> , T2 , OP >
-{
-  inline static void
-  apply( TinyVector<T1,3>& lhs, const T2& rhs, OP op )
-  {
-    op(lhs[0] , rhs );
-    op(lhs[1] , rhs );
-    op(lhs[2] , rhs );
-  }
-};
 
 ///////////////////////////////////////////////////////////////////////
 //
@@ -219,122 +118,6 @@ struct OTBinary< T1, TinyVector<T2,D> , OP >
   }
 };
 
-//////////////////////////////////////////////////////////////////////
-// Specializations of OTBinary for TinyVectors with D=1.
-//////////////////////////////////////////////////////////////////////
-
-template<class T1, class T2, class OP>
-struct OTBinary< TinyVector<T1,1> , TinyVector<T2,1> , OP >
-{
-  typedef typename BinaryReturn<T1,T2,OP>::Type_t Type_t;
-  inline static TinyVector<Type_t,1>
-  apply(const TinyVector<T1,1>& lhs, const TinyVector<T2,1>& rhs, OP op)
-  {
-    return TinyVector<Type_t,1>( op(lhs[0], rhs[0] ) );
-  }
-};
-
-template<class T1, class T2, class OP>
-struct OTBinary< TinyVector<T1,1> , T2 , OP >
-{
-  typedef typename BinaryReturn<T1,T2,OP>::Type_t Type_t;
-  inline static TinyVector<Type_t,1>
-  apply(const TinyVector<T1,1>& lhs, const T2& rhs, OP op)
-  {
-    return TinyVector<Type_t,1>( op(lhs[0], rhs ) );
-  }
-};
-
-template<class T1, class T2, class OP>
-struct OTBinary< T1, TinyVector<T2,1> , OP >
-{
-  typedef typename BinaryReturn<T1,T2,OP>::Type_t Type_t;
-  inline static TinyVector<Type_t,1>
-  apply(const T1& lhs, const TinyVector<T2,1>& rhs, OP op)
-  {
-    return TinyVector<Type_t,1>( op(lhs, rhs[0] ) );
-  }
-};
-
-//////////////////////////////////////////////////////////////////////
-// Specializations of OTBinary for TinyVectors with D=2.
-//////////////////////////////////////////////////////////////////////
-
-template<class T1, class T2, class OP>
-struct OTBinary< TinyVector<T1,2> , TinyVector<T2,2> , OP >
-{
-  typedef typename BinaryReturn<T1,T2,OP>::Type_t Type_t;
-  inline static TinyVector<Type_t,2>
-  apply(const TinyVector<T1,2>& lhs, const TinyVector<T2,2>& rhs, OP op)
-  {
-    return TinyVector<Type_t,2>( op(lhs[0], rhs[0]),op(lhs[1], rhs[1] ) );
-  }
-};
-
-template<class T1, class T2, class OP>
-struct OTBinary< TinyVector<T1,2> , T2 , OP >
-{
-  typedef typename BinaryReturn<T1,T2,OP>::Type_t Type_t;
-  inline static TinyVector<Type_t,2>
-  apply(const TinyVector<T1,2>& lhs, const T2& rhs, OP op)
-  {
-    return TinyVector<Type_t,2>( op(lhs[0], rhs ) ,op(lhs[1], rhs));
-  }
-};
-
-template<class T1, class T2, class OP>
-struct OTBinary< T1, TinyVector<T2,2> , OP >
-{
-  typedef typename BinaryReturn<T1,T2,OP>::Type_t Type_t;
-  inline static TinyVector<Type_t,2>
-  apply(const T1& lhs, const TinyVector<T2,2>& rhs, OP op)
-  {
-    return TinyVector<Type_t,2>( op(lhs, rhs[0] ) ,op(lhs, rhs[1] ) );
-  }
-};
-
-//////////////////////////////////////////////////////////////////////
-// Specializations of OTBinary for TinyVectors with D=3.
-//////////////////////////////////////////////////////////////////////
-
-template<class T1, class T2, class OP>
-struct OTBinary< TinyVector<T1,3> , TinyVector<T2,3> , OP >
-{
-  typedef typename BinaryReturn<T1,T2,OP>::Type_t Type_t;
-  inline static TinyVector<Type_t,3>
-  apply(const TinyVector<T1,3>& lhs, const TinyVector<T2,3>& rhs, OP op)
-  {
-    return TinyVector<Type_t,3>( op(lhs[0], rhs[0] ) ,
-                                 op(lhs[1], rhs[1] ) ,
-                                 op(lhs[2], rhs[2] ) );
-  }
-};
-
-template<class T1, class T2, class OP>
-struct OTBinary< TinyVector<T1,3> , T2 , OP >
-{
-  typedef typename BinaryReturn<T1,T2,OP>::Type_t Type_t;
-  inline static TinyVector<Type_t,3>
-  apply(const TinyVector<T1,3>& lhs, const T2& rhs, OP op)
-  {
-    return TinyVector<Type_t,3>( op(lhs[0], rhs ) ,
-                                 op(lhs[1], rhs ) ,
-                                 op(lhs[2], rhs ) );
-  }
-};
-
-template<class T1, class T2, class OP>
-struct OTBinary< T1, TinyVector<T2,3> , OP >
-{
-  typedef typename BinaryReturn<T1,T2,OP>::Type_t Type_t;
-  inline static TinyVector<Type_t,3>
-  apply(const T1& lhs, const TinyVector<T2,3>& rhs, OP op)
-  {
-    return TinyVector<Type_t,3>( op( lhs, rhs[0] ) ,
-                                 op( lhs, rhs[1] ) ,
-                                 op( lhs, rhs[2] ) );
-  }
-};
 
 //////////////////////////////////////////////////////////////////////
 //
@@ -353,50 +136,6 @@ struct OTDot< TinyVector<T1,D> , TinyVector<T2,D> >
     for (unsigned d=1; d<D; ++d)
       res += lhs[d]*rhs[d];
     return res;
-  }
-};
-
-template<class T1, class T2>
-struct OTDot< TinyVector<T1,1> , TinyVector<T2,1> >
-{
-  typedef typename BinaryReturn<T1,T2,OpMultiply>::Type_t Type_t;
-  inline static Type_t
-  apply(const TinyVector<T1,1>& lhs, const TinyVector<T2,1>& rhs)
-  {
-    return lhs[0]*rhs[0];
-  }
-};
-
-template<class T1, class T2>
-struct OTDot< TinyVector<T1,2> , TinyVector<T2,2> >
-{
-  typedef typename BinaryReturn<T1,T2,OpMultiply>::Type_t Type_t;
-  inline static Type_t
-  apply(const TinyVector<T1,2>& lhs, const TinyVector<T2,2>& rhs)
-  {
-    return lhs[0]*rhs[0] + lhs[1]*rhs[1];
-  }
-};
-
-template<class T1, class T2>
-struct OTDot< TinyVector<T1,3> , TinyVector<T2,3> >
-{
-  typedef typename BinaryReturn<T1,T2,OpMultiply>::Type_t Type_t;
-  inline static Type_t
-  apply(const TinyVector<T1,3>& lhs, const TinyVector<T2,3>& rhs)
-  {
-    return lhs[0]*rhs[0] + lhs[1]*rhs[1] + lhs[2]*rhs[2];
-  }
-};
-
-template<class T1, class T2>
-struct OTDot< TinyVector<T1,4> , TinyVector<T2,4> >
-{
-  typedef typename BinaryReturn<T1,T2,OpMultiply>::Type_t Type_t;
-  inline static Type_t
-  apply(const TinyVector<T1,4>& lhs, const TinyVector<T2,4>& rhs)
-  {
-    return lhs[0]*rhs[0] + lhs[1]*rhs[1] + lhs[2]*rhs[2] + lhs[3]*rhs[3];
   }
 };
 
@@ -432,11 +171,11 @@ struct OTDot< TinyVector<std::complex<T1>,3> , TinyVector<std::complex<T2>,3> >
   inline static Type_t
   apply(const TinyVector<std::complex<T1>,3>& lhs, const TinyVector<std::complex<T2>,3>& rhs)
   {
-    return std::complex<T1>(lhs[0].real()*rhs[0].real() - lhs[0].imag()*rhs[0].imag() + 
-                            lhs[1].real()*rhs[1].real() - lhs[1].imag()*rhs[1].imag() + 
+    return std::complex<T1>(lhs[0].real()*rhs[0].real() - lhs[0].imag()*rhs[0].imag() +
+                            lhs[1].real()*rhs[1].real() - lhs[1].imag()*rhs[1].imag() +
                             lhs[2].real()*rhs[2].real() - lhs[2].imag()*rhs[2].imag() ,
-                            lhs[0].real()*rhs[0].imag() + lhs[0].imag()*rhs[0].real() + 
-                            lhs[1].real()*rhs[1].imag() + lhs[1].imag()*rhs[1].real() + 
+                            lhs[0].real()*rhs[0].imag() + lhs[0].imag()*rhs[0].real() +
+                            lhs[1].real()*rhs[1].imag() + lhs[1].imag()*rhs[1].real() +
                             lhs[2].real()*rhs[2].imag() + lhs[2].imag()*rhs[2].real() );
   }
 };
