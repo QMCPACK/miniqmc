@@ -15,6 +15,9 @@
 
 InfoStream::~InfoStream()
 {
+  if (currStream != nullStream) {
+    delete nullStream;
+  }
   if (ownStream && currStream) {
     delete(currStream);
   }
