@@ -52,7 +52,6 @@ void print_help()
 int main(int argc, char **argv)
 {
 
-  OhmmsInfo("check_spo");
 
   // clang-format off
   typedef QMCTraits::RealType           RealType;
@@ -120,14 +119,17 @@ int main(int argc, char **argv)
 
   print_version(verbose);
 
+  if (verbose) {
+    outputManager.setVerbosity(Verbosity::HIGH);
+  }
+
   Random.init(0, 1, iseed);
   Tensor<int, 3> tmat(na, 0, 0, 0, nb, 0, 0, 0, nc);
 
   // turn off output
   if (omp_get_max_threads() > 1)
   {
-    OhmmsInfo::Log->turnoff();
-    OhmmsInfo::Warn->turnoff();
+    outputManager.shutOff();
   }
 
   OHMMS_PRECISION ratio = 0.0;

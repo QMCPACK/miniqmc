@@ -29,7 +29,7 @@
 #include <Numerics/OhmmsPETE/Tensor.h>
 #include "Particle/Lattice/CrystalLattice.h"
 #include <Particle/ParticleAttrib.h>
-#include <Utilities/OhmmsInfo.h>
+#include <Utilities/OutputManager.h>
 
 #define APP_ABORT(msg)                                            \
   {                                                               \
@@ -132,21 +132,7 @@ struct PtclOnLatticeTraits
   // clang-format on
 };
 
-inline std::ostream &app_log() { return OhmmsInfo::Log->getStream(); }
 
-inline std::ostream &app_error()
-{
-  OhmmsInfo::Log->getStream() << "ERROR ";
-  return OhmmsInfo::Error->getStream();
-}
-
-inline std::ostream &app_warning()
-{
-  OhmmsInfo::Log->getStream() << "WARNING ";
-  return OhmmsInfo::Warn->getStream();
-}
-
-inline std::ostream &app_debug() { return OhmmsInfo::Debug->getStream(); }
 }
 
 #endif
