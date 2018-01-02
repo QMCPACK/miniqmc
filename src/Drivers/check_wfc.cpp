@@ -64,7 +64,6 @@ void print_help()
 int main(int argc, char **argv)
 {
 
-  OhmmsInfo("CheckWaveFunctionComponents");
 
   // clang-format off
   typedef QMCTraits::RealType           RealType;
@@ -121,6 +120,10 @@ int main(int argc, char **argv)
 
   print_version(verbose);
 
+  if (verbose) {
+    outputManager.setVerbosity(Verbosity::HIGH);
+  }
+
   if (wfc_name != "J1" && wfc_name != "J2" && wfc_name != "J3" &&
       wfc_name != "JeeI")
   {
@@ -134,8 +137,7 @@ int main(int argc, char **argv)
   // turn off output
   if (omp_get_max_threads() > 1)
   {
-    OhmmsInfo::Log->turnoff();
-    OhmmsInfo::Warn->turnoff();
+    outputManager.shutOff();
   }
 
   // list of accumulated errors

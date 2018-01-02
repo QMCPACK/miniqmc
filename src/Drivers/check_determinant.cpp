@@ -54,7 +54,6 @@ void print_help()
 int main(int argc, char **argv)
 {
 
-  OhmmsInfo("miniqmc");
 
   // clang-format off
   typedef QMCTraits::RealType           RealType;
@@ -115,11 +114,14 @@ int main(int argc, char **argv)
 
   print_version(verbose);
 
+  if (verbose) {
+    outputManager.setVerbosity(Verbosity::HIGH);
+  }
+
   // turn off output
   if (!verbose || omp_get_max_threads() > 1)
   {
-    OhmmsInfo::Log->turnoff();
-    OhmmsInfo::Warn->turnoff();
+    outputManager.shutOff();
   }
 
   double accumulated_error = 0.0;

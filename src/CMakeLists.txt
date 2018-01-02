@@ -120,8 +120,8 @@ ENDIF()
   SET(UTILITIES
     Utilities/RandomGenerator.cpp 
     Utilities/SpeciesSet.cpp 
-    Utilities/OhmmsInform.cpp 
-    Utilities/OhmmsInfo.cpp 
+    Utilities/InfoStream.cpp
+    Utilities/OutputManager.cpp
     Utilities/NewTimer.cpp
     Utilities/qmcpack_version.cpp
     Numerics/Spline2/einspline_allocator.c
