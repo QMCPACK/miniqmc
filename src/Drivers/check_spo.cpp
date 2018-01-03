@@ -47,16 +47,32 @@ TimerNameList_t<CheckSPOTimers> CheckSPOTimerNames = {
     {Timer_SPO_ref_vgh, "SPO_ref_vgh"},
 };
 
+void print_help()
+{
+  //clang-format off
+  cout << "usage:" << '\n';
+  cout << "  check_spo [-hvV] [-g \"n0 n1 n2\"] [-n steps]"             << '\n';
+  cout << "             [-r rmax] [-s seed]"                            << '\n';
+  cout << "options:"                                                    << '\n';
+  cout << "  -g  set the 3D tiling.             default: 1 1 1"         << '\n';
+  cout << "  -h  print help and exit"                                   << '\n';
+  cout << "  -n  number of MC steps             default: 100"           << '\n';
+  cout << "  -r  set the Rmax.                  default: 1.7"           << '\n';
+  cout << "  -s  set the random seed.           default: 11"            << '\n';
+  cout << "  -v  verbose output"                                        << '\n';
+  cout << "  -V  print version information and exit"                    << '\n';
+  //clang-format on
+
+  exit(1); // print help and exit
+}
+
 int main(int argc, char **argv)
 {
 
-  OhmmsInfo("check_spo");
 
   // clang-format off
   typedef QMCTraits::RealType           RealType;
   typedef ParticleSet::ParticlePos_t    ParticlePos_t;
-  typedef ParticleSet::ParticleLayout_t LatticeType;
-  typedef ParticleSet::TensorType       TensorType;
   typedef ParticleSet::PosType          PosType;
   // clang-format on
 
@@ -70,45 +86,67 @@ int main(int argc, char **argv)
   int nsteps  = 100;
   int nmovers = omp_get_max_threads();
   int iseed   = 11;
+  // this is the cutoff from the non-local PP
+  RealType Rmax(1.7);
   int nx = 37, ny = 37, nz = 37;
   int tileSize = -1;
   bool transfer = true;
   bool verbose = false;
 
-  char *g_opt_arg;
   int opt;
-  while ((opt = getopt(argc, argv, "hvVfs:g:i:b:c:a:w:")) != -1)
+  while(optind < argc)
   {
-    switch (opt)
+    if ((opt = getopt(argc, argv, "fhvVa:g:i:n:r:s:w:")) != -1)
     {
-    case 'h': printf("[-g \"n0 n1 n2\"]\n"); return 1;
-    case 'f': // forward only, no transfer back to host
-      printf("Results are not transferred back. Checking report should be ignored.\n");
-      transfer = false;
+      switch (opt)
+      {
+      case 'a': tileSize = atoi(optarg); break;
+      case 'g': // tiling1 tiling2 tiling3
+        sscanf(optarg, "%d %d %d", &na, &nb, &nc);
+        break;
+      case 'f': // forward only, no transfer back to host
+        printf("Results are not transferred back. Checking report should be ignored.\n");
+        transfer = false;
       break;
-    case 'g': // tiling1 tiling2 tiling3
-      sscanf(optarg, "%d %d %d", &na, &nb, &nc);
-      break;
-    case 'w': // number of nmovers
-      nmovers = atoi(optarg);
-      break;
-    case 'i': // number of MC steps
-      nsteps = atoi(optarg);
-      break;
-    case 's': // random seed
-      iseed = atoi(optarg);
-      break;
-    case 'a': tileSize = atoi(optarg); break;
-    case 'v': verbose  = true; break;
-    case 'V':
-      print_version(true);
-      return 1;
-      break;
+      case 'h': print_help(); break;
+      case 'i': // number of MC steps
+        nsteps = atoi(optarg);
+        break;
+      case 'n': // number of MC steps
+        nsteps = atoi(optarg);
+        break;
+      case 'r': // rmax
+        Rmax = atof(optarg);
+        break;
+      case 's':
+        iseed = atoi(optarg);
+        break;
+      case 'v': verbose = true; break;
+      case 'V':
+        print_version(true);
+        return 1;
+        break;
+      case 'w': // number of nmovers
+        nmovers = atoi(optarg);
+        break;
+      default:
+        print_help();
+      }
+    }
+    else // disallow non-option arguments
+    {
+      cerr << "Non-option arguments not allowed" << endl;
+      print_help();
     }
   }
 
   print_version(verbose);
 
+  if (verbose) {
+    outputManager.setVerbosity(Verbosity::HIGH);
+  }
+
+  Random.init(0, 1, iseed);
   Tensor<int, 3> tmat(na, 0, 0, 0, nb, 0, 0, 0, nc);
 
   TimerManager.set_timer_threshold(timer_level_coarse);
@@ -121,8 +159,7 @@ int main(int argc, char **argv)
   // turn off output
   if (omp_get_max_threads() > 1)
   {
-    OhmmsInfo::Log->turnoff();
-    OhmmsInfo::Warn->turnoff();
+    outputManager.shutOff();
   }
 
   using spo_type = Mover::spo_type;
@@ -213,11 +250,6 @@ int main(int argc, char **argv)
   }
 
   Timers[Timer_Init]->stop();
-
-  // setup some parameters
-  // this is the cutoff from the non-local PP
-  const RealType Rmax(1.7);
-  const RealType tau = 2.0;
 
   RealType sqrttau = 2.0;
   RealType accept  = 0.5;
@@ -397,7 +429,7 @@ int main(int argc, char **argv)
          << std::endl;
     fail = true;
   }
-  if (!fail) cout << "All checking pass!" << std::endl;
+  if (!fail) cout << "All checks passed for spo" << std::endl;
 
   return 0;
 }

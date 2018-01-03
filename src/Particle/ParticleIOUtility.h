@@ -30,7 +30,6 @@ namespace qmcplusplus
 template <typename PS> void expandSuperCell(PS &ref_, Tensor<int, 3> &tmat)
 {
   typedef typename PS::SingleParticlePos_t SingleParticlePos_t;
-  typedef typename PS::Tensor_t Tensor_t;
 
   Tensor<int, 3> I(1, 0, 0, 0, 1, 0, 0, 0, 1);
   bool identity = true;

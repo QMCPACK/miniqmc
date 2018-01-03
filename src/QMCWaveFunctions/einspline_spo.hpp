@@ -33,7 +33,7 @@
 
 namespace qmcplusplus
 {
-template <typename T, typename compute_engine_type = MultiBsplineRef<T> >
+template <typename T, typename compute_engine_type = miniqmcreference::MultiBsplineRef<T> >
 struct einspline_spo
 {
   /// define the einsplie data object type

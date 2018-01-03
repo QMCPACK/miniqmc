@@ -3,14 +3,14 @@ PROJECT(drivers)
 if(QMC_BUILD_LEVEL GREATER 4)
 # add apps XYZ.cpp, e.g., qmc_particles.cpp
 #SET(ESTEST einspline_smp einspline_spo qmc_particles moveonsphere twobody ptclset)
-SET(ESTEST check_wfc check_spo omp4offload)
+SET(ESTEST check_wfc check_spo omp4offload check_determinant)
 
 FOREACH(p ${ESTEST})
   ADD_EXECUTABLE( ${p}  ${p}.cpp)
   TARGET_LINK_LIBRARIES(${p} qmcbase qmcutil ${QMC_UTIL_LIBS} ${MPI_LIBRARY})
 ENDFOREACH(p ${ESTEST})
 
-ADD_LIBRARY(miniwfs ../QMCWaveFunctions/RefWaveFunction.cpp ../QMCWaveFunctions/WaveFunction.cpp)
+ADD_LIBRARY(miniwfs ../QMCWaveFunctions/WaveFunctionRef.cpp ../QMCWaveFunctions/WaveFunction.cpp)
 
 ADD_EXECUTABLE(miniqmc miniqmc.cpp)
 TARGET_LINK_LIBRARIES(miniqmc miniwfs qmcbase qmcutil ${QMC_UTIL_LIBS} ${MPI_LIBRARY})

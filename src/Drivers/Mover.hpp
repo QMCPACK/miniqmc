@@ -15,7 +15,7 @@ namespace qmcplusplus
   {
     using RealType = QMCTraits::RealType;
     using spo_type = einspline_spo<RealType, MultiBspline<RealType> >;
-    using spo_ref_type = einspline_spo<RealType, MultiBsplineRef<RealType> >;
+    using spo_ref_type = einspline_spo<RealType, miniqmcreference::MultiBsplineRef<RealType> >;
 
     RandomGenerator<RealType> *rng;
     ParticleSet               *els;

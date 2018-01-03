@@ -109,17 +109,18 @@ template <class T> struct BsplineFunctor : public OptimizableFunctorBase
     int numKnots = numCoefs - 2;
     DeltaR       = cutoff_radius / (real_type)(numKnots - 1);
     DeltaRInv    = 1.0 / DeltaR;
-    for (int i       = 0; i < SplineCoefs.size(); i++)
+    for (int i = 0; i < SplineCoefs.size(); i++)
       SplineCoefs[i] = 0.0;
     // Ensure that cusp conditions is satsified at the origin
     SplineCoefs[1] = Parameters[0];
     SplineCoefs[2] = Parameters[1];
     SplineCoefs[0] = Parameters[1] - 2.0 * DeltaR * CuspValue;
-    for (int i           = 2; i < Parameters.size(); i++)
+    for (int i = 2; i < Parameters.size(); i++)
       SplineCoefs[i + 1] = Parameters[i];
   }
 
-  void setupParameters(int n, real_type rcut, real_type cusp, std::vector<real_type> &params)
+  void setupParameters(int n, real_type rcut, real_type cusp,
+                       std::vector<real_type> &params)
   {
     CuspValue = cusp;
     cutoff_radius = rcut;
@@ -309,9 +310,7 @@ inline void BsplineFunctor<T>::evaluateVGL(
 {
 
   real_type dSquareDeltaRinv = DeltaRInv * DeltaRInv;
-  constexpr real_type cZero(0);
   constexpr real_type cOne(1);
-  constexpr real_type cMOne(-1);
 
   //    START_MARK_FIRST();
 

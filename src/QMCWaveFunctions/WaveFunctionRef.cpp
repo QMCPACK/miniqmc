@@ -14,14 +14,16 @@
 #include <Input/Input.hpp>
 
 /*!
- * @file SoAWaveFunction.cpp
-   @brief Wavefunction based on Structure of Arrays (SoA) storage
+ * @file WaveFunctionRef.cpp
+ * @brief Wavefunction based on reference implemenation
  */
 
-namespace qmcplusplus
+namespace miniqmcreference
 {
-WaveFunction::WaveFunction(ParticleSet &ions, ParticleSet &els,
-                           RandomGenerator<RealType> RNG)
+using namespace qmcplusplus;
+
+WaveFunctionRef::WaveFunctionRef(ParticleSet &ions, ParticleSet &els,
+                                 RandomGenerator<RealType> RNG)
 {
   FirstTime = true;
 
@@ -48,9 +50,9 @@ WaveFunction::WaveFunction(ParticleSet &ions, ParticleSet &els,
   buildJeeI(*J3, els.Lattice.WignerSeitzRadius);
 }
 
-WaveFunction::~WaveFunction() { delete J2; }
+WaveFunctionRef::~WaveFunctionRef() { delete J2; }
 
-void WaveFunction::evaluateLog(ParticleSet &P)
+void WaveFunctionRef::evaluateLog(ParticleSet &P)
 {
   constexpr valT czero(0);
   if (FirstTime)
@@ -65,26 +67,26 @@ void WaveFunction::evaluateLog(ParticleSet &P)
   }
 }
 
-WaveFunctionBase::posT WaveFunction::evalGrad(ParticleSet &P, int iat)
+WaveFunctionBase::posT WaveFunctionRef::evalGrad(ParticleSet &P, int iat)
 {
   return Det->evalGrad(P, iat) + J1->evalGrad(P, iat) + J2->evalGrad(P, iat) +
          J3->evalGrad(P, iat);
 }
 
-WaveFunctionBase::valT WaveFunction::ratioGrad(ParticleSet &P, int iat,
-                                               posT &grad)
+WaveFunctionBase::valT WaveFunctionRef::ratioGrad(ParticleSet &P, int iat,
+                                                  posT &grad)
 {
   return Det->ratioGrad(P, iat, grad) + J1->ratioGrad(P, iat, grad) +
          J2->ratioGrad(P, iat, grad) + J3->ratioGrad(P, iat, grad);
 }
 
-WaveFunctionBase::valT WaveFunction::ratio(ParticleSet &P, int iat)
+WaveFunctionBase::valT WaveFunctionRef::ratio(ParticleSet &P, int iat)
 {
   return Det->ratio(P, iat) * J1->ratio(P, iat) * J2->ratio(P, iat) *
          J3->ratio(P, iat);
 }
 
-void WaveFunction::acceptMove(ParticleSet &P, int iat)
+void WaveFunctionRef::acceptMove(ParticleSet &P, int iat)
 {
   Det->acceptMove(P, iat);
   J1->acceptMove(P, iat);
@@ -92,9 +94,9 @@ void WaveFunction::acceptMove(ParticleSet &P, int iat)
   J3->acceptMove(P, iat);
 }
 
-void WaveFunction::restore(int iat) {}
+void WaveFunctionRef::restore(int iat) {}
 
-void WaveFunction::evaluateGL(ParticleSet &P)
+void WaveFunctionRef::evaluateGL(ParticleSet &P)
 {
   constexpr valT czero(0);
   P.G = czero;
@@ -104,4 +106,4 @@ void WaveFunction::evaluateGL(ParticleSet &P)
   J2->evaluateGL(P, P.G, P.L);
   J3->evaluateGL(P, P.G, P.L);
 }
-} // qmcplusplus
+} // miniqmcreferencce

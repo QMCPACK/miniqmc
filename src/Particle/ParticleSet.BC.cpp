@@ -22,7 +22,6 @@
  */
 #include "Particle/ParticleSet.h"
 #include "Particle/FastParticleOperators.h"
-#include "Utilities/OhmmsInfo.h"
 
 namespace qmcplusplus
 {

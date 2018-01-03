@@ -41,16 +41,33 @@
 using namespace std;
 using namespace qmcplusplus;
 
+void print_help()
+{
+  //clang-format off
+  cout << "usage:" << '\n';
+  cout << "  check_wfc [-hvV] [-f wfc_component] [-g \"n0 n1 n2\"]"     << '\n';
+  cout << "            [-r rmax] [-s seed]"                             << '\n';
+  cout << "options:"                                                    << '\n';
+  cout << "  -f  specify wavefunction component to check"               << '\n';
+  cout << "      one of: J1, J2, J3.            default: J2"            << '\n';
+  cout << "  -g  set the 3D tiling.             default: 1 1 1"         << '\n';
+  cout << "  -h  print help and exit"                                   << '\n';
+  cout << "  -r  set the Rmax.                  default: 1.7"           << '\n';
+  cout << "  -s  set the random seed.           default: 11"            << '\n';
+  cout << "  -v  verbose output"                                        << '\n';
+  cout << "  -V  print version information and exit"                    << '\n';
+  //clang-format on
+
+  exit(1); // print help and exit
+}
+
 int main(int argc, char **argv)
 {
 
-  OhmmsInfo("CheckWaveFunctionComponents");
 
   // clang-format off
   typedef QMCTraits::RealType           RealType;
   typedef ParticleSet::ParticlePos_t    ParticlePos_t;
-  typedef ParticleSet::ParticleLayout_t LatticeType;
-  typedef ParticleSet::TensorType       TensorType;
   typedef ParticleSet::PosType          PosType;
   // clang-format on
 
@@ -59,63 +76,69 @@ int main(int argc, char **argv)
   int na     = 1;
   int nb     = 1;
   int nc     = 1;
-  int nsteps = 100;
-  int iseed  = 11;
+  int iseed   = 11;
   RealType Rmax(1.7);
   string wfc_name("J2");
 
   bool verbose = false;
 
-  char *g_opt_arg;
   int opt;
-  while ((opt = getopt(argc, argv, "hvVs:g:i:r:f:")) != -1)
+  while(optind < argc)
   {
-    switch (opt)
+    if ((opt = getopt(argc, argv, "hvVf:g:r:s:")) != -1)
     {
-    case 'h': printf("[-g \"n0 n1 n2\"]\n"); return 1;
-    case 'g': // tiling1 tiling2 tiling3
-      sscanf(optarg, "%d %d %d", &na, &nb, &nc);
-      break;
-    case 'i': // number of MC steps
-      nsteps = atoi(optarg);
-      break;
-    case 's': // random seed
-      iseed = atoi(optarg);
-      break;
-    case 'r': // rmax
-      Rmax = atof(optarg);
-      break;
-    case 'f': // Wave function component
-      wfc_name = optarg;
-      break;
-    case 'v': verbose  = true; break;
-    case 'V':
-      print_version(true);
-      return 1;
-      break;
+      switch (opt)
+      {
+      case 'f': // Wave function component
+        wfc_name = optarg;
+        break;
+      case 'g': // tiling1 tiling2 tiling3
+        sscanf(optarg, "%d %d %d", &na, &nb, &nc);
+        break;
+      case 'h': print_help(); break;
+      case 'r': // rmax
+        Rmax = atof(optarg);
+        break;
+      case 's':
+        iseed = atoi(optarg);
+        break;
+      case 'v': verbose = true; break;
+      case 'V':
+        print_version(true);
+        return 1;
+        break;
+      default:
+        print_help();
+      }
+    }
+    else // disallow non-option arguments
+    {
+      cerr << "Non-option arguments not allowed" << endl;
+      print_help();
     }
   }
 
   print_version(verbose);
 
-  if (wfc_name != "J1" && wfc_name != "J2" && wfc_name != "JeeI")
-  {
-    cerr << "Uknown wave funciton component " << wfc_name << endl
-         << "Now supports J1 J2(default) JeeI Det(to be supported)" << endl;
-    exit(1);
+  if (verbose) {
+    outputManager.setVerbosity(Verbosity::HIGH);
   }
 
+  if (wfc_name != "J1" && wfc_name != "J2" && wfc_name != "J3" &&
+      wfc_name != "JeeI")
+  {
+    cerr << "Uknown wave funciton component:  " << wfc_name << endl << endl;
+    print_help();
+  }
+
+  Random.init(0, 1, iseed);
   Tensor<int, 3> tmat(na, 0, 0, 0, nb, 0, 0, 0, nc);
 
   // turn off output
   if (omp_get_max_threads() > 1)
   {
-    OhmmsInfo::Log->turnoff();
-    OhmmsInfo::Warn->turnoff();
+    outputManager.shutOff();
   }
-
-  double t0 = 0.0, t1 = 0.0;
-  OHMMS_PRECISION ratio = 0.0;
 
   // list of accumulated errors
   double evaluateLog_v_err = 0.0;
@@ -130,9 +153,8 @@ int main(int argc, char **argv)
 
   PrimeNumberSet<uint32_t> myPrimes;
 
-// clang-format off
-  #pragma omp parallel reduction(+:t0,ratio) \
-   reduction(+:evaluateLog_v_err,evaluateLog_g_err,evaluateLog_l_err,evalGrad_g_err) \
+  // clang-format off
+  #pragma omp parallel reduction(+:evaluateLog_v_err,evaluateLog_g_err,evaluateLog_l_err,evalGrad_g_err) \
    reduction(+:ratioGrad_r_err,ratioGrad_g_err,evaluateGL_g_err,evaluateGL_l_err,ratio_err)
   // clang-format on
   {
@@ -141,10 +163,10 @@ int main(int argc, char **argv)
     els.setName("e");
     OHMMS_PRECISION scale = 1.0;
 
-    int np = omp_get_num_threads();
     int ip = omp_get_thread_num();
 
     // create generator within the thread
+    Random.init(0, 1, iseed);
     RandomGenerator<RealType> random_th(myPrimes[ip]);
 
     tile_cell(ions, tmat, scale);
@@ -171,15 +193,14 @@ int main(int argc, char **argv)
     els_ref.RSoA = els_ref.R;
 
     // create tables
-    DistanceTableData *d_ee     = DistanceTable::add(els, DT_SOA);
-    DistanceTableData *d_ee_ref = DistanceTable::add(els_ref, DT_SOA);
-    DistanceTableData *d_ie     = DistanceTable::add(ions, els_ref, DT_SOA);
+    DistanceTable::add(els, DT_SOA);
+    DistanceTable::add(els_ref, DT_SOA);
+    DistanceTableData *d_ie = DistanceTable::add(ions, els_ref, DT_SOA);
     d_ie->setRmax(Rmax);
 
     ParticlePos_t delta(nels);
 
     RealType sqrttau = 2.0;
-    RealType accept  = 0.5;
 
     vector<RealType> ur(nels);
     random_th.generate_uniform(ur.data(), nels);
@@ -193,8 +214,9 @@ int main(int argc, char **argv)
       buildJ2(*J, els.Lattice.WignerSeitzRadius);
       wfc = dynamic_cast<WaveFunctionComponentBasePtr>(J);
       cout << "Built J2" << endl;
-      TwoBodyJastrowRef<BsplineFunctor<RealType>> *J_ref =
-          new TwoBodyJastrowRef<BsplineFunctor<RealType>>(els_ref);
+      miniqmcreference::TwoBodyJastrowRef<BsplineFunctor<RealType>> *J_ref =
+          new miniqmcreference::TwoBodyJastrowRef<BsplineFunctor<RealType>>(
+              els_ref);
       buildJ2(*J_ref, els.Lattice.WignerSeitzRadius);
       wfc_ref = dynamic_cast<WaveFunctionComponentBasePtr>(J_ref);
       cout << "Built J2_ref" << endl;
@@ -206,21 +228,23 @@ int main(int argc, char **argv)
       buildJ1(*J, els.Lattice.WignerSeitzRadius);
       wfc = dynamic_cast<WaveFunctionComponentBasePtr>(J);
       cout << "Built J1" << endl;
-      OneBodyJastrowRef<BsplineFunctor<RealType>> *J_ref =
-          new OneBodyJastrowRef<BsplineFunctor<RealType>>(ions, els_ref);
+      miniqmcreference::OneBodyJastrowRef<BsplineFunctor<RealType>> *J_ref =
+          new miniqmcreference::OneBodyJastrowRef<BsplineFunctor<RealType>>(
+              ions, els_ref);
       buildJ1(*J_ref, els.Lattice.WignerSeitzRadius);
       wfc_ref = dynamic_cast<WaveFunctionComponentBasePtr>(J_ref);
       cout << "Built J1_ref" << endl;
     }
-    else if (wfc_name == "JeeI")
+    else if (wfc_name == "JeeI" || wfc_name == "J3")
     {
       ThreeBodyJastrow<PolynomialFunctor3D> *J =
           new ThreeBodyJastrow<PolynomialFunctor3D>(ions, els);
       buildJeeI(*J, els.Lattice.WignerSeitzRadius);
       wfc = dynamic_cast<WaveFunctionComponentBasePtr>(J);
       cout << "Built JeeI" << endl;
-      ThreeBodyJastrowRef<PolynomialFunctor3D> *J_ref =
-          new ThreeBodyJastrowRef<PolynomialFunctor3D>(ions, els_ref);
+      miniqmcreference::ThreeBodyJastrowRef<PolynomialFunctor3D> *J_ref =
+          new miniqmcreference::ThreeBodyJastrowRef<PolynomialFunctor3D>(
+              ions, els_ref);
       buildJeeI(*J_ref, els.Lattice.WignerSeitzRadius);
       wfc_ref = dynamic_cast<WaveFunctionComponentBasePtr>(J_ref);
       cout << "Built JeeI_ref" << endl;
@@ -232,7 +256,6 @@ int main(int argc, char **argv)
     els.update();
     els_ref.update();
 
-    // for(int mc=0; mc<nsteps; ++mc)
     {
       els.G = czero;
       els.L = czero;
@@ -289,7 +312,7 @@ int main(int argc, char **argv)
         g_eval += sqrt(dot(grad_ref, grad_ref));
 
         PosType dr    = sqrttau * delta[iel];
-        bool good_soa = els.makeMoveAndCheck(iel, dr);
+        els.makeMoveAndCheck(iel, dr);
         bool good_ref = els_ref.makeMoveAndCheck(iel, dr);
 
         if (!good_ref) continue;
@@ -400,55 +423,58 @@ int main(int argc, char **argv)
   if (evaluateLog_v_err / np > small)
   {
     cout << "Fail in evaluateLog, V error =" << evaluateLog_v_err / np
-         << std::endl;
+         << " for " << wfc_name << std::endl;
     fail = true;
   }
   if (evaluateLog_g_err / np > small)
   {
     cout << "Fail in evaluateLog, G error =" << evaluateLog_g_err / np
-         << std::endl;
+         << " for " << wfc_name << std::endl;
     fail = true;
   }
   if (evaluateLog_l_err / np > small)
   {
     cout << "Fail in evaluateLog, L error =" << evaluateLog_l_err / np
-         << std::endl;
+         << " for " << wfc_name << std::endl;
     fail = true;
   }
   if (evalGrad_g_err / np > small)
   {
-    cout << "Fail in evalGrad, G error =" << evalGrad_g_err / np << std::endl;
+    cout << "Fail in evalGrad, G error =" << evalGrad_g_err / np << " for "
+         << wfc_name << std::endl;
     fail = true;
   }
   if (ratioGrad_r_err / np > small)
   {
     cout << "Fail in ratioGrad, ratio error =" << ratioGrad_r_err / np
-         << std::endl;
+         << " for " << wfc_name << std::endl;
     fail = true;
   }
   if (ratioGrad_g_err / np > small)
   {
-    cout << "Fail in ratioGrad, G error =" << ratioGrad_g_err / np << std::endl;
+    cout << "Fail in ratioGrad, G error =" << ratioGrad_g_err / np << " for "
+         << wfc_name << std::endl;
     fail = true;
   }
   if (evaluateGL_g_err / np > small)
   {
     cout << "Fail in evaluateGL, G error =" << evaluateGL_g_err / np
-         << std::endl;
+         << " for " << wfc_name << std::endl;
     fail = true;
   }
   if (evaluateGL_l_err / np > small)
   {
     cout << "Fail in evaluateGL, L error =" << evaluateGL_l_err / np
-         << std::endl;
+         << " for " << wfc_name << std::endl;
     fail = true;
   }
   if (ratio_err / np > small)
   {
-    cout << "Fail in ratio, ratio error =" << ratio_err / np << std::endl;
+    cout << "Fail in ratio, ratio error =" << ratio_err / np << " for "
+         << wfc_name << std::endl;
     fail = true;
   }
-  if (!fail) cout << "All checking pass!" << std::endl;
+  if (!fail) cout << "All checks passed for " << wfc_name << std::endl;
 
   return 0;
 }

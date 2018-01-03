@@ -343,7 +343,6 @@ template <typename FT> void TwoBodyJastrow<FT>::recompute(ParticleSet &P)
   const DistanceTableData *d_table = P.DistTables[0];
   for (int ig = 0; ig < NumGroups; ++ig)
   {
-    const int igt = ig * NumGroups;
     for (int iat = P.first(ig), last = P.last(ig); iat < last; ++iat)
     {
       computeU3(P, iat, d_table->Distances[iat], cur_u.data(), cur_du.data(),

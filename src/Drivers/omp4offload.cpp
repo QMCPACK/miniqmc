@@ -22,8 +22,6 @@ using namespace qmcplusplus;
 int main(int argc, char **argv)
 {
 
-  OhmmsInfo("omp4offload");
-
 #ifdef ENABLE_OFFLOAD
 
   std::cout << "Current number of devices " << omp_get_num_devices() << std::endl;
