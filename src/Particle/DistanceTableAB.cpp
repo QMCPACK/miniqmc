@@ -24,7 +24,6 @@
 #include "Particle/DistanceTable.h"
 #include "Particle/DistanceTableData.h"
 #include "Particle/Lattice/ParticleBConds.h"
-#include "Particle/AsymmetricDistanceTableData.h"
 #include "Utilities/SIMD/algorithm.hpp"
 #include "Particle/DistanceTableBA.h"
 
@@ -44,25 +43,15 @@ DistanceTableData *createDistanceTable(const ParticleSet &s, ParticleSet &t,
     DIM = OHMMS_DIM
   };
   DistanceTableData *dt = 0;
-  // int sc=s.Lattice.SuperCellEnum;
   int sc = t.Lattice.SuperCellEnum;
   std::ostringstream o;
-  bool useSoA = (dt_type == DT_SOA || dt_type == DT_SOA_PREFERRED);
   o << "  Distance table for AB: source = " << s.getName()
     << " target = " << t.getName() << "\n";
   if (sc == SUPERCELL_BULK)
   {
-    if (useSoA)
-    {
-      o << "  Using SoaDistanceTableBA<T,D,PPPG> of SoA layout " << PPPG
-        << std::endl;
-      dt = new DistanceTableBA<RealType, DIM, PPPG + SOA_OFFSET>(s, t);
-    }
-    else
-    {
-      o << "  Using AsymmetricDTD<T,D,PPPG> " << PPPG << std::endl;
-      dt = new AsymmetricDTD<RealType, DIM, PPPG>(s, t);
-    }
+    o << "  Using SoaDistanceTableBA<T,D,PPPG> of SoA layout " << PPPG
+      << std::endl;
+    dt = new DistanceTableBA<RealType, DIM, PPPG + SOA_OFFSET>(s, t);
     o << "    Setting Rmax = " << s.Lattice.SimulationCellRadius;
   }
   else
@@ -73,7 +62,7 @@ DistanceTableData *createDistanceTable(const ParticleSet &s, ParticleSet &t,
 
   // set dt properties
   dt->CellType = sc;
-  dt->DTType   = (useSoA) ? DT_SOA : DT_AOS;
+  dt->DTType   = DT_SOA;
   std::ostringstream p;
   p << s.getName() << "_" << t.getName();
   dt->Name = p.str(); // assign the table name
