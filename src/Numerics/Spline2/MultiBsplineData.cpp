@@ -9,7 +9,7 @@
 // File created by: Jeongnim Kim, jeongnim.kim@intel.com, Intel Corp.
 ////////////////////////////////////////////////////////////////////////////////
 // -*- C++ -*-
-/**@file MultiBspline.cpp
+/**@file MultiBsplineData.cpp
  *
  * Initialize the static data for float and double
  */

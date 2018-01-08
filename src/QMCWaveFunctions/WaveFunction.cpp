@@ -14,7 +14,7 @@
 #include <Input/Input.hpp>
 
 /*!
- * @file SoAWaveFunction.cpp
+ * @file WaveFunction.cpp
    @brief Wavefunction based on Structure of Arrays (SoA) storage
  */
 

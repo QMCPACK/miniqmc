@@ -11,7 +11,7 @@
 //    Intel Corp.
 ////////////////////////////////////////////////////////////////////////////////
 // -*- C++ -*-
-/** @file Container.h
+/** @file Containers.h
  *
  * Master header to support SoA containers
  */

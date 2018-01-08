@@ -29,7 +29,7 @@
 #include "Particle/ParticleSet.h"
 #include "Particle/DistanceTableData.h"
 
-/**@file wavefunctioncomponentbase.h
+/**@file WaveFunctionComponentBase.h
  *@brief Declaration of WaveFunctionComponentBase
  */
 namespace qmcplusplus
