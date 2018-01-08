@@ -9,7 +9,7 @@
 // File created by: Jeongnim Kim, jeongnim.kim@intel.com, Intel Corp.
 ////////////////////////////////////////////////////////////////////////////////
 // -*- C++ -*-
-/** @file einspline_allocator.cpp
+/** @file bspline_allocator.cpp
  * @brief Implementation of einspline::Allocator member functions
  *
  * Allocator::Policy is not defined precisely yet but is intended to select

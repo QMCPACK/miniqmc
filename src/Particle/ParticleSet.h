@@ -24,6 +24,10 @@
 //    University of Illinois at Urbana-Champaign
 ////////////////////////////////////////////////////////////////////////////////
 
+/** @file ParticleSet.h
+ *  @brief Particle positions and related data
+ */
+
 #ifndef QMCPLUSPLUS_PARTICLESET_H
 #define QMCPLUSPLUS_PARTICLESET_H
 
@@ -74,9 +78,9 @@ template <typename T> struct MCDataType
 class ParticleSet : public QMCTraits, public PtclOnLatticeTraits
 {
 public:
-  ///@typedef walker type
+  /// walker type
   typedef Walker<QMCTraits, PtclOnLatticeTraits> Walker_t;
-  ///@typedef buffer type for a serialized buffer
+  /// buffer type for a serialized buffer
   typedef Walker_t::Buffer_t Buffer_t;
 
   /// the name of the particle set.

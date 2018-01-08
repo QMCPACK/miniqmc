@@ -21,7 +21,7 @@
 //    University of Illinois at Urbana-Champaign
 //////////////////////////////////////////////////////////////////////////////////////
 
-/** @file DeterminantOperator.h
+/** @file DeterminantOperators.h
  * @brief Define determinant operators
  */
 #ifndef OHMMS_NUMERIC_DETERMINANT_H

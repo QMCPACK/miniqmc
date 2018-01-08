@@ -9,7 +9,7 @@
 // File created by: Jeongnim Kim, jeongnim.kim@intel.com, Intel Corp.
 ////////////////////////////////////////////////////////////////////////////////
 // -*- C++ -*-
-/** @file bspline_traits.h
+/** @file bspline_traits.hpp
  *
  * extend spline/bspline_traints by introducing
  * bspline_traits<T,D> with only speciliazation with 3D

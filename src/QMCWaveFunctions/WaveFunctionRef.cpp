@@ -18,6 +18,10 @@
  * @brief Wavefunction based on reference implemenation
  */
 
+/*!
+ *  Namespace containing reference implementation.
+ */
+
 namespace miniqmcreference
 {
 using namespace qmcplusplus;
