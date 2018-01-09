@@ -95,35 +95,8 @@ SET(ENABLE_GCOV FALSE CACHE BOOL "Enable code coverage")
 ######################################################################
 SET(QMC_MPI 1 CACHE BOOL "Enable/disable MPI")
 SET(QMC_OMP 1 CACHE BOOL "Enable/disable OpenMP")
-SET(QMC_BITS 64 CACHE INTEGER "Select OS bit")
 SET(QMC_COMPLEX 0 CACHE INTEGER "Build for complex binary")
 SET(PRINT_DEBUG 0 CACHE BOOL "Enable/disable debug printing")
-
-######################################################################
-# set debug printout
-# DEBUG_PSIBUFFER_ON keep track buffer's locator
-######################################################################
-SET(DEBUG_PSIBUFFER_ON 0 CACHE BOOL "Build with GPU support through CUDA")
-######################################################################
-# check environment variables 
-# todo: disallow environment
-######################################################################
-IF($ENV{QMC_MPI})
-  SET(QMC_MPI $ENV{QMC_MPI}) 
-  MESSAGE(STATUS "Found environment QMC_MPI=${QMC_MPI}")
-ENDIF($ENV{QMC_MPI})
-IF($ENV{QMC_OMP})
-  SET(QMC_OMP $ENV{QMC_OMP}) 
-  MESSAGE(STATUS "Found environment QMC_OMP=${QMC_OMP}")
-ENDIF($ENV{QMC_OMP})
-IF($ENV{QMC_BITS})
-  SET(QMC_BITS $ENV{QMC_BITS})
-  MESSAGE(STATUS "Found environment QMC_BITS=${QMC_BITS}")
-ENDIF($ENV{QMC_BITS})
-IF($ENV{QMC_COMPLEX})
-  SET(QMC_COMPLEX $ENV{QMC_COMPLEX})
-  MESSAGE(STATUS "Found environment QMC_COMPLEX=${QMC_COMPLEX}")
-ENDIF($ENV{QMC_COMPLEX})
 
 ######################################################################
 # Standard test
@@ -175,16 +148,6 @@ SET(BUILD_FCIQMC 0 CACHE BOOL "Build with FCIQMC")
 #SET(MPIP_PROFILE 0)
 SET(QMC_BUILD_STATIC 0 CACHE BOOL "Link to static libraries")
 SET(ENABLE_TIMERS 1 CACHE BOOL "Enable internal timers")
-
-######################################################################
-# Performance-related macros
-# QMC_SK_USE_RECURSIVE enable/disable recursive evalaution of SK
-######################################################################
-SET(QMC_SK_USE_RECURSIVE 0)
-IF($ENV{QMC_SK_RECURSIVE})
-  MESSAGE(STATUS "SK structure factor uses a recursive algorithm.")
-  SET(QMC_SK_USE_RECURSIVE $ENV{QMC_SK_RECURSIVE}) 
-ENDIF($ENV{QMC_SK_RECURSIVE})
 
 ######################################################################
 # FIXED PARAMETERS for test and legacy reasons
@@ -317,31 +280,24 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
       ENDFOREACH(type)
     ELSE(QMC_BUILD_STATIC)
       MESSAGE(STATUS "Building CPU code. Linking dynamically.")
-      SET(CMAKE_EXE_LINKER_FLAGS "-dynamic")
     ENDIF(QMC_BUILD_STATIC)
   ENDIF($ENV{CRAYPE_VERSION} MATCHES ".")
 
   #------------------------------------
   # Identify the compiler
   #------------------------------------
-  IF( $ENV{CXX} MATCHES "icpc" )
-    SET( COMPILER Intel )
-  ELSEIF($ENV{CXX} MATCHES "xlC" OR CMAKE_C_COMPILER_ID MATCHES "XL")
-    SET( COMPILER IBM )
-  ELSEIF ( CMAKE_C_COMPILER_WORKS OR CMAKE_C_COMPILER_WORKS )
-    IF( CMAKE_COMPILE_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX )
+  IF ( CMAKE_C_COMPILER_WORKS OR CMAKE_C_COMPILER_WORKS )
+    IF( (CMAKE_CXX_COMPILER_ID MATCHES "GNU") OR ( CMAKE_C_COMPILER_ID MATCHES "GNU") )
       SET( COMPILER GNU )
-    ELSEIF( MSVC OR MSVC_IDE OR MSVC60 OR MSVC70 OR MSVC71 OR MSVC80 OR CMAKE_COMPILER_2005 OR MSVC90 OR MSVC10 )
-      SET( COMPILER Microsoft )
-    ELSEIF( (${CMAKE_C_COMPILER_ID} MATCHES "Intel") OR (${CMAKE_CXX_COMPILER_ID} MATCHES "Intel") ) 
+    ELSEIF( (CMAKE_CXX_COMPILER_ID MATCHES "XL") OR ( CMAKE_C_COMPILER_ID MATCHES "XL") )
+      SET( COMPILER IBM )
+    ELSEIF( (CMAKE_CXX_COMPILER_ID MATCHES "Intel") OR (CMAKE_C_COMPILER_ID MATCHES "Intel") )
       SET( COMPILER Intel )
-    ELSEIF( (${CMAKE_C_COMPILER_ID} MATCHES "PGI") OR (${CMAKE_CXX_COMPILER_ID} MATCHES "PGI") )
+    ELSEIF( (CMAKE_CXX_COMPILER_ID MATCHES "PGI") OR (CMAKE_C_COMPILER_ID MATCHES "PGI") )
       SET( COMPILER PGI )
-    ELSEIF( (${CMAKE_C_COMPILER_ID} MATCHES "CRAY") OR (${CMAKE_CXX_COMPILER_ID} MATCHES "CRAY") OR
-            (${CMAKE_C_COMPILER_ID} MATCHES "Cray") OR (${CMAKE_CXX_COMPILER_ID} MATCHES "Cray") )
+    ELSEIF( (CMAKE_CXX_COMPILER_ID MATCHES "Cray") OR (CMAKE_C_COMPILER_ID MATCHES "Cray") )
       SET( COMPILER Cray )
-    ELSEIF( (${CMAKE_C_COMPILER_ID} MATCHES "CLANG") OR (${CMAKE_CXX_COMPILER_ID} MATCHES "CLANG") OR
-            (${CMAKE_C_COMPILER_ID} MATCHES "Clang") OR (${CMAKE_CXX_COMPILER_ID} MATCHES "Clang") )
+    ELSEIF( (CMAKE_CXX_COMPILER_ID MATCHES "Clang") OR (CMAKE_C_COMPILER_ID MATCHES "Clang") )
       SET( COMPILER Clang )
     ELSE()
         SET(USING_DEFAULT TRUE)
@@ -467,12 +423,8 @@ IF (ENABLE_GCOV)
   ENDIF()
 ENDIF(ENABLE_GCOV)
 
-# check if C++11 is needed by QMCPACK features
-#SET(CXX11_NEEDED FALSE)
-#IF(BUILD_LMYENGINE_INTERFACE OR BUILD_MINIAPPS OR BUILD_AFQMC OR ENABLE_AA_SOA)
-  SET(CXX11_NEEDED TRUE)
-#ENDIF()
-# once C++11 is needed
+# Require C++11 while leaving possibility to fall back by modifying this file
+SET(CXX11_NEEDED TRUE)
 IF(CXX11_NEEDED)
   SET(CXX11_FLAG "-std=c++11")
   #check if the CXX compiler supports -std=c++11 option
@@ -497,13 +449,7 @@ IF(CXX11_NEEDED)
       SET (CMAKE_CXX_FLAGS "${CXX11_FLAG} ${CMAKE_CXX_FLAGS}")
     ENDIF()
   ELSE()
-    MESSAGE(STATUS "Disabling features requring C++11 due to the lack of compiler support")
-    SET(BUILD_LMYENGINE_INTERFACE 0)
-    SET(BUILD_MINIAPPS 0)
-    SET(BUILD_AFQMC 0)
-    IF(ENABLE_AA_SOA)
-      MESSAGE(FATAL_ERROR "ENABLE_AA_SOA requires C++11 compiler support!")
-    ENDIF()
+    MESSAGE(FATAL_ERROR "A compiler supporting C++11 is required. Use a newer C++ compiler.")
   ENDIF()
 ENDIF(CXX11_NEEDED)
 
