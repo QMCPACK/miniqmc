@@ -22,13 +22,22 @@
  @mainpage MiniQMC: miniapp for QMCPACK kernels
 
  Implemented kernels
-   - \subpage JastrowFactors includes one-body, two-body and three-body Jastrow
+   - \subpage JastrowFactors "Jastrow Factors" includes one-body, two-body and three-body Jastrow
      factors.
-   - Single Particle Orbitals (SPO) based on splines
-   - Inverse determinant update
+   - \subpage SPO "Single Particle Orbitals" (SPO) based on splines
+   - \subpage InverseUpdate "Inverse matrix update" for determinant
+   - \subpage ParticleHandling "Particle distances" and boundary conditions
 
-  Compares against a reference implementation for correctness.
-  (separate drivers)
+
+
+  The \ref src/Drivers/miniqmc.cpp "miniqmc" driver models particle moves and evaluation of the wavefunction.
+  The <a href="https://github.com/QMCPACK/miniqmc/wiki#miniqmc-computational-overview">wiki</a> gives an outline of the computation.
+
+  The \ref src/Drivers/check_wfc.cpp "check_wfc", \ref src/Drivers/check_spo.cpp "check_spo",
+  and \ref src/Drivers/check_determinant.cpp "check_determinant" drivers check correctness by comparing against
+  reference implementations of the Jastrow, SPO, and determinant inverse (respectively).
+  The code for the reference implementation uses a `Ref` suffix and is contained in the \ref miniqmcreference namespace.
+
 
  */
 
@@ -42,8 +51,8 @@
   The Jastrow factor is composed from two types of classes - the first is for
   the types of particles involved (one/two/three body), and the second is the
   functional form for the radial part.  The classes for the first part are
-  qmcplusplus::OneBodyJastrowRef, qmcplusplus::TwoBodyJastrowRef and
-  qmcplusplus::ThreeBodyJastrowRef.  The second part uses 1D B-splines, defined
+  qmcplusplus::OneBodyJastrow, qmcplusplus::TwoBodyJastrow and
+  qmcplusplus::ThreeBodyJastrow.  The second part uses 1D B-splines, defined
   in qmcplusplus::BsplineFunctor, for one and two body Jastrow and polynomials,
   defined in qmcplusplus::PolynomialFunctor3D, for three body Jastrow.
 
@@ -51,6 +60,46 @@
   it is the most widely used.  The QMCPACK distribution contains other
   functional forms.
  */
+
+ /*!
+ \page SPO Single Particle Orbitals
+
+  The Single Particle Orbitals (SPO) depend only on individual electron coordinates and are represented by a 3D spline.
+  The 3D spline code is located in \ref src/Numerics/Spline2, with the evaluation code in the \ref qmcplusplus::MultiBspline "MultiBspline" class.
+  The connection from the wavefunction to the spline functions is located in the \ref qmcplusplus::einspline_spo "einspline_spo" class.
+
+  The core evaluation routine evaluates the value, the gradient, and the Laplacian at a given electron coordinate.
+
+  The size of the coefficient data set can be large - on the order of gigabytes.
+
+ */
+
+ /*!
+ \page InverseUpdate Inverse Matrix Update
+
+  The inverse matrix and updating is handled by \ref qmcplusplus::DiracDeterminant "DiracDeterminant".
+  The initial creation and inversion of the matrix occurs in qmcplusplus::DiracDeterminant::recompute, which is called on the first
+  call to qmcplusplus::DiracDeterminant::evaluateLog.   The rows are updated after accepted Monte Carlo moves
+  via updateRow (in \ref src/QMCWaveFunctions/Determinant.h), which is called from qmcplusplus::DiracDeterminant::acceptMove.
+
+  The implementation for updateRow is
+  \snippet QMCWaveFunctions/Determinant.h UpdateRow
+ */
+
+ /*!
+ \page ParticleHandling Particle positions, distances, and boundary conditions
+
+  The qmcpluplus:ParticleSet class holds particle positions, lattice information, and distance tables.
+  The positions are stored in the \ref qmcplusplus::ParticleSet#R member, and a copy is kept in a Structure-of-Arrays (SoA) layout in
+  \ref qmcplusplus::ParticleSet#RSoA.
+
+  Distances, using the minimum image conventions with periodic boundaries, are computed in \ref src/Particle/Lattice/ParticleBConds.h.
+
+  Distances are stored in distance tables, where qmcplusplus::DistanceTableData is the base class for the storage.  There are two types
+  of distance tables.  One is for similar particles (qmcplusplus::DistanceTableAA), such as electron-electron distances.  The other
+  is for dissimilar particles (qmcplusplus::DistanceTableBA), such as electron-ion distances.
+ */
+
 // clang-format on
 
 #include <Utilities/Configuration.h>

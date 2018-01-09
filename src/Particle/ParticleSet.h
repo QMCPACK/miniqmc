@@ -85,15 +85,15 @@ public:
 
   /// the name of the particle set.
   std::string myName;
-  //!< ParticleLayout
+  /// ParticleLayout
   ParticleLayout_t Lattice, PrimitiveLattice;
-  //!< unique, persistent ID for each particle
+  /// unique, persistent ID for each particle
   ParticleIndex_t ID;
   /// index to the primitice cell with tiling
   ParticleIndex_t PCID;
-  //!< Species ID
+  /// Species ID
   ParticleIndex_t GroupID;
-  //!< Position
+  /// Position
   ParticlePos_t R;
   /// SoA copy of R
   VectorSoAContainer<RealType, DIM> RSoA;

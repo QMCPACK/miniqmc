@@ -122,6 +122,7 @@ inline void InvertOnly(T *restrict x, int n, int lda, T *restrict work,
 }
 
 /** update Row as implemented in the full code */
+/** [UpdateRow] */
 template <typename T, typename RT>
 inline void updateRow(T *restrict pinv, const T *restrict tv, int m, int lda,
                       int rowchanged, RT c_ratio_in)
@@ -135,6 +136,7 @@ inline void updateRow(T *restrict pinv, const T *restrict tv, int m, int lda,
   std::copy_n(pinv + m * rowchanged, m, rcopy);
   BLAS::ger(m, m, -cone, rcopy, 1, temp, 1, pinv, m);
 }
+/** [UpdateRow] */
 /**@}*/
 
 // FIXME do we want to keep this in the miniapp?
