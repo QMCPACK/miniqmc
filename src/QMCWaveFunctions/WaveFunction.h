@@ -73,7 +73,9 @@ struct WaveFunction : public WaveFunctionBase
   J1OrbType *J1;
   J2OrbType *J2;
   J3OrbType *J3;
-  DetType *Det;
+  int nelup;
+  DetType *Det_up;
+  DetType *Det_dn;
 
   WaveFunction(ParticleSet &ions, ParticleSet &els,
                RandomGenerator<RealType> RNG);
@@ -106,7 +108,9 @@ struct WaveFunctionRef : public qmcplusplus::WaveFunctionBase
   J1OrbType *J1;
   J2OrbType *J2;
   J3OrbType *J3;
-  DetType *Det;
+  int nelup;
+  DetType *Det_up;
+  DetType *Det_dn;
   PooledData<valT> Buffer;
 
   WaveFunctionRef(ParticleSet &ions, ParticleSet &els,
