@@ -34,6 +34,10 @@
 #include "Particle/DistanceTable.h"
 #include "Utilities/RandomGenerator.h"
 
+/** @file ParticleSet.cpp
+  * @brief Particle positions and related data
+  */
+
 //#define PACK_DISTANCETABLES
 
 namespace qmcplusplus

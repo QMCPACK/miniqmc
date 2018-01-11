@@ -16,6 +16,8 @@
 /**@file MultiBspline.hpp
  *
  * Master header file to define MultiBspline
+ *
+ * Contains 3D spline evaluation routines.
  */
 #ifndef QMCPLUSPLUS_MULTIEINSPLINE_COMMON_HPP
 #define QMCPLUSPLUS_MULTIEINSPLINE_COMMON_HPP
@@ -31,7 +33,7 @@ namespace qmcplusplus
 template <typename T> struct MultiBspline
 {
 
-  /// define the einsplie object type
+  /// define the einspline object type
   using spliner_type = typename bspline_traits<T, 3>::SplineType;
 
   MultiBspline() {}

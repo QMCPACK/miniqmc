@@ -37,5 +37,5 @@ Access operators to each compoenent are provided.
 
 \code
 H.data(int i, int j); //return the starting address of (i,j) component
-\endode
+\endcode
 

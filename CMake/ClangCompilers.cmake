@@ -1,7 +1,7 @@
 # Check compiler version
-IF ( CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.0 )
+IF ( CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.3 )
   MESSAGE(STATUS "Compiler Version ${CMAKE_CXX_COMPILER_VERSION}")
-  MESSAGE(FATAL_ERROR "Require clang 3.0 or higher ")
+  MESSAGE(FATAL_ERROR "Requires clang 3.3 or higher ")
 ENDIF()
 
 # Set the std
@@ -26,7 +26,10 @@ SET( HAVE_POSIX_MEMALIGN 0 )    # Clang doesn't support -malign-double
 
 # Suppress compile warnings
 SET(CMAKE_C_FLAGS     "${CMAKE_C_FLAGS} -Wno-deprecated -Wno-unused-value")
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated -Wno-unused-value -Wno-undefined-var-template")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated -Wno-unused-value")
+IF ( CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 3.8 )
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-undefined-var-template")
+ENDIF()
 
 # Set extra optimization specific flags
 SET( CMAKE_C_FLAGS_RELEASE     "${CMAKE_C_FLAGS_RELEASE} -ffast-math" )

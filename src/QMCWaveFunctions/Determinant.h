@@ -122,6 +122,7 @@ inline void InvertOnly(T *restrict x, int n, int lda, T *restrict work,
 }
 
 /** update Row as implemented in the full code */
+/** [UpdateRow] */
 template <typename T, typename RT>
 inline void updateRow(T *restrict pinv, const T *restrict tv, int m, int lda,
                       int rowchanged, RT c_ratio_in)
@@ -135,6 +136,7 @@ inline void updateRow(T *restrict pinv, const T *restrict tv, int m, int lda,
   std::copy_n(pinv + m * rowchanged, m, rcopy);
   BLAS::ger(m, m, -cone, rcopy, 1, temp, 1, pinv, m);
 }
+/** [UpdateRow] */
 /**@}*/
 
 // FIXME do we want to keep this in the miniapp?
@@ -176,7 +178,8 @@ void checkDiff(const MT1 &a, const MT2 &b, const std::string &tag)
 
 struct DiracDeterminant : public WaveFunctionComponentBase
 {
-  DiracDeterminant(int nels, RandomGenerator<RealType> RNG)
+  DiracDeterminant(int nels, RandomGenerator<RealType> RNG, int First=0)
+  : FirstIndex(First)
   {
     psiMinv.resize(nels, nels);
     psiV.resize(nels);
@@ -220,7 +223,7 @@ struct DiracDeterminant : public WaveFunctionComponentBase
 
   GradType evalGrad(ParticleSet &P, int iat) {}
 
-  ValueType ratioGrad(ParticleSet &P, int iat, GradType &grad) {}
+  ValueType ratioGrad(ParticleSet &P, int iat, GradType &grad) { return ratio(P, iat); }
 
   void evaluateGL(ParticleSet &P, ParticleSet::ParticleGradient_t &G,
                   ParticleSet::ParticleLaplacian_t &L, bool fromscratch = false) {}
@@ -244,7 +247,7 @@ struct DiracDeterminant : public WaveFunctionComponentBase
     constexpr double czero(0);
     for (int j = 0; j < nels; ++j)
       psiV[j] = myRandom() - shift;
-    curRatio = inner_product_n(psiV.data(), psiMinv[iel], nels, czero);
+    curRatio = inner_product_n(psiV.data(), psiMinv[iel-FirstIndex], nels, czero);
     return curRatio;
   }
 
@@ -252,8 +255,8 @@ struct DiracDeterminant : public WaveFunctionComponentBase
   inline void acceptMove(ParticleSet &P, int iel)
   {
     const int nels = psiV.size();
-    updateRow(psiMinv.data(), psiV.data(), nels, nels, iel, curRatio);
-    std::copy_n(psiV.data(), nels, psiMsave[iel]);
+    updateRow(psiMinv.data(), psiV.data(), nels, nels, iel-FirstIndex, curRatio);
+    std::copy_n(psiV.data(), nels, psiMsave[iel-FirstIndex]);
   }
 
   /** accessor functions for checking */
@@ -267,6 +270,8 @@ private:
   double curRatio;
   /// workspace size
   int LWork;
+  /// initial particle index
+  const int FirstIndex;
   /// inverse matrix to be update
   Matrix<RealType> psiMinv;
   /// a SPO set for the row update

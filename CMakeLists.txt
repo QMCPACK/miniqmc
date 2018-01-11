@@ -98,12 +98,6 @@ SET(QMC_COMPLEX 0 CACHE INTEGER "Build for complex binary")
 SET(PRINT_DEBUG 0 CACHE BOOL "Enable/disable debug printing")
 
 ######################################################################
-# set debug printout
-# DEBUG_PSIBUFFER_ON keep track buffer's locator
-######################################################################
-SET(DEBUG_PSIBUFFER_ON 0 CACHE BOOL "Build with GPU support through CUDA")
-
-######################################################################
 # Standard test
 ######################################################################
 SET(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMake" ${CMAKE_MODULE_PATH})
@@ -286,7 +280,6 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
       ENDFOREACH(type)
     ELSE(QMC_BUILD_STATIC)
       MESSAGE(STATUS "Building CPU code. Linking dynamically.")
-      SET(CMAKE_EXE_LINKER_FLAGS "-dynamic")
     ENDIF(QMC_BUILD_STATIC)
   ENDIF($ENV{CRAYPE_VERSION} MATCHES ".")
 
@@ -403,7 +396,7 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
     MESSAGE(STATUS "Assuming Cray libsci or other BLAS/LAPACK will be linked by compiler wrappers")
   ELSE()	 
     # Search for Blas/Lapack
-    #find_package(LAPACK)
+    find_package(LAPACK)
     # When cmake finds and sets up the MKL libraries with a non-Intel compiler, set the flag
     # This should be tidied up when FindMKL.cmake supports non-Intel compilers.
     IF("${LAPACK_LIBRARIES}" MATCHES "mkl")
@@ -412,13 +405,13 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
       SET( HAVE_MKL 1 )
     ENDIF()
   ENDIF()
-  #IF(LAPACK_FOUND)
-  #  MESSAGE(STATUS "LAPACK libraries: ${LAPACK_LIBRARIES}")
-  #  MESSAGE(STATUS "LAPACK linker flags: ${LAPACK_LINKER_FLAGS}")
-  #  SET(LAPACK_LIBRARY ${LAPACK_LIBRARIES} ${LAPACK_LINKER_FLAGS})
-  #ELSE()
-  #  MESSAGE(FATAL_ERROR "Could not find required libraries LAPACK &/or BLAS") 
-  #ENDIF()
+  IF(LAPACK_FOUND)
+    MESSAGE(STATUS "LAPACK libraries: ${LAPACK_LIBRARIES}")
+    MESSAGE(STATUS "LAPACK linker flags: ${LAPACK_LINKER_FLAGS}")
+    SET(LAPACK_LIBRARY ${LAPACK_LIBRARIES} ${LAPACK_LINKER_FLAGS})
+  ELSE()
+    MESSAGE(FATAL_ERROR "Could not find required libraries LAPACK &/or BLAS") 
+  ENDIF()
 
   INCLUDE(CMake/FindVectorMath.cmake)
 
@@ -430,12 +423,8 @@ IF (ENABLE_GCOV)
   ENDIF()
 ENDIF(ENABLE_GCOV)
 
-# check if C++11 is needed by QMCPACK features
-#SET(CXX11_NEEDED FALSE)
-#IF(BUILD_LMYENGINE_INTERFACE OR BUILD_MINIAPPS OR BUILD_AFQMC OR ENABLE_SOA)
-  SET(CXX11_NEEDED TRUE)
-#ENDIF()
-# once C++11 is needed
+# Require C++11 while leaving possibility to fall back by modifying this file
+SET(CXX11_NEEDED TRUE)
 IF(CXX11_NEEDED)
   SET(CXX11_FLAG "-std=c++11")
   #check if the CXX compiler supports -std=c++11 option
@@ -460,13 +449,7 @@ IF(CXX11_NEEDED)
       SET (CMAKE_CXX_FLAGS "${CXX11_FLAG} ${CMAKE_CXX_FLAGS}")
     ENDIF()
   ELSE()
-    MESSAGE(STATUS "Disabling features requring C++11 due to the lack of compiler support")
-    SET(BUILD_LMYENGINE_INTERFACE 0)
-    SET(BUILD_MINIAPPS 0)
-    SET(BUILD_AFQMC 0)
-    IF(ENABLE_SOA)
-      MESSAGE(FATAL_ERROR "ENABLE_SOA requires C++11 compiler support!")
-    ENDIF()
+    MESSAGE(FATAL_ERROR "A compiler supporting C++11 is required. Use a newer C++ compiler.")
   ENDIF()
 ENDIF(CXX11_NEEDED)
 

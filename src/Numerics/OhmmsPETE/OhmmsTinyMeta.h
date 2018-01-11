@@ -43,14 +43,13 @@ template<class T1, class T2> struct OTDot {};
 
 ////////////////////////////////////////////////////////////////////////////////
 // TinyVectorOps.h        assignment/unary and binary operators  for TinyVector
-// TensorOps.h            assignment/unary and binary operators  for Tensors TinyVectorTensorOps.h  binary operators for TinyVector and Tensor combinations
-// TinyMatrixOps.h        assignment/unary and binary operators  for TinyMatrix
+// TensorOps.h            assignment/unary and binary operators  for Tensors
+// TinyVectorTensorOps.h  binary operators for TinyVector and Tensor combinations
 ////////////////////////////////////////////////////////////////////////////////
 #define PAssert
 #include "Numerics/OhmmsPETE/TinyVectorOps.h"
 #include "Numerics/OhmmsPETE/TensorOps.h"
 #include "Numerics/OhmmsPETE/TinyVectorTensorOps.h"
-#include "Numerics/OhmmsPETE/TinyMatrixOps.h"
 
 // macros to generate a set of binary and unary combintions for each operator
 // e.g., OHMMS_META_BINARY_OPERATORS(TinyVector,operator+,OpAdd)
@@ -103,7 +102,7 @@ FUNC( const T1& x, const TENT<T2,D>& v2)                                      \
 {                                                                             \
   return OTBinary<T1,TENT<T2,D>,TAG>::apply(x,v2,TAG());                      \
 }                                                                             \
- 
+
 #define OHMMS_META_ACCUM_OPERATORS(TENT,FUNC,TAG)                             \
                                                                               \
 template <class T1, class T2, unsigned D>                                     \
@@ -121,7 +120,7 @@ FUNC( TENT<T1,D>& v1, const T2& v2 )                                          \
   OTAssign<TENT<T1,D>,T2,TAG>::apply(v1,v2,TAG());                            \
   return v1;                                                                  \
 }                                                                             \
- 
+
 #define OHMMS_TINYMAT_BINARY_OPERATORS(TENT,FUNC,TAG)                         \
                                                                               \
 template <class T1, class T2, unsigned D1, unsigned D2>                       \
@@ -165,7 +164,7 @@ FUNC( const T1& x, const TENT<T2,D1,D2>& v2)                                  \
 {                                                                             \
   return OTBinary<T1,TENT<T2,D1,D2>,TAG>::apply(x,v2,TAG());                  \
 }                                                                             \
- 
+
 #define OHMMS_TINYMAT_ACCUM_OPERATORS(TENT,FUNC,TAG)                          \
                                                                               \
 template <class T1, class T2, unsigned D1, unsigned D2>                       \

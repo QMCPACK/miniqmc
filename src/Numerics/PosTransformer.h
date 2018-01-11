@@ -11,7 +11,7 @@
 //    Intel Corp.
 ////////////////////////////////////////////////////////////////////////////////
 // -*- C++ -*-
-/** @file VectorOperators.h
+/** @file PosTransformer.h
  * @brief Support funtions to handle position type data manged by soa
  */
 #ifndef QMCPLUSPLUS_SOA_FAST_PARTICLE_OPERATORS_H
