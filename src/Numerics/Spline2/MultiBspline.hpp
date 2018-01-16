@@ -44,11 +44,13 @@ template <typename T> struct MultiBspline
   MultiBspline(const MultiBspline &in) = delete;
   MultiBspline &operator=(const MultiBspline &in) = delete;
 
+  // These things exist because the GPU cannot access the static versions
   T A44[16];
   T dA44[16];
   T d2A44[16];
   //T d3A44[16];
 
+  // This copies the static versions into the local copies for the GPU
   void copy_A44() {
     for (int i=0; i<16; i++) {
       A44[i] = MultiBsplineData<T>::A44[i];

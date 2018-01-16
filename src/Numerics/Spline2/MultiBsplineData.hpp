@@ -41,6 +41,8 @@ template <typename T> struct SplineBound
 
 template <typename T> struct MultiBsplineData
 {
+  // These won't be accessible on for instance a GPU, so workaround puts copies into
+  // BeplineData
   static const T A44[16];
   static const T dA44[16];
   static const T d2A44[16];
