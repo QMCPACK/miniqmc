@@ -17,6 +17,7 @@
 #define OUTPUTMANAGER_H
 
 #include <Utilities/InfoStream.h>
+#include <config.h>
 
 
 enum class Verbosity {LOW, HIGH, DEBUG};
@@ -59,6 +60,7 @@ public:
     case LogType::DEBUG:
       return infoDebug.getStream();
     }
+    QMC_NORETURN(infoError.getStream());
   }
 
   /// Pause the summary and log streams

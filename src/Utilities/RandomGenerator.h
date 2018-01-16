@@ -46,7 +46,7 @@
 struct BoxMuller2
 {
   template <typename RNG>
-  static inline void generate(RNG &rng, double *restrict a, int n)
+  static inline void generate(RNG &rng, double *QMC_RESTRICT a, int n)
   {
     for (int i = 0; i + 1 < n; i += 2)
     {
@@ -62,7 +62,7 @@ struct BoxMuller2
   }
 
   template <typename RNG>
-  static inline void generate(RNG &rng, float *restrict a, int n)
+  static inline void generate(RNG &rng, float *QMC_RESTRICT a, int n)
   {
     for (int i = 0; i + 1 < n; i += 2)
     {

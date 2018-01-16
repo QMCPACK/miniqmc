@@ -25,24 +25,24 @@ namespace qmcplusplus
 {
 /**@{Determinant utilities */
 /** Inversion of a double matrix after LU factorization*/
-inline void getri(int n, double *restrict a, int lda, int *restrict piv,
-                  double *restrict work, int &lwork)
+inline void getri(int n, double *QMC_RESTRICT a, int lda, int *QMC_RESTRICT piv,
+                  double *QMC_RESTRICT work, int &lwork)
 {
   int status;
   dgetri(n, a, lda, piv, work, lwork, status);
 }
 
 /** Inversion of a float matrix after LU factorization*/
-inline void getri(int n, float *restrict a, int lda, int *restrict piv,
-                  float *restrict work, int &lwork)
+inline void getri(int n, float *QMC_RESTRICT a, int lda, int *QMC_RESTRICT piv,
+                  float *QMC_RESTRICT work, int &lwork)
 {
   int status;
   sgetri(n, a, lda, piv, work, lwork, status);
 }
 
 /** Inversion of a std::complex<double> matrix after LU factorization*/
-inline void getri(int n, std::complex<double> *restrict a, int lda,
-                  int *restrict piv, std::complex<double> *restrict work,
+inline void getri(int n, std::complex<double> *QMC_RESTRICT a, int lda,
+                  int *QMC_RESTRICT piv, std::complex<double> *QMC_RESTRICT work,
                   int &lwork)
 {
   int status;
@@ -50,8 +50,8 @@ inline void getri(int n, std::complex<double> *restrict a, int lda,
 }
 
 /** Inversion of a complex<float> matrix after LU factorization*/
-inline void getri(int n, std::complex<float> *restrict a, int lda,
-                  int *restrict piv, std::complex<float> *restrict work,
+inline void getri(int n, std::complex<float> *QMC_RESTRICT a, int lda,
+                  int *QMC_RESTRICT piv, std::complex<float> *QMC_RESTRICT work,
                   int &lwork)
 {
   int status;
@@ -61,7 +61,7 @@ inline void getri(int n, std::complex<float> *restrict a, int lda,
 
 /** query the size of workspace for Xgetri after LU decompisiton */
 template <class T>
-inline int getGetriWorkspace(T *restrict x, int n, int lda, int *restrict pivot)
+inline int getGetriWorkspace(T *QMC_RESTRICT x, int n, int lda, int *QMC_RESTRICT pivot)
 {
   T work;
   int lwork = -1;
@@ -75,7 +75,7 @@ inline int getGetriWorkspace(T *restrict x, int n, int lda, int *restrict pivot)
  * Assume: in[n][lda] and out[n][lda]
  */
 template <typename TIN, typename TOUT>
-inline void transpose(const TIN *restrict in, TOUT *restrict out, int n,
+inline void transpose(const TIN *QMC_RESTRICT in, TOUT *QMC_RESTRICT out, int n,
                       int lda)
 {
   for (int i = 0; i < n; ++i)
@@ -85,8 +85,8 @@ inline void transpose(const TIN *restrict in, TOUT *restrict out, int n,
 
 /// used only for debugging or walker move
 template <class T>
-inline T InvertWithLog(T *restrict x, int n, int lda, T *restrict work,
-                       int lwork, int *restrict pivot, T &phase)
+inline T InvertWithLog(T *QMC_RESTRICT x, int n, int lda, T *QMC_RESTRICT work,
+                       int lwork, int *QMC_RESTRICT pivot, T &phase)
 {
   T logdet(0.0);
   LUFactorization(n, n, x, lda, pivot);
@@ -104,7 +104,7 @@ inline T InvertWithLog(T *restrict x, int n, int lda, T *restrict work,
 
 /// inner product
 template <typename T1, typename T2, typename T3>
-inline T3 inner_product_n(const T1 *restrict a, const T2 *restrict b, int n,
+inline T3 inner_product_n(const T1 *QMC_RESTRICT a, const T2 *QMC_RESTRICT b, int n,
                           T3 res)
 {
   for (int i = 0; i < n; ++i)
@@ -114,8 +114,8 @@ inline T3 inner_product_n(const T1 *restrict a, const T2 *restrict b, int n,
 
 /// recompute inverse, do not evaluate log|det|
 template <class T>
-inline void InvertOnly(T *restrict x, int n, int lda, T *restrict work,
-                       int *restrict pivot, int lwork)
+inline void InvertOnly(T *QMC_RESTRICT x, int n, int lda, T *QMC_RESTRICT work,
+                       int *QMC_RESTRICT pivot, int lwork)
 {
   LUFactorization(n, n, x, lda, pivot);
   getri(n, x, lda, pivot, work, lwork);
@@ -124,7 +124,7 @@ inline void InvertOnly(T *restrict x, int n, int lda, T *restrict work,
 /** update Row as implemented in the full code */
 /** [UpdateRow] */
 template <typename T, typename RT>
-inline void updateRow(T *restrict pinv, const T *restrict tv, int m, int lda,
+inline void updateRow(T *QMC_RESTRICT pinv, const T *QMC_RESTRICT tv, int m, int lda,
                       int rowchanged, RT c_ratio_in)
 {
   constexpr T cone(1);
@@ -206,7 +206,7 @@ struct DiracDeterminant : public WaveFunctionComponentBase
                              pivot.data(), phase);
     std::copy_n(psiM.data(), nels * nels, psiMinv.data());
 
-    if (omp_get_num_threads() == 1)
+    if (qmc_get_num_threads() == 1)
     {
       checkIdentity(psiMsave, psiM, "Psi_0 * psiM(double)");
       checkIdentity(psiMsave, psiMinv, "Psi_0 * psiMinv(T)");
@@ -214,14 +214,15 @@ struct DiracDeterminant : public WaveFunctionComponentBase
     }
   }
 
-  RealType evaluateLog(ParticleSet &P, ParticleSet::ParticleGradient_t &G,
-                       ParticleSet::ParticleLaplacian_t &L)
+  RealType evaluateLog(ParticleSet &, ParticleSet::ParticleGradient_t &,
+                       ParticleSet::ParticleLaplacian_t &)
   {
     recompute();
     // FIXME do we want remainder of evaluateLog?
+    return 0.0;
   }
 
-  GradType evalGrad(ParticleSet &P, int iat) {}
+  GradType evalGrad(ParticleSet &, int) { return GradType(); }
 
   ValueType ratioGrad(ParticleSet &P, int iat, GradType &grad) { return ratio(P, iat); }
 

@@ -45,7 +45,7 @@ template <typename T, typename RNG = std::mt19937> struct StdRandom
       : nContexts(1), myContext(0), baseOffset(0), uniform(T(0), T(1)),
         normal(T(0), T(1))
   {
-    myRNG.seed(MakeSeed(omp_get_thread_num(), omp_get_num_threads()));
+    myRNG.seed(MakeSeed(qmc_get_thread_num(), qmc_get_num_threads()));
   }
 
   explicit StdRandom(uint_type iseed)
@@ -97,13 +97,13 @@ template <typename T, typename RNG = std::mt19937> struct StdRandom
   inline result_type operator()() { return uniform(myRNG); }
 
   /** generate a series of random numbers */
-  inline void generate_uniform(T *restrict d, int n)
+  inline void generate_uniform(T *QMC_RESTRICT d, int n)
   {
     for (int i = 0; i < n; ++i)
       d[i]     = uniform(myRNG);
   }
 
-  inline void generate_normal(T *restrict d, int n)
+  inline void generate_normal(T *QMC_RESTRICT d, int n)
   {
     BoxMuller2::generate(*this, d, n);
   }

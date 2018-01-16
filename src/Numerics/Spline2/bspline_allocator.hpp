@@ -176,9 +176,9 @@ void Allocator::copy(UBT *single, MBT *multi, int i, const int *offset,
   for (intptr_t ix = 0; ix < n0; ++ix)
     for (intptr_t iy = 0; iy < n1; ++iy)
     {
-      out_type *restrict out =
+      out_type *QMC_RESTRICT out =
           multi->coefs + ix * x_stride_out + iy * y_stride_out + istart;
-      const in_type *restrict in = single->coefs +
+      const in_type *QMC_RESTRICT in = single->coefs +
                                    (ix + offset0) * x_stride_in +
                                    (iy + offset1) * y_stride_in + offset2;
       for (intptr_t iz = 0; iz < n2; ++iz)

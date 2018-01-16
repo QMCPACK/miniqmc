@@ -85,6 +85,7 @@ ELSE(QMC_MIXED_PRECISION)
 ENDIF(QMC_MIXED_PRECISION)
 MESSAGE("   Base precision = ${OHMMS_PRECISION}")
 MESSAGE("   Full precision = ${OHMMS_PRECISION_FULL}")
+OPTION(QMC_USE_KOKKOS "Whether to use Kokkos" OFF)
 
 # Code coverage
 SET(GCOV_SUPPORTED FALSE)
@@ -309,10 +310,20 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
   ENDIF()
   MESSAGE(STATUS "Compiler: ${COMPILER}")
 
+  IF(QMC_USE_KOKKOS)
+    SET(KOKKOS_PREFIX "" CACHE PATH "Path to Kokkos install")
+    MESSAGE("searching in ${KOKKOS_PREFIX}/lib/CMake/Kokkos")
+    FIND_PACKAGE(Kokkos PATHS "${KOKKOS_PREFIX}/lib/CMake/Kokkos")
+    LINK_LIBRARIES(kokkos)
+  ENDIF()
+
   #------------------------------------
   # Include compiler-specific cmake file
   #------------------------------------
-  IF( ${COMPILER} MATCHES "IBM" )
+  IF (QMC_USE_KOKKOS)
+    #leave the flags alone, NVCC etc. don't accept the GNU flags
+    MESSAGE("leaving flags alone")
+  ELSEIF( ${COMPILER} MATCHES "IBM" )
     INCLUDE(${PROJECT_CMAKE}/IBMCompilers.cmake)
   ELSEIF( ${COMPILER} MATCHES "Intel" )
     INCLUDE(${PROJECT_CMAKE}/IntelCompilers.cmake)

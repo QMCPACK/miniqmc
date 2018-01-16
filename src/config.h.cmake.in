@@ -245,6 +245,17 @@
 /* Use VTune Task API with timers */
 #cmakedefine USE_VTUNE_TASKS @USE_VTUNE_TASKS@
 
+#cmakedefine QMC_USE_KOKKOS
+
+#ifdef __CUDACC__
+#define QMC_RESTRICT
+#define QMC_FORCEINLINE
+#define QMC_NORETURN(x) return (x)
+#else
+#define QMC_RESTRICT restrict
+#define QMC_FORCEINLINE __forceinline
+#define QMC_NORETURN(x)
+#endif
 
 #endif // QMCPLUSPLUS_CONFIGURATION_H
 

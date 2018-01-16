@@ -326,9 +326,9 @@ struct DistanceTableData
    * @param displ compressed displacement
    * @return number of target particles within rcut
    */
-  virtual size_t get_neighbors(int iat, RealType rcut, int *restrict jid,
-                               RealType *restrict dist,
-                               PosType *restrict displ) const
+  virtual size_t get_neighbors(int iat, RealType rcut, int *QMC_RESTRICT jid,
+                               RealType *QMC_RESTRICT dist,
+                               PosType *QMC_RESTRICT displ) const
   {
     return 0;
   }
@@ -349,7 +349,7 @@ struct DistanceTableData
    * @return number of target particles within rcut
    */
   virtual size_t get_neighbors(int iat, RealType rcut,
-                               RealType *restrict dist) const
+                               RealType *QMC_RESTRICT dist) const
   {
     return 0;
   }

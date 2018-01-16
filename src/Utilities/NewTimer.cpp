@@ -265,7 +265,7 @@ void TimerManagerClass::print_flat()
                (*it).first.c_str(), p.timeList[i], p.callList[i],
                p.timeList[i] / (static_cast<double>(p.callList[i]) +
                                 std::numeric_limits<double>::epsilon()),
-               p.timeList[i] / static_cast<double>(omp_get_max_threads()));
+               p.timeList[i] / static_cast<double>(qmc_get_max_threads()));
         ++it;
       }
     }

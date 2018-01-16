@@ -94,7 +94,7 @@ typedef struct
 {
   spline_code sp_code;
   type_code t_code;
-  void *restrict coefs;
+  void *QMC_RESTRICT coefs;
 } Bspline;
 
 #ifdef __cplusplus

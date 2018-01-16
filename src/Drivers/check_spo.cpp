@@ -105,7 +105,6 @@ int main(int argc, char **argv)
       case 'V':
         print_version(true);
         return 1;
-        break;
       default:
         print_help();
       }
@@ -127,7 +126,7 @@ int main(int argc, char **argv)
   Tensor<int, 3> tmat(na, 0, 0, 0, nb, 0, 0, 0, nc);
 
   // turn off output
-  if (omp_get_max_threads() > 1)
+  if (qmc_get_max_threads() > 1)
   {
     outputManager.shutOff();
   }
@@ -175,8 +174,8 @@ int main(int argc, char **argv)
    reduction(+:evalV_v_err,evalVGH_v_err,evalVGH_g_err,evalVGH_h_err)
   // clang-format on
   {
-    const int np     = omp_get_num_threads();
-    const int ip     = omp_get_thread_num();
+    const int np     = qmc_get_num_threads();
+    const int ip     = qmc_get_thread_num();
     const int team_id = ip / team_size;
     const int member_id = ip % team_size;
 
@@ -317,7 +316,7 @@ int main(int argc, char **argv)
   evalVGH_g_err /= dNumVGHCalls;
   evalVGH_h_err /= dNumVGHCalls;
 
-  int np                     = omp_get_max_threads();
+  int np                     = qmc_get_max_threads();
   constexpr RealType small_v = std::numeric_limits<RealType>::epsilon() * 1e4;
   constexpr RealType small_g = std::numeric_limits<RealType>::epsilon() * 3e6;
   constexpr RealType small_h = std::numeric_limits<RealType>::epsilon() * 6e8;

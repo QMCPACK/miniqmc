@@ -112,19 +112,19 @@ template <class FT> struct TwoBodyJastrow : public WaveFunctionComponentBase
                   bool fromscratch = false);
 
   /*@{ internal compute engines*/
-  inline void computeU3(ParticleSet &P, int iat, const RealType *restrict dist,
-                        RealType *restrict u, RealType *restrict du,
-                        RealType *restrict d2u);
+  inline void computeU3(ParticleSet &P, int iat, const RealType *QMC_RESTRICT dist,
+                        RealType *QMC_RESTRICT u, RealType *QMC_RESTRICT du,
+                        RealType *QMC_RESTRICT d2u);
 
   /** compute gradient
    */
-  inline posT accumulateG(const valT *restrict du,
+  inline posT accumulateG(const valT *QMC_RESTRICT du,
                           const RowContainer &displ) const
   {
     posT grad;
     for (int idim = 0; idim < OHMMS_DIM; ++idim)
     {
-      const valT *restrict dX = displ.data(idim);
+      const valT *QMC_RESTRICT dX = displ.data(idim);
       valT s                  = valT();
 
 #pragma omp simd reduction(+ : s) aligned(du, dX)
@@ -137,7 +137,7 @@ template <class FT> struct TwoBodyJastrow : public WaveFunctionComponentBase
 
   /** compute gradient and lap
    */
-  inline void accumulateGL(const valT *restrict du, const valT *restrict d2u,
+  inline void accumulateGL(const valT *QMC_RESTRICT du, const valT *QMC_RESTRICT d2u,
                            const RowContainer &displ, posT &grad,
                            valT &lap) const
   {
@@ -148,7 +148,7 @@ template <class FT> struct TwoBodyJastrow : public WaveFunctionComponentBase
       lap += d2u[jat] + lapfac * du[jat];
     for (int idim = 0; idim < OHMMS_DIM; ++idim)
     {
-      const valT *restrict dX = displ.data(idim);
+      const valT *QMC_RESTRICT dX = displ.data(idim);
       valT s                  = valT();
       //#pragma omp simd reduction(+:s)
       for (int jat = 0; jat < N; ++jat)
@@ -234,10 +234,10 @@ template <typename FT> void TwoBodyJastrow<FT>::addFunc(int ia, int ib, FT *j)
  */
 template <typename FT>
 inline void TwoBodyJastrow<FT>::computeU3(ParticleSet &P, int iat,
-                                          const RealType *restrict dist,
-                                          RealType *restrict u,
-                                          RealType *restrict du,
-                                          RealType *restrict d2u)
+                                          const RealType *QMC_RESTRICT dist,
+                                          RealType *QMC_RESTRICT u,
+                                          RealType *QMC_RESTRICT du,
+                                          RealType *QMC_RESTRICT d2u)
 {
   constexpr valT czero(0);
   std::fill_n(u, N, czero);

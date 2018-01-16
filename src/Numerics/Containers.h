@@ -130,7 +130,7 @@ template <typename T, unsigned D> struct VectorSoAContainer
   }
 
   /// initialize the data members
-  __forceinline void setDefaults()
+  QMC_FORCEINLINE void setDefaults()
   {
     nLocal     = 0;
     nGhosts    = 0;
@@ -143,7 +143,7 @@ template <typename T, unsigned D> struct VectorSoAContainer
    *
    * nAllocated is used to ensure no memory leak
    */
-  __forceinline void resize(size_t n)
+  QMC_FORCEINLINE void resize(size_t n)
   {
     if (nAllocated) myAlloc.deallocate(myData, nAllocated);
     nLocal     = n;
@@ -159,7 +159,7 @@ template <typename T, unsigned D> struct VectorSoAContainer
    *
    * Free existing memory and reset the internal variables
    */
-  __forceinline void resetByRef(size_t n, size_t n_padded, T *ptr)
+  QMC_FORCEINLINE void resetByRef(size_t n, size_t n_padded, T *ptr)
   {
     if (nAllocated) myAlloc.deallocate(myData, nAllocated);
     nAllocated = 0;
@@ -169,9 +169,9 @@ template <typename T, unsigned D> struct VectorSoAContainer
   }
 
   /// return the physical size
-  __forceinline size_t size() const { return nLocal; }
+  QMC_FORCEINLINE size_t size() const { return nLocal; }
   /// return the physical size
-  __forceinline size_t capacity() const { return nGhosts; }
+  QMC_FORCEINLINE size_t capacity() const { return nGhosts; }
 
   /** AoS to SoA : copy from ParticleAttrib<>
    *
@@ -198,7 +198,7 @@ template <typename T, unsigned D> struct VectorSoAContainer
 
   /** return TinyVector<T,D>
    */
-  __forceinline Type_t operator[](size_t i) const
+  QMC_FORCEINLINE Type_t operator[](size_t i) const
   {
     return Type_t(myData + i, nGhosts);
   }
@@ -208,8 +208,8 @@ template <typename T, unsigned D> struct VectorSoAContainer
   {
     size_t M;
     T *_base;
-    __forceinline Accessor(T *a, size_t ng) : _base(a), M(ng) {}
-    __forceinline Accessor &operator=(const TinyVector<T, D> &rhs)
+    QMC_FORCEINLINE Accessor(T *a, size_t ng) : _base(a), M(ng) {}
+    QMC_FORCEINLINE Accessor &operator=(const TinyVector<T, D> &rhs)
     {
       #pragma unroll
       for (size_t i      = 0; i < D; ++i)
@@ -218,7 +218,7 @@ template <typename T, unsigned D> struct VectorSoAContainer
     }
 
     /** asign value */
-    template <typename T1> __forceinline Accessor &operator=(T1 rhs)
+    template <typename T1> QMC_FORCEINLINE Accessor &operator=(T1 rhs)
     {
       #pragma unroll
       for (size_t i      = 0; i < D; ++i)
@@ -231,18 +231,18 @@ template <typename T, unsigned D> struct VectorSoAContainer
    *
    * Use for (*this)[i]=TinyVector<T,D>;
    */
-  __forceinline Accessor operator()(size_t i)
+  QMC_FORCEINLINE Accessor operator()(size_t i)
   {
     return Accessor(myData + i, nGhosts);
   }
   /// return the base
-  __forceinline T *data() { return myData; }
+  QMC_FORCEINLINE T *data() { return myData; }
   /// return the base
-  __forceinline const T *data() const { return myData; }
+  QMC_FORCEINLINE const T *data() const { return myData; }
   /// return the pointer of the i-th components
-  __forceinline T *restrict data(size_t i) { return myData + i * nGhosts; }
+  QMC_FORCEINLINE T *QMC_RESTRICT data(size_t i) { return myData + i * nGhosts; }
   /// return the const pointer of the i-th components
-  __forceinline const T *restrict data(size_t i) const
+  QMC_FORCEINLINE const T *QMC_RESTRICT data(size_t i) const
   {
     return myData + i * nGhosts;
   }
