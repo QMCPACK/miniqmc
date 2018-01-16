@@ -206,7 +206,7 @@ struct DiracDeterminant : public WaveFunctionComponentBase
                              pivot.data(), phase);
     std::copy_n(psiM.data(), nels * nels, psiMinv.data());
 
-    if (qmc_get_num_threads() == 1)
+    if (omp_get_num_threads() == 1)
     {
       checkIdentity(psiMsave, psiM, "Psi_0 * psiM(double)");
       checkIdentity(psiMsave, psiMinv, "Psi_0 * psiMinv(T)");

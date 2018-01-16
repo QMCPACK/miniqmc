@@ -67,7 +67,7 @@ int main(int argc, char **argv)
   int nsteps    = 100;
   int iseed     = 11;
   int nsubsteps = 1;
-  int np        = qmc_get_max_threads();
+  int np        = omp_get_max_threads();
 
   PrimeNumberSet<uint32_t> myPrimes;
 
@@ -118,7 +118,7 @@ int main(int argc, char **argv)
   }
 
   // turn off output
-  if (!verbose || qmc_get_max_threads() > 1)
+  if (!verbose || omp_get_max_threads() > 1)
   {
     outputManager.shutOff();
   }
