@@ -9,9 +9,6 @@
 // File created by: Jeongnim Kim, jeongnim.kim@intel.com, Intel Corp.
 ////////////////////////////////////////////////////////////////////////////////
 // -*- C++ -*-
-#ifdef ENABLE_OPENMP
-#include <omp.h>
-#endif
 #include <QMCWaveFunctions/WaveFunction.h>
 #include <Input/Input.hpp>
 
