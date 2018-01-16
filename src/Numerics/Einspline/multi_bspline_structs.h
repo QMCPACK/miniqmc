@@ -31,6 +31,8 @@ typedef struct
 {
   spline_code spcode;
   type_code tcode;
+  typedef Kokkos::View<float**, Kokkos::LayoutRight> coefs_view_t;
+  coefs_view_t coefs_view;
   float *QMC_RESTRICT coefs;
   intptr_t x_stride;
   Ugrid x_grid;
@@ -43,6 +45,8 @@ typedef struct
 {
   spline_code spcode;
   type_code tcode;
+  typedef Kokkos::View<float***, Kokkos::LayoutRight> coefs_view_t;
+  coefs_view_t coefs_view;
   float *QMC_RESTRICT coefs;
   intptr_t x_stride, y_stride;
   Ugrid x_grid, y_grid;
@@ -54,6 +58,8 @@ typedef struct
 {
   spline_code spcode;
   type_code tcode;
+  typedef Kokkos::View<float****, Kokkos::LayoutRight> coefs_view_t;
+  coefs_view_t coefs_view;
   float *QMC_RESTRICT coefs;
   intptr_t x_stride, y_stride, z_stride;
   Ugrid x_grid, y_grid, z_grid;
@@ -69,6 +75,8 @@ typedef struct
 {
   spline_code spcode;
   type_code tcode;
+  typedef Kokkos::View<double**, Kokkos::LayoutRight> coefs_view_t;
+  coefs_view_t coefs_view;
   double *QMC_RESTRICT coefs;
   intptr_t x_stride;
   Ugrid x_grid;
@@ -81,6 +89,8 @@ typedef struct
 {
   spline_code spcode;
   type_code tcode;
+  typedef Kokkos::View<double***, Kokkos::LayoutRight> coefs_view_t;
+  coefs_view_t coefs_view;
   double *QMC_RESTRICT coefs;
   intptr_t x_stride, y_stride;
   Ugrid x_grid, y_grid;
@@ -92,6 +102,8 @@ typedef struct
 {
   spline_code spcode;
   type_code tcode;
+  typedef Kokkos::View<double****, Kokkos::LayoutRight> coefs_view_t;
+  coefs_view_t coefs_view;
   double *QMC_RESTRICT coefs;
   intptr_t x_stride, y_stride, z_stride;
   Ugrid x_grid, y_grid, z_grid;
@@ -107,6 +119,8 @@ typedef struct
 {
   spline_code spcode;
   type_code tcode;
+  typedef Kokkos::View<complex_float**, Kokkos::LayoutRight> coefs_view_t;
+  coefs_view_t coefs_view;
   complex_float *QMC_RESTRICT coefs;
   intptr_t x_stride;
   Ugrid x_grid;
@@ -119,6 +133,8 @@ typedef struct
 {
   spline_code spcode;
   type_code tcode;
+  typedef Kokkos::View<complex_float***, Kokkos::LayoutRight> coefs_view_t;
+  coefs_view_t coefs_view;
   complex_float *QMC_RESTRICT coefs;
   intptr_t x_stride, y_stride;
   Ugrid x_grid, y_grid;
@@ -132,6 +148,8 @@ typedef struct
 {
   spline_code spcode;
   type_code tcode;
+  typedef Kokkos::View<complex_float**, Kokkos::LayoutRight> coefs_view_t;
+  coefs_view_t coefs_view;
   complex_float *QMC_RESTRICT coefs;
   intptr_t x_stride, y_stride, z_stride;
   Ugrid x_grid, y_grid, z_grid;
@@ -149,6 +167,8 @@ typedef struct
 {
   spline_code spcode;
   type_code tcode;
+  typedef Kokkos::View<complex_double**, Kokkos::LayoutRight> coefs_view_t;
+  coefs_view_t coefs_view;
   complex_double *QMC_RESTRICT coefs;
   intptr_t x_stride;
   Ugrid x_grid;
@@ -161,6 +181,8 @@ typedef struct
 {
   spline_code spcode;
   type_code tcode;
+  typedef Kokkos::View<complex_double***, Kokkos::LayoutRight> coefs_view_t;
+  coefs_view_t coefs_view;
   complex_double *QMC_RESTRICT coefs;
   intptr_t x_stride, y_stride;
   Ugrid x_grid, y_grid;
@@ -174,6 +196,8 @@ typedef struct
 {
   spline_code spcode;
   type_code tcode;
+  typedef Kokkos::View<complex_double****, Kokkos::LayoutRight> coefs_view_t;
+  coefs_view_t coefs_view;
   complex_double *QMC_RESTRICT coefs;
   intptr_t x_stride, y_stride, z_stride;
   Ugrid x_grid, y_grid, z_grid;
