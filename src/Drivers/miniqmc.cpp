@@ -262,12 +262,12 @@ int main(int argc, char **argv)
   }
 
   // turn off output
-  if (!verbose || qmc_get_max_threads() > 1)
+  if (!verbose || omp_get_max_threads() > 1)
   {
     outputManager.shutOff();
   }
 
-  int nthreads = qmc_get_max_threads();
+  int nthreads = omp_get_max_threads();
 
   using spo_type = einspline_spo<OHMMS_PRECISION>;
   spo_type spo_main;
@@ -325,7 +325,7 @@ int main(int argc, char **argv)
     ions.setName("ion");
     els.setName("e");
 
-    const int ip = qmc_get_thread_num();
+    const int ip = omp_get_thread_num();
 
     const int member_id = ip % team_size;
 

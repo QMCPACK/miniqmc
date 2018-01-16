@@ -210,7 +210,7 @@ struct DiracDeterminantRef : public qmcplusplus::WaveFunctionComponentBase
                              pivot.data(), phase);
     std::copy_n(psiM.data(), nels * nels, psiMinv.data());
 
-    if (qmc_get_num_threads() == 1)
+    if (omp_get_num_threads() == 1)
     {
       // qualified invocation to defeat ADL
       miniqmcreference::checkIdentity(psiMsave, psiM, "Psi_0 * psiM(double)");

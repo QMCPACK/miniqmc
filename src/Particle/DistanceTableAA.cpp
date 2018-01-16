@@ -67,7 +67,7 @@ DistanceTableData *createDistanceTable(ParticleSet &s, int dt_type)
   dt->Name = p.str(); // assign the table name
 
   o << " using Cartesian coordinates";
-  if (qmc_get_thread_num() == 0)
+  if (omp_get_thread_num() == 0)
   {
     app_log() << o.str() << std::endl;
     app_log().flush();
