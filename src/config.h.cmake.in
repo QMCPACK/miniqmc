@@ -248,7 +248,7 @@
 #cmakedefine QMC_USE_KOKKOS
 
 #ifdef __CUDACC__
-#define QMC_RESTRICT
+#define QMC_RESTRICT __restrict__
 #define QMC_FORCEINLINE
 #define QMC_NORETURN(x) return (x)
 #else

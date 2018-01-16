@@ -315,6 +315,7 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
     MESSAGE("searching in ${KOKKOS_PREFIX}/lib/CMake/Kokkos")
     FIND_PACKAGE(Kokkos PATHS "${KOKKOS_PREFIX}/lib/CMake/Kokkos")
     LINK_LIBRARIES(kokkos)
+    INCLUDE_DIRECTORIES(${KOKKOS_PREFIX}/include)
   ENDIF()
 
   #------------------------------------
