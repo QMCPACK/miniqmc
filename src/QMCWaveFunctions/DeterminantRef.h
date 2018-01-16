@@ -210,7 +210,7 @@ struct DiracDeterminantRef : public qmcplusplus::WaveFunctionComponentBase
                              pivot.data(), phase);
     std::copy_n(psiM.data(), nels * nels, psiMinv.data());
 
-    if (omp_get_num_threads() == 1)
+    if (qmc_get_num_threads() == 1)
     {
       // qualified invocation to defeat ADL
       miniqmcreference::checkIdentity(psiMsave, psiM, "Psi_0 * psiM(double)");
@@ -219,13 +219,14 @@ struct DiracDeterminantRef : public qmcplusplus::WaveFunctionComponentBase
     }
   }
 
-  RealType evaluateLog(ParticleSet &P, ParticleSet::ParticleGradient_t &G,
-                       ParticleSet::ParticleLaplacian_t &L)
+  RealType evaluateLog(ParticleSet &, ParticleSet::ParticleGradient_t &,
+                       ParticleSet::ParticleLaplacian_t &)
   {
     recompute();
     // FIXME do we want remainder of evaluateLog?
+    return RealType();
   }
-  GradType evalGrad(ParticleSet &P, int iat) {}
+  GradType evalGrad(ParticleSet &, int) { return GradType(); }
   ValueType ratioGrad(ParticleSet &P, int iat, GradType &grad) { return ratio(P, iat); }
   void evaluateGL(ParticleSet &P, ParticleSet::ParticleGradient_t &G,
                   ParticleSet::ParticleLaplacian_t &L, bool fromscratch = false) {}

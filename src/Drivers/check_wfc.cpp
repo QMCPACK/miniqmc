@@ -106,7 +106,6 @@ int main(int argc, char **argv)
       case 'V':
         print_version(true);
         return 1;
-        break;
       default:
         print_help();
       }
@@ -135,7 +134,7 @@ int main(int argc, char **argv)
   Tensor<int, 3> tmat(na, 0, 0, 0, nb, 0, 0, 0, nc);
 
   // turn off output
-  if (omp_get_max_threads() > 1)
+  if (qmc_get_max_threads() > 1)
   {
     outputManager.shutOff();
   }
@@ -163,7 +162,7 @@ int main(int argc, char **argv)
     els.setName("e");
     OHMMS_PRECISION scale = 1.0;
 
-    int ip = omp_get_thread_num();
+    int ip = qmc_get_thread_num();
 
     // create generator within the thread
     Random.init(0, 1, iseed);
@@ -416,7 +415,7 @@ int main(int argc, char **argv)
     }
   } // end of omp parallel
 
-  int np                   = omp_get_max_threads();
+  int np                   = qmc_get_max_threads();
   constexpr RealType small = std::numeric_limits<RealType>::epsilon() * 1e4;
   bool fail                = false;
   cout << std::endl;

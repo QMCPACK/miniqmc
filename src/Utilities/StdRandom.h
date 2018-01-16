@@ -45,7 +45,7 @@ template <typename T, typename RNG = std::mt19937> struct StdRandom
       : nContexts(1), myContext(0), baseOffset(0), uniform(T(0), T(1)),
         normal(T(0), T(1))
   {
-    myRNG.seed(MakeSeed(omp_get_thread_num(), omp_get_num_threads()));
+    myRNG.seed(MakeSeed(qmc_get_thread_num(), qmc_get_num_threads()));
   }
 
   explicit StdRandom(uint_type iseed)

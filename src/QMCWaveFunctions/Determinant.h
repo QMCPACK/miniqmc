@@ -206,7 +206,7 @@ struct DiracDeterminant : public WaveFunctionComponentBase
                              pivot.data(), phase);
     std::copy_n(psiM.data(), nels * nels, psiMinv.data());
 
-    if (omp_get_num_threads() == 1)
+    if (qmc_get_num_threads() == 1)
     {
       checkIdentity(psiMsave, psiM, "Psi_0 * psiM(double)");
       checkIdentity(psiMsave, psiMinv, "Psi_0 * psiMinv(T)");
@@ -214,14 +214,15 @@ struct DiracDeterminant : public WaveFunctionComponentBase
     }
   }
 
-  RealType evaluateLog(ParticleSet &P, ParticleSet::ParticleGradient_t &G,
-                       ParticleSet::ParticleLaplacian_t &L)
+  RealType evaluateLog(ParticleSet &, ParticleSet::ParticleGradient_t &,
+                       ParticleSet::ParticleLaplacian_t &)
   {
     recompute();
     // FIXME do we want remainder of evaluateLog?
+    return 0.0;
   }
 
-  GradType evalGrad(ParticleSet &P, int iat) {}
+  GradType evalGrad(ParticleSet &, int) { return GradType(); }
 
   ValueType ratioGrad(ParticleSet &P, int iat, GradType &grad) { return ratio(P, iat); }
 

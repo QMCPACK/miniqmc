@@ -247,6 +247,7 @@
 
 #define QMC_RESTRICT
 #define QMC_FORCEINLINE
+#define QMC_NORETURN(x) return (x)
 
 #endif // QMCPLUSPLUS_CONFIGURATION_H
 
