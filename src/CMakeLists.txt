@@ -39,15 +39,13 @@ IF (GIT_FOUND AND IS_GIT_PROJECT)
   #
   # Apparently custom commands need to be defined where the output is used.
   # If this in the main CMakeLists.txt it does not work.
-  
+
   EXECUTE_PROCESS(COMMAND ${GIT_EXECUTABLE} log -1 --format=%s
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     OUTPUT_VARIABLE GIT_SUBJECT_RAW
     OUTPUT_STRIP_TRAILING_WHITESPACE
     )
-  MESSAGE("GIT_SUBJECT_RAW ${GIT_SUBJECT_RAW}")
   STRING(REPLACE "\"" "\\\"" GIT_SUBJECT "${GIT_SUBJECT_RAW}")
-  MESSAGE("GIT_SUBJECT ${GIT_SUBJECT}")
   ADD_CUSTOM_COMMAND(
     OUTPUT ${GITREV_TMP}
     COMMAND ${CMAKE_COMMAND} -E echo_append "#define GIT_BRANCH_RAW " > ${GITREV_TMP}
