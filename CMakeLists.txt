@@ -309,6 +309,21 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
   ENDIF()
   MESSAGE(STATUS "Compiler: ${COMPILER}")
 
+  #------------------------------------
+  # Include compiler-specific cmake file
+  #------------------------------------
+  IF( ${COMPILER} MATCHES "IBM" )
+    INCLUDE(${PROJECT_CMAKE}/IBMCompilers.cmake)
+  ELSEIF( ${COMPILER} MATCHES "Intel" )
+    INCLUDE(${PROJECT_CMAKE}/IntelCompilers.cmake)
+  ELSEIF( ${COMPILER} MATCHES "GNU" )
+    INCLUDE(${PROJECT_CMAKE}/GNUCompilers.cmake)
+  ELSEIF( ${COMPILER} MATCHES "Clang" )
+    INCLUDE(${PROJECT_CMAKE}/ClangCompilers.cmake)
+  ELSE()
+    MESSAGE(WARNING "No default file for compiler (${COMPILER})")
+  ENDIF()
+
   #-------------------------------------------------------------------
   #  check MPI installation
   #-------------------------------------------------------------------
