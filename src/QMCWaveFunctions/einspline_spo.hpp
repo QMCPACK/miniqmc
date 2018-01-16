@@ -35,9 +35,14 @@ struct einspline_spo
   /// define the einsplie data object type
   using spline_type = typename bspline_traits<T, 3>::SplineType;
   using pos_type        = TinyVector<T, 3>;
-  using vContainer_type = aligned_vector<T>;
-  using gContainer_type = VectorSoAContainer<T, 3>;
-  using hContainer_type = VectorSoAContainer<T, 6>;
+
+  //  using vContainer_type = aligned_vector<T>;
+  //  using gContainer_type = VectorSoAContainer<T, 3>;
+  //  using hContainer_type = VectorSoAContainer<T, 6>;
+  using vContainer_type = Kokkos::View<T*>;
+  using gContainer_type = Kokkos::View<T*[3], Kokko::LayoutLeft>;
+  using hContainer_type = Kokkos::View<T*[6], Kokko::LayoutLeft>;
+
   using lattice_type    = CrystalLattice<T, 3>;
 
   /// number of blocks
@@ -59,9 +64,12 @@ struct einspline_spo
   compute_engine_type compute_engine;
 
   aligned_vector<spline_type *> einsplines;
-  aligned_vector<vContainer_type *> psi;
-  aligned_vector<gContainer_type *> grad;
-  aligned_vector<hContainer_type *> hess;
+  //aligned_vector<vContainer_type *> psi;
+  //aligned_vector<gContainer_type *> grad;
+  //aligned_vector<hContainer_type *> hess;
+  Kokkos::View<vContainer_type*> psi;
+  Kokkos::View<gContainer_type*> grad;
+  Kokkos::View<hContainer_type*> hess;
 
   /// default constructor
   einspline_spo()
@@ -121,14 +129,23 @@ struct einspline_spo
     if (nBlocks > psi.size())
     {
       clean();
-      psi.resize(nBlocks);
-      grad.resize(nBlocks);
-      hess.resize(nBlocks);
-      for (int i = 0; i < nBlocks; ++i)
-      {
-        psi[i]  = new vContainer_type(nSplinesPerBlock);
-        grad[i] = new gContainer_type(nSplinesPerBlock);
-        hess[i] = new hContainer_type(nSplinesPerBlock);
+      //      psi.resize(nBlocks);
+      //      grad.resize(nBlocks);
+      //      hess.resize(nBlocks);
+      //      for (int i = 0; i < nBlocks; ++i)
+      //      {
+      //        psi[i]  = new vContainer_type(nSplinesPerBlock);
+      //        grad[i] = new gContainer_type(nSplinesPerBlock);
+      //        hess[i] = new hContainer_type(nSplinesPerBlock);
+      //      }
+
+      psi = Kokkos::View<vContainer_type*>("Psi", nBlocks);
+      grad = Kokkos::View<gContainer_type*>("Grad", nBlocks);
+      hess = Kokkos::View<hContainer_type*>("Hess", nBlocks);
+      for (int i = 0; i < psi.extent(0); i++) {
+	new (&psi(i)) vContainer_type("Psi_i", nSplinesPerBlock);
+	new (&grad(i)) gContainer_type("Grad_i", nSplinesPerBlock);
+	new (&hess(i)) hContainer_type("Hess_i", nSplinesPerBlock);
       }
     }
   }

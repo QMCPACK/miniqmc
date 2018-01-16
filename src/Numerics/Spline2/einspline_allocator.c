@@ -134,8 +134,11 @@ einspline_create_multi_UBspline_3d_s(Ugrid x_grid, Ugrid y_grid, Ugrid z_grid,
   spline->z_stride = N;
 
   spline->coefs_size = (size_t)Nx * spline->x_stride;
-  spline->coefs =
-      (float *)einspline_alloc(sizeof(float) * spline->coefs_size, QMC_CLINE);
+  spline->coefs_view = multi_UBspline_3d_s::coefs_view_t("Multi_UBspline_3d_s",Nx,Ny,Ny,N);
+  spline->coefs = spline->coefs_view.data();
+
+  //  spline->coefs =
+  //      (float *)einspline_alloc(sizeof(float) * spline->coefs_size, QMC_CLINE);
   // printf("Einepline allocator %d %d %d %zd (%d)  %zu
   // %d\n",Nx,Ny,Nz,N,num_splines,spline->coefs_size,QMC_CLINE);
 
@@ -227,8 +230,11 @@ einspline_create_multi_UBspline_3d_d(Ugrid x_grid, Ugrid y_grid, Ugrid z_grid,
   spline->z_stride = N;
 
   spline->coefs_size = (size_t)Nx * spline->x_stride;
-  spline->coefs =
-      (double *)einspline_alloc(sizeof(double) * spline->coefs_size, QMC_CLINE);
+  spline->coefs_view = multi_UBspline_3d_d::coefs_view_t("Multi_UBspline_3d_d",Nx,Ny,Ny,N);
+  spline->coefs = spline->coefs_view.data();
+
+  //  spline->coefs =
+  //      (double *)einspline_alloc(sizeof(double) * spline->coefs_size, QMC_CLINE);
 
   if (!spline->coefs)
   {
