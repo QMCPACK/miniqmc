@@ -458,7 +458,10 @@ IF(CXX11_NEEDED)
     # avoid repeated -std=c++11 flag
     STRING(REPLACE "++" "\\+\\+" CXX11_FLAG_MATCH ${CXX11_FLAG})
     IF(NOT CMAKE_CXX_FLAGS MATCHES ${CXX11_FLAG_MATCH})
-      SET (CMAKE_CXX_FLAGS "${CXX11_FLAG} ${CMAKE_CXX_FLAGS}")
+      #Kokkos will bring in the C++11 flag through INTERFACE_COMPILE_OPTIONS
+      IF (NOT QMC_USE_KOKKOS)
+        SET (CMAKE_CXX_FLAGS "${CXX11_FLAG} ${CMAKE_CXX_FLAGS}")
+      ENDIF()
     ENDIF()
   ELSE()
     MESSAGE(FATAL_ERROR "A compiler supporting C++11 is required. Use a newer C++ compiler.")
