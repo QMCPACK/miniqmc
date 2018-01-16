@@ -7,3 +7,4 @@ cmake $HOME/src/miniqmc \
 -DQMC_USE_KOKKOS:BOOL=ON \
 -DKOKKOS_PREFIX:PATH=$HOME/install/kokkos \
 2>&1 | tee config_log
+
