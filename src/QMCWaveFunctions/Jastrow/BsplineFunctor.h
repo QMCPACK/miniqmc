@@ -144,10 +144,10 @@ template <class T> struct BsplineFunctor : public OptimizableFunctorBase
   // clang-format off
   void evaluateVGL(const int iStart, const int iEnd, 
       const T* _distArray,  
-      T* restrict _valArray,
-      T* restrict _gradArray, 
-      T* restrict _laplArray, 
-      T* restrict distArrayCompressed, int* restrict distIndices ) const;
+      T* QMC_RESTRICT _valArray,
+      T* QMC_RESTRICT _gradArray, 
+      T* QMC_RESTRICT _laplArray, 
+      T* QMC_RESTRICT distArrayCompressed, int* QMC_RESTRICT distIndices ) const;
   // clang-format on
 
   /** evaluate sum of the pair potentials for [iStart,iEnd)
@@ -157,8 +157,8 @@ template <class T> struct BsplineFunctor : public OptimizableFunctorBase
    * @param distArrayCompressed temp storage to filter r_j < cutoff_radius
    * @return \f$\sum u(r_j)\f$ for r_j < cutoff_radius
    */
-  T evaluateV(const int iStart, const int iEnd, const T *restrict _distArray,
-              T *restrict distArrayCompressed) const;
+  T evaluateV(const int iStart, const int iEnd, const T *QMC_RESTRICT _distArray,
+              T *QMC_RESTRICT distArrayCompressed) const;
 
   inline real_type evaluate(real_type r)
   {
@@ -261,10 +261,10 @@ template <class T> struct BsplineFunctor : public OptimizableFunctorBase
 
 template <typename T>
 inline T BsplineFunctor<T>::evaluateV(const int iStart, const int iEnd,
-                                      const T *restrict _distArray,
-                                      T *restrict distArrayCompressed) const
+                                      const T *QMC_RESTRICT _distArray,
+                                      T *QMC_RESTRICT distArrayCompressed) const
 {
-  const real_type *restrict distArray = _distArray + iStart;
+  const real_type *QMC_RESTRICT distArray = _distArray + iStart;
 
   ASSUME_ALIGNED(distArrayCompressed);
   int iCount       = 0;
@@ -305,8 +305,8 @@ inline T BsplineFunctor<T>::evaluateV(const int iStart, const int iEnd,
 template <typename T>
 inline void BsplineFunctor<T>::evaluateVGL(
     const int iStart, const int iEnd, const T *_distArray,
-    T *restrict _valArray, T *restrict _gradArray, T *restrict _laplArray,
-    T *restrict distArrayCompressed, int *restrict distIndices) const
+    T *QMC_RESTRICT _valArray, T *QMC_RESTRICT _gradArray, T *QMC_RESTRICT _laplArray,
+    T *QMC_RESTRICT distArrayCompressed, int *QMC_RESTRICT distIndices) const
 {
 
   real_type dSquareDeltaRinv = DeltaRInv * DeltaRInv;

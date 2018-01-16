@@ -97,13 +97,13 @@ template <typename T, typename RNG = std::mt19937> struct StdRandom
   inline result_type operator()() { return uniform(myRNG); }
 
   /** generate a series of random numbers */
-  inline void generate_uniform(T *restrict d, int n)
+  inline void generate_uniform(T *QMC_RESTRICT d, int n)
   {
     for (int i = 0; i < n; ++i)
       d[i]     = uniform(myRNG);
   }
 
-  inline void generate_normal(T *restrict d, int n)
+  inline void generate_normal(T *QMC_RESTRICT d, int n)
   {
     BoxMuller2::generate(*this, d, n);
   }

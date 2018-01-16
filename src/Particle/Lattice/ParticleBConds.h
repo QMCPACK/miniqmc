@@ -153,26 +153,26 @@ template <class T> struct DTD_BConds<T, 3, PPPG + SOA_OFFSET>
   }
 
   template <typename PT, typename RSoA>
-  void computeDistances(const PT &pos, const RSoA &R0, T *restrict temp_r,
+  void computeDistances(const PT &pos, const RSoA &R0, T *QMC_RESTRICT temp_r,
                         RSoA &temp_dr, int first, int last, int flip_ind = 0)
   {
     const T x0 = pos[0];
     const T y0 = pos[1];
     const T z0 = pos[2];
 
-    const T *restrict px = R0.data(0);
-    const T *restrict py = R0.data(1);
-    const T *restrict pz = R0.data(2);
+    const T *QMC_RESTRICT px = R0.data(0);
+    const T *QMC_RESTRICT py = R0.data(1);
+    const T *QMC_RESTRICT pz = R0.data(2);
 
-    T *restrict dx = temp_dr.data(0);
-    T *restrict dy = temp_dr.data(1);
-    T *restrict dz = temp_dr.data(2);
+    T *QMC_RESTRICT dx = temp_dr.data(0);
+    T *QMC_RESTRICT dy = temp_dr.data(1);
+    T *QMC_RESTRICT dz = temp_dr.data(2);
 
-    const T *restrict cellx = corners.data(0);
+    const T *QMC_RESTRICT cellx = corners.data(0);
     ASSUME_ALIGNED(cellx);
-    const T *restrict celly = corners.data(1);
+    const T *QMC_RESTRICT celly = corners.data(1);
     ASSUME_ALIGNED(celly);
-    const T *restrict cellz = corners.data(2);
+    const T *QMC_RESTRICT cellz = corners.data(2);
     ASSUME_ALIGNED(cellz);
 
     CONSTEXPR T minusone(-1);

@@ -127,7 +127,7 @@ template <class FT> struct OneBodyJastrow : public WaveFunctionComponentBase
   {
     UpdateMode                = ORB_PBYP_RATIO;
     curAt                     = valT(0);
-    const valT *restrict dist = P.DistTables[myTableID]->Temp_r.data();
+    const valT *QMC_RESTRICT dist = P.DistTables[myTableID]->Temp_r.data();
     if (NumGroups > 0)
     {
       for (int jg = 0; jg < NumGroups; ++jg)
@@ -172,7 +172,7 @@ template <class FT> struct OneBodyJastrow : public WaveFunctionComponentBase
   /** compute gradient and lap
    * @return lap
    */
-  inline valT accumulateGL(const valT *restrict du, const valT *restrict d2u,
+  inline valT accumulateGL(const valT *QMC_RESTRICT du, const valT *QMC_RESTRICT d2u,
                            const RowContainer &displ, posT &grad) const
   {
     valT lap(0);
@@ -182,7 +182,7 @@ template <class FT> struct OneBodyJastrow : public WaveFunctionComponentBase
       lap += d2u[jat] + lapfac * du[jat];
     for (int idim = 0; idim < OHMMS_DIM; ++idim)
     {
-      const valT *restrict dX = displ.data(idim);
+      const valT *QMC_RESTRICT dX = displ.data(idim);
       valT s                  = valT();
       //#pragma omp simd reduction(+:s)
       for (int jat = 0; jat < Nions; ++jat)

@@ -130,7 +130,7 @@ template <class T, unsigned D> struct TinyVector
     X[15] = x33;
   }
 
-  inline TinyVector(const T *restrict base, int offset)
+  inline TinyVector(const T *QMC_RESTRICT base, int offset)
   {
     #pragma unroll
     for (int i = 0; i < D; ++i) X[i] = base[i * offset];
