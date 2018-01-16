@@ -43,7 +43,10 @@ public:
 
   template <typename SplineType> void destroy(SplineType *spline)
   {
-    einspline_free(spline->coefs);
+    //einspline_free(spline->coefs);
+    //free(spline);
+    // Delete View by setting it to an empty view and rely on reference counting
+    spline->coefs_view = typename SplineType::coefs_view_t();
     free(spline);
   }
 
