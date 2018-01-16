@@ -249,7 +249,7 @@
 
 #ifdef __CUDACC__
 #define QMC_RESTRICT __restrict__
-#define QMC_FORCEINLINE
+#define QMC_FORCEINLINE __forceinline__
 #define QMC_NORETURN(x) return (x)
 #else
 #define QMC_RESTRICT restrict
