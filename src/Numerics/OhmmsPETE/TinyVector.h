@@ -130,7 +130,7 @@ template <class T, unsigned D> struct TinyVector
     X[15] = x33;
   }
 
-  KOKKOS_INLINE_FUNCTION TinyVector(const T *restrict base, int offset)
+  KOKKOS_INLINE_FUNCTION TinyVector(const T *QMC_RESTRICT base, int offset)
   {
 #pragma unroll(D)
     for (int i = 0; i < D; ++i) X[i] = base[i * offset];

@@ -24,6 +24,7 @@
 
 #include "Numerics/PETE/PETE.h"
 #include "Numerics/OhmmsPETE/OhmmsTinyMeta.h"
+
 /***************************************************************************
  *
  * The POOMA Framework
