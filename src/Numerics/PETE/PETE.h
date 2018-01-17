@@ -29,6 +29,8 @@
 #ifndef PETE_PETE_PETE_H
 #define PETE_PETE_PETE_H
 
+#include <Kokkos_Core.hpp>
+
 ///////////////////////////////////////////////////////////////////////////////
 //
 // This is the header file you should include if you want to use PETE, the
@@ -41,24 +43,24 @@
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-#if PETE_MAKE_EMPTY_CONSTRUCTORS
+// #if PETE_MAKE_EMPTY_CONSTRUCTORS
 
 #define PETE_EMPTY_CONSTRUCTORS(CLASS) \
-  CLASS() {}                           \
-  CLASS(const CLASS &) {}              \
-  CLASS &operator=(const CLASS &) { return *this; }
+  KOKKOS_INLINE_FUNCTION CLASS() {}                           \
+  KOKKOS_INLINE_FUNCTION CLASS(const CLASS &) {}              \
+  KOKKOS_INLINE_FUNCTION CLASS &operator=(const CLASS &) { return *this; }
 
 #define PETE_EMPTY_CONSTRUCTORS_TEMPLATE(CLASS, ARG) \
-  CLASS() {}                                         \
-  CLASS(const CLASS<ARG> &) {}                       \
-  CLASS &operator=(const CLASS<ARG> &) { return *this; }
+  KOKKOS_INLINE_FUNCTION CLASS() {}                                         \
+  KOKKOS_INLINE_FUNCTION CLASS(const CLASS<ARG> &) {}                       \
+  KOKKOS_INLINE_FUNCTION CLASS &operator=(const CLASS<ARG> &) { return *this; }
 
-#else
-
-#define PETE_EMPTY_CONSTRUCTORS(CLASS)
-#define PETE_EMPTY_CONSTRUCTORS_TEMPLATE(CLASS, ARG)
-
-#endif
+// #else
+//
+// #define PETE_EMPTY_CONSTRUCTORS(CLASS)
+// #define PETE_EMPTY_CONSTRUCTORS_TEMPLATE(CLASS, ARG)
+//
+// #endif
 
 #include "Numerics/PETE/Scalar.h"
 #include "Numerics/PETE/TypeComputations.h"

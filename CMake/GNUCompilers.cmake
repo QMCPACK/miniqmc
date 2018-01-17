@@ -27,10 +27,10 @@ SET( CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -ffast-math" )
 SET( CMAKE_C_FLAGS_RELWITHDEBINFO     "${CMAKE_C_FLAGS_RELWITHDEBINFO} -ffast-math" )
 SET( CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -ffast-math" )
 
-#------------------------
-# Not on Cray's machine
-#------------------------
-IF(NOT $ENV{CRAYPE_VERSION} MATCHES ".")
+#--------------------------------------
+# Neither on Cray's machine nor PowerPC
+#--------------------------------------
+IF((NOT $ENV{CRAYPE_VERSION} MATCHES ".") AND (NOT CMAKE_SYSTEM_PROCESSOR MATCHES "ppc64"))
 
 #check if the user has already specified -march=XXXX option for cross-compiling.
 if(CMAKE_CXX_FLAGS MATCHES "-march=" OR CMAKE_C_FLAGS MATCHES "-march=")
@@ -41,12 +41,17 @@ if(CMAKE_CXX_FLAGS MATCHES "-march=" OR CMAKE_C_FLAGS MATCHES "-march=")
   endif() #(CMAKE_CXX_FLAGS MATCHES "-march=" AND CMAKE_C_FLAGS MATCHES "-march=")
 else() #(CMAKE_CXX_FLAGS MATCHES "-march=" OR CMAKE_C_FLAGS MATCHES "-march=")
   # use -march=native
-  MESSAGE(" Specify -march style flag elsewhere")
-  #SET(CMAKE_C_FLAGS     "${CMAKE_C_FLAGS} -march=native")
-  #SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
+  if (CMAKE_SYSTEM_PROCESSOR MATCHES "ppc")
+    # PowerPC doesn't support -march=native
+    set(CMAKE_C_FLAGS     "${CMAKE_C_FLAGS} -mcpu=native -mtune=native")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcpu=native -mtune=native")
+  else()
+    set(CMAKE_C_FLAGS     "${CMAKE_C_FLAGS} -march=native")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
+  endif()
 endif() #(CMAKE_CXX_FLAGS MATCHES "-march=" OR CMAKE_C_FLAGS MATCHES "-march=")
 
-ENDIF(NOT $ENV{CRAYPE_VERSION} MATCHES ".")
+ENDIF((NOT $ENV{CRAYPE_VERSION} MATCHES ".") AND (NOT CMAKE_SYSTEM_PROCESSOR MATCHES "ppc64"))
 
 # Add static flags if necessary
 IF(QMC_BUILD_STATIC)

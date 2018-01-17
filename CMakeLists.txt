@@ -316,15 +316,13 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
     FIND_PACKAGE(Kokkos PATHS "${KOKKOS_PREFIX}/lib/CMake/Kokkos")
     LINK_LIBRARIES(kokkos)
     INCLUDE_DIRECTORIES(${KOKKOS_PREFIX}/include)
+    MESSAGE(STATUS "Target processor ${CMAKE_SYSTEM_PROCESSOR}")
   ENDIF()
 
   #------------------------------------
   # Include compiler-specific cmake file
   #------------------------------------
-  IF (QMC_USE_KOKKOS)
-    #leave the flags alone, NVCC etc. don't accept the GNU flags
-    MESSAGE("leaving flags alone")
-  ELSEIF( ${COMPILER} MATCHES "IBM" )
+  IF( ${COMPILER} MATCHES "IBM" )
     INCLUDE(${PROJECT_CMAKE}/IBMCompilers.cmake)
   ELSEIF( ${COMPILER} MATCHES "Intel" )
     INCLUDE(${PROJECT_CMAKE}/IntelCompilers.cmake)
