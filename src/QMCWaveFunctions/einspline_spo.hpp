@@ -114,13 +114,14 @@ struct einspline_spo
 
   void clean()
   {
-    const int n = psi.size();
-    for (int i = 0; i < n; ++i)
-    {
-      delete psi[i];
-      delete grad[i];
-      delete hess[i];
+    for(int i=0; i<psi.extent(0); i++) {
+      psi(i) = vContainer_type();
+      grad(i) = gContainer_type();
+      hess(i) = hContainer_type();
     }
+    psi = Kokkos::View<vContainer_type*>()  ;
+    grad = Kokkos::View<gContainer_type*>()  ;
+    hess = Kokkos::View<hContainer_type*>() ;
   }
 
   /// resize the containers
