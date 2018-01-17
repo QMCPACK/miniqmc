@@ -40,11 +40,11 @@ using namespace qmcplusplus;
 class detWorkClass
 {
 public:
-  detWorkClass(){init();};  // Constructor
+  detWorkClass(){setup();};  // Constructor
   ~detWorkClass(){};        // Destructor
 
   // Setup everything
-  void init()
+  void setup()
   {
     double myerror=0;           // Returned by evaluate()
     typedef double value_type;  // I guess kokkos needs this? (kokkos wiki/ParallelDispatch)
@@ -115,6 +115,7 @@ public:
   }  // End init
 
   // Loop Monte Carlo moves - returns myerror
+  KOKKOS_INLINE_FUNCTION
   double evaluate()
   {
     int my_accepted = 0;
@@ -165,8 +166,7 @@ public:
       {
         myerror += std::fabs(determinant_ref(i) - determinant(i));
       }
-    return myerror;
-  }  // End evaluate;
+  }  // End operator ();
 }   // End class detWorkClass
 
 
@@ -262,7 +262,8 @@ int main(int argc, char **argv)
   kokkos::parallel_reduce(Kokkos::RangePolicy<>(0, numberOfThreads),
                           [=] (const size_t i, double &internalUpdate)
                           {
-                            internalUpdate += detWorkClass().evaluate();
+                            detWorkClass dwc;
+                            internalUpdate += dwc.evaluate();
                           }
                           );
   // @DEBUG: End kokkos implementation
