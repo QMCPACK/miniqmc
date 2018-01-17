@@ -119,8 +119,8 @@ struct DistanceTableBA : public DTD_BConds<T, D, SC>,
       simd::copy_n(Temp_dr.data(idim), Nsources, Displacements[iat].data(idim));
   }
 
-  size_t get_neighbors(int iat, RealType rcut, int *restrict jid,
-                       RealType *restrict dist, PosType *restrict displ) const
+  size_t get_neighbors(int iat, RealType rcut, int *QMC_RESTRICT jid,
+                       RealType *QMC_RESTRICT dist, PosType *QMC_RESTRICT displ) const
   {
     CONSTEXPR T cminus(-1);
     size_t nn = 0;
@@ -173,7 +173,7 @@ struct DistanceTableBA : public DTD_BConds<T, D, SC>,
     return index;
   }
 
-  size_t get_neighbors(int iat, RealType rcut, RealType *restrict dist) const
+  size_t get_neighbors(int iat, RealType rcut, RealType *QMC_RESTRICT dist) const
   {
     size_t nn = 0;
     for (int jat = 0; jat < Ntargets; ++jat)
@@ -198,9 +198,9 @@ struct DistanceTableBA : public DTD_BConds<T, D, SC>,
     for (int iat = 0; iat < Nsources; ++iat)
     {
       int nn                  = 0;
-      int *restrict jptr      = J2[iat];
-      RealType *restrict rptr = r_m2[iat];
-      PosType *restrict dptr  = dr_m2[iat];
+      int *QMC_RESTRICT jptr      = J2[iat];
+      RealType *QMC_RESTRICT rptr = r_m2[iat];
+      PosType *QMC_RESTRICT dptr  = dr_m2[iat];
       for (int jat = 0; jat < Ntargets; ++jat)
       {
         const RealType rij = Distances[jat][iat];

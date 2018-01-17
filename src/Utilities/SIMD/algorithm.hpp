@@ -27,7 +27,7 @@ namespace qmcplusplus {
      * @param result starting address of the output
      */
     template<typename T1, typename T2>
-      inline void copy_n(const T1* restrict first, size_t count, T2* restrict result)
+      inline void copy_n(const T1* QMC_RESTRICT first, size_t count, T2* QMC_RESTRICT result)
       {
         ASSUME_ALIGNED(first); ASSUME_ALIGNED(result);
 //#pragma omp simd 
@@ -36,7 +36,7 @@ namespace qmcplusplus {
       }
 
     template<typename T1, typename T2>
-    inline T2 accumulate_n(const T1* restrict in, size_t n, T2 res)
+    inline T2 accumulate_n(const T1* QMC_RESTRICT in, size_t n, T2 res)
       {
 #pragma omp simd reduction(+:res)
         for(int i=0; i<n; ++i)
@@ -46,7 +46,7 @@ namespace qmcplusplus {
 
   ///inner product
   template<typename T1, typename T2, typename T3>
-    inline T3 inner_product_n(const T1* restrict a, const T2* restrict b, int n, T3 res)
+    inline T3 inner_product_n(const T1* QMC_RESTRICT a, const T2* QMC_RESTRICT b, int n, T3 res)
     {
       for(int i=0; i<n; ++i) res += a[i]*b[i];
       return res;

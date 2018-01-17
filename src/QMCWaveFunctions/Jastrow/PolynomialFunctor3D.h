@@ -322,9 +322,9 @@ struct PolynomialFunctor3D : public OptimizableFunctorBase
   }
 
   // assume r_1I < L && r_2I < L, compression and screening is handled outside
-  inline real_type evaluateV(int Nptcl, const real_type *restrict r_12_array,
+  inline real_type evaluateV(int Nptcl, const real_type *QMC_RESTRICT r_12_array,
                              const real_type r_1I,
-                             const real_type *restrict r_2I_array) const
+                             const real_type *QMC_RESTRICT r_2I_array) const
   {
     constexpr real_type czero(0);
     constexpr real_type cone(1);
@@ -450,12 +450,12 @@ struct PolynomialFunctor3D : public OptimizableFunctorBase
 
   // assume r_1I < L && r_2I < L, compression and screening is handled outside
   inline void evaluateVGL(
-      int Nptcl, const real_type *restrict r_12_array, const real_type r_1I,
-      const real_type *restrict r_2I_array, real_type *restrict val_array,
-      real_type *restrict grad0_array, real_type *restrict grad1_array,
-      real_type *restrict grad2_array, real_type *restrict hess00_array,
-      real_type *restrict hess11_array, real_type *restrict hess22_array,
-      real_type *restrict hess01_array, real_type *restrict hess02_array) const
+      int Nptcl, const real_type *QMC_RESTRICT r_12_array, const real_type r_1I,
+      const real_type *QMC_RESTRICT r_2I_array, real_type *QMC_RESTRICT val_array,
+      real_type *QMC_RESTRICT grad0_array, real_type *QMC_RESTRICT grad1_array,
+      real_type *QMC_RESTRICT grad2_array, real_type *QMC_RESTRICT hess00_array,
+      real_type *QMC_RESTRICT hess11_array, real_type *QMC_RESTRICT hess22_array,
+      real_type *QMC_RESTRICT hess01_array, real_type *QMC_RESTRICT hess02_array) const
   {
     constexpr real_type czero(0);
     constexpr real_type cone(1);

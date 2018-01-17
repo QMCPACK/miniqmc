@@ -45,19 +45,19 @@ template <typename T> struct MultiBsplineRef
    * evaluate_vgh(r,psi,grad,hess,ip).
    */
 
-  void evaluate_v(const spliner_type *restrict spline_m, T x, T y, T z, T *restrict vals,
+  void evaluate_v(const spliner_type *QMC_RESTRICT spline_m, T x, T y, T z, T *QMC_RESTRICT vals,
                   size_t num_splines) const;
 
-  void evaluate_vgl(const spliner_type *restrict spline_m, T x, T y, T z, T *restrict vals, T *restrict grads,
-                    T *restrict lapl, size_t num_splines) const;
+  void evaluate_vgl(const spliner_type *QMC_RESTRICT spline_m, T x, T y, T z, T *QMC_RESTRICT vals, T *QMC_RESTRICT grads,
+                    T *QMC_RESTRICT lapl, size_t num_splines) const;
 
-  void evaluate_vgh(const spliner_type *restrict spline_m, T x, T y, T z, T *restrict vals, T *restrict grads,
-                    T *restrict hess, size_t num_splines) const;
+  void evaluate_vgh(const spliner_type *QMC_RESTRICT spline_m, T x, T y, T z, T *QMC_RESTRICT vals, T *QMC_RESTRICT grads,
+                    T *QMC_RESTRICT hess, size_t num_splines) const;
 };
 
 template <typename T>
-inline void MultiBsplineRef<T>::evaluate_v(const spliner_type *restrict spline_m,
-                                           T x, T y, T z, T *restrict vals,
+inline void MultiBsplineRef<T>::evaluate_v(const spliner_type *QMC_RESTRICT spline_m,
+                                           T x, T y, T z, T *QMC_RESTRICT vals,
                                            size_t num_splines) const
 {
   x -= spline_m->x_grid.start;
@@ -88,7 +88,7 @@ inline void MultiBsplineRef<T>::evaluate_v(const spliner_type *restrict spline_m
     for (size_t j = 0; j < 4; j++)
     {
       const T pre00 = a[i] * b[j];
-      const T *restrict coefs =
+      const T *QMC_RESTRICT coefs =
           spline_m->coefs + (ix + i) * xs + (iy + j) * ys + iz * zs;
       for (size_t n = 0; n < num_splines; n++)
         vals[n] +=
@@ -99,9 +99,9 @@ inline void MultiBsplineRef<T>::evaluate_v(const spliner_type *restrict spline_m
 
 template <typename T>
 inline void
-MultiBsplineRef<T>::evaluate_vgl(const spliner_type *restrict spline_m,
-                                 T x, T y, T z, T *restrict vals,
-                                 T *restrict grads, T *restrict lapl,
+MultiBsplineRef<T>::evaluate_vgl(const spliner_type *QMC_RESTRICT spline_m,
+                                 T x, T y, T z, T *QMC_RESTRICT vals,
+                                 T *QMC_RESTRICT grads, T *QMC_RESTRICT lapl,
                                  size_t num_splines) const
 {
   x -= spline_m->x_grid.start;
@@ -128,12 +128,12 @@ MultiBsplineRef<T>::evaluate_vgl(const spliner_type *restrict spline_m,
 
   const size_t out_offset = spline_m->num_splines;
 
-  T *restrict gx = grads;
-  T *restrict gy = grads + out_offset;
-  T *restrict gz = grads + 2 * out_offset;
-  T *restrict lx = lapl;
-  T *restrict ly = lapl + out_offset;
-  T *restrict lz = lapl + 2 * out_offset;
+  T *QMC_RESTRICT gx = grads;
+  T *QMC_RESTRICT gy = grads + out_offset;
+  T *QMC_RESTRICT gz = grads + 2 * out_offset;
+  T *QMC_RESTRICT lx = lapl;
+  T *QMC_RESTRICT ly = lapl + out_offset;
+  T *QMC_RESTRICT lz = lapl + 2 * out_offset;
 
   std::fill(vals, vals + num_splines, T());
   std::fill(gx, gx + num_splines, T());
@@ -154,11 +154,11 @@ MultiBsplineRef<T>::evaluate_vgl(const spliner_type *restrict spline_m,
       const T pre01 = a[i] * db[j];
       const T pre02 = a[i] * d2b[j];
 
-      const T *restrict coefs =
+      const T *QMC_RESTRICT coefs =
           spline_m->coefs + (ix + i) * xs + (iy + j) * ys + iz * zs;
-      const T *restrict coefszs  = coefs + zs;
-      const T *restrict coefs2zs = coefs + 2 * zs;
-      const T *restrict coefs3zs = coefs + 3 * zs;
+      const T *QMC_RESTRICT coefszs  = coefs + zs;
+      const T *QMC_RESTRICT coefs2zs = coefs + 2 * zs;
+      const T *QMC_RESTRICT coefs3zs = coefs + 3 * zs;
 
       for (int n = 0; n < num_splines; n++)
       {
@@ -202,9 +202,9 @@ MultiBsplineRef<T>::evaluate_vgl(const spliner_type *restrict spline_m,
 
 template <typename T>
 inline void
-MultiBsplineRef<T>::evaluate_vgh(const spliner_type *restrict spline_m,
-                                 T x, T y, T z, T *restrict vals,
-                                 T *restrict grads, T *restrict hess,
+MultiBsplineRef<T>::evaluate_vgh(const spliner_type *QMC_RESTRICT spline_m,
+                                 T x, T y, T z, T *QMC_RESTRICT vals,
+                                 T *QMC_RESTRICT grads, T *QMC_RESTRICT hess,
                                  size_t num_splines) const
 {
 
@@ -232,16 +232,16 @@ MultiBsplineRef<T>::evaluate_vgh(const spliner_type *restrict spline_m,
 
   const size_t out_offset = spline_m->num_splines;
 
-  T *restrict gx = grads;
-  T *restrict gy = grads + out_offset;
-  T *restrict gz = grads + 2 * out_offset;
+  T *QMC_RESTRICT gx = grads;
+  T *QMC_RESTRICT gy = grads + out_offset;
+  T *QMC_RESTRICT gz = grads + 2 * out_offset;
 
-  T *restrict hxx = hess;
-  T *restrict hxy = hess + out_offset;
-  T *restrict hxz = hess + 2 * out_offset;
-  T *restrict hyy = hess + 3 * out_offset;
-  T *restrict hyz = hess + 4 * out_offset;
-  T *restrict hzz = hess + 5 * out_offset;
+  T *QMC_RESTRICT hxx = hess;
+  T *QMC_RESTRICT hxy = hess + out_offset;
+  T *QMC_RESTRICT hxz = hess + 2 * out_offset;
+  T *QMC_RESTRICT hyy = hess + 3 * out_offset;
+  T *QMC_RESTRICT hyz = hess + 4 * out_offset;
+  T *QMC_RESTRICT hzz = hess + 5 * out_offset;
 
   std::fill(vals, vals + num_splines, T());
   std::fill(gx, gx + num_splines, T());
@@ -257,11 +257,11 @@ MultiBsplineRef<T>::evaluate_vgh(const spliner_type *restrict spline_m,
   for (int i = 0; i < 4; i++)
     for (int j = 0; j < 4; j++)
     {
-      const T *restrict coefs =
+      const T *QMC_RESTRICT coefs =
           spline_m->coefs + (ix + i) * xs + (iy + j) * ys + iz * zs;
-      const T *restrict coefszs  = coefs + zs;
-      const T *restrict coefs2zs = coefs + 2 * zs;
-      const T *restrict coefs3zs = coefs + 3 * zs;
+      const T *QMC_RESTRICT coefszs  = coefs + zs;
+      const T *QMC_RESTRICT coefs2zs = coefs + 2 * zs;
+      const T *QMC_RESTRICT coefs3zs = coefs + 3 * zs;
 
       const T pre20 = d2a[i] * b[j];
       const T pre10 = da[i] * b[j];

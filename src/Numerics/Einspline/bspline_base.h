@@ -24,9 +24,11 @@
 #include "config.h"
 
 #ifdef __cplusplus
-#include <complex>
-typedef std::complex<float> complex_float;
-typedef std::complex<double> complex_double;
+#include <Kokkos_Core.hpp>
+//typedef std::complex<float> complex_float;
+//typedef std::complex<double> complex_double;
+typedef Kokkos::complex<float> complex_float;
+typedef Kokkos::complex<double> complex_double;
 #else
 #include <complex.h>
 typedef complex float complex_float;
@@ -94,7 +96,7 @@ typedef struct
 {
   spline_code sp_code;
   type_code t_code;
-  void *restrict coefs;
+  void *QMC_RESTRICT coefs;
 } Bspline;
 
 #ifdef __cplusplus

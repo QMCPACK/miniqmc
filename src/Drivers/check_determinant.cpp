@@ -29,105 +29,45 @@
 #include <QMCWaveFunctions/DeterminantRef.h>
 #include <getopt.h>
 
+#ifdef QMC_USE_KOKKOS
+#include <Kokkos_Core.hpp>
+#endif
+
 using namespace std;
 using namespace qmcplusplus;
 
 
-void print_help()
+
+// Gutted contents of omp_parallel_reduce and stuck it in this class.
+// Call this inside a kokkos::parallel_reduce instance.
+class detWorkClass
 {
-  //clang-format off
-  cout << "usage:" << '\n';
-  cout << "  check_determinant [-hvV] [-g \"n0 n1 n2\"] [-n steps]"     << '\n';
-  cout << "             [-N substeps] [-s seed]"                        << '\n';
-  cout << "options:"                                                    << '\n';
-  cout << "  -g  set the 3D tiling.             default: 1 1 1"         << '\n';
-  cout << "  -h  print help and exit"                                   << '\n';
-  cout << "  -n  number of MC steps             default: 100"           << '\n';
-  cout << "  -N  number of MC substeps          default: 1"             << '\n';
-  cout << "  -s  set the random seed.           default: 11"            << '\n';
-  cout << "  -v  verbose output"                                        << '\n';
-  cout << "  -V  print version information and exit"                    << '\n';
-  //clang-format on
+public:
+  detWorkClass(){setup();};  // Constructor
+  ~detWorkClass(){};        // Destructor
 
-  exit(1); // print help and exit
-}
-int main(int argc, char **argv)
-{
-
-
-  // clang-format off
-  typedef QMCTraits::RealType           RealType;
-  typedef ParticleSet::ParticlePos_t    ParticlePos_t;
-  typedef ParticleSet::PosType          PosType;
-  // clang-format on
-
-  int na        = 1;
-  int nb        = 1;
-  int nc        = 1;
-  int nsteps    = 100;
-  int iseed     = 11;
-  int nsubsteps = 1;
-  int np        = omp_get_max_threads();
-
-  PrimeNumberSet<uint32_t> myPrimes;
-
-  bool verbose = false;
-
-  int opt;
-  while(optind < argc)
+  // Setup everything
+  void setup()
   {
-    if ((opt = getopt(argc, argv, "hvVg:n:N:r:s:")) != -1)
-    {
-      switch (opt)
-      {
-      case 'g': // tiling1 tiling2 tiling3
-        sscanf(optarg, "%d %d %d", &na, &nb, &nc);
-        break;
-      case 'h': print_help(); break;
-      case 'n':
-        nsteps = atoi(optarg);
-        break;
-      case 'N':
-        nsubsteps = atoi(optarg);
-        break;
-      case 's':
-        iseed = atoi(optarg);
-        break;
-      case 'v': verbose = true; break;
-      case 'V':
-        print_version(true);
-        return 1;
-        break;
-      default:
-        print_help();
-      }
-    }
-    else // disallow non-option arguments
-    {
-      cerr << "Non-option arguments not allowed" << endl;
-      print_help();
-    }
-  }
+    double myerror=0;           // Returned by evaluate()
+    typedef double value_type;  // I guess kokkos needs this? (kokkos wiki/ParallelDispatch)
 
-  Random.init(0, 1, iseed);
-  Tensor<int, 3> tmat(na, 0, 0, 0, nb, 0, 0, 0, nc);
+    // clang-format off
+    typedef QMCTraits::RealType           RealType;
+    typedef ParticleSet::ParticlePos_t    ParticlePos_t;
+    typedef ParticleSet::PosType          PosType;
+    // clang-format on
 
-  print_version(verbose);
+    int na        = 1;
+    int nb        = 1;
+    int nc        = 1;
+    int nsteps    = 100;
+    int iseed     = 11;
+    int nsubsteps = 1;
+    int np        = omp_get_max_threads();
 
-  if (verbose) {
-    outputManager.setVerbosity(Verbosity::HIGH);
-  }
+    PrimeNumberSet<uint32_t> myPrimes;
 
-  // turn off output
-  if (!verbose || omp_get_max_threads() > 1)
-  {
-    outputManager.shutOff();
-  }
-
-  double accumulated_error = 0.0;
-
-#pragma omp parallel reduction(+:accumulated_error)
-  {
     ParticleSet ions, els;
     ions.setName("ion");
     els.setName("e");
@@ -154,7 +94,7 @@ int main(int argc, char **argv)
       els.create(ud);
       els.R.InUnit = 1;
       random_th.generate_uniform(&els.R[0][0], nels3);
-      els.convert2Cart(els.R); // convert to Cartiesian
+      els.convert2Cart(els.R); // convert to Cartesian
       els.RSoA = els.R;
     }
 
@@ -175,57 +115,168 @@ int main(int argc, char **argv)
     random_th.generate_uniform(ur.data(), nels);
 
     els.update();
+  }  // End init
 
+  // Loop Monte Carlo moves - returns myerror
+  KOKKOS_INLINE_FUNCTION
+  double evaluate()
+  {
     int my_accepted = 0;
     for (int mc = 0; mc < nsteps; ++mc)
-    {
-      determinant_ref.recompute();
-      determinant.recompute();
-      for (int l = 0; l < nsubsteps; ++l) // drift-and-diffusion
       {
-        random_th.generate_normal(&delta[0][0], nels3);
-        for (int iel = 0; iel < nels; ++iel)
-        {
-          // Operate on electron with index iel
-          els.setActive(iel);
-
-          // Construct trial move
-          PosType dr   = sqrttau * delta[iel];
-          bool isValid = els.makeMoveAndCheck(iel, dr);
-
-          if (!isValid) continue;
-
-          // Compute gradient at the trial position
-
-          determinant_ref.ratio(els, iel);
-          determinant.ratio(els, iel);
-
-          // Accept/reject the trial move
-          if (ur[iel] > accept) // MC
+        determinant_ref.recompute();
+        determinant.recompute();
+        for (int l = 0; l < nsubsteps; ++l) // drift-and-diffusion
           {
-            // Update position, and update temporary storage
-            els.acceptMove(iel);
-            determinant_ref.acceptMove(els, iel);
-            determinant.acceptMove(els, iel);
-            my_accepted++;
-          }
-          else
-          {
-            els.rejectMove(iel);
-          }
-        } // iel
-      }   // substeps
+            random_th.generate_normal(&delta[0][0], nels3);
+            for (int iel = 0; iel < nels; ++iel)
+              {
+                // Operate on electron with index iel
+                els.setActive(iel);
 
-      els.donePbyP();
-    }
+                // Construct trial move
+                PosType dr   = sqrttau * delta[iel];
+                bool isValid = els.makeMoveAndCheck(iel, dr);
+
+                if (!isValid) continue;
+
+                // Compute gradient at the trial position
+
+                determinant_ref.ratio(els, iel);
+                determinant.ratio(els, iel);
+
+                // Accept/reject the trial move
+                if (ur[iel] > accept) // MC
+                  {
+                    // Update position, and update temporary storage
+                    els.acceptMove(iel);
+                    determinant_ref.acceptMove(els, iel);
+                    determinant.acceptMove(els, iel);
+                    my_accepted++;
+                  }
+                else
+                  {
+                    els.rejectMove(iel);
+                  }
+              } // iel
+          }   // substeps
+
+        els.donePbyP();
+      }
 
     // accumulate error
     for (int i = 0; i < determinant_ref.size(); i++)
-    {
-      accumulated_error += std::fabs(determinant_ref(i) - determinant(i));
-    }
-  } // end of omp parallel
+      {
+        myerror += std::fabs(determinant_ref(i) - determinant(i));
+      }
+  }  // End operator ();
+}   // End class detWorkClass
 
+
+
+// Print help message then exit
+void print_help()
+{
+  //clang-format off
+  cout << "usage:" << '\n';
+  cout << "  check_determinant [-hvV] [-g \"n0 n1 n2\"] [-n steps]"     << '\n';
+  cout << "             [-N substeps] [-s seed]"                        << '\n';
+  cout << "options:"                                                    << '\n';
+  cout << "  -g  set the 3D tiling.             default: 1 1 1"         << '\n';
+  cout << "  -h  print help and exit"                                   << '\n';
+  cout << "  -n  number of MC steps             default: 100"           << '\n';
+  cout << "  -N  number of MC substeps          default: 1"             << '\n';
+  cout << "  -s  set the random seed.           default: 11"            << '\n';
+  cout << "  -v  verbose output"                                        << '\n';
+  cout << "  -V  print version information and exit"                    << '\n';
+  //clang-format on
+
+  exit(1); // print help and exit
+}
+
+
+
+/*
+  Begin main program
+ */
+int main(int argc, char **argv)
+{
+
+#ifdef QMC_USE_KOKKOS
+  Kokkos::initialize(argc, argv);
+#endif
+
+  bool verbose = false;
+
+
+  // Scan argv
+  int opt;
+  while(optind < argc)
+  {
+    if ((opt = getopt(argc, argv, "hvVg:n:N:r:s:")) != -1)
+    {
+      switch (opt)
+      {
+      case 'g': // tiling1 tiling2 tiling3
+        sscanf(optarg, "%d %d %d", &na, &nb, &nc);
+        break;
+      case 'h': print_help(); break;
+      case 'n':
+        nsteps = atoi(optarg);
+        break;
+      case 'N':
+        nsubsteps = atoi(optarg);
+        break;
+      case 's':
+        iseed = atoi(optarg);
+        break;
+      case 'v': verbose = true; break;
+      case 'V':
+        print_version(true);
+        return 1;
+      default:
+        print_help();
+      }
+    }
+    else // disallow non-option arguments
+    {
+      cerr << "Non-option arguments not allowed" << endl;
+      print_help();
+    }
+  }
+
+
+  // Output config
+  Random.init(0, 1, iseed);
+  Tensor<int, 3> tmat(na, 0, 0, 0, nb, 0, 0, 0, nc);
+
+  print_version(verbose);
+
+  if (verbose) {
+    outputManager.setVerbosity(Verbosity::HIGH);
+  }
+
+  // turn off output
+  if (!verbose || omp_get_max_threads() > 1)
+  {
+    outputManager.shutOff();
+  }
+
+
+  // @DEBUG: Begin kokkos implementation
+  // For each thread, create a detWorkClass and evaluate it
+  double accumulated_error = 0.0;
+  kokkos::parallel_reduce(Kokkos::RangePolicy<>(0, numberOfThreads),
+                          [=] (const size_t i, double &internalUpdate)
+                          {
+                            detWorkClass dwc;
+                            internalUpdate += dwc.evaluate();
+                          }, accumulated_error);
+  // @DEBUG: End kokkos implementation
+
+
+
+  // Report the results and exit
   constexpr double small_err = std::numeric_limits<double>::epsilon() * 6e8;
 
   cout << "total accumulated error of " << accumulated_error << " for " << np
@@ -239,6 +290,10 @@ int main(int argc, char **argv)
   }
   else
     cout << "All checks passed for determinant" << '\n';
+
+#ifdef QMC_USE_KOKKOS
+  Kokkos::finalize();
+#endif
 
   return 0;
 }

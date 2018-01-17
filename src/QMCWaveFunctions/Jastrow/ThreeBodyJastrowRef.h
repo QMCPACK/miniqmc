@@ -405,15 +405,15 @@ public:
     for (int idim = 0; idim < OHMMS_DIM; ++idim)
       std::fill_n(dUk.data(idim), kelmax, czero);
 
-    valT *restrict val     = mVGL.data(0);
-    valT *restrict gradF0  = mVGL.data(1);
-    valT *restrict gradF1  = mVGL.data(2);
-    valT *restrict gradF2  = mVGL.data(3);
-    valT *restrict hessF00 = mVGL.data(4);
-    valT *restrict hessF11 = mVGL.data(5);
-    valT *restrict hessF22 = mVGL.data(6);
-    valT *restrict hessF01 = mVGL.data(7);
-    valT *restrict hessF02 = mVGL.data(8);
+    valT *QMC_RESTRICT val     = mVGL.data(0);
+    valT *QMC_RESTRICT gradF0  = mVGL.data(1);
+    valT *QMC_RESTRICT gradF1  = mVGL.data(2);
+    valT *QMC_RESTRICT gradF2  = mVGL.data(3);
+    valT *QMC_RESTRICT hessF00 = mVGL.data(4);
+    valT *QMC_RESTRICT hessF11 = mVGL.data(5);
+    valT *QMC_RESTRICT hessF22 = mVGL.data(6);
+    valT *QMC_RESTRICT hessF01 = mVGL.data(7);
+    valT *QMC_RESTRICT hessF02 = mVGL.data(8);
 
     for (int iat = 0; iat < Nion; ++iat)
       if (distjI[iat] < Ion_cutoff[iat])

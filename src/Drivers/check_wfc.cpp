@@ -64,6 +64,10 @@ void print_help()
 int main(int argc, char **argv)
 {
 
+  #ifdef QMC_USE_KOKKOS
+  Kokkos::initialize(argc,argv);
+  #endif
+  {
 
   // clang-format off
   typedef QMCTraits::RealType           RealType;
@@ -106,7 +110,6 @@ int main(int argc, char **argv)
       case 'V':
         print_version(true);
         return 1;
-        break;
       default:
         print_help();
       }
@@ -475,6 +478,9 @@ int main(int argc, char **argv)
     fail = true;
   }
   if (!fail) cout << "All checks passed for " << wfc_name << std::endl;
-
+  }
+  #ifdef QMC_USE_KOKKOS
+  Kokkos::finalize();
+  #endif
   return 0;
 }
