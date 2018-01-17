@@ -156,7 +156,7 @@ void MultiBspline<T>::evaluate_v(const TeamType& team, const spliner_type *QMC_R
   CONSTEXPR T zero(0);
   ASSUME_ALIGNED(vals);
 
-  Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, numsplines),
+  Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, num_splines),
        [&](const int& i) {
     vals[i] = T();
   });
