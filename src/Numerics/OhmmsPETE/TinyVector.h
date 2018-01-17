@@ -39,8 +39,8 @@
 
 // include files
 #include <iomanip>
-#include "PETE/PETE.h"
-#include "OhmmsPETE/OhmmsTinyMeta.h"
+#include "Numerics/PETE/PETE.h"
+#include "Numerics/OhmmsPETE/OhmmsTinyMeta.h"
 
 namespace qmcplusplus
 {
