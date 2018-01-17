@@ -175,7 +175,7 @@ void MultiBspline<T>::evaluate_v(const TeamType& team, const spliner_type *QMC_R
 
 template <typename T>
 KOKKOS_INLINE_FUNCTION
-MultiBspline<T>::evaluate_vgl(const spliner_type *QMC_RESTRICT spline_m,
+void MultiBspline<T>::evaluate_vgl(const spliner_type *QMC_RESTRICT spline_m,
                               T x, T y, T z, T *QMC_RESTRICT vals,
                               T *QMC_RESTRICT grads, T *QMC_RESTRICT lapl,
                               size_t num_splines) const
@@ -295,7 +295,7 @@ MultiBspline<T>::evaluate_vgl(const spliner_type *QMC_RESTRICT spline_m,
 template <typename T>
 template<class TeamType>
 KOKKOS_INLINE_FUNCTION
-MultiBspline<T>::evaluate_vgh(const TeamType& team, const spliner_type *QMC_RESTRICT spline_m,
+void MultiBspline<T>::evaluate_vgh(const TeamType& team, const spliner_type *QMC_RESTRICT spline_m,
                               T x, T y, T z, T *QMC_RESTRICT vals,
                               T *QMC_RESTRICT grads, T *QMC_RESTRICT hess,
                               size_t num_splines) const
