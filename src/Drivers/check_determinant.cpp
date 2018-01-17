@@ -118,7 +118,6 @@ public:
   }  // End init
 
   // Loop Monte Carlo moves - returns myerror
-  KOKKOS_INLINE_FUNCTION
   double evaluate()
   {
     int my_accepted = 0;
