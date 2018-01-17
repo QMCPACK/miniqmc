@@ -40,8 +40,8 @@ struct einspline_spo
   //  using gContainer_type = VectorSoAContainer<T, 3>;
   //  using hContainer_type = VectorSoAContainer<T, 6>;
   using vContainer_type = Kokkos::View<T*>;
-  using gContainer_type = Kokkos::View<T*[3], Kokko::LayoutLeft>;
-  using hContainer_type = Kokkos::View<T*[6], Kokko::LayoutLeft>;
+  using gContainer_type = Kokkos::View<T*[3], Kokkos::LayoutLeft>;
+  using hContainer_type = Kokkos::View<T*[6], Kokkos::LayoutLeft>;
 
   using lattice_type    = CrystalLattice<T, 3>;
 
