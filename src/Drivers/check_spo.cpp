@@ -146,6 +146,10 @@ int main(int argc, char **argv)
       einspline_spo<OHMMS_PRECISION,
                     miniqmcreference::MultiBsplineRef<OHMMS_PRECISION>>;
   spo_ref_type spo_ref_main;
+  using spo_v2_type =
+      einspline_spo<OHMMS_PRECISION,
+                    miniqmcreference::MultiBsplinev2<OHMMS_PRECISION>>;
+  spo_v2_type spo_v2_main;
   int nTiles = 1;
 
   {
@@ -165,15 +169,21 @@ int main(int argc, char **argv)
     spo_main.Lattice.set(lattice_b);
     spo_ref_main.set(nx, ny, nz, norb, nTiles);
     spo_ref_main.Lattice.set(lattice_b);
+    spo_v2_main.set(nx, ny, nz, norb, nTiles);
+    spo_v2_main.Lattice.set(lattice_b);
   }
 
   double nspheremoves = 0;
   double dNumVGHCalls = 0;
 
   double evalV_v_err   = 0.0;
+  double evalV_v_v2_err   = 0.0;
   double evalVGH_v_err = 0.0;
+  double evalVGH_v_v2_err = 0.0;
   double evalVGH_g_err = 0.0;
+  double evalVGH_g_v2_err = 0.0;
   double evalVGH_h_err = 0.0;
+  double evalVGH_h_v2_err = 0.0;
 
 // clang-format off
   #pragma omp parallel reduction(+:ratio,nspheremoves,dNumVGHCalls) \
@@ -218,6 +228,7 @@ int main(int argc, char **argv)
     // create spo per thread
     spo_type spo(spo_main, team_size, member_id);
     spo_ref_type spo_ref(spo_ref_main, team_size, member_id);
+    spo_v2_type spo_v2(spo_v2_main, team_size, member_id);
 
     // use teams
     // if(team_size>1 && team_size>=nTiles ) spo.set_range(team_size,ip%team_size);
@@ -249,6 +260,7 @@ int main(int argc, char **argv)
         PosType pos = els.R[iel] + sqrttau * delta[iel];
         spo.evaluate_vgh(pos);
         spo_ref.evaluate_vgh(pos);
+        spo_v2.evaluate_vgh(pos);
         // accumulate error
         for (int ib = 0; ib < spo.nBlocks; ib++)
           for (int n = 0; n < spo.nSplinesPerBlock; n++)
@@ -256,6 +268,9 @@ int main(int argc, char **argv)
             // value
             evalVGH_v_err +=
                 std::fabs((*spo.psi[ib])[n] - (*spo_ref.psi[ib])[n]);
+            // value (v2)
+            evalVGH_v_v2_err +=
+                std::fabs((*spo.psi[ib])[n] - (*spo_v2.psi[ib])[n]);
             // grad
             evalVGH_g_err += std::fabs(spo.grad[ib]->data(0)[n] -
                                        spo_ref.grad[ib]->data(0)[n]);
@@ -263,6 +278,13 @@ int main(int argc, char **argv)
                                        spo_ref.grad[ib]->data(1)[n]);
             evalVGH_g_err += std::fabs(spo.grad[ib]->data(2)[n] -
                                        spo_ref.grad[ib]->data(2)[n]);
+            // grad (v2)
+            evalVGH_g_v2_err += std::fabs(spo.grad[ib]->data(0)[n] -
+                                       spo_v2.grad[ib]->data(0)[n]);
+            evalVGH_g_v2_err += std::fabs(spo.grad[ib]->data(1)[n] -
+                                       spo_v2.grad[ib]->data(1)[n]);
+            evalVGH_g_v2_err += std::fabs(spo.grad[ib]->data(2)[n] -
+                                       spo_v2.grad[ib]->data(2)[n]);
             // hess
             evalVGH_h_err += std::fabs(spo.hess[ib]->data(0)[n] -
                                        spo_ref.hess[ib]->data(0)[n]);
@@ -276,6 +298,19 @@ int main(int argc, char **argv)
                                        spo_ref.hess[ib]->data(4)[n]);
             evalVGH_h_err += std::fabs(spo.hess[ib]->data(5)[n] -
                                        spo_ref.hess[ib]->data(5)[n]);
+            // hess v2)
+            evalVGH_h_v2_err += std::fabs(spo.hess[ib]->data(0)[n] -
+                                       spo_v2.hess[ib]->data(0)[n]);
+            evalVGH_h_v2_err += std::fabs(spo.hess[ib]->data(1)[n] -
+                                       spo_v2.hess[ib]->data(1)[n]);
+            evalVGH_h_v2_err += std::fabs(spo.hess[ib]->data(2)[n] -
+                                       spo_v2.hess[ib]->data(2)[n]);
+            evalVGH_h_v2_err += std::fabs(spo.hess[ib]->data(3)[n] -
+                                       spo_v2.hess[ib]->data(3)[n]);
+            evalVGH_h_v2_err += std::fabs(spo.hess[ib]->data(4)[n] -
+                                       spo_v2.hess[ib]->data(4)[n]);
+            evalVGH_h_v2_err += std::fabs(spo.hess[ib]->data(5)[n] -
+                                       spo_v2.hess[ib]->data(5)[n]);
           }
         if (ur[iel] > accept)
         {
@@ -300,11 +335,14 @@ int main(int argc, char **argv)
             PosType pos = centerP + r * rOnSphere[k];
             spo.evaluate_v(pos);
             spo_ref.evaluate_v(pos);
+            spo_v2.evaluate_v(pos);
             // accumulate error
             for (int ib = 0; ib < spo.nBlocks; ib++)
               for (int n = 0; n < spo.nSplinesPerBlock; n++)
                 evalV_v_err +=
                     std::fabs((*spo.psi[ib])[n] - (*spo_ref.psi[ib])[n]);
+                evalV_v_v2_err +=
+                    std::fabs((*spo.psi[ib])[n] - (*spo_v2.psi[ib])[n]);
           }
         } // els
       }   // ions
@@ -318,9 +356,13 @@ int main(int argc, char **argv)
   } // end of omp parallel
 
   evalV_v_err /= nspheremoves;
+  evalV_v_v2_err /= nspheremoves;
   evalVGH_v_err /= dNumVGHCalls;
+  evalVGH_v_v2_err /= dNumVGHCalls;
   evalVGH_g_err /= dNumVGHCalls;
+  evalVGH_g_v2_err /= dNumVGHCalls;
   evalVGH_h_err /= dNumVGHCalls;
+  evalVGH_h_v2_err /= dNumVGHCalls;
 
   int np                     = omp_get_max_threads();
   constexpr RealType small_v = std::numeric_limits<RealType>::epsilon() * 1e4;
@@ -333,9 +375,20 @@ int main(int argc, char **argv)
     cout << "Fail in evaluate_v, V error =" << evalV_v_err / np << std::endl;
     fail = true;
   }
+  if (evalV_v_v2_err / np > small_v)
+  {
+    cout << "Fail in evaluate_v_v2, V error =" << evalV_v_v2_err / np << std::endl;
+    fail = true;
+  }
   if (evalVGH_v_err / np > small_v)
   {
     cout << "Fail in evaluate_vgh, V error =" << evalVGH_v_err / np
+         << std::endl;
+    fail = true;
+  }
+  if (evalVGH_v_v2_err / np > small_v)
+  {
+    cout << "Fail in evaluate_vgh_v2, V error =" << evalVGH_v_v2_err / np
          << std::endl;
     fail = true;
   }
@@ -345,9 +398,21 @@ int main(int argc, char **argv)
          << std::endl;
     fail = true;
   }
+  if (evalVGH_g_v2_err / np > small_g)
+  {
+    cout << "Fail in evaluate_vgh_v2, G error =" << evalVGH_g_v2_err / np
+         << std::endl;
+    fail = true;
+  }
   if (evalVGH_h_err / np > small_h)
   {
     cout << "Fail in evaluate_vgh, H error =" << evalVGH_h_err / np
+         << std::endl;
+    fail = true;
+  }
+  if (evalVGH_h_v2_err / np > small_h)
+  {
+    cout << "Fail in evaluate_vgh_v2, H error =" << evalVGH_h_v2_err / np
          << std::endl;
     fail = true;
   }
