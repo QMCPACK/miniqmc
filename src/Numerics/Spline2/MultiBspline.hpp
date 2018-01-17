@@ -435,5 +435,140 @@ MultiBspline<T>::evaluate_vgh(const TeamType& team, const spliner_type *QMC_REST
   });
 }
 
+//Loop interchange (Ye's v2)
+//Need to implement a switch to turn this on
+template <typename T>
+template<class TeamType>
+KOKKOS_INLINE_FUNCTION
+void MultiBspline<T>::evaluate_vgh_v2(const TeamType& team, const spliner_type *restrict spline_m,
+                              T x, T y, T z, T *restrict vals,
+                              T *restrict grads, T *restrict hess,
+                              size_t num_splines) const
+{
+
+  int ix, iy, iz;
+  T tx, ty, tz;
+  T a[4], b[4], c[4], da[4], db[4], dc[4], d2a[4], d2b[4], d2c[4];
+
+  x -= spline_m->x_grid.start;
+  y -= spline_m->y_grid.start;
+  z -= spline_m->z_grid.start;
+  get(x * spline_m->x_grid.delta_inv, tx, ix,
+                      spline_m->x_grid.num - 1);
+  get(y * spline_m->y_grid.delta_inv, ty, iy,
+                      spline_m->y_grid.num - 1);
+  get(z * spline_m->z_grid.delta_inv, tz, iz,
+                      spline_m->z_grid.num - 1);
+
+  compute_prefactors(a, da, d2a, tx);
+  compute_prefactors(b, db, d2b, ty);
+  compute_prefactors(c, dc, d2c, tz);
+
+  const intptr_t xs = spline_m->x_stride;
+  const intptr_t ys = spline_m->y_stride;
+  const intptr_t zs = spline_m->z_stride;
+
+  const size_t out_offset = spline_m->num_splines;
+
+  ASSUME_ALIGNED(vals);
+  T *restrict gx = grads;
+  ASSUME_ALIGNED(gx);
+  T *restrict gy = grads + out_offset;
+  ASSUME_ALIGNED(gy);
+  T *restrict gz = grads + 2 * out_offset;
+  ASSUME_ALIGNED(gz);
+
+  T *restrict hxx = hess;
+  ASSUME_ALIGNED(hxx);
+  T *restrict hxy = hess + out_offset;
+  ASSUME_ALIGNED(hxy);
+  T *restrict hxz = hess + 2 * out_offset;
+  ASSUME_ALIGNED(hxz);
+  T *restrict hyy = hess + 3 * out_offset;
+  ASSUME_ALIGNED(hyy);
+  T *restrict hyz = hess + 4 * out_offset;
+  ASSUME_ALIGNED(hyz);
+  T *restrict hzz = hess + 5 * out_offset;
+  ASSUME_ALIGNED(hzz);
+
+  const T dxInv = spline_m->x_grid.delta_inv;
+  const T dyInv = spline_m->y_grid.delta_inv;
+  const T dzInv = spline_m->z_grid.delta_inv;
+  const T dxx   = dxInv * dxInv;
+  const T dyy   = dyInv * dyInv;
+  const T dzz   = dzInv * dzInv;
+  const T dxy   = dxInv * dyInv;
+  const T dxz   = dxInv * dzInv;
+  const T dyz   = dyInv * dzInv;
+
+  Kokkos::parallel_for(Kokkos::ThreadVectorRange(team,num_splines),
+       [&](const int& n) {
+    vals[n] = T();
+    gx[n] = T();
+    gy[n] = T();
+    gz[n] = T();
+    hxx[n] = T();
+    hxy[n] = T();
+    hxz[n] = T();
+    hyy[n] = T();
+    hyz[n] = T();
+    hzz[n] = T();
+
+    for (int i = 0; i < 4; i++)
+      for (int j = 0; j < 4; j++)
+			{
+				const T *restrict coefs =
+						spline_m->coefs + ((ix + i) * xs + (iy + j) * ys + iz * zs);
+				ASSUME_ALIGNED(coefs);
+				const T *restrict coefszs = coefs + zs;
+				ASSUME_ALIGNED(coefszs);
+				const T *restrict coefs2zs = coefs + 2 * zs;
+				ASSUME_ALIGNED(coefs2zs);
+				const T *restrict coefs3zs = coefs + 3 * zs;
+				ASSUME_ALIGNED(coefs3zs);
+
+				const T pre20 = d2a[i] * b[j];
+				const T pre10 = da[i] * b[j];
+				const T pre00 = a[i] * b[j];
+				const T pre11 = da[i] * db[j];
+				const T pre01 = a[i] * db[j];
+				const T pre02 = a[i] * d2b[j];
+
+        T coefsv    = coefs[n];
+        T coefsvzs  = coefszs[n];
+        T coefsv2zs = coefs2zs[n];
+        T coefsv3zs = coefs3zs[n];
+
+        T sum0 = c[0] * coefsv + c[1] * coefsvzs + c[2] * coefsv2zs +
+                 c[3] * coefsv3zs;
+        T sum1 = dc[0] * coefsv + dc[1] * coefsvzs + dc[2] * coefsv2zs +
+                 dc[3] * coefsv3zs;
+        T sum2 = d2c[0] * coefsv + d2c[1] * coefsvzs + d2c[2] * coefsv2zs +
+                 d2c[3] * coefsv3zs;
+
+        hxx[n] += pre20 * sum0;
+        hxy[n] += pre11 * sum0;
+        hxz[n] += pre10 * sum1;
+        hyy[n] += pre02 * sum0;
+        hyz[n] += pre01 * sum1;
+        hzz[n] += pre00 * sum2;
+        gx[n] += pre10 * sum0;
+        gy[n] += pre01 * sum0;
+        gz[n] += pre00 * sum1;
+        vals[n] += pre00 * sum0;
+      }
+
+    gx[n] *= dxInv;
+    gy[n] *= dyInv;
+    gz[n] *= dzInv;
+    hxx[n] *= dxx;
+    hyy[n] *= dyy;
+    hzz[n] *= dzz;
+    hxy[n] *= dxy;
+    hxz[n] *= dxz;
+    hyz[n] *= dyz;
+  });
+}
+
 } /** qmcplusplus namespace */
 #endif
