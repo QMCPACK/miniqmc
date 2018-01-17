@@ -58,7 +58,12 @@ template <class T, unsigned D> struct TinyVector
   // Default Constructor initializes to zero.
   KOKKOS_INLINE_FUNCTION TinyVector()
   {
+#ifdef __CUDACC__
+    //NVCC has trouble dealing with the "recursion" between OTAssign and the TinyVector copy ctor
+    for (unsigned int d = 0; d < D; ++d) X[d] = 0;
+#else
     OTAssign<TinyVector<T, D>, T, OpAssign>::apply(*this, T(0), OpAssign());
+#endif
   }
 
   // A noninitializing ctor.
@@ -70,8 +75,13 @@ template <class T, unsigned D> struct TinyVector
   // Copy Constructor
   KOKKOS_INLINE_FUNCTION TinyVector(const TinyVector &rhs)
   {
+#ifdef __CUDACC__
+    //NVCC has trouble dealing with the "recursion" between OTAssign and the TinyVector copy ctor
+    for (unsigned int d = 0; d < D; ++d) X[d] = rhs.X[d];
+#else
     OTAssign<TinyVector<T, D>, TinyVector<T, D>, OpAssign>::apply(*this, rhs,
                                                                   OpAssign());
+#endif
   }
 
   // Templated TinyVector constructor.
@@ -166,9 +176,9 @@ template <class T, unsigned D> struct TinyVector
 
   // Get and Set Operations
   KOKKOS_INLINE_FUNCTION Type_t &operator[](unsigned int i) { return X[i]; }
-  KOKKOS_INLINE_FUNCTION Type_t operator[](unsigned int i) const { return X[i]; }
+  KOKKOS_INLINE_FUNCTION Type_t const& operator[](unsigned int i) const { return X[i]; }
   KOKKOS_INLINE_FUNCTION Type_t &operator()(unsigned int i) { return X[i]; }
-  KOKKOS_INLINE_FUNCTION Type_t operator()(unsigned int i) const { return X[i]; }
+  KOKKOS_INLINE_FUNCTION Type_t const& operator()(unsigned int i) const { return X[i]; }
 
   KOKKOS_INLINE_FUNCTION Type_t *data() { return X; }
   KOKKOS_INLINE_FUNCTION const Type_t *data() const { return X; }

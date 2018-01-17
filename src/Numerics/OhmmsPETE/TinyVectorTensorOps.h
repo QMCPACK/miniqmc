@@ -33,7 +33,7 @@ template<class T1, class T2, unsigned D>
 struct OTDot< Tensor<T1,D> , TinyVector<T2,D> >
 {
   typedef typename BinaryReturn<T1,T2,OpMultiply>::Type_t Type_t;
-  inline static TinyVector<Type_t,D>
+  KOKKOS_INLINE_FUNCTION static TinyVector<Type_t,D>
   apply(const Tensor<T1,D>& lhs, const TinyVector<T2,D>& rhs)
   {
     TinyVector<Type_t,D> ret= TinyVector<Type_t,D>::DontInitialize();
@@ -53,7 +53,7 @@ template<class T1, class T2>
 struct OTDot< Tensor<T1,1> , TinyVector<T2,1> >
 {
   typedef typename BinaryReturn<T1,T2,OpMultiply>::Type_t Type_t;
-  inline static TinyVector<Type_t,1>
+  KOKKOS_INLINE_FUNCTION static TinyVector<Type_t,1>
   apply(const Tensor<T1,1>& lhs, const TinyVector<T2,1>& rhs)
   {
     return TinyVector<Type_t,1>( lhs[0]*rhs[0] );
@@ -64,7 +64,7 @@ template<class T1, class T2>
 struct OTDot< Tensor<T1,2> , TinyVector<T2,2> >
 {
   typedef typename BinaryReturn<T1,T2,OpMultiply>::Type_t Type_t;
-  inline static TinyVector<Type_t,2>
+  KOKKOS_INLINE_FUNCTION static TinyVector<Type_t,2>
   apply(const Tensor<T1,2>& lhs, const TinyVector<T2,2>& rhs)
   {
     return TinyVector<Type_t,2>( lhs[0]*rhs[0] + lhs[1]*rhs[1] ,
@@ -76,7 +76,7 @@ template<class T1, class T2>
 struct OTDot< Tensor<T1,3> , TinyVector<T2,3> >
 {
   typedef typename BinaryReturn<T1,T2,OpMultiply>::Type_t Type_t;
-  inline static TinyVector<Type_t,3>
+  KOKKOS_INLINE_FUNCTION static TinyVector<Type_t,3>
   apply(const Tensor<T1,3>& lhs, const TinyVector<T2,3>& rhs)
   {
     return TinyVector<Type_t,3>( lhs[0]*rhs[0] + lhs[1]*rhs[1] + lhs[2]*rhs[2],
@@ -89,7 +89,7 @@ template<class T1, class T2>
 struct OTDot< Tensor<T1,4> , TinyVector<T2,4> >
 {
   typedef typename BinaryReturn<T1,T2,OpMultiply>::Type_t Type_t;
-  inline static TinyVector<Type_t,4>
+  KOKKOS_INLINE_FUNCTION static TinyVector<Type_t,4>
   apply(const Tensor<T1,4>& lhs, const TinyVector<T2,4>& rhs)
   {
     return TinyVector<Type_t,4>( lhs[ 0]*rhs[0] + lhs[ 1]*rhs[1] + lhs[ 2]*rhs[2] + lhs[ 3]*rhs[3],
@@ -109,7 +109,7 @@ template<class T1, class T2, unsigned D>
 struct OTDot< TinyVector<T1,D> , Tensor<T2,D> >
 {
   typedef typename BinaryReturn<T1,T2,OpMultiply>::Type_t Type_t;
-  inline static TinyVector<Type_t,D>
+  KOKKOS_INLINE_FUNCTION static TinyVector<Type_t,D>
   apply(const TinyVector<T2,D>& lhs, const Tensor<T1,D>& rhs)
   {
     TinyVector<Type_t,D> ret = TinyVector<Type_t,D>::DontInitialize();
@@ -129,7 +129,7 @@ template<class T1, class T2>
 struct OTDot< TinyVector<T1,1> , Tensor<T2,1> >
 {
   typedef typename BinaryReturn<T1,T2,OpMultiply>::Type_t Type_t;
-  inline static TinyVector<Type_t,1>
+  KOKKOS_INLINE_FUNCTION static TinyVector<Type_t,1>
   apply(const TinyVector<T1,1>& lhs, const Tensor<T2,1>& rhs)
   {
     return TinyVector<Type_t,1>( lhs[0]*rhs[0] );
@@ -140,7 +140,7 @@ template<class T1, class T2>
 struct OTDot< TinyVector<T1,2> , Tensor<T2,2> >
 {
   typedef typename BinaryReturn<T1,T2,OpMultiply>::Type_t Type_t;
-  inline static TinyVector<Type_t,2>
+  KOKKOS_INLINE_FUNCTION static TinyVector<Type_t,2>
   apply(const TinyVector<T1,2>& lhs, const Tensor<T2,2>& rhs)
   {
     return TinyVector<Type_t,2>( lhs[0]*rhs(0,0) + lhs[1]*rhs(1,0) ,
@@ -152,7 +152,7 @@ template<class T1, class T2>
 struct OTDot< TinyVector<T1,3> , Tensor<T2,3> >
 {
   typedef typename BinaryReturn<T1,T2,OpMultiply>::Type_t Type_t;
-  inline static TinyVector<Type_t,3>
+  KOKKOS_INLINE_FUNCTION static TinyVector<Type_t,3>
   apply(const TinyVector<T1,3>& lhs, const Tensor<T2,3>& rhs)
   {
     return TinyVector<Type_t,3>( lhs[0]*rhs[0] + lhs[1]*rhs[3] + lhs[2]*rhs[6],
@@ -165,7 +165,7 @@ template<class T1, class T2>
 struct OTDot< TinyVector<T1,4> , Tensor<T2,4> >
 {
   typedef typename BinaryReturn<T1,T2,OpMultiply>::Type_t Type_t;
-  inline static TinyVector<Type_t,4>
+  KOKKOS_INLINE_FUNCTION static TinyVector<Type_t,4>
   apply(const TinyVector<T1,4>& lhs, const Tensor<T2,4>& rhs)
   {
     return TinyVector<Type_t,4>( lhs[0]*rhs[0] + lhs[1]*rhs[4] + lhs[2]*rhs[ 8] + lhs[3]*rhs[12],
@@ -195,7 +195,7 @@ struct OuterProduct< TinyVector<T1,D> , TinyVector<T2,D> >
 {
   typedef typename BinaryReturn<T1,T2,OpMultiply>::Type_t Type_t;
   typedef Tensor<typename BinaryReturn<T1,T2,OpMultiply>::Type_t,D> Return_t;
-  inline static Return_t
+  KOKKOS_INLINE_FUNCTION static Return_t
   apply(const TinyVector<T1,D>& a, const TinyVector<T2,D>& b)
   {
     return Return_t();
@@ -207,7 +207,7 @@ struct OuterProduct< TinyVector<T1,2> , TinyVector<T2,2> >
 {
   typedef typename BinaryReturn<T1,T2,OpMultiply>::Type_t Type_t;
   typedef Tensor<typename BinaryReturn<T1,T2,OpMultiply>::Type_t,2> Return_t;
-  inline static Return_t
+  KOKKOS_INLINE_FUNCTION static Return_t
   apply(const TinyVector<T1,2>& a, const TinyVector<T2,2>& b)
   {
     return Return_t(a[0]*b[0],a[0]*b[1],
@@ -220,7 +220,7 @@ struct OuterProduct< TinyVector<T1,3> , TinyVector<T2,3> >
 {
   typedef typename BinaryReturn<T1,T2,OpMultiply>::Type_t Type_t;
   typedef Tensor<typename BinaryReturn<T1,T2,OpMultiply>::Type_t,3> Return_t;
-  inline static Return_t
+  KOKKOS_INLINE_FUNCTION static Return_t
   apply(const TinyVector<T1,3>& a, const TinyVector<T2,3>& b)
   {
     return Return_t(a[0]*b[0],a[0]*b[1],a[0]*b[2],
