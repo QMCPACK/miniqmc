@@ -119,23 +119,6 @@ struct einspline_spo
     resize();
   }
 
-  einspline_spo(einspline_spo_ref<T,compute_engine_type> &in, int ncrews, int crewID)
-      : Owner(false), Lattice(in.Lattice), is_copy(false)
-  {
-    nSplinesSerialThreshold_V = 512;
-    nSplinesSerialThreshold_VGH = 128;
-    nSplines         = in.nSplines;
-    nSplinesPerBlock = in.nSplinesPerBlock;
-    nBlocks          = (in.nBlocks + ncrews - 1) / ncrews;
-    firstBlock       = nBlocks * crewID;
-    lastBlock        = std::min(in.nBlocks, nBlocks * (crewID + 1));
-    nBlocks          = lastBlock - firstBlock;
-    einsplines       = Kokkos::View<spline_type*>("einsplines",nBlocks);
-    for (int i = 0, t = firstBlock; i < nBlocks; ++i, ++t)
-      einsplines[i] = in.einsplines[t];
-    resize();
-  }
-
   /// destructors
   ~einspline_spo()
   {
