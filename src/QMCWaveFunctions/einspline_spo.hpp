@@ -40,8 +40,8 @@ struct einspline_spo
   //  using gContainer_type = VectorSoAContainer<T, 3>;
   //  using hContainer_type = VectorSoAContainer<T, 6>;
   using vContainer_type = Kokkos::View<T*>;
-  using gContainer_type = Kokkos::View<T*[3], Kokko::LayoutLeft>;
-  using hContainer_type = Kokkos::View<T*[6], Kokko::LayoutLeft>;
+  using gContainer_type = Kokkos::View<T*[3], Kokkos::LayoutLeft>;
+  using hContainer_type = Kokkos::View<T*[6], Kokkos::LayoutLeft>;
 
   using lattice_type    = CrystalLattice<T, 3>;
 
@@ -114,13 +114,14 @@ struct einspline_spo
 
   void clean()
   {
-    const int n = psi.size();
-    for (int i = 0; i < n; ++i)
-    {
-      delete psi[i];
-      delete grad[i];
-      delete hess[i];
+    for(int i=0; i<psi.extent(0); i++) {
+      psi(i) = vContainer_type();
+      grad(i) = gContainer_type();
+      hess(i) = hContainer_type();
     }
+    psi = Kokkos::View<vContainer_type*>()  ;
+    grad = Kokkos::View<gContainer_type*>()  ;
+    hess = Kokkos::View<hContainer_type*>() ;
   }
 
   /// resize the containers

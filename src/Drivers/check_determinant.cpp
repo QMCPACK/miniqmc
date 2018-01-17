@@ -28,7 +28,10 @@
 #include <QMCWaveFunctions/Determinant.h>
 #include <QMCWaveFunctions/DeterminantRef.h>
 #include <getopt.h>
+
+#ifdef QMC_USE_KOKKOS
 #include <Kokkos_Core.hpp>
+#endif
 
 using namespace std;
 using namespace qmcplusplus;
@@ -115,7 +118,6 @@ public:
   }  // End init
 
   // Loop Monte Carlo moves - returns myerror
-  KOKKOS_INLINE_FUNCTION
   double evaluate()
   {
     int my_accepted = 0;
@@ -198,6 +200,10 @@ void print_help()
  */
 int main(int argc, char **argv)
 {
+
+#ifdef QMC_USE_KOKKOS
+  Kokkos::initialize(argc, argv);
+#endif
 
   bool verbose = false;
 
@@ -283,6 +289,10 @@ int main(int argc, char **argv)
   }
   else
     cout << "All checks passed for determinant" << '\n';
+
+#ifdef QMC_USE_KOKKOS
+  Kokkos::finalize();
+#endif
 
   return 0;
 }
