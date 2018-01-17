@@ -246,11 +246,15 @@ struct DiracDeterminant : public WaveFunctionComponentBase
     const int nels = psiV.size();
     constexpr double shift(0.5);
     constexpr double czero(0);
-    for (int j = 0; j < nels; ++j)
-      psiV[j] = myRandom() - shift;
+
+    Kokkos::parallel_for(nels, KOKKOS_LAMBDA (const size_t j)
+                         {
+                           psiV[j] = myRandom() - shift;
+                         });
     curRatio = inner_product_n(psiV.data(), psiMinv[iel-FirstIndex], nels, czero);
     return curRatio;
   }
+
 
   /** accept the row and update the inverse */
   inline void acceptMove(ParticleSet &P, int iel)
