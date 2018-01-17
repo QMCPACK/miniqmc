@@ -125,9 +125,11 @@ struct OTAssign< TinyVector<T1,3> , TinyVector<T2,3> , OP >
   KOKKOS_INLINE_FUNCTION static void
   apply( TinyVector<T1,3>& lhs, const TinyVector<T2,3>& rhs, OP op)
   {
-    op(lhs[0] , rhs[0] );
-    op(lhs[1] , rhs[1] );
-    op(lhs[2] , rhs[2] );
+    for (int i = 0; i < 3; ++i) {
+      auto const& a = lhs[i];
+      auto const& b = rhs[i];
+      op(a, b);
+    }
   }
 };
 

@@ -316,6 +316,7 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
     FIND_PACKAGE(Kokkos PATHS "${KOKKOS_PREFIX}/lib/CMake/Kokkos")
     LINK_LIBRARIES(kokkos)
     INCLUDE_DIRECTORIES(${KOKKOS_PREFIX}/include)
+    MESSAGE(STATUS "Target processor ${CMAKE_SYSTEM_PROCESSOR}")
   ENDIF()
 
   #------------------------------------

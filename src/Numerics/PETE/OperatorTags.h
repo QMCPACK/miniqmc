@@ -26,11 +26,13 @@
 // ----------------------------------------------------------------------
 // ACL:license
 
+#ifndef PETE_PETE_OPERATORTAGS_H
+#define PETE_PETE_OPERATORTAGS_H
+
 #include <cstdlib>
 #include <cmath>
 
-#ifndef PETE_PETE_OPERATORTAGS_H
-#define PETE_PETE_OPERATORTAGS_H
+#include <Kokkos_Core.hpp>
 
 namespace qmcplusplus
 {
@@ -39,7 +41,7 @@ struct OpAdd
 {
   PETE_EMPTY_CONSTRUCTORS(OpAdd)
   template <class T1, class T2>
-  inline typename BinaryReturn<T1, T2, OpAdd>::Type_t
+  KOKKOS_INLINE_FUNCTION typename BinaryReturn<T1, T2, OpAdd>::Type_t
   operator()(const T1 &a, const T2 &b) const
   {
     return (a + b);
@@ -50,7 +52,7 @@ struct OpSubtract
 {
   PETE_EMPTY_CONSTRUCTORS(OpSubtract)
   template <class T1, class T2>
-  inline typename BinaryReturn<T1, T2, OpSubtract>::Type_t
+  KOKKOS_INLINE_FUNCTION typename BinaryReturn<T1, T2, OpSubtract>::Type_t
   operator()(const T1 &a, const T2 &b) const
   {
     return (a - b);
@@ -61,7 +63,7 @@ struct OpMultiply
 {
   PETE_EMPTY_CONSTRUCTORS(OpMultiply)
   template <class T1, class T2>
-  inline typename BinaryReturn<T1, T2, OpMultiply>::Type_t
+  KOKKOS_INLINE_FUNCTION typename BinaryReturn<T1, T2, OpMultiply>::Type_t
   operator()(const T1 &a, const T2 &b) const
   {
     return (a * b);
@@ -72,7 +74,7 @@ struct OpDivide
 {
   PETE_EMPTY_CONSTRUCTORS(OpDivide)
   template <class T1, class T2>
-  inline typename BinaryReturn<T1, T2, OpDivide>::Type_t
+  KOKKOS_INLINE_FUNCTION typename BinaryReturn<T1, T2, OpDivide>::Type_t
   operator()(const T1 &a, const T2 &b) const
   {
     return (a / b);
@@ -83,7 +85,7 @@ struct OpMod
 {
   PETE_EMPTY_CONSTRUCTORS(OpMod)
   template <class T1, class T2>
-  inline typename BinaryReturn<T1, T2, OpMod>::Type_t
+  KOKKOS_INLINE_FUNCTION typename BinaryReturn<T1, T2, OpMod>::Type_t
   operator()(const T1 &a, const T2 &b) const
   {
     return (a % b);
@@ -95,7 +97,7 @@ struct OpAddAssign
 {
   PETE_EMPTY_CONSTRUCTORS(OpAddAssign)
   template <class T1, class T2>
-  inline typename BinaryReturn<T1, T2, OpAddAssign>::Type_t
+  KOKKOS_INLINE_FUNCTION typename BinaryReturn<T1, T2, OpAddAssign>::Type_t
   operator()(const T1 &a, const T2 &b) const
   {
     (const_cast<T1 &>(a) += b);
@@ -112,7 +114,7 @@ struct OpSubtractAssign
 {
   PETE_EMPTY_CONSTRUCTORS(OpSubtractAssign)
   template <class T1, class T2>
-  inline typename BinaryReturn<T1, T2, OpSubtractAssign>::Type_t
+  KOKKOS_INLINE_FUNCTION typename BinaryReturn<T1, T2, OpSubtractAssign>::Type_t
   operator()(const T1 &a, const T2 &b) const
   {
     (const_cast<T1 &>(a) -= b);
@@ -129,7 +131,7 @@ struct OpMultiplyAssign
 {
   PETE_EMPTY_CONSTRUCTORS(OpMultiplyAssign)
   template <class T1, class T2>
-  inline typename BinaryReturn<T1, T2, OpMultiplyAssign>::Type_t
+  KOKKOS_INLINE_FUNCTION typename BinaryReturn<T1, T2, OpMultiplyAssign>::Type_t
   operator()(const T1 &a, const T2 &b) const
   {
     (const_cast<T1 &>(a) *= b);
@@ -146,7 +148,7 @@ struct OpDivideAssign
 {
   PETE_EMPTY_CONSTRUCTORS(OpDivideAssign)
   template <class T1, class T2>
-  inline typename BinaryReturn<T1, T2, OpDivideAssign>::Type_t
+  KOKKOS_INLINE_FUNCTION typename BinaryReturn<T1, T2, OpDivideAssign>::Type_t
   operator()(const T1 &a, const T2 &b) const
   {
     (const_cast<T1 &>(a) /= b);
@@ -163,7 +165,7 @@ struct OpModAssign
 {
   PETE_EMPTY_CONSTRUCTORS(OpModAssign)
   template <class T1, class T2>
-  inline typename BinaryReturn<T1, T2, OpModAssign>::Type_t
+  KOKKOS_INLINE_FUNCTION typename BinaryReturn<T1, T2, OpModAssign>::Type_t
   operator()(const T1 &a, const T2 &b) const
   {
     (const_cast<T1 &>(a) %= b);
@@ -181,7 +183,7 @@ struct OpAssign
 {
   PETE_EMPTY_CONSTRUCTORS(OpAssign)
   template <class T1, class T2>
-  inline typename BinaryReturn<T1, T2, OpAssign>::Type_t
+  KOKKOS_INLINE_FUNCTION typename BinaryReturn<T1, T2, OpAssign>::Type_t
   operator()(const T1 &a, const T2 &b) const
   {
     return (const_cast<T1 &>(a) = b);
