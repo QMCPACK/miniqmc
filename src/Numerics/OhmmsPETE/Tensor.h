@@ -22,8 +22,8 @@
 #ifndef OHMMS_TENSOR_H
 #define OHMMS_TENSOR_H
 
-#include "PETE/PETE.h"
-#include "OhmmsPETE/OhmmsTinyMeta.h"
+#include "../PETE/PETE.h"
+#include "OhmmsTinyMeta.h"
 /***************************************************************************
  *
  * The POOMA Framework
