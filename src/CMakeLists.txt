@@ -40,12 +40,6 @@ IF (GIT_FOUND AND IS_GIT_PROJECT)
   # Apparently custom commands need to be defined where the output is used.
   # If this in the main CMakeLists.txt it does not work.
 
-  EXECUTE_PROCESS(COMMAND ${GIT_EXECUTABLE} log -1 --format=%s
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-    OUTPUT_VARIABLE GIT_SUBJECT_RAW
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-    )
-  STRING(REPLACE "\"" "\\\"" GIT_SUBJECT "${GIT_SUBJECT_RAW}")
   ADD_CUSTOM_COMMAND(
     OUTPUT ${GITREV_TMP}
     COMMAND ${CMAKE_COMMAND} -E echo_append "#define GIT_BRANCH_RAW " > ${GITREV_TMP}
@@ -57,7 +51,9 @@ IF (GIT_FOUND AND IS_GIT_PROJECT)
     COMMAND ${CMAKE_COMMAND} -E echo_append "#define GIT_COMMIT_LAST_CHANGED_RAW " >> ${GITREV_TMP}
     COMMAND ${GIT_EXECUTABLE} log -1 --format=%ad >> ${GITREV_TMP}
     COMMAND ${CMAKE_COMMAND} -E echo >> ${GITREV_TMP}
-    COMMAND ${CMAKE_COMMAND} -E echo "#define GIT_COMMIT_SUBJECT_RAW \"${GIT_SUBJECT}\"" >> ${GITREV_TMP}
+    COMMAND ${CMAKE_COMMAND} -E echo_append "#define GIT_COMMIT_SUBJECT_RAW \"" >> ${GITREV_TMP}
+    COMMAND ${GIT_EXECUTABLE} log -1 --format=%s | sed -E "s/\"/\\\"/g" | tr -d '\n' >> ${GITREV_TMP}
+    COMMAND ${CMAKE_COMMAND} -E echo_append "\"" >> ${GITREV_TMP}
     COMMAND ${CMAKE_COMMAND} -E copy_if_different ${GITREV_TMP} ${GITREV_FILE}
     COMMAND ${CMAKE_COMMAND} -E remove ${GITREV_TMP}
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
