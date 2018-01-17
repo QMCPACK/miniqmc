@@ -264,8 +264,7 @@ int main(int argc, char **argv)
                           {
                             detWorkClass dwc;
                             internalUpdate += dwc.evaluate();
-                          }
-                          );
+                          }, accumulated_error);
   // @DEBUG: End kokkos implementation
 
 
