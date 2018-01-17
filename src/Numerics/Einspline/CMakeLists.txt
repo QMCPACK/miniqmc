@@ -29,8 +29,8 @@ SET(HFILES
 set(SRCS )
 
 SET(SRCS ${SRCS}
-  bspline_create.c
-  multi_bspline_create.c
+  bspline_create.cpp
+  multi_bspline_create.cpp
 )
 
 #do not compiler c functions

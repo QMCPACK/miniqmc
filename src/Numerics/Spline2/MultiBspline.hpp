@@ -26,6 +26,8 @@
 #include <Numerics/Spline2/MultiBsplineData.hpp>
 #include <stdlib.h>
 
+#include <Kokkos_Core.hpp>
+
 #ifdef __CUDA_ARCH__
 #undef ASSUME_ALIGNED
 #define ASSUME_ALIGNED(s)
@@ -88,7 +90,7 @@ template <typename T> struct MultiBspline
 
 #define MYMAX(a,b) (a<b?b:a)
 #define MYMIN(a,b) (a<b?b:a)
-  KOKKOS_INLINE_FUNCITON void get(T x, T &dx, int &ind, int ng) const
+  KOKKOS_INLINE_FUNCTION void get(T x, T &dx, int &ind, int ng) const
   {
     T ipart;
     dx = std::modf(x, &ipart);
@@ -119,7 +121,7 @@ template <typename T> struct MultiBspline
 template <typename T>
 template<class TeamType>
 KOKKOS_INLINE_FUNCTION
-inline void MultiBspline<T>::evaluate_v(const spliner_type *QMC_RESTRICT spline_m,
+void MultiBspline<T>::evaluate_v(const spliner_type *QMC_RESTRICT spline_m,
                                         T x, T y, T z, T *QMC_RESTRICT vals,
                                         size_t num_splines) const
 {
