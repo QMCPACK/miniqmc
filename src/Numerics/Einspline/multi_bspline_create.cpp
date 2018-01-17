@@ -30,8 +30,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-int posix_memalign(void **memptr, size_t alignment, size_t size);
-
 ////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////
 ////       Helper functions for spline creation         ////
@@ -132,7 +130,7 @@ void set_multi_UBspline_3d_s_d(multi_UBspline_3d_s *spline, int num,
   else
     Nz = Mz + 2;
 
-  double *spline_tmp = malloc(sizeof(double) * Nx * Ny * Nz);
+  double *spline_tmp = static_cast<double*>(malloc(sizeof(double) * Nx * Ny * Nz));
 
 // First, solve in the X-direction
 #pragma omp parallel for
@@ -172,7 +170,7 @@ void set_multi_UBspline_3d_s_d(multi_UBspline_3d_s *spline, int num,
 #pragma omp parallel for
     for (int ix = 0; ix < Nx; ++ix)
     {
-      const double *restrict i_ptr = spline_tmp + ix * Ny * Nz;
+      const double *QMC_RESTRICT i_ptr = spline_tmp + ix * Ny * Nz;
       for (int iy = 0; iy < Ny; ++iy)
         for (int iz = 0; iz < Nz; ++iz)
           spline->coefs[ix * spline->x_stride + iy * spline->y_stride +

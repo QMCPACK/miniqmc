@@ -24,11 +24,11 @@
 #include "config.h"
 
 #ifdef __cplusplus
-#include <complex>
+#include <Kokkos_Core.hpp>
 //typedef std::complex<float> complex_float;
 //typedef std::complex<double> complex_double;
-typedef kokkos::complex<float> complex_float;
-typedef kokkos::complex<double> complex_double;
+typedef Kokkos::complex<float> complex_float;
+typedef Kokkos::complex<double> complex_double;
 #else
 #include <complex.h>
 typedef complex float complex_float;
