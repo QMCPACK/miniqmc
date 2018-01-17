@@ -40,8 +40,15 @@ if(CMAKE_CXX_FLAGS MATCHES "-march=" OR CMAKE_C_FLAGS MATCHES "-march=")
     MESSAGE(FATAL_ERROR "if -march=ARCH is specified by the user, it should be added in both CMAKE_CXX_FLAGS and CMAKE_C_FLAGS!")
   endif() #(CMAKE_CXX_FLAGS MATCHES "-march=" AND CMAKE_C_FLAGS MATCHES "-march=")
 else() #(CMAKE_CXX_FLAGS MATCHES "-march=" OR CMAKE_C_FLAGS MATCHES "-march=")
-  # Don't use -march=native
-  MESSAGE("-march=ARCH should be set by user.")
+  # use -march=native
+  if (CMAKE_SYSTEM_PROCESSOR MATCHES "ppc")
+    # PowerPC doesn't support -march=native
+    set(CMAKE_C_FLAGS     "${CMAKE_C_FLAGS} -mcpu=native -mtune=native")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcpu=native -mtune=native")
+  else()
+    set(CMAKE_C_FLAGS     "${CMAKE_C_FLAGS} -march=native")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
+  endif()
 endif() #(CMAKE_CXX_FLAGS MATCHES "-march=" OR CMAKE_C_FLAGS MATCHES "-march=")
 
 ENDIF(NOT $ENV{CRAYPE_VERSION} MATCHES ".")
