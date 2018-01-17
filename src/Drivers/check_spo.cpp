@@ -18,6 +18,8 @@
 /** @file check_spo.cpp
  * @brief Miniapp to check 3D spline implementation against the reference.
  */
+// We might want to implement kokkos partitioning
+//
 #include <Utilities/Configuration.h>
 #include <Particle/ParticleSet.h>
 #include <Utilities/RandomGenerator.h>
@@ -52,6 +54,10 @@ void print_help()
 int main(int argc, char **argv)
 {
 
+  #ifdef QMC_USE_KOKKOS
+  Kokkos::initialize(argc,argv);
+  #endif
+  {
 
   // clang-format off
   typedef QMCTraits::RealType           RealType;
@@ -346,6 +352,9 @@ int main(int argc, char **argv)
     fail = true;
   }
   if (!fail) cout << "All checks passed for spo" << std::endl;
-
+  }
+  #ifdef QMC_USE_KOKKOS
+  Kokkos::finalize();
+  #endif
   return 0;
 }
