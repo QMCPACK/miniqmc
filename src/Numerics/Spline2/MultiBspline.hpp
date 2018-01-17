@@ -116,6 +116,11 @@ template <typename T> struct MultiBspline
   KOKKOS_INLINE_FUNCTION
   void evaluate_vgh(const TeamType& team, const spliner_type *QMC_RESTRICT spline_m, T x, T y, T z, T *QMC_RESTRICT vals, T *QMC_RESTRICT grads,
                     T *QMC_RESTRICT hess, size_t num_splines) const;
+
+  template<class TeamType>
+  KOKKOS_INLINE_FUNCTION
+  void evaluate_vgh_v2(const TeamType& team, const spliner_type *QMC_RESTRICT spline_m, T x, T y, T z, T *QMC_RESTRICT vals, T *QMC_RESTRICT grads,
+                    T *QMC_RESTRICT hess, size_t num_splines) const;
 };
 
 template <typename T>
