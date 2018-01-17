@@ -121,7 +121,7 @@ template <typename T> struct MultiBspline
 template <typename T>
 template<class TeamType>
 KOKKOS_INLINE_FUNCTION
-void MultiBspline<T>::evaluate_v(const spliner_type *QMC_RESTRICT spline_m,
+void MultiBspline<T>::evaluate_v(const TeamType& team, const spliner_type *QMC_RESTRICT spline_m,
                                         T x, T y, T z, T *QMC_RESTRICT vals,
                                         size_t num_splines) const
 {
