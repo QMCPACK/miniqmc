@@ -43,12 +43,13 @@ using namespace qmcplusplus;
 class detWorkClass
 {
 public:
-  detWorkClass(){setup();};  // Constructor
+  detWorkClass(int nsteps, int nsubsteps, int iseed){setup();};  // Constructor
   ~detWorkClass(){};        // Destructor
 
   // Setup everything
   void setup()
   {
+    Random.init(0, 1, iseed);
     double myerror=0;           // Returned by evaluate()
     typedef double value_type;  // I guess kokkos needs this? (kokkos wiki/ParallelDispatch)
 
@@ -61,10 +62,9 @@ public:
     int na        = 1;
     int nb        = 1;
     int nc        = 1;
-    int nsteps    = 100;
-    int iseed     = 11;
-    int nsubsteps = 1;
-    int np        = omp_get_max_threads();
+    //int nsteps    = 100;
+    //int iseed     = 11;
+    //int nsubsteps = 1;
 
     PrimeNumberSet<uint32_t> myPrimes;
 
@@ -72,6 +72,7 @@ public:
     ions.setName("ion");
     els.setName("e");
 
+    Tensor<int, 3> tmat(na, 0, 0, 0, nb, 0, 0, 0, nc);
     Tensor<OHMMS_PRECISION, 3> lattice_b;
     OHMMS_PRECISION scale = 1.0;
     lattice_b             = tile_cell(ions, tmat, scale);
@@ -142,7 +143,7 @@ public:
                 // Compute gradient at the trial position
 
                 determinant_ref.ratio(els, iel);
-                determinant.ratio(els, iel);
+                determinant.ratio(els, iel);   // Kokkos parallel_for over nels
 
                 // Accept/reject the trial move
                 if (ur[iel] > accept) // MC
@@ -168,7 +169,11 @@ public:
       {
         myerror += std::fabs(determinant_ref(i) - determinant(i));
       }
-  }  // End operator ();
+  }  // End method evaluate
+
+private:
+
+
 }   // End class detWorkClass
 
 
@@ -206,7 +211,9 @@ int main(int argc, char **argv)
 #endif
 
   bool verbose = false;
-
+  int Nsteps = 100;   // Defaults to pass to detWorkClass
+  int Nsubsteps = 1;
+  int Iseed = 11;
 
   // Scan argv
   int opt;
@@ -221,13 +228,13 @@ int main(int argc, char **argv)
         break;
       case 'h': print_help(); break;
       case 'n':
-        nsteps = atoi(optarg);
+        Nsteps = atoi(optarg);
         break;
       case 'N':
-        nsubsteps = atoi(optarg);
+        Nsubsteps = atoi(optarg);
         break;
       case 's':
-        iseed = atoi(optarg);
+        Iseed = atoi(optarg);
         break;
       case 'v': verbose = true; break;
       case 'V':
@@ -245,41 +252,37 @@ int main(int argc, char **argv)
   }
 
 
+  int np = omp_get_max_threads();
+
   // Output config
-  Random.init(0, 1, iseed);
-  Tensor<int, 3> tmat(na, 0, 0, 0, nb, 0, 0, 0, nc);
+  print_version( verbose );
 
-  print_version(verbose);
-
-  if (verbose) {
+  if ( verbose ) {
     outputManager.setVerbosity(Verbosity::HIGH);
   }
 
   // turn off output
-  if (!verbose || omp_get_max_threads() > 1)
+  if ( !verbose || np > 1 )
   {
     outputManager.shutOff();
   }
 
-
   // @DEBUG: Begin kokkos implementation
   // For each thread, create a detWorkClass and evaluate it
   double accumulated_error = 0.0;
-  kokkos::parallel_reduce(Kokkos::RangePolicy<>(0, numberOfThreads),
+  Kokkos::parallel_reduce(Kokkos::RangePolicy<>(0, numberOfThreads),
                           [=] (const size_t i, double &internalUpdate)
                           {
-                            detWorkClass dwc;
+                            detWorkClass dwc(Nsteps, Nsubsteps, Iseed);
                             internalUpdate += dwc.evaluate();
                           }, accumulated_error);
   // @DEBUG: End kokkos implementation
 
 
-
   // Report the results and exit
   constexpr double small_err = std::numeric_limits<double>::epsilon() * 6e8;
-
   cout << "total accumulated error of " << accumulated_error << " for " << np
-       << " procs" << '\n';
+       << " procs\n";
 
   if (accumulated_error / np > small_err)
   {
@@ -288,7 +291,7 @@ int main(int argc, char **argv)
     return 1;
   }
   else
-    cout << "All checks passed for determinant" << '\n';
+    cout << "All checks passed for determinant\n";
 
 #ifdef QMC_USE_KOKKOS
   Kokkos::finalize();
