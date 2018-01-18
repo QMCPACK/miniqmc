@@ -25,6 +25,7 @@
 #include <Utilities/SIMD/allocator.hpp>
 #include <Utilities/SIMD/algorithm.hpp>
 #include <numeric>
+#include <Kokkos_Core.hpp>
 
 /*!
  * @file TwoBodyJastrow.h
@@ -70,7 +71,8 @@ template <class FT> struct TwoBodyJastrow : public WaveFunctionComponentBase
   /// Correction
   RealType KEcorr;
   ///\f$Uat[i] = sum_(j) u_{i,j}\f$
-  Vector<valT> Uat;
+  //Vector<valT> Uat;
+  Kokkos::View<valT*,Kokkos::HostSpace> Uat;
   ///\f$dUat[i] = sum_(j) du_{i,j}\f$
   Vector<posT> dUat;
   valT *FirstAddressOfdU, *LastAddressOfdU;
@@ -173,7 +175,8 @@ template <typename FT> void TwoBodyJastrow<FT>::init(ParticleSet &p)
   N         = p.getTotalNum();
   NumGroups = p.groups();
 
-  Uat.resize(N);
+  Uat=Kokkos::View<valT*,Kokkos::HostSpace>("Uat",N);
+ // Uat.resize(N);
   dUat.resize(N);
   FirstAddressOfdU = &(dUat[0][0]);
   LastAddressOfdU  = FirstAddressOfdU + dUat.size() * OHMMS_DIM;
@@ -276,8 +279,8 @@ typename TwoBodyJastrow<FT>::ValueType TwoBodyJastrow<FT>::ratio(ParticleSet &P,
     int iEnd   = P.last(jg);
     cur_Uat += f2.evaluateV(iStart, iEnd, dist, DistCompressed.data());
   }
-
-  return std::exp(Uat[iat] - cur_Uat);
+  return std::exp(Uat(iat)-cur_Uat);
+  //return std::exp(Uat[iat] - cur_Uat);
 }
 
 template <typename FT>
@@ -297,7 +300,8 @@ TwoBodyJastrow<FT>::ratioGrad(ParticleSet &P, int iat, GradType &grad_iat)
   computeU3(P, iat, P.DistTables[0]->Temp_r.data(), cur_u.data(), cur_du.data(),
             cur_d2u.data());
   cur_Uat = simd::accumulate_n(cur_u.data(), N, valT());
-  DiffVal = Uat[iat] - cur_Uat;
+ // DiffVal = Uat[iat] - cur_Uat;
+  DiffVal = Uat(iat) - cur_Uat;
   grad_iat += accumulateG(cur_du.data(), P.DistTables[0]->Temp_dr);
   return std::exp(DiffVal);
 }
@@ -327,13 +331,15 @@ void TwoBodyJastrow<FT>::acceptMove(ParticleSet &P, int iat)
     posT dg               = newg - old_du[jat] * old_dr[jat];
     valT newl             = cur_d2u[jat] + lapfac * cur_du[jat];
     valT dl               = old_d2u[jat] + lapfac * old_du[jat] - newl;
-    Uat[jat] += du;
+   // Uat[jat] += du;
+    Uat(jat) += du;
     dUat[jat] -= dg;
     d2Uat[jat] += dl;
     cur_dUat += newg;
     cur_d2Uat -= newl;
   }
-  Uat[iat]   = cur_Uat;
+//  Uat[iat]   = cur_Uat;
+  Uat(iat)   = cur_Uat;
   dUat[iat]  = cur_dUat;
   d2Uat[iat] = cur_d2Uat;
 }
@@ -347,7 +353,8 @@ template <typename FT> void TwoBodyJastrow<FT>::recompute(ParticleSet &P)
     {
       computeU3(P, iat, d_table->Distances[iat], cur_u.data(), cur_du.data(),
                 cur_d2u.data());
-      Uat[iat] = simd::accumulate_n(cur_u.data(), N, valT());
+     // Uat[iat] = simd::accumulate_n(cur_u.data(), N, valT());
+      Uat(iat) = simd::accumulate_n(cur_u.data(), N, valT());
       posT grad;
       valT lap;
       accumulateGL(cur_du.data(), cur_d2u.data(), d_table->Displacements[iat],
@@ -378,7 +385,8 @@ void TwoBodyJastrow<FT>::evaluateGL(ParticleSet &P,
   LogValue = valT(0);
   for (int iat = 0; iat < N; ++iat)
   {
-    LogValue += Uat[iat];
+  //  LogValue += Uat[iat];
+    LogValue += Uat(iat);
     G[iat] += dUat[iat];
     L[iat] += d2Uat[iat];
   }
