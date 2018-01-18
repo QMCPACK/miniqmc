@@ -319,7 +319,7 @@ int main(int argc, char **argv)
   }
 
   Timers[Timer_Total]->start();
-#pragma omp parallel
+  //#pragma omp parallel
   {
     ParticleSet ions, els;
     ions.setName("ion");

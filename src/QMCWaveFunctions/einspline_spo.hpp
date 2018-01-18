@@ -91,7 +91,11 @@ struct einspline_spo
   {
   }
   /// disable copy constructor
-  //einspline_spo(const einspline_spo &in) = delete;
+
+
+
+
+  einspline_spo(const einspline_spo &in) = default;
   /// disable copy operator
   //einspline_spo &operator=(const einspline_spo &in) = delete;
 

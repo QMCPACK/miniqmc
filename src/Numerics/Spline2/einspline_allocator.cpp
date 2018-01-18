@@ -31,27 +31,27 @@
 
 #if defined(__INTEL_COMPILER)
 
-inline void *einspline_alloc(size_t size, size_t alignment)
+void *einspline_alloc(size_t size, size_t alignment)
 {
   return _mm_malloc(size, alignment);
 }
 
-inline void einspline_free(void *ptr) { _mm_free(ptr); }
+void einspline_free(void *ptr) { _mm_free(ptr); }
 
 #elif defined(HAVE_POSIX_MEMALIGN)
 
-inline void *einspline_alloc(size_t size, size_t alignment)
+void *einspline_alloc(size_t size, size_t alignment)
 {
   void *ptr;
   posix_memalign(&ptr, alignment, size);
   return ptr;
 }
 
-inline void einspline_free(void *ptr) { free(ptr); }
+void einspline_free(void *ptr) { free(ptr); }
 
 #else
 
-inline void *einspline_alloc(size_t size, size_t alignment)
+void *einspline_alloc(size_t size, size_t alignment)
 {
   size += (alignment - 1) + sizeof(void *);
   void *ptr = malloc(size);
@@ -68,7 +68,7 @@ inline void *einspline_alloc(size_t size, size_t alignment)
   }
 }
 
-inline void einspline_free(void *aligned)
+void einspline_free(void *aligned)
 {
   void *ptr = *((void **)aligned - 1);
   free(ptr);

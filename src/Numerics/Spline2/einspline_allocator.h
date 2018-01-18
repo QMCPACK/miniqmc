@@ -26,16 +26,38 @@
 #ifndef EINSPLINE_ALIGNED_ALLOC_H
 #define EINSPLINE_ALIGNED_ALLOC_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+//#ifdef __cplusplus
+//extern "C" {
+  //#endif
 
 void *einspline_alloc(size_t size, size_t alignment);
 
 void einspline_free(void *ptr);
 
-#ifdef __cplusplus
-}
-#endif
+multi_UBspline_3d_s *
+einspline_create_multi_UBspline_3d_s(Ugrid x_grid, Ugrid y_grid, Ugrid z_grid,
+                                     BCtype_s xBC, BCtype_s yBC, BCtype_s zBC,
+                                     int num_splines);
+
+multi_UBspline_3d_d *
+einspline_create_multi_UBspline_3d_d(Ugrid x_grid, Ugrid y_grid, Ugrid z_grid,
+                                     BCtype_d xBC, BCtype_d yBC, BCtype_d zBC,
+                                     int num_splines);
+
+  UBspline_3d_s *einspline_create_UBspline_3d_s(Ugrid x_grid, Ugrid y_grid,
+						Ugrid z_grid, BCtype_s xBC,
+						BCtype_s yBC, BCtype_s zBC,
+						float *data);
+
+  UBspline_3d_d *einspline_create_UBspline_3d_d(Ugrid x_grid, Ugrid y_grid,
+						Ugrid z_grid, BCtype_d xBC,
+						BCtype_d yBC, BCtype_d zBC,
+						double *data);
+
+
+
+//#ifdef __cplusplus
+//}
+//#endif
 
 #endif
