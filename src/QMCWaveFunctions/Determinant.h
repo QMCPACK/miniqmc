@@ -182,10 +182,10 @@ struct DiracDeterminant : public WaveFunctionComponentBase
   : FirstIndex(First)
   {
     psiMinv.resize(nels, nels);
-    psiV.resize(nels);
+    psiV = decltype(psiV)("DiracDeterminant::psiV", nels);
     psiM.resize(nels, nels);
 
-    pivot.resize(nels);
+    pivot = decltype(pivot)("DiracDeterminant::pivot", nels);
     psiMsave.resize(nels, nels);
 
     // now we "void initialize(RandomGenerator<T> RNG)"
@@ -193,7 +193,7 @@ struct DiracDeterminant : public WaveFunctionComponentBase
     nels = psiM.rows();
     // get lwork and resize workspace
     LWork = getGetriWorkspace(psiM.data(), nels, nels, pivot.data());
-    work.resize(LWork);
+    work = decltype(work)("DiracDeterminant::work", LWork);
 
     myRandom = RNG;
     constexpr double shift(0.5);
@@ -249,7 +249,8 @@ struct DiracDeterminant : public WaveFunctionComponentBase
 
     Kokkos::parallel_for(nels, KOKKOS_LAMBDA (const size_t j)
                          {
-                           psiV[j] = myRandom() - shift;
+                           auto random_value = myRandom();
+                           psiV[j] = random_value - shift;
                          });
     curRatio = inner_product_n(psiV.data(), psiMinv[iel-FirstIndex], nels, czero);
     return curRatio;
@@ -280,15 +281,15 @@ private:
   /// inverse matrix to be update
   Matrix<RealType> psiMinv;
   /// a SPO set for the row update
-  aligned_vector<RealType> psiV;
+  Kokkos::View<RealType*> psiV;
   /// internal storage to perform inversion correctly
   Matrix<double> psiM; // matrix to be inverted
   /// random number generator for testing
   RandomGenerator<RealType> myRandom;
 
   // temporary workspace for inversion
-  aligned_vector<int> pivot;
-  aligned_vector<double> work;
+  Kokkos::View<int*> pivot;
+  Kokkos::View<double*> work;
   Matrix<RealType> psiMsave;
 };
 }
