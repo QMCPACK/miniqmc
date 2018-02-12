@@ -219,9 +219,10 @@ struct DiracDeterminant : public WaveFunctionComponentBase
   {
     recompute();
     // FIXME do we want remainder of evaluateLog?
+    return 0.0;
   }
 
-  GradType evalGrad(ParticleSet &P, int iat) {}
+  GradType evalGrad(ParticleSet &P, int iat) { return GradType();}
 
   ValueType ratioGrad(ParticleSet &P, int iat, GradType &grad) { return ratio(P, iat); }
 

@@ -224,8 +224,9 @@ struct DiracDeterminantRef : public qmcplusplus::WaveFunctionComponentBase
   {
     recompute();
     // FIXME do we want remainder of evaluateLog?
+    return 0.0;
   }
-  GradType evalGrad(ParticleSet &P, int iat) {}
+  GradType evalGrad(ParticleSet &P, int iat) {return GradType();}
   ValueType ratioGrad(ParticleSet &P, int iat, GradType &grad) { return ratio(P, iat); }
   void evaluateGL(ParticleSet &P, ParticleSet::ParticleGradient_t &G,
                   ParticleSet::ParticleLaplacian_t &L, bool fromscratch = false) {}
