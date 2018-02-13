@@ -116,6 +116,7 @@
 #define QMCPLUSPLUS_NEW_TIMER_H
 
 #include <Utilities/Clock.h>
+#include <Utilities/XMLWriter.h>
 #include <vector>
 #include <string>
 #include <algorithm>
@@ -284,6 +285,8 @@ public:
   void print();
   void print_flat();
   void print_stack();
+
+  XMLNode* output_timing(XMLDocument &doc);
 
   typedef std::map<std::string, int> nameList_t;
   typedef std::vector<double> timeList_t;

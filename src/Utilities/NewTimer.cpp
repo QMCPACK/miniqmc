@@ -330,68 +330,64 @@ void TimerManagerClass::print_stack()
 #endif
 }
 
-// Might want some sort of structured output for timing data - either xml or
-// yaml
-#if 0
-void
-TimerManagerClass::output_timing(Communicate *comm, Libxml2Document &doc, xmlNodePtr root)
+XMLNode*
+TimerManagerClass::output_timing(XMLDocument &doc)
 {
+  XMLNode* timing_root = doc.NewElement("timing");
 #if ENABLE_TIMERS
-#ifdef USE_STACK_TIMERS
   StackProfileData p;
 
-  collate_stack_profile(comm, p);
+  collate_stack_profile(p);
 
-  if(comm == NULL || comm->rank() == 0)
+  timing_root->InsertEndChild(MakeTextElement(doc,"max_stack_level_exceeded", timer_max_level_exceeded?"yes":"no"));
+  timing_root->InsertEndChild(MakeTextElement(doc,"max_timers_exceeded", max_timers_exceeded?"yes":"no"));
+
+  std::vector<XMLNode *> node_stack;
+  node_stack.push_back(timing_root);
+  XMLNode *current_root = timing_root;
+  for (int i = 0; i < p.names.size(); i++)
   {
-    xmlNodePtr timing_root = doc.addChild(root, "timing");
-    doc.addChild(timing_root, "max_stack_level_exceeded", timer_max_level_exceeded?"yes":"no");
-    doc.addChild(timing_root, "max_timers_exceeded", max_timers_exceeded?"yes":"no");
-    std::vector<xmlNodePtr> node_stack;
-    node_stack.push_back(timing_root);
-    xmlNodePtr current_root = timing_root;
+    std::string stack_name = p.names[i];
+    int level = get_level(stack_name);
+    std::string name = get_leaf_name(stack_name);
 
-    for (int i = 0; i < p.names.size(); i++)
+    std::string indent_str(2*level, ' ');
+
+    XMLNode *timer  = doc.NewElement("timer");
+    current_root->InsertEndChild(timer);
+
+    timer->InsertEndChild(MakeTextElement(doc,"name",name));
+    timer->InsertEndChild(MakeTextElement(doc,"time_incl",std::to_string(p.timeList[i])));
+    timer->InsertEndChild(MakeTextElement(doc,"time_excl",std::to_string(p.timeExclList[i])));
+    timer->InsertEndChild(MakeTextElement(doc,"calls",std::to_string(p.callList[i])));
+
+    int next_level = level;
+    if (i+1 < p.names.size())
     {
-      std::string stack_name = p.names[i];
-      int level = get_level(stack_name);
-      std::string name = get_leaf_name(stack_name);
+      next_level = get_level(p.names[i+1]);
+    }
 
-      std::string indent_str(2*level, ' ');
-
-      xmlNodePtr timer = doc.addChild(current_root, "timer");
-      doc.addChild(timer, "name", name);
-      doc.addChild(timer, "time_incl", p.timeList[i]);
-      doc.addChild(timer, "time_excl", p.timeExclList[i]);
-      doc.addChild(timer, "calls", p.callList[i]);
-
-      int next_level = level;
-      if (i+1 < p.names.size())
+    if (next_level > level)
+    {
+      //XMLNode* next_node = doc.addChild(timer, "includes");
+      XMLNode* next_node = doc.NewElement("includes");
+      timer->InsertEndChild(next_node);
+      node_stack.push_back(next_node);
+      current_root = next_node;
+    }
+    if (next_level < level)
+    {
+      for (int j = 0; j < level-next_level; j++)
       {
-        next_level = get_level(p.names[i+1]);
-      }
-
-      if (next_level > level)
-      {
-        xmlNodePtr next_node = doc.addChild(timer, "includes");
-        node_stack.push_back(next_node);
-        current_root = next_node;
-      }
-      if (next_level < level)
-      {
-        for (int j = 0; j < level-next_level; j++)
-        {
-          node_stack.pop_back();
-          current_root = node_stack.back();
-        }
+        node_stack.pop_back();
+        current_root = node_stack.back();
       }
     }
   }
-
 #endif
-#endif
+  return timing_root;
 }
-#endif
+
 
 void NewTimer::set_active_by_timer_threshold(const timer_levels threshold)
 {

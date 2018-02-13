@@ -9,7 +9,6 @@
 // File created by: Jeongnim Kim, jeongnim.kim@intel.com, Intel Corp.
 ////////////////////////////////////////////////////////////////////////////////
 // -*- C++ -*-
-#include <omp.h>
 #include <QMCWaveFunctions/WaveFunction.h>
 #include <Input/Input.hpp>
 
