@@ -19,7 +19,7 @@
 #ifndef QMCPLUSPLUS_XML_WRITER_H
 #define QMCPLUSPLUS_XML_WRITER_H
 
-#include <tinyxml/tinyxml2.h>
+#include <Utilities/tinyxml/tinyxml2.h>
 #include <string>
 
 namespace qmcplusplus
