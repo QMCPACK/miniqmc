@@ -124,10 +124,12 @@ ENDIF()
     Utilities/InfoStream.cpp
     Utilities/OutputManager.cpp
     Utilities/NewTimer.cpp
+    Utilities/XMLWriter.cpp
     Utilities/qmcpack_version.cpp
     Numerics/Spline2/einspline_allocator.c
     Numerics/Spline2/bspline_allocator.cpp
     Numerics/Spline2/MultiBsplineData.cpp
+    tinyxml/tinyxml2.cpp
     ${GITREV_TMP}
     )
 
