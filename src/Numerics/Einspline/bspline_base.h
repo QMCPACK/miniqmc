@@ -23,15 +23,9 @@
 
 #include "config.h"
 
-#ifdef __cplusplus
 #include <complex>
 typedef std::complex<float> complex_float;
 typedef std::complex<double> complex_double;
-#else
-#include <complex.h>
-typedef complex float complex_float;
-typedef complex double complex_double;
-#endif
 
 // Conventions:
 // Postfixes:
@@ -96,9 +90,5 @@ typedef struct
   type_code t_code;
   void *restrict coefs;
 } Bspline;
-
-#ifdef __cplusplus
-extern "C"
-#endif
 
 #endif

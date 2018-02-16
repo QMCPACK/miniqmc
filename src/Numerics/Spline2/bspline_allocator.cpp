@@ -18,7 +18,6 @@
 #include "Numerics/Spline2/bspline_allocator.hpp"
 #include "Numerics/Spline2/einspline_allocator.h"
 
-extern "C" {
 
 void set_multi_UBspline_3d_d(multi_UBspline_3d_d *spline, int spline_num,
                              double *data);
@@ -45,7 +44,6 @@ UBspline_3d_d *einspline_create_UBspline_3d_d(Ugrid x_grid, Ugrid y_grid,
                                               Ugrid z_grid, BCtype_d xBC,
                                               BCtype_d yBC, BCtype_d zBC,
                                               double *data);
-}
 
 namespace qmcplusplus
 {

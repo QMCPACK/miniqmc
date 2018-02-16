@@ -24,9 +24,6 @@
 #include "bspline_base.h"
 #include "multi_bspline_structs.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 ////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////
@@ -52,8 +49,5 @@ void set_multi_UBspline_3d_s_d(multi_UBspline_3d_s *spline, int spline_num,
 // Set the data for the splines, and compute spline coefficients
 void set_multi_UBspline_3d_d(multi_UBspline_3d_d *spline, int spline_num,
                              double *data);
-#ifdef __cplusplus
-}
-#endif
 
 #endif
