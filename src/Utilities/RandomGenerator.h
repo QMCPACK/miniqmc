@@ -88,8 +88,6 @@ inline uint32_t MakeSeed(int i, int n)
 namespace qmcplusplus
 {
 template <class T> using RandomGenerator = StdRandom<T>;
-typedef StdRandom<OHMMS_PRECISION_FULL> RandomGenerator_t;
-extern RandomGenerator_t Random;
 }
 
 #endif

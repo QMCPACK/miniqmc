@@ -131,7 +131,6 @@ int main(int argc, char **argv)
     print_help();
   }
 
-  Random.init(0, 1, iseed);
   Tensor<int, 3> tmat(na, 0, 0, 0, nb, 0, 0, 0, nc);
 
   // turn off output
@@ -166,7 +165,6 @@ int main(int argc, char **argv)
     int ip = omp_get_thread_num();
 
     // create generator within the thread
-    Random.init(0, 1, iseed);
     RandomGenerator<RealType> random_th(myPrimes[ip]);
 
     tile_cell(ions, tmat, scale);
