@@ -109,7 +109,6 @@ int main(int argc, char **argv)
     }
   }
 
-  Random.init(0, 1, iseed);
   Tensor<int, 3> tmat(na, 0, 0, 0, nb, 0, 0, 0, nc);
 
   print_version(verbose);
