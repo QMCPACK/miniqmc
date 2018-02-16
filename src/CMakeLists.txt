@@ -119,7 +119,6 @@ ENDIF()
   # create libqmcutil
   ####################################
   SET(UTILITIES
-    Utilities/RandomGenerator.cpp 
     Utilities/SpeciesSet.cpp 
     Utilities/InfoStream.cpp
     Utilities/OutputManager.cpp

@@ -245,7 +245,6 @@ int main(int argc, char **argv)
 
   int number_of_electrons = 0;
 
-  Random.init(0, 1, iseed);
   Tensor<int, 3> tmat(na, 0, 0, 0, nb, 0, 0, 0, nc);
 
   TimerManager.set_timer_threshold(timer_level_coarse);

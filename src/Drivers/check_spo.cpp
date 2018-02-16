@@ -146,7 +146,6 @@ int main(int argc, char **argv)
     outputManager.setVerbosity(Verbosity::HIGH);
   }
 
-  Random.init(0, 1, iseed);
   Tensor<int, 3> tmat(na, 0, 0, 0, nb, 0, 0, 0, nc);
 
   TimerManager.set_timer_threshold(timer_level_coarse);
