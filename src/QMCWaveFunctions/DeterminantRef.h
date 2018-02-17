@@ -182,8 +182,8 @@ struct DiracDeterminantRef : public qmcplusplus::WaveFunctionComponentBase
 {
   using ParticleSet = qmcplusplus::ParticleSet;
 
-  DiracDeterminantRef(int nels, qmcplusplus::RandomGenerator<RealType> RNG, int First=0)
-  : FirstIndex(First)
+  DiracDeterminantRef(int nels, const qmcplusplus::RandomGenerator<RealType> &RNG, int First=0)
+  : FirstIndex(First), myRandom(RNG)
   {
     psiMinv.resize(nels, nels);
     psiV.resize(nels);
@@ -199,9 +199,8 @@ struct DiracDeterminantRef : public qmcplusplus::WaveFunctionComponentBase
     LWork = getGetriWorkspace(psiM.data(), nels, nels, pivot.data());
     work.resize(LWork);
 
-    myRandom = RNG;
     constexpr double shift(0.5);
-    RNG.generate_uniform(psiMsave.data(), nels * nels);
+    myRandom.generate_uniform(psiMsave.data(), nels * nels);
     psiMsave -= shift;
 
     double phase;

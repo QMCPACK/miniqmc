@@ -178,8 +178,8 @@ void checkDiff(const MT1 &a, const MT2 &b, const std::string &tag)
 
 struct DiracDeterminant : public WaveFunctionComponentBase
 {
-  DiracDeterminant(int nels, RandomGenerator<RealType> RNG, int First=0)
-  : FirstIndex(First)
+  DiracDeterminant(int nels, const RandomGenerator<RealType> &RNG, int First=0)
+  : FirstIndex(First), myRandom(RNG)
   {
     psiMinv.resize(nels, nels);
     psiV.resize(nels);
@@ -195,9 +195,8 @@ struct DiracDeterminant : public WaveFunctionComponentBase
     LWork = getGetriWorkspace(psiM.data(), nels, nels, pivot.data());
     work.resize(LWork);
 
-    myRandom = RNG;
     constexpr double shift(0.5);
-    RNG.generate_uniform(psiMsave.data(), nels * nels);
+    myRandom.generate_uniform(psiMsave.data(), nels * nels);
     psiMsave -= shift;
 
     double phase;
