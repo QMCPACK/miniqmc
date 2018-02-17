@@ -25,9 +25,6 @@
 #include "bspline_structs.h"
 #include <inttypes.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 ////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////
@@ -41,8 +38,5 @@ void find_coefs_1d_d(Ugrid grid, BCtype_d bc, double *data, intptr_t dstride,
 void find_coefs_1d_s(Ugrid grid, BCtype_s bc, float *data, intptr_t dstride,
                      float *coefs, intptr_t cstride);
 
-#ifdef __cplusplus
-}
-#endif
 
 #endif
