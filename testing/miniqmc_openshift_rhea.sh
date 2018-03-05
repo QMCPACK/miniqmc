@@ -122,14 +122,6 @@ echo
 
 EOF
 
-cp $BUILD_TAG.pbs $BUILD_DIR
-
-cd $BUILD_DIR
-
-source scl_source enable rh-python35
-which python
-
-#$BUILD_DIR/../../../scripts/blocking_qsub.py $BUILD_DIR $BUILD_TAG.pbs
 /home/bgl/blocking_qsub $BUILD_DIR $BUILD_TAG.pbs
 
 cp $BUILD_DIR/$BUILD_TAG.o* ../
