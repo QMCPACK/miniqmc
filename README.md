@@ -6,3 +6,5 @@
 HTML pages will be in the html/ directory with the top level file in
 'html/index.html'.
 3. Any issue or discussion, please use github issue.
+
+I'm testing openshift
