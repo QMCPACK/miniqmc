@@ -156,9 +156,12 @@ void checkIdentity(const MT1 &a, const MT2 &b, const std::string &tag)
       error += (i == j) ? std::abs(e - cone) : std::abs(e);
     }
   }
-#pragma omp master
-  std::cout << tag << " Identity Error = " << error / nrows / nrows
-            << std::endl;
+  double tol = nrows*nrows*1e-14;
+  #pragma omp master
+  if (error > tol) {
+    std::cout << tag << " difference from identity matrix exceeds tolerance.  Difference per element = " << error / nrows / nrows
+              << std::endl;
+  }
 }
 
 // FIXME do we want to keep this in the miniapp?
@@ -172,8 +175,12 @@ void checkDiff(const MT1 &a, const MT2 &b, const std::string &tag)
   for (int i = 0; i < nrows; ++i)
     for (int j = 0; j < ncols; ++j)
       error += std::abs(static_cast<double>(a(i, j) - b(i, j)));
+
+  double tol = nrows*nrows*1e-14;
 #pragma omp master
-  std::cout << tag << " diff Error = " << error / nrows / nrows << std::endl;
+  if (error > tol) {
+    std::cout << tag << " matrix difference exceeds tolerance.  Difference per element = " << error / nrows / nrows << std::endl;
+  }
 }
 
 struct DiracDeterminant : public WaveFunctionComponentBase
