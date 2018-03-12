@@ -93,7 +93,7 @@ SET(ENABLE_GCOV FALSE CACHE BOOL "Enable code coverage")
 ######################################################################
 # enable MPI and OPNEMP  if possible
 ######################################################################
-SET(QMC_MPI 1 CACHE BOOL "Enable/disable MPI")
+SET(QMC_MPI 0 CACHE BOOL "Enable/disable MPI")
 SET(QMC_OMP 1 CACHE BOOL "Enable/disable OpenMP")
 SET(QMC_COMPLEX 0 CACHE INTEGER "Build for complex binary")
 SET(PRINT_DEBUG 0 CACHE BOOL "Enable/disable debug printing")
