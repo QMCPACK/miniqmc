@@ -185,6 +185,8 @@ int main(int argc, char **argv)
   MPI_Comm world = MPI_COMM_WORLD;
   MPI_Init(&argc, &argv);
   MPI_Comm_rank(world, &rank);
+  int mpi_processes = 1;
+  MPI_Comm_size(world, &mpi_processes);
 #endif
   bool ionode = (rank == 0);
   int na      = 1;
@@ -328,6 +330,9 @@ int main(int argc, char **argv)
       cout << "Iterations = " << nsteps << endl;
       cout << "Rmax " << Rmax << endl;
       cout << "OpenMP threads " << nthreads << endl;
+#ifdef HAVE_MPI
+      cout << "MPI processes " << mpi_processes << endl;
+#endif
 
       cout << "\nSPO coefficients size = " << SPO_coeff_size;
       cout << " bytes (" << SPO_coeff_size_MB << " MB)" << endl;
