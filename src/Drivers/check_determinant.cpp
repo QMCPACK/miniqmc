@@ -158,7 +158,9 @@ int main(int argc, char **argv)
     }
 
     miniqmcreference::DiracDeterminantRef determinant_ref(nels, random_th);
+    determinant_ref.checkMatrix();
     DiracDeterminant determinant(nels, random_th);
+    determinant.checkMatrix();
 
     // For VMC, tau is large and should result in an acceptance ratio of roughly
     // 50%
