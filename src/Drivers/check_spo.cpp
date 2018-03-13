@@ -26,6 +26,9 @@
 #include <QMCWaveFunctions/einspline_spo.hpp>
 #include <Utilities/qmcpack_version.h>
 #include <getopt.h>
+#ifdef HAVE_MPI
+#include <mpi.h>
+#endif
 
 using namespace std;
 using namespace qmcplusplus;
@@ -45,8 +48,6 @@ void print_help()
   cout << "  -v  verbose output"                                        << '\n';
   cout << "  -V  print version information and exit"                    << '\n';
   //clang-format on
-
-  exit(1); // print help and exit
 }
 
 int main(int argc, char **argv)
@@ -61,8 +62,14 @@ int main(int argc, char **argv)
 
   // use the global generator
 
-  // bool ionode=(mycomm->rank() == 0);
-  bool ionode = 1;
+  int rank = 0;
+#ifdef HAVE_MPI
+  MPI_Comm world = MPI_COMM_WORLD;
+  MPI_Init(&argc, &argv);
+  MPI_Comm_rank(world, &rank);
+#endif
+  bool ionode = (rank == 0);
+
   int na      = 1;
   int nb      = 1;
   int nc      = 1;
@@ -76,6 +83,8 @@ int main(int argc, char **argv)
   int team_size   = 1;
 
   bool verbose = false;
+  bool stop_after_arg_parse = false;
+  int ret_code = 0;
 
   int opt;
   while(optind < argc)
@@ -91,7 +100,12 @@ int main(int argc, char **argv)
       case 'g': // tiling1 tiling2 tiling3
         sscanf(optarg, "%d %d %d", &na, &nb, &nc);
         break;
-      case 'h': print_help(); break;
+      case 'h':
+        if (ionode) {
+          print_help();
+        }
+        stop_after_arg_parse = true;
+        break;
       case 'n':
         nsteps = atoi(optarg);
         break;
@@ -103,21 +117,40 @@ int main(int argc, char **argv)
         break;
       case 'v': verbose = true; break;
       case 'V':
-        print_version(true);
-        return 1;
+        if (ionode) {
+          print_version(true);
+        }
+        stop_after_arg_parse = true;
+        ret_code = 0;
         break;
       default:
-        print_help();
+        if (ionode) {
+          print_help();
+        }
+        stop_after_arg_parse = true;
       }
     }
     else // disallow non-option arguments
     {
-      cerr << "Non-option arguments not allowed" << endl;
-      print_help();
+      if (ionode) {
+        cerr << "Non-option arguments not allowed" << endl;
+        print_help();
+        stop_after_arg_parse = true;
+      }
     }
   }
 
-  print_version(verbose);
+  if (stop_after_arg_parse) {
+#ifdef HAVE_MPI
+    MPI_Finalize();
+#endif
+    return ret_code;
+  }
+
+
+  if (ionode) {
+    print_version(verbose);
+  }
 
   if (verbose) {
     outputManager.setVerbosity(Verbosity::HIGH);
@@ -126,7 +159,7 @@ int main(int argc, char **argv)
   Tensor<int, 3> tmat(na, 0, 0, 0, nb, 0, 0, 0, nc);
 
   // turn off output
-  if (omp_get_max_threads() > 1)
+  if (omp_get_max_threads() > 1 || !ionode)
   {
     outputManager.shutOff();
   }
@@ -321,7 +354,7 @@ int main(int argc, char **argv)
   constexpr RealType small_g = std::numeric_limits<RealType>::epsilon() * 3e6;
   constexpr RealType small_h = std::numeric_limits<RealType>::epsilon() * 6e8;
   bool fail                  = false;
-  cout << std::endl;
+  if (ionode) cout << std::endl;
   if (evalV_v_err / np > small_v)
   {
     cout << "Fail in evaluate_v, V error =" << evalV_v_err / np << std::endl;
@@ -345,7 +378,15 @@ int main(int argc, char **argv)
          << std::endl;
     fail = true;
   }
-  if (!fail) cout << "All checks passed for spo" << std::endl;
+#ifdef HAVE_MPI
+  bool local_fail = fail;
+  MPI_Reduce(&local_fail, &fail, 1, MPI_C_BOOL, MPI_LOR, 0, world);
+#endif
+  if (!fail && ionode) cout << "All checks passed for spo" << std::endl;
+
+#ifdef HAVE_MPI
+  MPI_Finalize();
+#endif
 
   return 0;
 }

@@ -114,6 +114,9 @@
 #include <QMCWaveFunctions/einspline_spo.hpp>
 #include <QMCWaveFunctions/WaveFunction.h>
 #include <getopt.h>
+#ifdef HAVE_MPI
+#include <mpi.h>
+#endif
 
 using namespace std;
 using namespace qmcplusplus;
@@ -163,8 +166,6 @@ void print_help()
   cout << "  -v  verbose output"                                        << '\n';
   cout << "  -V  print version information and exit"                    << '\n';
   //clang-format on
-
-  exit(1); // print help and exit
 }
 
 int main(int argc, char **argv)
@@ -179,8 +180,15 @@ int main(int argc, char **argv)
 
   // use the global generator
 
-  // bool ionode=(mycomm->rank() == 0);
-  bool ionode = 1;
+  int rank = 0;
+#ifdef HAVE_MPI
+  MPI_Comm world = MPI_COMM_WORLD;
+  MPI_Init(&argc, &argv);
+  MPI_Comm_rank(world, &rank);
+  int mpi_processes = 1;
+  MPI_Comm_size(world, &mpi_processes);
+#endif
+  bool ionode = (rank == 0);
   int na      = 1;
   int nb      = 1;
   int nc      = 1;
@@ -199,6 +207,8 @@ int main(int argc, char **argv)
   PrimeNumberSet<uint32_t> myPrimes;
 
   bool verbose = false;
+  bool stop_after_arg_parse = false;
+  int ret_code = 0;
 
   int opt;
   while(optind < argc)
@@ -214,7 +224,12 @@ int main(int argc, char **argv)
       case 'g': // tiling1 tiling2 tiling3
         sscanf(optarg, "%d %d %d", &na, &nb, &nc);
         break;
-      case 'h': print_help(); break;
+      case 'h':
+        if (ionode) {
+          print_help();
+        }
+        stop_after_arg_parse = true;
+        break;
       case 'n':
         nsteps = atoi(optarg);
         break;
@@ -229,18 +244,34 @@ int main(int argc, char **argv)
         break;
       case 'v': verbose = true; break;
       case 'V':
-        print_version(true);
-        return 1;
+        if (ionode) {
+          print_version(true);
+        }
+        stop_after_arg_parse = true;
         break;
       default:
-        print_help();
+        if (ionode) {
+          print_help();
+        }
+        stop_after_arg_parse = true;
       }
     }
     else // disallow non-option arguments
     {
-      cerr << "Non-option arguments not allowed" << endl;
-      print_help();
+      if (ionode) {
+        cerr << "Non-option arguments not allowed" << endl;
+        ret_code = 1;
+        stop_after_arg_parse = true;
+        print_help();
+      }
     }
+  }
+
+  if (stop_after_arg_parse) {
+#ifdef HAVE_MPI
+    MPI_Finalize();
+#endif
+    return ret_code;
   }
 
   int number_of_electrons = 0;
@@ -251,14 +282,17 @@ int main(int argc, char **argv)
   TimerList_t Timers;
   setup_timers(Timers, MiniQMCTimerNames, timer_level_coarse);
 
-  print_version(verbose);
+  if (ionode) {
+    print_version(verbose);
+  }
+
 
   if (verbose) {
     outputManager.setVerbosity(Verbosity::HIGH);
   }
 
   // turn off output
-  if (!verbose || omp_get_max_threads() > 1)
+  if (!verbose || omp_get_max_threads() > 1 || !ionode)
   {
     outputManager.shutOff();
   }
@@ -296,6 +330,9 @@ int main(int argc, char **argv)
       cout << "Iterations = " << nsteps << endl;
       cout << "Rmax " << Rmax << endl;
       cout << "OpenMP threads " << nthreads << endl;
+#ifdef HAVE_MPI
+      cout << "MPI processes " << mpi_processes << endl;
+#endif
 
       cout << "\nSPO coefficients size = " << SPO_coeff_size;
       cout << " bytes (" << SPO_coeff_size_MB << " MB)" << endl;
@@ -549,6 +586,10 @@ int main(int argc, char **argv)
     std::string info_name = "info_" + std::to_string(na) + "_" + std::to_string(nb) + "_" + std::to_string(nc) + ".xml";
     doc.SaveFile(info_name.c_str());
   }
+
+#ifdef HAVE_MPI
+  MPI_Finalize();
+#endif
 
   return 0;
 }
