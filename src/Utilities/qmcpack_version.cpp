@@ -12,7 +12,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include <Utilities/qmcpack_version.h>
-#include <iostream>
+#include <Utilities/OutputManager.h>
 
 #define STR_EXPAND(x) #x
 #define STR(x) STR_EXPAND(x)
@@ -29,21 +29,22 @@
 #define QMCPACK_GIT_COMMIT_SUBJECT GIT_COMMIT_SUBJECT_RAW
 #endif
 
-using std::cout;
 using std::endl;
+using qmcplusplus::app_summary;
 
 void print_version(bool verbose)
 {
 #ifdef QMCPACK_GIT_BRANCH
-  cout << "miniqmc git branch: " << QMCPACK_GIT_BRANCH << endl;
-  cout << "miniqmc git commit: " << QMCPACK_GIT_HASH << endl;
+  app_summary() << "miniqmc git branch: " << QMCPACK_GIT_BRANCH << endl;
+  app_summary() << "miniqmc git commit: " << QMCPACK_GIT_HASH << endl;
+
   if (verbose) {
-    cout << "miniqmc git commit date: " << QMCPACK_GIT_COMMIT_LAST_CHANGED << endl;
-    cout << "miniqmc git commit subject: " << QMCPACK_GIT_COMMIT_SUBJECT << endl;
+    app_summary() << "miniqmc git commit date: " << QMCPACK_GIT_COMMIT_LAST_CHANGED << endl;
+    app_summary() << "miniqmc git commit subject: " << QMCPACK_GIT_COMMIT_SUBJECT << endl;
   }
 
 #else
-  cout << "miniqmc not built from git repository" << endl;
+  app_summary() << "miniqmc not built from git repository" << endl;
 #endif
-  cout << endl;
+  app_summary() << endl;
 }

@@ -19,6 +19,7 @@
  * @brief Miniapp to check 3D spline implementation against the reference.
  */
 #include <Utilities/Configuration.h>
+#include <Utilities/Communicate.h>
 #include <Particle/ParticleSet.h>
 #include <Utilities/RandomGenerator.h>
 #include <Input/Input.hpp>
@@ -33,17 +34,17 @@ using namespace qmcplusplus;
 void print_help()
 {
   //clang-format off
-  cout << "usage:" << '\n';
-  cout << "  check_spo [-hvV] [-g \"n0 n1 n2\"] [-n steps]"             << '\n';
-  cout << "             [-r rmax] [-s seed]"                            << '\n';
-  cout << "options:"                                                    << '\n';
-  cout << "  -g  set the 3D tiling.             default: 1 1 1"         << '\n';
-  cout << "  -h  print help and exit"                                   << '\n';
-  cout << "  -n  number of MC steps             default: 100"           << '\n';
-  cout << "  -r  set the Rmax.                  default: 1.7"           << '\n';
-  cout << "  -s  set the random seed.           default: 11"            << '\n';
-  cout << "  -v  verbose output"                                        << '\n';
-  cout << "  -V  print version information and exit"                    << '\n';
+  app_summary() << "usage:" << '\n';
+  app_summary() << "  check_spo [-hvV] [-g \"n0 n1 n2\"] [-n steps]"             << '\n';
+  app_summary() << "             [-r rmax] [-s seed]"                            << '\n';
+  app_summary() << "options:"                                                    << '\n';
+  app_summary() << "  -g  set the 3D tiling.             default: 1 1 1"         << '\n';
+  app_summary() << "  -h  print help and exit"                                   << '\n';
+  app_summary() << "  -n  number of MC steps             default: 100"           << '\n';
+  app_summary() << "  -r  set the Rmax.                  default: 1.7"           << '\n';
+  app_summary() << "  -s  set the random seed.           default: 11"            << '\n';
+  app_summary() << "  -v  verbose output"                                        << '\n';
+  app_summary() << "  -V  print version information and exit"                    << '\n';
   //clang-format on
 
   exit(1); // print help and exit
@@ -59,10 +60,14 @@ int main(int argc, char **argv)
   typedef ParticleSet::PosType          PosType;
   // clang-format on
 
+#ifdef HAVE_MPI
+  CommunicateMPI comm(argc, argv);
+#else
+  Communicate comm(argc, argv);
+#endif
+
   // use the global generator
 
-  // bool ionode=(mycomm->rank() == 0);
-  bool ionode = 1;
   int na      = 1;
   int nb      = 1;
   int nc      = 1;
@@ -76,6 +81,11 @@ int main(int argc, char **argv)
   int team_size   = 1;
 
   bool verbose = false;
+
+  if (!comm.root())
+  {
+    outputManager.shutOff();
+  }
 
   int opt;
   while(optind < argc)
@@ -117,11 +127,11 @@ int main(int argc, char **argv)
     }
   }
 
-  print_version(verbose);
-
   if (verbose) {
     outputManager.setVerbosity(Verbosity::HIGH);
   }
+
+  print_version(verbose);
 
   Tensor<int, 3> tmat(na, 0, 0, 0, nb, 0, 0, 0, nc);
 
@@ -150,11 +160,10 @@ int main(int argc, char **argv)
     const int norb        = count_electrons(ions, 1) / 2;
     tileSize              = (tileSize > 0) ? tileSize : norb;
     nTiles                = norb / tileSize;
-    if (ionode)
-      cout << "\nNumber of orbitals/splines = " << norb
-           << " and Tile size = " << tileSize
-           << " and Number of tiles = " << nTiles
-           << " and Iterations = " << nsteps << endl;
+    app_summary() << "\nNumber of orbitals/splines = " << norb
+                  << " and Tile size = " << tileSize
+                  << " and Number of tiles = " << nTiles
+                  << " and Iterations = " << nsteps << endl;
     spo_main.set(nx, ny, nz, norb, nTiles);
     spo_main.Lattice.set(lattice_b);
     spo_ref_main.set(nx, ny, nz, norb, nTiles);
@@ -321,7 +330,7 @@ int main(int argc, char **argv)
   constexpr RealType small_g = std::numeric_limits<RealType>::epsilon() * 3e6;
   constexpr RealType small_h = std::numeric_limits<RealType>::epsilon() * 6e8;
   bool fail                  = false;
-  cout << std::endl;
+  app_summary() << std::endl;
   if (evalV_v_err / np > small_v)
   {
     cout << "Fail in evaluate_v, V error =" << evalV_v_err / np << std::endl;
@@ -345,7 +354,12 @@ int main(int argc, char **argv)
          << std::endl;
     fail = true;
   }
-  if (!fail) cout << "All checks passed for spo" << std::endl;
+#ifdef HAVE_MPI
+  bool local_fail = fail;
+  MPI_Reduce(&local_fail, &fail, 1, MPI_C_BOOL, MPI_LOR, 0, comm.world());
+#endif
+
+  if (!fail) app_summary() << "All checks passed for spo" << std::endl;
 
   return 0;
 }
