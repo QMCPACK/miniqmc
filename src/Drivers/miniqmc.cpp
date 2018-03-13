@@ -164,8 +164,6 @@ void print_help()
   app_summary() << "  -v  verbose output"                                        << '\n';
   app_summary() << "  -V  print version information and exit"                    << '\n';
   //clang-format on
-
-  exit(1); // print help and exit
 }
 
 int main(int argc, char **argv)
@@ -178,11 +176,7 @@ int main(int argc, char **argv)
   typedef ParticleSet::PosType          PosType;
   // clang-format on
 
-#ifdef HAVE_MPI
-  CommunicateMPI comm(argc, argv);
-#else
   Communicate comm(argc, argv);
-#endif
 
   // use the global generator
 
@@ -224,7 +218,10 @@ int main(int argc, char **argv)
       case 'g': // tiling1 tiling2 tiling3
         sscanf(optarg, "%d %d %d", &na, &nb, &nc);
         break;
-      case 'h': print_help(); break;
+      case 'h':
+        print_help();
+        return 1;
+        break;
       case 'n':
         nsteps = atoi(optarg);
         break;
@@ -244,11 +241,12 @@ int main(int argc, char **argv)
         break;
       default:
         print_help();
+        return 1;
       }
     }
     else // disallow non-option arguments
     {
-      cerr << "Non-option arguments not allowed" << endl;
+      app_error() << "Non-option arguments not allowed" << endl;
       print_help();
     }
   }

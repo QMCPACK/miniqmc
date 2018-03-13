@@ -22,7 +22,6 @@
 #include <mpi.h>
 #endif
 
-// Base class, and serial (no mpi) implementation
 class Communicate
 {
 public:
@@ -30,33 +29,19 @@ public:
 
   virtual ~Communicate();
 
-  virtual void initialize(int argc, char **argv);
-
   int rank() { return m_rank; }
   int size() { return m_size; }
-  bool root() { return m_root; }
+  bool root() { return m_rank == 0; }
+#ifdef HAVE_MPI
+  MPI_Comm world() { return m_world; }
+#endif
+  void reduce(int *value);
 protected:
   int m_rank;
   int m_size;
-  bool m_root;
-};
-
 #ifdef HAVE_MPI
-
-class CommunicateMPI : public Communicate
-{
-public:
-  CommunicateMPI(int argc, char **argv);
-
-  void initialize(int argc, char **argv) override;
-
-  MPI_Comm world() { return m_world; }
-
-  virtual ~CommunicateMPI();
-protected:
   MPI_Comm m_world;
-
-};
 #endif
+};
 
 #endif

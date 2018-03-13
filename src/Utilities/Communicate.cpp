@@ -18,39 +18,29 @@
 
 Communicate::Communicate(int argc, char **argv)
 {
-  initialize(argc, argv);
-}
-
-void
-Communicate::initialize(int argc, char **argv)
-{
-  m_rank = 0;
-  m_rank = 1;
-  m_root = true;
-}
-
-Communicate::~Communicate()
-{
-}
-
 #ifdef HAVE_MPI
-CommunicateMPI::CommunicateMPI(int argc, char **argv):Communicate(argc, argv)
-{
-  initialize(argc, argv);
-}
-
-void
-CommunicateMPI::initialize(int argc, char **argv)
-{
   MPI_Init(&argc, &argv);
   m_world = MPI_COMM_WORLD;
   MPI_Comm_rank(m_world, &m_rank);
   MPI_Comm_size(m_world, &m_size);
-  m_root = (m_rank == 0);
+#else
+  m_rank = 0;
+  m_size = 1;
+#endif
 }
 
-CommunicateMPI::~CommunicateMPI()
+Communicate::~Communicate()
 {
+#ifdef HAVE_MPI
   MPI_Finalize();
-}
 #endif
+}
+
+void
+Communicate::reduce(int *value)
+{
+#ifdef HAVE_MPI
+  int local_value = *value;
+  MPI_Reduce(&local_value, value, 1, MPI_INT, MPI_SUM, 0, m_world);
+#endif
+}

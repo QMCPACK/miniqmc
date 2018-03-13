@@ -60,11 +60,7 @@ int main(int argc, char **argv)
   typedef ParticleSet::PosType          PosType;
   // clang-format on
 
-#ifdef HAVE_MPI
-  CommunicateMPI comm(argc, argv);
-#else
   Communicate comm(argc, argv);
-#endif
 
   // use the global generator
 
@@ -122,7 +118,7 @@ int main(int argc, char **argv)
     }
     else // disallow non-option arguments
     {
-      cerr << "Non-option arguments not allowed" << endl;
+      app_error() << "Non-option arguments not allowed" << endl;
       print_help();
     }
   }
@@ -329,37 +325,34 @@ int main(int argc, char **argv)
   constexpr RealType small_v = std::numeric_limits<RealType>::epsilon() * 1e4;
   constexpr RealType small_g = std::numeric_limits<RealType>::epsilon() * 3e6;
   constexpr RealType small_h = std::numeric_limits<RealType>::epsilon() * 6e8;
-  bool fail                  = false;
+  int nfail                  = 0;
   app_summary() << std::endl;
   if (evalV_v_err / np > small_v)
   {
     cout << "Fail in evaluate_v, V error =" << evalV_v_err / np << std::endl;
-    fail = true;
+    nfail = 1;
   }
   if (evalVGH_v_err / np > small_v)
   {
     cout << "Fail in evaluate_vgh, V error =" << evalVGH_v_err / np
          << std::endl;
-    fail = true;
+    nfail += 1;
   }
   if (evalVGH_g_err / np > small_g)
   {
     cout << "Fail in evaluate_vgh, G error =" << evalVGH_g_err / np
          << std::endl;
-    fail = true;
+    nfail += 1;
   }
   if (evalVGH_h_err / np > small_h)
   {
     cout << "Fail in evaluate_vgh, H error =" << evalVGH_h_err / np
          << std::endl;
-    fail = true;
+    nfail += 1;
   }
-#ifdef HAVE_MPI
-  bool local_fail = fail;
-  MPI_Reduce(&local_fail, &fail, 1, MPI_C_BOOL, MPI_LOR, 0, comm.world());
-#endif
+  comm.reduce(&nfail);
 
-  if (!fail) app_summary() << "All checks passed for spo" << std::endl;
+  if (nfail == 0) app_summary() << "All checks passed for spo" << std::endl;
 
   return 0;
 }
