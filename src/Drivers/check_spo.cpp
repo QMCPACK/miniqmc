@@ -134,7 +134,7 @@ int main(int argc, char **argv)
   // turn off output
   if (omp_get_max_threads() > 1)
   {
-    outputManager.shutOff();
+    outputManager.pause();
   }
 
   OHMMS_PRECISION ratio = 0.0;
@@ -315,6 +315,8 @@ int main(int argc, char **argv)
     dNumVGHCalls += nels;
 
   } // end of omp parallel
+
+  outputManager.resume();
 
   evalV_v_err /= nspheremoves;
   evalVGH_v_err /= dNumVGHCalls;
