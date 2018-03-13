@@ -35,7 +35,7 @@ public:
 #ifdef HAVE_MPI
   MPI_Comm world() { return m_world; }
 #endif
-  void reduce(int *value);
+  void reduce(int &value);
 protected:
   int m_rank;
   int m_size;

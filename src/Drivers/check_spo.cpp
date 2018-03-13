@@ -350,7 +350,7 @@ int main(int argc, char **argv)
          << std::endl;
     nfail += 1;
   }
-  comm.reduce(&nfail);
+  comm.reduce(nfail);
 
   if (nfail == 0) app_summary() << "All checks passed for spo" << std::endl;
 

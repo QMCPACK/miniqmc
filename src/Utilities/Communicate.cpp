@@ -37,10 +37,10 @@ Communicate::~Communicate()
 }
 
 void
-Communicate::reduce(int *value)
+Communicate::reduce(int &value)
 {
 #ifdef HAVE_MPI
-  int local_value = *value;
-  MPI_Reduce(&local_value, value, 1, MPI_INT, MPI_SUM, 0, m_world);
+  int local_value = value;
+  MPI_Reduce(&local_value, &value, 1, MPI_INT, MPI_SUM, 0, m_world);
 #endif
 }
