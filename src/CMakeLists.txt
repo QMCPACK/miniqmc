@@ -122,6 +122,7 @@ ENDIF()
     Utilities/SpeciesSet.cpp 
     Utilities/InfoStream.cpp
     Utilities/OutputManager.cpp
+    Utilities/Communicate.cpp
     Utilities/NewTimer.cpp
     Utilities/XMLWriter.cpp
     Utilities/tinyxml/tinyxml2.cpp
