@@ -1,5 +1,7 @@
 # miniQMC - QMCPACK Miniapp
 
+trivial change
+
 # Documentation and support
 1. Out-of-source documentation at https://github.com/QMCPACK/miniqmc/wiki
 2. In-source doxygen documentation can be created via 'doxygen Doxyfile'. The
