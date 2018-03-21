@@ -25,7 +25,7 @@ module list
 
 echo ""
 echo ""
-echo "starting new test for real full precision again"
+echo "starting new test for real full precision again and again"
 echo ""
 echo ""
 
