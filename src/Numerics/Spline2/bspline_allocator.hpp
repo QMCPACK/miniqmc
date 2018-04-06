@@ -18,6 +18,7 @@
 #include <Utilities/SIMD/allocator.hpp>
 #include <Numerics/Spline2/bspline_traits.hpp>
 #include "Numerics/Spline2/einspline_allocator.h"
+#include <Numerics/OhmmsPETE/OhmmsArray.h>
 
 namespace qmcplusplus
 {
@@ -99,6 +100,9 @@ public:
   /** set the data in double to multi_UBspline_3d_s */
   void set(double *indata, multi_UBspline_3d_s *spline, int i);
 
+  template<typename T>
+  void setCoefficientsForOneOrbital(int i, Array<T,3> &coeff, typename bspline_traits<T,3>::SplineType *spline);
+
   /** copy a UBSpline_3d_X to multi_UBspline_3d_X at i-th band
    * @param single  UBspline_3d_X
    * @param multi target multi_UBspline_3d_X
@@ -112,6 +116,21 @@ public:
   /** copy double to single: only for testing */
   void copy(multi_UBspline_3d_d *in, multi_UBspline_3d_s *out);
 };
+
+template<typename T>
+void Allocator::setCoefficientsForOneOrbital(int i, Array<T,3> &coeff, typename bspline_traits<T,3>::SplineType *spline)
+{
+  for (int ix = 0; ix < spline->x_grid.num + 3; ix++) {
+    for (int iy = 0; iy < spline->y_grid.num + 3; iy++) {
+      for (int iz = 0; iz < spline->z_grid.num + 3; iz++) {
+        intptr_t xs = spline->x_stride;
+        intptr_t ys = spline->y_stride;
+        intptr_t zs = spline->z_stride;
+        spline->coefs[iz*zs + iy*ys + iz*zs + i] = coeff(ix,iy,iz);
+      }
+    }
+  }
+}
 
 template <typename T, typename ValT, typename IntT>
 typename bspline_traits<T, 3>::SplineType *
