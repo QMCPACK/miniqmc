@@ -100,6 +100,11 @@ public:
   /** set the data in double to multi_UBspline_3d_s */
   void set(double *indata, multi_UBspline_3d_s *spline, int i);
 
+  /** Set coefficients for a single orbital (band)
+   * @param i index of the orbital
+   * @param coeff array of coefficients
+   * @param spline target MultibsplineType
+   */
   template<typename T>
   void setCoefficientsForOneOrbital(int i, Array<T,3> &coeff, typename bspline_traits<T,3>::SplineType *spline);
 
