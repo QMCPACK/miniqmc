@@ -90,16 +90,6 @@ public:
   createUBspline(ValT &start, ValT &end, IntT &ng, bc_code bc,
                  T *data = nullptr);
 
-  /** set the data to a spline, interpolation is done
-   * @param indata starting address of the input data
-   * @param spline target MultiBsplineType
-   * @param i the band index to copy to
-   */
-  void set(float *indata, multi_UBspline_3d_s *spline, int i);
-  void set(double *indata, multi_UBspline_3d_d *spline, int i);
-  /** set the data in double to multi_UBspline_3d_s */
-  void set(double *indata, multi_UBspline_3d_s *spline, int i);
-
   /** Set coefficients for a single orbital (band)
    * @param i index of the orbital
    * @param coeff array of coefficients
@@ -118,8 +108,6 @@ public:
   template <typename UBT, typename MBT>
   void copy(UBT *single, MBT *multi, int i, const int *offset, const int *N);
 
-  /** copy double to single: only for testing */
-  void copy(multi_UBspline_3d_d *in, multi_UBspline_3d_s *out);
 };
 
 template<typename T>
