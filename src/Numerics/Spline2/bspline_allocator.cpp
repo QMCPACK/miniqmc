@@ -28,8 +28,7 @@ einspline_create_multi_UBspline_3d_s(Ugrid x_grid, Ugrid y_grid, Ugrid z_grid,
 
 UBspline_3d_s *einspline_create_UBspline_3d_s(Ugrid x_grid, Ugrid y_grid,
                                               Ugrid z_grid, BCtype_s xBC,
-                                              BCtype_s yBC, BCtype_s zBC,
-                                              float *data);
+                                              BCtype_s yBC, BCtype_s zBC);
 
 multi_UBspline_3d_d *
 einspline_create_multi_UBspline_3d_d(Ugrid x_grid, Ugrid y_grid, Ugrid z_grid,
@@ -38,8 +37,7 @@ einspline_create_multi_UBspline_3d_d(Ugrid x_grid, Ugrid y_grid, Ugrid z_grid,
 
 UBspline_3d_d *einspline_create_UBspline_3d_d(Ugrid x_grid, Ugrid y_grid,
                                               Ugrid z_grid, BCtype_d xBC,
-                                              BCtype_d yBC, BCtype_d zBC,
-                                              double *data);
+                                              BCtype_d yBC, BCtype_d zBC);
 
 namespace qmcplusplus
 {
@@ -70,20 +68,16 @@ multi_UBspline_3d_d *Allocator::allocateMultiBspline(Ugrid x_grid, Ugrid y_grid,
 
 UBspline_3d_d *Allocator::allocateUBspline(Ugrid x_grid, Ugrid y_grid,
                                            Ugrid z_grid, BCtype_d xBC,
-                                           BCtype_d yBC, BCtype_d zBC,
-                                           double *data)
+                                           BCtype_d yBC, BCtype_d zBC)
 {
-  return einspline_create_UBspline_3d_d(x_grid, y_grid, z_grid, xBC, yBC, zBC,
-                                        data);
+  return einspline_create_UBspline_3d_d(x_grid, y_grid, z_grid, xBC, yBC, zBC);
 }
 
 UBspline_3d_s *Allocator::allocateUBspline(Ugrid x_grid, Ugrid y_grid,
                                            Ugrid z_grid, BCtype_s xBC,
-                                           BCtype_s yBC, BCtype_s zBC,
-                                           float *data)
+                                           BCtype_s yBC, BCtype_s zBC)
 {
-  return einspline_create_UBspline_3d_s(x_grid, y_grid, z_grid, xBC, yBC, zBC,
-                                        data);
+  return einspline_create_UBspline_3d_s(x_grid, y_grid, z_grid, xBC, yBC, zBC);
 }
 
 
