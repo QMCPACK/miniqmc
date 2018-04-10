@@ -242,8 +242,7 @@ einspline_create_multi_UBspline_3d_d(Ugrid x_grid, Ugrid y_grid, Ugrid z_grid,
 
 UBspline_3d_d *einspline_create_UBspline_3d_d(Ugrid x_grid, Ugrid y_grid,
                                               Ugrid z_grid, BCtype_d xBC,
-                                              BCtype_d yBC, BCtype_d zBC,
-                                              double *data)
+                                              BCtype_d yBC, BCtype_d zBC)
 {
   // Create new spline
   UBspline_3d_d *restrict spline = (UBspline_3d_d *)malloc(sizeof(UBspline_3d_d));
@@ -291,48 +290,12 @@ UBspline_3d_d *einspline_create_UBspline_3d_d(Ugrid x_grid, Ugrid y_grid,
   spline->coefs =
       (double *)einspline_alloc(sizeof(double) * spline->coefs_size, QMC_CLINE);
 
-  if (data != NULL) // only data is provided
-  {
-// First, solve in the X-direction
-#pragma omp parallel for
-    for (int iy = 0; iy < My; iy++)
-      for (int iz = 0; iz < Mz; iz++)
-      {
-        intptr_t doffset = iy * Mz + iz;
-        intptr_t coffset = iy * Nz + iz;
-        find_coefs_1d_d(spline->x_grid, xBC, data + doffset, My * Mz,
-                        spline->coefs + coffset, Ny * Nz);
-      }
-
-// Now, solve in the Y-direction
-#pragma omp parallel for
-    for (int ix = 0; ix < Nx; ix++)
-      for (int iz = 0; iz < Nz; iz++)
-      {
-        intptr_t doffset = ix * Ny * Nz + iz;
-        intptr_t coffset = ix * Ny * Nz + iz;
-        find_coefs_1d_d(spline->y_grid, yBC, spline->coefs + doffset, Nz,
-                        spline->coefs + coffset, Nz);
-      }
-
-// Now, solve in the Z-direction
-#pragma omp parallel for
-    for (int ix = 0; ix < Nx; ix++)
-      for (int iy = 0; iy < Ny; iy++)
-      {
-        intptr_t doffset = (ix * Ny + iy) * Nz;
-        intptr_t coffset = (ix * Ny + iy) * Nz;
-        find_coefs_1d_d(spline->z_grid, zBC, spline->coefs + doffset, 1,
-                        spline->coefs + coffset, 1);
-      }
-  }
   return spline;
 }
 
 UBspline_3d_s *einspline_create_UBspline_3d_s(Ugrid x_grid, Ugrid y_grid,
                                               Ugrid z_grid, BCtype_s xBC,
-                                              BCtype_s yBC, BCtype_s zBC,
-                                              float *data)
+                                              BCtype_s yBC, BCtype_s zBC)
 {
   // Create new spline
   UBspline_3d_s *spline = (UBspline_3d_s *)malloc(sizeof(UBspline_3d_s));
@@ -378,34 +341,5 @@ UBspline_3d_s *einspline_create_UBspline_3d_s(Ugrid x_grid, Ugrid y_grid,
   spline->coefs =
       (float *)einspline_alloc(sizeof(float) * spline->coefs_size, QMC_CLINE);
 
-  // First, solve in the X-direction
-  for (int iy = 0; iy < My; iy++)
-    for (int iz = 0; iz < Mz; iz++)
-    {
-      intptr_t doffset = iy * Mz + iz;
-      intptr_t coffset = iy * Nz + iz;
-      find_coefs_1d_s(spline->x_grid, xBC, data + doffset, My * Mz,
-                      spline->coefs + coffset, Ny * Nz);
-    }
-
-  // Now, solve in the Y-direction
-  for (int ix = 0; ix < Nx; ix++)
-    for (int iz = 0; iz < Nz; iz++)
-    {
-      intptr_t doffset = ix * Ny * Nz + iz;
-      intptr_t coffset = ix * Ny * Nz + iz;
-      find_coefs_1d_s(spline->y_grid, yBC, spline->coefs + doffset, Nz,
-                      spline->coefs + coffset, Nz);
-    }
-
-  // Now, solve in the Z-direction
-  for (int ix = 0; ix < Nx; ix++)
-    for (int iy = 0; iy < Ny; iy++)
-    {
-      intptr_t doffset = (ix * Ny + iy) * Nz;
-      intptr_t coffset = (ix * Ny + iy) * Nz;
-      find_coefs_1d_s(spline->z_grid, zBC, spline->coefs + doffset, 1,
-                      spline->coefs + coffset, 1);
-    }
   return spline;
 }
