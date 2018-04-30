@@ -259,21 +259,15 @@ int main(int argc, char **argv)
   TimerList_t Timers;
   setup_timers(Timers, MiniQMCTimerNames, timer_level_coarse);
 
-
-  if (verbose) {
-    outputManager.setVerbosity(Verbosity::HIGH);
+  if (comm.root())
+  {
+    if (verbose)
+      outputManager.setVerbosity(Verbosity::HIGH);
+    else
+      outputManager.setVerbosity(Verbosity::LOW);
   }
 
   print_version(verbose);
-
-  // turn off output
-  if (!verbose || omp_get_max_threads() > 1)
-  {
-    outputManager.shutOff();
-  }
-
-
-  int nthreads = omp_get_max_threads();
 
   using spo_type = einspline_spo<OHMMS_PRECISION>;
   spo_type spo_main;
@@ -304,7 +298,7 @@ int main(int argc, char **argv)
     app_summary() << "Number of electrons = " << nels << endl;
     app_summary() << "Iterations = " << nsteps << endl;
     app_summary() << "Rmax " << Rmax << endl;
-    app_summary() << "OpenMP threads " << nthreads << endl;
+    app_summary() << "OpenMP threads " << omp_get_max_threads() << endl;
 #ifdef HAVE_MPI
     app_summary() << "MPI processes " << comm.size() << endl;
 #endif
