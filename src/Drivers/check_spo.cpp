@@ -19,8 +19,9 @@
  * @brief Miniapp to check 3D spline implementation against the reference.
  */
 #include <Utilities/Configuration.h>
-#include <Utilities/NewTimer.h>
 #include <Utilities/qmcpack_version.h>
+#include <Utilities/Communicate.h>
+#include <Utilities/NewTimer.h>
 #include <Drivers/Mover.hpp>
 #include <Input/Input.hpp>
 #include <getopt.h>
@@ -50,17 +51,17 @@ TimerNameList_t<CheckSPOTimers> CheckSPOTimerNames = {
 void print_help()
 {
   //clang-format off
-  cout << "usage:" << '\n';
-  cout << "  check_spo [-hvV] [-g \"n0 n1 n2\"] [-n steps]"             << '\n';
-  cout << "             [-r rmax] [-s seed]"                            << '\n';
-  cout << "options:"                                                    << '\n';
-  cout << "  -g  set the 3D tiling.             default: 1 1 1"         << '\n';
-  cout << "  -h  print help and exit"                                   << '\n';
-  cout << "  -n  number of MC steps             default: 100"           << '\n';
-  cout << "  -r  set the Rmax.                  default: 1.7"           << '\n';
-  cout << "  -s  set the random seed.           default: 11"            << '\n';
-  cout << "  -v  verbose output"                                        << '\n';
-  cout << "  -V  print version information and exit"                    << '\n';
+  app_summary() << "usage:" << '\n';
+  app_summary() << "  check_spo [-hvV] [-g \"n0 n1 n2\"] [-n steps]"             << '\n';
+  app_summary() << "             [-r rmax] [-s seed]"                            << '\n';
+  app_summary() << "options:"                                                    << '\n';
+  app_summary() << "  -g  set the 3D tiling.             default: 1 1 1"         << '\n';
+  app_summary() << "  -h  print help and exit"                                   << '\n';
+  app_summary() << "  -n  number of MC steps             default: 100"           << '\n';
+  app_summary() << "  -r  set the Rmax.                  default: 1.7"           << '\n';
+  app_summary() << "  -s  set the random seed.           default: 11"            << '\n';
+  app_summary() << "  -v  verbose output"                                        << '\n';
+  app_summary() << "  -V  print version information and exit"                    << '\n';
   //clang-format on
 
   exit(1); // print help and exit
@@ -76,10 +77,10 @@ int main(int argc, char **argv)
   typedef ParticleSet::PosType          PosType;
   // clang-format on
 
+  Communicate comm(argc, argv);
+
   // use the global generator
 
-  // bool ionode=(mycomm->rank() == 0);
-  bool ionode = 1;
   int na      = 1;
   int nb      = 1;
   int nc      = 1;
@@ -92,6 +93,11 @@ int main(int argc, char **argv)
   int tileSize = -1;
   bool transfer = true;
   bool verbose = false;
+
+  if (!comm.root())
+  {
+    outputManager.shutOff();
+  }
 
   int opt;
   while(optind < argc)
@@ -135,18 +141,20 @@ int main(int argc, char **argv)
     }
     else // disallow non-option arguments
     {
-      cerr << "Non-option arguments not allowed" << endl;
+      app_error() << "Non-option arguments not allowed" << endl;
       print_help();
     }
   }
 
-  print_version(verbose);
-
-  if (verbose) {
-    outputManager.setVerbosity(Verbosity::HIGH);
+  if (comm.root())
+  {
+    if (verbose)
+      outputManager.setVerbosity(Verbosity::HIGH);
+    else
+      outputManager.setVerbosity(Verbosity::LOW);
   }
 
-  Tensor<int, 3> tmat(na, 0, 0, 0, nb, 0, 0, 0, nc);
+  print_version(verbose);
 
   TimerManager.set_timer_threshold(timer_level_coarse);
   TimerList_t Timers;
@@ -155,17 +163,12 @@ int main(int argc, char **argv)
   Timers[Timer_Total]->start();
   Timers[Timer_Init]->start();
 
-  // turn off output
-  if (omp_get_max_threads() > 1)
-  {
-    outputManager.shutOff();
-  }
-
   using spo_type = Mover::spo_type;
   spo_type spo_main;
   using spo_ref_type = Mover::spo_ref_type;
   spo_ref_type spo_ref_main;
   int nTiles = 1;
+  Tensor<int, 3> tmat(na, 0, 0, 0, nb, 0, 0, 0, nc);
 
   {
     Tensor<RealType, 3> lattice_b;
@@ -176,11 +179,10 @@ int main(int argc, char **argv)
     const int norb  = count_electrons(ions, 1) / 2;
     tileSize        = (tileSize > 0) ? tileSize : norb;
     nTiles          = norb / tileSize;
-    if (ionode)
-      cout << "\nNumber of orbitals/splines = " << norb
-           << " and Tile size = " << tileSize
-           << " and Number of tiles = " << nTiles
-           << " and Iterations = " << nsteps << endl;
+    app_summary() << "\nNumber of orbitals/splines = " << norb
+                  << " and Tile size = " << tileSize
+                  << " and Number of tiles = " << nTiles
+                  << " and Iterations = " << nsteps << endl;
     spo_main.set(nx, ny, nz, norb, nTiles);
     spo_main.Lattice.set(lattice_b);
     spo_ref_main.set(nx, ny, nz, norb, nTiles);
@@ -380,7 +382,9 @@ int main(int argc, char **argv)
 
   Timers[Timer_Total]->stop();
 
-  if (ionode)
+  outputManager.resume();
+
+  if (comm.root())
   {
     cout << "================================== " << endl;
     TimerManager.print();
@@ -403,32 +407,34 @@ int main(int argc, char **argv)
   constexpr RealType small_v = std::numeric_limits<RealType>::epsilon() * 1e4;
   constexpr RealType small_g = std::numeric_limits<RealType>::epsilon() * 3e6;
   constexpr RealType small_h = std::numeric_limits<RealType>::epsilon() * 6e8;
-  bool fail                  = false;
-  cout << std::endl;
+  int nfail                  = 0;
+  app_log() << std::endl;
   if (evalV_v_err / np > small_v)
   {
-    cout << "Fail in evaluate_v, V error =" << evalV_v_err / np << std::endl;
-    fail = true;
+    app_log() << "Fail in evaluate_v, V error =" << evalV_v_err / np << std::endl;
+    nfail = 1;
   }
   if (evalVGH_v_err / np > small_v)
   {
-    cout << "Fail in evaluate_vgh, V error =" << evalVGH_v_err / np
+    app_log() << "Fail in evaluate_vgh, V error =" << evalVGH_v_err / np
          << std::endl;
-    fail = true;
+    nfail += 1;
   }
   if (evalVGH_g_err / np > small_g)
   {
-    cout << "Fail in evaluate_vgh, G error =" << evalVGH_g_err / np
+    app_log() << "Fail in evaluate_vgh, G error =" << evalVGH_g_err / np
          << std::endl;
-    fail = true;
+    nfail += 1;
   }
   if (evalVGH_h_err / np > small_h)
   {
-    cout << "Fail in evaluate_vgh, H error =" << evalVGH_h_err / np
+    app_log() << "Fail in evaluate_vgh, H error =" << evalVGH_h_err / np
          << std::endl;
-    fail = true;
+    nfail += 1;
   }
-  if (!fail) cout << "All checks passed for spo" << std::endl;
+  comm.reduce(nfail);
+
+  if (nfail == 0) app_log() << "All checks passed for spo" << std::endl;
 
   return 0;
 }

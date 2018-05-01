@@ -113,15 +113,10 @@ int main(int argc, char **argv)
 
   print_version(verbose);
 
-  if (verbose) {
+  if (verbose)
     outputManager.setVerbosity(Verbosity::HIGH);
-  }
-
-  // turn off output
-  if (!verbose || omp_get_max_threads() > 1)
-  {
-    outputManager.shutOff();
-  }
+  else
+    outputManager.setVerbosity(Verbosity::LOW);
 
   double accumulated_error = 0.0;
 
@@ -158,7 +153,9 @@ int main(int argc, char **argv)
     }
 
     miniqmcreference::DiracDeterminantRef determinant_ref(nels, random_th);
+    determinant_ref.checkMatrix();
     DiracDeterminant determinant(nels, random_th);
+    determinant.checkMatrix();
 
     // For VMC, tau is large and should result in an acceptance ratio of roughly
     // 50%

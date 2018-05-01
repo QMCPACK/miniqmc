@@ -157,7 +157,7 @@ void checkIdentity(const MT1 &a, const MT2 &b, const std::string &tag)
     }
   }
 #pragma omp master
-  std::cout << tag << " Identity Error = " << error / nrows / nrows
+  std::cout << tag << " difference from identity (average per element) = " << error / nrows / nrows
             << std::endl;
 }
 
@@ -172,8 +172,9 @@ void checkDiff(const MT1 &a, const MT2 &b, const std::string &tag)
   for (int i = 0; i < nrows; ++i)
     for (int j = 0; j < ncols; ++j)
       error += std::abs(static_cast<double>(a(i, j) - b(i, j)));
+
 #pragma omp master
-  std::cout << tag << " diff Error = " << error / nrows / nrows << std::endl;
+  std::cout << tag << " difference between matrices (average per element) = " << error / nrows / nrows << std::endl;
 }
 
 struct DiracDeterminant : public WaveFunctionComponentBase
@@ -205,7 +206,10 @@ struct DiracDeterminant : public WaveFunctionComponentBase
     LogValue = InvertWithLog(psiM.data(), nels, nels, work.data(), LWork,
                              pivot.data(), phase);
     std::copy_n(psiM.data(), nels * nels, psiMinv.data());
+  }
 
+  void checkMatrix()
+  {
     if (omp_get_num_threads() == 1)
     {
       checkIdentity(psiMsave, psiM, "Psi_0 * psiM(double)");

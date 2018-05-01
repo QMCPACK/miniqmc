@@ -103,6 +103,7 @@
 // clang-format on
 
 #include <Utilities/Configuration.h>
+#include <Utilities/Communicate.h>
 #include <Particle/ParticleSet.h>
 #include <Particle/DistanceTable.h>
 #include <Utilities/PrimeNumberSet.h>
@@ -150,21 +151,19 @@ TimerNameList_t<MiniQMCTimers> MiniQMCTimerNames = {
 void print_help()
 {
   //clang-format off
-  cout << "usage:" << '\n';
-  cout << "  miniqmc   [-hvV] [-g \"n0 n1 n2\"] [-n steps]"             << '\n';
-  cout << "            [-N substeps] [-r rmax] [-s seed]"               << '\n';
-  cout << "options:"                                                    << '\n';
-  cout << "  -g  set the 3D tiling.             default: 1 1 1"         << '\n';
-  cout << "  -h  print help and exit"                                   << '\n';
-  cout << "  -n  number of MC steps             default: 100"           << '\n';
-  cout << "  -N  number of MC substeps          default: 1"             << '\n';
-  cout << "  -r  set the Rmax.                  default: 1.7"           << '\n';
-  cout << "  -s  set the random seed.           default: 11"            << '\n';
-  cout << "  -v  verbose output"                                        << '\n';
-  cout << "  -V  print version information and exit"                    << '\n';
+  app_summary() << "usage:" << '\n';
+  app_summary() << "  miniqmc   [-hvV] [-g \"n0 n1 n2\"] [-n steps]"             << '\n';
+  app_summary() << "            [-N substeps] [-r rmax] [-s seed]"               << '\n';
+  app_summary() << "options:"                                                    << '\n';
+  app_summary() << "  -g  set the 3D tiling.             default: 1 1 1"         << '\n';
+  app_summary() << "  -h  print help and exit"                                   << '\n';
+  app_summary() << "  -n  number of MC steps             default: 100"           << '\n';
+  app_summary() << "  -N  number of MC substeps          default: 1"             << '\n';
+  app_summary() << "  -r  set the Rmax.                  default: 1.7"           << '\n';
+  app_summary() << "  -s  set the random seed.           default: 11"            << '\n';
+  app_summary() << "  -v  verbose output"                                        << '\n';
+  app_summary() << "  -V  print version information and exit"                    << '\n';
   //clang-format on
-
-  exit(1); // print help and exit
 }
 
 int main(int argc, char **argv)
@@ -177,10 +176,10 @@ int main(int argc, char **argv)
   typedef ParticleSet::PosType          PosType;
   // clang-format on
 
+  Communicate comm(argc, argv);
+
   // use the global generator
 
-  // bool ionode=(mycomm->rank() == 0);
-  bool ionode = 1;
   int na      = 1;
   int nb      = 1;
   int nc      = 1;
@@ -200,6 +199,11 @@ int main(int argc, char **argv)
 
   bool verbose = false;
 
+  if (!comm.root())
+  {
+    outputManager.shutOff();
+  }
+
   int opt;
   while(optind < argc)
   {
@@ -214,7 +218,10 @@ int main(int argc, char **argv)
       case 'g': // tiling1 tiling2 tiling3
         sscanf(optarg, "%d %d %d", &na, &nb, &nc);
         break;
-      case 'h': print_help(); break;
+      case 'h':
+        print_help();
+        return 1;
+        break;
       case 'n':
         nsteps = atoi(optarg);
         break;
@@ -234,11 +241,12 @@ int main(int argc, char **argv)
         break;
       default:
         print_help();
+        return 1;
       }
     }
     else // disallow non-option arguments
     {
-      cerr << "Non-option arguments not allowed" << endl;
+      app_error() << "Non-option arguments not allowed" << endl;
       print_help();
     }
   }
@@ -251,19 +259,15 @@ int main(int argc, char **argv)
   TimerList_t Timers;
   setup_timers(Timers, MiniQMCTimerNames, timer_level_coarse);
 
-  print_version(verbose);
-
-  if (verbose) {
-    outputManager.setVerbosity(Verbosity::HIGH);
-  }
-
-  // turn off output
-  if (!verbose || omp_get_max_threads() > 1)
+  if (comm.root())
   {
-    outputManager.shutOff();
+    if (verbose)
+      outputManager.setVerbosity(Verbosity::HIGH);
+    else
+      outputManager.setVerbosity(Verbosity::LOW);
   }
 
-  int nthreads = omp_get_max_threads();
+  print_version(verbose);
 
   using spo_type = einspline_spo<OHMMS_PRECISION>;
   spo_type spo_main;
@@ -287,34 +291,33 @@ int main(int argc, char **argv)
     const unsigned int SPO_coeff_size =
         (nx + 3) * (ny + 3) * (nz + 3) * norb * sizeof(RealType);
     double SPO_coeff_size_MB = SPO_coeff_size * 1.0 / 1024 / 1024;
-    if (ionode)
-    {
-      cout << "\nNumber of orbitals/splines = " << norb << endl;
-      cout << "Tile size = " << tileSize << endl;
-      cout << "Number of tiles = " << nTiles << endl;
-      cout << "Number of electrons = " << nels << endl;
-      cout << "Iterations = " << nsteps << endl;
-      cout << "Rmax " << Rmax << endl;
-      cout << "OpenMP threads " << nthreads << endl;
 
-      cout << "\nSPO coefficients size = " << SPO_coeff_size;
-      cout << " bytes (" << SPO_coeff_size_MB << " MB)" << endl;
-    }
+    app_summary() << "\nNumber of orbitals/splines = " << norb << endl;
+    app_summary() << "Tile size = " << tileSize << endl;
+    app_summary() << "Number of tiles = " << nTiles << endl;
+    app_summary() << "Number of electrons = " << nels << endl;
+    app_summary() << "Iterations = " << nsteps << endl;
+    app_summary() << "Rmax " << Rmax << endl;
+    app_summary() << "OpenMP threads " << omp_get_max_threads() << endl;
+#ifdef HAVE_MPI
+    app_summary() << "MPI processes " << comm.size() << endl;
+#endif
+
+    app_summary() << "\nSPO coefficients size = " << SPO_coeff_size;
+    app_summary() << " bytes (" << SPO_coeff_size_MB << " MB)" << endl;
+
     spo_main.set(nx, ny, nz, norb, nTiles);
     spo_main.Lattice.set(lattice_b);
   }
 
-  if (ionode)
-  {
-    if (!useRef)
-      cout << "Using SoA distance table, Jastrow + einspline, " << endl
-           << "and determinant update." << endl;
-    else
-      cout << "Using the reference implementation for Jastrow, " << endl
-           << "determinant update, and distance table + einspline of the "
-           << endl
-           << "reference implementation " << endl;
-  }
+  if (!useRef)
+    app_summary() << "Using SoA distance table, Jastrow + einspline, " << endl
+                << "and determinant update." << endl;
+  else
+    app_summary() << "Using the reference implementation for Jastrow, " << endl
+                << "determinant update, and distance table + einspline of the "
+                << endl
+                << "reference implementation " << endl;
 
   Timers[Timer_Total]->start();
 #pragma omp parallel
@@ -516,7 +519,7 @@ int main(int argc, char **argv)
   } // end of omp parallel
   Timers[Timer_Total]->stop();
 
-  if (ionode)
+  if (comm.root())
   {
     cout << "================================== " << endl;
 

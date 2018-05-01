@@ -92,7 +92,7 @@ SET(ENABLE_GCOV FALSE CACHE BOOL "Enable code coverage")
 ######################################################################
 # enable MPI and OPNEMP  if possible
 ######################################################################
-SET(QMC_MPI 1 CACHE BOOL "Enable/disable MPI")
+SET(QMC_MPI 0 CACHE BOOL "Enable/disable MPI")
 SET(QMC_OMP 1 CACHE BOOL "Enable/disable OpenMP")
 SET(QMC_COMPLEX 0 CACHE INTEGER "Build for complex binary")
 SET(PRINT_DEBUG 0 CACHE BOOL "Enable/disable debug printing")
@@ -610,31 +610,6 @@ SET(QMC_UTIL_LIBS ${QMC_UTIL_LIBS} ${FORTRAN_LIBRARIES})
 
 #include qmcpack/src build/src
 INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR}/src ${PROJECT_BINARY_DIR}/src)
-
-######################################################################
-# Manage Einspline library
-# - toolchain file can set 
-# - check if libeinspline can be found in $EINSPLINE_HOME/include and
-# $EINSPLINE_HOME/lib
-# - if not found, build it from the source directory in $EINSPLINE_HOME
-# - if everything fails, do not use it
-######################################################################
-SET(HAVE_EINSPLINE 1)
-set(build_einspline 1)
-#if(HAVE_EINSPLINE_EXT)
-#  set(HAVE_EINSPLINE 0)
-#  INCLUDE(${PROJECT_CMAKE}/FindEinspline.cmake)
-#  IF(EINSPLINE_FOUND)
-#    INCLUDE_DIRECTORIES(${EINSPLINE_INCLUDE_DIR})
-#    SET(QMC_UTIL_LIBS ${EINSPLINE_LIBRARIES} ${QMC_UTIL_LIBS})
-#    set(build_einspline 0)
-#  endif()
-#endif()
-if(build_einspline)
-  SUBDIRS(src/Numerics/Einspline)
-  INCLUDE_DIRECTORIES(${PROJECT_BINARY_DIR}/include)
-  SET(QMC_UTIL_LIBS ${QMC_UTIL_LIBS} einspline)
-endif()
 
 #IF(BUILD_LMYENGINE_INTERFACE)
 #  ADD_DEFINITIONS(-DHAVE_LMY_ENGINE)

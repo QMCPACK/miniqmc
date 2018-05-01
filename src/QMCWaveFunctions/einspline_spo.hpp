@@ -155,15 +155,17 @@ struct einspline_spo
       pos_type end(1);
       einsplines.resize(nBlocks);
       RandomGenerator<T> myrandom(11);
-      Array<T, 3> data(nx, ny, nz);
-      std::fill(data.begin(), data.end(), T());
-      myrandom.generate_uniform(data.data(), data.size());
+      Array<T, 3> coef_data(nx+3, ny+3, nz+3);
       for (int i = 0; i < nBlocks; ++i)
       {
         einsplines[i] = myAllocator.createMultiBspline(T(0), start, end, ng, PERIODIC, nSplinesPerBlock);
-        if (init_random)
-          for (int j = 0; j < nSplinesPerBlock; ++j)
-            myAllocator.set(data.data(), einsplines[i], j);
+        if (init_random) {
+          for (int j = 0; j < nSplinesPerBlock; ++j) {
+            // Generate different coefficients for each orbital
+            myrandom.generate_uniform(coef_data.data(), coef_data.size());
+            myAllocator.setCoefficientsForOneOrbital(j, coef_data, einsplines[i]);
+          }
+        }
 #ifdef ENABLE_OFFLOAD
         // attach pointers
         spline_type **restrict einsplines_ptr=einsplines.data();
