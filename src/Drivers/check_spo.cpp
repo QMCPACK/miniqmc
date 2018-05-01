@@ -123,19 +123,17 @@ int main(int argc, char **argv)
     }
   }
 
-  if (verbose) {
-    outputManager.setVerbosity(Verbosity::HIGH);
+  if (comm.root())
+  {
+    if (verbose)
+      outputManager.setVerbosity(Verbosity::HIGH);
+    else
+      outputManager.setVerbosity(Verbosity::LOW);
   }
 
   print_version(verbose);
 
   Tensor<int, 3> tmat(na, 0, 0, 0, nb, 0, 0, 0, nc);
-
-  // turn off output
-  if (omp_get_max_threads() > 1)
-  {
-    outputManager.pause();
-  }
 
   OHMMS_PRECISION ratio = 0.0;
 
@@ -328,33 +326,33 @@ int main(int argc, char **argv)
   constexpr RealType small_g = std::numeric_limits<RealType>::epsilon() * 3e6;
   constexpr RealType small_h = std::numeric_limits<RealType>::epsilon() * 6e8;
   int nfail                  = 0;
-  app_summary() << std::endl;
+  app_log() << std::endl;
   if (evalV_v_err / np > small_v)
   {
-    cout << "Fail in evaluate_v, V error =" << evalV_v_err / np << std::endl;
+    app_log() << "Fail in evaluate_v, V error =" << evalV_v_err / np << std::endl;
     nfail = 1;
   }
   if (evalVGH_v_err / np > small_v)
   {
-    cout << "Fail in evaluate_vgh, V error =" << evalVGH_v_err / np
+    app_log() << "Fail in evaluate_vgh, V error =" << evalVGH_v_err / np
          << std::endl;
     nfail += 1;
   }
   if (evalVGH_g_err / np > small_g)
   {
-    cout << "Fail in evaluate_vgh, G error =" << evalVGH_g_err / np
+    app_log() << "Fail in evaluate_vgh, G error =" << evalVGH_g_err / np
          << std::endl;
     nfail += 1;
   }
   if (evalVGH_h_err / np > small_h)
   {
-    cout << "Fail in evaluate_vgh, H error =" << evalVGH_h_err / np
+    app_log() << "Fail in evaluate_vgh, H error =" << evalVGH_h_err / np
          << std::endl;
     nfail += 1;
   }
   comm.reduce(nfail);
 
-  if (nfail == 0) app_summary() << "All checks passed for spo" << std::endl;
+  if (nfail == 0) app_log() << "All checks passed for spo" << std::endl;
 
   return 0;
 }

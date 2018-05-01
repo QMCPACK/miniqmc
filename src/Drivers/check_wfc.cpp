@@ -120,9 +120,10 @@ int main(int argc, char **argv)
 
   print_version(verbose);
 
-  if (verbose) {
+  if (verbose)
     outputManager.setVerbosity(Verbosity::HIGH);
-  }
+  else
+    outputManager.setVerbosity(Verbosity::LOW);
 
   if (wfc_name != "J1" && wfc_name != "J2" && wfc_name != "J3" &&
       wfc_name != "JeeI")
@@ -132,12 +133,6 @@ int main(int argc, char **argv)
   }
 
   Tensor<int, 3> tmat(na, 0, 0, 0, nb, 0, 0, 0, nc);
-
-  // turn off output
-  if (omp_get_max_threads() > 1)
-  {
-    outputManager.shutOff();
-  }
 
   // list of accumulated errors
   double evaluateLog_v_err = 0.0;
