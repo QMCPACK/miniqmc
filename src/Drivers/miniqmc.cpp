@@ -391,7 +391,6 @@ int main(int argc, char **argv)
     RealType accept  = 0.5;
 
     aligned_vector<RealType> ur(nels);
-    random_th.generate_uniform(ur.data(), nels);
 
     els.update();
     wavefunction->evaluateLog(els);
@@ -402,6 +401,7 @@ int main(int argc, char **argv)
       Timers[Timer_Diffusion]->start();
       for (int l = 0; l < nsubsteps; ++l) // drift-and-diffusion
       {
+        random_th.generate_uniform(ur.data(), nels);
         random_th.generate_normal(&delta[0][0], nels3);
         for (int iel = 0; iel < nels; ++iel)
         {
