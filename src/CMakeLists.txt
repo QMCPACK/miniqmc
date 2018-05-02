@@ -184,7 +184,7 @@ ENDIF()
 
   if(QMC_BUILD_LEVEL GREATER 4)
 
-    MESSAGE(STATUS "Minimal build: only minapp drivers")
+    MESSAGE(STATUS "Minimal build: only miniapp drivers")
     SUBDIRS(Drivers)
 
   else() #{{{

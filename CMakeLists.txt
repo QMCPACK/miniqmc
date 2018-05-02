@@ -1,4 +1,4 @@
-PROJECT(qmcpack)
+PROJECT(qmcpack CXX)
 
 
 #####################################################
@@ -108,19 +108,9 @@ SET(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMake" ${CMAKE_MODULE_PATH})
 # add macros to compile einspline if necessary
 ######################################################################
 INCLUDE(${CMAKE_ROOT}/Modules/CheckFunctionExists.cmake)
-INCLUDE(${CMAKE_ROOT}/Modules/CheckIncludeFile.cmake)
-INCLUDE(${CMAKE_ROOT}/Modules/CheckTypeSize.cmake)
 
 CHECK_FUNCTION_EXISTS(sincos HAVE_SINCOS)
 CHECK_FUNCTION_EXISTS(posix_memalign HAVE_POSIX_MEMALIGN)
-
-CHECK_INCLUDE_FILE(dlfcn.h HAVE_DLFCN_H)
-CHECK_INCLUDE_FILE(inttypes.h HAVE_INTTYPES_H)
-CHECK_INCLUDE_FILE(memory.h HAVE_MEMORY_H)
-CHECK_INCLUDE_FILE(sys/stat.h HAVE_SYS_STAT_H)
-CHECK_INCLUDE_FILE(sys/time.h HAVE_SYS_TIME_H)
-CHECK_INCLUDE_FILE(sys/types.h HAVE_SYS_TYPES_H)
-CHECK_INCLUDE_FILE(unistd.h HAVE_UNISTD_H)
 
 ######################################################################
 # Build options
@@ -140,12 +130,6 @@ iF(MIXED_PRECISION AND BUILD_LMYENGINE_INTERFACE)
 ENDIF()
 SET(BUILD_AFQMC 0 CACHE BOOL "Build with AFQMC")
 SET(BUILD_FCIQMC 0 CACHE BOOL "Build with FCIQMC")
-#SET(BUILD_QMCTOOLS 1 CACHE BOOL "Build tools for QMCPACK")
-#SET(BUILD_SANDBOX 0 CACHE BOOL "Build snadbox for testing")
-#SET(MPIP_PROFILE 0 CACHE BOOL "Build with mpip for mpi profile")
-#SET(BUILD_QMCTOOLS 1)
-#SET(BUILD_SANDBOX 0)
-#SET(MPIP_PROFILE 0)
 SET(QMC_BUILD_STATIC 0 CACHE BOOL "Link to static libraries")
 SET(ENABLE_TIMERS 1 CACHE BOOL "Enable internal timers")
 
@@ -221,7 +205,6 @@ ENDIF()
 #If the automatic detection does not work, comment out everything 
 #upto COMPILER MANUAL SELECTION and use one of the customized cmake file.
 ######################################################
-INCLUDE(${CMAKE_ROOT}/Modules/CheckCCompilerFlag.cmake)
 INCLUDE(${CMAKE_ROOT}/Modules/CheckCXXCompilerFlag.cmake)
 
 
@@ -273,8 +256,6 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
       SET(BUILD_SHARED_LIBS off)
       SET(CMAKE_FIND_LIBRARY_SUFFIXES .a)
       FOREACH(type SHARED_LIBRARY SHARED_MODULE EXE)
-        SET(CMAKE_${type}_LINK_STATIC_C_FLAGS "-Wl,-Bstatic")
-        SET(CMAKE_${type}_LINK_DYNAMIC_C_FLAGS "-static")
         SET(CMAKE_${type}_LINK_STATIC_CXX_FLAGS "-Wl,-Bstatic")
         SET(CMAKE_${type}_LINK_DYNAMIC_CXX_FLAGS "-static")
       ENDFOREACH(type)
@@ -286,23 +267,23 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
   #------------------------------------
   # Identify the compiler
   #------------------------------------
-  IF ( CMAKE_C_COMPILER_WORKS OR CMAKE_C_COMPILER_WORKS )
-    IF( (CMAKE_CXX_COMPILER_ID MATCHES "GNU") OR ( CMAKE_C_COMPILER_ID MATCHES "GNU") )
+  IF ( CMAKE_CXX_COMPILER_WORKS )
+    IF( CMAKE_CXX_COMPILER_ID MATCHES "GNU" )
       SET( COMPILER GNU )
-    ELSEIF( (CMAKE_CXX_COMPILER_ID MATCHES "XL") OR ( CMAKE_C_COMPILER_ID MATCHES "XL") )
+    ELSEIF( CMAKE_CXX_COMPILER_ID MATCHES "XL" )
       SET( COMPILER IBM )
-    ELSEIF( (CMAKE_CXX_COMPILER_ID MATCHES "Intel") OR (CMAKE_C_COMPILER_ID MATCHES "Intel") )
+    ELSEIF( CMAKE_CXX_COMPILER_ID MATCHES "Intel" )
       SET( COMPILER Intel )
-    ELSEIF( (CMAKE_CXX_COMPILER_ID MATCHES "PGI") OR (CMAKE_C_COMPILER_ID MATCHES "PGI") )
+    ELSEIF( CMAKE_CXX_COMPILER_ID MATCHES "PGI" )
       SET( COMPILER PGI )
-    ELSEIF( (CMAKE_CXX_COMPILER_ID MATCHES "Cray") OR (CMAKE_C_COMPILER_ID MATCHES "Cray") )
+    ELSEIF( CMAKE_CXX_COMPILER_ID MATCHES "Cray" )
       SET( COMPILER Cray )
-    ELSEIF( (CMAKE_CXX_COMPILER_ID MATCHES "Clang") OR (CMAKE_C_COMPILER_ID MATCHES "Clang") )
+    ELSEIF( CMAKE_CXX_COMPILER_ID MATCHES "Clang" )
       SET( COMPILER Clang )
     ELSE()
-        SET(USING_DEFAULT TRUE)
-        MESSAGE("${CMAKE_C_COMPILER_ID}")
-        MESSAGE(WARNING "Unknown C/C++ compiler, default flags will be used")
+      SET(USING_DEFAULT TRUE)
+      MESSAGE("${CMAKE_CXX_COMPILER_ID}")
+      MESSAGE(WARNING "Unknown C++ compiler, default flags will be used")
     ENDIF()
   ELSE()
     MESSAGE(WARNING "No compiler identified")
@@ -353,7 +334,7 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
         SET(MPI_WARNING_LIST
             "Building MPI version without using MPI compiler wrappers.\n"
             "This may not build qmcpack correctly. To ensure the correct version, specify the compiler wrappers to cmake.\n"
-            "For example: cmake -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpic++\n"
+            "For example: cmake -DCMAKE_CXX_COMPILER=mpic++\n"
             "To build without MPI, pass '-DQMC_MPI=0' to cmake")
         MESSAGE(WARNING ${MPI_WARNING_LIST})
 
@@ -384,7 +365,6 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
   ENDIF(INTEL_COMPILER)
   IF ( HAVE_MKL )
     # We found MKL, add the link library
-    SET(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} ${MKL_FLAGS}")
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${MKL_FLAGS}")
     SET(LAPACK_FOUND 1)
     SET(LAPACK_LIBRARIES "${MKL_LIBRARIES}")
@@ -486,7 +466,6 @@ IF ( HAVE_MPI )
 ENDIF(HAVE_MPI)
 
 MESSAGE(STATUS "CXX compiler flags: ${CMAKE_CXX_FLAGS}")
-MESSAGE(STATUS "CC  compiler flags: ${CMAKE_C_FLAGS}")
 
 SET(HAVE_OOMPI ${HAVE_MPI})
 INCLUDE(${CMAKE_ROOT}/Modules/FindThreads.cmake)
