@@ -152,12 +152,12 @@ void print_help()
 {
   //clang-format off
   app_summary() << "usage:" << '\n';
-  app_summary() << "  miniqmc   [-hvV] [-g \"n0 n1 n2\"] [-n steps]"             << '\n';
+  app_summary() << "  miniqmc   [-hjvV] [-g \"n0 n1 n2\"] [-n steps]"            << '\n';
   app_summary() << "            [-N substeps] [-r rmax] [-s seed]"               << '\n';
   app_summary() << "options:"                                                    << '\n';
   app_summary() << "  -g  set the 3D tiling.             default: 1 1 1"         << '\n';
   app_summary() << "  -h  print help and exit"                                   << '\n';
-  app_summary() << "  -j  enable three body Jastrow"                             << '\n';
+  app_summary() << "  -j  enable three body Jastrow      default: off"           << '\n';
   app_summary() << "  -n  number of MC steps             default: 100"           << '\n';
   app_summary() << "  -N  number of MC substeps          default: 1"             << '\n';
   app_summary() << "  -r  set the Rmax.                  default: 1.7"           << '\n';
