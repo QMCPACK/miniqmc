@@ -20,7 +20,7 @@
 namespace qmcplusplus
 {
 WaveFunction::WaveFunction(ParticleSet &ions, ParticleSet &els,
-                           RandomGenerator<RealType> RNG)
+                           RandomGenerator<RealType> &RNG)
 {
   FirstTime = true;
 

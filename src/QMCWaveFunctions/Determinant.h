@@ -178,7 +178,7 @@ void checkDiff(const MT1 &a, const MT2 &b, const std::string &tag)
 
 struct DiracDeterminant : public WaveFunctionComponentBase
 {
-  DiracDeterminant(int nels, const RandomGenerator<RealType> &RNG, int First=0)
+  DiracDeterminant(int nels, RandomGenerator<RealType> &RNG, int First=0)
   : FirstIndex(First), myRandom(RNG)
   {
     psiMinv.resize(nels, nels);
@@ -279,7 +279,7 @@ private:
   /// internal storage to perform inversion correctly
   Matrix<double> psiM; // matrix to be inverted
   /// random number generator for testing
-  RandomGenerator<RealType> myRandom;
+  RandomGenerator<RealType> &myRandom;
 
   // temporary workspace for inversion
   aligned_vector<int> pivot;

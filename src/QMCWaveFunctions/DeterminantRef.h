@@ -182,7 +182,7 @@ struct DiracDeterminantRef : public qmcplusplus::WaveFunctionComponentBase
 {
   using ParticleSet = qmcplusplus::ParticleSet;
 
-  DiracDeterminantRef(int nels, const qmcplusplus::RandomGenerator<RealType> &RNG, int First=0)
+  DiracDeterminantRef(int nels, qmcplusplus::RandomGenerator<RealType> &RNG, int First=0)
   : FirstIndex(First), myRandom(RNG)
   {
     psiMinv.resize(nels, nels);
@@ -281,7 +281,7 @@ private:
   /// internal storage to perform inversion correctly
   qmcplusplus::Matrix<double> psiM; // matrix to be inverted
   /// random number generator for testing
-  qmcplusplus::RandomGenerator<RealType> myRandom;
+  qmcplusplus::RandomGenerator<RealType> &myRandom;
 
   // temporary workspace for inversion
   qmcplusplus::aligned_vector<int> pivot;
