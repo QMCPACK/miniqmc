@@ -229,8 +229,10 @@ int main(int argc, char **argv)
         enableJ3 = true;
         break;
       case 'm':
-        const RealType meshfactor = atof(optarg);
-        nx *= meshfactor; ny *= meshfactor; nz *= meshfactor;
+        {
+          const RealType meshfactor = atof(optarg);
+          nx *= meshfactor; ny *= meshfactor; nz *= meshfactor;
+        }
         break;
       case 'n':
         nsteps = atoi(optarg);
