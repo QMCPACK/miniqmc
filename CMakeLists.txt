@@ -70,7 +70,6 @@ SET (EXECUTABLE_OUTPUT_PATH ${qmcpack_BINARY_DIR}/bin CACHE PATH "Single output 
 # QMC_COMPLEX = true if using complex wavefunctions
 # QMC_MPI =  enable MPI 
 # QMC_OMP = enable OMP 
-# QMC_BITS = 32/64 bit
 ######################################################################
 SET(OHMMS_DIM 3 CACHE INTEGER "Select physical dimension")
 SET(OHMMS_INDEXTYPE int)
@@ -117,12 +116,8 @@ CHECK_FUNCTION_EXISTS(posix_memalign HAVE_POSIX_MEMALIGN)
 # QMC_BUILD_STATIC build static/dynamic  libraries
 # BUILD_QMCTOOLS   build utility programs
 # BUILD_SANDBOX    build test programs
-# BUILD_MINIAPPS   build miniapps (Incomplete)
-# MPIP_PROFILE     profile mpi performance
 ######################################################################
-SET(QMC_ADIOS 0 CACHE BOOL "Build with ADIOS")
 SET(BUILD_UNIT_TESTS 1 CACHE BOOL "Build unit tests")
-SET(BUILD_MINIAPPS 1 CACHE BOOL "Build miniapps")
 SET(BUILD_LMYENGINE_INTERFACE 1 CACHE BOOL "Build LMY engine")
 iF(MIXED_PRECISION AND BUILD_LMYENGINE_INTERFACE)
   MESSAGE(STATUS "LMY engine is not compatiable with CPU mixed precision build! Disabling LMY engine")
@@ -147,9 +142,6 @@ SET(OHMMS_ORTHO 0)
 #FindXYZ.cmake will set the values if successful
 ######################################################################
 #SET(ENABLE_PHDF5 0 CACHE BOOL "Enable phdf5 for output")
-SET(HAVE_LIBXML2 1)
-SET(HAVE_LIBFFTW 0)
-SET(HAVE_LIBXMLPP 0)
 #SET(HAVE_LIBHDF5 0)
 SET(HAVE_LIBSPRNG 0)
 SET(HAVE_LIBBLITZ 0)
@@ -163,27 +155,6 @@ set(TAU_HOME $ENV{TAU_HOME})
 # Directory where customize cmake files reside
 ######################################################
 SET (PROJECT_CMAKE ${qmcpack_SOURCE_DIR}/CMake)
-
-######################################################
-# set ADIOS flags 
-######################################################
-IF(QMC_ADIOS)
-  IF(NOT HAVE_ADIOS)
-    SET (ADIOS_FOUND 0)
-    INCLUDE(${PROJECT_CMAKE}/FindADIOS.cmake)
-    IF (${ADIOS_FOUND} EQUAL 1)
-      INCLUDE_DIRECTORIES(${ADIOS_INCLUDES})
-      MESSAGE(STATUS "Found ADIOS")
-      LINK_LIBRARIES(${ADIOS_LIBRARIES})
-      ADD_DEFINITIONS(-DHAVE_ADIOS)
-    ELSE()
-      MESSAGE(STATUS "Couldn't find required library ADIOS")
-      MESSAGE(FATAL_ERROR "ADIOS_HOME: export ADIOS_HOME=/path/to/adios")
-    ENDIF()
-  ELSE()
-    ADD_DEFINITIONS(-DHAVE_ADIOS)
-  ENDIF()
-ENDIF(QMC_ADIOS)
 
 SET(QMCPACK_UNIT_TEST_DIR ${qmcpack_BINARY_DIR}/tests/bin)
 
@@ -305,6 +276,34 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
     MESSAGE(WARNING "No default file for compiler (${COMPILER})")
   ENDIF()
 
+  # Check for the compiler C++11 flag, if we go to requiring >= cmake 3.1.3 we could drop this
+  # and just write
+  # set(CMAKE_CXX_STANDARD_REQUIRED 11 CACHE INTEGER "C++ stangard must be at least 11")
+  SET(CXX11_FLAG "-std=c++11")
+  #check if the CXX compiler supports -std=c++11 option
+  include(CheckCXXCompilerFlag) # works with clean load paths and non system compilers with CMP0056
+  CHECK_CXX_COMPILER_FLAG(${CXX11_FLAG} CXX_COMPILER_SUPPORT_CXX11)
+
+  # Force the flag on Cray with Intel compiler, because the Cray wrapper
+  #  prints an warning that interferes with the flag detection code
+  #  with older versions of CMake.
+  IF($ENV{CRAYPE_VERSION} MATCHES ".")
+    IF( ${COMPILER} MATCHES "Intel" AND NOT CXX_COMPILER_SUPPORT_CXX11)
+      SET(CXX_COMPILER_SUPPORT_CXX11 TRUE)
+      MESSAGE(STATUS "Forcing C++11 support on Cray with Intel")
+    ENDIF()
+  ENDIF()
+
+  IF (CXX_COMPILER_SUPPORT_CXX11)
+    # avoid repeated -std=c++11 flag
+    STRING(REPLACE "++" "\\+\\+" CXX11_FLAG_MATCH ${CXX11_FLAG})
+    IF(NOT CMAKE_CXX_FLAGS MATCHES ${CXX11_FLAG_MATCH})
+      SET (CMAKE_CXX_FLAGS "${CXX11_FLAG} ${CMAKE_CXX_FLAGS}")
+    ENDIF()
+  ELSE()
+    MESSAGE(FATAL_ERROR "A compiler supporting C++11 is required. Use a newer C++ compiler.")
+  ENDIF()
+
   #-------------------------------------------------------------------
   #  check MPI installation
   #-------------------------------------------------------------------
@@ -403,36 +402,6 @@ IF (ENABLE_GCOV)
   ENDIF()
 ENDIF(ENABLE_GCOV)
 
-# Require C++11 while leaving possibility to fall back by modifying this file
-SET(CXX11_NEEDED TRUE)
-IF(CXX11_NEEDED)
-  SET(CXX11_FLAG "-std=c++11")
-  #check if the CXX compiler supports -std=c++11 option
-  include(CheckCXXCompilerFlag)
-  CHECK_CXX_COMPILER_FLAG(${CXX11_FLAG} CXX_COMPILER_SUPPORT_CXX11)
-  # Turn on C++11 for this code
-
-  # Force the flag on Cray with Intel compiler, because the Cray wrapper
-  #  prints an warning that interferes with the flag detection code
-  #  with older versions of CMake.
-  IF($ENV{CRAYPE_VERSION} MATCHES ".")
-    IF( ${COMPILER} MATCHES "Intel" AND NOT CXX_COMPILER_SUPPORT_CXX11)
-      SET(CXX_COMPILER_SUPPORT_CXX11 TRUE)
-      MESSAGE(STATUS "Forcing C++11 support on Cray with Intel")
-    ENDIF()
-  ENDIF()
-
-  IF (CXX_COMPILER_SUPPORT_CXX11)
-    # avoid repeated -std=c++11 flag
-    STRING(REPLACE "++" "\\+\\+" CXX11_FLAG_MATCH ${CXX11_FLAG})
-    IF(NOT CMAKE_CXX_FLAGS MATCHES ${CXX11_FLAG_MATCH})
-      SET (CMAKE_CXX_FLAGS "${CXX11_FLAG} ${CMAKE_CXX_FLAGS}")
-    ENDIF()
-  ELSE()
-    MESSAGE(FATAL_ERROR "A compiler supporting C++11 is required. Use a newer C++ compiler.")
-  ENDIF()
-ENDIF(CXX11_NEEDED)
-
 # AFQMC requires MKL sparse for good performance (roughly a factor of 2x)
 IF (BUILD_AFQMC AND NOT MKL_FOUND)
   MESSAGE(WARNING "AFQMC - MKL not found, using simple sparse matrix routines.  Link with MKL sparse libraries for better performance.")
@@ -477,40 +446,10 @@ INCLUDE(${CMAKE_ROOT}/Modules/FindThreads.cmake)
 # list of libraries to be linked with the main applications using I/O
 
 SET(QMC_UTIL_LIBS ${LAPACK_LIBRARY} ${BLAS_LIBRARY})
-
-#SET( FFTW_FOUND 0 )
-#IF ( HAVE_MKL )
-#  IF ( HAVE_MKL_FFTW3 )
-#    SET( FFTW_FOUND 1 )
-#  ENDIF()
-#ENDIF()
-#IF ( NOT FFTW_FOUND )
-#  find_package(FFTW)
-#ENDIF()
-#IF(FFTW_FOUND)
-#  SET(HAVE_LIBFFTW 1)
-#  INCLUDE_DIRECTORIES(${FFTW_INCLUDE_DIR})
-#  SET(QMC_UTIL_LIBS ${QMC_UTIL_LIBS} ${FFTW_LIBRARIES})
-#  MESSAGE(STATUS "Found FFTW")
-#ELSE(FFTW_FOUND)
-##  MESSAGE(STATUS "Disabling FFTW")
-#  MESSAGE(FATAL_ERROR "Could not find required library FFTW. Verify FFTW_HOME")
-#ENDIF(FFTW_FOUND)
- 
 SET(QMC_UTIL_LIBS ${QMC_UTIL_LIBS} ${FORTRAN_LIBRARIES})
 
 #find_package(ZLIB)
-#find_package(LibXml2) 
-#INCLUDE(CMake/FindLibxml2QMC.cmake)
    
-#IF(LIBXML2_FOUND)
-#  INCLUDE_DIRECTORIES(${LIBXML2_INCLUDE_DIR})
-#  SET(HAVE_LIBXML2 1)
-#  SET(QMC_UTIL_LIBS ${QMC_UTIL_LIBS} ${LIBXML2_LIBRARIES})
-#ELSE()
-#  MESSAGE(FATAL_ERROR "Could not find required library Libxml2")
-#ENDIF(LIBXML2_FOUND)
-
 #set(HDF5_USE_STATIC_LIBRARIES off)
 #if(QMC_BUILD_STATIC)
 #  set(HDF5_USE_STATIC_LIBRARIES on)
@@ -541,98 +480,12 @@ SET(QMC_UTIL_LIBS ${QMC_UTIL_LIBS} ${FORTRAN_LIBRARIES})
 #ENDIF(HDF5_FOUND)
 #
 
-#INCLUDE(${PROJECT_CMAKE}/FindPkgConfig.cmake)
-##################################################################
-# TODO:use profile tools
-##################################################################
-#IF(MPIP_PROFILE)
-#  LINK_LIBRARIES("/usr/apps/tools/mpip/lib/cmpi/libmpiP.a")
-#  LINK_LIBRARIES("/usr/lib/libbfd.a")
-#  LINK_LIBRARIES("/usr/lib/libiberty.a")
-#ENDIF(MPIP_PROFILE)
-#if(ENABLE_TAU_PROFILE)
-#  INCLUDE(${PROJECT_CMAKE}/FindTau.cmake)
-#endif(ENABLE_TAU_PROFILE)
-#    #add tau stuff
-#    IF(FOUND_TAU)
-#      ADD_DEFINITIONS(
-#        -DTAU_MPI
-#        -DTAU_MPI_THREADED
-#        -DTAU_MPIGREQUEST
-#        -DTAU_MPIDATAREP
-#        -DTAU_MPIERRHANDLER
-#        -DTAU_MPIATTRFUNCTION
-#        -DTAU_MPITYPEEX
-#        -DTAU_MPIADDERROR
-#      )
-#      #build libtau
-#      subdirs(src/tau)
-#      LINK_LIBRARIES(tau)
-#    ENDIF(FOUND_TAU)
-#IF(FOUND_TAU)
-#  INCLUDE_DIRECTORIES(${TAU_INCLUDE_DIR})
-#  ADD_DEFINITIONS (-DPROFILING_ON
-#      -DTAU_STDCXXLIB
-#      -DTAU_DOT_H_LESS_HEADERS
-#      -DTAU_CALLPATH
-#      -DTAU_LARGEFILE64_SOURCE
-#      -DTAU_BFD
-#      )
-#  if(ENABLE_OPENMP)
-#    ADD_DEFINITIONS(-DTAU_OPENMP)
-#  endif(ENABLE_OPENMP)
-#ENDIF(FOUND_TAU)
-
 ######################################################
 # Add optional macros
 ######################################################
 
 #include qmcpack/src build/src
 INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR}/src ${PROJECT_BINARY_DIR}/src)
-
-#IF(BUILD_LMYENGINE_INTERFACE)
-#  ADD_DEFINITIONS(-DHAVE_LMY_ENGINE)
-#  SET(FORMIC_BINARY_DIR ${qmcpack_BINARY_DIR})
-#  SUBDIRS(src/formic/utils)
-#  SET(QMC_UTIL_LIBS formic_utils ${QMC_UTIL_LIBS})
-#ENDIF(BUILD_LMYENGINE_INTERFACE)
-
-#include(ExternalProject)
-#  set(einspline_PREFIX "${CMAKE_CURRENT_BINARY_DIR}/einspline")
-#  set(einspline_INSTALL_DIR "${CMAKE_CURRENT_BINARY_DIR}/einspline")
-#  set(einspline_CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${einspline_INSTALL_DIR})
-#ExternalProject_Add(
-#   einspline
-#   SVN_REPOSITORY http://qmctools.googlecode.com/svn/ext-packages/einspline
-#   )
-#    INSTALL_DIR ${einspline_INSTALL_DIR}
-#    CMAKE_ARGS ${einspline_CMAKE_ARGS}
-#    )
-#  find_package(einspline REQUIRED)
-#  set(HAVE_EINSPLINE 1)
-#######################################################################
-## Manage GTK+ and GTKMM packages for GUI
-## search headers and libraries
-##   1) -lXYZ-${XYZ_VERSION} 
-##   2) -lXYZ
-## example: -lgtk-${GTK_VERSION} | -lgtk
-#######################################################################
-#SET(GTK_VERSION 2.0)
-#SET(PANGO_VERSION 1.0)
-#
-#SET(GTKMM_VERSION 2.4)
-#SET(PANGOMM_VERSION 1.4)
-#SET(SIGCPP_VERSION 2.0)
-#IF(ENABLE_GTK_GUI)
-#  INCLUDE(${PROJECT_CMAKE}/FindGTK.cmake)
-#  #THIS SHOULD GO TO the directory where GUI is built
-#  IF(GTKMM_FOUND)
-#   INCLUDE_DIRECTORIES(${GTKMM_INCLUDE_DIR})
-#   LINK_LIBRARIES(${GTKMM_LIBRARIES})
-#  ENDIF(GTKMM_FOUND)
-#ENDIF(ENABLE_GTK_GUI)
-
-
 
 #  To connect the timer regions with VTune sampling, some Task API calls
 #  are present in the code.  To enable them, set USE_VTUNE_TASKS and add the
@@ -706,34 +559,9 @@ ENDIF()
 if(HAVE_MPI)
   ADD_DEFINITIONS(-DMPICH_SKIP_MPICXX)
 endif()
-#ADD_DEFINITIONS(-DDISABLE_WS_CELL)
 
 EXECUTE_PROCESS(COMMAND hostname OUTPUT_VARIABLE QMC_HOSTNAME OUTPUT_STRIP_TRAILING_WHITESPACE)
 CONFIGURE_FILE(${qmcpack_SOURCE_DIR}/qmcpack.settings ${qmcpack_BINARY_DIR}/bin/qmcpack.settings)
 
-#########################
-# add definitions for adios profile
-# add definitions for adios verification
-########################
-IF(QMC_ADIOS)
-  #ADD_DEFINITIONS(-DIO_PROFILE)
-  #ADD_DEFINITIONS(-DADIOS_VERIFY)
-  ADD_DEFINITIONS(-DWRITE_GLOBAL)
-ENDIF(QMC_ADIOS)
-
 SUBDIRS(src)
 
-IF(NOT(QMC_BUILD_LEVEL GREATER 4))
-  SUBDIRS(tests)
-  SUBDIRS(examples)
-ENDIF()
-
-#ADD_CUSTOM_TARGET(print_settings ALL
-#      ${CMAKE_COMMAND} -E echo "Print build settings"
-#          VERBATIM)
-#
-#add_custom_command(TARGET print_settings
-#  POST_BUILD
-#  COMMAND svn info ${qmcpack_SOURCE_DIR})
-#
-#file(APPEND ${qmcpack_BINARY_DIR}/bin/qmcpack.settings ${print_settings})
