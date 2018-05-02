@@ -152,11 +152,12 @@ void print_help()
 {
   //clang-format off
   app_summary() << "usage:" << '\n';
-  app_summary() << "  miniqmc   [-hvV] [-g \"n0 n1 n2\"] [-n steps]"             << '\n';
+  app_summary() << "  miniqmc   [-hjvV] [-g \"n0 n1 n2\"] [-n steps]"            << '\n';
   app_summary() << "            [-N substeps] [-r rmax] [-s seed]"               << '\n';
   app_summary() << "options:"                                                    << '\n';
   app_summary() << "  -g  set the 3D tiling.             default: 1 1 1"         << '\n';
   app_summary() << "  -h  print help and exit"                                   << '\n';
+  app_summary() << "  -j  enable three body Jastrow      default: off"           << '\n';
   app_summary() << "  -n  number of MC steps             default: 100"           << '\n';
   app_summary() << "  -N  number of MC substeps          default: 1"             << '\n';
   app_summary() << "  -r  set the Rmax.                  default: 1.7"           << '\n';
@@ -194,6 +195,7 @@ int main(int argc, char **argv)
   // Set cutoff for NLPP use.
   RealType Rmax(1.7);
   bool useRef = false;
+  bool enableJ3 = false;
 
   PrimeNumberSet<uint32_t> myPrimes;
 
@@ -207,7 +209,7 @@ int main(int argc, char **argv)
   int opt;
   while(optind < argc)
   {
-    if ((opt = getopt(argc, argv, "hvVa:c:g:n:N:r:s:")) != -1)
+    if ((opt = getopt(argc, argv, "hjvVa:c:g:n:N:r:s:")) != -1)
     {
       switch (opt)
       {
@@ -221,6 +223,9 @@ int main(int argc, char **argv)
       case 'h':
         print_help();
         return 1;
+        break;
+      case 'j':
+        enableJ3 = true;
         break;
       case 'n':
         nsteps = atoi(optarg);
@@ -363,11 +368,11 @@ int main(int argc, char **argv)
     if (useRef)
     {
       wavefunction =
-          new miniqmcreference::WaveFunctionRef(ions, els, random_th);
+          new miniqmcreference::WaveFunctionRef(ions, els, random_th, enableJ3);
     }
     else
     {
-      wavefunction = new WaveFunction(ions, els, random_th);
+      wavefunction = new WaveFunction(ions, els, random_th, enableJ3);
     }
 
     // set Rmax for ion-el distance table for PP
