@@ -26,7 +26,7 @@ namespace miniqmcreference
 using namespace qmcplusplus;
 
 WaveFunctionRef::WaveFunctionRef(ParticleSet &ions, ParticleSet &els,
-                                 RandomGenerator<RealType> &RNG)
+                                 RandomGenerator<RealType> &RNG, bool enableJ3)
 {
   FirstTime = true;
 
@@ -51,8 +51,13 @@ WaveFunctionRef::WaveFunctionRef(ParticleSet &ions, ParticleSet &els,
   buildJ2(*J2, els.Lattice.WignerSeitzRadius);
 
   // J3 component
-  J3 = new J3OrbType(ions, els);
-  buildJeeI(*J3, els.Lattice.WignerSeitzRadius);
+  if(enableJ3)
+  {
+    J3 = new J3OrbType(ions, els);
+    buildJeeI(*J3, els.Lattice.WignerSeitzRadius);
+  }
+  else
+    J3 = nullptr;
 }
 
 WaveFunctionRef::~WaveFunctionRef()
@@ -61,7 +66,7 @@ WaveFunctionRef::~WaveFunctionRef()
   delete Det_dn;
   delete J1;
   delete J2;
-  delete J3;
+  if(J3) delete J3;
 }
 
 void WaveFunctionRef::evaluateLog(ParticleSet &P)
@@ -75,7 +80,7 @@ void WaveFunctionRef::evaluateLog(ParticleSet &P)
     LogValue += Det_dn->evaluateLog(P, P.G, P.L);
     LogValue += J1->evaluateLog(P, P.G, P.L);
     LogValue += J2->evaluateLog(P, P.G, P.L);
-    LogValue += J3->evaluateLog(P, P.G, P.L);
+    if(J3) LogValue += J3->evaluateLog(P, P.G, P.L);
     FirstTime = false;
   }
 }
@@ -85,7 +90,7 @@ WaveFunctionBase::posT WaveFunctionRef::evalGrad(ParticleSet &P, int iat)
   return ( iat<nelup ? Det_up->evalGrad(P, iat) : Det_dn->evalGrad(P, iat) )
          + J1->evalGrad(P, iat)
          + J2->evalGrad(P, iat)
-         + J3->evalGrad(P, iat);
+         + (J3?J3->evalGrad(P, iat):posT());
 }
 
 WaveFunctionBase::valT WaveFunctionRef::ratioGrad(ParticleSet &P, int iat,
@@ -94,7 +99,7 @@ WaveFunctionBase::valT WaveFunctionRef::ratioGrad(ParticleSet &P, int iat,
   return ( iat<nelup ? Det_up->ratioGrad(P, iat, grad) : Det_dn->ratioGrad(P, iat, grad) )
          * J1->ratioGrad(P, iat, grad)
          * J2->ratioGrad(P, iat, grad)
-         * J3->ratioGrad(P, iat, grad);
+         * (J3?J3->ratioGrad(P, iat, grad):1.0);
 }
 
 WaveFunctionBase::valT WaveFunctionRef::ratio(ParticleSet &P, int iat)
@@ -102,7 +107,7 @@ WaveFunctionBase::valT WaveFunctionRef::ratio(ParticleSet &P, int iat)
   return ( iat<nelup ? Det_up->ratio(P, iat) : Det_dn->ratio(P, iat) )
          * J1->ratio(P, iat)
          * J2->ratio(P, iat)
-         * J3->ratio(P, iat);
+         * (J3?J3->ratio(P, iat):1.0);
 }
 
 void WaveFunctionRef::acceptMove(ParticleSet &P, int iat)
@@ -113,7 +118,7 @@ void WaveFunctionRef::acceptMove(ParticleSet &P, int iat)
     Det_dn->acceptMove(P, iat);
   J1->acceptMove(P, iat);
   J2->acceptMove(P, iat);
-  J3->acceptMove(P, iat);
+  if(J3) J3->acceptMove(P, iat);
 }
 
 void WaveFunctionRef::restore(int iat) {}
@@ -127,6 +132,6 @@ void WaveFunctionRef::evaluateGL(ParticleSet &P)
   Det_dn->evaluateGL(P, P.G, P.L);
   J1->evaluateGL(P, P.G, P.L);
   J2->evaluateGL(P, P.G, P.L);
-  J3->evaluateGL(P, P.G, P.L);
+  if(J3) J3->evaluateGL(P, P.G, P.L);
 }
 } // miniqmcreferencce

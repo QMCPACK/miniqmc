@@ -18,6 +18,7 @@
 #include <Utilities/SIMD/allocator.hpp>
 #include <Numerics/Spline2/bspline_traits.hpp>
 #include "Numerics/Spline2/einspline_allocator.h"
+#include <Numerics/OhmmsPETE/OhmmsArray.h>
 
 namespace qmcplusplus
 {
@@ -61,13 +62,11 @@ public:
 
   /// allocate a single bspline
   UBspline_3d_s *allocateUBspline(Ugrid x_grid, Ugrid y_grid, Ugrid z_grid,
-                                  BCtype_s xBC, BCtype_s yBC, BCtype_s zBC,
-                                  float *data = nullptr);
+                                  BCtype_s xBC, BCtype_s yBC, BCtype_s zBC);
 
   /// allocate a UBspline_3d_d
   UBspline_3d_d *allocateUBspline(Ugrid x_grid, Ugrid y_grid, Ugrid z_grid,
-                                  BCtype_d xBC, BCtype_d yBC, BCtype_d zBC,
-                                  double *data = nullptr);
+                                  BCtype_d xBC, BCtype_d yBC, BCtype_d zBC);
 
   /** allocate a multi_UBspline_3d_(s,d)
    * @tparam T datatype
@@ -86,18 +85,15 @@ public:
    */
   template <typename ValT, typename IntT, typename T>
   typename bspline_traits<T, 3>::SingleSplineType *
-  createUBspline(ValT &start, ValT &end, IntT &ng, bc_code bc,
-                 T *data = nullptr);
+  createUBspline(ValT &start, ValT &end, IntT &ng, bc_code bc);
 
-  /** set the data to a spline, interpolation is done
-   * @param indata starting address of the input data
-   * @param spline target MultiBsplineType
-   * @param i the band index to copy to
+  /** Set coefficients for a single orbital (band)
+   * @param i index of the orbital
+   * @param coeff array of coefficients
+   * @param spline target MultibsplineType
    */
-  void set(float *indata, multi_UBspline_3d_s *spline, int i);
-  void set(double *indata, multi_UBspline_3d_d *spline, int i);
-  /** set the data in double to multi_UBspline_3d_s */
-  void set(double *indata, multi_UBspline_3d_s *spline, int i);
+  template<typename T>
+  void setCoefficientsForOneOrbital(int i, Array<T,3> &coeff, typename bspline_traits<T,3>::SplineType *spline);
 
   /** copy a UBSpline_3d_X to multi_UBspline_3d_X at i-th band
    * @param single  UBspline_3d_X
@@ -109,9 +105,22 @@ public:
   template <typename UBT, typename MBT>
   void copy(UBT *single, MBT *multi, int i, const int *offset, const int *N);
 
-  /** copy double to single: only for testing */
-  void copy(multi_UBspline_3d_d *in, multi_UBspline_3d_s *out);
 };
+
+template<typename T>
+void Allocator::setCoefficientsForOneOrbital(int i, Array<T,3> &coeff, typename bspline_traits<T,3>::SplineType *spline)
+{
+  for (int ix = 0; ix < spline->x_grid.num + 3; ix++) {
+    for (int iy = 0; iy < spline->y_grid.num + 3; iy++) {
+      for (int iz = 0; iz < spline->z_grid.num + 3; iz++) {
+        intptr_t xs = spline->x_stride;
+        intptr_t ys = spline->y_stride;
+        intptr_t zs = spline->z_stride;
+        spline->coefs[iz*zs + iy*ys + iz*zs + i] = coeff(ix,iy,iz);
+      }
+    }
+  }
+}
 
 template <typename T, typename ValT, typename IntT>
 typename bspline_traits<T, 3>::SplineType *
@@ -138,7 +147,7 @@ Allocator::createMultiBspline(T dummy, ValT &start, ValT &end, IntT &ng,
 
 template <typename ValT, typename IntT, typename T>
 typename bspline_traits<T, 3>::SingleSplineType *
-Allocator::createUBspline(ValT &start, ValT &end, IntT &ng, bc_code bc, T *data)
+Allocator::createUBspline(ValT &start, ValT &end, IntT &ng, bc_code bc)
 {
   Ugrid x_grid, y_grid, z_grid;
   typename bspline_traits<T, 3>::BCType xBC, yBC, zBC;
@@ -154,7 +163,7 @@ Allocator::createUBspline(ValT &start, ValT &end, IntT &ng, bc_code bc, T *data)
   xBC.lCode = xBC.rCode = bc;
   yBC.lCode = yBC.rCode = bc;
   zBC.lCode = zBC.rCode = bc;
-  return allocateUBspline(x_grid, y_grid, z_grid, xBC, yBC, zBC, data);
+  return allocateUBspline(x_grid, y_grid, z_grid, xBC, yBC, zBC);
 }
 
 template <typename UBT, typename MBT>
