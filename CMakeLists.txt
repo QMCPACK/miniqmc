@@ -358,10 +358,17 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
   #-------------------------------------------------------------------
   # check lapack/blas
   #-------------------------------------------------------------------
-  # Quick search for MKL (this will need to be improved). Currently only for Intel compilers
+  # Quick search for MKL (this will need to be improved).
+  # This reproduces the old intel -mkl behavior or
+  # if ENABLE_MKL is set to 1 supports other compilers
   IF (INTEL_COMPILER)
+    SET(ENABLE_MKL TRUE CACHE BOOL "ENABLE MKL for Intel compilers")
+  ELSE (INTEL_COMPILER)
+    SET(ENABLE_MKL FALSE CACHE BOOL "ENABLE MKL for non-intel compilers (Experimental)")
+  ENDIF (INTEL_COMPILER)
+  IF (ENABLE_MKL)
    INCLUDE(CMake/FindMKL.cmake)
-  ENDIF(INTEL_COMPILER)
+  ENDIF(ENABLE_MKL)
   IF ( HAVE_MKL )
     # We found MKL, add the link library
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${MKL_FLAGS}")
@@ -550,11 +557,7 @@ MESSAGE(STATUS "Ready to build qmcpack")
 #  -DMPICH_SKIP_MPICXX : disable C++ binding of MPICH
 ####################################################################
 
-ADD_DEFINITIONS(-DHAVE_CONFIG_H -DH5_USE_16_API -DUSE_REAL_STRUCT_FACTOR -DINLINE_ALL=inline)
-
-IF(CMAKE_COMPILER_IS_GNUCXX OR (${COMPILER} STREQUAL "Clang"))
-  ADD_DEFINITIONS(-DADD_)
-ENDIF()
+ADD_DEFINITIONS(-DHAVE_CONFIG_H -DH5_USE_16_API -DUSE_REAL_STRUCT_FACTOR -DINLINE_ALL=inline -DADD_)
 
 if(HAVE_MPI)
   ADD_DEFINITIONS(-DMPICH_SKIP_MPICXX)
