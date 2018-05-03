@@ -283,7 +283,7 @@ private:
   /// internal storage to perform inversion correctly
   Matrix<double> psiM; // matrix to be inverted
   /// random number generator for testing
-  RandomGenerator<RealType> &myRandom;
+  RandomGenerator<RealType> myRandom;
 
   // temporary workspace for inversion
   aligned_vector<int> pivot;

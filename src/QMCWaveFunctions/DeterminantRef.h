@@ -286,7 +286,7 @@ private:
   /// internal storage to perform inversion correctly
   qmcplusplus::Matrix<double> psiM; // matrix to be inverted
   /// random number generator for testing
-  qmcplusplus::RandomGenerator<RealType> &myRandom;
+  qmcplusplus::RandomGenerator<RealType> myRandom;
 
   // temporary workspace for inversion
   qmcplusplus::aligned_vector<int> pivot;
