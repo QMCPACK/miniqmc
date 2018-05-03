@@ -25,8 +25,7 @@ namespace qmcplusplus
  * transposed form
  */
 template <typename T, unsigned D, int SC>
-struct DistanceTableBA : public DTD_BConds<T, D, SC>,
-                            public DistanceTableData
+struct DistanceTableBA : public DTD_BConds<T, D, SC>, public DistanceTableData
 {
   int Nsources;
   int Ntargets;
@@ -54,7 +53,7 @@ struct DistanceTableBA : public DTD_BConds<T, D, SC>,
     Displacements.resize(Ntargets);
     for (int i = 0; i < Ntargets; ++i)
       Displacements[i].attachReference(Nsources, Nsources_padded,
-                                  memoryPool.data() + i * BlockSize);
+                                       memoryPool.data() + i * BlockSize);
 
     Temp_r.resize(Nsources);
     Temp_dr.resize(Nsources);
@@ -66,7 +65,7 @@ struct DistanceTableBA : public DTD_BConds<T, D, SC>,
     J2.resize(Nsources, Ntargets_padded);
   }
 
-  DistanceTableBA()                           = delete;
+  DistanceTableBA()                        = delete;
   DistanceTableBA(const DistanceTableBA &) = delete;
   ~DistanceTableBA() {}
 
@@ -139,5 +138,5 @@ struct DistanceTableBA : public DTD_BConds<T, D, SC>,
     }
   }
 };
-}
+} // namespace qmcplusplus
 #endif

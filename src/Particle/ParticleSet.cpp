@@ -35,8 +35,8 @@
 #include "Utilities/RandomGenerator.h"
 
 /** @file ParticleSet.cpp
-  * @brief Particle positions and related data
-  */
+ * @brief Particle positions and related data
+ */
 
 //#define PACK_DISTANCETABLES
 
@@ -96,15 +96,15 @@ void ParticleSet::create(const std::vector<int> &agroup)
 {
   SubPtcl.resize(agroup.size() + 1);
   SubPtcl[0] = 0;
-  for (int is       = 0; is < agroup.size(); is++)
+  for (int is = 0; is < agroup.size(); is++)
     SubPtcl[is + 1] = SubPtcl[is] + agroup[is];
-  size_t nsum       = SubPtcl[agroup.size()];
+  size_t nsum = SubPtcl[agroup.size()];
   resize(nsum);
   TotalNum = nsum;
   int loc  = 0;
   for (int i = 0; i < agroup.size(); i++)
   {
-    for (int j     = 0; j < agroup[i]; j++, loc++)
+    for (int j = 0; j < agroup[i]; j++, loc++)
       GroupID[loc] = i;
   }
 }
@@ -127,9 +127,9 @@ void ParticleSet::resetGroups()
       mySpecies(qind, ig) = 0.0;
   }
   for (int iat = 0; iat < Z.size(); iat++)
-    Z[iat]     = mySpecies(qind, GroupID[iat]);
-  natt         = mySpecies.numAttributes();
-  int massind  = mySpecies.addAttribute("mass");
+    Z[iat] = mySpecies(qind, GroupID[iat]);
+  natt        = mySpecies.numAttributes();
+  int massind = mySpecies.addAttribute("mass");
   if (massind == natt)
   {
     for (int ig = 0; ig < nspecies; ig++)
@@ -144,7 +144,7 @@ void ParticleSet::resetGroups()
   else
     app_log() << "  Distinctive masses for each species " << std::endl;
   for (int iat = 0; iat < Mass.size(); iat++)
-    Mass[iat]  = mySpecies(massind, GroupID[iat]);
+    Mass[iat] = mySpecies(massind, GroupID[iat]);
   std::vector<int> ng(nspecies, 0);
   for (int iat = 0; iat < GroupID.size(); iat++)
   {
@@ -155,9 +155,9 @@ void ParticleSet::resetGroups()
   }
   SubPtcl.resize(nspecies + 1);
   SubPtcl[0] = 0;
-  for (int i       = 0; i < nspecies; ++i)
+  for (int i = 0; i < nspecies; ++i)
     SubPtcl[i + 1] = SubPtcl[i] + ng[i];
-  int membersize   = mySpecies.addAttribute("membersize");
+  int membersize = mySpecies.addAttribute("membersize");
   for (int ig = 0; ig < nspecies; ++ig)
     mySpecies(membersize, ig) = ng[ig];
   // orgID=ID;
@@ -166,7 +166,7 @@ void ParticleSet::resetGroups()
   for (int i = 0; i < nspecies; ++i)
     for (int iat = 0; iat < GroupID.size(); ++iat)
       if (GroupID[iat] == i) IndirectID[new_id++] = ID[iat];
-  IsGrouped                                       = true;
+  IsGrouped = true;
   for (int iat = 0; iat < ID.size(); ++iat)
     IsGrouped &= (IndirectID[iat] == ID[iat]);
   if (IsGrouped)
@@ -280,7 +280,7 @@ void ParticleSet::update(bool skipSK)
   RSoA.copyIn(R);
   for (int i = 0; i < DistTables.size(); i++)
     DistTables[i]->evaluate(*this);
-  activePtcl=-1;
+  activePtcl = -1;
 }
 
 void ParticleSet::setActive(int iat)
@@ -301,23 +301,23 @@ bool ParticleSet::makeMoveAndCheck(Index_t iat,
                                    const SingleParticlePos_t &displ)
 {
   activePtcl = iat;
-  activePos=R[iat]+displ;
+  activePos  = R[iat] + displ;
   if (UseBoundBox)
   {
     if (Lattice.outOfBound(Lattice.toUnit(displ)))
     {
-      activePtcl=-1;
+      activePtcl = -1;
       return false;
     }
-    newRedPos=Lattice.toUnit(activePos);
+    newRedPos = Lattice.toUnit(activePos);
     if (Lattice.isValid(newRedPos))
     {
       for (int i = 0; i < DistTables.size(); ++i)
-        DistTables[i]->move(*this,activePos);
+        DistTables[i]->move(*this, activePos);
       return true;
     }
     // out of bound
-    activePtcl=-1;
+    activePtcl = -1;
     return false;
   }
   else
@@ -337,7 +337,7 @@ void ParticleSet::makeMoveOnSphere(Index_t iat,
                                    const SingleParticlePos_t &displ)
 {
   activePtcl = iat;
-  activePos=R[iat]+displ;
+  activePos  = R[iat] + displ;
   for (int i = 0; i < DistTables.size(); ++i)
     DistTables[i]->moveOnSphere(*this, activePos);
 }
@@ -356,8 +356,8 @@ void ParticleSet::acceptMove(Index_t iat)
     for (int i = 0, n = DistTables.size(); i < n; i++)
       DistTables[i]->update(iat);
 
-    R[iat] = activePos;
-    RSoA(iat) = activePos;
+    R[iat]     = activePos;
+    RSoA(iat)  = activePos;
     activePtcl = -1;
   }
   else
@@ -368,10 +368,7 @@ void ParticleSet::acceptMove(Index_t iat)
   }
 }
 
-void ParticleSet::rejectMove(Index_t iat)
-{
-  activePtcl = -1;
-}
+void ParticleSet::rejectMove(Index_t iat) { activePtcl = -1; }
 
 void ParticleSet::donePbyP(bool skipSK)
 {
@@ -395,10 +392,7 @@ void ParticleSet::loadWalker(Walker_t &awalker, bool pbyp)
   }
 }
 
-void ParticleSet::saveWalker(Walker_t &awalker)
-{
-  awalker.R = R;
-}
+void ParticleSet::saveWalker(Walker_t &awalker) { awalker.R = R; }
 
 void ParticleSet::clearDistanceTables()
 {
@@ -407,4 +401,4 @@ void ParticleSet::clearDistanceTables()
     delete *iter;
   DistTables.clear();
 }
-}
+} // namespace qmcplusplus

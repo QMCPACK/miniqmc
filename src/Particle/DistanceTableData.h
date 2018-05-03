@@ -370,5 +370,5 @@ struct DistanceTableData
     }
   }
 };
-}
+} // namespace qmcplusplus
 #endif
