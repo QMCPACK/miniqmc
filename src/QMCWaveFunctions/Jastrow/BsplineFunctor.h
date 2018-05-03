@@ -122,11 +122,10 @@ template <class T> struct BsplineFunctor : public OptimizableFunctorBase
   void setupParameters(int n, real_type rcut, real_type cusp,
                        std::vector<real_type> &params)
   {
-    CuspValue     = cusp;
+    CuspValue = cusp;
     cutoff_radius = rcut;
     resize(n);
-    for (int i = 0; i < n; i++)
-    {
+    for (int i = 0; i < n; i++) {
       Parameters[i] = params[i];
     }
     reset();
@@ -252,7 +251,7 @@ template <class T> struct BsplineFunctor : public OptimizableFunctorBase
 
     int imin = std::max(i, 1);
     int imax = std::min(i + 4, NumParams + 1);
-    for (int n = imin; n < imax; ++n)
+    for (int n      = imin; n < imax; ++n)
       derivs[n - 1] = SplineDerivs[n];
     derivs[1] += SplineDerivs[0];
 
@@ -271,15 +270,15 @@ inline T BsplineFunctor<T>::evaluateV(const int iStart, const int iEnd,
   int iCount       = 0;
   const int iLimit = iEnd - iStart;
 
-#pragma vector always
+  #pragma vector always
   for (int jat = 0; jat < iLimit; jat++)
   {
-    real_type r = distArray[jat];
+    real_type r                                          = distArray[jat];
     if (r < cutoff_radius) distArrayCompressed[iCount++] = distArray[jat];
   }
 
   real_type d = 0.0;
-#pragma omp simd reduction(+ : d)
+  #pragma omp simd reduction(+:d)
   for (int jat = 0; jat < iCount; jat++)
   {
     real_type r = distArrayCompressed[jat];
@@ -324,7 +323,7 @@ inline void BsplineFunctor<T>::evaluateVGL(
   real_type *gradArray       = _gradArray + iStart;
   real_type *laplArray       = _laplArray + iStart;
 
-#pragma vector always
+  #pragma vector always
   for (int jat = 0; jat < iLimit; jat++)
   {
     real_type r = distArray[jat];
@@ -336,7 +335,7 @@ inline void BsplineFunctor<T>::evaluateVGL(
     }
   }
 
-#pragma omp simd
+  #pragma omp simd
   for (int j = 0; j < iCount; j++)
   {
 
@@ -375,5 +374,5 @@ inline void BsplineFunctor<T>::evaluateVGL(
     // clang-format on
   }
 }
-} // namespace qmcplusplus
+}
 #endif

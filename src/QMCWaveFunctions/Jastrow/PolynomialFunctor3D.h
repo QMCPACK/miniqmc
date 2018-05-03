@@ -145,9 +145,9 @@ struct PolynomialFunctor3D : public OptimizableFunctorBase
     GammaPerm.resize(NumGamma);
     IndepVar.resize(NumGamma, false);
     // Set identity permutation
-    for (int i = 0; i < NumGamma; i++)
+    for (int i     = 0; i < NumGamma; i++)
       GammaPerm[i] = i;
-    int col = -1;
+    int col        = -1;
     for (int row = 0; row < NumConstraints; row++)
     {
       int max_loc;
@@ -173,7 +173,7 @@ struct PolynomialFunctor3D : public OptimizableFunctorBase
       // manually swap the rows
       for (int ind_col = 0; ind_col < ConstraintMatrix.size2(); ind_col++)
       {
-        real_type temp                     = ConstraintMatrix(row, ind_col);
+        real_type temp = ConstraintMatrix(row, ind_col);
         ConstraintMatrix(row, ind_col)     = ConstraintMatrix(max_loc, ind_col);
         ConstraintMatrix(max_loc, ind_col) = temp;
       }
@@ -194,7 +194,7 @@ struct PolynomialFunctor3D : public OptimizableFunctorBase
         }
       }
     }
-    for (int c = col + 1; c < NumGamma; c++)
+    for (int c    = col + 1; c < NumGamma; c++)
       IndepVar[c] = true;
   }
 
@@ -210,7 +210,7 @@ struct PolynomialFunctor3D : public OptimizableFunctorBase
     std::fill(GammaVec.begin(), GammaVec.end(), 0.0);
     // First, set all independent variables
     int var = 0;
-    for (int i = 0; i < NumGamma; i++)
+    for (int i                     = 0; i < NumGamma; i++)
       if (IndepVar[i]) GammaVec[i] = scale * Parameters[var++];
     assert(var == Parameters.size());
     // Now, set dependent variables
@@ -437,9 +437,9 @@ struct PolynomialFunctor3D : public OptimizableFunctorBase
       hess(1, 2) = both_minus_L * hess(1, 2) + r_1I_minus_L * grad[1] +
                    r_2I_minus_L * grad[2] + val;
       hess(2, 2) = both_minus_L * hess(2, 2) + ctwo * r_1I_minus_L * grad[2];
-      grad[0]    = both_minus_L * grad[0];
-      grad[1]    = both_minus_L * grad[1] + r_2I_minus_L * val;
-      grad[2]    = both_minus_L * grad[2] + r_1I_minus_L * val;
+      grad[0] = both_minus_L * grad[0];
+      grad[1] = both_minus_L * grad[1] + r_2I_minus_L * val;
+      grad[2] = both_minus_L * grad[2] + r_1I_minus_L * val;
       val *= both_minus_L;
     }
     hess(1, 0) = hess(0, 1);
@@ -549,5 +549,5 @@ struct PolynomialFunctor3D : public OptimizableFunctorBase
     }
   }
 };
-} // namespace qmcplusplus
+}
 #endif

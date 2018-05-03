@@ -253,7 +253,7 @@ template <class FT> struct OneBodyJastrowRef : public WaveFunctionComponentBase
     computeU3(P, iat, P.DistTables[myTableID]->Temp_r.data());
     curLap = accumulateGL(dU.data(), d2U.data(),
                           P.DistTables[myTableID]->Temp_dr, curGrad);
-    curAt  = std::accumulate(U.begin(), U.begin() + Nions, valT());
+    curAt = std::accumulate(U.begin(), U.begin() + Nions, valT());
     grad_iat += curGrad;
     return std::exp(Vat[iat] - curAt);
   }
@@ -275,5 +275,5 @@ template <class FT> struct OneBodyJastrowRef : public WaveFunctionComponentBase
     Lap[iat]  = curLap;
   }
 }; // class OneBodyJastrowRef
-} // namespace miniqmcreference
+} // miniqmcreferencce
 #endif

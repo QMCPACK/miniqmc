@@ -158,7 +158,7 @@ private:
   }
 };
 
-} // namespace qmcplusplus
+} // end-of qmcplusplus
 
 #include "Numerics/OhmmsPETE/OhmmsVectorOperators.h"
 
@@ -257,8 +257,7 @@ inline void evaluate(Vector<T, C> &lhs, const Op &op,
 template <class T, class C>
 std::ostream &operator<<(std::ostream &out, const Vector<T, C> &rhs)
 {
-  for (int i = 0; i < rhs.size(); i++)
-    out << rhs[i] << std::endl;
+  for (int i = 0; i < rhs.size(); i++) out << rhs[i] << std::endl;
   return out;
 }
 
@@ -266,10 +265,9 @@ template <class T, class C>
 std::istream &operator>>(std::istream &is, Vector<T, C> &rhs)
 {
   // printTinyVector<TinyVector<T,D> >::print(out,rhs);
-  for (int i = 0; i < rhs.size(); i++)
-    is >> rhs[i];
+  for (int i = 0; i < rhs.size(); i++) is >> rhs[i];
   return is;
 }
-} // namespace qmcplusplus
+}
 
 #endif // OHMMS_PARTICLEATTRIB_PEPE_H

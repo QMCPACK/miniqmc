@@ -160,7 +160,7 @@ public:
     if (j)
     {
       RealType rcut = 0.5 * j->cutoff_radius;
-      for (int i = 0; i < Nion; i++)
+      for (int i                                       = 0; i < Nion; i++)
         if (Ions.GroupID[i] == iSpecies) Ion_cutoff[i] = rcut;
     }
     else
@@ -200,7 +200,7 @@ public:
     // first set radii
     for (int i = 0; i < Nion; ++i)
     {
-      FT *f = F(Ions.GroupID[i], 0, 0);
+      FT *f                     = F(Ions.GroupID[i], 0, 0);
       if (f != 0) Ion_cutoff[i] = .5 * f->cutoff_radius;
     }
     // then check radii
@@ -483,5 +483,5 @@ public:
     LogValue = mhalf * LogValue;
   }
 }; // class ThreeBodyJastrowRef
-} // namespace miniqmcreference
+} // miniqmcreference
 #endif
