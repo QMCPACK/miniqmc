@@ -53,7 +53,7 @@ template <class FT> struct OneBodyJastrow : public WaveFunctionComponentBase
   posT curGrad;
 
   ///\f$Vat[i] = sum_(j) u_{i,j}\f$
-  aligned_vector<RealType> Vat;
+  Vector<valT> Vat;
   aligned_vector<valT> U, dU, d2U;
   aligned_vector<valT> DistCompressed;
   aligned_vector<int> DistIndice;
@@ -133,7 +133,7 @@ template <class FT> struct OneBodyJastrow : public WaveFunctionComponentBase
       for (int jg = 0; jg < NumGroups; ++jg)
       {
         if (F[jg] != nullptr)
-          curAt += F[jg]->evaluateV(Ions.first(jg), Ions.last(jg), dist,
+          curAt += F[jg]->evaluateV(-1, Ions.first(jg), Ions.last(jg), dist,
                                     DistCompressed.data());
       }
     }
@@ -144,15 +144,6 @@ template <class FT> struct OneBodyJastrow : public WaveFunctionComponentBase
         int gid = Ions.GroupID[c];
         if (F[gid] != nullptr) curAt += F[gid]->evaluate(dist[c]);
       }
-    }
-
-    if (!P.Ready4Measure)
-    { // need to compute per atom
-      computeU3(P, iat, P.DistTables[myTableID]->Distances[iat]);
-      Lap[iat] =
-          accumulateGL(dU.data(), d2U.data(),
-                       P.DistTables[myTableID]->Displacements[iat], Grad[iat]);
-      Vat[iat] = simd::accumulate_n(U.data(), Nions, valT());
     }
 
     return std::exp(Vat[iat] - curAt);
@@ -210,7 +201,7 @@ template <class FT> struct OneBodyJastrow : public WaveFunctionComponentBase
       for (int jg = 0; jg < NumGroups; ++jg)
       {
         if (F[jg] == nullptr) continue;
-        F[jg]->evaluateVGL(Ions.first(jg), Ions.last(jg), dist, U.data(),
+        F[jg]->evaluateVGL(-1, Ions.first(jg), Ions.last(jg), dist, U.data(),
                            dU.data(), d2U.data(), DistCompressed.data(),
                            DistIndice.data());
       }
@@ -235,11 +226,6 @@ template <class FT> struct OneBodyJastrow : public WaveFunctionComponentBase
    */
   GradType evalGrad(ParticleSet &P, int iat)
   {
-    computeU3(P, iat, P.DistTables[myTableID]->Distances[iat]);
-    Lap[iat] =
-        accumulateGL(dU.data(), d2U.data(),
-                     P.DistTables[myTableID]->Displacements[iat], Grad[iat]);
-    Vat[iat] = simd::accumulate_n(U.data(), Nions, valT());
     return GradType(Grad[iat]);
   }
 

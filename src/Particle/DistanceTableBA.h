@@ -75,7 +75,6 @@ struct DistanceTableBA : public DTD_BConds<T, D, SC>,
   /** evaluate the full table */
   inline void evaluate(ParticleSet &P)
   {
-    activePtcl = -1;
     // be aware of the sign of Displacement
     for (int iat = 0; iat < Ntargets; ++iat)
       DTD_BConds<T, D, SC>::computeDistances(P.R[iat], Origin->RSoA,
@@ -94,18 +93,15 @@ struct DistanceTableBA : public DTD_BConds<T, D, SC>,
                                            0, Nsources);
   }
 
-  inline void moveOnSphere(const ParticleSet &P, const PosType &rnew,
-                           IndexType jat)
+  inline void moveOnSphere(const ParticleSet &P, const PosType &rnew)
   {
-    activePtcl = jat;
     DTD_BConds<T, D, SC>::computeDistances(rnew, Origin->RSoA, Temp_r.data(),
                                            Temp_dr, 0, Nsources);
   }
 
   /// evaluate the temporary pair relations
-  inline void move(const ParticleSet &P, const PosType &rnew, IndexType jat)
+  inline void move(const ParticleSet &P, const PosType &rnew)
   {
-    activePtcl = jat;
     DTD_BConds<T, D, SC>::computeDistances(rnew, Origin->RSoA, Temp_r.data(),
                                            Temp_dr, 0, Nsources);
   }
@@ -113,84 +109,13 @@ struct DistanceTableBA : public DTD_BConds<T, D, SC>,
   /// update the stripe for jat-th particle
   inline void update(IndexType iat)
   {
-    if (iat != activePtcl) return;
     simd::copy_n(Temp_r.data(), Nsources, Distances[iat]);
     for (int idim = 0; idim < D; ++idim)
       simd::copy_n(Temp_dr.data(idim), Nsources, Displacements[iat].data(idim));
   }
 
-  size_t get_neighbors(int iat, RealType rcut, int *restrict jid,
-                       RealType *restrict dist, PosType *restrict displ) const
-  {
-    CONSTEXPR T cminus(-1);
-    size_t nn = 0;
-    for (int jat = 0; jat < Ntargets; ++jat)
-    {
-      const RealType rij = Distances[jat][iat];
-      if (rij < rcut)
-      { // make the compact list
-        jid[nn]   = jat;
-        dist[nn]  = rij;
-        displ[nn] = cminus * Displacements[jat][iat];
-        nn++;
-      }
-    }
-    return nn;
-  }
-
-  int get_first_neighbor(IndexType iat, RealType &r, PosType &dr) const
-  {
-    RealType min_dist = std::numeric_limits<RealType>::max();
-    int index         = -1;
-    if (iat == activePtcl)
-    {
-      for (int jat = 0; jat < Nsources; ++jat)
-        if (Temp_r[jat] < min_dist)
-        {
-          min_dist = Temp_r[jat];
-          index    = jat;
-        }
-      if (index >= 0)
-      {
-        r  = min_dist;
-        dr = Temp_dr[index];
-      }
-    }
-    else
-    {
-      for (int jat = 0; jat < Nsources; ++jat)
-        if (Distances[iat][jat] < min_dist)
-        {
-          min_dist = Distances[iat][jat];
-          index    = jat;
-        }
-      if (index >= 0)
-      {
-        r  = min_dist;
-        dr = Displacements[iat][index];
-      }
-    }
-    return index;
-  }
-
-  size_t get_neighbors(int iat, RealType rcut, RealType *restrict dist) const
-  {
-    size_t nn = 0;
-    for (int jat = 0; jat < Ntargets; ++jat)
-    {
-      const RealType rij = Distances[jat][iat];
-      if (rij < rcut)
-      { // make the compact list
-        dist[nn] = rij;
-        nn++;
-      }
-    }
-    return nn;
-  }
-
   inline void donePbyP()
   {
-    activePtcl = -1;
     // Rmax is zero: no need to transpose the table.
     if (Rmax < std::numeric_limits<T>::epsilon()) return;
 

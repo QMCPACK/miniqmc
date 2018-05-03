@@ -142,7 +142,7 @@ template <class T> struct BsplineFunctor : public OptimizableFunctorBase
    * @param distIndices temp storage for the compressed index
    */
   // clang-format off
-  void evaluateVGL(const int iStart, const int iEnd, 
+  void evaluateVGL(const int iat, const int iStart, const int iEnd, 
       const T* _distArray,  
       T* restrict _valArray,
       T* restrict _gradArray, 
@@ -157,8 +157,8 @@ template <class T> struct BsplineFunctor : public OptimizableFunctorBase
    * @param distArrayCompressed temp storage to filter r_j < cutoff_radius
    * @return \f$\sum u(r_j)\f$ for r_j < cutoff_radius
    */
-  T evaluateV(const int iStart, const int iEnd, const T *restrict _distArray,
-              T *restrict distArrayCompressed) const;
+  T evaluateV(const int iat, const int iStart, const int iEnd,
+              const T *restrict _distArray, T *restrict distArrayCompressed) const;
 
   inline real_type evaluate(real_type r)
   {
@@ -260,7 +260,7 @@ template <class T> struct BsplineFunctor : public OptimizableFunctorBase
 };
 
 template <typename T>
-inline T BsplineFunctor<T>::evaluateV(const int iStart, const int iEnd,
+inline T BsplineFunctor<T>::evaluateV(const int iat, const int iStart, const int iEnd,
                                       const T *restrict _distArray,
                                       T *restrict distArrayCompressed) const
 {
@@ -273,8 +273,10 @@ inline T BsplineFunctor<T>::evaluateV(const int iStart, const int iEnd,
   #pragma vector always
   for (int jat = 0; jat < iLimit; jat++)
   {
-    real_type r                                          = distArray[jat];
-    if (r < cutoff_radius) distArrayCompressed[iCount++] = distArray[jat];
+    real_type r = distArray[jat];
+    // pick the distances smaller than the cutoff and avoid the reference atom
+    if (r < cutoff_radius && iStart+jat != iat )
+      distArrayCompressed[iCount++] = distArray[jat];
   }
 
   real_type d = 0.0;
@@ -303,7 +305,7 @@ inline T BsplineFunctor<T>::evaluateV(const int iStart, const int iEnd,
 }
 
 template <typename T>
-inline void BsplineFunctor<T>::evaluateVGL(
+inline void BsplineFunctor<T>::evaluateVGL(const int iat, 
     const int iStart, const int iEnd, const T *_distArray,
     T *restrict _valArray, T *restrict _gradArray, T *restrict _laplArray,
     T *restrict distArrayCompressed, int *restrict distIndices) const
@@ -327,7 +329,7 @@ inline void BsplineFunctor<T>::evaluateVGL(
   for (int jat = 0; jat < iLimit; jat++)
   {
     real_type r = distArray[jat];
-    if (r < cutoff_radius)
+    if (r < cutoff_radius && iStart+jat != iat )
     {
       distIndices[iCount]         = jat;
       distArrayCompressed[iCount] = r;

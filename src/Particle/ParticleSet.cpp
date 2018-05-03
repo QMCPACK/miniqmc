@@ -45,13 +45,13 @@ namespace qmcplusplus
 
 ParticleSet::ParticleSet()
     : UseBoundBox(true), IsGrouped(true), myName("none"), SameMass(true),
-      myTwist(0.0)
+      myTwist(0.0), activePtcl(-1)
 {
 }
 
 ParticleSet::ParticleSet(const ParticleSet &p)
     : UseBoundBox(p.UseBoundBox), IsGrouped(p.IsGrouped),
-      mySpecies(p.getSpeciesSet()), SameMass(true), myTwist(0.0)
+      mySpecies(p.getSpeciesSet()), SameMass(true), myTwist(0.0), activePtcl(-1)
 {
   // initBase();
   assign(p); // only the base is copied, assumes that other properties are not
@@ -280,7 +280,7 @@ void ParticleSet::update(bool skipSK)
   RSoA.copyIn(R);
   for (int i = 0; i < DistTables.size(); i++)
     DistTables[i]->evaluate(*this);
-  Ready4Measure = true;
+  activePtcl=-1;
 }
 
 void ParticleSet::setActive(int iat)
@@ -301,33 +301,29 @@ bool ParticleSet::makeMoveAndCheck(Index_t iat,
                                    const SingleParticlePos_t &displ)
 {
   activePtcl = iat;
-  // SingleParticlePos_t red_displ(Lattice.toUnit(displ));
+  activePos=R[iat]+displ;
   if (UseBoundBox)
   {
     if (Lattice.outOfBound(Lattice.toUnit(displ)))
     {
+      activePtcl=-1;
       return false;
     }
-    activePos = R[iat]; // save the current position
-    SingleParticlePos_t newpos(activePos + displ);
-    newRedPos = Lattice.toUnit(newpos);
+    newRedPos=Lattice.toUnit(activePos);
     if (Lattice.isValid(newRedPos))
     {
       for (int i = 0; i < DistTables.size(); ++i)
-        DistTables[i]->move(*this, newpos, iat);
-      R[iat] = newpos;
+        DistTables[i]->move(*this,activePos);
       return true;
     }
     // out of bound
+    activePtcl=-1;
     return false;
   }
   else
   {
-    activePos = R[iat]; // save the current position
-    SingleParticlePos_t newpos(activePos + displ);
     for (int i = 0; i < DistTables.size(); ++i)
-      DistTables[i]->move(*this, newpos, iat);
-    R[iat] = newpos;
+      DistTables[i]->move(*this, activePos);
     return true;
   }
 }
@@ -341,11 +337,9 @@ void ParticleSet::makeMoveOnSphere(Index_t iat,
                                    const SingleParticlePos_t &displ)
 {
   activePtcl = iat;
-  activePos  = R[iat]; // save the current position
-  SingleParticlePos_t newpos(activePos + displ);
+  activePos=R[iat]+displ;
   for (int i = 0; i < DistTables.size(); ++i)
-    DistTables[i]->moveOnSphere(*this, newpos, iat);
-  R[iat] = newpos;
+    DistTables[i]->moveOnSphere(*this, activePos);
 }
 
 /** update the particle attribute by the proposed move
@@ -362,7 +356,9 @@ void ParticleSet::acceptMove(Index_t iat)
     for (int i = 0, n = DistTables.size(); i < n; i++)
       DistTables[i]->update(iat);
 
-    RSoA(iat) = R[iat];
+    R[iat] = activePos;
+    RSoA(iat) = activePos;
+    activePtcl = -1;
   }
   else
   {
@@ -374,17 +370,14 @@ void ParticleSet::acceptMove(Index_t iat)
 
 void ParticleSet::rejectMove(Index_t iat)
 {
-  // restore the position by the saved activePos
-  R[iat] = activePos;
-  for (int i                  = 0; i < DistTables.size(); ++i)
-    DistTables[i]->activePtcl = -1;
+  activePtcl = -1;
 }
 
 void ParticleSet::donePbyP(bool skipSK)
 {
   for (size_t i = 0, nt = DistTables.size(); i < nt; i++)
     DistTables[i]->donePbyP();
-  Ready4Measure = true;
+  activePtcl = -1;
 }
 
 void ParticleSet::loadWalker(Walker_t &awalker, bool pbyp)
@@ -400,14 +393,11 @@ void ParticleSet::loadWalker(Walker_t &awalker, bool pbyp)
       if (DistTables[i]->Need_full_table_loadWalker)
         DistTables[i]->evaluate(*this);
   }
-
-  Ready4Measure = false;
 }
 
 void ParticleSet::saveWalker(Walker_t &awalker)
 {
   awalker.R = R;
-  // awalker.DataSet.rewind();
 }
 
 void ParticleSet::clearDistanceTables()

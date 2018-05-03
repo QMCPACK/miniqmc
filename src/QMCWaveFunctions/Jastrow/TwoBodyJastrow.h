@@ -250,7 +250,7 @@ inline void TwoBodyJastrow<FT>::computeU3(ParticleSet &P, int iat,
     const FuncType &f2(*F[igt + jg]);
     int iStart = P.first(jg);
     int iEnd   = P.last(jg);
-    f2.evaluateVGL(iStart, iEnd, dist, u, du, d2u, DistCompressed.data(),
+    f2.evaluateVGL(iat, iStart, iEnd, dist, u, du, d2u, DistCompressed.data(),
                    DistIndice.data());
   }
   // u[iat]=czero;
@@ -274,7 +274,7 @@ typename TwoBodyJastrow<FT>::ValueType TwoBodyJastrow<FT>::ratio(ParticleSet &P,
     const FuncType &f2(*F[igt + jg]);
     int iStart = P.first(jg);
     int iEnd   = P.last(jg);
-    cur_Uat += f2.evaluateV(iStart, iEnd, dist, DistCompressed.data());
+    cur_Uat += f2.evaluateV(iat, iStart, iEnd, dist, DistCompressed.data());
   }
 
   return std::exp(Uat[iat] - cur_Uat);
