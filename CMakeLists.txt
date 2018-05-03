@@ -275,7 +275,8 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
   ENDIF()
 
   # requires C++11 standard
-  set(CMAKE_CXX_STANDARD_REQUIRED 11 CACHE INTEGER "C++ stangard must be at least 11")
+  SET(CMAKE_CXX_STANDARD 11)
+  SET(CMAKE_CXX_STANDARD_REQUIRED ON)
   SET(CXX11_FLAG "-std=c++11")
   # avoid repeated -std=c++11 flag
   STRING(REPLACE "++" "\\+\\+" CXX11_FLAG_MATCH ${CXX11_FLAG})
