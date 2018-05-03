@@ -53,7 +53,7 @@ struct DistanceTableBA : public DTD_BConds<T, D, SC>,
     memoryPool.resize(Ntargets * BlockSize);
     Displacements.resize(Ntargets);
     for (int i = 0; i < Ntargets; ++i)
-      Displacements[i].resetByRef(Nsources, Nsources_padded,
+      Displacements[i].attachReference(Nsources, Nsources_padded,
                                   memoryPool.data() + i * BlockSize);
 
     Temp_r.resize(Nsources);
@@ -66,10 +66,8 @@ struct DistanceTableBA : public DTD_BConds<T, D, SC>,
     J2.resize(Nsources, Ntargets_padded);
   }
 
-#if (__cplusplus >= 201103L)
   DistanceTableBA()                           = delete;
   DistanceTableBA(const DistanceTableBA &) = delete;
-#endif
   ~DistanceTableBA() {}
 
   /** evaluate the full table */

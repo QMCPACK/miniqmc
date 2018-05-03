@@ -1,13 +1,13 @@
-////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////
 // This file is distributed under the University of Illinois/NCSA Open Source
-// License.  See LICENSE file in top directory for details.
+// License. See LICENSE file in top directory for details.
 //
 // Copyright (c) 2016 Jeongnim Kim and QMCPACK developers.
 //
 // File developed by:
 //
 // File created by: Jeongnim Kim, jeongnim.kim@intel.com, Intel Corp.
-////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////
 // -*- C++ -*-
 #ifndef QMCPLUSPLUS_ONEBODYJASTROW_REF_H
 #define QMCPLUSPLUS_ONEBODYJASTROW_REF_H
@@ -23,6 +23,7 @@ namespace miniqmcreference
 {
 
 using namespace qmcplusplus;
+
 /** @ingroup WaveFunctionComponent
  *  @brief Specialization for one-body Jastrow function using multiple functors
  */
@@ -40,12 +41,13 @@ template <class FT> struct OneBodyJastrowRef : public WaveFunctionComponentBase
   int myTableID;
   /// number of ions
   int Nions;
+  /// number of electrons
+  int Nelec;
   /// number of groups
   int NumGroups;
   /// reference to the sources (ions)
   const ParticleSet &Ions;
 
-  valT LogValue;
   valT curAt;
   valT curLap;
   posT curGrad;
@@ -85,10 +87,10 @@ template <class FT> struct OneBodyJastrowRef : public WaveFunctionComponentBase
     {
       NumGroups = 0;
     }
-    const int N = els.getTotalNum();
-    Vat.resize(N);
-    Grad.resize(N);
-    Lap.resize(N);
+    Nelec = els.getTotalNum();
+    Vat.resize(Nelec);
+    Grad.resize(Nelec);
+    Lap.resize(Nelec);
 
     U.resize(Nions);
     dU.resize(Nions);
@@ -103,37 +105,42 @@ template <class FT> struct OneBodyJastrowRef : public WaveFunctionComponentBase
     F[source_type] = afunc;
   }
 
+  void recompute(ParticleSet &P)
+  {
+    const DistanceTableData &d_ie(*(P.DistTables[myTableID]));
+    for (int iat = 0; iat < Nelec; ++iat)
+    {
+      computeU3(P, iat, d_ie.Distances[iat]);
+      Vat[iat] = std::accumulate(U.begin(), U.begin() + Nions, valT());
+      Lap[iat] = accumulateGL(dU.data(), d2U.data(), d_ie.Displacements[iat],
+                              Grad[iat]);
+    }
+  }
+
   RealType evaluateLog(ParticleSet &P, ParticleSet::ParticleGradient_t &G,
                        ParticleSet::ParticleLaplacian_t &L)
   {
-    const int n = P.getTotalNum();
-    const DistanceTableData &d_ie(*(P.DistTables[myTableID]));
-    LogValue = valT();
-    for (int iat = 0; iat < n; ++iat)
-    {
-      computeU3(P, iat, d_ie.Distances[iat]);
-      LogValue -= Vat[iat] =
-          std::accumulate(U.begin(), U.begin() + Nions, valT());
-      Lap[iat] = accumulateGL(dU.data(), d2U.data(), d_ie.Displacements[iat],
-                              Grad[iat]);
-      G[iat] += Grad[iat];
-      L[iat] -= Lap[iat];
-    }
+    evaluateGL(P, G, L, true);
     return LogValue;
   }
 
   ValueType ratio(ParticleSet &P, int iat)
   {
-    UpdateMode                = ORB_PBYP_RATIO;
-    curAt                     = valT(0);
-    const valT *restrict dist = P.DistTables[myTableID]->Temp_r.data();
+    UpdateMode = ORB_PBYP_RATIO;
+    curAt      = computeU(P.DistTables[myTableID]->Temp_r.data());
+    return std::exp(Vat[iat] - curAt);
+  }
+
+  inline valT computeU(const valT *dist)
+  {
+    valT curVat(0);
     if (NumGroups > 0)
     {
       for (int jg = 0; jg < NumGroups; ++jg)
       {
         if (F[jg] != nullptr)
-          curAt += F[jg]->evaluateV(-1, Ions.first(jg), Ions.last(jg), dist,
-                                    DistCompressed.data());
+          curVat += F[jg]->evaluateV(-1, Ions.first(jg), Ions.last(jg), dist,
+                                     DistCompressed.data());
       }
     }
     else
@@ -141,22 +148,23 @@ template <class FT> struct OneBodyJastrowRef : public WaveFunctionComponentBase
       for (int c = 0; c < Nions; ++c)
       {
         int gid = Ions.GroupID[c];
-        if (F[gid] != nullptr) curAt += F[gid]->evaluate(dist[c]);
+        if (F[gid] != nullptr) curVat += F[gid]->evaluate(dist[c]);
       }
     }
-
-    return std::exp(Vat[iat] - curAt);
+    return curVat;
   }
 
   inline void evaluateGL(ParticleSet &P, ParticleSet::ParticleGradient_t &G,
                          ParticleSet::ParticleLaplacian_t &L,
                          bool fromscratch = false)
   {
-    const size_t n = P.getTotalNum();
-    for (size_t iat = 0; iat < n; ++iat)
+    if (fromscratch) recompute(P);
+
+    for (size_t iat = 0; iat < Nelec; ++iat)
       G[iat] += Grad[iat];
-    for (size_t iat = 0; iat < n; ++iat)
+    for (size_t iat = 0; iat < Nelec; ++iat)
       L[iat] -= Lap[iat];
+    LogValue = -std::accumulate(Vat.begin(), Vat.begin() + Nelec, valT());
   }
 
   /** compute gradient and lap
@@ -257,6 +265,7 @@ template <class FT> struct OneBodyJastrowRef : public WaveFunctionComponentBase
     Grad[iat] = curGrad;
     Lap[iat]  = curLap;
   }
-}; // class OneBodyJastrowRef
+};
+
 } // namespace miniqmcreference
 #endif

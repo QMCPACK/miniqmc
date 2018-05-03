@@ -40,24 +40,27 @@ struct DistanceTableAA : public DTD_BConds<T, D, SC>,
     resize(target.getTotalNum());
   }
 
-#if (__cplusplus >= 201103L)
   DistanceTableAA()                           = delete;
   DistanceTableAA(const DistanceTableAA &) = delete;
-#endif
   ~DistanceTableAA() {}
+
+  size_t compute_size(int N)
+  {
+    const size_t N_padded = getAlignedSize<T>(N);
+    const size_t Alignment = getAlignment<T>();
+    return (N_padded*(2*N-N_padded+1)+(Alignment-1)*N_padded)/2;
+  }
 
   void resize(int n)
   {
-    N[SourceIndex] = N[VisitorIndex] = Ntargets = n;
-    Ntargets_padded                             = getAlignedSize<T>(n);
-    BlockSize                                   = Ntargets_padded * D;
-    Distances.resize(Ntargets, Ntargets_padded);
-
-    memoryPool.resize(Ntargets * BlockSize);
+    N[SourceIndex]=N[VisitorIndex]=Ntargets=n;
+    Ntargets_padded=getAlignedSize<T>(n);
+    Distances.resize(Ntargets,Ntargets_padded);
+    const size_t total_size = compute_size(Ntargets);
+    memoryPool.resize(total_size*D);
     Displacements.resize(Ntargets);
-    for (int i = 0; i < Ntargets; ++i)
-      Displacements[i].resetByRef(Ntargets, Ntargets_padded,
-                                  memoryPool.data() + i * BlockSize);
+    for(int i=0; i<Ntargets; ++i)
+      Displacements[i].attachReference(i,total_size,memoryPool.data()+compute_size(i));
 
     Temp_r.resize(Ntargets);
     Temp_dr.resize(Ntargets);
