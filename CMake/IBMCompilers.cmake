@@ -18,7 +18,7 @@ SET( CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG" )
 SET( CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -O3" )
 
 # Set language standardards
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -qnoxlcompatmacros")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -qnoxlcompatmacros")
 
 IF(QMC_OMP)
   SET(ENABLE_OPENMP 1)
