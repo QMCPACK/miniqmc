@@ -256,7 +256,7 @@ template <class FT> struct OneBodyJastrow : public WaveFunctionComponentBase
     computeU3(P, iat, P.DistTables[myTableID]->Temp_r.data());
     curLap = accumulateGL(dU.data(), d2U.data(),
                           P.DistTables[myTableID]->Temp_dr, curGrad);
-    curAt = simd::accumulate_n(U.data(), Nions, valT());
+    curAt  = simd::accumulate_n(U.data(), Nions, valT());
     grad_iat += curGrad;
     return std::exp(Vat[iat] - curAt);
   }
@@ -278,5 +278,5 @@ template <class FT> struct OneBodyJastrow : public WaveFunctionComponentBase
     Lap[iat]  = curLap;
   }
 };
-}
+} // namespace qmcplusplus
 #endif

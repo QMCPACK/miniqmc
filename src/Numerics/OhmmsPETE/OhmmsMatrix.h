@@ -178,7 +178,7 @@ public:
   {
     for (int col = 0; col < D2; col++)
     {
-      Type_t tmp = (*this)(r1, col);
+      Type_t tmp       = (*this)(r1, col);
       (*this)(r1, col) = (*this)(r2, col);
       (*this)(r2, col) = tmp;
     }
@@ -188,7 +188,7 @@ public:
   {
     for (int row = 0; row < D1; row++)
     {
-      Type_t tmp = (*this)(row, c1);
+      Type_t tmp       = (*this)(row, c1);
       (*this)(row, c1) = (*this)(row, c2);
       (*this)(row, c2) = tmp;
     }
@@ -202,13 +202,15 @@ public:
   template <class IT> inline void replaceColumn(IT first, size_type j)
   {
     typename Container_t::iterator ii(X.begin() + j);
-    for (int i = 0; i < D1; i++, ii += D2) *ii = *first++;
+    for (int i = 0; i < D1; i++, ii += D2)
+      *ii = *first++;
   }
 
   template <class IT> inline void add2Column(IT first, size_type j)
   {
     typename Container_t::iterator ii(X.begin() + j);
-    for (int i = 0; i < D1; i++, ii += D2) *ii += *first++;
+    for (int i = 0; i < D1; i++, ii += D2)
+      *ii += *first++;
   }
 
   /**
@@ -299,7 +301,8 @@ std::ostream &operator<<(std::ostream &out, const Matrix<T, C> &rhs)
   size_type ii = 0;
   for (size_type i = 0; i < rhs.rows(); i++)
   {
-    for (size_type j = 0; j < rhs.cols(); j++) out << rhs(ii++) << " ";
+    for (size_type j = 0; j < rhs.cols(); j++)
+      out << rhs(ii++) << " ";
     out << std::endl;
   }
   return out;
@@ -423,7 +426,7 @@ inline void evaluate(Matrix<T, C> &lhs, const Op &op,
     abort();
   }
 }
-}
+} // namespace qmcplusplus
 
-#include "Numerics/OhmmsPETE/OhmmsMatrixOperators.h" 
+#include "Numerics/OhmmsPETE/OhmmsMatrixOperators.h"
 #endif // OHMMS_PETE_MATRIX_H

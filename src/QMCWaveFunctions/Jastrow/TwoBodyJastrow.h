@@ -197,7 +197,7 @@ template <typename FT> void TwoBodyJastrow<FT>::addFunc(int ia, int ib, FT *j)
     {
       int ij = 0;
       for (int ig = 0; ig < NumGroups; ++ig)
-        for (int jg                   = 0; jg < NumGroups; ++jg, ++ij)
+        for (int jg = 0; jg < NumGroups; ++jg, ++ij)
           if (F[ij] == nullptr) F[ij] = j;
     }
   }
@@ -208,13 +208,13 @@ template <typename FT> void TwoBodyJastrow<FT>::addFunc(int ia, int ib, FT *j)
       // a very special case, 1 up + 1 down
       // uu/dd was prevented by the builder
       for (int ig = 0; ig < NumGroups; ++ig)
-        for (int jg              = 0; jg < NumGroups; ++jg)
+        for (int jg = 0; jg < NumGroups; ++jg)
           F[ig * NumGroups + jg] = j;
     }
     else
     {
       // generic case
-      F[ia * NumGroups + ib]              = j;
+      F[ia * NumGroups + ib] = j;
       if (ia < ib) F[ib * NumGroups + ia] = j;
     }
   }
@@ -386,5 +386,5 @@ void TwoBodyJastrow<FT>::evaluateGL(ParticleSet &P,
   constexpr valT mhalf(-0.5);
   LogValue = mhalf * LogValue;
 }
-}
+} // namespace qmcplusplus
 #endif
