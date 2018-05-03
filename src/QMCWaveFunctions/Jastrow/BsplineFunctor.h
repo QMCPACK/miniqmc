@@ -122,10 +122,11 @@ template <class T> struct BsplineFunctor : public OptimizableFunctorBase
   void setupParameters(int n, real_type rcut, real_type cusp,
                        std::vector<real_type> &params)
   {
-    CuspValue = cusp;
+    CuspValue     = cusp;
     cutoff_radius = rcut;
     resize(n);
-    for (int i = 0; i < n; i++) {
+    for (int i = 0; i < n; i++)
+    {
       Parameters[i] = params[i];
     }
     reset();
@@ -158,7 +159,8 @@ template <class T> struct BsplineFunctor : public OptimizableFunctorBase
    * @return \f$\sum u(r_j)\f$ for r_j < cutoff_radius
    */
   T evaluateV(const int iat, const int iStart, const int iEnd,
-              const T *restrict _distArray, T *restrict distArrayCompressed) const;
+              const T *restrict _distArray,
+              T *restrict distArrayCompressed) const;
 
   inline real_type evaluate(real_type r)
   {
@@ -251,7 +253,7 @@ template <class T> struct BsplineFunctor : public OptimizableFunctorBase
 
     int imin = std::max(i, 1);
     int imax = std::min(i + 4, NumParams + 1);
-    for (int n      = imin; n < imax; ++n)
+    for (int n = imin; n < imax; ++n)
       derivs[n - 1] = SplineDerivs[n];
     derivs[1] += SplineDerivs[0];
 
@@ -260,7 +262,8 @@ template <class T> struct BsplineFunctor : public OptimizableFunctorBase
 };
 
 template <typename T>
-inline T BsplineFunctor<T>::evaluateV(const int iat, const int iStart, const int iEnd,
+inline T BsplineFunctor<T>::evaluateV(const int iat, const int iStart,
+                                      const int iEnd,
                                       const T *restrict _distArray,
                                       T *restrict distArrayCompressed) const
 {
@@ -270,17 +273,17 @@ inline T BsplineFunctor<T>::evaluateV(const int iat, const int iStart, const int
   int iCount       = 0;
   const int iLimit = iEnd - iStart;
 
-  #pragma vector always
+#pragma vector always
   for (int jat = 0; jat < iLimit; jat++)
   {
     real_type r = distArray[jat];
     // pick the distances smaller than the cutoff and avoid the reference atom
-    if (r < cutoff_radius && iStart+jat != iat )
+    if (r < cutoff_radius && iStart + jat != iat)
       distArrayCompressed[iCount++] = distArray[jat];
   }
 
   real_type d = 0.0;
-  #pragma omp simd reduction(+:d)
+#pragma omp simd reduction(+ : d)
   for (int jat = 0; jat < iCount; jat++)
   {
     real_type r = distArrayCompressed[jat];
@@ -305,8 +308,8 @@ inline T BsplineFunctor<T>::evaluateV(const int iat, const int iStart, const int
 }
 
 template <typename T>
-inline void BsplineFunctor<T>::evaluateVGL(const int iat, 
-    const int iStart, const int iEnd, const T *_distArray,
+inline void BsplineFunctor<T>::evaluateVGL(
+    const int iat, const int iStart, const int iEnd, const T *_distArray,
     T *restrict _valArray, T *restrict _gradArray, T *restrict _laplArray,
     T *restrict distArrayCompressed, int *restrict distIndices) const
 {
@@ -325,11 +328,11 @@ inline void BsplineFunctor<T>::evaluateVGL(const int iat,
   real_type *gradArray       = _gradArray + iStart;
   real_type *laplArray       = _laplArray + iStart;
 
-  #pragma vector always
+#pragma vector always
   for (int jat = 0; jat < iLimit; jat++)
   {
     real_type r = distArray[jat];
-    if (r < cutoff_radius && iStart+jat != iat )
+    if (r < cutoff_radius && iStart + jat != iat)
     {
       distIndices[iCount]         = jat;
       distArrayCompressed[iCount] = r;
@@ -337,7 +340,7 @@ inline void BsplineFunctor<T>::evaluateVGL(const int iat,
     }
   }
 
-  #pragma omp simd
+#pragma omp simd
   for (int j = 0; j < iCount; j++)
   {
 
@@ -376,5 +379,5 @@ inline void BsplineFunctor<T>::evaluateVGL(const int iat,
     // clang-format on
   }
 }
-}
+} // namespace qmcplusplus
 #endif

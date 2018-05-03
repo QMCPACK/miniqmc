@@ -224,10 +224,7 @@ template <class FT> struct OneBodyJastrow : public WaveFunctionComponentBase
    * @param P quantum particleset
    * @param iat particle index
    */
-  GradType evalGrad(ParticleSet &P, int iat)
-  {
-    return GradType(Grad[iat]);
-  }
+  GradType evalGrad(ParticleSet &P, int iat) { return GradType(Grad[iat]); }
 
   /** compute the gradient during particle-by-particle update
    * @param P quantum particleset
@@ -242,7 +239,7 @@ template <class FT> struct OneBodyJastrow : public WaveFunctionComponentBase
     computeU3(P, iat, P.DistTables[myTableID]->Temp_r.data());
     curLap = accumulateGL(dU.data(), d2U.data(),
                           P.DistTables[myTableID]->Temp_dr, curGrad);
-    curAt = simd::accumulate_n(U.data(), Nions, valT());
+    curAt  = simd::accumulate_n(U.data(), Nions, valT());
     grad_iat += curGrad;
     return std::exp(Vat[iat] - curAt);
   }
@@ -264,5 +261,5 @@ template <class FT> struct OneBodyJastrow : public WaveFunctionComponentBase
     Lap[iat]  = curLap;
   }
 };
-}
+} // namespace qmcplusplus
 #endif

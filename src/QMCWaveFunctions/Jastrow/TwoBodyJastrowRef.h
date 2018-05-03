@@ -384,5 +384,5 @@ void TwoBodyJastrowRef<FT>::evaluateGL(ParticleSet &P,
   constexpr valT mhalf(-0.5);
   LogValue = mhalf * LogValue;
 }
-} // miniqmcreference
+} // namespace miniqmcreference
 #endif
