@@ -47,11 +47,9 @@ struct WaveFunctionBase
   typedef OHMMS_PRECISION RealType;
 
   valT LogValue;
-  DistanceTableData *d_ee;
-  DistanceTableData *d_ie;
+  int ei_TableID;
 
-  inline void setRmax(valT x) { d_ie->setRmax(x); }
-
+  WaveFunctionBase(): ei_TableID(0) {};
   virtual ~WaveFunctionBase() {}
   virtual void evaluateLog(ParticleSet &P)                    = 0;
   virtual posT evalGrad(ParticleSet &P, int iat)              = 0;
@@ -64,21 +62,17 @@ struct WaveFunctionBase
 
 struct WaveFunction : public WaveFunctionBase
 {
-  using J1OrbType = OneBodyJastrow<BsplineFunctor<valT>>;
-  using J2OrbType = TwoBodyJastrow<BsplineFunctor<valT>>;
-  using J3OrbType = ThreeBodyJastrow<PolynomialFunctor3D>;
-  using DetType   = DiracDeterminant;
+  friend void build_WaveFunction(bool useRef, WaveFunction &WF, ParticleSet &ions, ParticleSet &els, const RandomGenerator<QMCTraits::RealType> &RNG, bool enableJ3);
 
-  bool FirstTime;
-  J1OrbType *J1;
-  J2OrbType *J2;
-  J3OrbType *J3;
+  private:
+  std::vector<WaveFunctionComponentBase *> Jastrows;
+  WaveFunctionComponentBase *Det_up;
+  WaveFunctionComponentBase *Det_dn;
+  bool FirstTime, Is_built;
   int nelup;
-  DetType *Det_up;
-  DetType *Det_dn;
 
-  WaveFunction(ParticleSet &ions, ParticleSet &els,
-               RandomGenerator<RealType> &RNG, bool enableJ3);
+  public:
+  WaveFunction(): FirstTime(true), Is_built(false), nelup(0), Det_up(nullptr), Det_dn(nullptr) { }
   ~WaveFunction();
   void evaluateLog(ParticleSet &P);
   posT evalGrad(ParticleSet &P, int iat);
@@ -88,6 +82,8 @@ struct WaveFunction : public WaveFunctionBase
   void restore(int iat);
   void evaluateGL(ParticleSet &P);
 };
+
+void build_WaveFunction(bool useRef, WaveFunction &WF, ParticleSet &ions, ParticleSet &els, const RandomGenerator<QMCTraits::RealType> &RNG, bool enableJ3);
 
 } // qmcplusplus
 
@@ -105,10 +101,10 @@ struct WaveFunctionRef : public qmcplusplus::WaveFunctionBase
   using DetType   = DiracDeterminantRef;
 
   bool FirstTime;
+  int nelup;
   J1OrbType *J1;
   J2OrbType *J2;
   J3OrbType *J3;
-  int nelup;
   DetType *Det_up;
   DetType *Det_dn;
   PooledData<valT> Buffer;

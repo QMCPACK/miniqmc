@@ -34,8 +34,8 @@ WaveFunctionRef::WaveFunctionRef(ParticleSet &ions, ParticleSet &els,
   els.RSoA  = els.R;
 
   // distance tables
-  d_ee = DistanceTable::add(els, DT_SOA);
-  d_ie = DistanceTable::add(ions, els, DT_SOA);
+  els.addTable(els, DT_SOA);
+  ei_TableID = els.addTable(ions, DT_SOA);
 
   // determinant component
   nelup = els.getTotalNum()/2;
