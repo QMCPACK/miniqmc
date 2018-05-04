@@ -1,28 +1,21 @@
-////////////////////////////////////////////////////////////////////////////////
 // This file is distributed under the University of Illinois/NCSA Open Source
-// License.  See LICENSE file in top directory for details.
+// License. See LICENSE file in top directory for details.
 //
 // Copyright (c) 2016 Jeongnim Kim and QMCPACK developers.
 //
-// File developed by:
-// Ye Luo, yeluo@anl.gov, Argonne National Laboratory
+// File developed by: Ye Luo, yeluo@anl.gov, Argonne National Laboratory
 //
-// File created by:
-// Ye Luo, yeluo@anl.gov, Argonne National Laboratory
-////////////////////////////////////////////////////////////////////////////////
+// File created by: Ye Luo, yeluo@anl.gov, Argonne National Laboratory
+//////////////////////////////////////////////////////////////////////////////////////
 
-#ifndef QMCPLUSPLUS_EEIJASTROW_OPTIMIZED_SOA_H
-#define QMCPLUSPLUS_EEIJASTROW_OPTIMIZED_SOA_H
+#ifndef QMCPLUSPLUS_EEIJASTROW_H
+#define QMCPLUSPLUS_EEIJASTROW_H
 #include "Utilities/Configuration.h"
 #include "QMCWaveFunctions/WaveFunctionComponentBase.h"
 #include "Particle/DistanceTableData.h"
-#include "Numerics/OhmmsPETE/OhmmsArray.h"
-#include <map>
+#include <Utilities/SIMD/allocator.hpp>
+#include <Utilities/SIMD/algorithm.hpp>
 #include <numeric>
-
-/*!
- * @file ThreeBodyJastrow.h
- */
 
 namespace qmcplusplus
 {
@@ -43,13 +36,12 @@ template <class FT> class ThreeBodyJastrow : public WaveFunctionComponentBase
   using posT = TinyVector<valT, OHMMS_DIM>;
   /// use the same container
   using RowContainer = DistanceTableData::RowContainer;
-  /// define container types
-  using vContainer_type = aligned_vector<valT>;
-  using gContainer_type = VectorSoAContainer<valT, OHMMS_DIM>;
   /// table index for i-el, el-el is always zero
   int myTableID;
   // nuber of particles
   int Nelec, Nion;
+  /// number of particles + padded
+  size_t Nelec_padded;
   // number of groups of the target particleset
   int eGroups, iGroups;
   /// reference to the sources (ions)
@@ -58,38 +50,36 @@ template <class FT> class ThreeBodyJastrow : public WaveFunctionComponentBase
   RealType DiffVal;
 
   ///\f$Uat[i] = sum_(j) u_{i,j}\f$
-  Vector<valT> Uat;
-  vContainer_type oldUk, newUk;
+  Vector<valT> Uat, oldUk, newUk;
   ///\f$dUat[i] = sum_(j) du_{i,j}\f$
-  Vector<posT> dUat;
-  valT *FirstAddressOfdU, *LastAddressOfdU;
-  gContainer_type olddUk, newdUk;
+  using gContainer_type = VectorSoAContainer<valT, OHMMS_DIM>;
+  gContainer_type dUat, olddUk, newdUk;
   ///\f$d2Uat[i] = sum_(j) d2u_{i,j}\f$
-  Vector<valT> d2Uat;
-  vContainer_type oldd2Uk, newd2Uk;
+  Vector<valT> d2Uat, oldd2Uk, newd2Uk;
+  /// current values during PbyP
   valT cur_Uat, cur_d2Uat;
-  posT cur_dUat;
+  posT cur_dUat, dUat_temp;
   /// container for the Jastrow functions
   Array<FT *, 3> F;
-
-  std::map<std::string, FT *> J3Unique;
-  // YYYY
-  std::map<FT *, int> J3UniqueIndex;
 
   /// the cutoff for e-I pairs
   std::vector<valT> Ion_cutoff;
   /// the electrons around ions within the cutoff radius, grouped by species
   Array<std::vector<int>, 2> elecs_inside;
+  Array<std::vector<valT>, 2> elecs_inside_dist;
+  Array<std::vector<posT>, 2> elecs_inside_displ;
+  /// the ions around
+  std::vector<int> ions_nearby;
 
+  /// work buffer size
+  size_t Nbuffer;
   /// compressed distances
-  aligned_vector<valT> Distjk_Compressed, DistkI_Compressed;
-  std::vector<int> DistIndice;
-
-  using VGL_type = VectorSoAContainer<valT, 9>;
-  VGL_type mVGL;
-
-  // Used for evaluating derivatives with respect to the parameters
-  int NumVars;
+  aligned_vector<valT> Distjk_Compressed, DistkI_Compressed, DistjI_Compressed;
+  std::vector<int> DistIndice_k;
+  /// compressed displacements
+  gContainer_type Disp_jk_Compressed, Disp_jI_Compressed, Disp_kI_Compressed;
+  /// work result buffer
+  VectorSoAContainer<valT, 9> mVGL;
 
 public:
   /// alias FuncType
@@ -97,7 +87,7 @@ public:
 
   ThreeBodyJastrow(const ParticleSet &ions, ParticleSet &elecs,
                    bool is_master = false)
-      : Ions(ions), NumVars(0)
+      : Ions(ions)
   {
     WaveFunctionComponentName = "ThreeBodyJastrow";
     myTableID                 = elecs.addTable(Ions, DT_SOA);
@@ -109,15 +99,14 @@ public:
 
   void init(ParticleSet &p)
   {
-    Nelec   = p.getTotalNum();
-    Nion    = Ions.getTotalNum();
-    iGroups = Ions.getSpeciesSet().getTotalNum();
-    eGroups = p.groups();
+    Nelec        = p.getTotalNum();
+    Nelec_padded = getAlignedSize<valT>(Nelec);
+    Nion         = Ions.getTotalNum();
+    iGroups      = Ions.getSpeciesSet().getTotalNum();
+    eGroups      = p.groups();
 
     Uat.resize(Nelec);
     dUat.resize(Nelec);
-    FirstAddressOfdU = &(dUat[0][0]);
-    LastAddressOfdU  = FirstAddressOfdU + dUat.size() * OHMMS_DIM;
     d2Uat.resize(Nelec);
 
     oldUk.resize(Nelec);
@@ -129,13 +118,22 @@ public:
 
     F.resize(iGroups, eGroups, eGroups);
     F = nullptr;
-    elecs_inside.resize(Nion, eGroups);
-    Ion_cutoff.resize(Nion);
+    elecs_inside.resize(eGroups, Nion);
+    elecs_inside_dist.resize(eGroups, Nion);
+    elecs_inside_displ.resize(eGroups, Nion);
+    ions_nearby.resize(Nion);
+    Ion_cutoff.resize(Nion, 0.0);
 
-    mVGL.resize(Nelec);
-    DistkI_Compressed.resize(Nelec);
-    Distjk_Compressed.resize(Nelec);
-    DistIndice.resize(Nelec);
+    // initialize buffers
+    Nbuffer = Nelec;
+    mVGL.resize(Nbuffer);
+    Distjk_Compressed.resize(Nbuffer);
+    DistjI_Compressed.resize(Nbuffer);
+    DistkI_Compressed.resize(Nbuffer);
+    Disp_jk_Compressed.resize(Nbuffer);
+    Disp_jI_Compressed.resize(Nbuffer);
+    Disp_kI_Compressed.resize(Nbuffer);
+    DistIndice_k.resize(Nbuffer);
   }
 
   void addFunc(int iSpecies, int eSpecies1, int eSpecies2, FT *j)
@@ -158,16 +156,13 @@ public:
     if (j)
     {
       RealType rcut = 0.5 * j->cutoff_radius;
-      for (int i                                       = 0; i < Nion; i++)
+      for (int i = 0; i < Nion; i++)
         if (Ions.GroupID[i] == iSpecies) Ion_cutoff[i] = rcut;
     }
     else
     {
       APP_ABORT("ThreeBodyJastrow::addFunc  Jastrow function pointer is NULL");
     }
-    std::stringstream aname;
-    aname << iSpecies << "_" << eSpecies1 << "_" << eSpecies2;
-    J3Unique[aname.str()] = j;
   }
 
   /** check that correlation information is complete
@@ -190,14 +185,13 @@ public:
     }
     if (!complete)
     {
-      APP_ABORT(
-          "ThreeBodyJastrow::check_complete  J3 eeI is missing correlation "
-          "components\n  see preceding messages for details");
+      APP_ABORT("ThreeBodyJastrow::check_complete  J3 eeI is missing "
+                "correlation components\n  see preceding messages for details");
     }
     // first set radii
     for (int i = 0; i < Nion; ++i)
     {
-      FT *f                     = F(Ions.GroupID[i], 0, 0);
+      FT *f = F(Ions.GroupID[i], 0, 0);
       if (f != 0) Ion_cutoff[i] = .5 * f->cutoff_radius;
     }
     // then check radii
@@ -219,9 +213,8 @@ public:
     }
     if (!all_radii_match)
     {
-      APP_ABORT(
-          "ThreeBodyJastrow::check_radii  J3 eeI are inconsistent for some "
-          "ion species\n  see preceding messages for details");
+      APP_ABORT("ThreeBodyJastrow::check_radii  J3 eeI are inconsistent for "
+                "some ion species\n  see preceding messages for details");
     }
   }
 
@@ -231,13 +224,22 @@ public:
 
     for (int iat = 0; iat < Nion; ++iat)
       for (int jg = 0; jg < eGroups; ++jg)
-        elecs_inside(iat, jg).clear();
+      {
+        elecs_inside(jg, iat).clear();
+        elecs_inside_dist(jg, iat).clear();
+        elecs_inside_displ(jg, iat).clear();
+      }
 
     for (int jg = 0; jg < eGroups; ++jg)
       for (int jel = P.first(jg); jel < P.last(jg); jel++)
         for (int iat = 0; iat < Nion; ++iat)
           if (eI_table.Distances[jel][iat] < Ion_cutoff[iat])
-            elecs_inside(iat, jg).push_back(jel);
+          {
+            elecs_inside(jg, iat).push_back(jel);
+            elecs_inside_dist(jg, iat).push_back(eI_table.Distances[jel][iat]);
+            elecs_inside_displ(jg, iat).push_back(
+                eI_table.Displacements[jel][iat]);
+          }
   }
 
   RealType evaluateLog(ParticleSet &P, ParticleSet::ParticleGradient_t &G,
@@ -253,7 +255,8 @@ public:
 
     const DistanceTableData &eI_table = (*P.DistTables[myTableID]);
     const DistanceTableData &ee_table = (*P.DistTables[0]);
-    cur_Uat = computeU(P, iat, eI_table.Temp_r.data(), ee_table.Temp_r.data());
+    cur_Uat = computeU(P, iat, P.GroupID[iat], eI_table.Temp_r.data(),
+                       ee_table.Temp_r.data());
     DiffVal = Uat[iat] - cur_Uat;
     return std::exp(DiffVal);
   }
@@ -281,7 +284,7 @@ public:
     // get the old value, grad, lapl
     computeU3(P, iat, eI_table.Distances[iat], eI_table.Displacements[iat],
               ee_table.Distances[iat], ee_table.Displacements[iat], Uat[iat],
-              dUat[iat], d2Uat[iat], oldUk, olddUk, oldd2Uk);
+              dUat_temp, d2Uat[iat], oldUk, olddUk, oldd2Uk);
     if (UpdateMode == ORB_PBYP_RATIO)
     { // ratio-only during the move; need to compute derivatives
       computeU3(P, iat, eI_table.Temp_r.data(), eI_table.Temp_dr,
@@ -292,12 +295,20 @@ public:
     for (int jel = 0; jel < Nelec; jel++)
     {
       Uat[jel] += newUk[jel] - oldUk[jel];
-      dUat[jel] += newdUk[jel] - olddUk[jel];
       d2Uat[jel] += newd2Uk[jel] - oldd2Uk[jel];
     }
+    for (int idim = 0; idim < OHMMS_DIM; ++idim)
+    {
+      valT *restrict save_g      = dUat.data(idim);
+      const valT *restrict new_g = newdUk.data(idim);
+      const valT *restrict old_g = olddUk.data(idim);
+      for (int jel = 0; jel < Nelec; jel++)
+        save_g[jel] += new_g[jel] - old_g[jel];
+    }
 
+    LogValue += Uat[iat] - cur_Uat;
     Uat[iat]   = cur_Uat;
-    dUat[iat]  = cur_dUat;
+    dUat(iat)  = cur_dUat;
     d2Uat[iat] = cur_d2Uat;
 
     const int ig = P.GroupID[iat];
@@ -305,18 +316,37 @@ public:
     for (int jat = 0; jat < Nion; jat++)
     {
       bool inside = eI_table.Temp_r[jat] < Ion_cutoff[jat];
-      std::vector<int>::iterator iter;
-      iter =
-          find(elecs_inside(jat, ig).begin(), elecs_inside(jat, ig).end(), iat);
+      auto iter =
+          find(elecs_inside(ig, jat).begin(), elecs_inside(ig, jat).end(), iat);
+      auto iter_dist = elecs_inside_dist(ig, jat).begin() +
+                       std::distance(elecs_inside(ig, jat).begin(), iter);
+      auto iter_displ = elecs_inside_displ(ig, jat).begin() +
+                        std::distance(elecs_inside(ig, jat).begin(), iter);
       if (inside)
       {
-        if (iter == elecs_inside(jat, ig).end())
-          elecs_inside(jat, ig).push_back(iat);
+        if (iter == elecs_inside(ig, jat).end())
+        {
+          elecs_inside(ig, jat).push_back(iat);
+          elecs_inside_dist(ig, jat).push_back(eI_table.Temp_r[jat]);
+          elecs_inside_displ(ig, jat).push_back(eI_table.Temp_dr[jat]);
+        }
+        else
+        {
+          *iter_dist  = eI_table.Temp_r[jat];
+          *iter_displ = eI_table.Temp_dr[jat];
+        }
       }
       else
       {
-        if (iter != elecs_inside(jat, ig).end())
-          elecs_inside(jat, ig).erase(iter);
+        if (iter != elecs_inside(ig, jat).end())
+        {
+          *iter = elecs_inside(ig, jat).back();
+          elecs_inside(ig, jat).pop_back();
+          *iter_dist = elecs_inside_dist(ig, jat).back();
+          elecs_inside_dist(ig, jat).pop_back();
+          *iter_displ = elecs_inside_displ(ig, jat).back();
+          elecs_inside_displ(ig, jat).pop_back();
+        }
       }
     }
   }
@@ -332,75 +362,87 @@ public:
     {
       computeU3(P, jel, eI_table.Distances[jel], eI_table.Displacements[jel],
                 ee_table.Distances[jel], ee_table.Displacements[jel], Uat[jel],
-                dUat[jel], d2Uat[jel], newUk, newdUk, newd2Uk, true);
+                dUat_temp, d2Uat[jel], newUk, newdUk, newd2Uk, true);
+      dUat(jel) = dUat_temp;
       // add the contribution from the upper triangle
       for (int kel = 0; kel < jel; kel++)
       {
         Uat[kel] += newUk[kel];
-        dUat[kel] += newdUk[kel];
         d2Uat[kel] += newd2Uk[kel];
+      }
+      for (int idim = 0; idim < OHMMS_DIM; ++idim)
+      {
+        valT *restrict save_g      = dUat.data(idim);
+        const valT *restrict new_g = newdUk.data(idim);
+        for (int kel = 0; kel < jel; kel++)
+          save_g[kel] += new_g[kel];
       }
     }
   }
 
-  inline valT computeU(ParticleSet &P, int jel, const RealType *distjI,
-                       const RealType *distjk)
+  inline valT computeU(const ParticleSet &P, int jel, int jg,
+                       const RealType *distjI, const RealType *distjk)
   {
-    valT Uj = valT(0);
-
     const DistanceTableData &eI_table = (*P.DistTables[myTableID]);
-    const int jg                      = P.GroupID[jel];
 
+    ions_nearby.clear();
     for (int iat = 0; iat < Nion; ++iat)
-      if (distjI[iat] < Ion_cutoff[iat])
-      {
-        const int ig    = Ions.GroupID[iat];
-        const valT r_Ij = distjI[iat];
+      if (distjI[iat] < Ion_cutoff[iat]) ions_nearby.push_back(iat);
 
-        for (int kg = 0; kg < eGroups; ++kg)
+    valT Uj = valT(0);
+    for (int kg = 0; kg < eGroups; ++kg)
+    {
+      int kel_counter = 0;
+      for (int iind = 0; iind < ions_nearby.size(); ++iind)
+      {
+        const int iat   = ions_nearby[iind];
+        const int ig    = Ions.GroupID[iat];
+        const valT r_jI = distjI[iat];
+        for (int kind = 0; kind < elecs_inside(kg, iat).size(); kind++)
         {
-          const FT &feeI(*F(ig, jg, kg));
-          int kel_counter = 0;
-          for (int kind = 0; kind < elecs_inside(iat, kg).size(); kind++)
+          const int kel = elecs_inside(kg, iat)[kind];
+          if (kel != jel)
           {
-            const int kel = elecs_inside(iat, kg)[kind];
-            if (kel != jel)
+            DistkI_Compressed[kel_counter] = elecs_inside_dist(kg, iat)[kind];
+            Distjk_Compressed[kel_counter] = distjk[kel];
+            DistjI_Compressed[kel_counter] = r_jI;
+            kel_counter++;
+            if (kel_counter == Nbuffer)
             {
-              DistkI_Compressed[kel_counter] = eI_table.Distances[kel][iat];
-              Distjk_Compressed[kel_counter] = distjk[kel];
-              kel_counter++;
+              const FT &feeI(*F(ig, jg, kg));
+              Uj += feeI.evaluateV(kel_counter, Distjk_Compressed.data(),
+                                   DistjI_Compressed.data(),
+                                   DistkI_Compressed.data());
+              kel_counter = 0;
             }
           }
-          Uj += feeI.evaluateV(kel_counter, Distjk_Compressed.data(), r_Ij,
+        }
+        if ((iind + 1 == ions_nearby.size() ||
+             ig != Ions.GroupID[ions_nearby[iind + 1]]) &&
+            kel_counter > 0)
+        {
+          const FT &feeI(*F(ig, jg, kg));
+          Uj += feeI.evaluateV(kel_counter, Distjk_Compressed.data(),
+                               DistjI_Compressed.data(),
                                DistkI_Compressed.data());
+          kel_counter = 0;
         }
       }
+    }
     return Uj;
   }
 
-  inline void computeU3(ParticleSet &P, int jel, const RealType *distjI,
-                        const RowContainer &displjI, const RealType *distjk,
-                        const RowContainer &displjk, valT &Uj, posT &dUj,
-                        valT &d2Uj, vContainer_type &Uk, gContainer_type &dUk,
-                        vContainer_type &d2Uk, bool triangle = false)
+  inline void computeU3_engine(const ParticleSet &P, const FT &feeI,
+                               int kel_counter, valT &Uj, posT &dUj, valT &d2Uj,
+                               Vector<valT> &Uk, gContainer_type &dUk,
+                               Vector<valT> &d2Uk)
   {
+    const DistanceTableData &eI_table = (*P.DistTables[myTableID]);
+
     constexpr valT czero(0);
     constexpr valT cone(1);
-    constexpr valT cminus(-1);
     constexpr valT ctwo(2);
     constexpr valT lapfac = OHMMS_DIM - cone;
-    Uj                    = czero;
-    dUj                   = posT();
-    d2Uj                  = czero;
-
-    const DistanceTableData &eI_table = (*P.DistTables[myTableID]);
-    const int jg                      = P.GroupID[jel];
-
-    const int kelmax = triangle ? jel : Nelec;
-    std::fill_n(Uk.data(), kelmax, czero);
-    std::fill_n(d2Uk.data(), kelmax, czero);
-    for (int idim = 0; idim < OHMMS_DIM; ++idim)
-      std::fill_n(dUk.data(idim), kelmax, czero);
 
     valT *restrict val     = mVGL.data(0);
     valT *restrict gradF0  = mVGL.data(1);
@@ -412,56 +454,133 @@ public:
     valT *restrict hessF01 = mVGL.data(7);
     valT *restrict hessF02 = mVGL.data(8);
 
-    for (int iat = 0; iat < Nion; ++iat)
-      if (distjI[iat] < Ion_cutoff[iat])
-      {
-        const int ig       = Ions.GroupID[iat];
-        const valT r_Ij    = distjI[iat];
-        const posT disp_Ij = cminus * displjI[iat];
+    feeI.evaluateVGL(kel_counter, Distjk_Compressed.data(),
+                     DistjI_Compressed.data(), DistkI_Compressed.data(), val,
+                     gradF0, gradF1, gradF2, hessF00, hessF11, hessF22, hessF01,
+                     hessF02);
 
-        for (int kg = 0; kg < eGroups; ++kg)
+    // compute the contribution to jel, kel
+    Uj               = simd::accumulate_n(val, kel_counter, Uj);
+    valT gradF0_sum  = simd::accumulate_n(gradF0, kel_counter, czero);
+    valT gradF1_sum  = simd::accumulate_n(gradF1, kel_counter, czero);
+    valT hessF00_sum = simd::accumulate_n(hessF00, kel_counter, czero);
+    valT hessF11_sum = simd::accumulate_n(hessF11, kel_counter, czero);
+    d2Uj -= hessF00_sum + hessF11_sum + lapfac * (gradF0_sum + gradF1_sum);
+    std::fill_n(hessF11, kel_counter, czero);
+    for (int idim = 0; idim < OHMMS_DIM; ++idim)
+    {
+      valT *restrict jk = Disp_jk_Compressed.data(idim);
+      valT *restrict jI = Disp_jI_Compressed.data(idim);
+      valT *restrict kI = Disp_kI_Compressed.data(idim);
+      valT dUj_x(0);
+      for (int kel_index = 0; kel_index < kel_counter; kel_index++)
+      {
+        // recycle hessF11
+        hessF11[kel_index] += kI[kel_index] * jk[kel_index];
+        dUj_x += gradF1[kel_index] * jI[kel_index];
+        // destroy jk, kI
+        const valT temp = jk[kel_index] * gradF0[kel_index];
+        dUj_x += temp;
+        jk[kel_index] *= jI[kel_index];
+        kI[kel_index] = kI[kel_index] * gradF2[kel_index] - temp;
+      }
+      dUj[idim] += dUj_x;
+
+      valT *restrict jk0 = Disp_jk_Compressed.data(0);
+      if (idim > 0)
+      {
+        for (int kel_index = 0; kel_index < kel_counter; kel_index++)
+          jk0[kel_index] += jk[kel_index];
+      }
+
+      valT *restrict dUk_x = dUk.data(idim);
+      for (int kel_index = 0; kel_index < kel_counter; kel_index++)
+        dUk_x[DistIndice_k[kel_index]] += kI[kel_index];
+    }
+    valT sum(0);
+    valT *restrict jk0 = Disp_jk_Compressed.data(0);
+    for (int kel_index = 0; kel_index < kel_counter; kel_index++)
+      sum += hessF01[kel_index] * jk0[kel_index];
+    d2Uj -= ctwo * sum;
+
+    for (int kel_index = 0; kel_index < kel_counter; kel_index++)
+      hessF00[kel_index] = hessF00[kel_index] + hessF22[kel_index] +
+                           lapfac * (gradF0[kel_index] + gradF2[kel_index]) -
+                           ctwo * hessF02[kel_index] * hessF11[kel_index];
+
+    for (int kel_index = 0; kel_index < kel_counter; kel_index++)
+    {
+      const int kel = DistIndice_k[kel_index];
+      Uk[kel] += val[kel_index];
+      d2Uk[kel] -= hessF00[kel_index];
+    }
+  }
+
+  inline void computeU3(const ParticleSet &P, int jel, const RealType *distjI,
+                        const RowContainer &displjI, const RealType *distjk,
+                        const RowContainer &displjk, valT &Uj, posT &dUj,
+                        valT &d2Uj, Vector<valT> &Uk, gContainer_type &dUk,
+                        Vector<valT> &d2Uk, bool triangle = false)
+  {
+    constexpr valT czero(0);
+
+    Uj   = czero;
+    dUj  = posT();
+    d2Uj = czero;
+
+    const int jg = P.GroupID[jel];
+
+    const int kelmax = triangle ? jel : Nelec;
+    std::fill_n(Uk.data(), kelmax, czero);
+    std::fill_n(d2Uk.data(), kelmax, czero);
+    for (int idim = 0; idim < OHMMS_DIM; ++idim)
+      std::fill_n(dUk.data(idim), kelmax, czero);
+
+    ions_nearby.clear();
+    for (int iat = 0; iat < Nion; ++iat)
+      if (distjI[iat] < Ion_cutoff[iat]) ions_nearby.push_back(iat);
+
+    for (int kg = 0; kg < eGroups; ++kg)
+    {
+      int kel_counter = 0;
+      for (int iind = 0; iind < ions_nearby.size(); ++iind)
+      {
+        const int iat      = ions_nearby[iind];
+        const int ig       = Ions.GroupID[iat];
+        const valT r_jI    = distjI[iat];
+        const posT disp_Ij = displjI[iat];
+        for (int kind = 0; kind < elecs_inside(kg, iat).size(); kind++)
         {
-          const FT &feeI(*F(ig, jg, kg));
-          int kel_counter = 0;
-          for (int kind = 0; kind < elecs_inside(iat, kg).size(); kind++)
+          const int kel = elecs_inside(kg, iat)[kind];
+          if (kel < kelmax && kel != jel)
           {
-            const int kel = elecs_inside(iat, kg)[kind];
-            if (kel < kelmax && kel != jel)
+            DistkI_Compressed[kel_counter]  = elecs_inside_dist(kg, iat)[kind];
+            DistjI_Compressed[kel_counter]  = r_jI;
+            Distjk_Compressed[kel_counter]  = distjk[kel];
+            Disp_kI_Compressed(kel_counter) = elecs_inside_displ(kg, iat)[kind];
+            Disp_jI_Compressed(kel_counter) = disp_Ij;
+            Disp_jk_Compressed(kel_counter) = displjk[kel];
+            DistIndice_k[kel_counter]       = kel;
+            kel_counter++;
+            if (kel_counter == Nbuffer)
             {
-              DistkI_Compressed[kel_counter] = eI_table.Distances[kel][iat];
-              Distjk_Compressed[kel_counter] = distjk[kel];
-              DistIndice[kel_counter]        = kel;
-              kel_counter++;
+              const FT &feeI(*F(ig, jg, kg));
+              computeU3_engine(P, feeI, kel_counter, Uj, dUj, d2Uj, Uk, dUk,
+                               d2Uk);
+              kel_counter = 0;
             }
           }
-
-          feeI.evaluateVGL(kel_counter, Distjk_Compressed.data(), r_Ij,
-                           DistkI_Compressed.data(), val, gradF0, gradF1,
-                           gradF2, hessF00, hessF11, hessF22, hessF01, hessF02);
-
-          for (int kel_index = 0; kel_index < kel_counter; kel_index++)
-          {
-            int kel            = DistIndice[kel_index];
-            const posT disp_Ik = cminus * eI_table.Displacements[kel][iat];
-            const posT disp_jk = displjk[kel];
-
-            // compute the contribution to jel
-            Uj += val[kel_index];
-            dUj += gradF0[kel_index] * disp_jk - gradF1[kel_index] * disp_Ij;
-            d2Uj -= hessF00[kel_index] + hessF11[kel_index] +
-                    lapfac * (gradF0[kel_index] + gradF1[kel_index]) -
-                    ctwo * hessF01[kel_index] * dot(disp_jk, disp_Ij);
-
-            // compute the contribution to kel
-            Uk[kel] += val[kel_index];
-            dUk(kel) = dUk[kel] - gradF0[kel_index] * disp_jk -
-                       gradF2[kel_index] * disp_Ik;
-            d2Uk[kel] -= hessF00[kel_index] + hessF22[kel_index] +
-                         lapfac * (gradF0[kel_index] + gradF2[kel_index]) +
-                         ctwo * hessF02[kel_index] * dot(disp_jk, disp_Ik);
-          }
+        }
+        if ((iind + 1 == ions_nearby.size() ||
+             ig != Ions.GroupID[ions_nearby[iind + 1]]) &&
+            kel_counter > 0)
+        {
+          const FT &feeI(*F(ig, jg, kg));
+          computeU3_engine(P, feeI, kel_counter, Uj, dUj, d2Uj, Uk, dUk, d2Uk);
+          kel_counter = 0;
         }
       }
+    }
   }
 
   void evaluateGL(ParticleSet &P, ParticleSet::ParticleGradient_t &G,
@@ -480,5 +599,6 @@ public:
     LogValue = mhalf * LogValue;
   }
 };
-}
+
+} // namespace qmcplusplus
 #endif

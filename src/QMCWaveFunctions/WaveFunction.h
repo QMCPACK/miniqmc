@@ -78,7 +78,7 @@ struct WaveFunction : public WaveFunctionBase
   DetType *Det_dn;
 
   WaveFunction(ParticleSet &ions, ParticleSet &els,
-               RandomGenerator<RealType> RNG);
+               RandomGenerator<RealType> &RNG, bool enableJ3);
   ~WaveFunction();
   void evaluateLog(ParticleSet &P);
   posT evalGrad(ParticleSet &P, int iat);
@@ -114,7 +114,7 @@ struct WaveFunctionRef : public qmcplusplus::WaveFunctionBase
   PooledData<valT> Buffer;
 
   WaveFunctionRef(ParticleSet &ions, ParticleSet &els,
-                  RandomGenerator<RealType> RNG);
+                  RandomGenerator<RealType> &RNG, bool enableJ3);
   ~WaveFunctionRef();
   void evaluateLog(ParticleSet &P);
   posT evalGrad(ParticleSet &P, int iat);

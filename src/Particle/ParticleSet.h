@@ -121,8 +121,6 @@ public:
   bool IsGrouped;
   /// true if the particles have the same mass
   bool SameMass;
-  /// true if all the internal state is ready for estimators
-  bool Ready4Measure;
   /// the index of the active particle for particle-by-particle moves
   Index_t activePtcl;
 
@@ -207,6 +205,15 @@ public:
    */
   void setActive(int iat);
 
+  /** return the position of the active partice
+   *
+   * activePtcl=-1 is used to flag non-physical moves
+   */
+  inline const PosType& activeR(int iat) const
+  {
+    return (activePtcl == iat)? activePos:R[iat];
+  }
+
   /** move a particle
    * @param iat the index of the particle to be moved
    * @param displ random displacement of the iat-th particle
@@ -282,8 +289,7 @@ public:
 
   inline void assign(const ParticleSet &ptclin)
   {
-    TotalNum = ptclin.getTotalNum();
-    resize(TotalNum);
+    resize(ptclin.getTotalNum());
     Lattice          = ptclin.Lattice;
     PrimitiveLattice = ptclin.PrimitiveLattice;
     R.InUnit         = ptclin.R.InUnit;

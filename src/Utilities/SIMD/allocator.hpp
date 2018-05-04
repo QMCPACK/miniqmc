@@ -35,5 +35,9 @@ template<typename T> inline size_t getAlignedSize(size_t n)
   return ((n+ND-1)/ND)*ND;
 }
 
+template<typename T> inline size_t getAlignment()
+{
+  return QMC_CLINE/sizeof(T);
+}
 
 #endif
