@@ -35,11 +35,12 @@ void print_help()
 {
   //clang-format off
   app_summary() << "usage:" << '\n';
-  app_summary() << "  check_spo [-hvV] [-g \"n0 n1 n2\"] [-n steps]"             << '\n';
-  app_summary() << "             [-r rmax] [-s seed]"                            << '\n';
+  app_summary() << "  check_spo [-hvV] [-g \"n0 n1 n2\"] [-m meshfactor]"        << '\n';
+  app_summary() << "            [-n steps] [-r rmax] [-s seed]"                  << '\n';
   app_summary() << "options:"                                                    << '\n';
   app_summary() << "  -g  set the 3D tiling.             default: 1 1 1"         << '\n';
   app_summary() << "  -h  print help and exit"                                   << '\n';
+  app_summary() << "  -m  meshfactor                     default: 1.0"           << '\n';
   app_summary() << "  -n  number of MC steps             default: 100"           << '\n';
   app_summary() << "  -r  set the Rmax.                  default: 1.7"           << '\n';
   app_summary() << "  -s  set the random seed.           default: 11"            << '\n';
@@ -86,7 +87,7 @@ int main(int argc, char **argv)
   int opt;
   while(optind < argc)
   {
-    if ((opt = getopt(argc, argv, "hvVa:c:f:g:n:r:s:")) != -1)
+    if ((opt = getopt(argc, argv, "hvVa:c:f:g:m:n:r:s:")) != -1)
     {
       switch (opt)
       {
@@ -98,6 +99,12 @@ int main(int argc, char **argv)
         sscanf(optarg, "%d %d %d", &na, &nb, &nc);
         break;
       case 'h': print_help(); break;
+      case 'm':
+        {
+          const RealType meshfactor = atof(optarg);
+          nx *= meshfactor; ny *= meshfactor; nz *= meshfactor;
+        }
+        break;
       case 'n':
         nsteps = atoi(optarg);
         break;
@@ -154,10 +161,24 @@ int main(int argc, char **argv)
     const int norb        = count_electrons(ions, 1) / 2;
     tileSize              = (tileSize > 0) ? tileSize : norb;
     nTiles                = norb / tileSize;
-    app_summary() << "\nNumber of orbitals/splines = " << norb
-                  << " and Tile size = " << tileSize
-                  << " and Number of tiles = " << nTiles
-                  << " and Iterations = " << nsteps << endl;
+
+    const unsigned int SPO_coeff_size =
+        (nx + 3) * (ny + 3) * (nz + 3) * norb * sizeof(RealType);
+    const double SPO_coeff_size_MB = SPO_coeff_size * 1.0 / 1024 / 1024;
+
+    app_summary() << "Number of orbitals/splines = " << norb << endl
+                  << "Tile size = " << tileSize << endl
+                  << "Number of tiles = " << nTiles << endl
+                  << "Rmax = " << Rmax << endl;
+    app_summary() << "Iterations = " << nsteps << endl;
+    app_summary() << "OpenMP threads = " << omp_get_max_threads() << endl;
+#ifdef HAVE_MPI
+    app_summary() << "MPI processes = " << comm.size() << endl;
+#endif
+
+    app_summary() << "\nSPO coefficients size = " << SPO_coeff_size
+                  << " bytes (" << SPO_coeff_size_MB << " MB)" << endl;
+
     spo_main.set(nx, ny, nz, norb, nTiles);
     spo_main.Lattice.set(lattice_b);
     spo_ref_main.set(nx, ny, nz, norb, nTiles);
