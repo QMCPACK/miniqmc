@@ -59,9 +59,9 @@ struct einspline_spo
   compute_engine_type compute_engine;
 
   aligned_vector<spline_type *> einsplines;
-  aligned_vector<vContainer_type *> psi;
-  aligned_vector<gContainer_type *> grad;
-  aligned_vector<hContainer_type *> hess;
+  aligned_vector<vContainer_type> psi;
+  aligned_vector<gContainer_type> grad;
+  aligned_vector<hContainer_type> hess;
 
   /// default constructor
   einspline_spo()
@@ -98,38 +98,22 @@ struct einspline_spo
   /// destructors
   ~einspline_spo()
   {
-    if (psi.size()) clean();
     if (Owner)
       for (int i = 0; i < nBlocks; ++i)
         myAllocator.destroy(einsplines[i]);
   }
 
-  void clean()
-  {
-    const int n = psi.size();
-    for (int i = 0; i < n; ++i)
-    {
-      delete psi[i];
-      delete grad[i];
-      delete hess[i];
-    }
-  }
-
   /// resize the containers
   void resize()
   {
-    if (nBlocks > psi.size())
+    psi.resize(nBlocks);
+    grad.resize(nBlocks);
+    hess.resize(nBlocks);
+    for (int i = 0; i < nBlocks; ++i)
     {
-      clean();
-      psi.resize(nBlocks);
-      grad.resize(nBlocks);
-      hess.resize(nBlocks);
-      for (int i = 0; i < nBlocks; ++i)
-      {
-        psi[i]  = new vContainer_type(nSplinesPerBlock);
-        grad[i] = new gContainer_type(nSplinesPerBlock);
-        hess[i] = new hContainer_type(nSplinesPerBlock);
-      }
+      psi[i].resize(nSplinesPerBlock);
+      grad[i].resize(nSplinesPerBlock);
+      hess[i].resize(nSplinesPerBlock);
     }
   }
 
@@ -171,7 +155,7 @@ struct einspline_spo
   {
     auto u = Lattice.toUnit_floor(p);
     for (int i = 0; i < nBlocks; ++i)
-      compute_engine.evaluate_v(einsplines[i], u[0], u[1], u[2], psi[i]->data(), psi[i]->size());
+      compute_engine.evaluate_v(einsplines[i], u[0], u[1], u[2], psi[i].data(), nSplinesPerBlock);
   }
 
   /** evaluate psi */
@@ -180,7 +164,7 @@ struct einspline_spo
     auto u = Lattice.toUnit_floor(p);
     #pragma omp for nowait
     for (int i = 0; i < nBlocks; ++i)
-      compute_engine.evaluate_v(einsplines[i], u[0], u[1], u[2], psi[i]->data(), psi[i]->size());
+      compute_engine.evaluate_v(einsplines[i], u[0], u[1], u[2], psi[i].data(), nSplinesPerBlock);
   }
 
   /** evaluate psi, grad and lap */
@@ -189,8 +173,8 @@ struct einspline_spo
     auto u = Lattice.toUnit_floor(p);
     for (int i = 0; i < nBlocks; ++i)
       compute_engine.evaluate_vgl(einsplines[i], u[0], u[1], u[2],
-                                  psi[i]->data(), grad[i]->data(), hess[i]->data(),
-                                  psi[i]->size());
+                                  psi[i].data(), grad[i].data(), hess[i].data(),
+                                  nSplinesPerBlock);
   }
 
   /** evaluate psi, grad and lap */
@@ -200,8 +184,8 @@ struct einspline_spo
     #pragma omp for nowait
     for (int i = 0; i < nBlocks; ++i)
       compute_engine.evaluate_vgl(einsplines[i], u[0], u[1], u[2],
-                                  psi[i]->data(), grad[i]->data(), hess[i]->data(),
-                                  psi[i]->size());
+                                  psi[i].data(), grad[i].data(), hess[i].data(),
+                                  nSplinesPerBlock);
   }
 
   /** evaluate psi, grad and hess */
@@ -210,8 +194,8 @@ struct einspline_spo
     auto u = Lattice.toUnit_floor(p);
     for (int i = 0; i < nBlocks; ++i)
       compute_engine.evaluate_vgh(einsplines[i], u[0], u[1], u[2],
-                                  psi[i]->data(), grad[i]->data(), hess[i]->data(),
-                                  psi[i]->size());
+                                  psi[i].data(), grad[i].data(), hess[i].data(),
+                                  nSplinesPerBlock);
   }
 
   /** evaluate psi, grad and hess */
@@ -221,8 +205,8 @@ struct einspline_spo
     #pragma omp for nowait
     for (int i = 0; i < nBlocks; ++i)
       compute_engine.evaluate_vgh(einsplines[i], u[0], u[1], u[2],
-                                  psi[i]->data(), grad[i]->data(), hess[i]->data(),
-                                  psi[i]->size());
+                                  psi[i].data(), grad[i].data(), hess[i].data(),
+                                  nSplinesPerBlock);
   }
 
   void print(std::ostream &os)
