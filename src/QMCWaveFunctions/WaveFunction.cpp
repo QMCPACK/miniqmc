@@ -35,6 +35,40 @@ void build_WaveFunction(bool useRef, WaveFunction &WF, ParticleSet &ions, Partic
 
   if(useRef)
   {
+    using J1OrbType = miniqmcreference::OneBodyJastrowRef<BsplineFunctor<valT>>;
+    using J2OrbType = miniqmcreference::TwoBodyJastrowRef<BsplineFunctor<valT>>;
+    using J3OrbType = miniqmcreference::ThreeBodyJastrowRef<PolynomialFunctor3D>;
+    using DetType   = miniqmcreference::DiracDeterminantRef;
+
+    ions.RSoA = ions.R;
+    els.RSoA  = els.R;
+
+    // distance tables
+    els.addTable(els, DT_SOA);
+    WF.ei_TableID = els.addTable(ions, DT_SOA);
+
+    // determinant component
+    WF.nelup = nelup;
+    WF.Det_up = new DetType(nelup, RNG, 0);
+    WF.Det_dn = new DetType(els.getTotalNum()-nelup, RNG, nelup);
+
+    // J1 component
+    J1OrbType *J1 = new J1OrbType(ions, els);
+    buildJ1(*J1, els.Lattice.WignerSeitzRadius);
+    WF.Jastrows.push_back(J1);
+
+    // J2 component
+    J2OrbType *J2 = new J2OrbType(els);
+    buildJ2(*J2, els.Lattice.WignerSeitzRadius);
+    WF.Jastrows.push_back(J2);
+
+    // J3 component
+    if(enableJ3)
+    {
+      J3OrbType *J3 = new J3OrbType(ions, els);
+      buildJeeI(*J3, els.Lattice.WignerSeitzRadius);
+      WF.Jastrows.push_back(J3);
+    }
   }
   else
   {
@@ -103,7 +137,7 @@ void WaveFunction::evaluateLog(ParticleSet &P)
   }
 }
 
-WaveFunctionBase::posT WaveFunction::evalGrad(ParticleSet &P, int iat)
+WaveFunction::posT WaveFunction::evalGrad(ParticleSet &P, int iat)
 {
   posT grad_iat = ( iat<nelup ? Det_up->evalGrad(P, iat) : Det_dn->evalGrad(P, iat) );
   for(size_t i=0; i<Jastrows.size(); i++)
@@ -111,7 +145,7 @@ WaveFunctionBase::posT WaveFunction::evalGrad(ParticleSet &P, int iat)
   return grad_iat;
 }
 
-WaveFunctionBase::valT WaveFunction::ratioGrad(ParticleSet &P, int iat,
+WaveFunction::valT WaveFunction::ratioGrad(ParticleSet &P, int iat,
                                                posT &grad)
 {
   valT ratio = ( iat<nelup ? Det_up->ratioGrad(P, iat, grad) : Det_dn->ratioGrad(P, iat, grad) );
@@ -120,7 +154,7 @@ WaveFunctionBase::valT WaveFunction::ratioGrad(ParticleSet &P, int iat,
   return ratio;
 }
 
-WaveFunctionBase::valT WaveFunction::ratio(ParticleSet &P, int iat)
+WaveFunction::valT WaveFunction::ratio(ParticleSet &P, int iat)
 {
   valT ratio = ( iat<nelup ? Det_up->ratio(P, iat) : Det_dn->ratio(P, iat) );
   for(size_t i=0; i<Jastrows.size(); i++)

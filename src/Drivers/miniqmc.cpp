@@ -370,22 +370,15 @@ int main(int argc, char **argv)
       els.RSoA = els.R;
     }
 
-    WaveFunctionBase *wavefunction;
+    WaveFunction *wavefunction = new WaveFunction();
 
     if (useRef)
-    {
-      wavefunction =
-          new miniqmcreference::WaveFunctionRef(ions, els, random_th, enableJ3);
-    }
+      build_WaveFunction(true, *wavefunction, ions, els, random_th, enableJ3);
     else
-    {
-      WaveFunction *WFtemp = new WaveFunction();
-      wavefunction = WFtemp;
-      build_WaveFunction(false, *WFtemp, ions, els, random_th, enableJ3);
-    }
+      build_WaveFunction(false, *wavefunction, ions, els, random_th, enableJ3);
 
     // set Rmax for ion-el distance table for PP
-    els.DistTables[wavefunction->ei_TableID]->setRmax(Rmax);
+    els.DistTables[wavefunction->get_ei_TableID()]->setRmax(Rmax);
 
     // create pseudopp
     NonLocalPP<OHMMS_PRECISION> ecp(random_th);
@@ -486,7 +479,7 @@ int main(int argc, char **argv)
       // Compute NLPP energy using integral over spherical points
 
       ecp.randomize(rOnSphere); // pick random sphere
-      const DistanceTableData *d_ie = els.DistTables[wavefunction->ei_TableID];
+      const DistanceTableData *d_ie = els.DistTables[wavefunction->get_ei_TableID()];
 
       Timers[Timer_ECP]->start();
       for (int iat = 0; iat < nions; ++iat)
