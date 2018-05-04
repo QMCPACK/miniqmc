@@ -59,7 +59,7 @@ struct WaveFunction
   int nelup, ei_TableID;
 
   public:
-  WaveFunction(): FirstTime(true), Is_built(false), nelup(0), ei_TableID(1), Det_up(nullptr), Det_dn(nullptr) { }
+  WaveFunction(): FirstTime(true), Is_built(false), nelup(0), ei_TableID(1), Det_up(nullptr), Det_dn(nullptr), LogValue(0.0) { }
   ~WaveFunction();
   void evaluateLog(ParticleSet &P);
   posT evalGrad(ParticleSet &P, int iat);
@@ -69,6 +69,7 @@ struct WaveFunction
   void restore(int iat);
   void evaluateGL(ParticleSet &P);
   int get_ei_TableID() const {return ei_TableID;}
+  valT getLogValue() const {return LogValue;}
 };
 
 void build_WaveFunction(bool useRef, WaveFunction &WF, ParticleSet &ions, ParticleSet &els, const RandomGenerator<QMCTraits::RealType> &RNG, bool enableJ3);

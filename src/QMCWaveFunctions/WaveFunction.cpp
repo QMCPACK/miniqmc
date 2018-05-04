@@ -181,7 +181,11 @@ void WaveFunction::evaluateGL(ParticleSet &P)
   P.L = czero;
   Det_up->evaluateGL(P, P.G, P.L);
   Det_dn->evaluateGL(P, P.G, P.L);
+  LogValue = Det_up->LogValue + Det_dn->LogValue;
   for(size_t i=0; i<Jastrows.size(); i++)
+  {
     Jastrows[i]->evaluateGL(P, P.G, P.L);
+    LogValue += Jastrows[i]->LogValue;
+  }
 }
 } // qmcplusplus

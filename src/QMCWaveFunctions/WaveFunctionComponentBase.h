@@ -107,7 +107,7 @@ struct WaveFunctionComponentBase : public QMCTraits
   /// default constructor
   WaveFunctionComponentBase()
       : IsOptimizing(false), Optimizable(true), UpdateMode(ORB_WALKER),
-        LogValue(1.0), PhaseValue(0.0), WaveFunctionComponentName("WaveFunctionComponentBase")
+        LogValue(0.0), PhaseValue(0.0), WaveFunctionComponentName("WaveFunctionComponentBase")
   { }
 
   /// default destructor
