@@ -159,9 +159,9 @@ template <typename T, unsigned D> struct VectorSoAContainer
    *
    * Free existing memory and reset the internal variables
    */
-  __forceinline void resetByRef(size_t n, size_t n_padded, T *ptr)
+  __forceinline void attachReference(size_t n, size_t n_padded, T *ptr)
   {
-    if (nAllocated) myAlloc.deallocate(myData, nAllocated);
+    if(nAllocated) throw std::runtime_error("Pointer attaching is not allowed on VectorSoAContainer with allocated memory.");
     nAllocated = 0;
     nLocal     = n;
     nGhosts    = n_padded;
@@ -198,7 +198,7 @@ template <typename T, unsigned D> struct VectorSoAContainer
 
   /** return TinyVector<T,D>
    */
-  __forceinline Type_t operator[](size_t i) const
+  __forceinline const Type_t operator[](size_t i) const
   {
     return Type_t(myData + i, nGhosts);
   }

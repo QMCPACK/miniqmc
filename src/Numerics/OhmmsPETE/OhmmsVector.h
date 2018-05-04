@@ -1,19 +1,14 @@
-////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////
 // This file is distributed under the University of Illinois/NCSA Open Source
-// License.  See LICENSE file in top directory for details.
+// License. See LICENSE file in top directory for details.
 //
 // Copyright (c) 2016 Jeongnim Kim and QMCPACK developers.
 //
-// File developed by:
-// Jeongnim Kim, jeongnim.kim@intel.com,
-//    Intel Corp.
-// Ye Luo, yeluo@anl.gov,
-//    Argonne National Laboratory
+// File developed by: Jeongnim Kim, jeongnim.kim@intel.com, Intel Corp.
+//                    Ye Luo, yeluo@anl.gov, Argonne National Laboratory
 //
-// File created by:
-// Jeongnim Kim, jeongnim.kim@intel.com,
-//    Intel Corp.
-////////////////////////////////////////////////////////////////////////////////
+// File created by: Jeongnim Kim, jeongnim.kim@intel.com, Intel Corp.
+//////////////////////////////////////////////////////////////////////////////////////
 
 /** @file Vector.h
  *
@@ -29,6 +24,7 @@
 #include <vector>
 #include <iostream>
 #include <type_traits>
+#include <stdexcept>
 
 namespace qmcplusplus
 {
@@ -39,14 +35,20 @@ public:
   typedef T Type_t;
   typedef T *iterator;
   typedef const T *const_iterator;
+  typedef typename Alloc::size_type size_type;
   typedef typename Alloc::pointer pointer;
   typedef typename Alloc::const_pointer const_pointer;
   typedef Vector<T, Alloc> This_t;
 
   /** constructor with size n*/
-  explicit inline Vector(size_t n = 0) : nLocal(n), nAllocated(0), X(nullptr)
+  explicit inline Vector(size_t n = 0, Type_t val = Type_t())
+      : nLocal(n), nAllocated(0), X(nullptr)
   {
-    if (n) resize_impl(n);
+    if (n)
+    {
+      resize_impl(n);
+      std::fill_n(X, n, val);
+    }
   }
 
   /** constructor with an initialized ref */
@@ -96,30 +98,70 @@ public:
     }
   }
 
+  // Attach to pre-allocated memory
+  inline void attachReference(T *ref, size_t n)
+  {
+    if (nAllocated)
+      throw std::runtime_error(
+          "Pointer attaching is not allowed on Vector with allocated memory.");
+    nLocal     = n;
+    nAllocated = 0;
+    X          = ref;
+  }
+
   //! return the current size
   inline size_t size() const { return nLocal; }
 
   /// resize
-  inline void resize(size_t n)
+  inline void resize(size_t n, Type_t val = Type_t())
   {
     if (nLocal > nAllocated)
       throw std::runtime_error(
           "Resize not allowed on Vector constructed by initialized memory.");
     if (n > nAllocated)
+    {
       resize_impl(n);
+      std::fill_n(X, n, val);
+    }
+    else if (n > nLocal)
+    {
+      std::fill_n(X + nLocal, n - nLocal, val);
+      nLocal = n;
+    }
     else
       nLocal = n;
     return;
   }
 
+  /// clear
+  inline void clear() { nLocal = 0; }
+
+  /// free
+  inline void free()
+  {
+    if (nAllocated)
+    {
+      mAllocator.deallocate(X, nAllocated);
+    }
+    nLocal     = 0;
+    nAllocated = 0;
+    X          = nullptr;
+  }
+
   // Get and Set Operations
   inline Type_t &operator[](size_t i) { return X[i]; }
 
-  inline Type_t operator[](size_t i) const { return X[i]; }
+  inline const Type_t &operator[](size_t i) const { return X[i]; }
 
-  inline Type_t &operator()(size_t i) { return X[i]; }
+  // inline Type_t& operator()(size_t i)
+  //{
+  //  return X[i];
+  //}
 
-  inline Type_t operator()(size_t i) const { return X[i]; }
+  // inline Type_t operator()( size_t i) const
+  //{
+  //  return X[i];
+  //}
 
   inline iterator begin() { return X; }
   inline const_iterator begin() const { return X; }
@@ -158,7 +200,7 @@ private:
   }
 };
 
-} // end-of qmcplusplus
+} // namespace qmcplusplus
 
 #include "Numerics/OhmmsPETE/OhmmsVectorOperators.h"
 
@@ -257,7 +299,8 @@ inline void evaluate(Vector<T, C> &lhs, const Op &op,
 template <class T, class C>
 std::ostream &operator<<(std::ostream &out, const Vector<T, C> &rhs)
 {
-  for (int i = 0; i < rhs.size(); i++) out << rhs[i] << std::endl;
+  for (int i = 0; i < rhs.size(); i++)
+    out << rhs[i] << std::endl;
   return out;
 }
 
@@ -265,9 +308,11 @@ template <class T, class C>
 std::istream &operator>>(std::istream &is, Vector<T, C> &rhs)
 {
   // printTinyVector<TinyVector<T,D> >::print(out,rhs);
-  for (int i = 0; i < rhs.size(); i++) is >> rhs[i];
+  for (int i = 0; i < rhs.size(); i++)
+    is >> rhs[i];
   return is;
 }
-}
+
+} // namespace qmcplusplus
 
 #endif // OHMMS_PARTICLEATTRIB_PEPE_H
