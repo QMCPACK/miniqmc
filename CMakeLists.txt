@@ -1,15 +1,18 @@
-PROJECT(qmcpack CXX)
-
-
-#####################################################
-CMAKE_MINIMUM_REQUIRED(VERSION 3.4.0)
-IF(COMMAND cmake_policy)
-  cmake_policy(SET CMP0003 NEW)
-ENDIF(COMMAND cmake_policy)
-
+######################################################################
+# GLOBAL
+######################################################################
+CMAKE_MINIMUM_REQUIRED(VERSION 3.6.0)
+cmake_policy(SET CMP0003 NEW)
+#Actually set CXX11 flag for Clang on Apple, even llvm non apple clang
+#This is contrary to what the --help-policy says
+cmake_policy(SET CMP0025 NEW)
 
 ######################################################################
-# Version 
+PROJECT(qmcpack CXX)
+######################################################################
+
+######################################################################
+# Version
 ######################################################################
 SET(QMCPACK_VERSION_MAJOR 3)
 SET(QMCPACK_VERSION_MINOR 1)
@@ -17,7 +20,7 @@ SET(QMCPACK_VERSION_PATCH 0)
 SET(QMCPACK_VERSION "${QMCPACK_VERSION_MAJOR}.${QMCPACK_VERSION_MINOR}.${QMCPACK_VERSION_PATCH}")
 
 ######################################################################
-# CTest 
+# CTest
 ######################################################################
 SET( DROP_METHOD "http" )
 SET( DROP_SITE "cdash.qmcpack.org" )
@@ -68,8 +71,8 @@ SET (EXECUTABLE_OUTPUT_PATH ${qmcpack_BINARY_DIR}/bin CACHE PATH "Single output 
 # OHMMS_PRECISION  = base precision, float, double etc
 # OHMMS_PRECISION_FULL  = full precision, double etc
 # QMC_COMPLEX = true if using complex wavefunctions
-# QMC_MPI =  enable MPI 
-# QMC_OMP = enable OMP 
+# QMC_MPI =  enable MPI
+# QMC_OMP = enable OMP
 ######################################################################
 SET(OHMMS_DIM 3 CACHE INTEGER "Select physical dimension")
 SET(OHMMS_INDEXTYPE int)
@@ -277,12 +280,7 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
   # requires C++11 standard
   SET(CMAKE_CXX_STANDARD 11)
   SET(CMAKE_CXX_STANDARD_REQUIRED ON)
-  SET(CXX11_FLAG "-std=c++11")
-  # avoid repeated -std=c++11 flag
-  STRING(REPLACE "++" "\\+\\+" CXX11_FLAG_MATCH ${CXX11_FLAG})
-  IF(NOT CMAKE_CXX_FLAGS MATCHES ${CXX11_FLAG_MATCH})
-    SET (CMAKE_CXX_FLAGS "${CXX11_FLAG} ${CMAKE_CXX_FLAGS}")
-  ENDIF()
+  SET(CMAKE_CXX_EXTENSIONS OFF)
 
   #-------------------------------------------------------------------
   #  check MPI installation
@@ -303,10 +301,10 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
       IF(MPI_FOUND)
         MESSAGE(STATUS "Found mpi.h and libraries. Check for working mpi compiler ")
         INCLUDE_DIRECTORIES(${MPI_CXX_INCLUDE_PATH})
-        FILE(WRITE ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp/testmpi.cxx 
+        FILE(WRITE ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp/testmpi.cxx
           "#include <mpi.h>"
           "int main(int argc, char** argv){MPI_Init(&argc,&argv); MPI_Finalize();return 0;}\n")
-        #TRY_COMPILE(MPI_WORKS ${CMAKE_BINARY_DIR} 
+        #TRY_COMPILE(MPI_WORKS ${CMAKE_BINARY_DIR}
         #${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp/testmpi.cxx
         #OUTPUT_VARIABLE OUTPUT)
         set(MPI_WORKS 1)
