@@ -86,11 +86,6 @@ struct WaveFunctionComponentBase : public QMCTraits
    * If true, this object is actively modified during optimization
    */
   bool Optimizable;
-  /** true, if FermionWF */
-  bool IsFermionWF;
-  /** true, if compute for the ratio instead of buffering */
-  bool Need2Compute4PbyP;
-
   /** current update mode */
   int UpdateMode;
   /** current \f$\log\phi \f$
@@ -113,10 +108,7 @@ struct WaveFunctionComponentBase : public QMCTraits
   WaveFunctionComponentBase()
       : IsOptimizing(false), Optimizable(true), UpdateMode(ORB_WALKER),
         LogValue(1.0), PhaseValue(0.0), WaveFunctionComponentName("WaveFunctionComponentBase")
-  {
-    /// store instead of computing
-    Need2Compute4PbyP = false;
-  }
+  { }
 
   /// default destructor
   virtual ~WaveFunctionComponentBase() {}

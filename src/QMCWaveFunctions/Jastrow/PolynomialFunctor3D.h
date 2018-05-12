@@ -145,9 +145,9 @@ struct PolynomialFunctor3D : public OptimizableFunctorBase
     GammaPerm.resize(NumGamma);
     IndepVar.resize(NumGamma, false);
     // Set identity permutation
-    for (int i     = 0; i < NumGamma; i++)
+    for (int i = 0; i < NumGamma; i++)
       GammaPerm[i] = i;
-    int col        = -1;
+    int col = -1;
     for (int row = 0; row < NumConstraints; row++)
     {
       int max_loc;
@@ -173,7 +173,7 @@ struct PolynomialFunctor3D : public OptimizableFunctorBase
       // manually swap the rows
       for (int ind_col = 0; ind_col < ConstraintMatrix.size2(); ind_col++)
       {
-        real_type temp = ConstraintMatrix(row, ind_col);
+        real_type temp                     = ConstraintMatrix(row, ind_col);
         ConstraintMatrix(row, ind_col)     = ConstraintMatrix(max_loc, ind_col);
         ConstraintMatrix(max_loc, ind_col) = temp;
       }
@@ -194,7 +194,7 @@ struct PolynomialFunctor3D : public OptimizableFunctorBase
         }
       }
     }
-    for (int c    = col + 1; c < NumGamma; c++)
+    for (int c = col + 1; c < NumGamma; c++)
       IndepVar[c] = true;
   }
 
@@ -210,7 +210,7 @@ struct PolynomialFunctor3D : public OptimizableFunctorBase
     std::fill(GammaVec.begin(), GammaVec.end(), 0.0);
     // First, set all independent variables
     int var = 0;
-    for (int i                     = 0; i < NumGamma; i++)
+    for (int i = 0; i < NumGamma; i++)
       if (IndepVar[i]) GammaVec[i] = scale * Parameters[var++];
     assert(var == Parameters.size());
     // Now, set dependent variables
@@ -323,7 +323,7 @@ struct PolynomialFunctor3D : public OptimizableFunctorBase
 
   // assume r_1I < L && r_2I < L, compression and screening is handled outside
   inline real_type evaluateV(int Nptcl, const real_type *restrict r_12_array,
-                             const real_type r_1I,
+                             const real_type *restrict r_1I_array,
                              const real_type *restrict r_2I_array) const
   {
     constexpr real_type czero(0);
@@ -333,10 +333,11 @@ struct PolynomialFunctor3D : public OptimizableFunctorBase
     const real_type L = chalf * cutoff_radius;
     real_type val_tot = czero;
 
-#pragma omp simd aligned(r_12_array, r_2I_array) reduction(+ : val_tot)
+#pragma omp simd aligned(r_12_array,r_1I_array,r_2I_array) reduction(+:val_tot)
     for (int ptcl = 0; ptcl < Nptcl; ptcl++)
     {
       const real_type r_12 = r_12_array[ptcl];
+      const real_type r_1I = r_1I_array[ptcl];
       const real_type r_2I = r_2I_array[ptcl];
       real_type val        = czero;
       real_type r2l(cone);
@@ -437,9 +438,9 @@ struct PolynomialFunctor3D : public OptimizableFunctorBase
       hess(1, 2) = both_minus_L * hess(1, 2) + r_1I_minus_L * grad[1] +
                    r_2I_minus_L * grad[2] + val;
       hess(2, 2) = both_minus_L * hess(2, 2) + ctwo * r_1I_minus_L * grad[2];
-      grad[0] = both_minus_L * grad[0];
-      grad[1] = both_minus_L * grad[1] + r_2I_minus_L * val;
-      grad[2] = both_minus_L * grad[2] + r_1I_minus_L * val;
+      grad[0]    = both_minus_L * grad[0];
+      grad[1]    = both_minus_L * grad[1] + r_2I_minus_L * val;
+      grad[2]    = both_minus_L * grad[2] + r_1I_minus_L * val;
       val *= both_minus_L;
     }
     hess(1, 0) = hess(0, 1);
@@ -450,7 +451,8 @@ struct PolynomialFunctor3D : public OptimizableFunctorBase
 
   // assume r_1I < L && r_2I < L, compression and screening is handled outside
   inline void evaluateVGL(
-      int Nptcl, const real_type *restrict r_12_array, const real_type r_1I,
+      int Nptcl, const real_type *restrict r_12_array,
+      const real_type *restrict r_1I_array,
       const real_type *restrict r_2I_array, real_type *restrict val_array,
       real_type *restrict grad0_array, real_type *restrict grad1_array,
       real_type *restrict grad2_array, real_type *restrict hess00_array,
@@ -463,12 +465,14 @@ struct PolynomialFunctor3D : public OptimizableFunctorBase
     constexpr real_type ctwo(2);
 
     const real_type L = chalf * cutoff_radius;
-#pragma omp simd aligned(r_12_array, r_2I_array, val_array, grad0_array,       \
-                         grad1_array, grad2_array, hess00_array, hess11_array, \
-                         hess22_array, hess01_array, hess02_array)
+#pragma omp simd aligned(r_12_array, r_1I_array, r_2I_array, val_array,       \
+                         grad0_array, grad1_array, grad2_array, hess00_array, \
+                         hess11_array, hess22_array, hess01_array,            \
+                         hess02_array)
     for (int ptcl = 0; ptcl < Nptcl; ptcl++)
     {
       const real_type r_12 = r_12_array[ptcl];
+      const real_type r_1I = r_1I_array[ptcl];
       const real_type r_2I = r_2I_array[ptcl];
 
       real_type val(czero);
@@ -549,5 +553,5 @@ struct PolynomialFunctor3D : public OptimizableFunctorBase
     }
   }
 };
-}
+} // namespace qmcplusplus
 #endif
