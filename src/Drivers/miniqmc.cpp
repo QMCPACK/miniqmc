@@ -155,6 +155,7 @@ void print_help()
   app_summary() << "  miniqmc   [-hjvV] [-g \"n0 n1 n2\"] [-m meshfactor]"       << '\n';
   app_summary() << "            [-n steps] [-N substeps] [-r rmax] [-s seed]"    << '\n';
   app_summary() << "options:"                                                    << '\n';
+  app_summary() << "  -b  use reference implementations  default: off"           << '\n';
   app_summary() << "  -g  set the 3D tiling.             default: 1 1 1"         << '\n';
   app_summary() << "  -h  print help and exit"                                   << '\n';
   app_summary() << "  -j  enable three body Jastrow      default: off"           << '\n';
@@ -210,11 +211,14 @@ int main(int argc, char **argv)
   int opt;
   while(optind < argc)
   {
-    if ((opt = getopt(argc, argv, "hjvVa:c:g:m:n:N:r:s:")) != -1)
+    if ((opt = getopt(argc, argv, "bhjvVa:c:g:m:n:N:r:s:")) != -1)
     {
       switch (opt)
       {
       case 'a': tileSize = atoi(optarg); break;
+      case 'b':
+        useRef = true;
+        break;
       case 'c': // number of members per team
         team_size = atoi(optarg);
         break;
@@ -370,20 +374,15 @@ int main(int argc, char **argv)
       els.RSoA = els.R;
     }
 
-    WaveFunctionBase *wavefunction;
+    WaveFunction *wavefunction = new WaveFunction();
 
     if (useRef)
-    {
-      wavefunction =
-          new miniqmcreference::WaveFunctionRef(ions, els, random_th, enableJ3);
-    }
+      build_WaveFunction(true, *wavefunction, ions, els, random_th, enableJ3);
     else
-    {
-      wavefunction = new WaveFunction(ions, els, random_th, enableJ3);
-    }
+      build_WaveFunction(false, *wavefunction, ions, els, random_th, enableJ3);
 
     // set Rmax for ion-el distance table for PP
-    wavefunction->setRmax(Rmax);
+    els.DistTables[wavefunction->get_ei_TableID()]->setRmax(Rmax);
 
     // create pseudopp
     NonLocalPP<OHMMS_PRECISION> ecp(random_th);
@@ -484,7 +483,7 @@ int main(int argc, char **argv)
       // Compute NLPP energy using integral over spherical points
 
       ecp.randomize(rOnSphere); // pick random sphere
-      const DistanceTableData *d_ie = wavefunction->d_ie;
+      const DistanceTableData *d_ie = els.DistTables[wavefunction->get_ei_TableID()];
 
       Timers[Timer_ECP]->start();
       for (int iat = 0; iat < nions; ++iat)

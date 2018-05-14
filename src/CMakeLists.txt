@@ -169,7 +169,6 @@ ENDIF()
     Particle/ParticleSet.BC.cpp 
     Particle/DistanceTableAA.cpp
     Particle/DistanceTableAB.cpp
-    Particle/DistanceTable.cpp
     )
 
   ADD_LIBRARY(qmcbase ${PARTICLE}  ${PARTICLEIO}) 
