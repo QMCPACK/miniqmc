@@ -186,10 +186,10 @@ int main(int argc, char **argv)
     els_ref.RSoA = els_ref.R;
 
     // create tables
-    DistanceTable::add(els, DT_SOA);
-    DistanceTable::add(els_ref, DT_SOA);
-    DistanceTableData *d_ie = DistanceTable::add(ions, els_ref, DT_SOA);
-    d_ie->setRmax(Rmax);
+    els.addTable(els, DT_SOA);
+    els_ref.addTable(els_ref, DT_SOA);
+    const int ei_TableID = els_ref.addTable(ions, DT_SOA);
+    els_ref.DistTables[ei_TableID]->setRmax(Rmax);
 
     ParticlePos_t delta(nels);
 
@@ -381,12 +381,12 @@ int main(int argc, char **argv)
       int nsphere          = 0;
       for (int iat = 0; iat < nions; ++iat)
       {
-        for (int nj = 0, jmax = d_ie->nadj(iat); nj < jmax; ++nj)
+        for (int nj = 0, jmax = els_ref.DistTables[ei_TableID]->nadj(iat); nj < jmax; ++nj)
         {
-          const RealType r = d_ie->distance(iat, nj);
+          const RealType r = els_ref.DistTables[ei_TableID]->distance(iat, nj);
           if (r < Rmax)
           {
-            const int iel = d_ie->iadj(iat, nj);
+            const int iel = els_ref.DistTables[ei_TableID]->iadj(iat, nj);
             nsphere++;
             random_th.generate_uniform(&delta[0][0], nknots * 3);
             for (int k = 0; k < nknots; ++k)

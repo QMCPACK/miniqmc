@@ -184,7 +184,7 @@ struct DiracDeterminantRef : public qmcplusplus::WaveFunctionComponentBase
 {
   using ParticleSet = qmcplusplus::ParticleSet;
 
-  DiracDeterminantRef(int nels, qmcplusplus::RandomGenerator<RealType> &RNG, int First=0)
+  DiracDeterminantRef(int nels, const qmcplusplus::RandomGenerator<RealType> &RNG, int First=0)
   : FirstIndex(First), myRandom(RNG)
   {
     psiMinv.resize(nels, nels);

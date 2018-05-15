@@ -40,45 +40,26 @@ namespace qmcplusplus
 {
 /** A minimal TrialWavefunction
  */
-struct WaveFunctionBase
+
+struct WaveFunction
 {
+  friend void build_WaveFunction(bool useRef, WaveFunction &WF, ParticleSet &ions, ParticleSet &els, const RandomGenerator<QMCTraits::RealType> &RNG, bool enableJ3);
+
+  using RealType = OHMMS_PRECISION;
   using valT = OHMMS_PRECISION;
-  using posT = TinyVector<OHMMS_PRECISION, OHMMS_DIM>;
-  typedef OHMMS_PRECISION RealType;
+  using posT = TinyVector<valT, OHMMS_DIM>;
 
+  private:
+  std::vector<WaveFunctionComponentBase *> Jastrows;
+  WaveFunctionComponentBase *Det_up;
+  WaveFunctionComponentBase *Det_dn;
   valT LogValue;
-  DistanceTableData *d_ee;
-  DistanceTableData *d_ie;
 
-  inline void setRmax(valT x) { d_ie->setRmax(x); }
+  bool FirstTime, Is_built;
+  int nelup, ei_TableID;
 
-  virtual ~WaveFunctionBase() {}
-  virtual void evaluateLog(ParticleSet &P)                    = 0;
-  virtual posT evalGrad(ParticleSet &P, int iat)              = 0;
-  virtual valT ratioGrad(ParticleSet &P, int iat, posT &grad) = 0;
-  virtual valT ratio(ParticleSet &P, int iat)                 = 0;
-  virtual void acceptMove(ParticleSet &P, int iat)            = 0;
-  virtual void restore(int iat)                               = 0;
-  virtual void evaluateGL(ParticleSet &P)                     = 0;
-};
-
-struct WaveFunction : public WaveFunctionBase
-{
-  using J1OrbType = OneBodyJastrow<BsplineFunctor<valT>>;
-  using J2OrbType = TwoBodyJastrow<BsplineFunctor<valT>>;
-  using J3OrbType = ThreeBodyJastrow<PolynomialFunctor3D>;
-  using DetType   = DiracDeterminant;
-
-  bool FirstTime;
-  J1OrbType *J1;
-  J2OrbType *J2;
-  J3OrbType *J3;
-  int nelup;
-  DetType *Det_up;
-  DetType *Det_dn;
-
-  WaveFunction(ParticleSet &ions, ParticleSet &els,
-               RandomGenerator<RealType> &RNG, bool enableJ3);
+  public:
+  WaveFunction(): FirstTime(true), Is_built(false), nelup(0), ei_TableID(1), Det_up(nullptr), Det_dn(nullptr), LogValue(0.0) { }
   ~WaveFunction();
   void evaluateLog(ParticleSet &P);
   posT evalGrad(ParticleSet &P, int iat);
@@ -87,43 +68,12 @@ struct WaveFunction : public WaveFunctionBase
   void acceptMove(ParticleSet &P, int iat);
   void restore(int iat);
   void evaluateGL(ParticleSet &P);
+  int get_ei_TableID() const {return ei_TableID;}
+  valT getLogValue() const {return LogValue;}
 };
+
+void build_WaveFunction(bool useRef, WaveFunction &WF, ParticleSet &ions, ParticleSet &els, const RandomGenerator<QMCTraits::RealType> &RNG, bool enableJ3);
 
 } // qmcplusplus
-
-namespace miniqmcreference
-{
-/** A minimial TrialWaveFunction - the reference version.
- */
-using namespace qmcplusplus;
-struct WaveFunctionRef : public qmcplusplus::WaveFunctionBase
-{
-
-  using J1OrbType = OneBodyJastrow<BsplineFunctor<valT>>;
-  using J2OrbType = TwoBodyJastrow<BsplineFunctor<valT>>;
-  using J3OrbType = ThreeBodyJastrow<PolynomialFunctor3D>;
-  using DetType   = DiracDeterminantRef;
-
-  bool FirstTime;
-  J1OrbType *J1;
-  J2OrbType *J2;
-  J3OrbType *J3;
-  int nelup;
-  DetType *Det_up;
-  DetType *Det_dn;
-  PooledData<valT> Buffer;
-
-  WaveFunctionRef(ParticleSet &ions, ParticleSet &els,
-                  RandomGenerator<RealType> &RNG, bool enableJ3);
-  ~WaveFunctionRef();
-  void evaluateLog(ParticleSet &P);
-  posT evalGrad(ParticleSet &P, int iat);
-  valT ratioGrad(ParticleSet &P, int iat, posT &grad);
-  valT ratio(ParticleSet &P, int iat);
-  void acceptMove(ParticleSet &P, int iat);
-  void restore(int iat);
-  void evaluateGL(ParticleSet &P);
-};
-} // miniqmcreference
 
 #endif

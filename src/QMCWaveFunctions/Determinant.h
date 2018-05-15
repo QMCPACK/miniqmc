@@ -179,7 +179,7 @@ void checkDiff(const MT1 &a, const MT2 &b, const std::string &tag)
 
 struct DiracDeterminant : public WaveFunctionComponentBase
 {
-  DiracDeterminant(int nels, RandomGenerator<RealType> &RNG, int First=0)
+  DiracDeterminant(int nels, const RandomGenerator<RealType> &RNG, int First=0)
   : FirstIndex(First), myRandom(RNG)
   {
     psiMinv.resize(nels, nels);

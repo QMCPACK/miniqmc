@@ -25,7 +25,12 @@ SET(GITREV_BARE_TMP git-rev-tmp.h)
 SET(GITREV_FILE ${CMAKE_BINARY_DIR}/src/${GITREV_BARE_FILE})
 SET(GITREV_TMP ${CMAKE_BINARY_DIR}/src/${GITREV_BARE_TMP})
 
-IF (GIT_FOUND AND IS_GIT_PROJECT)
+# Always clean up git-rev-tmp.h file when cmake is run
+EXECUTE_PROCESS(
+  COMMAND ${CMAKE_COMMAND} -E remove ${GITREV_TMP}
+)
+
+IF (IS_GIT_PROJECT)
   # The following custom command picks up changes to the git revision information
   # every time the project is rebuilt. Even if the repositiory is updated (git pull)
   # without re-running cmake. It also appends '-dirty' to the commit hash if there are
@@ -40,6 +45,25 @@ IF (GIT_FOUND AND IS_GIT_PROJECT)
   # Apparently custom commands need to be defined where the output is used.
   # If this in the main CMakeLists.txt it does not work.
 
+  # Sed flags were once an issue and some HPC have old sed's
+  set(SED_FLAG "-E")
+  EXECUTE_PROCESS(COMMAND "sed" ${SED_FLAG} "s/\"/\\\\\"/g" "<${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists.txt"
+    OUTPUT_QUIET
+    ERROR_VARIABLE SED_ERROR)
+  if ( SED_ERROR MATCHES ".*invalid.*" )
+    set(SED_FLAG "-r")
+    EXECUTE_PROCESS(COMMAND "sed" ${SED_FLAG} "s/\"/\\\\\"/g" "<${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists.txt"
+      OUTPUT_QUIET ERROR_QUIET
+      ERROR_VARIABLE SED_ERROR)
+    if ( SED_ERROR MATCHES ".*invalid.*" )
+      MESSAGE(WARNING "Your system supports neither the sed -E or -r flag, git revision information will not be included in output")
+    else ( SED_ERROR MATCHES ".*invalid.*" )
+      MESSAGE("sed supports -r")
+    endif ( SED_ERROR MATCHES ".*invalid.*" )
+  else ( SED_ERROR MATCHES ".*invalid.*" )
+    MESSAGE("sed supports -E")
+  endif ( SED_ERROR MATCHES ".*invalid.*" )
+
   ADD_CUSTOM_COMMAND(
     OUTPUT ${GITREV_TMP}
     COMMAND ${CMAKE_COMMAND} -E echo_append "#define GIT_BRANCH_RAW " > ${GITREV_TMP}
@@ -52,8 +76,9 @@ IF (GIT_FOUND AND IS_GIT_PROJECT)
     COMMAND ${GIT_EXECUTABLE} log -1 --format=%ad >> ${GITREV_TMP}
     COMMAND ${CMAKE_COMMAND} -E echo >> ${GITREV_TMP}
     COMMAND ${CMAKE_COMMAND} -E echo_append "#define GIT_COMMIT_SUBJECT_RAW \"" >> ${GITREV_TMP}
-    COMMAND ${GIT_EXECUTABLE} log -1 --format=%s | sed -E "s/\"/\\\\\"/g" | tr -d '\\n' >> ${GITREV_TMP}
+    COMMAND ${GIT_EXECUTABLE} log -1 --format=%s | sed ${SED_FLAG} "s/\"/\\\\\"/g" | tr -d '\\n' >> ${GITREV_TMP}
     COMMAND ${CMAKE_COMMAND} -E echo_append "\"" >> ${GITREV_TMP}
+    COMMAND ${CMAKE_COMMAND} -E echo >> ${GITREV_TMP}
     COMMAND ${CMAKE_COMMAND} -E copy_if_different ${GITREV_TMP} ${GITREV_FILE}
     COMMAND ${CMAKE_COMMAND} -E remove ${GITREV_TMP}
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
@@ -100,21 +125,6 @@ ELSE()
 ENDIF()
 
 
-####################################
-# create liboompi
-####################################
-#IF(HAVE_OOMPI)
-#  CONFIGURE_FILE(${qmcpack_SOURCE_DIR}/src/oompi-config.h.cmake.in 
-#    ${qmcpack_BINARY_DIR}/src/oompi-config.h)
-#  INCLUDE_DIRECTORIES(${qmcpack_SOURCE_DIR}/src/OOMPI)
-#  SUBDIRS(OOMPI)
-#  IF ( MPI_LIBRARY )
-#     SET(MPI_LIBRARY oompi ${MPI_LIBRARY})
-#  ELSE()
-#     SET(MPI_LIBRARY oompi )
-#  ENDIF()
-#ENDIF(HAVE_OOMPI)
-
   ####################################
   # create libqmcutil
   ####################################
@@ -158,19 +168,7 @@ ENDIF()
     Particle/ParticleSet.BC.cpp 
     Particle/DistanceTableAA.cpp
     Particle/DistanceTableAB.cpp
-    Particle/DistanceTable.cpp
     )
-
-
-  # IF(QMC_BUILD_LEVEL GREATER 2)
-  #   IF(NOT QMC_COMPLEX)
-  #     SET(PARTICLE ${PARTICLE} Particle/Bead_ParticleSet.cpp )
-  #   ENDIF(NOT QMC_COMPLEX)
-  # ENDIF(QMC_BUILD_LEVEL GREATER 2)
-
-  #SET(PARTICLEIO
-  #  ParticleIO/ParticleIOUtility.cpp
-  #  )
 
   ADD_LIBRARY(qmcbase ${PARTICLE}  ${PARTICLEIO}) 
 
@@ -183,7 +181,7 @@ ENDIF()
 
   if(QMC_BUILD_LEVEL GREATER 4)
 
-    MESSAGE(STATUS "Minimal build: only minapp drivers")
+    MESSAGE(STATUS "Minimal build: only miniapp drivers")
     SUBDIRS(Drivers)
 
   else() #{{{
