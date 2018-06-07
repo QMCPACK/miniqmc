@@ -162,8 +162,8 @@ int main(int argc, char **argv)
     tileSize              = (tileSize > 0) ? tileSize : norb;
     nTiles                = norb / tileSize;
 
-    const size_t SPO_coeff_size =
-        (size_t)norb * (nx + 3) * (ny + 3) * (nz + 3) * sizeof(RealType);
+    const size_t SPO_coeff_size = static_cast<size_t>(norb)
+      * (nx + 3) * (ny + 3) * (nz + 3) * sizeof(RealType);
     const double SPO_coeff_size_MB = SPO_coeff_size * 1.0 / 1024 / 1024;
 
     app_summary() << "Number of orbitals/splines = " << norb << endl
