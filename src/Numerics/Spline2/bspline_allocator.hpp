@@ -116,7 +116,7 @@ void Allocator::setCoefficientsForOneOrbital(int i, Array<T,3> &coeff, typename 
         intptr_t xs = spline->x_stride;
         intptr_t ys = spline->y_stride;
         intptr_t zs = spline->z_stride;
-        spline->coefs[iz*zs + iy*ys + iz*zs + i] = coeff(ix,iy,iz);
+        spline->coefs[ix*xs + iy*ys + iz*zs + i] = coeff(ix,iy,iz);
       }
     }
   }
