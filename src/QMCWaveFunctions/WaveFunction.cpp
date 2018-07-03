@@ -20,6 +20,18 @@
 namespace qmcplusplus
 {
 
+enum WaveFunctionTimers
+{
+  Timer_Det,
+  Timer_GL,
+};
+
+TimerNameList_t<WaveFunctionTimers> WaveFunctionTimerNames = {
+  {Timer_Det, "Determinant"},
+  {Timer_GL, "Kinetic Energy"}
+};
+
+
 void build_WaveFunction(bool useRef, WaveFunction &WF, ParticleSet &ions, ParticleSet &els, const RandomGenerator<QMCTraits::RealType> &RNG, bool enableJ3)
 {
   using valT = WaveFunction::valT;
@@ -108,6 +120,8 @@ void build_WaveFunction(bool useRef, WaveFunction &WF, ParticleSet &ions, Partic
     }
   }
 
+  WF.setupTimers();
+
   WF.Is_built = true;
 }
 
@@ -119,6 +133,14 @@ WaveFunction::~WaveFunction()
     delete Det_dn;
     for(size_t i=0; i<Jastrows.size(); i++)
       delete Jastrows[i];
+  }
+}
+
+void WaveFunction::setupTimers()
+{
+  setup_timers(timers, WaveFunctionTimerNames, timer_level_coarse);
+  for (int i = 0; i < Jastrows.size(); i++) {
+    jastrow_timers.push_back(TimerManager.createTimer(Jastrows[i]->WaveFunctionComponentName, timer_level_coarse));
   }
 }
 
@@ -139,53 +161,87 @@ void WaveFunction::evaluateLog(ParticleSet &P)
 
 WaveFunction::posT WaveFunction::evalGrad(ParticleSet &P, int iat)
 {
+  timers[Timer_Det]->start();
   posT grad_iat = ( iat<nelup ? Det_up->evalGrad(P, iat) : Det_dn->evalGrad(P, iat) );
-  for(size_t i=0; i<Jastrows.size(); i++)
+  timers[Timer_Det]->stop();
+
+  for(size_t i=0; i<Jastrows.size(); i++) {
+    jastrow_timers[i]->start();
     grad_iat += Jastrows[i]->evalGrad(P, iat);
+    jastrow_timers[i]->stop();
+  }
   return grad_iat;
 }
 
 WaveFunction::valT WaveFunction::ratioGrad(ParticleSet &P, int iat,
                                                posT &grad)
 {
+  timers[Timer_Det]->start();
   valT ratio = ( iat<nelup ? Det_up->ratioGrad(P, iat, grad) : Det_dn->ratioGrad(P, iat, grad) );
-  for(size_t i=0; i<Jastrows.size(); i++)
+  timers[Timer_Det]->stop();
+
+  for(size_t i=0; i<Jastrows.size(); i++) {
+    jastrow_timers[i]->start();
     ratio *= Jastrows[i]->ratioGrad(P, iat, grad);
+    jastrow_timers[i]->stop();
+  }
   return ratio;
 }
 
 WaveFunction::valT WaveFunction::ratio(ParticleSet &P, int iat)
 {
+
+  timers[Timer_Det]->start();
   valT ratio = ( iat<nelup ? Det_up->ratio(P, iat) : Det_dn->ratio(P, iat) );
+  timers[Timer_Det]->stop();
+
   for(size_t i=0; i<Jastrows.size(); i++)
+  {
+    jastrow_timers[i]->start();
     ratio *= Jastrows[i]->ratio(P, iat);
+    jastrow_timers[i]->stop();
+  }
   return ratio;
 }
 
 void WaveFunction::acceptMove(ParticleSet &P, int iat)
 {
+  timers[Timer_Det]->start();
   if(iat<nelup)
     Det_up->acceptMove(P, iat);
   else
     Det_dn->acceptMove(P, iat);
+  timers[Timer_Det]->stop();
+
   for(size_t i=0; i<Jastrows.size(); i++)
+  {
+    jastrow_timers[i]->start();
     Jastrows[i]->acceptMove(P, iat);
+    jastrow_timers[i]->stop();
+  }
 }
 
 void WaveFunction::restore(int iat) {}
 
 void WaveFunction::evaluateGL(ParticleSet &P)
 {
+  ScopedTimer local_timer(timers[Timer_GL]);
+
   constexpr valT czero(0);
   P.G = czero;
   P.L = czero;
+  timers[Timer_Det]->start();
   Det_up->evaluateGL(P, P.G, P.L);
   Det_dn->evaluateGL(P, P.G, P.L);
   LogValue = Det_up->LogValue + Det_dn->LogValue;
+  timers[Timer_Det]->stop();
+
   for(size_t i=0; i<Jastrows.size(); i++)
   {
+    jastrow_timers[i]->start();
     Jastrows[i]->evaluateGL(P, P.G, P.L);
     LogValue += Jastrows[i]->LogValue;
+    jastrow_timers[i]->stop();
   }
 }
 } // qmcplusplus
