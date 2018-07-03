@@ -43,16 +43,35 @@
 namespace qmcplusplus
 {
 
+enum DistanceTimers
+{
+  Timer_makeMove,
+  Timer_moveDone,
+  Timer_setActive,
+  Timer_acceptMove
+};
+
+TimerNameList_t<DistanceTimers> DistanceTimerNames
+{
+  {Timer_makeMove, "Make move"},
+  {Timer_moveDone, "Move done"},
+  {Timer_setActive, "Set active"},
+  {Timer_acceptMove, "Accept move"},
+};
+
 ParticleSet::ParticleSet()
     : UseBoundBox(true), IsGrouped(true), myName("none"), SameMass(true),
       myTwist(0.0), activePtcl(-1)
 {
+  setup_timers(timers, DistanceTimerNames, timer_level_coarse);
 }
 
 ParticleSet::ParticleSet(const ParticleSet &p)
     : UseBoundBox(p.UseBoundBox), IsGrouped(p.IsGrouped),
       mySpecies(p.getSpeciesSet()), SameMass(true), myTwist(0.0), activePtcl(-1)
 {
+  //distance_timer = TimerManager.createTimer("Distance Tables", timer_level_coarse);
+  setup_timers(timers, DistanceTimerNames, timer_level_coarse);
   // initBase();
   assign(p); // only the base is copied, assumes that other properties are not
              // assignable
@@ -285,6 +304,8 @@ void ParticleSet::update(bool skipSK)
 
 void ParticleSet::setActive(int iat)
 {
+  ScopedTimer local_timer(timers[Timer_setActive]);
+
   for (size_t i = 0, n = DistTables.size(); i < n; i++)
     DistTables[i]->evaluate(*this, iat);
 }
@@ -300,6 +321,8 @@ void ParticleSet::setActive(int iat)
 bool ParticleSet::makeMoveAndCheck(Index_t iat,
                                    const SingleParticlePos_t &displ)
 {
+  ScopedTimer local_timer(timers[Timer_makeMove]);
+
   activePtcl = iat;
   activePos  = R[iat] + displ;
   if (UseBoundBox)
@@ -336,6 +359,8 @@ bool ParticleSet::makeMoveAndCheck(Index_t iat,
 void ParticleSet::makeMoveOnSphere(Index_t iat,
                                    const SingleParticlePos_t &displ)
 {
+  ScopedTimer local_timer(timers[Timer_makeMove]);
+
   activePtcl = iat;
   activePos  = R[iat] + displ;
   for (int i = 0; i < DistTables.size(); ++i)
@@ -350,6 +375,8 @@ void ParticleSet::makeMoveOnSphere(Index_t iat,
  */
 void ParticleSet::acceptMove(Index_t iat)
 {
+  ScopedTimer local_timer(timers[Timer_acceptMove]);
+
   if (iat == activePtcl)
   {
     // Update position + distance-table
@@ -372,6 +399,8 @@ void ParticleSet::rejectMove(Index_t iat) { activePtcl = -1; }
 
 void ParticleSet::donePbyP(bool skipSK)
 {
+  ScopedTimer local_timer(timers[Timer_moveDone]);
+
   for (size_t i = 0, nt = DistTables.size(); i < nt; i++)
     DistTables[i]->donePbyP();
   activePtcl = -1;

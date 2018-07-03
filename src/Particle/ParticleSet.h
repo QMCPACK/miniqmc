@@ -35,6 +35,7 @@
 #include <Particle/Walker.h>
 #include <Utilities/SpeciesSet.h>
 #include <Utilities/PooledData.h>
+#include <Utilities/NewTimer.h>
 #include <Numerics/Containers.h>
 
 namespace qmcplusplus
@@ -142,6 +143,7 @@ public:
 
   /// current MC step
   int current_step;
+
 
   /// default constructor
   ParticleSet();
@@ -327,6 +329,9 @@ protected:
 
   /// array to handle a group of distinct particles per species
   ParticleIndex_t SubPtcl;
+
+  /// Timer
+  TimerList_t timers;
 };
 }
 #endif

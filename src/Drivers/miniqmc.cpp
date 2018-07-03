@@ -123,29 +123,21 @@ enum MiniQMCTimers
 {
   Timer_Total,
   Timer_Diffusion,
-  Timer_GL,
   Timer_ECP,
   Timer_Value,
   Timer_evalGrad,
   Timer_ratioGrad,
   Timer_Update,
-  Timer_Wavefunction,
-  Timer_DT,
-  Timer_SPO
 };
 
 TimerNameList_t<MiniQMCTimers> MiniQMCTimerNames = {
     {Timer_Total, "Total"},
     {Timer_Diffusion, "Diffusion"},
-    {Timer_GL, "Wavefuntion GL"},
     {Timer_ECP, "Pseudopotential"},
     {Timer_Value, "Value"},
     {Timer_evalGrad, "Current Gradient"},
     {Timer_ratioGrad, "New Gradient"},
     {Timer_Update, "Update"},
-    {Timer_Wavefunction, "Wavefunction"},
-    {Timer_SPO, "Single-Particle Orbitals"},
-    {Timer_DT, "Distance Tables"},
 };
 
 void print_help()
@@ -417,35 +409,25 @@ int main(int argc, char **argv)
         for (int iel = 0; iel < nels; ++iel)
         {
           // Operate on electron with index iel
-          Timers[Timer_DT]->start();
           els.setActive(iel);
-          Timers[Timer_DT]->stop();
           // Compute gradient at the current position
           Timers[Timer_evalGrad]->start();
-          Timers[Timer_Wavefunction]->start();
           PosType grad_now = wavefunction->evalGrad(els, iel);
-          Timers[Timer_Wavefunction]->stop();
           Timers[Timer_evalGrad]->stop();
 
           // Construct trial move
           PosType dr = sqrttau * delta[iel];
-          Timers[Timer_DT]->start();
           bool isValid = els.makeMoveAndCheck(iel, dr);
-          Timers[Timer_DT]->stop();
 
           if (!isValid) continue;
 
           // Compute gradient at the trial position
           Timers[Timer_ratioGrad]->start();
 
-          Timers[Timer_Wavefunction]->start();
           PosType grad_new;
           wavefunction->ratioGrad(els, iel, grad_new);
-          Timers[Timer_Wavefunction]->stop();
 
-          Timers[Timer_SPO]->start();
           spo.evaluate_vgh(els.R[iel]);
-          Timers[Timer_SPO]->stop();
 
           Timers[Timer_ratioGrad]->stop();
 
@@ -456,9 +438,7 @@ int main(int argc, char **argv)
             Timers[Timer_Update]->start();
             wavefunction->acceptMove(els, iel);
             Timers[Timer_Update]->stop();
-            Timers[Timer_DT]->start();
             els.acceptMove(iel);
-            Timers[Timer_DT]->stop();
             my_accepted++;
           }
           else
@@ -469,14 +449,10 @@ int main(int argc, char **argv)
         } // iel
       }   // substeps
 
-      Timers[Timer_DT]->start();
       els.donePbyP();
-      Timers[Timer_DT]->stop();
 
       // evaluate Kinetic Energy
-      Timers[Timer_GL]->start();
       wavefunction->evaluateGL(els);
-      Timers[Timer_GL]->stop();
 
       Timers[Timer_Diffusion]->stop();
 
@@ -500,19 +476,13 @@ int main(int argc, char **argv)
             {
               PosType deltar(r * rOnSphere[k] - dr);
 
-              Timers[Timer_DT]->start();
               els.makeMoveOnSphere(iel, deltar);
-              Timers[Timer_DT]->stop();
 
               Timers[Timer_Value]->start();
 
-              Timers[Timer_SPO]->start();
               spo.evaluate_v(els.R[iel]);
-              Timers[Timer_SPO]->stop();
 
-              Timers[Timer_Wavefunction]->start();
               wavefunction->ratio(els, iel);
-              Timers[Timer_Wavefunction]->stop();
 
               Timers[Timer_Value]->stop();
 
