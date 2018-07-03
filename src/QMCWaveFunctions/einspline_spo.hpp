@@ -99,6 +99,7 @@ struct einspline_spo
     for (int i = 0, t = firstBlock; i < nBlocks; ++i, ++t)
       einsplines[i] = in.einsplines[t];
     resize();
+    timer = TimerManager.createTimer("Single-Particle Orbitals", timer_level_coarse);
   }
 
   /// destructors
