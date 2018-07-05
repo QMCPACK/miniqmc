@@ -265,10 +265,10 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
 
   IF(QMC_USE_KOKKOS)
     SET(KOKKOS_PREFIX "" CACHE PATH "Path to Kokkos install")
-    MESSAGE("searching in ${KOKKOS_PREFIX}/lib/CMake/Kokkos")
-    FIND_PACKAGE(Kokkos PATHS "${KOKKOS_PREFIX}/lib/CMake/Kokkos")
+    MESSAGE("searching in ${KOKKOS_PREFIX}/")
+    ADD_SUBDIRECTORY(${KOKKOS_PREFIX} ${qmcpack_BINARY_DIR}/kokkos)
+    INCLUDE_DIRECTORIES(${Kokkos_INCLUDE_DIRS_RET})
     LINK_LIBRARIES(kokkos)
-    INCLUDE_DIRECTORIES(${KOKKOS_PREFIX}/include)
   ENDIF()
 
   #------------------------------------
@@ -277,7 +277,7 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
   IF (QMC_USE_KOKKOS)
     #leave the flags alone, NVCC etc. don't accept the GNU flags
     MESSAGE("leaving flags alone")
-  ELSEIF( ${COMPILER} MATCHES "IBM" )
+  IF( ${COMPILER} MATCHES "IBM" )
     INCLUDE(${PROJECT_CMAKE}/IBMCompilers.cmake)
   ELSEIF( ${COMPILER} MATCHES "Intel" )
     INCLUDE(${PROJECT_CMAKE}/IntelCompilers.cmake)
