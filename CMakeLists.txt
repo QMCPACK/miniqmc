@@ -87,7 +87,7 @@ ELSE(QMC_MIXED_PRECISION)
 ENDIF(QMC_MIXED_PRECISION)
 MESSAGE("   Base precision = ${OHMMS_PRECISION}")
 MESSAGE("   Full precision = ${OHMMS_PRECISION_FULL}")
-OPTION(QMC_USE_KOKKOS "Whether to use Kokkos" OFF)
+SET(QMC_USE_KOKKOS 0 CACHE BOOL "Whether to use Kokkos")
 
 # Code coverage
 SET(GCOV_SUPPORTED FALSE)
@@ -265,10 +265,10 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
 
   IF(QMC_USE_KOKKOS)
     SET(KOKKOS_PREFIX "" CACHE PATH "Path to Kokkos install")
-    MESSAGE("searching in ${KOKKOS_PREFIX}/lib/CMake/Kokkos")
-    FIND_PACKAGE(Kokkos PATHS "${KOKKOS_PREFIX}/lib/CMake/Kokkos")
+    MESSAGE("searching in ${KOKKOS_PREFIX}/")
+    ADD_SUBDIRECTORY(${KOKKOS_PREFIX} ${qmcpack_BINARY_DIR}/kokkos)
+    INCLUDE_DIRECTORIES(${Kokkos_INCLUDE_DIRS_RET})
     LINK_LIBRARIES(kokkos)
-    INCLUDE_DIRECTORIES(${KOKKOS_PREFIX}/include)
   ENDIF()
 
   #------------------------------------
