@@ -87,7 +87,7 @@ ELSE(QMC_MIXED_PRECISION)
 ENDIF(QMC_MIXED_PRECISION)
 MESSAGE("   Base precision = ${OHMMS_PRECISION}")
 MESSAGE("   Full precision = ${OHMMS_PRECISION_FULL}")
-OPTION(QMC_USE_KOKKOS "Whether to use Kokkos" OFF)
+SET(QMC_USE_KOKKOS 0 CACHE BOOL "Whether to use Kokkos")
 
 # Code coverage
 SET(GCOV_SUPPORTED FALSE)
@@ -277,7 +277,7 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
   IF (QMC_USE_KOKKOS)
     #leave the flags alone, NVCC etc. don't accept the GNU flags
     MESSAGE("leaving flags alone")
-  IF( ${COMPILER} MATCHES "IBM" )
+  ELSEIF( ${COMPILER} MATCHES "IBM" )
     INCLUDE(${PROJECT_CMAKE}/IBMCompilers.cmake)
   ELSEIF( ${COMPILER} MATCHES "Intel" )
     INCLUDE(${PROJECT_CMAKE}/IntelCompilers.cmake)
