@@ -46,6 +46,10 @@ inline omp_int_t omp_get_max_threads() { return 1; }
 inline omp_int_t omp_get_num_threads() { return 1; }
 #endif
 
+#if defined(QMC_USE_KOKKOS)
+#include <Kokkos_Core.hpp>
+#endif
+
 // define empty DEBUG_MEMORY
 #define DEBUG_MEMORY(msg)
 // uncomment this out to trace the call tree of destructors

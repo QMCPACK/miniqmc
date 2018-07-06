@@ -187,6 +187,8 @@
 #cmakedefine BUILD_FCIQMC @BUILD_FCIQMC@
 
 #cmakedefine DEBUG_PSIBUFFER_ON @DEBUG_PSIBUFFER_ON@
+/* Enable Kokkos */
+#cmakedefine QMC_USE_KOKKOS @QMC_USE_KOKKOS@
 
 /* Disable trace manager and associated features */
 #cmakedefine DISABLE_TRACEMANAGER @DISABLE_TRACEMANAGER@
