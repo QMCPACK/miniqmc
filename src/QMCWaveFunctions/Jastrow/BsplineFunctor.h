@@ -55,7 +55,6 @@ template <class T> struct BsplineFunctor : public OptimizableFunctorBase
   real_type Y, dY, d2Y;
   // Stores the derivatives w.r.t. SplineCoefs
   // of the u, du/dr, and d2u/dr2
-  std::vector<TinyVector<real_type, 3>> SplineDerivs;
   std::vector<real_type> Parameters;
   std::vector<std::string> ParameterNames;
   std::string elementType, pairType;
@@ -100,7 +99,6 @@ template <class T> struct BsplineFunctor : public OptimizableFunctorBase
     DeltaRInv    = 1.0 / DeltaR;
     Parameters.resize(n);
     SplineCoefs.resize(numCoefs);
-    SplineDerivs.resize(numCoefs);
   }
 
   void reset()
@@ -218,47 +216,6 @@ template <class T> struct BsplineFunctor : public OptimizableFunctorBase
     // clang-format on
   }
 
-  inline bool evaluateDerivatives(real_type r,
-                                  std::vector<TinyVector<real_type, 3>> &derivs)
-  {
-    if (r >= cutoff_radius) return false;
-    r *= DeltaRInv;
-    real_type ipart, t;
-    t     = std::modf(r, &ipart);
-    int i = (int)ipart;
-    real_type tp[4];
-    tp[0] = t * t * t;
-    tp[1] = t * t;
-    tp[2] = t;
-    tp[3] = 1.0;
-
-    // clang-format off
-    SplineDerivs[0] = TinyVector<real_type,3>(0.0);
-    // d/dp_i u(r)
-    SplineDerivs[i+0][0] = A[ 0]*tp[0] + A[ 1]*tp[1] + A[ 2]*tp[2] + A[ 3]*tp[3];
-    SplineDerivs[i+1][0] = A[ 4]*tp[0] + A[ 5]*tp[1] + A[ 6]*tp[2] + A[ 7]*tp[3];
-    SplineDerivs[i+2][0] = A[ 8]*tp[0] + A[ 9]*tp[1] + A[10]*tp[2] + A[11]*tp[3];
-    SplineDerivs[i+3][0] = A[12]*tp[0] + A[13]*tp[1] + A[14]*tp[2] + A[15]*tp[3];
-    // d/dp_i du/dr
-    SplineDerivs[i+0][1] = DeltaRInv * (dA[ 1]*tp[1] + dA[ 2]*tp[2] + dA[ 3]*tp[3]);
-    SplineDerivs[i+1][1] = DeltaRInv * (dA[ 5]*tp[1] + dA[ 6]*tp[2] + dA[ 7]*tp[3]);
-    SplineDerivs[i+2][1] = DeltaRInv * (dA[ 9]*tp[1] + dA[10]*tp[2] + dA[11]*tp[3]);
-    SplineDerivs[i+3][1] = DeltaRInv * (dA[13]*tp[1] + dA[14]*tp[2] + dA[15]*tp[3]);
-    // d/dp_i d2u/dr2
-    SplineDerivs[i+0][2] = DeltaRInv * DeltaRInv * (d2A[ 2]*tp[2] + d2A[ 3]*tp[3]);
-    SplineDerivs[i+1][2] = DeltaRInv * DeltaRInv * (d2A[ 6]*tp[2] + d2A[ 7]*tp[3]);
-    SplineDerivs[i+2][2] = DeltaRInv * DeltaRInv * (d2A[10]*tp[2] + d2A[11]*tp[3]);
-    SplineDerivs[i+3][2] = DeltaRInv * DeltaRInv * (d2A[14]*tp[2] + d2A[15]*tp[3]);
-    // clang-format on
-
-    int imin = std::max(i, 1);
-    int imax = std::min(i + 4, NumParams + 1);
-    for (int n = imin; n < imax; ++n)
-      derivs[n - 1] = SplineDerivs[n];
-    derivs[1] += SplineDerivs[0];
-
-    return true;
-  }
 };
 
 template <typename T>
