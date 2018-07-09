@@ -20,6 +20,7 @@
 #ifndef QMCPLUSPLUS_EINSPLINE_SPO_HPP
 #define QMCPLUSPLUS_EINSPLINE_SPO_HPP
 #include <Utilities/Configuration.h>
+#include <Utilities/NewTimer.h>
 #include <Particle/ParticleSet.h>
 #include <Numerics/Spline2/bspline_allocator.hpp>
 #include <Numerics/Spline2/MultiBsplineRef.hpp>
@@ -74,10 +75,15 @@ struct einspline_spo
   OMPVector<T*> hess_shadows;
   OMPVector<OMPTinyVector<T, 3> > u_shadows;
 
+
+  /// Timer
+  NewTimer *timer;
+
   /// default constructor
   einspline_spo()
       : nBlocks(0), nSplines(0), firstBlock(0), lastBlock(0), Owner(false)
   {
+    timer = TimerManager.createTimer("Single-Particle Orbitals", timer_level_coarse);
   }
   /// disable copy constructor
   einspline_spo(const einspline_spo &in) = delete;
@@ -114,6 +120,7 @@ struct einspline_spo
 #endif
     }
     resize();
+    timer = TimerManager.createTimer("Single-Particle Orbitals", timer_level_coarse);
   }
 
   /// destructors
@@ -188,6 +195,8 @@ struct einspline_spo
   /** evaluate psi */
   inline void evaluate_v(const pos_type &p)
   {
+    ScopedTimer local_timer(timer);
+
     auto u = Lattice.toUnit_floor(p);
     for (int i = 0; i < nBlocks; ++i)
       compute_engine.evaluate_v(einsplines[i], u[0], u[1], u[2], psi[i].data(), nSplinesPerBlock);
@@ -226,6 +235,8 @@ struct einspline_spo
   /** evaluate psi, grad and hess */
   inline void evaluate_vgh(const pos_type &p)
   {
+    ScopedTimer local_timer(timer);
+
     auto u = Lattice.toUnit_floor(p);
     for (int i = 0; i < nBlocks; ++i)
       compute_engine.evaluate_vgh(einsplines[i], u[0], u[1], u[2],

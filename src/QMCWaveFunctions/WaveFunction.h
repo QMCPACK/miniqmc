@@ -24,6 +24,7 @@
 #define QMCPLUSPLUS_WAVEFUNCTIONS_H
 #include <Utilities/Configuration.h>
 #include <Utilities/RandomGenerator.h>
+#include <Utilities/NewTimer.h>
 #include <Particle/DistanceTable.h>
 #include <QMCWaveFunctions/Determinant.h>
 #include <QMCWaveFunctions/DeterminantRef.h>
@@ -58,8 +59,11 @@ struct WaveFunction
   bool FirstTime, Is_built;
   int nelup, ei_TableID;
 
+  TimerList_t timers;
+  TimerList_t jastrow_timers;
+
   public:
-  WaveFunction(): FirstTime(true), Is_built(false), nelup(0), ei_TableID(1), Det_up(nullptr), Det_dn(nullptr), LogValue(0.0) { }
+  WaveFunction(): FirstTime(true), Is_built(false), nelup(0), ei_TableID(1), Det_up(nullptr), Det_dn(nullptr), LogValue(0.0) {}
   ~WaveFunction();
   void evaluateLog(ParticleSet &P);
   posT evalGrad(ParticleSet &P, int iat);
@@ -70,6 +74,7 @@ struct WaveFunction
   void evaluateGL(ParticleSet &P);
   int get_ei_TableID() const {return ei_TableID;}
   valT getLogValue() const {return LogValue;}
+  void setupTimers();
 };
 
 void build_WaveFunction(bool useRef, WaveFunction &WF, ParticleSet &ions, ParticleSet &els, const RandomGenerator<QMCTraits::RealType> &RNG, bool enableJ3);
