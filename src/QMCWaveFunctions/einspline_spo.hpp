@@ -36,9 +36,9 @@ struct einspline_spo
   /// define the einsplie data object type
   using spline_type = typename bspline_traits<T, 3>::SplineType;
   using pos_type        = TinyVector<T, 3>;
-  using vContainer_type = aligned_vector<T>;
-  using gContainer_type = VectorSoAContainer<T, 3>;
-  using hContainer_type = VectorSoAContainer<T, 6>;
+  using vContainer_type = Kokkos::View<T*>;
+  using gContainer_type = Kokkos::View<T*[3],Kokkos::LayoutLeft>;
+  using hContainer_type = Kokkos::View<T*[6],Kokkos::LayoutLeft>;
   using lattice_type    = CrystalLattice<T, 3>;
 
   /// number of blocks
@@ -59,10 +59,10 @@ struct einspline_spo
   /// compute engine
   compute_engine_type compute_engine;
 
-  aligned_vector<spline_type *> einsplines;
-  aligned_vector<vContainer_type> psi;
-  aligned_vector<gContainer_type> grad;
-  aligned_vector<hContainer_type> hess;
+  Kokkos::View<spline_type *> einsplines;
+  Kokkos::View<vContainer_type*> psi;
+  Kokkos::View<gContainer_type*> grad;
+  Kokkos::View<hContainer_type*> hess;
 
 
   /// Timer
@@ -95,9 +95,10 @@ struct einspline_spo
     firstBlock       = nBlocks * member_id;
     lastBlock        = std::min(in.nBlocks, nBlocks * (member_id + 1));
     nBlocks          = lastBlock - firstBlock;
-    einsplines.resize(nBlocks);
+   // einsplines.resize(nBlocks);
+    einsplines       = Kokkos::View<spline_type*>("einsplines",nBlocks);
     for (int i = 0, t = firstBlock; i < nBlocks; ++i, ++t)
-      einsplines[i] = in.einsplines[t];
+      einsplines(i) = in.einsplines(t);
     resize();
     timer = TimerManager.createTimer("Single-Particle Orbitals", timer_level_coarse);
   }
@@ -105,22 +106,41 @@ struct einspline_spo
   /// destructors
   ~einspline_spo()
   {
+    //Note the change in garbage collection here.  The reason for doing this is that by
+    //changing einsplines to a view, it's more natural to work by reference than by raw pointer.  
+    // To maintain current interface, redoing the input types of allocate and destroy to call by references
+    //  would need to be propagated all the way down.  
+    // However, since we've converted the large chunks of memory to views, garbage collection is
+    // handled automatically.  Thus, setting the spline_type objects to empty views lets Kokkos handle the Garbage collection.
+
     if (Owner)
-      for (int i = 0; i < nBlocks; ++i)
-        myAllocator.destroy(einsplines[i]);
+      einsplines = Kokkos::View<spline_type*>();
+      
+  //    for (int i = 0; i < nBlocks; ++i)
+  //      myAllocator.destroy(einsplines(i));
   }
 
   /// resize the containers
   void resize()
   {
-    psi.resize(nBlocks);
-    grad.resize(nBlocks);
-    hess.resize(nBlocks);
+//    psi.resize(nBlocks);
+//    grad.resize(nBlocks);
+//    hess.resize(nBlocks);
+
+    psi = Kokkos::View<vContainer_type*>("Psi",nBlocks);
+    grad = Kokkos::View<gContainer_type*>("Grad",nBlocks);
+    hess = Kokkos::View<hContainer_type*>("Hess",nBlocks);
+
     for (int i = 0; i < nBlocks; ++i)
     {
-      psi[i].resize(nSplinesPerBlock);
-      grad[i].resize(nSplinesPerBlock);
-      hess[i].resize(nSplinesPerBlock);
+      //psi[i].resize(nSplinesPerBlock);
+      //grad[i].resize(nSplinesPerBlock);
+      //hess[i].resize(nSplinesPerBlock);
+     
+      //Using the "view-of-views" placement-new construct.
+      new (&psi(i))  vContainer_type("psi_i",nSplinesPerBlock);
+      new (&grad(i)) gContainer_type("grad_i",nSplinesPerBlock);
+      new (&hess(i)) hContainer_type("hess_i",nSplinesPerBlock);
     }
   }
 
@@ -133,23 +153,28 @@ struct einspline_spo
     nSplinesPerBlock = num_splines / nblocks;
     firstBlock       = 0;
     lastBlock        = nBlocks;
-    if (einsplines.empty())
+    if (! einsplines.extent(0))
     {
       Owner = true;
       TinyVector<int, 3> ng(nx, ny, nz);
       pos_type start(0);
       pos_type end(1);
-      einsplines.resize(nBlocks);
+      
+//    einsplines.resize(nBlocks);
+      einsplines = Kokkos::View<spline_type*>("einsplines",nBlocks);
+
       RandomGenerator<T> myrandom(11);
-      Array<T, 3> coef_data(nx+3, ny+3, nz+3);
+      //Array<T, 3> coef_data(nx+3, ny+3, nz+3);
+      Kokkos::View<T***> coef_data("coef_data",nx+3,ny+3,nz+3);
+
       for (int i = 0; i < nBlocks; ++i)
       {
-        einsplines[i] = myAllocator.createMultiBspline(T(0), start, end, ng, PERIODIC, nSplinesPerBlock);
+        einsplines(i) = *myAllocator.createMultiBspline(T(0), start, end, ng, PERIODIC, nSplinesPerBlock);
         if (init_random) {
           for (int j = 0; j < nSplinesPerBlock; ++j) {
             // Generate different coefficients for each orbital
-            myrandom.generate_uniform(coef_data.data(), coef_data.size());
-            myAllocator.setCoefficientsForOneOrbital(j, coef_data, einsplines[i]);
+            myrandom.generate_uniform(coef_data.data(), coef_data.extent(0));
+            myAllocator.setCoefficientsForOneOrbital(j, coef_data, &einsplines(i));
           }
         }
       }
@@ -164,7 +189,7 @@ struct einspline_spo
 
     auto u = Lattice.toUnit_floor(p);
     for (int i = 0; i < nBlocks; ++i)
-      compute_engine.evaluate_v(einsplines[i], u[0], u[1], u[2], psi[i].data(), nSplinesPerBlock);
+      compute_engine.evaluate_v(&einsplines(i), u[0], u[1], u[2], psi(i).data(), nSplinesPerBlock);
   }
 
   /** evaluate psi */
@@ -173,7 +198,7 @@ struct einspline_spo
     auto u = Lattice.toUnit_floor(p);
     #pragma omp for nowait
     for (int i = 0; i < nBlocks; ++i)
-      compute_engine.evaluate_v(einsplines[i], u[0], u[1], u[2], psi[i].data(), nSplinesPerBlock);
+      compute_engine.evaluate_v(&einsplines(i), u[0], u[1], u[2], psi(i).data(), nSplinesPerBlock);
   }
 
   /** evaluate psi, grad and lap */
@@ -181,8 +206,8 @@ struct einspline_spo
   {
     auto u = Lattice.toUnit_floor(p);
     for (int i = 0; i < nBlocks; ++i)
-      compute_engine.evaluate_vgl(einsplines[i], u[0], u[1], u[2],
-                                  psi[i].data(), grad[i].data(), hess[i].data(),
+      compute_engine.evaluate_vgl(&einsplines(i), u[0], u[1], u[2],
+                                  psi(i).data(), grad(i).data(), hess(i).data(),
                                   nSplinesPerBlock);
   }
 
@@ -192,8 +217,8 @@ struct einspline_spo
     auto u = Lattice.toUnit_floor(p);
     #pragma omp for nowait
     for (int i = 0; i < nBlocks; ++i)
-      compute_engine.evaluate_vgl(einsplines[i], u[0], u[1], u[2],
-                                  psi[i].data(), grad[i].data(), hess[i].data(),
+      compute_engine.evaluate_vgl(&einsplines(i), u[0], u[1], u[2],
+                                  psi(i).data(), grad(i).data(), hess(i).data(),
                                   nSplinesPerBlock);
   }
 
@@ -204,8 +229,8 @@ struct einspline_spo
 
     auto u = Lattice.toUnit_floor(p);
     for (int i = 0; i < nBlocks; ++i)
-      compute_engine.evaluate_vgh(einsplines[i], u[0], u[1], u[2],
-                                  psi[i].data(), grad[i].data(), hess[i].data(),
+      compute_engine.evaluate_vgh(&einsplines(i), u[0], u[1], u[2],
+                                  psi(i).data(), grad(i).data(), hess(i).data(),
                                   nSplinesPerBlock);
   }
 
@@ -215,8 +240,8 @@ struct einspline_spo
     auto u = Lattice.toUnit_floor(p);
     #pragma omp for nowait
     for (int i = 0; i < nBlocks; ++i)
-      compute_engine.evaluate_vgh(einsplines[i], u[0], u[1], u[2],
-                                  psi[i].data(), grad[i].data(), hess[i].data(),
+      compute_engine.evaluate_vgh(&einsplines(i), u[0], u[1], u[2],
+                                  psi(i).data(), grad(i).data(), hess(i).data(),
                                   nSplinesPerBlock);
   }
 
