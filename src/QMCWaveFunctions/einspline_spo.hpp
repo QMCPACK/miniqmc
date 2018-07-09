@@ -60,9 +60,9 @@ struct einspline_spo
   compute_engine_type compute_engine;
 
   Kokkos::View<spline_type *> einsplines;
-  aligned_vector<vContainer_type> psi;
-  aligned_vector<gContainer_type> grad;
-  aligned_vector<hContainer_type> hess;
+  Kokkos::View<vContainer_type*> psi;
+  Kokkos::View<gContainer_type*> grad;
+  Kokkos::View<hContainer_type*> hess;
 
 
   /// Timer
@@ -123,17 +123,27 @@ struct einspline_spo
   /// resize the containers
   void resize()
   {
-    psi.resize(nBlocks);
-    grad.resize(nBlocks);
-    hess.resize(nBlocks);
+//    psi.resize(nBlocks);
+//    grad.resize(nBlocks);
+//    hess.resize(nBlocks);
+
+    psi = Kokkos::View<vContainer_type*>("Psi",nBlocks);
+    grad = Kokkos::View<gContainer_type*>("Grad",nBlocks);
+    hess = Kokkos::View<hContainer_type*>("Hess",nBlocks);
+
     for (int i = 0; i < nBlocks; ++i)
     {
       //psi[i].resize(nSplinesPerBlock);
       //grad[i].resize(nSplinesPerBlock);
       //hess[i].resize(nSplinesPerBlock);
-      psi[i]=vContainer_type("psi_i",nSplinesPerBlock);
-      grad[i]=gContainer_type("grad_i",nSplinesPerBlock);
-      hess[i]=hContainer_type("hess_i",nSplinesPerBlock);
+     // psi[i]=vContainer_type("psi_i",nSplinesPerBlock);
+     // grad[i]=gContainer_type("grad_i",nSplinesPerBlock);
+     // hess[i]=hContainer_type("hess_i",nSplinesPerBlock);
+     
+      //Using the "view-of-views" placement-new construct.
+      new (&psi(i))  vContainer_type("psi_i",nSplinesPerBlock);
+      new (&grad(i)) gContainer_type("grad_i",nSplinesPerBlock);
+      new (&hess(i)) hContainer_type("hess_i",nSplinesPerBlock);
     }
   }
 
@@ -182,7 +192,7 @@ struct einspline_spo
 
     auto u = Lattice.toUnit_floor(p);
     for (int i = 0; i < nBlocks; ++i)
-      compute_engine.evaluate_v(&einsplines(i), u[0], u[1], u[2], psi[i].data(), nSplinesPerBlock);
+      compute_engine.evaluate_v(&einsplines(i), u[0], u[1], u[2], psi(i).data(), nSplinesPerBlock);
   }
 
   /** evaluate psi */
@@ -191,7 +201,7 @@ struct einspline_spo
     auto u = Lattice.toUnit_floor(p);
     #pragma omp for nowait
     for (int i = 0; i < nBlocks; ++i)
-      compute_engine.evaluate_v(&einsplines(i), u[0], u[1], u[2], psi[i].data(), nSplinesPerBlock);
+      compute_engine.evaluate_v(&einsplines(i), u[0], u[1], u[2], psi(i).data(), nSplinesPerBlock);
   }
 
   /** evaluate psi, grad and lap */
@@ -200,7 +210,7 @@ struct einspline_spo
     auto u = Lattice.toUnit_floor(p);
     for (int i = 0; i < nBlocks; ++i)
       compute_engine.evaluate_vgl(&einsplines(i), u[0], u[1], u[2],
-                                  psi[i].data(), grad[i].data(), hess[i].data(),
+                                  psi(i).data(), grad(i).data(), hess(i).data(),
                                   nSplinesPerBlock);
   }
 
@@ -211,7 +221,7 @@ struct einspline_spo
     #pragma omp for nowait
     for (int i = 0; i < nBlocks; ++i)
       compute_engine.evaluate_vgl(&einsplines(i), u[0], u[1], u[2],
-                                  psi[i].data(), grad[i].data(), hess[i].data(),
+                                  psi(i).data(), grad(i).data(), hess(i).data(),
                                   nSplinesPerBlock);
   }
 
@@ -223,7 +233,7 @@ struct einspline_spo
     auto u = Lattice.toUnit_floor(p);
     for (int i = 0; i < nBlocks; ++i)
       compute_engine.evaluate_vgh(&einsplines(i), u[0], u[1], u[2],
-                                  psi[i].data(), grad[i].data(), hess[i].data(),
+                                  psi(i).data(), grad(i).data(), hess(i).data(),
                                   nSplinesPerBlock);
   }
 
@@ -234,7 +244,7 @@ struct einspline_spo
     #pragma omp for nowait
     for (int i = 0; i < nBlocks; ++i)
       compute_engine.evaluate_vgh(&einsplines(i), u[0], u[1], u[2],
-                                  psi[i].data(), grad[i].data(), hess[i].data(),
+                                  psi(i).data(), grad(i).data(), hess(i).data(),
                                   nSplinesPerBlock);
   }
 
