@@ -37,8 +37,8 @@ struct einspline_spo
   using spline_type = typename bspline_traits<T, 3>::SplineType;
   using pos_type        = TinyVector<T, 3>;
   using vContainer_type = Kokkos::View<T*>;
-  using gContainer_type = Kokkos::View<T*[3]>;
-  using hContainer_type = Kokkos::View<T*[6]>;
+  using gContainer_type = Kokkos::View<T*[3],Kokkos::LayoutLeft>;
+  using hContainer_type = Kokkos::View<T*[6],Kokkos::LayoutLeft>;
   using lattice_type    = CrystalLattice<T, 3>;
 
   /// number of blocks
@@ -136,9 +136,6 @@ struct einspline_spo
       //psi[i].resize(nSplinesPerBlock);
       //grad[i].resize(nSplinesPerBlock);
       //hess[i].resize(nSplinesPerBlock);
-     // psi[i]=vContainer_type("psi_i",nSplinesPerBlock);
-     // grad[i]=gContainer_type("grad_i",nSplinesPerBlock);
-     // hess[i]=hContainer_type("hess_i",nSplinesPerBlock);
      
       //Using the "view-of-views" placement-new construct.
       new (&psi(i))  vContainer_type("psi_i",nSplinesPerBlock);
@@ -163,7 +160,7 @@ struct einspline_spo
       pos_type start(0);
       pos_type end(1);
       
-//      einsplines.resize(nBlocks);
+//    einsplines.resize(nBlocks);
       einsplines = Kokkos::View<spline_type*>("einsplines",nBlocks);
 
       RandomGenerator<T> myrandom(11);
