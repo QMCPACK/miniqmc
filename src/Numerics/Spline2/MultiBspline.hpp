@@ -44,17 +44,20 @@ template <typename T> struct MultiBspline
    * The base address for vals, grads and lapl are set by the callers, e.g.,
    * evaluate_vgh(r,psi,grad,hess,ip).
    */
+  KOKKOS_INLINE_FUNCTION
   void evaluate_v(const spliner_type *restrict spline_m, T x, T y, T z, T *restrict vals, size_t num_splines) const;
 
+  KOKKOS_INLINE_FUNCTION
   void evaluate_vgl(const spliner_type *restrict spline_m, T x, T y, T z, T *restrict vals, T *restrict grads,
                     T *restrict lapl, size_t num_splines) const;
 
+  KOKKOS_INLINE_FUNCTION
   void evaluate_vgh(const spliner_type *restrict spline_m, T x, T y, T z, T *restrict vals, T *restrict grads,
                     T *restrict hess, size_t num_splines) const;
 };
 
 template <typename T>
-inline void MultiBspline<T>::evaluate_v(const spliner_type *restrict spline_m,
+KOKKOS_INLINE_FUNCTION void MultiBspline<T>::evaluate_v(const spliner_type *restrict spline_m,
                                         T x, T y, T z, T *restrict vals,
                                         size_t num_splines) const
 {
@@ -99,7 +102,7 @@ inline void MultiBspline<T>::evaluate_v(const spliner_type *restrict spline_m,
 }
 
 template <typename T>
-inline void
+KOKKOS_INLINE_FUNCTION void
 MultiBspline<T>::evaluate_vgl(const spliner_type *restrict spline_m,
                               T x, T y, T z, T *restrict vals,
                               T *restrict grads, T *restrict lapl,
@@ -216,7 +219,7 @@ MultiBspline<T>::evaluate_vgl(const spliner_type *restrict spline_m,
 }
 
 template <typename T>
-inline void
+KOKKOS_INLINE_FUNCTION void
 MultiBspline<T>::evaluate_vgh(const spliner_type *restrict spline_m,
                               T x, T y, T z, T *restrict vals,
                               T *restrict grads, T *restrict hess,
