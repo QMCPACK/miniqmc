@@ -36,7 +36,7 @@ template <typename T> struct MultiBspline
   using spliner_type = typename bspline_traits<T, 3>::SplineType;
 
   MultiBspline() {}
-  MultiBspline(const MultiBspline &in) = delete;
+  MultiBspline(const MultiBspline &in) = default;
   MultiBspline &operator=(const MultiBspline &in) = delete;
 
   /** compute values vals[0,num_splines)
