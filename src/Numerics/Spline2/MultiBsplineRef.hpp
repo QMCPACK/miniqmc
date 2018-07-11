@@ -45,21 +45,18 @@ template <typename T> struct MultiBsplineRef
    * evaluate_vgh(r,psi,grad,hess,ip).
    */
 
-  KOKKOS_INLINE_FUNCTION
   void evaluate_v(const spliner_type *restrict spline_m, T x, T y, T z, T *restrict vals,
                   size_t num_splines) const;
 
-  KOKKOS_INLINE_FUNCTION
   void evaluate_vgl(const spliner_type *restrict spline_m, T x, T y, T z, T *restrict vals, T *restrict grads,
                     T *restrict lapl, size_t num_splines) const;
 
-  KOKKOS_INLINE_FUNCTION
   void evaluate_vgh(const spliner_type *restrict spline_m, T x, T y, T z, T *restrict vals, T *restrict grads,
                     T *restrict hess, size_t num_splines) const;
 };
 
 template <typename T>
-KOKKOS_INLINE_FUNCTION void MultiBsplineRef<T>::evaluate_v(const spliner_type *restrict spline_m,
+inline void MultiBsplineRef<T>::evaluate_v(const spliner_type *restrict spline_m,
                                            T x, T y, T z, T *restrict vals,
                                            size_t num_splines) const
 {
@@ -101,7 +98,7 @@ KOKKOS_INLINE_FUNCTION void MultiBsplineRef<T>::evaluate_v(const spliner_type *r
 }
 
 template <typename T>
-KOKKOS_INLINE_FUNCTION void
+inline void
 MultiBsplineRef<T>::evaluate_vgl(const spliner_type *restrict spline_m,
                                  T x, T y, T z, T *restrict vals,
                                  T *restrict grads, T *restrict lapl,
@@ -204,7 +201,7 @@ MultiBsplineRef<T>::evaluate_vgl(const spliner_type *restrict spline_m,
 }
 
 template <typename T>
-KOKKOS_INLINE_FUNCTION void
+inline void
 MultiBsplineRef<T>::evaluate_vgh(const spliner_type *restrict spline_m,
                                  T x, T y, T z, T *restrict vals,
                                  T *restrict grads, T *restrict hess,
