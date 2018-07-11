@@ -33,7 +33,7 @@ UBspline_3d_s *einspline_create_UBspline_3d_s(Ugrid x_grid, Ugrid y_grid,
 multi_UBspline_3d_d *
 einspline_create_multi_UBspline_3d_d(Ugrid x_grid, Ugrid y_grid, Ugrid z_grid,
                                      BCtype_d xBC, BCtype_d yBC, BCtype_d zBC,
-                                     int num_splines);
+                                     int num_splines, bool is_ref);
 
 UBspline_3d_d *einspline_create_UBspline_3d_d(Ugrid x_grid, Ugrid y_grid,
                                               Ugrid z_grid, BCtype_d xBC,
@@ -44,7 +44,7 @@ namespace qmcplusplus
 namespace einspline
 {
 
-Allocator::Allocator() : Policy(0) {}
+Allocator::Allocator(bool is_ref) : Policy(0), isRef(is_ref) {}
 
 Allocator::~Allocator() {}
 
@@ -63,7 +63,7 @@ multi_UBspline_3d_d *Allocator::allocateMultiBspline(Ugrid x_grid, Ugrid y_grid,
                                                      int num_splines)
 {
   return einspline_create_multi_UBspline_3d_d(x_grid, y_grid, z_grid, xBC, yBC,
-                                              zBC, num_splines);
+                                              zBC, num_splines, isRef);
 }
 
 UBspline_3d_d *Allocator::allocateUBspline(Ugrid x_grid, Ugrid y_grid,

@@ -51,6 +51,10 @@ struct einspline_spo
   int nSplines;
   /// number of splines per block
   int nSplinesPerBlock;
+
+  /// Reference implementation or not
+  bool isRef;
+
   /// if true, responsible for cleaning up einsplines
   bool Owner;
   lattice_type Lattice;
@@ -69,8 +73,8 @@ struct einspline_spo
   NewTimer *timer;
 
   /// default constructor
-  einspline_spo()
-      : nBlocks(0), nSplines(0), firstBlock(0), lastBlock(0), Owner(false)
+  einspline_spo(bool is_ref=false)
+      : nBlocks(0), nSplines(0), firstBlock(0), lastBlock(0), Owner(false), myAllocator(is_ref)
   {
     timer = TimerManager.createTimer("Single-Particle Orbitals", timer_level_coarse);
   }
@@ -87,8 +91,9 @@ struct einspline_spo
    * Create a view of the big object. A simple blocking & padding  method.
    */
   einspline_spo(einspline_spo &in, int team_size, int member_id)
-      : Owner(false), Lattice(in.Lattice)
+      : Owner(false), Lattice(in.Lattice), myAllocator(in.isRef)
   {
+    isRef = in.isRef;
     nSplines         = in.nSplines;
     nSplinesPerBlock = in.nSplinesPerBlock;
     nBlocks          = (in.nBlocks + team_size - 1) / team_size;

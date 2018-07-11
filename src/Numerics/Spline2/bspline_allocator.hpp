@@ -30,9 +30,12 @@ class Allocator
   /// Setting the allocation policy: default is using aligned allocator
   int Policy;
 
+  /// Is this the reference implementation or not
+  bool isRef;
+
 public:
   /// constructor
-  Allocator();
+  Allocator(bool is_ref=false);
 #if (__cplusplus >= 201103L)
   /// disable copy constructor
   Allocator(const Allocator &) = delete;
@@ -44,7 +47,11 @@ public:
 
   template <typename SplineType> void destroy(SplineType *spline)
   {
-    einspline_free(spline->coefs);
+    if (isRef) {
+      einspline_free(spline->coefs);
+    } else {
+      spline->coefbase->free();
+    }
     free(spline);
   }
 
@@ -114,10 +121,14 @@ void Allocator::setCoefficientsForOneOrbital(int i, Array<T,3> &coeff, typename 
   for (int ix = 0; ix < spline->x_grid.num + 3; ix++) {
     for (int iy = 0; iy < spline->y_grid.num + 3; iy++) {
       for (int iz = 0; iz < spline->z_grid.num + 3; iz++) {
-        intptr_t xs = spline->x_stride;
-        intptr_t ys = spline->y_stride;
-        intptr_t zs = spline->z_stride;
-        spline->coefs[ix*xs + iy*ys + iz*zs + i] = coeff(ix,iy,iz);
+        if (isRef) {
+          intptr_t xs = spline->x_stride;
+          intptr_t ys = spline->y_stride;
+          intptr_t zs = spline->z_stride;
+          spline->coefs[ix*xs + iy*ys + iz*zs + i] = coeff(ix,iy,iz);
+        } else {
+          spline->coefbase->set_coeff(ix,iy,iz,i,coeff(ix,iy,iz));
+        }
       }
     }
   }
@@ -145,6 +156,7 @@ Allocator::createMultiBspline(T dummy, ValT &start, ValT &end, IntT &ng,
   return allocateMultiBspline(x_grid, y_grid, z_grid, xBC, yBC, zBC,
                               num_splines);
 }
+
 
 template <typename ValT, typename IntT, typename T>
 typename bspline_traits<T, 3>::SingleSplineType *

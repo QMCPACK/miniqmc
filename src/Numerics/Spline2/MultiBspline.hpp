@@ -75,9 +75,6 @@ inline void MultiBspline<T>::evaluate_v(const spliner_type *restrict spline_m,
   MultiBsplineData<T>::compute_prefactors(b, ty);
   MultiBsplineData<T>::compute_prefactors(c, tz);
 
-  const intptr_t xs = spline_m->x_stride;
-  const intptr_t ys = spline_m->y_stride;
-  const intptr_t zs = spline_m->z_stride;
 
   CONSTEXPR T zero(0);
   ASSUME_ALIGNED(vals);
@@ -87,14 +84,20 @@ inline void MultiBspline<T>::evaluate_v(const spliner_type *restrict spline_m,
     for (size_t j = 0; j < 4; j++)
     {
       const T pre00 = a[i] * b[j];
-      const T *restrict coefs =
-          spline_m->coefs + ((ix + i) * xs + (iy + j) * ys + iz * zs);
+      const T *restrict coefs = spline_m->coefbase->get_coefs(ix+i, iy+j, iz);
+      const T *restrict coefszs= spline_m->coefbase->get_coefs(ix+i, iy+j, iz+1);
+      const T *restrict coefs2zs= spline_m->coefbase->get_coefs(ix+i, iy+j, iz+2);
+      const T *restrict coefs3zs= spline_m->coefbase->get_coefs(ix+i, iy+j, iz+3);
+
+      // Will need some solution for this macro - not every implementation of SplineCoefBase will
+      // ensure the returned pointers are aligned
       ASSUME_ALIGNED(coefs);
+
       //#pragma omp simd
       for (size_t n = 0; n < num_splines; n++)
         vals[n] +=
-            pre00 * (c[0] * coefs[n] + c[1] * coefs[n + zs] +
-                     c[2] * coefs[n + 2 * zs] + c[3] * coefs[n + 3 * zs]);
+            pre00 * (c[0] * coefs[n] + c[1] * coefszs[n] +
+                     c[2] * coefs2zs[n] + c[3] * coefs3zs[n]);
     }
 }
 
@@ -123,11 +126,8 @@ MultiBspline<T>::evaluate_vgl(const spliner_type *restrict spline_m,
   MultiBsplineData<T>::compute_prefactors(b, db, d2b, ty);
   MultiBsplineData<T>::compute_prefactors(c, dc, d2c, tz);
 
-  const intptr_t xs = spline_m->x_stride;
-  const intptr_t ys = spline_m->y_stride;
-  const intptr_t zs = spline_m->z_stride;
 
-  const size_t out_offset = spline_m->num_splines;
+  const size_t out_offset = spline_m->coefbase->get_num_splines();
 
   ASSUME_ALIGNED(vals);
   T *restrict gx = grads;
@@ -162,14 +162,13 @@ MultiBspline<T>::evaluate_vgl(const spliner_type *restrict spline_m,
       const T pre01 = a[i] * db[j];
       const T pre02 = a[i] * d2b[j];
 
-      const T *restrict coefs =
-          spline_m->coefs + ((ix + i) * xs + (iy + j) * ys + iz * zs);
+      const T *restrict coefs = spline_m->coefbase->get_coefs(ix+i, iy+j, iz);
+      const T *restrict coefszs= spline_m->coefbase->get_coefs(ix+i, iy+j, iz+1);
+      const T *restrict coefs2zs= spline_m->coefbase->get_coefs(ix+i, iy+j, iz+2);
+      const T *restrict coefs3zs= spline_m->coefbase->get_coefs(ix+i, iy+j, iz+3);
       ASSUME_ALIGNED(coefs);
-      const T *restrict coefszs = coefs + zs;
       ASSUME_ALIGNED(coefszs);
-      const T *restrict coefs2zs = coefs + 2 * zs;
       ASSUME_ALIGNED(coefs2zs);
-      const T *restrict coefs3zs = coefs + 3 * zs;
       ASSUME_ALIGNED(coefs3zs);
 
 #pragma noprefetch
@@ -241,11 +240,7 @@ MultiBspline<T>::evaluate_vgh(const spliner_type *restrict spline_m,
   MultiBsplineData<T>::compute_prefactors(b, db, d2b, ty);
   MultiBsplineData<T>::compute_prefactors(c, dc, d2c, tz);
 
-  const intptr_t xs = spline_m->x_stride;
-  const intptr_t ys = spline_m->y_stride;
-  const intptr_t zs = spline_m->z_stride;
-
-  const size_t out_offset = spline_m->num_splines;
+  const size_t out_offset = spline_m->coefbase->get_num_splines();
 
   ASSUME_ALIGNED(vals);
   T *restrict gx = grads;
@@ -282,14 +277,13 @@ MultiBspline<T>::evaluate_vgh(const spliner_type *restrict spline_m,
   for (int i = 0; i < 4; i++)
     for (int j = 0; j < 4; j++)
     {
-      const T *restrict coefs =
-          spline_m->coefs + ((ix + i) * xs + (iy + j) * ys + iz * zs);
+      const T *restrict coefs = spline_m->coefbase->get_coefs(ix+i, iy+j, iz);
       ASSUME_ALIGNED(coefs);
-      const T *restrict coefszs = coefs + zs;
+      const T *restrict coefszs = spline_m->coefbase->get_coefs(ix+i, iy+j, iz+1);
       ASSUME_ALIGNED(coefszs);
-      const T *restrict coefs2zs = coefs + 2 * zs;
+      const T *restrict coefs2zs = spline_m->coefbase->get_coefs(ix+i, iy+j, iz+2);
       ASSUME_ALIGNED(coefs2zs);
-      const T *restrict coefs3zs = coefs + 3 * zs;
+      const T *restrict coefs3zs = spline_m->coefbase->get_coefs(ix+i, iy+j, iz+3);
       ASSUME_ALIGNED(coefs3zs);
 
       const T pre20 = d2a[i] * b[j];

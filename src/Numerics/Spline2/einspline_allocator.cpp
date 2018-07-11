@@ -170,7 +170,7 @@ einspline_create_multi_UBspline_3d_s(Ugrid x_grid, Ugrid y_grid, Ugrid z_grid,
 multi_UBspline_3d_d *
 einspline_create_multi_UBspline_3d_d(Ugrid x_grid, Ugrid y_grid, Ugrid z_grid,
                                      BCtype_d xBC, BCtype_d yBC, BCtype_d zBC,
-                                     int num_splines)
+                                     int num_splines, bool is_ref)
 {
   // Create new spline
   multi_UBspline_3d_d *restrict spline = (multi_UBspline_3d_d *)malloc(sizeof(multi_UBspline_3d_d));
@@ -218,19 +218,29 @@ einspline_create_multi_UBspline_3d_d(Ugrid x_grid, Ugrid y_grid, Ugrid z_grid,
   z_grid.delta_inv = 1.0 / z_grid.delta;
   spline->z_grid   = z_grid;
 
-  const int ND = QMC_CLINE / sizeof(double);
-  int N =
-      (num_splines % ND) ? (num_splines + ND - num_splines % ND) : num_splines;
 
-  spline->x_stride = (size_t)Ny * (size_t)Nz * (size_t)N;
-  spline->y_stride = Nz * N;
-  spline->z_stride = N;
+  bool alloc_okay = false;
+  if (is_ref) {
+    const int ND = QMC_CLINE / sizeof(double);
+    int N =
+        (num_splines % ND) ? (num_splines + ND - num_splines % ND) : num_splines;
 
-  spline->coefs_size = (size_t)Nx * spline->x_stride;
-  spline->coefs =
-      (double *)einspline_alloc(sizeof(double) * spline->coefs_size, QMC_CLINE);
+    spline->x_stride = (size_t)Ny * (size_t)Nz * (size_t)N;
+    spline->y_stride = Nz * N;
+    spline->z_stride = N;
+    spline->coefs_size = (size_t)Nx * spline->x_stride;
+    spline->coefs =
+        (double *)einspline_alloc(sizeof(double) * spline->coefs_size, QMC_CLINE);
 
-  if (!spline->coefs)
+    alloc_okay = (spline->coefs != NULL);
+
+
+  } else {
+    spline->coefbase = new AlignedLocalSpline(Nx, Ny, Nz, num_splines);
+    alloc_okay = spline->coefbase->allocate_spline();
+  }
+
+  if (!alloc_okay)
   {
     fprintf(stderr, "Out of memory allocating spline coefficients in "
                     "create_multi_UBspline_3d_d.\n");

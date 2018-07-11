@@ -88,12 +88,88 @@ typedef struct
   int num_splines;
 } multi_UBspline_2d_d;
 
+class SplineCoefBase
+{
+public:
+  SplineCoefBase(int Nx, int Ny, int Nz, int Num_splines) : nx(Nx), ny(Ny), nz(Nz), num_splines(Num_splines) {}
+
+  virtual bool allocate_spline() = 0;
+  virtual size_t get_coefs_size() = 0;
+  virtual double *get_coefs(int ix, int iy, int iz) = 0;
+  virtual void set_coeff(int ix, int iy, int iz, int spline_index, double val) = 0;
+  virtual void free() {}
+  int get_num_splines() { return num_splines; }
+
+protected:
+  int nx;
+  int ny;
+  int nz;
+  int num_splines;
+};
+
+void *einspline_alloc(size_t N, size_t align);
+
+class AlignedLocalSpline : public SplineCoefBase
+{
+public:
+  AlignedLocalSpline(int Nx, int Ny, int Nz, int Num_splines): SplineCoefBase(Nx, Ny, Nz, Num_splines)
+  {
+  }
+  bool allocate_spline() override
+  {
+     const int ND = QMC_CLINE / sizeof(double);
+     int N =
+        (num_splines % ND) ? (num_splines + ND - num_splines % ND) : num_splines;
+
+      x_stride = (size_t)ny * (size_t)nz * (size_t)N;
+      y_stride = nz * N;
+      z_stride = N;
+
+      coefs_size = (size_t)nx * x_stride;
+      coefs =
+        (double *)einspline_alloc(sizeof(double) * coefs_size, QMC_CLINE);
+
+      if (coefs == NULL) return false;
+      return true;
+
+  }
+
+  size_t get_coefs_size() override
+  {
+    return coefs_size;
+  }
+
+  double *get_coefs(int ix, int iy, int iz)  override
+  {
+    return coefs + (ix*x_stride + iy*y_stride + iz*z_stride);
+  }
+
+  void set_coeff(int ix, int iy, int iz, int spline_index, double val) override
+  {
+    coefs[iz*z_stride + iy*y_stride + iz*z_stride + spline_index] = val;
+  }
+
+
+private:
+  size_t x_stride;
+  size_t y_stride;
+  size_t z_stride;
+  size_t coefs_size;
+  double *coefs;
+};
+
 typedef struct
 {
   spline_code spcode;
   type_code tcode;
+
+  // class to manage coefficients
+  SplineCoefBase* coefbase;
+
+  // only used for reference version
   double *restrict coefs;
   intptr_t x_stride, y_stride, z_stride;
+
   Ugrid x_grid, y_grid, z_grid;
   BCtype_d xBC, yBC, zBC;
   int num_splines;
