@@ -26,6 +26,11 @@
 #include <Numerics/Spline2/MultiBsplineData.hpp>
 #include <stdlib.h>
 
+#ifdef __CUDA_ARCH__
+#undef ASSUME_ALIGNED
+#define ASSUME_ALIGNED(x)
+#endif
+
 namespace qmcplusplus
 {
 
