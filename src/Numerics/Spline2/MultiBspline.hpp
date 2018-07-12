@@ -133,7 +133,11 @@ KOKKOS_INLINE_FUNCTION void MultiBspline<T>::evaluate_v(const spliner_type *rest
 
   CONSTEXPR T zero(0);
   ASSUME_ALIGNED(vals);
-  std::fill(vals, vals + num_splines, zero);
+  //std::fill() not OK with CUDA
+  //
+  //std::fill(vals, vals + num_splines, zero);
+  for (size_t i = 0; i<num_splines; i++)
+    vals[i] = zero;
 
   for (size_t i = 0; i < 4; i++)
     for (size_t j = 0; j < 4; j++)
@@ -195,13 +199,25 @@ MultiBspline<T>::evaluate_vgl(const spliner_type *restrict spline_m,
   T *restrict lz = lapl + 2 * out_offset;
   ASSUME_ALIGNED(lz);
 
-  std::fill(vals, vals + num_splines, T());
-  std::fill(gx, gx + num_splines, T());
-  std::fill(gy, gy + num_splines, T());
-  std::fill(gz, gz + num_splines, T());
-  std::fill(lx, lx + num_splines, T());
-  std::fill(ly, ly + num_splines, T());
-  std::fill(lz, lz + num_splines, T());
+// std::fill() Not OK with CUDA. 
+//
+//  std::fill(vals, vals + num_splines, T());
+//  std::fill(gx, gx + num_splines, T());
+//  std::fill(gy, gy + num_splines, T());
+//  std::fill(gz, gz + num_splines, T());
+//  std::fill(lx, lx + num_splines, T());
+//  std::fill(ly, ly + num_splines, T());
+//  std::fill(lz, lz + num_splines, T());
+
+  for (size_t i = 0; i < num_splines; i++){
+    vals[i]=0;
+      gx[i]=0;
+      gy[i]=0;
+      gz[i]=0;
+      lx[i]=0;
+      ly[i]=0;
+      lz[i]=0;
+  }
 
   for (int i = 0; i < 4; i++)
     for (int j = 0; j < 4; j++)
@@ -320,16 +336,31 @@ MultiBspline<T>::evaluate_vgh(const spliner_type *restrict spline_m,
   T *restrict hzz = hess + 5 * out_offset;
   ASSUME_ALIGNED(hzz);
 
-  std::fill(vals, vals + num_splines, T());
-  std::fill(gx, gx + num_splines, T());
-  std::fill(gy, gy + num_splines, T());
-  std::fill(gz, gz + num_splines, T());
-  std::fill(hxx, hxx + num_splines, T());
-  std::fill(hxy, hxy + num_splines, T());
-  std::fill(hxz, hxz + num_splines, T());
-  std::fill(hyy, hyy + num_splines, T());
-  std::fill(hyz, hyz + num_splines, T());
-  std::fill(hzz, hzz + num_splines, T());
+// std::fill() Not OK with CUDA.  
+//
+//  std::fill(vals, vals + num_splines, T());
+//  std::fill(gx, gx + num_splines, T());
+//  std::fill(gy, gy + num_splines, T());
+//  std::fill(gz, gz + num_splines, T());
+//  std::fill(hxx, hxx + num_splines, T());
+//  std::fill(hxy, hxy + num_splines, T());
+//  std::fill(hxz, hxz + num_splines, T());
+//  std::fill(hyy, hyy + num_splines, T());
+//  std::fill(hyz, hyz + num_splines, T());
+//  std::fill(hzz, hzz + num_splines, T());
+
+  for (size_t i = 0; i < num_splines; i++){
+    vals[i]=0;
+      gx[i]=0;
+      gy[i]=0;
+      gz[i]=0;
+     hxx[i]=0;
+     hxy[i]=0;
+     hxz[i]=0;
+     hyy[i]=0;
+     hyz[i]=0;
+     hzz[i]=0;
+  }
 
   for (int i = 0; i < 4; i++)
     for (int j = 0; j < 4; j++)
