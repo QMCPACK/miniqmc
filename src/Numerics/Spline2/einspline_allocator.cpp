@@ -226,6 +226,8 @@ einspline_create_multi_UBspline_3d_d(Ugrid x_grid, Ugrid y_grid, Ugrid z_grid,
   spline->y_stride = Nz * N;
   spline->z_stride = N;
 
+  spline->coefs_size=(size_t)Nx * spline->x_stride;
+
   spline->coefs_view = multi_UBspline_3d_d::coefs_view_t("Multi_UBspline_3d_d",Nx,Ny,Nz,N);
 
   //Check that data layout is as expected

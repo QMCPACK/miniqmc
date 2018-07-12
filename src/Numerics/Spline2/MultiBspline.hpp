@@ -80,13 +80,22 @@ template <typename T> struct MultiBspline
     d2a[3] = ((d2A44[12] * tx + d2A44[13]) * tx + d2A44[14]) * tx + d2A44[15];
   }
   
-  
+#define MYMAX(a,b) (a<b?b:a)
+#define MYMIN(a,b) (a>b?b:a)
   KOKKOS_INLINE_FUNCTION void get(T x, T &dx, int &ind, int ng) const
   {
     T ipart;
     dx  = std::modf(x, &ipart);
-    ind = std::min(std::max(int(0), static_cast<int>(ipart)), ng);
+    ind = MYMIN(MYMAX(int(0), static_cast<int>(ipart)), ng);
   }
+#undef MYMAX
+#undef MYMIN  
+//  KOKKOS_INLINE_FUNCTION void get(T x, T &dx, int &ind, int ng) const
+//  {
+//    T ipart;
+//    dx  = std::modf(x, &ipart);
+//    ind = std::min(std::max(int(0), static_cast<int>(ipart)), ng);
+//  }
   /** compute values vals[0,num_splines)
    *
    * The base address for vals, grads and lapl are set by the callers, e.g.,
@@ -131,13 +140,13 @@ KOKKOS_INLINE_FUNCTION void MultiBspline<T>::evaluate_v(const spliner_type *rest
   const intptr_t ys = spline_m->y_stride;
   const intptr_t zs = spline_m->z_stride;
 
-  CONSTEXPR T zero(0);
+//  CONSTEXPR T zero(0);
   ASSUME_ALIGNED(vals);
   //std::fill() not OK with CUDA
   //
   //std::fill(vals, vals + num_splines, zero);
   for (size_t i = 0; i<num_splines; i++)
-    vals[i] = zero;
+    vals[i] = T();
 
   for (size_t i = 0; i < 4; i++)
     for (size_t j = 0; j < 4; j++)
@@ -210,13 +219,13 @@ MultiBspline<T>::evaluate_vgl(const spliner_type *restrict spline_m,
 //  std::fill(lz, lz + num_splines, T());
 
   for (size_t i = 0; i < num_splines; i++){
-    vals[i]=0;
-      gx[i]=0;
-      gy[i]=0;
-      gz[i]=0;
-      lx[i]=0;
-      ly[i]=0;
-      lz[i]=0;
+    vals[i]=T();
+      gx[i]=T();
+      gy[i]=T();
+      gz[i]=T();
+      lx[i]=T();
+      ly[i]=T();
+      lz[i]=T();
   }
 
   for (int i = 0; i < 4; i++)
@@ -350,16 +359,16 @@ MultiBspline<T>::evaluate_vgh(const spliner_type *restrict spline_m,
 //  std::fill(hzz, hzz + num_splines, T());
 
   for (size_t i = 0; i < num_splines; i++){
-    vals[i]=0;
-      gx[i]=0;
-      gy[i]=0;
-      gz[i]=0;
-     hxx[i]=0;
-     hxy[i]=0;
-     hxz[i]=0;
-     hyy[i]=0;
-     hyz[i]=0;
-     hzz[i]=0;
+    vals[i]=T();
+      gx[i]=T();
+      gy[i]=T();
+      gz[i]=T();
+     hxx[i]=T();
+     hxy[i]=T();
+     hxz[i]=T();
+     hyy[i]=T();
+     hyz[i]=T();
+     hzz[i]=T();
   }
 
   for (int i = 0; i < 4; i++)
