@@ -26,6 +26,11 @@
 #include <Numerics/Spline2/MultiBsplineData.hpp>
 #include <stdlib.h>
 
+#ifdef __CUDA_ARCH__
+#undef ASSUME_ALIGNED
+#define ASSUME_ALIGNED(x)
+#endif
+
 namespace qmcplusplus
 {
 
@@ -36,25 +41,81 @@ template <typename T> struct MultiBspline
   using spliner_type = typename bspline_traits<T, 3>::SplineType;
 
   MultiBspline() {}
-  MultiBspline(const MultiBspline &in) = delete;
+  MultiBspline(const MultiBspline &in) = default;
   MultiBspline &operator=(const MultiBspline &in) = delete;
 
+  T A44[16];
+  T dA44[16];
+  T d2A44[16];
+
+  void copy_A44(){
+    for(int i=0; i<16; i++){
+      A44[i]=MultiBsplineData<T>::A44[i];
+      dA44[i]=MultiBsplineData<T>::dA44[i];
+      d2A44[i]=MultiBsplineData<T>::d2A44[i];
+    }
+  }
+
+  KOKKOS_INLINE_FUNCTION void compute_prefactors(T a[4], T tx) const
+  {
+    a[0] = ((A44[0] * tx + A44[1]) * tx + A44[2]) * tx + A44[3];
+    a[1] = ((A44[4] * tx + A44[5]) * tx + A44[6]) * tx + A44[7];
+    a[2] = ((A44[8] * tx + A44[9]) * tx + A44[10]) * tx + A44[11];
+    a[3] = ((A44[12] * tx + A44[13]) * tx + A44[14]) * tx + A44[15];
+  }
+
+  KOKKOS_INLINE_FUNCTION void compute_prefactors(T a[4], T da[4], T d2a[4], T tx) const
+  {
+    a[0]   = ((A44[0] * tx + A44[1]) * tx + A44[2]) * tx + A44[3];
+    a[1]   = ((A44[4] * tx + A44[5]) * tx + A44[6]) * tx + A44[7];
+    a[2]   = ((A44[8] * tx + A44[9]) * tx + A44[10]) * tx + A44[11];
+    a[3]   = ((A44[12] * tx + A44[13]) * tx + A44[14]) * tx + A44[15];
+    da[0]  = ((dA44[0] * tx + dA44[1]) * tx + dA44[2]) * tx + dA44[3];
+    da[1]  = ((dA44[4] * tx + dA44[5]) * tx + dA44[6]) * tx + dA44[7];
+    da[2]  = ((dA44[8] * tx + dA44[9]) * tx + dA44[10]) * tx + dA44[11];
+    da[3]  = ((dA44[12] * tx + dA44[13]) * tx + dA44[14]) * tx + dA44[15];
+    d2a[0] = ((d2A44[0] * tx + d2A44[1]) * tx + d2A44[2]) * tx + d2A44[3];
+    d2a[1] = ((d2A44[4] * tx + d2A44[5]) * tx + d2A44[6]) * tx + d2A44[7];
+    d2a[2] = ((d2A44[8] * tx + d2A44[9]) * tx + d2A44[10]) * tx + d2A44[11];
+    d2a[3] = ((d2A44[12] * tx + d2A44[13]) * tx + d2A44[14]) * tx + d2A44[15];
+  }
+  
+#define MYMAX(a,b) (a<b?b:a)
+#define MYMIN(a,b) (a>b?b:a)
+  KOKKOS_INLINE_FUNCTION void get(T x, T &dx, int &ind, int ng) const
+  {
+    T ipart;
+    dx  = std::modf(x, &ipart);
+    ind = MYMIN(MYMAX(int(0), static_cast<int>(ipart)), ng);
+  }
+#undef MYMAX
+#undef MYMIN  
+//  KOKKOS_INLINE_FUNCTION void get(T x, T &dx, int &ind, int ng) const
+//  {
+//    T ipart;
+//    dx  = std::modf(x, &ipart);
+//    ind = std::min(std::max(int(0), static_cast<int>(ipart)), ng);
+//  }
   /** compute values vals[0,num_splines)
    *
    * The base address for vals, grads and lapl are set by the callers, e.g.,
    * evaluate_vgh(r,psi,grad,hess,ip).
    */
+
+  KOKKOS_INLINE_FUNCTION
   void evaluate_v(const spliner_type *restrict spline_m, T x, T y, T z, T *restrict vals, size_t num_splines) const;
 
+  KOKKOS_INLINE_FUNCTION
   void evaluate_vgl(const spliner_type *restrict spline_m, T x, T y, T z, T *restrict vals, T *restrict grads,
                     T *restrict lapl, size_t num_splines) const;
 
+  KOKKOS_INLINE_FUNCTION
   void evaluate_vgh(const spliner_type *restrict spline_m, T x, T y, T z, T *restrict vals, T *restrict grads,
                     T *restrict hess, size_t num_splines) const;
 };
 
 template <typename T>
-inline void MultiBspline<T>::evaluate_v(const spliner_type *restrict spline_m,
+KOKKOS_INLINE_FUNCTION void MultiBspline<T>::evaluate_v(const spliner_type *restrict spline_m,
                                         T x, T y, T z, T *restrict vals,
                                         size_t num_splines) const
 {
@@ -63,25 +124,29 @@ inline void MultiBspline<T>::evaluate_v(const spliner_type *restrict spline_m,
   z -= spline_m->z_grid.start;
   T tx, ty, tz;
   int ix, iy, iz;
-  SplineBound<T>::get(x * spline_m->x_grid.delta_inv, tx, ix,
-                      spline_m->x_grid.num - 1);
-  SplineBound<T>::get(y * spline_m->y_grid.delta_inv, ty, iy,
-                      spline_m->y_grid.num - 1);
-  SplineBound<T>::get(z * spline_m->z_grid.delta_inv, tz, iz,
-                      spline_m->z_grid.num - 1);
+  get(x * spline_m->x_grid.delta_inv, tx, ix,
+                    spline_m->x_grid.num - 1);
+  get(y * spline_m->y_grid.delta_inv, ty, iy,
+                    spline_m->y_grid.num - 1);
+  get(z * spline_m->z_grid.delta_inv, tz, iz,
+                   spline_m->z_grid.num - 1);
   T a[4], b[4], c[4];
 
-  MultiBsplineData<T>::compute_prefactors(a, tx);
-  MultiBsplineData<T>::compute_prefactors(b, ty);
-  MultiBsplineData<T>::compute_prefactors(c, tz);
+  compute_prefactors(a, tx);
+  compute_prefactors(b, ty);
+  compute_prefactors(c, tz);
 
   const intptr_t xs = spline_m->x_stride;
   const intptr_t ys = spline_m->y_stride;
   const intptr_t zs = spline_m->z_stride;
 
-  CONSTEXPR T zero(0);
+//  CONSTEXPR T zero(0);
   ASSUME_ALIGNED(vals);
-  std::fill(vals, vals + num_splines, zero);
+  //std::fill() not OK with CUDA
+  //
+  //std::fill(vals, vals + num_splines, zero);
+  for (size_t i = 0; i<num_splines; i++)
+    vals[i] = T();
 
   for (size_t i = 0; i < 4; i++)
     for (size_t j = 0; j < 4; j++)
@@ -99,7 +164,7 @@ inline void MultiBspline<T>::evaluate_v(const spliner_type *restrict spline_m,
 }
 
 template <typename T>
-inline void
+KOKKOS_INLINE_FUNCTION void
 MultiBspline<T>::evaluate_vgl(const spliner_type *restrict spline_m,
                               T x, T y, T z, T *restrict vals,
                               T *restrict grads, T *restrict lapl,
@@ -110,18 +175,18 @@ MultiBspline<T>::evaluate_vgl(const spliner_type *restrict spline_m,
   z -= spline_m->z_grid.start;
   T tx, ty, tz;
   int ix, iy, iz;
-  SplineBound<T>::get(x * spline_m->x_grid.delta_inv, tx, ix,
-                      spline_m->x_grid.num - 1);
-  SplineBound<T>::get(y * spline_m->y_grid.delta_inv, ty, iy,
-                      spline_m->y_grid.num - 1);
-  SplineBound<T>::get(z * spline_m->z_grid.delta_inv, tz, iz,
-                      spline_m->z_grid.num - 1);
+  get(x * spline_m->x_grid.delta_inv, tx, ix,
+                    spline_m->x_grid.num - 1);
+  get(y * spline_m->y_grid.delta_inv, ty, iy,
+                    spline_m->y_grid.num - 1);
+  get(z * spline_m->z_grid.delta_inv, tz, iz,
+                    spline_m->z_grid.num - 1);
 
   T a[4], b[4], c[4], da[4], db[4], dc[4], d2a[4], d2b[4], d2c[4];
 
-  MultiBsplineData<T>::compute_prefactors(a, da, d2a, tx);
-  MultiBsplineData<T>::compute_prefactors(b, db, d2b, ty);
-  MultiBsplineData<T>::compute_prefactors(c, dc, d2c, tz);
+  compute_prefactors(a, da, d2a, tx);
+  compute_prefactors(b, db, d2b, ty);
+  compute_prefactors(c, dc, d2c, tz);
 
   const intptr_t xs = spline_m->x_stride;
   const intptr_t ys = spline_m->y_stride;
@@ -143,13 +208,25 @@ MultiBspline<T>::evaluate_vgl(const spliner_type *restrict spline_m,
   T *restrict lz = lapl + 2 * out_offset;
   ASSUME_ALIGNED(lz);
 
-  std::fill(vals, vals + num_splines, T());
-  std::fill(gx, gx + num_splines, T());
-  std::fill(gy, gy + num_splines, T());
-  std::fill(gz, gz + num_splines, T());
-  std::fill(lx, lx + num_splines, T());
-  std::fill(ly, ly + num_splines, T());
-  std::fill(lz, lz + num_splines, T());
+// std::fill() Not OK with CUDA. 
+//
+//  std::fill(vals, vals + num_splines, T());
+//  std::fill(gx, gx + num_splines, T());
+//  std::fill(gy, gy + num_splines, T());
+//  std::fill(gz, gz + num_splines, T());
+//  std::fill(lx, lx + num_splines, T());
+//  std::fill(ly, ly + num_splines, T());
+//  std::fill(lz, lz + num_splines, T());
+
+  for (size_t i = 0; i < num_splines; i++){
+    vals[i]=T();
+      gx[i]=T();
+      gy[i]=T();
+      gz[i]=T();
+      lx[i]=T();
+      ly[i]=T();
+      lz[i]=T();
+  }
 
   for (int i = 0; i < 4; i++)
     for (int j = 0; j < 4; j++)
@@ -216,7 +293,7 @@ MultiBspline<T>::evaluate_vgl(const spliner_type *restrict spline_m,
 }
 
 template <typename T>
-inline void
+KOKKOS_INLINE_FUNCTION void
 MultiBspline<T>::evaluate_vgh(const spliner_type *restrict spline_m,
                               T x, T y, T z, T *restrict vals,
                               T *restrict grads, T *restrict hess,
@@ -230,16 +307,16 @@ MultiBspline<T>::evaluate_vgh(const spliner_type *restrict spline_m,
   x -= spline_m->x_grid.start;
   y -= spline_m->y_grid.start;
   z -= spline_m->z_grid.start;
-  SplineBound<T>::get(x * spline_m->x_grid.delta_inv, tx, ix,
-                      spline_m->x_grid.num - 1);
-  SplineBound<T>::get(y * spline_m->y_grid.delta_inv, ty, iy,
-                      spline_m->y_grid.num - 1);
-  SplineBound<T>::get(z * spline_m->z_grid.delta_inv, tz, iz,
-                      spline_m->z_grid.num - 1);
+  get(x * spline_m->x_grid.delta_inv, tx, ix,
+                    spline_m->x_grid.num - 1);
+  get(y * spline_m->y_grid.delta_inv, ty, iy,
+                    spline_m->y_grid.num - 1);
+  get(z * spline_m->z_grid.delta_inv, tz, iz,
+                    spline_m->z_grid.num - 1);
 
-  MultiBsplineData<T>::compute_prefactors(a, da, d2a, tx);
-  MultiBsplineData<T>::compute_prefactors(b, db, d2b, ty);
-  MultiBsplineData<T>::compute_prefactors(c, dc, d2c, tz);
+  compute_prefactors(a, da, d2a, tx);
+  compute_prefactors(b, db, d2b, ty);
+  compute_prefactors(c, dc, d2c, tz);
 
   const intptr_t xs = spline_m->x_stride;
   const intptr_t ys = spline_m->y_stride;
@@ -268,16 +345,31 @@ MultiBspline<T>::evaluate_vgh(const spliner_type *restrict spline_m,
   T *restrict hzz = hess + 5 * out_offset;
   ASSUME_ALIGNED(hzz);
 
-  std::fill(vals, vals + num_splines, T());
-  std::fill(gx, gx + num_splines, T());
-  std::fill(gy, gy + num_splines, T());
-  std::fill(gz, gz + num_splines, T());
-  std::fill(hxx, hxx + num_splines, T());
-  std::fill(hxy, hxy + num_splines, T());
-  std::fill(hxz, hxz + num_splines, T());
-  std::fill(hyy, hyy + num_splines, T());
-  std::fill(hyz, hyz + num_splines, T());
-  std::fill(hzz, hzz + num_splines, T());
+// std::fill() Not OK with CUDA.  
+//
+//  std::fill(vals, vals + num_splines, T());
+//  std::fill(gx, gx + num_splines, T());
+//  std::fill(gy, gy + num_splines, T());
+//  std::fill(gz, gz + num_splines, T());
+//  std::fill(hxx, hxx + num_splines, T());
+//  std::fill(hxy, hxy + num_splines, T());
+//  std::fill(hxz, hxz + num_splines, T());
+//  std::fill(hyy, hyy + num_splines, T());
+//  std::fill(hyz, hyz + num_splines, T());
+//  std::fill(hzz, hzz + num_splines, T());
+
+  for (size_t i = 0; i < num_splines; i++){
+    vals[i]=T();
+      gx[i]=T();
+      gy[i]=T();
+      gz[i]=T();
+     hxx[i]=T();
+     hxy[i]=T();
+     hxz[i]=T();
+     hyy[i]=T();
+     hyz[i]=T();
+     hzz[i]=T();
+  }
 
   for (int i = 0; i < 4; i++)
     for (int j = 0; j < 4; j++)

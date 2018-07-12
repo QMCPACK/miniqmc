@@ -17,8 +17,8 @@
 // -*- C++ -*-
 /** @file einspline_spo.hpp
  */
-#ifndef QMCPLUSPLUS_EINSPLINE_SPO_HPP
-#define QMCPLUSPLUS_EINSPLINE_SPO_HPP
+#ifndef QMCPLUSPLUS_EINSPLINE_SPO_REF_HPP
+#define QMCPLUSPLUS_EINSPLINE_SPO_REF_HPP
 #include <Utilities/Configuration.h>
 #include <Utilities/NewTimer.h>
 #include <Particle/ParticleSet.h>
@@ -31,7 +31,7 @@
 namespace qmcplusplus
 {
 template <typename T, typename compute_engine_type = MultiBspline<T> >
-struct einspline_spo
+struct einspline_spo_ref
 {
   /// define the einsplie data object type
   using spline_type = typename bspline_traits<T, 3>::SplineType;
@@ -69,15 +69,15 @@ struct einspline_spo
   NewTimer *timer;
 
   /// default constructor
-  einspline_spo()
+  einspline_spo_ref()
       : nBlocks(0), nSplines(0), firstBlock(0), lastBlock(0), Owner(false)
   {
     timer = TimerManager.createTimer("Single-Particle Orbitals", timer_level_coarse);
   }
   /// disable copy constructor
-  einspline_spo(const einspline_spo &in) = default;
+  einspline_spo_ref(const einspline_spo_ref &in) = delete;
   /// disable copy operator
-  einspline_spo &operator=(const einspline_spo &in) = delete;
+  einspline_spo_ref &operator=(const einspline_spo_ref &in) = delete;
 
   /** copy constructor
    * @param in einspline_spo
@@ -86,7 +86,7 @@ struct einspline_spo
    *
    * Create a view of the big object. A simple blocking & padding  method.
    */
-  einspline_spo(einspline_spo &in, int team_size, int member_id)
+  einspline_spo_ref(einspline_spo_ref &in, int team_size, int member_id)
       : Owner(false), Lattice(in.Lattice)
   {
     nSplines         = in.nSplines;
@@ -104,7 +104,7 @@ struct einspline_spo
   }
 
   /// destructors
-  ~einspline_spo()
+  ~einspline_spo_ref()
   {
     //Note the change in garbage collection here.  The reason for doing this is that by
     //changing einsplines to a view, it's more natural to work by reference than by raw pointer.  
@@ -153,7 +153,7 @@ struct einspline_spo
     nSplinesPerBlock = num_splines / nblocks;
     firstBlock       = 0;
     lastBlock        = nBlocks;
-    if (einsplines.extent(0)==0)
+    if (! einsplines.extent(0))
     {
       Owner = true;
       TinyVector<int, 3> ng(nx, ny, nz);

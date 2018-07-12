@@ -34,8 +34,8 @@ public:
   /// constructor
   Allocator();
 #if (__cplusplus >= 201103L)
-  /// disable copy constructor
-  Allocator(const Allocator &) = delete;
+  /// enable default copy constructor
+  Allocator(const Allocator &) = default;
   /// disable assignement
   Allocator &operator=(const Allocator &) = delete;
 #endif
