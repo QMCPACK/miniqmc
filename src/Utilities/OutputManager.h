@@ -59,6 +59,7 @@ public:
     case LogType::DEBUG:
       return infoDebug.getStream();
     }
+    return infoDebug.getStream();
   }
 
   /// Pause the summary and log streams

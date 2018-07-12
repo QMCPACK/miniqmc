@@ -29,16 +29,7 @@
 #include "Numerics/Einspline/bspline.h"
 #include "Numerics/Spline2/einspline_allocator.h"
 
-#if defined(__INTEL_COMPILER)
-
-void *einspline_alloc(size_t size, size_t alignment)
-{
-  return _mm_malloc(size, alignment);
-}
-
-void einspline_free(void *ptr) { _mm_free(ptr); }
-
-#elif defined(HAVE_POSIX_MEMALIGN)
+#if defined(HAVE_POSIX_MEMALIGN)
 
 int posix_memalign(void **memptr, size_t alignment, size_t size);
 
