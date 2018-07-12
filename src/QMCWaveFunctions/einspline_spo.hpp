@@ -153,7 +153,7 @@ struct einspline_spo
     nSplinesPerBlock = num_splines / nblocks;
     firstBlock       = 0;
     lastBlock        = nBlocks;
-    if (! einsplines.extent(0))
+    if (einsplines.extent(0)==0)
     {
       Owner = true;
       TinyVector<int, 3> ng(nx, ny, nz);
