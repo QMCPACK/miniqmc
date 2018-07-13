@@ -101,21 +101,23 @@ template <typename T> struct MultiBspline
    * The base address for vals, grads and lapl are set by the callers, e.g.,
    * evaluate_vgh(r,psi,grad,hess,ip).
    */
-
+  template <class TeamType>
   KOKKOS_INLINE_FUNCTION
-  void evaluate_v(const spliner_type *restrict spline_m, T x, T y, T z, T *restrict vals, size_t num_splines) const;
+  void evaluate_v(const TeamType& team, const spliner_type *restrict spline_m, T x, T y, T z, T *restrict vals, size_t num_splines) const;
 
   KOKKOS_INLINE_FUNCTION
   void evaluate_vgl(const spliner_type *restrict spline_m, T x, T y, T z, T *restrict vals, T *restrict grads,
                     T *restrict lapl, size_t num_splines) const;
-
+  
+  template <class TeamType>
   KOKKOS_INLINE_FUNCTION
-  void evaluate_vgh(const spliner_type *restrict spline_m, T x, T y, T z, T *restrict vals, T *restrict grads,
+  void evaluate_vgh(const TeamType& team, const spliner_type *restrict spline_m, T x, T y, T z, T *restrict vals, T *restrict grads,
                     T *restrict hess, size_t num_splines) const;
 };
 
 template <typename T>
-KOKKOS_INLINE_FUNCTION void MultiBspline<T>::evaluate_v(const spliner_type *restrict spline_m,
+template <class TeamType>
+KOKKOS_INLINE_FUNCTION void MultiBspline<T>::evaluate_v(const TeamType& team, const spliner_type *restrict spline_m,
                                         T x, T y, T z, T *restrict vals,
                                         size_t num_splines) const
 {
@@ -147,6 +149,11 @@ KOKKOS_INLINE_FUNCTION void MultiBspline<T>::evaluate_v(const spliner_type *rest
   //std::fill(vals, vals + num_splines, zero);
   for (size_t i = 0; i<num_splines; i++)
     vals[i] = T();
+   Kokkos::parallel_for(Kokkos::ThreadVectorRange(team,num_splines),
+     [&](const int& i) {
+        vals[i] = T();
+     });
+
 
   for (size_t i = 0; i < 4; i++)
     for (size_t j = 0; j < 4; j++)
@@ -156,10 +163,12 @@ KOKKOS_INLINE_FUNCTION void MultiBspline<T>::evaluate_v(const spliner_type *rest
           spline_m->coefs + ((ix + i) * xs + (iy + j) * ys + iz * zs);
       ASSUME_ALIGNED(coefs);
       //#pragma omp simd
-      for (size_t n = 0; n < num_splines; n++)
-        vals[n] +=
+      Kokkos::parallel_for(Kokkos::ThreadVectorRange(team,num_splines),
+        [&](const int& n) {
+          vals[n] +=
             pre00 * (c[0] * coefs[n] + c[1] * coefs[n + zs] +
                      c[2] * coefs[n + 2 * zs] + c[3] * coefs[n + 3 * zs]);
+         });
     }
 }
 
@@ -293,8 +302,9 @@ MultiBspline<T>::evaluate_vgl(const spliner_type *restrict spline_m,
 }
 
 template <typename T>
+template <class TeamType>
 KOKKOS_INLINE_FUNCTION void
-MultiBspline<T>::evaluate_vgh(const spliner_type *restrict spline_m,
+MultiBspline<T>::evaluate_vgh(const TeamType& team, const spliner_type *restrict spline_m,
                               T x, T y, T z, T *restrict vals,
                               T *restrict grads, T *restrict hess,
                               size_t num_splines) const
@@ -358,18 +368,32 @@ MultiBspline<T>::evaluate_vgh(const spliner_type *restrict spline_m,
 //  std::fill(hyz, hyz + num_splines, T());
 //  std::fill(hzz, hzz + num_splines, T());
 
-  for (size_t i = 0; i < num_splines; i++){
-    vals[i]=T();
-      gx[i]=T();
-      gy[i]=T();
-      gz[i]=T();
-     hxx[i]=T();
-     hxy[i]=T();
-     hxz[i]=T();
-     hyy[i]=T();
-     hyz[i]=T();
-     hzz[i]=T();
-  }
+//  for (size_t i = 0; i < num_splines; i++){
+//    vals[i]=T();
+//     gx[i]=T();
+//      gy[i]=T();
+//      gz[i]=T();
+//     hxx[i]=T();
+//     hxy[i]=T();
+//     hxz[i]=T();
+//     hyy[i]=T();
+//     hyz[i]=T();
+//     hzz[i]=T();
+//  }
+
+  Kokkos::parallel_for(Kokkos::ThreadVectorRange(team,num_splines),
+    [&](const int& i) {
+      vals[i] = T();
+      gx[i] = T();
+      gy[i] = T();
+      gz[i] = T();
+      hxx[i] = T();
+      hxy[i] = T();
+      hxz[i] = T();
+      hyy[i] = T();
+      hyz[i] = T();
+      hzz[i] = T();
+    });
 
   for (int i = 0; i < 4; i++)
     for (int j = 0; j < 4; j++)
@@ -392,9 +416,9 @@ MultiBspline<T>::evaluate_vgh(const spliner_type *restrict spline_m,
       const T pre02 = a[i] * d2b[j];
 
       const int iSplitPoint = num_splines;
-#pragma omp simd
-      for (int n = 0; n < iSplitPoint; n++)
-      {
+//#pragma omp simd
+      Kokkos::parallel_for(Kokkos::ThreadVectorRange(team,num_splines),
+        [&](const int& n) {
 
         T coefsv    = coefs[n];
         T coefsvzs  = coefszs[n];
@@ -418,7 +442,7 @@ MultiBspline<T>::evaluate_vgh(const spliner_type *restrict spline_m,
         gy[n] += pre01 * sum0;
         gz[n] += pre00 * sum1;
         vals[n] += pre00 * sum0;
-      }
+      });
     }
 
   const T dxInv = spline_m->x_grid.delta_inv;
@@ -431,9 +455,9 @@ MultiBspline<T>::evaluate_vgh(const spliner_type *restrict spline_m,
   const T dxz   = dxInv * dzInv;
   const T dyz   = dyInv * dzInv;
 
-#pragma omp simd
-  for (int n = 0; n < num_splines; n++)
-  {
+//#pragma omp simd
+  Kokkos::parallel_for(Kokkos::ThreadVectorRange(team,num_splines),
+       [&](const int& n) {
     gx[n] *= dxInv;
     gy[n] *= dyInv;
     gz[n] *= dzInv;
@@ -443,7 +467,7 @@ MultiBspline<T>::evaluate_vgh(const spliner_type *restrict spline_m,
     hxy[n] *= dxy;
     hxz[n] *= dxz;
     hyz[n] *= dyz;
-  }
+  });
 }
 
 } /** qmcplusplus namespace */
