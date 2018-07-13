@@ -33,6 +33,24 @@ namespace qmcplusplus
 template <typename T, typename compute_engine_type = MultiBspline<T> >
 struct einspline_spo
 {
+  struct EvaluateVGHTag {};
+  struct EvaluateVTag {};
+  typedef Kokkos::TeamPolicy<Kokkos::Serial,EvaluateVGHTag> policy_vgh_serial_t;
+  typedef Kokkos::TeamPolicy<EvaluateVGHTag> policy_vgh_parallel_t;
+  typedef Kokkos::TeamPolicy<Kokkos::Serial,EvaluateVTag> policy_v_serial_t;
+  typedef Kokkos::TeamPolicy<EvaluateVTag> policy_v_parallel_t;
+
+  typedef typename policy_vgh_serial_t::member_type team_vgh_serial_t;
+  typedef typename policy_vgh_parallel_t::member_type team_vgh_parallel_t;
+  typedef typename policy_v_serial_t::member_type team_v_serial_t;
+  typedef typename policy_v_parallel_t::member_type team_v_parallel_t;
+
+  
+  // Whether to use Serial evaluation or not
+  int nSplinesSerialThreshold_V;
+  int nSplinesSerialThreshold_VGH;
+
+
   /// define the einsplie data object type
   using spline_type = typename bspline_traits<T, 3>::SplineType;
   using pos_type        = TinyVector<T, 3>;
@@ -53,6 +71,9 @@ struct einspline_spo
   int nSplinesPerBlock;
   /// if true, responsible for cleaning up einsplines
   bool Owner;
+  /// if true, is copy.  For reference counting & clean up in Kokkos.
+  bool is_copy;
+
   lattice_type Lattice;
   /// use allocator
   einspline::Allocator myAllocator;
@@ -64,13 +85,16 @@ struct einspline_spo
   Kokkos::View<gContainer_type*> grad;
   Kokkos::View<hContainer_type*> hess;
 
-
+  //Temporary position for communicating within Kokkos parallel sections.
+  pos_type tmp_pos;
   /// Timer
   NewTimer *timer;
 
   /// default constructor
   einspline_spo()
-      : nBlocks(0), nSplines(0), firstBlock(0), lastBlock(0), Owner(false)
+      : nSplinesSerialThreshold_V(512),nSplinesSerialThreshold_VGH(128), 
+        nBlocks(0), nSplines(0), firstBlock(0), lastBlock(0), tmp_pos(0),
+        Owner(false), is_copy(false)
   {
     timer = TimerManager.createTimer("Single-Particle Orbitals", timer_level_coarse);
   }
@@ -87,8 +111,10 @@ struct einspline_spo
    * Create a view of the big object. A simple blocking & padding  method.
    */
   einspline_spo(einspline_spo &in, int team_size, int member_id)
-      : Owner(false), Lattice(in.Lattice)
+      : Owner(false), is_copy(false), Lattice(in.Lattice)
   {
+    nSplinesSerialThreshold_V = in.nSplinesSerialThreshold_V;
+    nSplinesSerialThreshold_VGH = in.nSplinesSerialThreshold_VGH;
     nSplines         = in.nSplines;
     nSplinesPerBlock = in.nSplinesPerBlock;
     nBlocks          = (in.nBlocks + team_size - 1) / team_size;
@@ -113,9 +139,18 @@ struct einspline_spo
     // However, since we've converted the large chunks of memory to views, garbage collection is
     // handled automatically.  Thus, setting the spline_type objects to empty views lets Kokkos handle the Garbage collection.
 
-    if (Owner)
+    if (!is_copy)
+    {
       einsplines = Kokkos::View<spline_type*>();
-      
+      for(int i=0; i<psi.extent(0); i++) {
+        psi(i) = vContainer_type();
+        grad(i) = gContainer_type();
+        hess(i) = hContainer_type();
+      }
+      psi = Kokkos::View<vContainer_type*>()  ;
+      grad = Kokkos::View<gContainer_type*>()  ;
+      hess = Kokkos::View<hContainer_type*>() ;
+    } 
   //    for (int i = 0; i < nBlocks; ++i)
   //      myAllocator.destroy(einsplines(i));
   }
@@ -186,11 +221,38 @@ struct einspline_spo
   inline void evaluate_v(const pos_type &p)
   {
     ScopedTimer local_timer(timer);
+    tmp_pos=p;
+    compute_engine.copy_A44();
+    is_copy=true; 
+    if(nSplines > nSplinesSerialThreshold_V)
+      Kokkos::parallel_for("EinsplineSPO::evalute_v_parallel",policy_v_parallel_t(nBlocks,1,32),*this);
+    else
+      Kokkos::parallel_for("EinsplineSPO::evalute_v_serial",policy_v_serial_t(nBlocks,1,32),*this);
 
-    auto u = Lattice.toUnit_floor(p);
-    for (int i = 0; i < nBlocks; ++i)
-      compute_engine.evaluate_v(&einsplines(i), u[0], u[1], u[2], psi(i).data(), nSplinesPerBlock);
+    is_copy=false;
+ //   auto u = Lattice.toUnit_floor(p);
+ //   for (int i = 0; i < nBlocks; ++i)
+  //    compute_engine.evaluate_v(&einsplines(i), u[0], u[1], u[2], psi(i).data(), nSplinesPerBlock);
   }
+
+  KOKKOS_INLINE_FUNCTION
+  void operator() (const EvaluateVTag&, const team_v_serial_t& team ) const {
+    int block = team.league_rank();
+    auto u = Lattice.toUnit_floor(tmp_pos);
+    einsplines(block).coefs=einsplines(block).coefs_view.data();
+    compute_engine.evaluate_v(team,&einsplines(block), u[0], u[1], u[2],
+                              psi(block).data(), psi(block).extent(0));
+  }
+ 
+  KOKKOS_INLINE_FUNCTION
+  void operator() (const EvaluateVTag&, const team_v_parallel_t& team ) const {
+    int block = team.league_rank();
+    auto u = Lattice.toUnit_floor(tmp_pos);
+    einsplines(block).coefs=einsplines(block).coefs_view.data();
+    compute_engine.evaluate_v(team,&einsplines(block), u[0], u[1], u[2],
+                              psi(block).data(), psi(block).extent(0));
+  }
+
 
   /** evaluate psi */
   inline void evaluate_v_pfor(const pos_type &p)
@@ -226,14 +288,40 @@ struct einspline_spo
   inline void evaluate_vgh(const pos_type &p)
   {
     ScopedTimer local_timer(timer);
+    tmp_pos=p;
 
-    auto u = Lattice.toUnit_floor(p);
-    for (int i = 0; i < nBlocks; ++i)
-      compute_engine.evaluate_vgh(&einsplines(i), u[0], u[1], u[2],
-                                  psi(i).data(), grad(i).data(), hess(i).data(),
-                                  nSplinesPerBlock);
+    is_copy = true;
+    compute_engine.copy_A44();
+
+    if(nSplines > nSplinesSerialThreshold_VGH)
+      Kokkos::parallel_for("EinsplineSPO::evalute_vgh",policy_vgh_parallel_t(nBlocks,1,32),*this);
+    else
+      Kokkos::parallel_for("EinsplineSPO::evalute_vgh",policy_vgh_serial_t(nBlocks,1,32),*this);
+    is_copy = false;
+    //auto u = Lattice.toUnit_floor(p);
+    //for (int i = 0; i < nBlocks; ++i)
+    //  compute_engine.evaluate_vgh(&einsplines(i), u[0], u[1], u[2],
+    //                              psi(i).data(), grad(i).data(), hess(i).data(),
+    //                              nSplinesPerBlock);
   }
 
+  KOKKOS_INLINE_FUNCTION
+  void operator() (const EvaluateVGHTag&, const team_vgh_parallel_t& team ) const {
+    int block = team.league_rank();
+    auto u = Lattice.toUnit_floor(tmp_pos);
+    compute_engine.evaluate_vgh(team,&einsplines[block], u[0], u[1], u[2],
+                                      psi(block).data(), grad(block).data(), hess(block).data(),
+                                      psi(block).extent(0));
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  void operator() (const EvaluateVGHTag&, const team_vgh_serial_t& team ) const {
+    int block = team.league_rank();
+    auto u = Lattice.toUnit_floor(tmp_pos);
+    compute_engine.evaluate_vgh(team,&einsplines[block], u[0], u[1], u[2],
+                                      psi(block).data(), grad(block).data(), hess(block).data(),
+                                      psi(block).extent(0));
+}
   /** evaluate psi, grad and hess */
   inline void evaluate_vgh_pfor(const pos_type &p)
   {
