@@ -353,8 +353,27 @@ int main(int argc, char **argv)
 
     // set Rmax for ion-el distance table for PP
     thiswalker->els.DistTables[thiswalker->wavefunction.get_ei_TableID()]->setRmax(Rmax);
+
+    // initial computing
+    thiswalker->els.update();
+    thiswalker->wavefunction.evaluateLog(thiswalker->els);
   }
   Timers[Timer_Init]->stop();
+
+  const int nions = ions.getTotalNum();
+  const int nels  = mover_list[0]->els.getTotalNum();
+  const int nels3 = 3 * nels;
+
+  // this is the number of qudrature points for the non-local PP
+  const int nknots(mover_list[0]->nlpp.size());
+
+  // For VMC, tau is large and should result in an acceptance ratio of roughly
+  // 50%
+  // For DMC, tau is small and should result in an acceptance ratio of 99%
+  const RealType tau = 2.0;
+
+  RealType sqrttau = std::sqrt(tau);
+  RealType accept  = 0.5;
 
   #pragma omp parallel for
   for(int iw = 0; iw<nmovers; iw++)
@@ -365,28 +384,10 @@ int main(int argc, char **argv)
     auto &wavefunction = mover_list[iw]->wavefunction;
     auto &ecp          = mover_list[iw]->nlpp;
 
-    const int nions = ions.getTotalNum();
-    const int nels  = els.getTotalNum();
-    const int nels3 = 3 * nels;
-
-    // this is the cutoff from the non-local PP
-    const int nknots(ecp.size());
-
-    // For VMC, tau is large and should result in an acceptance ratio of roughly
-    // 50%
-    // For DMC, tau is small and should result in an acceptance ratio of 99%
-    const RealType tau = 2.0;
-
     ParticlePos_t delta(nels);
     ParticlePos_t rOnSphere(nknots);
 
-    RealType sqrttau = std::sqrt(tau);
-    RealType accept  = 0.5;
-
     aligned_vector<RealType> ur(nels);
-
-    els.update();
-    wavefunction.evaluateLog(els);
 
     int my_accepted = 0;
     for (int mc = 0; mc < nsteps; ++mc)
