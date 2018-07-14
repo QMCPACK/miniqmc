@@ -24,17 +24,29 @@ namespace qmcplusplus
                const int team_size,
                const int member_id,
                const uint32_t myPrime,
-               const Tensor<int, 3> &tmat)
+               const ParticleSet &ions)
     : spo(spo_main, team_size, member_id), rng(myPrime), nlpp(rng)
   {
-    ions.setName("ion");
-    els.setName("e");
+    build_els(els, ions, rng);
+  }
 
+  const int build_ions(ParticleSet &ions,
+                       const Tensor<int, 3> &tmat,
+                       Tensor<QMCTraits::RealType, 3> &lattice)
+  {
+    ions.setName("ion");
     ions.Lattice.BoxBConds = 1;
-    tile_cell(ions, tmat, static_cast<OHMMS_PRECISION>(1.0));
+    lattice = tile_cell(ions, tmat, static_cast<OHMMS_PRECISION>(1.0));
     ions.RSoA = ions.R; // fill the SoA
 
-    const int nions = ions.getTotalNum();
+    return ions.getTotalNum();
+  }
+
+  const int build_els(ParticleSet &els,
+                      const ParticleSet &ions,
+                      RandomGenerator<QMCTraits::RealType> &rng)
+  {
+    els.setName("e");
     const int nels  = count_electrons(ions, 1);
     const int nels3 = 3 * nels;
 
@@ -51,5 +63,7 @@ namespace qmcplusplus
       els.RSoA = els.R;
     }
 
+    return nels;
   }
+
 }

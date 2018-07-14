@@ -43,8 +43,16 @@ namespace qmcplusplus
           const int team_size,
           const int member_id,
           const uint32_t myPrime,
-          const Tensor<int, 3> &tmat);
+          const ParticleSet &ions);
   };
+
+  const int build_ions(ParticleSet &ions,
+                       const Tensor<int, 3> &tmat,
+                       Tensor<QMCTraits::RealType, 3> &lattice);
+
+  const int build_els(ParticleSet &els,
+                      const ParticleSet &ions,
+                      RandomGenerator<QMCTraits::RealType> &rng);
 }
 
 #endif

@@ -114,6 +114,7 @@
 #include <Input/Input.hpp>
 #include <QMCWaveFunctions/einspline_spo.hpp>
 #include <QMCWaveFunctions/WaveFunction.h>
+#include <Drivers/Mover.hpp>
 #include <getopt.h>
 
 using namespace std;
@@ -281,13 +282,11 @@ int main(int argc, char **argv)
   spo_type spo_main;
   int nTiles = 1;
 
-  // Temporally create ParticleSet ions for setting splines.
-  // Per-thread ions will be created later to avoid any performance impact from
-  // shared ions.
+  ParticleSet ions;
+  // initialize ions and splines which are shared by all threads later
   {
     Tensor<OHMMS_PRECISION, 3> lattice_b;
-    ParticleSet ions;
-    lattice_b             = tile_cell(ions, tmat, static_cast<OHMMS_PRECISION>(1.0));
+    build_ions(ions, tmat, lattice_b);
     const int nels        = count_electrons(ions, 1);
     const int norb        = nels / 2;
     tileSize              = (tileSize > 0) ? tileSize : norb;
@@ -329,9 +328,7 @@ int main(int argc, char **argv)
   Timers[Timer_Total]->start();
 #pragma omp parallel
   {
-    ParticleSet ions, els;
-    ions.setName("ion");
-    els.setName("e");
+    ParticleSet els;
 
     const int ip = omp_get_thread_num();
 
@@ -343,26 +340,9 @@ int main(int argc, char **argv)
     // create generator within the thread
     RandomGenerator<RealType> random_th(myPrimes[ip]);
 
-    ions.Lattice.BoxBConds = 1;
-    tile_cell(ions, tmat, static_cast<OHMMS_PRECISION>(1.0));
-    ions.RSoA = ions.R; // fill the SoA
-
     const int nions = ions.getTotalNum();
-    const int nels  = count_electrons(ions, 1);
+    const int nels  = build_els(els, ions, random_th);
     const int nels3 = 3 * nels;
-
-    { // create up/down electrons
-      els.Lattice.BoxBConds = 1;
-      els.Lattice.set(ions.Lattice);
-      vector<int> ud(2);
-      ud[0] = nels / 2;
-      ud[1] = nels - ud[0];
-      els.create(ud);
-      els.R.InUnit = 1;
-      random_th.generate_uniform(&els.R[0][0], nels3);
-      els.convert2Cart(els.R); // convert to Cartiesian
-      els.RSoA = els.R;
-    }
 
     WaveFunction *wavefunction = new WaveFunction();
 
