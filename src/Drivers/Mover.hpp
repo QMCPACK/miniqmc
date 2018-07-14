@@ -44,6 +44,7 @@ namespace qmcplusplus
           const int member_id,
           const uint32_t myPrime,
           const ParticleSet &ions);
+
   };
 
   const int build_ions(ParticleSet &ions,
@@ -53,6 +54,10 @@ namespace qmcplusplus
   const int build_els(ParticleSet &els,
                       const ParticleSet &ions,
                       RandomGenerator<QMCTraits::RealType> &rng);
+
+  const std::vector<ParticleSet *> extract_els_list(const std::vector<Mover *> mover_list);
+
+  const std::vector<WaveFunction *> extract_wf_list(const std::vector<Mover *> mover_list);
 }
 
 #endif
