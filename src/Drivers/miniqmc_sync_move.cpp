@@ -383,7 +383,6 @@ int main(int argc, char **argv)
     ParticlePos_t grad_new(nmovers);
     aligned_vector<RealType> ur(nmovers);
     std::vector<bool> isValid(nmovers);
-    std::vector<bool> isAccepted(nmovers);
 
     for (int mc = 0; mc < nsteps; ++mc)
     {
@@ -415,22 +414,24 @@ int main(int argc, char **argv)
             isValid[iw] = mover_list[iw]->els.makeMoveAndCheck(iel, dr);
           }
 
+          std::vector<Mover *> valid_mover_list(filtered_list(mover_list,isValid));
+          std::vector<bool> isAccepted(valid_mover_list.size());
+
           // Compute gradient at the trial position
           Timers[Timer_ratioGrad]->start();
 
           #pragma omp parallel for
-          for(int iw = 0; iw<nmovers; iw++)
+          for(int iw = 0; iw<valid_mover_list.size(); iw++)
           {
-            if(!isValid[iw]) continue;
-            mover_list[iw]->wavefunction.ratioGrad(mover_list[iw]->els, iel, grad_new[iw]);
-            mover_list[iw]->spo.evaluate_vgh(mover_list[iw]->els.R[iel]);
+            valid_mover_list[iw]->wavefunction.ratioGrad(valid_mover_list[iw]->els, iel, grad_new[iw]);
+            valid_mover_list[iw]->spo.evaluate_vgh(valid_mover_list[iw]->els.R[iel]);
           }
 
           Timers[Timer_ratioGrad]->stop();
 
           // Accept/reject the trial move
-          for(int iw = 0; iw<nmovers; iw++)
-            if( isValid[iw] && ur[iw]>accept )
+          for(int iw = 0; iw<valid_mover_list.size(); iw++)
+            if (ur[iw]>accept)
               isAccepted[iw]=true;
             else
               isAccepted[iw]=false;
@@ -438,25 +439,23 @@ int main(int argc, char **argv)
           Timers[Timer_Update]->start();
           // update WF storage
           #pragma omp parallel for
-          for(int iw = 0; iw<nmovers; iw++)
+          for(int iw = 0; iw<valid_mover_list.size(); iw++)
           {
-            if(!isValid[iw]) continue;
             if (isAccepted[iw]) // MC
-              mover_list[iw]->wavefunction.acceptMove(mover_list[iw]->els, iel);
+              valid_mover_list[iw]->wavefunction.acceptMove(valid_mover_list[iw]->els, iel);
             else
-              mover_list[iw]->wavefunction.restore(iel);
+              valid_mover_list[iw]->wavefunction.restore(iel);
           }
           Timers[Timer_Update]->stop();
 
           // Update position
           #pragma omp parallel for
-          for(int iw = 0; iw<nmovers; iw++)
+          for(int iw = 0; iw<valid_mover_list.size(); iw++)
           {
-            if(!isValid[iw]) continue;
             if (isAccepted[iw]) // MC
-              mover_list[iw]->els.acceptMove(iel);
+              valid_mover_list[iw]->els.acceptMove(iel);
             else
-              mover_list[iw]->els.rejectMove(iel);
+              valid_mover_list[iw]->els.rejectMove(iel);
           }
         } // iel
       } // substeps

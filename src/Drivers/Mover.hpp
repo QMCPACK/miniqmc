@@ -55,6 +55,15 @@ namespace qmcplusplus
                       const ParticleSet &ions,
                       RandomGenerator<QMCTraits::RealType> &rng);
 
+  template <class T>
+  const std::vector<T *> filtered_list(const std::vector<T *> input_list, const std::vector<bool> chosen)
+  {
+    std::vector<T *> final_list;
+    for(int iw=0; iw<input_list.size(); iw++)
+      if(chosen[iw]) final_list.push_back(input_list[iw]);
+    return final_list;
+  }
+
   const std::vector<ParticleSet *> extract_els_list(const std::vector<Mover *> mover_list);
 
   const std::vector<WaveFunction *> extract_wf_list(const std::vector<Mover *> mover_list);
