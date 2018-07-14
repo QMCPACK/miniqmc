@@ -20,7 +20,7 @@ template <typename T> T count_electrons(const ParticleSet &ions, T scale)
 }
 
 template <typename T>
-Tensor<T, 3> tile_cell(ParticleSet &ions, Tensor<int, 3> &tmat, T scale)
+Tensor<T, 3> tile_cell(ParticleSet &ions, const Tensor<int, 3> &tmat, T scale)
 {
 
   Tensor<T, 3> nio_cell = {7.8811, 7.8811, 0.0, -7.8811, 7.8811,
