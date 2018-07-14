@@ -382,8 +382,8 @@ int main(int argc, char **argv)
     ParticlePos_t grad_now(nmovers);
     ParticlePos_t grad_new(nmovers);
     aligned_vector<RealType> ur(nmovers);
-    aligned_vector<bool> isValid(nmovers);
-    aligned_vector<bool> isAccepted(nmovers);
+    std::vector<bool> isValid(nmovers);
+    std::vector<bool> isAccepted(nmovers);
 
     for (int mc = 0; mc < nsteps; ++mc)
     {

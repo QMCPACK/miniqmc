@@ -65,6 +65,8 @@ struct WaveFunction
   public:
   WaveFunction(): FirstTime(true), Is_built(false), nelup(0), ei_TableID(1), Det_up(nullptr), Det_dn(nullptr), LogValue(0.0) {}
   ~WaveFunction();
+
+  /// operates on a single walker
   void evaluateLog(ParticleSet &P);
   posT evalGrad(ParticleSet &P, int iat);
   valT ratioGrad(ParticleSet &P, int iat, posT &grad);
@@ -72,6 +74,16 @@ struct WaveFunction
   void acceptMove(ParticleSet &P, int iat);
   void restore(int iat);
   void evaluateGL(ParticleSet &P);
+
+  /// operates on multiple walkers
+  void multi_evaluateLog(ParticleSet &P) {};
+  void multi_evalGrad(ParticleSet &P, int iat) {};
+  void multi_ratioGrad(ParticleSet &P, int iat, posT &grad) {};
+  void multi_ratio(ParticleSet &P, int iat) {};
+  void multi_acceptrestoreMove(ParticleSet &P, int iat) {};
+  void multi_evaluateGL(ParticleSet &P) {};
+
+  // others
   int get_ei_TableID() const {return ei_TableID;}
   valT getLogValue() const {return LogValue;}
   void setupTimers();
