@@ -147,7 +147,9 @@ void print_help()
   app_summary() << "usage:" << '\n';
   app_summary() << "  miniqmc   [-hjvV] [-g \"n0 n1 n2\"] [-m meshfactor]"       << '\n';
   app_summary() << "            [-n steps] [-N substeps] [-r rmax] [-s seed]"    << '\n';
+  app_summary() << "            [-w walkers] [-a tile_size]"                     << '\n';
   app_summary() << "options:"                                                    << '\n';
+  app_summary() << "  -a  size of each spline tile       default: num of orbs"   << '\n';
   app_summary() << "  -b  use reference implementations  default: off"           << '\n';
   app_summary() << "  -g  set the 3D tiling.             default: 1 1 1"         << '\n';
   app_summary() << "  -h  print help and exit"                                   << '\n';
@@ -157,6 +159,7 @@ void print_help()
   app_summary() << "  -N  number of MC substeps          default: 1"             << '\n';
   app_summary() << "  -r  set the Rmax.                  default: 1.7"           << '\n';
   app_summary() << "  -s  set the random seed.           default: 11"            << '\n';
+  app_summary() << "  -w  number of walker(movers)       default: num of threads"<< '\n';
   app_summary() << "  -v  verbose output"                                        << '\n';
   app_summary() << "  -V  print version information and exit"                    << '\n';
   //clang-format on
@@ -182,8 +185,8 @@ int main(int argc, char **argv)
   int nsteps  = 100;
   int iseed   = 11;
   int nx = 37, ny = 37, nz = 37;
+  int nmovers = omp_get_max_threads();
   // thread blocking
-  // int team_size=1; //default is 1
   int tileSize  = -1;
   int team_size = 1;
   int nsubsteps = 1;
@@ -204,7 +207,7 @@ int main(int argc, char **argv)
   int opt;
   while(optind < argc)
   {
-    if ((opt = getopt(argc, argv, "bhjvVa:c:g:m:n:N:r:s:")) != -1)
+    if ((opt = getopt(argc, argv, "bhjvVa:c:g:m:n:N:r:s:w:")) != -1)
     {
       switch (opt)
       {
@@ -247,6 +250,9 @@ int main(int argc, char **argv)
       case 'V':
         print_version(true);
         return 1;
+        break;
+      case 'w': // number of nmovers
+        nmovers = atoi(optarg);
         break;
       default:
         print_help();
