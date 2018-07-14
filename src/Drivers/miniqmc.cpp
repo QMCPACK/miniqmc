@@ -287,8 +287,7 @@ int main(int argc, char **argv)
   {
     Tensor<OHMMS_PRECISION, 3> lattice_b;
     ParticleSet ions;
-    OHMMS_PRECISION scale = 1.0;
-    lattice_b             = tile_cell(ions, tmat, scale);
+    lattice_b             = tile_cell(ions, tmat, static_cast<OHMMS_PRECISION>(1.0));
     const int nels        = count_electrons(ions, 1);
     const int norb        = nels / 2;
     tileSize              = (tileSize > 0) ? tileSize : norb;
@@ -345,8 +344,7 @@ int main(int argc, char **argv)
     RandomGenerator<RealType> random_th(myPrimes[ip]);
 
     ions.Lattice.BoxBConds = 1;
-    OHMMS_PRECISION scale  = 1.0;
-    tile_cell(ions, tmat, scale);
+    tile_cell(ions, tmat, static_cast<OHMMS_PRECISION>(1.0));
     ions.RSoA = ions.R; // fill the SoA
 
     const int nions = ions.getTotalNum();
