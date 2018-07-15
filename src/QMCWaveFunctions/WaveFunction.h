@@ -76,20 +76,33 @@ struct WaveFunction
   void evaluateGL(ParticleSet &P);
 
   /// operates on multiple walkers
-  void multi_evaluateLog(ParticleSet &P) {};
-  void multi_evalGrad(ParticleSet &P, int iat) {};
-  void multi_ratioGrad(ParticleSet &P, int iat, posT &grad) {};
-  void multi_ratio(ParticleSet &P, int iat) {};
-  void multi_acceptrestoreMove(ParticleSet &P, int iat) {};
-  void multi_evaluateGL(ParticleSet &P) {};
+  void multi_evaluateLog(const std::vector<WaveFunction *> &WF_list,
+                         const std::vector<ParticleSet *> &P_list) const;
+  void multi_evalGrad(const std::vector<ParticleSet *> &P_list, int iat) const {};
+  void multi_ratioGrad(const std::vector<ParticleSet *> &P_list, int iat, posT &grad) const {};
+  void multi_ratio(const std::vector<ParticleSet *> &P_list, int iat) const {};
+  void multi_acceptrestoreMove(const std::vector<WaveFunction *> &WF_list,
+                               const std::vector<ParticleSet *> &P_list,
+                               const std::vector<bool> &isAccepted,
+                               int iat) const;
+  void multi_evaluateGL(const std::vector<ParticleSet *> &P_list) const {};
 
   // others
   int get_ei_TableID() const {return ei_TableID;}
   valT getLogValue() const {return LogValue;}
   void setupTimers();
+
+  // friends
+  friend const std::vector<WaveFunctionComponentBase *> extract_up_list(const std::vector<WaveFunction *> WF_list);
+  friend const std::vector<WaveFunctionComponentBase *> extract_dn_list(const std::vector<WaveFunction *> WF_list);
+  friend const std::vector<WaveFunctionComponentBase *> extract_jas_list(const std::vector<WaveFunction *> WF_list, int jas_id);
 };
 
 void build_WaveFunction(bool useRef, WaveFunction &WF, ParticleSet &ions, ParticleSet &els, const RandomGenerator<QMCTraits::RealType> &RNG, bool enableJ3);
+
+const std::vector<WaveFunctionComponentBase *> extract_up_list(const std::vector<WaveFunction *> WF_list);
+const std::vector<WaveFunctionComponentBase *> extract_dn_list(const std::vector<WaveFunction *> WF_list);
+const std::vector<WaveFunctionComponentBase *> extract_jas_list(const std::vector<WaveFunction *> WF_list, int jas_id);
 
 } // qmcplusplus
 

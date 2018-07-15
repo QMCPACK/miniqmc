@@ -356,7 +356,12 @@ int main(int argc, char **argv)
 
     // initial computing
     thiswalker->els.update();
-    thiswalker->wavefunction.evaluateLog(thiswalker->els);
+  }
+
+  { // initial computing
+    const std::vector<ParticleSet *> P_list(extract_els_list(mover_list));
+    const std::vector<WaveFunction *> WF_list(extract_wf_list(mover_list));
+    mover_list[0]->wavefunction.multi_evaluateLog(WF_list, P_list);
   }
   Timers[Timer_Init]->stop();
 
@@ -417,6 +422,9 @@ int main(int argc, char **argv)
           std::vector<Mover *> valid_mover_list(filtered_list(mover_list,isValid));
           std::vector<bool> isAccepted(valid_mover_list.size());
 
+          const std::vector<ParticleSet *> valid_P_list(extract_els_list(valid_mover_list));
+          const std::vector<WaveFunction *> valid_WF_list(extract_wf_list(valid_mover_list));
+
           // Compute gradient at the trial position
           Timers[Timer_ratioGrad]->start();
 
@@ -438,14 +446,7 @@ int main(int argc, char **argv)
 
           Timers[Timer_Update]->start();
           // update WF storage
-          #pragma omp parallel for
-          for(int iw = 0; iw<valid_mover_list.size(); iw++)
-          {
-            if (isAccepted[iw]) // MC
-              valid_mover_list[iw]->wavefunction.acceptMove(valid_mover_list[iw]->els, iel);
-            else
-              valid_mover_list[iw]->wavefunction.restore(iel);
-          }
+          valid_mover_list[0]->wavefunction.multi_acceptrestoreMove(valid_WF_list, valid_P_list, isAccepted, iel);
           Timers[Timer_Update]->stop();
 
           // Update position
@@ -471,7 +472,7 @@ int main(int argc, char **argv)
       Timers[Timer_Diffusion]->stop();
 
       // Compute NLPP energy using integral over spherical points
-
+      // Ye: I have not found a strategy for NLPP
       Timers[Timer_ECP]->start();
       #pragma omp parallel for
       for(int iw = 0; iw<nmovers; iw++)

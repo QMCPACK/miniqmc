@@ -167,60 +167,67 @@ struct WaveFunctionComponentBase : public QMCTraits
                           bool fromscratch = false) = 0;
 
   /// operates on multiple walkers
-  virtual void multi_evaluateLog(std::vector<ParticleSet *> &P_list,
-                                 std::vector<ParticleSet::ParticleGradient_t *> &G_list,
-                                 std::vector<ParticleSet::ParticleLaplacian_t *> &L_list,
-                                 ParticleSet::ParticleValue_t &values)
+  virtual void multi_evaluateLog(const std::vector<WaveFunctionComponentBase *> &WFC_list,
+                                 const std::vector<ParticleSet *> &P_list,
+                                 const std::vector<ParticleSet::ParticleGradient_t *> &G_list,
+                                 const std::vector<ParticleSet::ParticleLaplacian_t *> &L_list,
+                                 ParticleSet::ParticleValue_t &values) const
   {
     #pragma omp parallel for
     for(int iw=0; iw<P_list.size(); iw++)
-      values[iw] = evaluateLog(*P_list[iw], *G_list[iw], *L_list[iw]);
+      values[iw] = WFC_list[iw]->evaluateLog(*P_list[iw], *G_list[iw], *L_list[iw]);
   };
 
-  virtual void multi_evalGrad(std::vector<ParticleSet *> &P_list, int iat,
-                              ParticleSet::ParticleGradient_t &grad_now)
+  virtual void multi_evalGrad(const std::vector<WaveFunctionComponentBase *> &WFC_list,
+                              const std::vector<ParticleSet *> &P_list, int iat,
+                              ParticleSet::ParticleGradient_t &grad_now) const
   {
     #pragma omp parallel for
     for(int iw=0; iw<P_list.size(); iw++)
-      grad_now[iw] = evalGrad(*P_list[iw], iat);
+      grad_now[iw] = WFC_list[iw]->evalGrad(*P_list[iw], iat);
   };
 
-  virtual void multi_ratioGrad(std::vector<ParticleSet *> &P_list, int iat,
+  virtual void multi_ratioGrad(const std::vector<WaveFunctionComponentBase *> &WFC_list,
+                               const std::vector<ParticleSet *> &P_list, int iat,
                                ParticleSet::ParticleValue_t &ratio_list,
-                               ParticleSet::ParticleGradient_t &grad_new)
+                               ParticleSet::ParticleGradient_t &grad_new) const
   {
     #pragma omp parallel for
     for(int iw=0; iw<P_list.size(); iw++)
     {
       GradType grad_iat;
-      ratio_list[iw] = ratioGrad(*P_list[iw], iat, grad_iat);
+      ratio_list[iw] = WFC_list[iw]->ratioGrad(*P_list[iw], iat, grad_iat);
       grad_new[iw] = grad_iat;
     }
   };
 
-  virtual void multi_acceptMove(std::vector<ParticleSet *> &P_list, int iat, std::vector<bool> isAccepted)
+  virtual void multi_acceptrestoreMove(const std::vector<WaveFunctionComponentBase *> &WFC_list,
+                                       const std::vector<ParticleSet *> &P_list,
+                                       const std::vector<bool> &isAccepted, int iat) const
   {
     #pragma omp parallel for
     for(int iw=0; iw<P_list.size(); iw++)
     {
-      if(isAccepted[iw]) acceptMove(*P_list[iw], iat);
+      if(isAccepted[iw]) WFC_list[iw]->acceptMove(*P_list[iw], iat);
     }
   };
 
-  virtual void multi_ratio(std::vector<ParticleSet *> &P_list, int iat,
-                           ParticleSet::ParticleValue_t &ratio_list)
+  virtual void multi_ratio(const std::vector<WaveFunctionComponentBase *> &WFC_list,
+                           const std::vector<ParticleSet *> &P_list, int iat,
+                           ParticleSet::ParticleValue_t &ratio_list) const
   {
     // TODO
   };
 
-  virtual void multi_evaluateGL(std::vector<ParticleSet *> &P_list,
-                                std::vector<ParticleSet::ParticleGradient_t *> &G_list,
-                                std::vector<ParticleSet::ParticleLaplacian_t *> &L_list,
-                                bool fromscratch = false)
+  virtual void multi_evaluateGL(const std::vector<WaveFunctionComponentBase *> &WFC_list,
+                                const std::vector<ParticleSet *> &P_list,
+                                const std::vector<ParticleSet::ParticleGradient_t *> &G_list,
+                                const std::vector<ParticleSet::ParticleLaplacian_t *> &L_list,
+                                bool fromscratch = false) const
   {
     #pragma omp parallel for
     for(int iw=0; iw<P_list.size(); iw++)
-      evaluateGL(*P_list[iw], *G_list[iw], *L_list[iw], fromscratch);
+      WFC_list[iw]->evaluateGL(*P_list[iw], *G_list[iw], *L_list[iw], fromscratch);
   };
 };
 }
