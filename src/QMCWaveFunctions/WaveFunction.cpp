@@ -177,6 +177,7 @@ WaveFunction::valT WaveFunction::ratioGrad(ParticleSet &P, int iat,
                                                posT &grad)
 {
   timers[Timer_Det]->start();
+  grad = valT(0);
   valT ratio = ( iat<nelup ? Det_up->ratioGrad(P, iat, grad) : Det_dn->ratioGrad(P, iat, grad) );
   timers[Timer_Det]->stop();
 
@@ -281,6 +282,71 @@ void WaveFunction::multi_evaluateLog(const std::vector<WaveFunction *> &WF_list,
       WF_list[iw]->FirstTime = false;
   }
 
+}
+
+void WaveFunction::multi_evalGrad(const std::vector<WaveFunction *> &WF_list,
+                                  const std::vector<ParticleSet *> &P_list, int iat,
+                                  std::vector<posT> &grad_now) const
+{
+  timers[Timer_Det]->start();
+  std::vector<posT> grad_now_det(P_list.size());
+  if(iat<nelup)
+  {
+    std::vector<WaveFunctionComponentBase *> up_list(extract_up_list(WF_list));
+    Det_up->multi_evalGrad(up_list, P_list, iat, grad_now_det);
+  }
+  else
+  {
+    std::vector<WaveFunctionComponentBase *> dn_list(extract_dn_list(WF_list));
+    Det_dn->multi_evalGrad(dn_list, P_list, iat, grad_now_det);
+  }
+  for(int iw=0; iw<P_list.size(); iw++)
+    grad_now[iw] = grad_now_det[iw];
+  timers[Timer_Det]->stop();
+
+  for(size_t i=0; i<Jastrows.size(); i++) {
+    jastrow_timers[i]->start();
+    std::vector<posT> grad_now_jas(P_list.size());
+    std::vector<WaveFunctionComponentBase *> jas_list(extract_jas_list(WF_list, i));
+    Jastrows[i]->multi_evalGrad(jas_list, P_list, iat, grad_now_jas);
+    for(int iw=0; iw<P_list.size(); iw++)
+      grad_now[iw] += grad_now_jas[iw];
+    jastrow_timers[i]->stop();
+  }
+}
+
+void WaveFunction::multi_ratioGrad(const std::vector<WaveFunction *> &WF_list,
+                                   const std::vector<ParticleSet *> &P_list, int iat,
+                                   std::vector<valT> &ratios,
+                                   std::vector<posT> &grad_new) const
+{
+  timers[Timer_Det]->start();
+  std::vector<valT> ratios_det(P_list.size());
+  for(int iw=0; iw<P_list.size(); iw++)
+    grad_new[iw] = valT(0);
+  if(iat<nelup)
+  {
+    std::vector<WaveFunctionComponentBase *> up_list(extract_up_list(WF_list));
+    Det_up->multi_ratioGrad(up_list, P_list, iat, ratios_det, grad_new);
+  }
+  else
+  {
+    std::vector<WaveFunctionComponentBase *> dn_list(extract_dn_list(WF_list));
+    Det_dn->multi_ratioGrad(dn_list, P_list, iat, ratios_det, grad_new);
+  }
+  for(int iw=0; iw<P_list.size(); iw++)
+    ratios[iw] = ratios_det[iw];
+  timers[Timer_Det]->stop();
+
+  for(size_t i=0; i<Jastrows.size(); i++) {
+    jastrow_timers[i]->start();
+    std::vector<valT> ratios_jas(P_list.size());
+    std::vector<WaveFunctionComponentBase *> jas_list(extract_jas_list(WF_list, i));
+    Jastrows[i]->multi_ratioGrad(jas_list, P_list, iat, ratios_jas, grad_new);
+    for(int iw=0; iw<P_list.size(); iw++)
+      ratios[iw] *= ratios_jas[iw];
+    jastrow_timers[i]->stop();
+  }
 }
 
 void WaveFunction::multi_acceptrestoreMove(const std::vector<WaveFunction *> &WF_list,

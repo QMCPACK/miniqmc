@@ -175,6 +175,8 @@ int main(int argc, char **argv)
   typedef QMCTraits::RealType           RealType;
   typedef ParticleSet::ParticlePos_t    ParticlePos_t;
   typedef ParticleSet::PosType          PosType;
+  typedef ParticleSet::GradType         GradType;
+  typedef ParticleSet::ValueType        ValueType;
   // clang-format on
 
   Communicate comm(argc, argv);
@@ -383,15 +385,21 @@ int main(int argc, char **argv)
 
   // synchronous walker moves
   {
-    ParticlePos_t delta(nmovers);
-    ParticlePos_t grad_now(nmovers);
-    ParticlePos_t grad_new(nmovers);
+    std::vector<PosType> delta(nmovers);
+    std::vector<GradType> grad_now(nmovers);
+    std::vector<GradType> grad_new(nmovers);
+    std::vector<ValueType> ratios(nmovers);
     aligned_vector<RealType> ur(nmovers);
     std::vector<bool> isValid(nmovers);
 
     for (int mc = 0; mc < nsteps; ++mc)
     {
       Timers[Timer_Diffusion]->start();
+
+      const std::vector<ParticleSet *> P_list(extract_els_list(mover_list));
+      const std::vector<WaveFunction *> WF_list(extract_wf_list(mover_list));
+      const Mover &anon_mover = *mover_list[0];
+
       for (int l = 0; l < nsubsteps; ++l) // drift-and-diffusion
       {
         for (int iel = 0; iel < nels; ++iel)
@@ -403,9 +411,7 @@ int main(int argc, char **argv)
 
           // Compute gradient at the current position
           Timers[Timer_evalGrad]->start();
-          #pragma omp parallel for
-          for(int iw = 0; iw<nmovers; iw++)
-            grad_now[iw] = mover_list[iw]->wavefunction.evalGrad(mover_list[iw]->els, iel);
+          anon_mover.wavefunction.multi_evalGrad(WF_list, P_list, iel, grad_now);
           Timers[Timer_evalGrad]->stop();
 
           // Construct trial move
@@ -427,11 +433,10 @@ int main(int argc, char **argv)
 
           // Compute gradient at the trial position
           Timers[Timer_ratioGrad]->start();
-
+          anon_mover.wavefunction.multi_ratioGrad(valid_WF_list, valid_P_list, iel, ratios, grad_new);
           #pragma omp parallel for
           for(int iw = 0; iw<valid_mover_list.size(); iw++)
           {
-            valid_mover_list[iw]->wavefunction.ratioGrad(valid_mover_list[iw]->els, iel, grad_new[iw]);
             valid_mover_list[iw]->spo.evaluate_vgh(valid_mover_list[iw]->els.R[iel]);
           }
 
@@ -446,7 +451,7 @@ int main(int argc, char **argv)
 
           Timers[Timer_Update]->start();
           // update WF storage
-          valid_mover_list[0]->wavefunction.multi_acceptrestoreMove(valid_WF_list, valid_P_list, isAccepted, iel);
+          anon_mover.wavefunction.multi_acceptrestoreMove(valid_WF_list, valid_P_list, isAccepted, iel);
           Timers[Timer_Update]->stop();
 
           // Update position

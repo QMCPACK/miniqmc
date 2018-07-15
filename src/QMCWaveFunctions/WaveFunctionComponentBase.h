@@ -180,7 +180,7 @@ struct WaveFunctionComponentBase : public QMCTraits
 
   virtual void multi_evalGrad(const std::vector<WaveFunctionComponentBase *> &WFC_list,
                               const std::vector<ParticleSet *> &P_list, int iat,
-                              ParticleSet::ParticleGradient_t &grad_now) const
+                              std::vector<PosType> &grad_now) const
   {
     #pragma omp parallel for
     for(int iw=0; iw<P_list.size(); iw++)
@@ -189,16 +189,12 @@ struct WaveFunctionComponentBase : public QMCTraits
 
   virtual void multi_ratioGrad(const std::vector<WaveFunctionComponentBase *> &WFC_list,
                                const std::vector<ParticleSet *> &P_list, int iat,
-                               ParticleSet::ParticleValue_t &ratio_list,
-                               ParticleSet::ParticleGradient_t &grad_new) const
+                               std::vector<ValueType> &ratios,
+                               std::vector<PosType> &grad_new) const
   {
     #pragma omp parallel for
     for(int iw=0; iw<P_list.size(); iw++)
-    {
-      GradType grad_iat;
-      ratio_list[iw] = WFC_list[iw]->ratioGrad(*P_list[iw], iat, grad_iat);
-      grad_new[iw] = grad_iat;
-    }
+      ratios[iw] = WFC_list[iw]->ratioGrad(*P_list[iw], iat, grad_new[iw]);
   };
 
   virtual void multi_acceptrestoreMove(const std::vector<WaveFunctionComponentBase *> &WFC_list,

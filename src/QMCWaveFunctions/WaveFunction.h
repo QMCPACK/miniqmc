@@ -78,8 +78,13 @@ struct WaveFunction
   /// operates on multiple walkers
   void multi_evaluateLog(const std::vector<WaveFunction *> &WF_list,
                          const std::vector<ParticleSet *> &P_list) const;
-  void multi_evalGrad(const std::vector<ParticleSet *> &P_list, int iat) const {};
-  void multi_ratioGrad(const std::vector<ParticleSet *> &P_list, int iat, posT &grad) const {};
+  void multi_evalGrad(const std::vector<WaveFunction *> &WF_list,
+                      const std::vector<ParticleSet *> &P_list, int iat,
+                      std::vector<posT> &grad_now) const;
+  void multi_ratioGrad(const std::vector<WaveFunction *> &WF_list,
+                       const std::vector<ParticleSet *> &P_list, int iat,
+                       std::vector<valT> &ratio_list,
+                       std::vector<posT> &grad_new) const;
   void multi_ratio(const std::vector<ParticleSet *> &P_list, int iat) const {};
   void multi_acceptrestoreMove(const std::vector<WaveFunction *> &WF_list,
                                const std::vector<ParticleSet *> &P_list,
