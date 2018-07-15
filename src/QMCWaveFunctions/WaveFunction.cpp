@@ -310,7 +310,7 @@ void WaveFunction::multi_acceptrestoreMove(const std::vector<WaveFunction *> &WF
   }
 }
 
-const std::vector<WaveFunctionComponentBase *> extract_up_list(const std::vector<WaveFunction *> WF_list)
+const std::vector<WaveFunctionComponentBase *> extract_up_list(const std::vector<WaveFunction *> &WF_list)
 {
   std::vector<WaveFunctionComponentBase *> up_list;
   for(auto it=WF_list.begin(); it!=WF_list.end(); it++)
@@ -318,7 +318,7 @@ const std::vector<WaveFunctionComponentBase *> extract_up_list(const std::vector
   return up_list;
 }
 
-const std::vector<WaveFunctionComponentBase *> extract_dn_list(const std::vector<WaveFunction *> WF_list)
+const std::vector<WaveFunctionComponentBase *> extract_dn_list(const std::vector<WaveFunction *> &WF_list)
 {
   std::vector<WaveFunctionComponentBase *> dn_list;
   for(auto it=WF_list.begin(); it!=WF_list.end(); it++)
@@ -326,7 +326,7 @@ const std::vector<WaveFunctionComponentBase *> extract_dn_list(const std::vector
   return dn_list;
 }
 
-const std::vector<WaveFunctionComponentBase *> extract_jas_list(const std::vector<WaveFunction *> WF_list, int jas_id)
+const std::vector<WaveFunctionComponentBase *> extract_jas_list(const std::vector<WaveFunction *> &WF_list, int jas_id)
 {
   std::vector<WaveFunctionComponentBase *> jas_list;
   for(auto it=WF_list.begin(); it!=WF_list.end(); it++)

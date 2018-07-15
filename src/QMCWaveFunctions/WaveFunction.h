@@ -93,16 +93,16 @@ struct WaveFunction
   void setupTimers();
 
   // friends
-  friend const std::vector<WaveFunctionComponentBase *> extract_up_list(const std::vector<WaveFunction *> WF_list);
-  friend const std::vector<WaveFunctionComponentBase *> extract_dn_list(const std::vector<WaveFunction *> WF_list);
-  friend const std::vector<WaveFunctionComponentBase *> extract_jas_list(const std::vector<WaveFunction *> WF_list, int jas_id);
+  friend const std::vector<WaveFunctionComponentBase *> extract_up_list(const std::vector<WaveFunction *> &WF_list);
+  friend const std::vector<WaveFunctionComponentBase *> extract_dn_list(const std::vector<WaveFunction *> &WF_list);
+  friend const std::vector<WaveFunctionComponentBase *> extract_jas_list(const std::vector<WaveFunction *> &WF_list, int jas_id);
 };
 
 void build_WaveFunction(bool useRef, WaveFunction &WF, ParticleSet &ions, ParticleSet &els, const RandomGenerator<QMCTraits::RealType> &RNG, bool enableJ3);
 
-const std::vector<WaveFunctionComponentBase *> extract_up_list(const std::vector<WaveFunction *> WF_list);
-const std::vector<WaveFunctionComponentBase *> extract_dn_list(const std::vector<WaveFunction *> WF_list);
-const std::vector<WaveFunctionComponentBase *> extract_jas_list(const std::vector<WaveFunction *> WF_list, int jas_id);
+const std::vector<WaveFunctionComponentBase *> extract_up_list(const std::vector<WaveFunction *> &WF_list);
+const std::vector<WaveFunctionComponentBase *> extract_dn_list(const std::vector<WaveFunction *> &WF_list);
+const std::vector<WaveFunctionComponentBase *> extract_jas_list(const std::vector<WaveFunction *> &WF_list, int jas_id);
 
 } // qmcplusplus
 

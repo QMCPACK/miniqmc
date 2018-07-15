@@ -431,7 +431,7 @@ void ParticleSet::clearDistanceTables()
   DistTables.clear();
 }
 
-const std::vector<ParticleSet::ParticleGradient_t *> extract_G_list(const std::vector<ParticleSet *> P_list)
+const std::vector<ParticleSet::ParticleGradient_t *> extract_G_list(const std::vector<ParticleSet *> &P_list)
 {
   std::vector<ParticleSet::ParticleGradient_t *> G_list;
   for(auto it=P_list.begin(); it!=P_list.end(); it++)
@@ -439,7 +439,7 @@ const std::vector<ParticleSet::ParticleGradient_t *> extract_G_list(const std::v
   return G_list;
 }
 
-const std::vector<ParticleSet::ParticleLaplacian_t *> extract_L_list(const std::vector<ParticleSet *> P_list)
+const std::vector<ParticleSet::ParticleLaplacian_t *> extract_L_list(const std::vector<ParticleSet *> &P_list)
 {
   std::vector<ParticleSet::ParticleLaplacian_t *> L_list;
   for(auto it=P_list.begin(); it!=P_list.end(); it++)

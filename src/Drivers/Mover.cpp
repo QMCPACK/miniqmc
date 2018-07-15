@@ -66,7 +66,7 @@ namespace qmcplusplus
     return nels;
   }
 
-  const std::vector<ParticleSet *> extract_els_list(const std::vector<Mover *> mover_list)
+  const std::vector<ParticleSet *> extract_els_list(const std::vector<Mover *> &mover_list)
   {
     std::vector<ParticleSet *> els_list;
     for(auto it=mover_list.begin(); it!=mover_list.end(); it++)
@@ -74,7 +74,7 @@ namespace qmcplusplus
     return els_list;
   }
 
-  const std::vector<WaveFunction *> extract_wf_list(const std::vector<Mover *> mover_list)
+  const std::vector<WaveFunction *> extract_wf_list(const std::vector<Mover *> &mover_list)
   {
     std::vector<WaveFunction *> wf_list;
     for(auto it=mover_list.begin(); it!=mover_list.end(); it++)
