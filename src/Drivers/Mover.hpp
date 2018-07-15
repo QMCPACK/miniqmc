@@ -47,13 +47,13 @@ namespace qmcplusplus
 
   };
 
-  const int build_ions(ParticleSet &ions,
-                       const Tensor<int, 3> &tmat,
-                       Tensor<QMCTraits::RealType, 3> &lattice);
+  int build_ions(ParticleSet &ions,
+                 const Tensor<int, 3> &tmat,
+                 Tensor<QMCTraits::RealType, 3> &lattice);
 
-  const int build_els(ParticleSet &els,
-                      const ParticleSet &ions,
-                      RandomGenerator<QMCTraits::RealType> &rng);
+  int build_els(ParticleSet &els,
+                const ParticleSet &ions,
+                RandomGenerator<QMCTraits::RealType> &rng);
 
   template <class T>
   const std::vector<T *> filtered_list(const std::vector<T *> &input_list, const std::vector<bool> &chosen)

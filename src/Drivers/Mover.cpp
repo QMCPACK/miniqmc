@@ -30,9 +30,9 @@ namespace qmcplusplus
     build_els(els, ions, rng);
   }
 
-  const int build_ions(ParticleSet &ions,
-                       const Tensor<int, 3> &tmat,
-                       Tensor<QMCTraits::RealType, 3> &lattice)
+  int build_ions(ParticleSet &ions,
+                 const Tensor<int, 3> &tmat,
+                 Tensor<QMCTraits::RealType, 3> &lattice)
   {
     ions.setName("ion");
     ions.Lattice.BoxBConds = 1;
@@ -42,9 +42,9 @@ namespace qmcplusplus
     return ions.getTotalNum();
   }
 
-  const int build_els(ParticleSet &els,
-                      const ParticleSet &ions,
-                      RandomGenerator<QMCTraits::RealType> &rng)
+  int build_els(ParticleSet &els,
+                const ParticleSet &ions,
+                RandomGenerator<QMCTraits::RealType> &rng)
   {
     els.setName("e");
     const int nels  = count_electrons(ions, 1);
