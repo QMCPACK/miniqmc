@@ -265,7 +265,7 @@ void WaveFunction::multi_evaluateLog(const std::vector<WaveFunction *> &WF_list,
     std::vector<WaveFunctionComponentBase *> up_list(extract_up_list(WF_list));
     Det_up->multi_evaluateLog(up_list, P_list, G_list, L_list, LogValues);
     for(int iw=0; iw<P_list.size(); iw++)
-      WF_list[iw]->LogValue  = LogValues[iw];
+      WF_list[iw]->LogValue = LogValues[iw];
     std::vector<WaveFunctionComponentBase *> dn_list(extract_dn_list(WF_list));
     Det_dn->multi_evaluateLog(dn_list, P_list, G_list, L_list, LogValues);
     for(int iw=0; iw<P_list.size(); iw++)
@@ -373,6 +373,37 @@ void WaveFunction::multi_acceptrestoreMove(const std::vector<WaveFunction *> &WF
     std::vector<WaveFunctionComponentBase *> jas_list(extract_jas_list(WF_list, i));
     Jastrows[i]->multi_acceptrestoreMove(jas_list, P_list, isAccepted, iat);
     jastrow_timers[i]->stop();
+  }
+}
+
+void WaveFunction::multi_evaluateGL(const std::vector<WaveFunction *> &WF_list,
+                                    const std::vector<ParticleSet *> &P_list) const
+{
+  constexpr valT czero(0);
+  const std::vector<ParticleSet::ParticleGradient_t *>  G_list(extract_G_list(P_list));
+  const std::vector<ParticleSet::ParticleLaplacian_t *> L_list(extract_L_list(P_list));
+
+  for(int iw=0; iw<P_list.size(); iw++)
+  {
+    *G_list[iw] = czero;
+    *L_list[iw] = czero;
+  }
+  // det up/dn
+  std::vector<WaveFunctionComponentBase *> up_list(extract_up_list(WF_list));
+  Det_up->multi_evaluateGL(up_list, P_list, G_list, L_list);
+  for(int iw=0; iw<P_list.size(); iw++)
+    WF_list[iw]->LogValue = up_list[iw]->LogValue;
+  std::vector<WaveFunctionComponentBase *> dn_list(extract_dn_list(WF_list));
+  Det_dn->multi_evaluateGL(dn_list, P_list, G_list, L_list);
+  for(int iw=0; iw<P_list.size(); iw++)
+    WF_list[iw]->LogValue += dn_list[iw]->LogValue;
+  // Jastrow factors
+  for(size_t i=0; i<Jastrows.size(); i++)
+  {
+    std::vector<WaveFunctionComponentBase *> jas_list(extract_jas_list(WF_list, i));
+    Jastrows[i]->multi_evaluateGL(jas_list, P_list, G_list, L_list);
+    for(int iw=0; iw<P_list.size(); iw++)
+      WF_list[iw]->LogValue += jas_list[iw]->LogValue;
   }
 }
 

@@ -182,7 +182,7 @@ struct WaveFunctionComponentBase : public QMCTraits
                               const std::vector<ParticleSet *> &P_list, int iat,
                               std::vector<PosType> &grad_now) const
   {
-    #pragma omp parallel for
+    //#pragma omp parallel for
     for(int iw=0; iw<P_list.size(); iw++)
       grad_now[iw] = WFC_list[iw]->evalGrad(*P_list[iw], iat);
   };

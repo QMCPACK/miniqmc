@@ -90,7 +90,8 @@ struct WaveFunction
                                const std::vector<ParticleSet *> &P_list,
                                const std::vector<bool> &isAccepted,
                                int iat) const;
-  void multi_evaluateGL(const std::vector<ParticleSet *> &P_list) const {};
+  void multi_evaluateGL(const std::vector<WaveFunction *> &WF_list,
+                        const std::vector<ParticleSet *> &P_list) const;
 
   // others
   int get_ei_TableID() const {return ei_TableID;}

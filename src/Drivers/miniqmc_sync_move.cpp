@@ -471,8 +471,8 @@ int main(int argc, char **argv)
       {
         mover_list[iw]->els.donePbyP();
         // evaluate Kinetic Energy
-        mover_list[iw]->wavefunction.evaluateGL(mover_list[iw]->els);
       }
+      anon_mover.wavefunction.multi_evaluateGL(WF_list, P_list);
 
       Timers[Timer_Diffusion]->stop();
 
