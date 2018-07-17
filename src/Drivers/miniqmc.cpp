@@ -364,7 +364,7 @@ int main(int argc, char **argv)
   const int nels  = mover_list[0]->els.getTotalNum();
   const int nels3 = 3 * nels;
 
-  // this is the number of qudrature points for the non-local PP
+  // this is the number of quadrature points for the non-local PP
   const int nknots(mover_list[0]->nlpp.size());
 
   // For VMC, tau is large and should result in an acceptance ratio of roughly
