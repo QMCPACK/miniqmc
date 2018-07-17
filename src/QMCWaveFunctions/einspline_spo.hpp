@@ -86,7 +86,7 @@ struct einspline_spo
    *
    * Create a view of the big object. A simple blocking & padding  method.
    */
-  einspline_spo(einspline_spo &in, int team_size, int member_id)
+  einspline_spo(const einspline_spo &in, int team_size, int member_id)
       : Owner(false), Lattice(in.Lattice)
   {
     nSplines         = in.nSplines;
