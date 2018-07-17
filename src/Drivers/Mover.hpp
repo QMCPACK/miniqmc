@@ -38,9 +38,10 @@ namespace qmcplusplus
   /**
    * @brief Container class includes all the classes required to operate walker moves
    *
-   * Movers are different from walkers. The former carry all the data needed to evolve walkers.
-   * The latter is lightweight in memory. In a capacity limited scenario,
-   * a limited amount movers can be used to handle a large amount of walkers.
+   * Movers are distinct from walkers. Walkers are lightweight in memory, while
+   * Movers carry additional data needed to evolve the walkers efficiently.
+   * In a memory capacity limited scenario, a limited number of movers can be used to
+   * handle a large amount of walkers.
    *
    * This class is used only by QMC drivers.
    */
