@@ -33,7 +33,6 @@ namespace qmcplusplus
     using spo_type = einspline_spo<RealType, MultiBspline<RealType> >;
 
     RandomGenerator<RealType> rng;
-    ParticleSet               ions;
     ParticleSet               els;
     spo_type                  spo;
     WaveFunction              wavefunction;
