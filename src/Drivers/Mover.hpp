@@ -29,6 +29,7 @@
 #include <QMCWaveFunctions/einspline_spo.hpp>
 #include <Numerics/Spline2/MultiBspline.hpp>
 #include <QMCWaveFunctions/WaveFunction.h>
+#include <Particle/ParticleSet_builder.hpp>
 #include <Input/pseudo.hpp>
 
 namespace qmcplusplus
@@ -64,20 +65,14 @@ namespace qmcplusplus
           const int team_size,
           const int member_id,
           const uint32_t myPrime,
-          const ParticleSet &ions);
+          const ParticleSet &ions)
+      : spo(spo_main, team_size, member_id), rng(myPrime), nlpp(rng)
+    {
+      build_els(els, ions, rng);
+    }
+
   };
 
-  // Ye: the following two routines are used for initialize data.
-  //     Needs to be moved to more appropriate places like Input/
-  /// build the ParticleSet of ions
-  int build_ions(ParticleSet &ions,
-                 const Tensor<int, 3> &tmat,
-                 Tensor<QMCTraits::RealType, 3> &lattice);
-
-  /// build the ParticleSet of ions
-  int build_els(ParticleSet &els,
-                const ParticleSet &ions,
-                RandomGenerator<QMCTraits::RealType> &rng);
 }
 
 #endif

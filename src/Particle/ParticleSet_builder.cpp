@@ -14,21 +14,12 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 
-#include <Drivers/Mover.hpp>
+#include <Particle/ParticleSet_builder.hpp>
 #include <Input/Input.hpp>
 #include <vector>
 
 namespace qmcplusplus
 {
-  Mover::Mover(const spo_type &spo_main,
-               const int team_size,
-               const int member_id,
-               const uint32_t myPrime,
-               const ParticleSet &ions)
-    : spo(spo_main, team_size, member_id), rng(myPrime), nlpp(rng)
-  {
-    build_els(els, ions, rng);
-  }
 
   int build_ions(ParticleSet &ions,
                  const Tensor<int, 3> &tmat,
