@@ -12,7 +12,13 @@
 // Ye Luo, yeluo@anl.gov,
 //    Argonne National Laboratory
 ////////////////////////////////////////////////////////////////////////////////
+// -*- C++ -*-
 
+/**
+ * @file Mover.h
+ * @brief Declaration of Mover class
+ *
+ */
 
 #ifndef QMCPLUSPLUS_MOVER_HPP
 #define QMCPLUSPLUS_MOVER_HPP
@@ -27,17 +33,33 @@
 
 namespace qmcplusplus
 {
+
+  /**
+   * @brief Container class includes all the classes required to operate walker moves
+   *
+   * Movers are different from walkers. The former carry all the data needed to evolve walkers.
+   * The latter is lightweight in memory. In a capacity limited scenario,
+   * a limited amount movers can be used to handle a large amount of walkers.
+   *
+   * This class is used only by QMC drivers.
+   */
   struct Mover
   {
     using RealType = QMCTraits::RealType;
     using spo_type = einspline_spo<RealType, MultiBspline<RealType> >;
 
+    /// random number generator
     RandomGenerator<RealType> rng;
+    /// electrons
     ParticleSet               els;
+    /// single particle orbitals
     spo_type                  spo;
+    /// wavefunction container
     WaveFunction              wavefunction;
+    /// non-local pseudo-potentials
     NonLocalPP<RealType>      nlpp;
 
+    /// constructor
     Mover(const spo_type &spo_main,
           const int team_size,
           const int member_id,
@@ -45,10 +67,14 @@ namespace qmcplusplus
           const ParticleSet &ions);
   };
 
+  // Ye: the following two routines are used for initialize data.
+  //     Needs to be moved to more appropriate places like Input/
+  /// build the ParticleSet of ions
   int build_ions(ParticleSet &ions,
                  const Tensor<int, 3> &tmat,
                  Tensor<QMCTraits::RealType, 3> &lattice);
 
+  /// build the ParticleSet of ions
   int build_els(ParticleSet &els,
                 const ParticleSet &ions,
                 RandomGenerator<QMCTraits::RealType> &rng);
