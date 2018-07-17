@@ -14,21 +14,12 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 
-#include <Drivers/Mover.hpp>
+#include <Particle/ParticleSet_builder.hpp>
 #include <Input/Input.hpp>
 #include <vector>
 
 namespace qmcplusplus
 {
-  Mover::Mover(const spo_type &spo_main,
-               const int team_size,
-               const int member_id,
-               const uint32_t myPrime,
-               const ParticleSet &ions)
-    : spo(spo_main, team_size, member_id), rng(myPrime), nlpp(rng)
-  {
-    build_els(els, ions, rng);
-  }
 
   int build_ions(ParticleSet &ions,
                  const Tensor<int, 3> &tmat,
@@ -66,19 +57,4 @@ namespace qmcplusplus
     return nels;
   }
 
-  const std::vector<ParticleSet *> extract_els_list(const std::vector<Mover *> &mover_list)
-  {
-    std::vector<ParticleSet *> els_list;
-    for(auto it=mover_list.begin(); it!=mover_list.end(); it++)
-      els_list.push_back(&(*it)->els);
-    return els_list;
-  }
-
-  const std::vector<WaveFunction *> extract_wf_list(const std::vector<Mover *> &mover_list)
-  {
-    std::vector<WaveFunction *> wf_list;
-    for(auto it=mover_list.begin(); it!=mover_list.end(); it++)
-      wf_list.push_back(&(*it)->wavefunction);
-    return wf_list;
-  }
 }
