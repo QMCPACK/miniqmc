@@ -114,6 +114,7 @@
 #include <Input/Input.hpp>
 #include <QMCWaveFunctions/einspline_spo.hpp>
 #include <QMCWaveFunctions/WaveFunction.h>
+#include <Drivers/Mover.hpp>
 #include <getopt.h>
 
 using namespace std;
@@ -122,6 +123,7 @@ using namespace qmcplusplus;
 enum MiniQMCTimers
 {
   Timer_Total,
+  Timer_Init,
   Timer_Diffusion,
   Timer_ECP,
   Timer_Value,
@@ -132,6 +134,7 @@ enum MiniQMCTimers
 
 TimerNameList_t<MiniQMCTimers> MiniQMCTimerNames = {
     {Timer_Total, "Total"},
+    {Timer_Init, "Initialization"},
     {Timer_Diffusion, "Diffusion"},
     {Timer_ECP, "Pseudopotential"},
     {Timer_Value, "Value"},
@@ -146,7 +149,9 @@ void print_help()
   app_summary() << "usage:" << '\n';
   app_summary() << "  miniqmc   [-hjvV] [-g \"n0 n1 n2\"] [-m meshfactor]"       << '\n';
   app_summary() << "            [-n steps] [-N substeps] [-r rmax] [-s seed]"    << '\n';
+  app_summary() << "            [-w walkers] [-a tile_size]"                     << '\n';
   app_summary() << "options:"                                                    << '\n';
+  app_summary() << "  -a  size of each spline tile       default: num of orbs"   << '\n';
   app_summary() << "  -b  use reference implementations  default: off"           << '\n';
   app_summary() << "  -g  set the 3D tiling.             default: 1 1 1"         << '\n';
   app_summary() << "  -h  print help and exit"                                   << '\n';
@@ -156,6 +161,7 @@ void print_help()
   app_summary() << "  -N  number of MC substeps          default: 1"             << '\n';
   app_summary() << "  -r  set the Rmax.                  default: 1.7"           << '\n';
   app_summary() << "  -s  set the random seed.           default: 11"            << '\n';
+  app_summary() << "  -w  number of walker(movers)       default: num of threads"<< '\n';
   app_summary() << "  -v  verbose output"                                        << '\n';
   app_summary() << "  -V  print version information and exit"                    << '\n';
   //clang-format on
@@ -181,8 +187,8 @@ int main(int argc, char **argv)
   int nsteps  = 100;
   int iseed   = 11;
   int nx = 37, ny = 37, nz = 37;
+  int nmovers = omp_get_max_threads();
   // thread blocking
-  // int team_size=1; //default is 1
   int tileSize  = -1;
   int team_size = 1;
   int nsubsteps = 1;
@@ -203,7 +209,7 @@ int main(int argc, char **argv)
   int opt;
   while(optind < argc)
   {
-    if ((opt = getopt(argc, argv, "bhjvVa:c:g:m:n:N:r:s:")) != -1)
+    if ((opt = getopt(argc, argv, "bhjvVa:c:g:m:n:N:r:s:w:")) != -1)
     {
       switch (opt)
       {
@@ -247,6 +253,9 @@ int main(int argc, char **argv)
         print_version(true);
         return 1;
         break;
+      case 'w': // number of nmovers
+        nmovers = atoi(optarg);
+        break;
       default:
         print_help();
         return 1;
@@ -281,14 +290,11 @@ int main(int argc, char **argv)
   spo_type spo_main;
   int nTiles = 1;
 
-  // Temporally create ParticleSet ions for setting splines.
-  // Per-thread ions will be created later to avoid any performance impact from
-  // shared ions.
+  ParticleSet ions;
+  // initialize ions and splines which are shared by all threads later
   {
     Tensor<OHMMS_PRECISION, 3> lattice_b;
-    ParticleSet ions;
-    OHMMS_PRECISION scale = 1.0;
-    lattice_b             = tile_cell(ions, tmat, scale);
+    build_ions(ions, tmat, lattice_b);
     const int nels        = count_electrons(ions, 1);
     const int norb        = nels / 2;
     tileSize              = (tileSize > 0) ? tileSize : norb;
@@ -328,75 +334,60 @@ int main(int argc, char **argv)
                 << "reference implementation " << endl;
 
   Timers[Timer_Total]->start();
-#pragma omp parallel
+
+  Timers[Timer_Init]->start();
+  std::vector<Mover *> mover_list(nmovers, nullptr);
+  // prepare movers
+  #pragma omp parallel for
+  for(int iw = 0; iw<nmovers; iw++)
   {
-    ParticleSet ions, els;
-    ions.setName("ion");
-    els.setName("e");
-
     const int ip = omp_get_thread_num();
-
     const int member_id = ip % team_size;
 
-    // create spo per thread
-    spo_type spo(spo_main, team_size, member_id);
+    // create and initialize movers
+    Mover *thiswalker = new Mover(spo_main, team_size, member_id, myPrimes[ip], ions);
+    mover_list[iw] = thiswalker;
 
-    // create generator within the thread
-    RandomGenerator<RealType> random_th(myPrimes[ip]);
-
-    ions.Lattice.BoxBConds = 1;
-    OHMMS_PRECISION scale  = 1.0;
-    tile_cell(ions, tmat, scale);
-    ions.RSoA = ions.R; // fill the SoA
-
-    const int nions = ions.getTotalNum();
-    const int nels  = count_electrons(ions, 1);
-    const int nels3 = 3 * nels;
-
-    { // create up/down electrons
-      els.Lattice.BoxBConds = 1;
-      els.Lattice.set(ions.Lattice);
-      vector<int> ud(2);
-      ud[0] = nels / 2;
-      ud[1] = nels - ud[0];
-      els.create(ud);
-      els.R.InUnit = 1;
-      random_th.generate_uniform(&els.R[0][0], nels3);
-      els.convert2Cart(els.R); // convert to Cartiesian
-      els.RSoA = els.R;
-    }
-
-    WaveFunction *wavefunction = new WaveFunction();
-
-    if (useRef)
-      build_WaveFunction(true, *wavefunction, ions, els, random_th, enableJ3);
-    else
-      build_WaveFunction(false, *wavefunction, ions, els, random_th, enableJ3);
+    // create wavefunction per mover
+    build_WaveFunction(useRef, thiswalker->wavefunction, ions, thiswalker->els, thiswalker->rng, enableJ3);
 
     // set Rmax for ion-el distance table for PP
-    els.DistTables[wavefunction->get_ei_TableID()]->setRmax(Rmax);
+    thiswalker->els.DistTables[thiswalker->wavefunction.get_ei_TableID()]->setRmax(Rmax);
 
-    // create pseudopp
-    NonLocalPP<OHMMS_PRECISION> ecp(random_th);
+    // initial computing
+    thiswalker->els.update();
+    thiswalker->wavefunction.evaluateLog(thiswalker->els);
+  }
+  Timers[Timer_Init]->stop();
 
-    // this is the cutoff from the non-local PP
-    const int nknots(ecp.size());
+  const int nions = ions.getTotalNum();
+  const int nels  = mover_list[0]->els.getTotalNum();
+  const int nels3 = 3 * nels;
 
-    // For VMC, tau is large and should result in an acceptance ratio of roughly
-    // 50%
-    // For DMC, tau is small and should result in an acceptance ratio of 99%
-    const RealType tau = 2.0;
+  // this is the number of quadrature points for the non-local PP
+  const int nknots(mover_list[0]->nlpp.size());
+
+  // For VMC, tau is large and should result in an acceptance ratio of roughly
+  // 50%
+  // For DMC, tau is small and should result in an acceptance ratio of 99%
+  const RealType tau = 2.0;
+
+  RealType sqrttau = std::sqrt(tau);
+  RealType accept  = 0.5;
+
+  #pragma omp parallel for
+  for(int iw = 0; iw<nmovers; iw++)
+  {
+    auto &els          = mover_list[iw]->els;
+    auto &spo          = mover_list[iw]->spo;
+    auto &random_th    = mover_list[iw]->rng;
+    auto &wavefunction = mover_list[iw]->wavefunction;
+    auto &ecp          = mover_list[iw]->nlpp;
 
     ParticlePos_t delta(nels);
     ParticlePos_t rOnSphere(nknots);
 
-    RealType sqrttau = std::sqrt(tau);
-    RealType accept  = 0.5;
-
     aligned_vector<RealType> ur(nels);
-
-    els.update();
-    wavefunction->evaluateLog(els);
 
     int my_accepted = 0;
     for (int mc = 0; mc < nsteps; ++mc)
@@ -412,7 +403,7 @@ int main(int argc, char **argv)
           els.setActive(iel);
           // Compute gradient at the current position
           Timers[Timer_evalGrad]->start();
-          PosType grad_now = wavefunction->evalGrad(els, iel);
+          PosType grad_now = wavefunction.evalGrad(els, iel);
           Timers[Timer_evalGrad]->stop();
 
           // Construct trial move
@@ -425,7 +416,7 @@ int main(int argc, char **argv)
           Timers[Timer_ratioGrad]->start();
 
           PosType grad_new;
-          wavefunction->ratioGrad(els, iel, grad_new);
+          wavefunction.ratioGrad(els, iel, grad_new);
 
           spo.evaluate_vgh(els.R[iel]);
 
@@ -436,7 +427,7 @@ int main(int argc, char **argv)
           {
             // Update position, and update temporary storage
             Timers[Timer_Update]->start();
-            wavefunction->acceptMove(els, iel);
+            wavefunction.acceptMove(els, iel);
             Timers[Timer_Update]->stop();
             els.acceptMove(iel);
             my_accepted++;
@@ -444,7 +435,7 @@ int main(int argc, char **argv)
           else
           {
             els.rejectMove(iel);
-            wavefunction->restore(iel);
+            wavefunction.restore(iel);
           }
         } // iel
       }   // substeps
@@ -452,14 +443,14 @@ int main(int argc, char **argv)
       els.donePbyP();
 
       // evaluate Kinetic Energy
-      wavefunction->evaluateGL(els);
+      wavefunction.evaluateGL(els);
 
       Timers[Timer_Diffusion]->stop();
 
       // Compute NLPP energy using integral over spherical points
 
       ecp.randomize(rOnSphere); // pick random sphere
-      const DistanceTableData *d_ie = els.DistTables[wavefunction->get_ei_TableID()];
+      const DistanceTableData *d_ie = els.DistTables[wavefunction.get_ei_TableID()];
 
       Timers[Timer_ECP]->start();
       for (int iat = 0; iat < nions; ++iat)
@@ -482,7 +473,7 @@ int main(int argc, char **argv)
 
               spo.evaluate_v(els.R[iel]);
 
-              wavefunction->ratio(els, iel);
+              wavefunction.ratio(els, iel);
 
               Timers[Timer_Value]->stop();
 
@@ -495,10 +486,14 @@ int main(int argc, char **argv)
 
     } // nsteps
 
-    // cleanup
-    delete wavefunction;
-  } // end of omp parallel
+  } // end of mover loop
   Timers[Timer_Total]->stop();
+
+  // free all movers
+  #pragma omp parallel for
+  for(int iw = 0; iw<nmovers; iw++)
+    delete mover_list[iw];
+  mover_list.clear();
 
   if (comm.root())
   {

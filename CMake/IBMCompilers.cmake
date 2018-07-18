@@ -19,8 +19,11 @@ SET( CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -O3" )
 
 # Set language standardards
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -qnoxlcompatmacros")
-# CMake (up to 3.11) only support XL up to 13.1.5 and CMAKE_CXX_STANDARD doesn't work
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+
+# CMake < 3.9 didn't have support for language standards in XL
+IF(NOT CMAKE_CXX11_STANDARD_COMPILE_OPTION)
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+ENDIF()
 
 IF(QMC_OMP)
   SET(ENABLE_OPENMP 1)
