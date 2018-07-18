@@ -13,9 +13,6 @@ ADD_LIBRARY(miniwfs ../QMCWaveFunctions/WaveFunction.cpp)
 ADD_EXECUTABLE(miniqmc miniqmc.cpp)
 TARGET_LINK_LIBRARIES(miniqmc miniwfs qmcbase qmcutil ${QMC_UTIL_LIBS} ${MPI_LIBRARY})
 
-#ADD_EXECUTABLE(diff_wfs diff_wfs.cpp)
-#TARGET_LINK_LIBRARIES(diff_wfs miniwfs qmcbase qmcutil ${QMC_UTIL_LIBS} ${MPI_LIBRARY})
-
 endif()
 
 #SET(boost_test exchange_walker)

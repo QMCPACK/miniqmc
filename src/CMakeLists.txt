@@ -143,7 +143,7 @@ ENDIF()
     ${GITREV_TMP}
     )
 
-   ADD_LIBRARY(qmcutil ${UTILITIES} ${ADIOS})
+   ADD_LIBRARY(qmcutil ${UTILITIES})
 
 
   # For unit tests, enable use for the fake RNG
@@ -169,80 +169,9 @@ ENDIF()
     Particle/ParticleSet.BC.cpp 
     Particle/DistanceTableAA.cpp
     Particle/DistanceTableAB.cpp
+    Particle/ParticleSet_builder.cpp
     )
 
-  ADD_LIBRARY(qmcbase ${PARTICLE}  ${PARTICLEIO}) 
+  ADD_LIBRARY(qmcbase ${PARTICLE})
 
-  #IF(QMC_BUILD_STATIC)
-  #  ADD_LIBRARY(qmcbase STATIC ${PARTICLE}  ${PARTICLEIO})
-  #ELSE(QMC_BUILD_STATIC)
-  #  ADD_LIBRARY(qmcbase SHARED ${PARTICLE}  ${PARTICLEIO})
-  #ENDIF(QMC_BUILD_STATIC)
-  #SUBDIRS(einspline)
-
-  if(QMC_BUILD_LEVEL GREATER 4)
-
-    MESSAGE(STATUS "Minimal build: only miniapp drivers")
-    SUBDIRS(Drivers)
-
-  else() #{{{
-
-  #############################
-  # Creating ADIOS
-  #############################
-
-
-
-  SUBDIRS(QMCWaveFunctions)
-  #SUBDIRS(QMCHamiltonians)
-  #SUBDIRS(QMCDrivers)
-
-  IF(BUILD_AFQMC)
-   SUBDIRS(AFQMC)
-  ENDIF(BUILD_AFQMC)
-
-  IF(BUILD_FCIQMC)
-   SUBDIRS(FCIQMC)
-  ENDIF(BUILD_FCIQMC)
-
-  #SUBDIRS(QMCApp)
-
-  #IF(BUILD_QMCTOOLS)
-  SUBDIRS(QMCTools)
-  #ENDIF(BUILD_QMCTOOLS)
-
-  IF(BUILD_SANDBOX)
-    SUBDIRS(SandBox)
-  ENDIF(BUILD_SANDBOX)
-
-  IF(BUILD_SQD)
-    SUBDIRS(SQD)
-  ENDIF(BUILD_SQD)
-
-  if (BUILD_UNIT_TESTS) #{
-    SET(HAS_TARGET_COMPILE_DEFINITIONS 1)
-    IF (CMAKE_VERSION VERSION_LESS "2.8.11")
-      MESSAGE("CMake version 2.8.10 - some unit tests will not be built")
-      SET(HAS_TARGET_COMPILE_DEFINITIONS 0)
-    ENDIF()
-    #Unit test directories
-    INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/external_codes/catch)
-    INCLUDE(${PROJECT_SOURCE_DIR}/CMake/unit_test.cmake)
-    SUBDIRS(OhmmsPETE/tests)
-    SUBDIRS(Numerics/tests)
-    SUBDIRS(Utilities/tests)
-    SUBDIRS(Numerics/einspline/tests)
-    SUBDIRS(OhmmsData/tests)
-    SUBDIRS(Lattice/tests)
-    SUBDIRS(Particle/tests)
-    SUBDIRS(ParticleIO/tests)
-    SUBDIRS(QMCWaveFunctions/tests)
-    SUBDIRS(QMCHamiltonians/tests)
-    IF (HAS_TARGET_COMPILE_DEFINITIONS)
-      SUBDIRS(ParticleBase/tests)
-      SUBDIRS(QMCDrivers/tests)
-      SUBDIRS(QMCApp/tests)
-    ENDIF()
-  endif() #}
-
-endif() #}}}
+  SUBDIRS(Drivers)

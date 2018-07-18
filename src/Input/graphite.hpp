@@ -25,7 +25,7 @@ template <typename T> T count_electrons(const ParticleSet &ions, T scale)
  * @param scale scaling factor
  */
 template <typename T>
-Tensor<T, 3> tile_cell(ParticleSet &ions, Tensor<int, 3> &tmat, T scale)
+Tensor<T, 3> tile_cell(ParticleSet &ions, const Tensor<int, 3> &tmat, T scale)
 {
   Tensor<T, 3> graphite = {4.65099, 0.0, 0.0, -2.3255,    4.02788,
                            0.0,     0.0, 0.0, 12.67609393};
