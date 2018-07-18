@@ -111,8 +111,8 @@ struct einspline_spo : public SPOSet
     {
       einsplines[i] = in.einsplines[t];
 #ifdef ENABLE_OFFLOAD
-      spline_type **restrict einsplines_ptr=einsplines.data();
-      spline_type *restrict &tile_ptr=in.einsplines[t];
+      spline_type **einsplines_ptr=einsplines.data();
+      auto &tile_ptr=in.einsplines[t];
       #pragma omp target map(to:i) device(0)
       {
         einsplines_ptr[i]=tile_ptr;
