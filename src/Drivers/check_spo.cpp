@@ -22,7 +22,7 @@
 #include <Utilities/qmcpack_version.h>
 #include <Utilities/Communicate.h>
 #include <Utilities/NewTimer.h>
-#include <Drivers/Mover.hpp>
+#include <Drivers/Mover_old.hpp>
 #include <Input/Input.hpp>
 #include <getopt.h>
 
