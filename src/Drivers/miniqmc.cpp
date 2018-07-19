@@ -377,7 +377,7 @@ int main(int argc, char **argv)
   RealType sqrttau = std::sqrt(tau);
   RealType accept  = 0.5;
 
-  #pragma omp parallel for
+//  #pragma omp parallel for
   for(int iw = 0; iw<nmovers; iw++)
   {
     auto &els          = mover_list[iw]->els;
@@ -492,7 +492,7 @@ int main(int argc, char **argv)
   Timers[Timer_Total]->stop();
 
   // free all movers
-  #pragma omp parallel for
+//  #pragma omp parallel for
   for(int iw = 0; iw<nmovers; iw++)
     delete mover_list[iw];
   mover_list.clear();
