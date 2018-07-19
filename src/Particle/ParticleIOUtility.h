@@ -27,7 +27,7 @@ namespace qmcplusplus
  * @param ref_ initial particle set in primitive cell
  * @param tmat tiling matrix
  */
-template <typename PS> void expandSuperCell(PS &ref_, Tensor<int, 3> &tmat)
+template <typename PS> void expandSuperCell(PS &ref_, const Tensor<int, 3> &tmat)
 {
   typedef typename PS::SingleParticlePos_t SingleParticlePos_t;
 

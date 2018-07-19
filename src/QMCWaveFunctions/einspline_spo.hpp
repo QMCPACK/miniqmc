@@ -110,8 +110,8 @@ struct einspline_spo
    *
    * Create a view of the big object. A simple blocking & padding  method.
    */
-  einspline_spo(einspline_spo &in, int team_size, int member_id)
-      : Owner(false), is_copy(false), Lattice(in.Lattice)
+  einspline_spo(const einspline_spo &in, int team_size, int member_id)
+      : Owner(false), Lattice(in.Lattice)
   {
     nSplinesSerialThreshold_V = in.nSplinesSerialThreshold_V;
     nSplinesSerialThreshold_VGH = in.nSplinesSerialThreshold_VGH;
