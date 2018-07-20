@@ -198,20 +198,20 @@ int main(int argc, char **argv)
     vector<RealType> ur(nels);
     random_th.generate_uniform(ur.data(), nels);
 
-    WaveFunctionComponentBasePtr wfc     = nullptr;
-    WaveFunctionComponentBasePtr wfc_ref = nullptr;
+    WaveFunctionComponentPtr wfc     = nullptr;
+    WaveFunctionComponentPtr wfc_ref = nullptr;
     if (wfc_name == "J2")
     {
       TwoBodyJastrow<BsplineFunctor<RealType>> *J =
           new TwoBodyJastrow<BsplineFunctor<RealType>>(els);
       buildJ2(*J, els.Lattice.WignerSeitzRadius);
-      wfc = dynamic_cast<WaveFunctionComponentBasePtr>(J);
+      wfc = dynamic_cast<WaveFunctionComponentPtr>(J);
       cout << "Built J2" << endl;
       miniqmcreference::TwoBodyJastrowRef<BsplineFunctor<RealType>> *J_ref =
           new miniqmcreference::TwoBodyJastrowRef<BsplineFunctor<RealType>>(
               els_ref);
       buildJ2(*J_ref, els.Lattice.WignerSeitzRadius);
-      wfc_ref = dynamic_cast<WaveFunctionComponentBasePtr>(J_ref);
+      wfc_ref = dynamic_cast<WaveFunctionComponentPtr>(J_ref);
       cout << "Built J2_ref" << endl;
     }
     else if (wfc_name == "J1")
@@ -219,13 +219,13 @@ int main(int argc, char **argv)
       OneBodyJastrow<BsplineFunctor<RealType>> *J =
           new OneBodyJastrow<BsplineFunctor<RealType>>(ions, els);
       buildJ1(*J, els.Lattice.WignerSeitzRadius);
-      wfc = dynamic_cast<WaveFunctionComponentBasePtr>(J);
+      wfc = dynamic_cast<WaveFunctionComponentPtr>(J);
       cout << "Built J1" << endl;
       miniqmcreference::OneBodyJastrowRef<BsplineFunctor<RealType>> *J_ref =
           new miniqmcreference::OneBodyJastrowRef<BsplineFunctor<RealType>>(
               ions, els_ref);
       buildJ1(*J_ref, els.Lattice.WignerSeitzRadius);
-      wfc_ref = dynamic_cast<WaveFunctionComponentBasePtr>(J_ref);
+      wfc_ref = dynamic_cast<WaveFunctionComponentPtr>(J_ref);
       cout << "Built J1_ref" << endl;
     }
     else if (wfc_name == "JeeI" || wfc_name == "J3")
@@ -233,13 +233,13 @@ int main(int argc, char **argv)
       ThreeBodyJastrow<PolynomialFunctor3D> *J =
           new ThreeBodyJastrow<PolynomialFunctor3D>(ions, els);
       buildJeeI(*J, els.Lattice.WignerSeitzRadius);
-      wfc = dynamic_cast<WaveFunctionComponentBasePtr>(J);
+      wfc = dynamic_cast<WaveFunctionComponentPtr>(J);
       cout << "Built JeeI" << endl;
       miniqmcreference::ThreeBodyJastrowRef<PolynomialFunctor3D> *J_ref =
           new miniqmcreference::ThreeBodyJastrowRef<PolynomialFunctor3D>(
               ions, els_ref);
       buildJeeI(*J_ref, els.Lattice.WignerSeitzRadius);
-      wfc_ref = dynamic_cast<WaveFunctionComponentBasePtr>(J_ref);
+      wfc_ref = dynamic_cast<WaveFunctionComponentPtr>(J_ref);
       cout << "Built JeeI_ref" << endl;
     }
 

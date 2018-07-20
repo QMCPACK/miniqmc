@@ -19,7 +19,7 @@
 #define QMCPLUSPLUS_DETERMINANT_H
 #include "Numerics/OhmmsPETE/OhmmsMatrix.h"
 #include "Numerics/DeterminantOperators.h"
-#include "QMCWaveFunctions/WaveFunctionComponentBase.h"
+#include "QMCWaveFunctions/WaveFunctionComponent.h"
 
 namespace qmcplusplus
 {
@@ -177,7 +177,7 @@ void checkDiff(const MT1 &a, const MT2 &b, const std::string &tag)
   std::cout << tag << " difference between matrices (average per element) = " << error / nrows / nrows << std::endl;
 }
 
-struct DiracDeterminant : public WaveFunctionComponentBase
+struct DiracDeterminant : public WaveFunctionComponent
 {
   DiracDeterminant(int nels, const RandomGenerator<RealType> &RNG, int First=0)
   : FirstIndex(First), myRandom(RNG)

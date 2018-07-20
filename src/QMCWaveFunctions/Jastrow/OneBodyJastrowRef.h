@@ -12,7 +12,7 @@
 #ifndef QMCPLUSPLUS_ONEBODYJASTROW_REF_H
 #define QMCPLUSPLUS_ONEBODYJASTROW_REF_H
 #include "Utilities/Configuration.h"
-#include "QMCWaveFunctions/WaveFunctionComponentBase.h"
+#include "QMCWaveFunctions/WaveFunctionComponent.h"
 #include <numeric>
 
 /*!
@@ -27,7 +27,7 @@ using namespace qmcplusplus;
 /** @ingroup WaveFunctionComponent
  *  @brief Specialization for one-body Jastrow function using multiple functors
  */
-template <class FT> struct OneBodyJastrowRef : public WaveFunctionComponentBase
+template <class FT> struct OneBodyJastrowRef : public WaveFunctionComponent
 {
   /// alias FuncType
   using FuncType = FT;
