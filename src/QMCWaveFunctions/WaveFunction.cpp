@@ -9,13 +9,24 @@
 // File created by: Jeongnim Kim, jeongnim.kim@intel.com, Intel Corp.
 ////////////////////////////////////////////////////////////////////////////////
 // -*- C++ -*-
-#include <QMCWaveFunctions/WaveFunction.h>
-#include <Input/Input.hpp>
 
 /*!
  * @file WaveFunction.cpp
    @brief Wavefunction based on Structure of Arrays (SoA) storage
  */
+
+#include <QMCWaveFunctions/WaveFunction.h>
+#include <QMCWaveFunctions/Determinant.h>
+#include <QMCWaveFunctions/DeterminantRef.h>
+#include <QMCWaveFunctions/Jastrow/BsplineFunctor.h>
+#include <QMCWaveFunctions/Jastrow/PolynomialFunctor3D.h>
+#include <QMCWaveFunctions/Jastrow/OneBodyJastrowRef.h>
+#include <QMCWaveFunctions/Jastrow/OneBodyJastrow.h>
+#include <QMCWaveFunctions/Jastrow/TwoBodyJastrowRef.h>
+#include <QMCWaveFunctions/Jastrow/TwoBodyJastrow.h>
+#include <QMCWaveFunctions/Jastrow/ThreeBodyJastrowRef.h>
+#include <QMCWaveFunctions/Jastrow/ThreeBodyJastrow.h>
+#include <Input/Input.hpp>
 
 namespace qmcplusplus
 {
@@ -26,9 +37,9 @@ enum WaveFunctionTimers
   Timer_GL,
 };
 
-TimerNameList_t<WaveFunctionTimers> WaveFunctionTimerNames = {
-  {Timer_Det, "Determinant"},
-  {Timer_GL, "Kinetic Energy"}
+TimerNameLevelList_t<WaveFunctionTimers> WaveFunctionTimerNames = {
+  {Timer_Det, "Determinant", timer_level_fine},
+  {Timer_GL, "Kinetic Energy", timer_level_coarse}
 };
 
 
@@ -138,9 +149,9 @@ WaveFunction::~WaveFunction()
 
 void WaveFunction::setupTimers()
 {
-  setup_timers(timers, WaveFunctionTimerNames, timer_level_coarse);
+  setup_timers(timers, WaveFunctionTimerNames);
   for (int i = 0; i < Jastrows.size(); i++) {
-    jastrow_timers.push_back(TimerManager.createTimer(Jastrows[i]->WaveFunctionComponentName, timer_level_coarse));
+    jastrow_timers.push_back(TimerManager.createTimer(Jastrows[i]->WaveFunctionComponentName, timer_level_fine));
   }
 }
 

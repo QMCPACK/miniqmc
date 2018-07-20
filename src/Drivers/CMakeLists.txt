@@ -8,7 +8,7 @@ FOREACH(p ${ESTEST})
   TARGET_LINK_LIBRARIES(${p} qmcbase qmcutil ${QMC_UTIL_LIBS} ${MPI_LIBRARY})
 ENDFOREACH(p ${ESTEST})
 
-ADD_LIBRARY(miniwfs ../QMCWaveFunctions/WaveFunction.cpp)
+ADD_LIBRARY(miniwfs ../QMCWaveFunctions/WaveFunction.cpp ../QMCWaveFunctions/SPOSet_builder.cpp)
 
 SET(DRIVERS miniqmc miniqmc_sync_move)
 

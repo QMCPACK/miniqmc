@@ -112,7 +112,8 @@
 #include <Utilities/RandomGenerator.h>
 #include <Utilities/qmcpack_version.h>
 #include <Input/Input.hpp>
-#include <QMCWaveFunctions/einspline_spo.hpp>
+#include <QMCWaveFunctions/SPOSet.h>
+#include <QMCWaveFunctions/SPOSet_builder.h>
 #include <QMCWaveFunctions/WaveFunction.h>
 #include <Drivers/Mover.hpp>
 #include <getopt.h>
@@ -149,7 +150,7 @@ void print_help()
   app_summary() << "usage:" << '\n';
   app_summary() << "  miniqmc   [-hjvV] [-g \"n0 n1 n2\"] [-m meshfactor]"       << '\n';
   app_summary() << "            [-n steps] [-N substeps] [-r rmax] [-s seed]"    << '\n';
-  app_summary() << "            [-w walkers] [-a tile_size]"                     << '\n';
+  app_summary() << "            [-w walkers] [-a tile_size] [-t timer_level]"    << '\n';
   app_summary() << "options:"                                                    << '\n';
   app_summary() << "  -a  size of each spline tile       default: num of orbs"   << '\n';
   app_summary() << "  -b  use reference implementations  default: off"           << '\n';
@@ -161,6 +162,7 @@ void print_help()
   app_summary() << "  -N  number of MC substeps          default: 1"             << '\n';
   app_summary() << "  -r  set the Rmax.                  default: 1.7"           << '\n';
   app_summary() << "  -s  set the random seed.           default: 11"            << '\n';
+  app_summary() << "  -t  timer level: coarse or fine    default: fine"          << '\n';
   app_summary() << "  -w  number of walker(movers)       default: num of threads"<< '\n';
   app_summary() << "  -v  verbose output"                                        << '\n';
   app_summary() << "  -V  print version information and exit"                    << '\n';
@@ -200,6 +202,7 @@ int main(int argc, char **argv)
   PrimeNumberSet<uint32_t> myPrimes;
 
   bool verbose = false;
+  std::string timer_level_name = "fine";
 
   if (!comm.root())
   {
@@ -209,7 +212,7 @@ int main(int argc, char **argv)
   int opt;
   while(optind < argc)
   {
-    if ((opt = getopt(argc, argv, "bhjvVa:c:g:m:n:N:r:s:w:")) != -1)
+    if ((opt = getopt(argc, argv, "bhjvVa:c:g:m:n:N:r:s:w:t:")) != -1)
     {
       switch (opt)
       {
@@ -248,6 +251,9 @@ int main(int argc, char **argv)
       case 's':
         iseed = atoi(optarg);
         break;
+      case 't':
+        timer_level_name = std::string(optarg);
+        break;
       case 'v': verbose = true; break;
       case 'V':
         print_version(true);
@@ -272,7 +278,15 @@ int main(int argc, char **argv)
 
   Tensor<int, 3> tmat(na, 0, 0, 0, nb, 0, 0, 0, nc);
 
-  TimerManager.set_timer_threshold(timer_level_coarse);
+  timer_levels timer_level = timer_level_fine;
+  if (timer_level_name == "coarse") {
+    timer_level = timer_level_coarse;
+  } else if (timer_level_name != "fine") {
+    app_error() << "Timer level should be 'coarse' or 'fine', name given: " << timer_level_name << endl;
+    return 1;
+  }
+
+  TimerManager.set_timer_threshold(timer_level);
   TimerList_t Timers;
   setup_timers(Timers, MiniQMCTimerNames, timer_level_coarse);
 
@@ -286,8 +300,7 @@ int main(int argc, char **argv)
 
   print_version(verbose);
 
-  using spo_type = einspline_spo<OHMMS_PRECISION>;
-  spo_type spo_main;
+  SPOSet *spo_main;
   int nTiles = 1;
 
   ParticleSet ions;
@@ -320,8 +333,7 @@ int main(int argc, char **argv)
     app_summary() << "\nSPO coefficients size = " << SPO_coeff_size
                   << " bytes (" << SPO_coeff_size_MB << " MB)" << endl;
 
-    spo_main.set(nx, ny, nz, norb, nTiles);
-    spo_main.Lattice.set(lattice_b);
+    spo_main = build_SPOSet(useRef, nx, ny, nz, norb, nTiles, lattice_b);
   }
 
   if (!useRef)
@@ -345,8 +357,11 @@ int main(int argc, char **argv)
     const int member_id = ip % team_size;
 
     // create and initialize movers
-    Mover *thiswalker = new Mover(spo_main, team_size, member_id, myPrimes[ip], ions);
+    Mover *thiswalker = new Mover(myPrimes[ip], ions);
     mover_list[iw] = thiswalker;
+
+    // create a spo view in each Mover
+    thiswalker->spo = build_SPOSet_view(useRef, spo_main, team_size, member_id);
 
     // create wavefunction per mover
     build_WaveFunction(useRef, thiswalker->wavefunction, ions, thiswalker->els, thiswalker->rng, enableJ3);
@@ -379,7 +394,7 @@ int main(int argc, char **argv)
   for(int iw = 0; iw<nmovers; iw++)
   {
     auto &els          = mover_list[iw]->els;
-    auto &spo          = mover_list[iw]->spo;
+    auto &spo          = *mover_list[iw]->spo;
     auto &random_th    = mover_list[iw]->rng;
     auto &wavefunction = mover_list[iw]->wavefunction;
     auto &ecp          = mover_list[iw]->nlpp;
@@ -494,6 +509,7 @@ int main(int argc, char **argv)
   for(int iw = 0; iw<nmovers; iw++)
     delete mover_list[iw];
   mover_list.clear();
+  delete spo_main;
 
   if (comm.root())
   {
