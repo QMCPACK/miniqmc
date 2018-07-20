@@ -26,16 +26,16 @@
 #include <Numerics/Spline2/MultiBspline.hpp>
 #include <Utilities/SIMD/allocator.hpp>
 #include "Numerics/OhmmsPETE/OhmmsArray.h"
+#include "QMCWaveFunctions/SPOSet.h"
 #include <iostream>
 
 namespace qmcplusplus
 {
 template <typename T, typename compute_engine_type = MultiBspline<T> >
-struct einspline_spo
+struct einspline_spo : public SPOSet
 {
   /// define the einsplie data object type
   using spline_type = typename bspline_traits<T, 3>::SplineType;
-  using pos_type        = TinyVector<T, 3>;
   using vContainer_type = aligned_vector<T>;
   using gContainer_type = VectorSoAContainer<T, 3>;
   using hContainer_type = VectorSoAContainer<T, 6>;
@@ -137,8 +137,8 @@ struct einspline_spo
     {
       Owner = true;
       TinyVector<int, 3> ng(nx, ny, nz);
-      pos_type start(0);
-      pos_type end(1);
+      PosType start(0);
+      PosType end(1);
       einsplines.resize(nBlocks);
       RandomGenerator<T> myrandom(11);
       Array<T, 3> coef_data(nx+3, ny+3, nz+3);
@@ -158,7 +158,7 @@ struct einspline_spo
   }
 
   /** evaluate psi */
-  inline void evaluate_v(const pos_type &p)
+  inline void evaluate_v(const PosType &p)
   {
     ScopedTimer local_timer(timer);
 
@@ -168,7 +168,7 @@ struct einspline_spo
   }
 
   /** evaluate psi */
-  inline void evaluate_v_pfor(const pos_type &p)
+  inline void evaluate_v_pfor(const PosType &p)
   {
     auto u = Lattice.toUnit_floor(p);
     #pragma omp for nowait
@@ -177,7 +177,7 @@ struct einspline_spo
   }
 
   /** evaluate psi, grad and lap */
-  inline void evaluate_vgl(const pos_type &p)
+  inline void evaluate_vgl(const PosType &p)
   {
     auto u = Lattice.toUnit_floor(p);
     for (int i = 0; i < nBlocks; ++i)
@@ -187,7 +187,7 @@ struct einspline_spo
   }
 
   /** evaluate psi, grad and lap */
-  inline void evaluate_vgl_pfor(const pos_type &p)
+  inline void evaluate_vgl_pfor(const PosType &p)
   {
     auto u = Lattice.toUnit_floor(p);
     #pragma omp for nowait
@@ -198,7 +198,7 @@ struct einspline_spo
   }
 
   /** evaluate psi, grad and hess */
-  inline void evaluate_vgh(const pos_type &p)
+  inline void evaluate_vgh(const PosType &p)
   {
     ScopedTimer local_timer(timer);
 
@@ -210,7 +210,7 @@ struct einspline_spo
   }
 
   /** evaluate psi, grad and hess */
-  inline void evaluate_vgh_pfor(const pos_type &p)
+  inline void evaluate_vgh_pfor(const PosType &p)
   {
     auto u = Lattice.toUnit_floor(p);
     #pragma omp for nowait
