@@ -147,7 +147,7 @@ int main(int argc, char **argv)
 
   using spo_type = einspline_spo<OHMMS_PRECISION>;
   spo_type spo_main;
-  using spo_ref_type = einspline_spo_ref<OHMMS_PRECISION>;
+  using spo_ref_type = miniqmcreference::einspline_spo_ref<OHMMS_PRECISION>;
   spo_ref_type spo_ref_main;
   int nTiles = 1;
 

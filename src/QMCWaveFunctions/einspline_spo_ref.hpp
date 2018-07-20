@@ -29,8 +29,11 @@
 #include "QMCWaveFunctions/SPOSet.h"
 #include <iostream>
 
-namespace qmcplusplus
+namespace miniqmcreference
 {
+
+using namespace qmcplusplus;
+
 template <typename T>
 struct einspline_spo_ref : public SPOSet
 {
@@ -57,7 +60,7 @@ struct einspline_spo_ref : public SPOSet
   /// use allocator
   einspline::Allocator myAllocator;
   /// compute engine
-  miniqmcreference::MultiBsplineRef<T> compute_engine;
+  MultiBsplineRef<T> compute_engine;
 
   aligned_vector<spline_type *> einsplines;
   aligned_vector<vContainer_type> psi;

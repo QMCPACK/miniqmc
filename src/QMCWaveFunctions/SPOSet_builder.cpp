@@ -25,7 +25,7 @@ SPOSet* build_SPOSet(bool useRef,
 {
   if (useRef)
   {
-    auto *spo_main = new einspline_spo_ref<OHMMS_PRECISION>;
+    auto *spo_main = new miniqmcreference::einspline_spo_ref<OHMMS_PRECISION>;
     spo_main->set(nx, ny, nz, num_splines, nblocks);
     spo_main->Lattice.set(lattice_b);
     return dynamic_cast<SPOSet*>(spo_main);
@@ -44,8 +44,8 @@ SPOSet* build_SPOSet_slave(bool useRef, const SPOSet* SPOSet_main,
 {
   if (useRef)
   {
-    auto *temp_ptr = dynamic_cast<const einspline_spo_ref<OHMMS_PRECISION>*>(SPOSet_main);
-    auto *spo_slave = new einspline_spo_ref<OHMMS_PRECISION>(*temp_ptr, team_size, member_id);
+    auto *temp_ptr = dynamic_cast<const miniqmcreference::einspline_spo_ref<OHMMS_PRECISION>*>(SPOSet_main);
+    auto *spo_slave = new miniqmcreference::einspline_spo_ref<OHMMS_PRECISION>(*temp_ptr, team_size, member_id);
     return dynamic_cast<SPOSet*>(spo_slave);
   }
   else
