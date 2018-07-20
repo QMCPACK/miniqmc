@@ -75,7 +75,7 @@ struct einspline_spo_ref : public SPOSet
   einspline_spo_ref()
       : nBlocks(0), nSplines(0), firstBlock(0), lastBlock(0), Owner(false)
   {
-    timer = TimerManager.createTimer("Single-Particle Orbitals", timer_level_coarse);
+    timer = TimerManager.createTimer("Single-Particle Orbitals Ref", timer_level_fine);
   }
   /// disable copy constructor
   einspline_spo_ref(const einspline_spo_ref &in) = delete;
@@ -102,7 +102,7 @@ struct einspline_spo_ref : public SPOSet
     for (int i = 0, t = firstBlock; i < nBlocks; ++i, ++t)
       einsplines[i] = in.einsplines[t];
     resize();
-    timer = TimerManager.createTimer("Single-Particle Orbitals", timer_level_coarse);
+    timer = TimerManager.createTimer("Single-Particle Orbitals Ref", timer_level_fine);
   }
 
   /// destructors
