@@ -112,7 +112,8 @@
 #include <Utilities/RandomGenerator.h>
 #include <Utilities/qmcpack_version.h>
 #include <Input/Input.hpp>
-#include <QMCWaveFunctions/einspline_spo.hpp>
+#include <QMCWaveFunctions/SPOSet.h>
+#include <QMCWaveFunctions/SPOSet_builder.h>
 #include <QMCWaveFunctions/WaveFunction.h>
 #include <Drivers/Mover.hpp>
 #include <getopt.h>
@@ -299,8 +300,7 @@ int main(int argc, char **argv)
 
   print_version(verbose);
 
-  using spo_type = einspline_spo<OHMMS_PRECISION>;
-  spo_type spo_main;
+  SPOSet *spo_main;
   int nTiles = 1;
 
   ParticleSet ions;
@@ -333,8 +333,7 @@ int main(int argc, char **argv)
     app_summary() << "\nSPO coefficients size = " << SPO_coeff_size
                   << " bytes (" << SPO_coeff_size_MB << " MB)" << endl;
 
-    spo_main.set(nx, ny, nz, norb, nTiles);
-    spo_main.Lattice.set(lattice_b);
+    spo_main = build_SPOSet(useRef, nx, ny, nz, norb, nTiles, lattice_b);
   }
 
   if (!useRef)
@@ -358,8 +357,11 @@ int main(int argc, char **argv)
     const int member_id = ip % team_size;
 
     // create and initialize movers
-    Mover *thiswalker = new Mover(spo_main, team_size, member_id, myPrimes[ip], ions);
+    Mover *thiswalker = new Mover(myPrimes[ip], ions);
     mover_list[iw] = thiswalker;
+
+    // create a spo view in each Mover
+    thiswalker->spo = build_SPOSet_view(useRef, spo_main, team_size, member_id);
 
     // create wavefunction per mover
     build_WaveFunction(useRef, thiswalker->wavefunction, ions, thiswalker->els, thiswalker->rng, enableJ3);
@@ -392,7 +394,7 @@ int main(int argc, char **argv)
   for(int iw = 0; iw<nmovers; iw++)
   {
     auto &els          = mover_list[iw]->els;
-    auto &spo          = mover_list[iw]->spo;
+    auto &spo          = *mover_list[iw]->spo;
     auto &random_th    = mover_list[iw]->rng;
     auto &wavefunction = mover_list[iw]->wavefunction;
     auto &ecp          = mover_list[iw]->nlpp;
@@ -507,6 +509,7 @@ int main(int argc, char **argv)
   for(int iw = 0; iw<nmovers; iw++)
     delete mover_list[iw];
   mover_list.clear();
+  delete spo_main;
 
   if (comm.root())
   {
