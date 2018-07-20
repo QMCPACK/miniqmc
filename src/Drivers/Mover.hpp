@@ -68,7 +68,7 @@ namespace qmcplusplus
     }
 
     /// destructor
-    ~Mover() { delete spo; }
+    ~Mover() { if (spo!=nullptr) delete spo; }
 
   };
 
