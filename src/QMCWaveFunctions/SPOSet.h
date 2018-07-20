@@ -12,6 +12,9 @@
 #ifndef QMCPLUSPLUS_SINGLEPARTICLEORBITALSET_H
 #define QMCPLUSPLUS_SINGLEPARTICLEORBITALSET_H
 
+#include <Utilities/Configuration.h>
+#include <string>
+
 namespace qmcplusplus
 {
 
@@ -23,18 +26,18 @@ namespace qmcplusplus
 class SPOSet : public QMCTraits
 {
 private:
+  /// number of SPOs
   int OrbitalSetSize;
-  ///name of the basis set
+  /// name of the basis set
   std::string className;
 
+public:
   /** return the size of the orbital set
    */
   inline int size() const
   {
     return OrbitalSetSize;
   }
-
-public:
 
   virtual void evaluate_v(const PosType &p) = 0;
   virtual void evaluate_vgl(const PosType &p) = 0;

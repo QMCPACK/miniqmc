@@ -15,15 +15,15 @@
 //    Intel Corp.
 // ////////////////////////////////////////////////////////////////////////////////
 // -*- C++ -*-
-/** @file einspline_spo.hpp
+/** @file einspline_spo_ref.hpp
  */
-#ifndef QMCPLUSPLUS_EINSPLINE_SPO_HPP
-#define QMCPLUSPLUS_EINSPLINE_SPO_HPP
+#ifndef QMCPLUSPLUS_EINSPLINE_SPO_REF_HPP
+#define QMCPLUSPLUS_EINSPLINE_SPO_REF_HPP
 #include <Utilities/Configuration.h>
 #include <Utilities/NewTimer.h>
 #include <Particle/ParticleSet.h>
 #include <Numerics/Spline2/bspline_allocator.hpp>
-#include <Numerics/Spline2/MultiBspline.hpp>
+#include <Numerics/Spline2/MultiBsplineRef.hpp>
 #include <Utilities/SIMD/allocator.hpp>
 #include "Numerics/OhmmsPETE/OhmmsArray.h"
 #include "QMCWaveFunctions/SPOSet.h"
@@ -32,7 +32,7 @@
 namespace qmcplusplus
 {
 template <typename T>
-struct einspline_spo : public SPOSet
+struct einspline_spo_ref : public SPOSet
 {
   /// define the einsplie data object type
   using spline_type = typename bspline_traits<T, 3>::SplineType;
@@ -57,7 +57,7 @@ struct einspline_spo : public SPOSet
   /// use allocator
   einspline::Allocator myAllocator;
   /// compute engine
-  MultiBspline<T> compute_engine;
+  miniqmcreference::MultiBsplineRef<T> compute_engine;
 
   aligned_vector<spline_type *> einsplines;
   aligned_vector<vContainer_type> psi;
@@ -69,24 +69,24 @@ struct einspline_spo : public SPOSet
   NewTimer *timer;
 
   /// default constructor
-  einspline_spo()
+  einspline_spo_ref()
       : nBlocks(0), nSplines(0), firstBlock(0), lastBlock(0), Owner(false)
   {
     timer = TimerManager.createTimer("Single-Particle Orbitals", timer_level_coarse);
   }
   /// disable copy constructor
-  einspline_spo(const einspline_spo &in) = delete;
+  einspline_spo_ref(const einspline_spo_ref &in) = delete;
   /// disable copy operator
-  einspline_spo &operator=(const einspline_spo &in) = delete;
+  einspline_spo_ref &operator=(const einspline_spo_ref &in) = delete;
 
   /** copy constructor
-   * @param in einspline_spo
+   * @param in einspline_spo_ref
    * @param team_size number of members in a team
    * @param member_id id of this member in a team
    *
    * Create a view of the big object. A simple blocking & padding  method.
    */
-  einspline_spo(const einspline_spo &in, int team_size, int member_id)
+  einspline_spo_ref(const einspline_spo_ref &in, int team_size, int member_id)
       : Owner(false), Lattice(in.Lattice)
   {
     nSplines         = in.nSplines;
@@ -103,7 +103,7 @@ struct einspline_spo : public SPOSet
   }
 
   /// destructors
-  ~einspline_spo()
+  ~einspline_spo_ref()
   {
     if (Owner)
       for (int i = 0; i < nBlocks; ++i)
