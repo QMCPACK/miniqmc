@@ -39,20 +39,20 @@ SPOSet* build_SPOSet(bool useRef,
   }
 }
 
-SPOSet* build_SPOSet_slave(bool useRef, const SPOSet* SPOSet_main,
+SPOSet* build_SPOSet_view(bool useRef, const SPOSet* SPOSet_main,
                            int team_size, int member_id)
 {
   if (useRef)
   {
     auto *temp_ptr = dynamic_cast<const miniqmcreference::einspline_spo_ref<OHMMS_PRECISION>*>(SPOSet_main);
-    auto *spo_slave = new miniqmcreference::einspline_spo_ref<OHMMS_PRECISION>(*temp_ptr, team_size, member_id);
-    return dynamic_cast<SPOSet*>(spo_slave);
+    auto *spo_view = new miniqmcreference::einspline_spo_ref<OHMMS_PRECISION>(*temp_ptr, team_size, member_id);
+    return dynamic_cast<SPOSet*>(spo_view);
   }
   else
   {
     auto *temp_ptr = dynamic_cast<const einspline_spo<OHMMS_PRECISION>*>(SPOSet_main);
-    auto *spo_slave = new einspline_spo<OHMMS_PRECISION>(*temp_ptr, team_size, member_id);
-    return dynamic_cast<SPOSet*>(spo_slave);
+    auto *spo_view = new einspline_spo<OHMMS_PRECISION>(*temp_ptr, team_size, member_id);
+    return dynamic_cast<SPOSet*>(spo_view);
   }
 }
 

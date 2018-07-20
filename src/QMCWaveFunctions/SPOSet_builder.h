@@ -23,7 +23,7 @@ SPOSet* build_SPOSet(bool useRef,
                      const Tensor<OHMMS_PRECISION, 3> &lattice_b,
                      bool init_random = true);
 
-SPOSet* build_SPOSet_slave(bool useRef, const SPOSet* SPOSet_main,
+SPOSet* build_SPOSet_view(bool useRef, const SPOSet* SPOSet_main,
                            int team_size, int member_id);
 
 }
