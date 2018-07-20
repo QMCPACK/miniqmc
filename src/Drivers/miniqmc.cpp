@@ -360,7 +360,7 @@ int main(int argc, char **argv)
     Mover *thiswalker = new Mover(myPrimes[ip], ions);
     mover_list[iw] = thiswalker;
 
-    // create a spo slave in each Mover
+    // create a spo view in each Mover
     thiswalker->spo = build_SPOSet_view(useRef, spo_main, team_size, member_id);
 
     // create wavefunction per mover
