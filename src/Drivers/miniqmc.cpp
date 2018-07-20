@@ -150,7 +150,7 @@ void print_help()
   app_summary() << "usage:" << '\n';
   app_summary() << "  miniqmc   [-hjvV] [-g \"n0 n1 n2\"] [-m meshfactor]"       << '\n';
   app_summary() << "            [-n steps] [-N substeps] [-r rmax] [-s seed]"    << '\n';
-  app_summary() << "            [-w walkers] [-a tile_size]"                     << '\n';
+  app_summary() << "            [-w walkers] [-a tile_size] [-t timer_level]"    << '\n';
   app_summary() << "options:"                                                    << '\n';
   app_summary() << "  -a  size of each spline tile       default: num of orbs"   << '\n';
   app_summary() << "  -b  use reference implementations  default: off"           << '\n';
@@ -162,6 +162,7 @@ void print_help()
   app_summary() << "  -N  number of MC substeps          default: 1"             << '\n';
   app_summary() << "  -r  set the Rmax.                  default: 1.7"           << '\n';
   app_summary() << "  -s  set the random seed.           default: 11"            << '\n';
+  app_summary() << "  -t  timer level: coarse or fine    default: fine"          << '\n';
   app_summary() << "  -w  number of walker(movers)       default: num of threads"<< '\n';
   app_summary() << "  -v  verbose output"                                        << '\n';
   app_summary() << "  -V  print version information and exit"                    << '\n';
@@ -201,6 +202,7 @@ int main(int argc, char **argv)
   PrimeNumberSet<uint32_t> myPrimes;
 
   bool verbose = false;
+  std::string timer_level_name = "fine";
 
   if (!comm.root())
   {
@@ -210,7 +212,7 @@ int main(int argc, char **argv)
   int opt;
   while(optind < argc)
   {
-    if ((opt = getopt(argc, argv, "bhjvVa:c:g:m:n:N:r:s:w:")) != -1)
+    if ((opt = getopt(argc, argv, "bhjvVa:c:g:m:n:N:r:s:w:t:")) != -1)
     {
       switch (opt)
       {
@@ -249,6 +251,9 @@ int main(int argc, char **argv)
       case 's':
         iseed = atoi(optarg);
         break;
+      case 't':
+        timer_level_name = std::string(optarg);
+        break;
       case 'v': verbose = true; break;
       case 'V':
         print_version(true);
@@ -273,7 +278,15 @@ int main(int argc, char **argv)
 
   Tensor<int, 3> tmat(na, 0, 0, 0, nb, 0, 0, 0, nc);
 
-  TimerManager.set_timer_threshold(timer_level_coarse);
+  timer_levels timer_level = timer_level_fine;
+  if (timer_level_name == "coarse") {
+    timer_level = timer_level_coarse;
+  } else if (timer_level_name != "fine") {
+    app_error() << "Timer level should be 'coarse' or 'fine', name given: " << timer_level_name << endl;
+    return 1;
+  }
+
+  TimerManager.set_timer_threshold(timer_level);
   TimerList_t Timers;
   setup_timers(Timers, MiniQMCTimerNames, timer_level_coarse);
 

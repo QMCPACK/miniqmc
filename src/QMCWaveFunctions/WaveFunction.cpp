@@ -37,9 +37,9 @@ enum WaveFunctionTimers
   Timer_GL,
 };
 
-TimerNameList_t<WaveFunctionTimers> WaveFunctionTimerNames = {
-  {Timer_Det, "Determinant"},
-  {Timer_GL, "Kinetic Energy"}
+TimerNameLevelList_t<WaveFunctionTimers> WaveFunctionTimerNames = {
+  {Timer_Det, "Determinant", timer_level_fine},
+  {Timer_GL, "Kinetic Energy", timer_level_coarse}
 };
 
 
@@ -149,9 +149,9 @@ WaveFunction::~WaveFunction()
 
 void WaveFunction::setupTimers()
 {
-  setup_timers(timers, WaveFunctionTimerNames, timer_level_coarse);
+  setup_timers(timers, WaveFunctionTimerNames);
   for (int i = 0; i < Jastrows.size(); i++) {
-    jastrow_timers.push_back(TimerManager.createTimer(Jastrows[i]->WaveFunctionComponentName, timer_level_coarse));
+    jastrow_timers.push_back(TimerManager.createTimer(Jastrows[i]->WaveFunctionComponentName, timer_level_fine));
   }
 }
 
