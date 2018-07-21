@@ -167,7 +167,7 @@ struct WaveFunctionComponent : public QMCTraits
                           bool fromscratch = false) = 0;
 
   /// operates on multiple walkers
-  virtual void multi_evaluateLog(const std::vector<WaveFunctionComponentBase *> &WFC_list,
+  virtual void multi_evaluateLog(const std::vector<WaveFunctionComponent *> &WFC_list,
                                  const std::vector<ParticleSet *> &P_list,
                                  const std::vector<ParticleSet::ParticleGradient_t *> &G_list,
                                  const std::vector<ParticleSet::ParticleLaplacian_t *> &L_list,
@@ -178,7 +178,7 @@ struct WaveFunctionComponent : public QMCTraits
       values[iw] = WFC_list[iw]->evaluateLog(*P_list[iw], *G_list[iw], *L_list[iw]);
   };
 
-  virtual void multi_evalGrad(const std::vector<WaveFunctionComponentBase *> &WFC_list,
+  virtual void multi_evalGrad(const std::vector<WaveFunctionComponent *> &WFC_list,
                               const std::vector<ParticleSet *> &P_list, int iat,
                               std::vector<PosType> &grad_now) const
   {
@@ -187,7 +187,7 @@ struct WaveFunctionComponent : public QMCTraits
       grad_now[iw] = WFC_list[iw]->evalGrad(*P_list[iw], iat);
   };
 
-  virtual void multi_ratioGrad(const std::vector<WaveFunctionComponentBase *> &WFC_list,
+  virtual void multi_ratioGrad(const std::vector<WaveFunctionComponent *> &WFC_list,
                                const std::vector<ParticleSet *> &P_list, int iat,
                                std::vector<ValueType> &ratios,
                                std::vector<PosType> &grad_new) const
@@ -197,7 +197,7 @@ struct WaveFunctionComponent : public QMCTraits
       ratios[iw] = WFC_list[iw]->ratioGrad(*P_list[iw], iat, grad_new[iw]);
   };
 
-  virtual void multi_acceptrestoreMove(const std::vector<WaveFunctionComponentBase *> &WFC_list,
+  virtual void multi_acceptrestoreMove(const std::vector<WaveFunctionComponent *> &WFC_list,
                                        const std::vector<ParticleSet *> &P_list,
                                        const std::vector<bool> &isAccepted, int iat) const
   {
@@ -208,14 +208,14 @@ struct WaveFunctionComponent : public QMCTraits
     }
   };
 
-  virtual void multi_ratio(const std::vector<WaveFunctionComponentBase *> &WFC_list,
+  virtual void multi_ratio(const std::vector<WaveFunctionComponent *> &WFC_list,
                            const std::vector<ParticleSet *> &P_list, int iat,
                            ParticleSet::ParticleValue_t &ratio_list) const
   {
     // TODO
   };
 
-  virtual void multi_evaluateGL(const std::vector<WaveFunctionComponentBase *> &WFC_list,
+  virtual void multi_evaluateGL(const std::vector<WaveFunctionComponent *> &WFC_list,
                                 const std::vector<ParticleSet *> &P_list,
                                 const std::vector<ParticleSet::ParticleGradient_t *> &G_list,
                                 const std::vector<ParticleSet::ParticleLaplacian_t *> &L_list,
