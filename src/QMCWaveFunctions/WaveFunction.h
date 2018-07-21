@@ -33,10 +33,8 @@ namespace qmcplusplus
 /** A minimal TrialWavefunction
  */
 
-struct WaveFunction
+class WaveFunction
 {
-  friend void build_WaveFunction(bool useRef, WaveFunction &WF, ParticleSet &ions, ParticleSet &els, const RandomGenerator<QMCTraits::RealType> &RNG, bool enableJ3);
-
   using RealType = OHMMS_PRECISION;
   using valT = OHMMS_PRECISION;
   using posT = TinyVector<valT, OHMMS_DIM>;
@@ -90,6 +88,7 @@ struct WaveFunction
   void setupTimers();
 
   // friends
+  friend void build_WaveFunction(bool useRef, WaveFunction &WF, ParticleSet &ions, ParticleSet &els, const RandomGenerator<QMCTraits::RealType> &RNG, bool enableJ3);
   friend const std::vector<WaveFunctionComponentBase *> extract_up_list(const std::vector<WaveFunction *> &WF_list);
   friend const std::vector<WaveFunctionComponentBase *> extract_dn_list(const std::vector<WaveFunction *> &WF_list);
   friend const std::vector<WaveFunctionComponentBase *> extract_jas_list(const std::vector<WaveFunction *> &WF_list, int jas_id);
