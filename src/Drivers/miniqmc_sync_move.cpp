@@ -405,7 +405,8 @@ int main(int argc, char **argv)
     std::vector<GradType> grad_new(nmovers);
     std::vector<ValueType> ratios(nmovers);
     aligned_vector<RealType> ur(nmovers);
-    std::vector<bool> isValid(nmovers);
+    /// masks for movers with valid moves
+    std::vector<int> isValid(nmovers);
 
     for (int mc = 0; mc < nsteps; ++mc)
     {
