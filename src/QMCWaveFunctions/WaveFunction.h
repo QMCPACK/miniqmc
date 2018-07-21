@@ -15,7 +15,7 @@
  * @brief Top level wavefunction container
  *
  * Represents a product of wavefunction components (classes based on
- * WaveFunctionComponentBase).
+ * WaveFunctionComponent).
  *
  * Corresponds to QMCWaveFunction/TrialWaveFunction.h in the QMCPACK source.
  */
@@ -26,7 +26,7 @@
 #include <Utilities/RandomGenerator.h>
 #include <Utilities/NewTimer.h>
 #include <Particle/ParticleSet.h>
-#include <QMCWaveFunctions/WaveFunctionComponentBase.h>
+#include <QMCWaveFunctions/WaveFunctionComponent.h>
 
 namespace qmcplusplus
 {
@@ -40,9 +40,9 @@ class WaveFunction
   using posT = TinyVector<valT, OHMMS_DIM>;
 
   private:
-  std::vector<WaveFunctionComponentBase *> Jastrows;
-  WaveFunctionComponentBase *Det_up;
-  WaveFunctionComponentBase *Det_dn;
+  std::vector<WaveFunctionComponent *> Jastrows;
+  WaveFunctionComponent *Det_up;
+  WaveFunctionComponent *Det_dn;
   valT LogValue;
 
   bool FirstTime, Is_built;
