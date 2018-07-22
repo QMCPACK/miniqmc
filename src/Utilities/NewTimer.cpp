@@ -236,7 +236,7 @@ void TimerManagerClass::print()
 {
 #if ENABLE_TIMERS
 #ifdef USE_STACK_TIMERS
-  printf("Stack timer profile\n");
+  printf("Stack timer profile in seconds\n");
   print_stack();
 #else
   printf("\nFlat profile\n");

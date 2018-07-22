@@ -15,7 +15,7 @@
  * @brief Top level wavefunction container
  *
  * Represents a product of wavefunction components (classes based on
- * WaveFunctionComponentBase).
+ * WaveFunctionComponent).
  *
  * Corresponds to QMCWaveFunction/TrialWaveFunction.h in the QMCPACK source.
  */
@@ -25,17 +25,8 @@
 #include <Utilities/Configuration.h>
 #include <Utilities/RandomGenerator.h>
 #include <Utilities/NewTimer.h>
-#include <Particle/DistanceTable.h>
-#include <QMCWaveFunctions/Determinant.h>
-#include <QMCWaveFunctions/DeterminantRef.h>
-#include <QMCWaveFunctions/Jastrow/BsplineFunctor.h>
-#include <QMCWaveFunctions/Jastrow/PolynomialFunctor3D.h>
-#include <QMCWaveFunctions/Jastrow/OneBodyJastrowRef.h>
-#include <QMCWaveFunctions/Jastrow/OneBodyJastrow.h>
-#include <QMCWaveFunctions/Jastrow/TwoBodyJastrowRef.h>
-#include <QMCWaveFunctions/Jastrow/TwoBodyJastrow.h>
-#include <QMCWaveFunctions/Jastrow/ThreeBodyJastrowRef.h>
-#include <QMCWaveFunctions/Jastrow/ThreeBodyJastrow.h>
+#include <Particle/ParticleSet.h>
+#include <QMCWaveFunctions/WaveFunctionComponent.h>
 
 namespace qmcplusplus
 {
@@ -51,9 +42,9 @@ struct WaveFunction
   using posT = TinyVector<valT, OHMMS_DIM>;
 
   private:
-  std::vector<WaveFunctionComponentBase *> Jastrows;
-  WaveFunctionComponentBase *Det_up;
-  WaveFunctionComponentBase *Det_dn;
+  std::vector<WaveFunctionComponent *> Jastrows;
+  WaveFunctionComponent *Det_up;
+  WaveFunctionComponent *Det_dn;
   valT LogValue;
 
   bool FirstTime, Is_built;

@@ -30,17 +30,17 @@
 #include "OMP_target_test/OMPTinyVector.h"
 #include "OMP_target_test/OMPVector.h"
 #include "OMP_target_test/OMPVectorSoAContainer.h"
+#include "QMCWaveFunctions/SPOSet.h"
 #include <iostream>
 
 namespace qmcplusplus
 {
-template <typename T, typename compute_engine_type = MultiBspline<T> >
-struct einspline_spo
+template <typename T>
+struct einspline_spo : public SPOSet
 {
   /// define the einsplie data object type
-  using self_type = einspline_spo<T, compute_engine_type>;
+  using self_type = einspline_spo<T>;
   using spline_type = typename bspline_traits<T, 3>::SplineType;
-  using pos_type        = TinyVector<T, 3>;
   using vContainer_type = OMPVector<T, aligned_vector<T> >;
   using gContainer_type = OMPVectorSoAContainer<T, 3>;
   using hContainer_type = OMPVectorSoAContainer<T, 6>;
@@ -62,7 +62,7 @@ struct einspline_spo
   /// use allocator
   einspline::Allocator myAllocator;
   /// compute engine
-  compute_engine_type compute_engine;
+  MultiBspline<T> compute_engine;
 
   OMPVector<spline_type *> einsplines;
   std::vector<vContainer_type> psi;
@@ -83,7 +83,7 @@ struct einspline_spo
   einspline_spo()
       : nBlocks(0), nSplines(0), firstBlock(0), lastBlock(0), Owner(false)
   {
-    timer = TimerManager.createTimer("Single-Particle Orbitals", timer_level_coarse);
+    timer = TimerManager.createTimer("Single-Particle Orbitals", timer_level_fine);
   }
   /// disable copy constructor
   einspline_spo(const einspline_spo &in) = delete;
@@ -120,7 +120,7 @@ struct einspline_spo
 #endif
     }
     resize();
-    timer = TimerManager.createTimer("Single-Particle Orbitals", timer_level_coarse);
+    timer = TimerManager.createTimer("Single-Particle Orbitals", timer_level_fine);
   }
 
   /// destructors
@@ -158,8 +158,8 @@ struct einspline_spo
     {
       Owner = true;
       TinyVector<int, 3> ng(nx, ny, nz);
-      pos_type start(0);
-      pos_type end(1);
+      PosType start(0);
+      PosType end(1);
       einsplines.resize(nBlocks);
       RandomGenerator<T> myrandom(11);
       Array<T, 3> coef_data(nx+3, ny+3, nz+3);
@@ -193,7 +193,7 @@ struct einspline_spo
   }
 
   /** evaluate psi */
-  inline void evaluate_v(const pos_type &p)
+  inline void evaluate_v(const PosType &p)
   {
     ScopedTimer local_timer(timer);
 
@@ -203,7 +203,7 @@ struct einspline_spo
   }
 
   /** evaluate psi */
-  inline void evaluate_v_pfor(const pos_type &p)
+  inline void evaluate_v_pfor(const PosType &p)
   {
     auto u = Lattice.toUnit_floor(p);
     #pragma omp for nowait
@@ -212,7 +212,7 @@ struct einspline_spo
   }
 
   /** evaluate psi, grad and lap */
-  inline void evaluate_vgl(const pos_type &p)
+  inline void evaluate_vgl(const PosType &p)
   {
     auto u = Lattice.toUnit_floor(p);
     for (int i = 0; i < nBlocks; ++i)
@@ -222,7 +222,7 @@ struct einspline_spo
   }
 
   /** evaluate psi, grad and lap */
-  inline void evaluate_vgl_pfor(const pos_type &p)
+  inline void evaluate_vgl_pfor(const PosType &p)
   {
     auto u = Lattice.toUnit_floor(p);
     #pragma omp for nowait
@@ -233,7 +233,7 @@ struct einspline_spo
   }
 
   /** evaluate psi, grad and hess */
-  inline void evaluate_vgh(const pos_type &p)
+  inline void evaluate_vgh(const PosType &p)
   {
     ScopedTimer local_timer(timer);
 
@@ -245,7 +245,7 @@ struct einspline_spo
   }
 
   /** evaluate psi, grad and hess */
-  inline void evaluate_vgh_pfor(const pos_type &p)
+  inline void evaluate_vgh_pfor(const PosType &p)
   {
     auto u = Lattice.toUnit_floor(p);
     #pragma omp for nowait
@@ -256,7 +256,7 @@ struct einspline_spo
   }
 
   /** evaluate psi, grad and hess with offload */
-  inline void evaluate_vgh_offload(const pos_type &p, bool need_transfer=false)
+  inline void evaluate_vgh_offload(const PosType &p, bool need_transfer=false)
   {
     if(nBlocks!=psi_shadows.size())
     {
@@ -320,7 +320,7 @@ struct einspline_spo
   }
 
   /** evaluate psi, grad and hess of multiple walkers with offload */
-  inline void evaluate_multi_vgh(const std::vector<pos_type> &p, std::vector<self_type *> &shadows, bool need_transfer=false)
+  inline void evaluate_multi_vgh(const std::vector<PosType> &p, std::vector<self_type *> &shadows, bool need_transfer=false)
   {
     const size_t nw = p.size();
     if(nw*nBlocks!=psi_shadows.size())

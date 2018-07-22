@@ -29,16 +29,16 @@
 #include "Particle/ParticleSet.h"
 #include "Particle/DistanceTableData.h"
 
-/**@file WaveFunctionComponentBase.h
- *@brief Declaration of WaveFunctionComponentBase
+/**@file WaveFunctionComponent.h
+ *@brief Declaration of WaveFunctionComponent
  */
 namespace qmcplusplus
 {
 
-/// forward declaration of WaveFunctionComponentBase
-class WaveFunctionComponentBase;
+/// forward declaration of WaveFunctionComponent
+class WaveFunctionComponent;
 
-typedef WaveFunctionComponentBase *WaveFunctionComponentBasePtr;
+typedef WaveFunctionComponent *WaveFunctionComponentPtr;
 
 /**@defgroup WaveFunctionComponent Wavefunction Component group
  * @brief Classes which constitute a many-body trial wave function
@@ -48,12 +48,12 @@ typedef WaveFunctionComponentBase *WaveFunctionComponentBasePtr;
  \Psi(\{ {\bf R}\}) = \prod_i \psi_{i}(\{ {\bf R}\}),
  * \f]
  * where \f$\Psi\f$s are represented by
- * the derived classes from WaveFunctionComponentBase.
+ * the derived classes from WaveFunctionComponent.
  */
 /** @ingroup WaveFunctionComponentComponent
  * @brief An abstract class for a component of a many-body trial wave function
  */
-struct WaveFunctionComponentBase : public QMCTraits
+struct WaveFunctionComponent : public QMCTraits
 {
 
   /// recasting enum of DistanceTableData to maintain consistency
@@ -105,13 +105,13 @@ struct WaveFunctionComponentBase : public QMCTraits
   std::string WaveFunctionComponentName;
 
   /// default constructor
-  WaveFunctionComponentBase()
+  WaveFunctionComponent()
       : IsOptimizing(false), Optimizable(true), UpdateMode(ORB_WALKER),
-        LogValue(0.0), PhaseValue(0.0), WaveFunctionComponentName("WaveFunctionComponentBase")
+        LogValue(0.0), PhaseValue(0.0), WaveFunctionComponentName("WaveFunctionComponent")
   { }
 
   /// default destructor
-  virtual ~WaveFunctionComponentBase() {}
+  virtual ~WaveFunctionComponent() {}
 
   /** evaluate the value of the wavefunction
    * @param P active ParticleSet

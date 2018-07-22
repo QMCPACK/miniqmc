@@ -19,11 +19,16 @@
  * @brief Miniapp to check 3D spline implementation against the reference.
  */
 #include <Utilities/Configuration.h>
-#include <Utilities/qmcpack_version.h>
 #include <Utilities/Communicate.h>
 #include <Utilities/NewTimer.h>
-#include <Drivers/Mover_old.hpp>
+#include <Drivers/Mover.hpp>
+#include <Particle/ParticleSet.h>
+#include <Particle/ParticleSet_builder.hpp>
+#include <Utilities/RandomGenerator.h>
 #include <Input/Input.hpp>
+#include <QMCWaveFunctions/einspline_spo.hpp>
+#include <QMCWaveFunctions/einspline_spo_ref.hpp>
+#include <Utilities/qmcpack_version.h>
 #include <getopt.h>
 
 using namespace std;
@@ -168,18 +173,18 @@ int main(int argc, char **argv)
   Timers[Timer_Total]->start();
   Timers[Timer_Init]->start();
 
-  using spo_type = Mover::spo_type;
+  using spo_type = einspline_spo<OHMMS_PRECISION>;
   spo_type spo_main;
-  using spo_ref_type = Mover::spo_ref_type;
+  using spo_ref_type = miniqmcreference::einspline_spo_ref<OHMMS_PRECISION>;
   spo_ref_type spo_ref_main;
   int nTiles = 1;
   Tensor<int, 3> tmat(na, 0, 0, 0, nb, 0, 0, 0, nc);
 
+  ParticleSet ions;
+  // initialize ions and splines which are shared by all threads later
   {
-    Tensor<RealType, 3> lattice_b;
-    ParticleSet ions;
-    OHMMS_PRECISION scale = 1.0;
-    lattice_b             = tile_cell(ions, tmat, scale);
+    Tensor<OHMMS_PRECISION, 3> lattice_b;
+    build_ions(ions, tmat, lattice_b);
     const int norb        = count_electrons(ions, 1) / 2;
     tileSize              = (tileSize > 0) ? tileSize : norb;
     nTiles                = norb / tileSize;
@@ -207,19 +212,14 @@ int main(int argc, char **argv)
     spo_ref_main.Lattice.set(lattice_b);
   }
 
-  // construct ion particles
-  ParticleSet ions;
-  const RealType scale = 1.0;
-  ions.Lattice.BoxBConds      = 1;
-  tile_cell(ions, tmat, scale);
-  ions.update();
   const int nions = ions.getTotalNum();
   const int nels  = count_electrons(ions, 1);
   const int nels3 = 3 * nels;
 
   // construct a list of movers
-  std::vector<Mover> mover_list(nmovers);
+  std::vector<Mover *> mover_list(nmovers, nullptr);
   std::cout << "Constructing " << nmovers << " movers!" << std::endl;
+  std::vector<spo_ref_type *> spo_ref_views(nmovers, nullptr);
   // per mover data
   std::vector<ParticlePos_t> delta_list(nmovers);
   std::vector<ParticlePos_t> rOnSphere_list(nmovers);
@@ -231,40 +231,21 @@ int main(int argc, char **argv)
   #pragma omp parallel for
   for(size_t iw = 0; iw < mover_list.size(); iw++)
   {
-    auto &mover = mover_list[iw];
-    // create RNG within the thread
-    mover.rng = new RandomGenerator<RealType>(MakeSeed(iw, mover_list.size()));
-    auto &random_th = *mover.rng;
+    // create and initialize movers
+    Mover *thiswalker = new Mover(MakeSeed(iw, mover_list.size()), ions);
+    mover_list[iw] = thiswalker;
 
-    // create elecs within the thread
-    mover.els     = new ParticleSet;
-    auto &els = *mover.els;
+    // create a spo view in each Mover
+    spo_shadows[iw] = new spo_type(spo_main, 1, 0);
+    thiswalker->spo = dynamic_cast<SPOSet *>(spo_shadows[iw]);
+    spo_ref_views[iw] = new spo_ref_type(spo_ref_main, 1, 0);
 
-    // create up/down electrons
-    els.Lattice.BoxBConds = 1;
-    els.Lattice.set(ions.Lattice);
-    vector<int> ud(2);
-    ud[0] = nels / 2;
-    ud[1] = nels - ud[0];
-    els.create(ud);
-    els.R.InUnit = 1;
-    random_th.generate_uniform(&els.R[0][0], nels3);
-    els.convert2Cart(els.R); // convert to Cartiesian
-    // update content: compute distance tables and structure factor
-    els.update();
-
-    // create spo per thread
-    mover.spo = new spo_type(spo_main, 1, 0);
-    spo_shadows[iw] = mover.spo;
-    mover.spo_ref = new spo_ref_type(spo_ref_main, 1, 0);
-
-    // create pseudopp per thread
-    mover.nlpp = new NonLocalPP<RealType>(random_th);
-    auto &ecp = *mover.nlpp;
+    // initial computing
+    thiswalker->els.update();
 
     // temporal data during walking
     delta_list[iw].resize(nels);
-    rOnSphere_list[iw].resize(ecp.size());
+    rOnSphere_list[iw].resize(thiswalker->nlpp.size());
     ur_list[iw].resize(nels);
   }
 
@@ -289,8 +270,8 @@ int main(int argc, char **argv)
     std::cout << "mc = " << mc << std::endl;
     for(size_t iw = 0; iw < mover_list.size(); iw++)
     {
-      auto &mover = mover_list[iw];
-      auto &random_th = *mover.rng;
+      auto &mover = *mover_list[iw];
+      auto &random_th = mover.rng;
       auto &delta = delta_list[iw];
       auto &ur = ur_list[iw];
 
@@ -298,32 +279,31 @@ int main(int argc, char **argv)
       random_th.generate_uniform(ur.data(), nels);
     }
 
+    spo_type *anon_spo = dynamic_cast<spo_type *>(mover_list[0]->spo);
     // VMC
     for (int iel = 0; iel < nels; ++iel)
     {
       for(size_t iw = 0; iw < mover_list.size(); iw++)
       {
-        auto &mover = mover_list[iw];
-        auto &els = *mover.els;
-        auto &spo = *mover.spo;
+        auto &els = mover_list[iw]->els;
         auto &delta = delta_list[iw];
         auto &pos = pos_list[iw];
         pos = els.R[iel] + sqrttau * delta[iel];
       }
 
       Timers[Timer_SPO_vgh]->start();
-      mover_list[0].spo->evaluate_multi_vgh(pos_list, spo_shadows, transfer);
+      anon_spo->evaluate_multi_vgh(pos_list, spo_shadows, transfer);
       Timers[Timer_SPO_vgh]->stop();
 
       Timers[Timer_SPO_ref_vgh]->start();
       #pragma omp parallel for reduction(+:evalVGH_v_err,evalVGH_g_err,evalVGH_h_err)
       for(size_t iw = 0; iw < mover_list.size(); iw++)
       {
-        auto &mover = mover_list[iw];
-        auto &spo = *mover.spo;
-        auto &spo_ref = *mover.spo_ref;
+        auto &mover = *mover_list[iw];
+        auto &spo = *dynamic_cast<spo_type *>(mover.spo);
+        auto &spo_ref = *spo_ref_views[iw];
         auto &pos = pos_list[iw];
-        auto &els = *mover.els;
+        auto &els = mover.els;
         auto &ur = ur_list[iw];
         auto &my_accepted = my_accepted_list[iw];
         if(transfer) spo_ref.evaluate_vgh(pos);
@@ -400,6 +380,16 @@ int main(int argc, char **argv)
 
   Timers[Timer_Total]->stop();
 
+  // free all movers
+  #pragma omp parallel for
+  for(int iw = 0; iw<nmovers; iw++)
+  {
+    delete mover_list[iw];
+    delete spo_ref_views[iw];
+  }
+  mover_list.clear();
+  spo_ref_views.clear();
+
   outputManager.resume();
 
   if (comm.root())
@@ -409,7 +399,7 @@ int main(int argc, char **argv)
     cout << "================================== " << endl;
   }
 
-  for(size_t iw = 0; iw < mover_list.size(); iw++)
+  for(size_t iw = 0; iw < nmovers; iw++)
   {
     ratio += RealType(my_accepted_list[iw]) / RealType(nels * nsteps);
     nspheremoves += RealType(my_vals_list[iw]) / RealType(nsteps);
@@ -421,7 +411,7 @@ int main(int argc, char **argv)
   evalVGH_g_err /= dNumVGHCalls;
   evalVGH_h_err /= dNumVGHCalls;
 
-  int np                     = mover_list.size();
+  const int np = nmovers;
   constexpr RealType small_v = std::numeric_limits<RealType>::epsilon() * 1e4;
   constexpr RealType small_g = std::numeric_limits<RealType>::epsilon() * 3e6;
   constexpr RealType small_h = std::numeric_limits<RealType>::epsilon() * 6e8;
