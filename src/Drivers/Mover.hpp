@@ -89,6 +89,14 @@ namespace qmcplusplus
     return els_list;
   }
 
+  const std::vector<SPOSet *> extract_spo_list(const std::vector<Mover *> &mover_list)
+  {
+    std::vector<SPOSet *> spo_list;
+    for(auto it=mover_list.begin(); it!=mover_list.end(); it++)
+      spo_list.push_back((*it)->spo);
+    return spo_list;
+  }
+
   const std::vector<WaveFunction *> extract_wf_list(const std::vector<Mover *> &mover_list)
   {
     std::vector<WaveFunction *> wf_list;

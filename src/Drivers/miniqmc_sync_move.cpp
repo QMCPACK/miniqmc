@@ -401,6 +401,7 @@ int main(int argc, char **argv)
   // synchronous walker moves
   {
     std::vector<PosType> delta(nmovers);
+    std::vector<PosType> pos_list(nmovers);
     std::vector<GradType> grad_now(nmovers);
     std::vector<GradType> grad_new(nmovers);
     std::vector<ValueType> ratios(nmovers);
@@ -445,17 +446,16 @@ int main(int argc, char **argv)
           std::vector<bool> isAccepted(valid_mover_list.size());
 
           const std::vector<ParticleSet *> valid_P_list(extract_els_list(valid_mover_list));
+          const std::vector<SPOSet *> valid_spo_list(extract_spo_list(valid_mover_list));
           const std::vector<WaveFunction *> valid_WF_list(extract_wf_list(valid_mover_list));
 
           // Compute gradient at the trial position
           Timers[Timer_ratioGrad]->start();
           anon_mover.wavefunction.multi_ratioGrad(valid_WF_list, valid_P_list, iel, ratios, grad_new);
-          #pragma omp parallel for
-          for(int iw = 0; iw<valid_mover_list.size(); iw++)
-          {
-            valid_mover_list[iw]->spo->evaluate_vgh(valid_mover_list[iw]->els.R[iel]);
-          }
 
+          for(int iw = 0; iw<valid_mover_list.size(); iw++)
+            pos_list[iw] = valid_mover_list[iw]->els.R[iel];
+          anon_mover.spo->multi_evaluate_vgh(valid_spo_list, pos_list);
           Timers[Timer_ratioGrad]->stop();
 
           // Accept/reject the trial move
