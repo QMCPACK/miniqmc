@@ -39,9 +39,35 @@ public:
     return OrbitalSetSize;
   }
 
+  /// operates on a single walker
   virtual void evaluate_v(const PosType &p) = 0;
   virtual void evaluate_vgl(const PosType &p) = 0;
   virtual void evaluate_vgh(const PosType &p) = 0;
+
+  /// operates on multiple walkers
+  virtual void multi_evaluate_v(const std::vector<SPOSet *> &spo_list,
+                                const std::vector<PosType> &pos_list) const
+  {
+    #pragma omp parallel for
+    for(int iw=0; iw<spo_list.size(); iw++)
+      spo_list[iw]->evaluate_v(pos_list[iw]);
+  }
+
+  virtual void multi_evaluate_vgl(const std::vector<SPOSet *> &spo_list,
+                                const std::vector<PosType> &pos_list) const
+  {
+    #pragma omp parallel for
+    for(int iw=0; iw<spo_list.size(); iw++)
+      spo_list[iw]->evaluate_vgl(pos_list[iw]);
+  }
+
+  virtual void multi_evaluate_vgh(const std::vector<SPOSet *> &spo_list,
+                                const std::vector<PosType> &pos_list) const
+  {
+    #pragma omp parallel for
+    for(int iw=0; iw<spo_list.size(); iw++)
+      spo_list[iw]->evaluate_vgl(pos_list[iw]);
+  }
 
 };
 
