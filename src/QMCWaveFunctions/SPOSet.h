@@ -32,14 +32,17 @@ private:
   std::string className;
 
 public:
-  /** return the size of the orbital set
-   */
+  /// return the size of the orbital set
   inline int size() const
   {
     return OrbitalSetSize;
   }
 
+  /// destructor
+  virtual ~SPOSet() { }
+
   /// operates on a single walker
+  /// evaluating SPOs
   virtual void evaluate_v(const PosType &p) = 0;
   virtual void evaluate_vgl(const PosType &p) = 0;
   virtual void evaluate_vgh(const PosType &p) = 0;
