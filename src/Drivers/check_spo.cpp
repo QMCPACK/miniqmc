@@ -166,7 +166,7 @@ int main(int argc, char **argv)
 
   print_version(verbose);
 
-  TimerManager.set_timer_threshold(timer_level_coarse);
+  TimerManager.set_timer_threshold(timer_level_fine);
   TimerList_t Timers;
   setup_timers(Timers, CheckSPOTimerNames, timer_level_coarse);
 
