@@ -333,5 +333,9 @@ protected:
   /// Timer
   TimerList_t timers;
 };
+
+const std::vector<ParticleSet::ParticleGradient_t *> extract_G_list(const std::vector<ParticleSet *> &P_list);
+const std::vector<ParticleSet::ParticleLaplacian_t *> extract_L_list(const std::vector<ParticleSet *> &P_list);
+
 }
 #endif
