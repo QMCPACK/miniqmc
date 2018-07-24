@@ -319,6 +319,14 @@ struct einspline_spo : public SPOSet
     }
   }
 
+  inline void multi_evaluate_vgh(const std::vector<SPOSet *> &spo_list, const std::vector<PosType> &p) const override
+  {
+    std::vector<self_type *> shadows;
+    for(int iw = 0; iw<spo_list.size(); iw++)
+      shadows.push_back(dynamic_cast<self_type *>(spo_list[iw]));
+    shadows[0]->evaluate_multi_vgh(p, shadows);
+  }
+
   /** evaluate psi, grad and hess of multiple walkers with offload */
   inline void evaluate_multi_vgh(const std::vector<PosType> &p, std::vector<self_type *> &shadows, bool need_transfer=false)
   {
