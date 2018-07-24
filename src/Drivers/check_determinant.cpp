@@ -21,6 +21,7 @@
 
 #include <Utilities/Configuration.h>
 #include <Particle/ParticleSet.h>
+#include <Particle/ParticleSet_builder.hpp>
 #include <Utilities/PrimeNumberSet.h>
 #include <Utilities/RandomGenerator.h>
 #include <Utilities/qmcpack_version.h>
@@ -111,6 +112,11 @@ int main(int argc, char **argv)
 
   Tensor<int, 3> tmat(na, 0, 0, 0, nb, 0, 0, 0, nc);
 
+  // setup ions
+  ParticleSet ions;
+  Tensor<OHMMS_PRECISION, 3> lattice_b;
+  build_ions(ions, tmat, lattice_b);
+
   print_version(verbose);
 
   if (verbose)
@@ -122,35 +128,18 @@ int main(int argc, char **argv)
 
 #pragma omp parallel reduction(+:accumulated_error)
   {
-    ParticleSet ions, els;
-    ions.setName("ion");
-    els.setName("e");
-
-    Tensor<OHMMS_PRECISION, 3> lattice_b;
-    OHMMS_PRECISION scale = 1.0;
-    lattice_b             = tile_cell(ions, tmat, scale);
+    int ip = omp_get_thread_num();
 
     // create generator within the thread
-    RandomGenerator<RealType> random_th(myPrimes[0]);
+    RandomGenerator<RealType> random_th(myPrimes[ip]);
 
-    ions.Lattice.BoxBConds = 1;
-    ions.RSoA              = ions.R; // fill the SoA
+    ParticleSet els;
+    build_els(els, ions, random_th);
+    els.update();
 
-    const int nels  = count_electrons(ions, 1);
+    const int nions = ions.getTotalNum();
+    const int nels  = els.getTotalNum();
     const int nels3 = 3 * nels;
-
-    { // create up/down electrons
-      els.Lattice.BoxBConds = 1;
-      els.Lattice.set(ions.Lattice);
-      vector<int> ud(2);
-      ud[0] = nels / 2;
-      ud[1] = nels - ud[0];
-      els.create(ud);
-      els.R.InUnit = 1;
-      random_th.generate_uniform(&els.R[0][0], nels3);
-      els.convert2Cart(els.R); // convert to Cartiesian
-      els.RSoA = els.R;
-    }
 
     miniqmcreference::DiracDeterminantRef determinant_ref(nels, random_th);
     determinant_ref.checkMatrix();

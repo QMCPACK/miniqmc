@@ -21,9 +21,9 @@
 #include <Utilities/Configuration.h>
 #include <Utilities/Communicate.h>
 #include <Particle/ParticleSet.h>
+#include <Particle/ParticleSet_builder.hpp>
 #include <Utilities/RandomGenerator.h>
 #include <Input/Input.hpp>
-#include <Numerics/Spline2/MultiBsplineRef.hpp>
 #include <QMCWaveFunctions/einspline_spo.hpp>
 #include <QMCWaveFunctions/einspline_spo_ref.hpp>
 #include <Utilities/qmcpack_version.h>
@@ -151,11 +151,11 @@ int main(int argc, char **argv)
   spo_ref_type spo_ref_main;
   int nTiles = 1;
 
+  ParticleSet ions;
+  // initialize ions and splines which are shared by all threads later
   {
     Tensor<OHMMS_PRECISION, 3> lattice_b;
-    ParticleSet ions;
-    OHMMS_PRECISION scale = 1.0;
-    lattice_b             = tile_cell(ions, tmat, scale);
+    build_ions(ions, tmat, lattice_b);
     const int norb        = count_electrons(ions, 1) / 2;
     tileSize              = (tileSize > 0) ? tileSize : norb;
     nTiles                = norb / tileSize;
@@ -204,30 +204,13 @@ int main(int argc, char **argv)
     // create generator within the thread
     RandomGenerator<RealType> random_th(MakeSeed(team_id, np));
 
-    ParticleSet ions, els;
-    const OHMMS_PRECISION scale = 1.0;
-    ions.Lattice.BoxBConds      = 1;
-    tile_cell(ions, tmat, scale);
+    ParticleSet els;
+    build_els(els, ions, random_th);
+    els.update();
 
     const int nions = ions.getTotalNum();
-    const int nels  = count_electrons(ions, 1);
+    const int nels  = els.getTotalNum();
     const int nels3 = 3 * nels;
-
-    { // create up/down electrons
-      els.Lattice.BoxBConds = 1;
-      els.Lattice.set(ions.Lattice);
-      vector<int> ud(2);
-      ud[0] = nels / 2;
-      ud[1] = nels - ud[0];
-      els.create(ud);
-      els.R.InUnit = 1;
-      random_th.generate_uniform(&els.R[0][0], nels3);
-      els.convert2Cart(els.R); // convert to Cartiesian
-    }
-
-    // update content: compute distance tables and structure factor
-    els.update();
-    ions.update();
 
     // create pseudopp
     NonLocalPP<OHMMS_PRECISION> ecp(random_th);
