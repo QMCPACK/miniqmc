@@ -330,7 +330,7 @@ struct einspline_spo : public SPOSet
   /** evaluate psi, grad and hess of multiple walkers with offload */
   inline void evaluate_multi_vgh(const std::vector<PosType> &p, std::vector<self_type *> &shadows, bool need_transfer=false)
   {
-    const size_t nw = p.size();
+    const size_t nw = shadows.size();
     if(nw*nBlocks!=psi_shadows.size())
     {
       psi_shadows.resize(nw*nBlocks);
