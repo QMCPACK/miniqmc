@@ -10,11 +10,12 @@ ENDFOREACH(p ${ESTEST})
 
 ADD_LIBRARY(miniwfs ../QMCWaveFunctions/WaveFunction.cpp ../QMCWaveFunctions/SPOSet_builder.cpp)
 
-ADD_EXECUTABLE(check_spo check_spo.cpp)
-TARGET_LINK_LIBRARIES(check_spo miniwfs qmcbase qmcutil ${QMC_UTIL_LIBS} ${MPI_LIBRARY})
+SET(DRIVERS check_spo miniqmc miniqmc_sync_move)
 
-ADD_EXECUTABLE(miniqmc miniqmc.cpp)
-TARGET_LINK_LIBRARIES(miniqmc miniwfs qmcbase qmcutil ${QMC_UTIL_LIBS} ${MPI_LIBRARY})
+FOREACH(p ${DRIVERS})
+  ADD_EXECUTABLE( ${p}  ${p}.cpp)
+  TARGET_LINK_LIBRARIES(${p} miniwfs qmcbase qmcutil ${QMC_UTIL_LIBS} ${MPI_LIBRARY})
+ENDFOREACH(p ${ESTEST})
 
 endif()
 

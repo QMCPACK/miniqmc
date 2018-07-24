@@ -113,6 +113,8 @@ struct WaveFunctionComponent : public QMCTraits
   /// default destructor
   virtual ~WaveFunctionComponent() {}
 
+  /// operates on a single walker
+
   /** evaluate the value of the wavefunction
    * @param P active ParticleSet
    * @param G Gradients, \f$\nabla\ln\Psi\f$
@@ -163,6 +165,66 @@ struct WaveFunctionComponent : public QMCTraits
   virtual void evaluateGL(ParticleSet &P, ParticleSet::ParticleGradient_t &G,
                           ParticleSet::ParticleLaplacian_t &L,
                           bool fromscratch = false) = 0;
+
+  /// operates on multiple walkers
+  virtual void multi_evaluateLog(const std::vector<WaveFunctionComponent *> &WFC_list,
+                                 const std::vector<ParticleSet *> &P_list,
+                                 const std::vector<ParticleSet::ParticleGradient_t *> &G_list,
+                                 const std::vector<ParticleSet::ParticleLaplacian_t *> &L_list,
+                                 ParticleSet::ParticleValue_t &values) const
+  {
+    #pragma omp parallel for
+    for(int iw=0; iw<P_list.size(); iw++)
+      values[iw] = WFC_list[iw]->evaluateLog(*P_list[iw], *G_list[iw], *L_list[iw]);
+  };
+
+  virtual void multi_evalGrad(const std::vector<WaveFunctionComponent *> &WFC_list,
+                              const std::vector<ParticleSet *> &P_list, int iat,
+                              std::vector<PosType> &grad_now) const
+  {
+    //#pragma omp parallel for
+    for(int iw=0; iw<P_list.size(); iw++)
+      grad_now[iw] = WFC_list[iw]->evalGrad(*P_list[iw], iat);
+  };
+
+  virtual void multi_ratioGrad(const std::vector<WaveFunctionComponent *> &WFC_list,
+                               const std::vector<ParticleSet *> &P_list, int iat,
+                               std::vector<ValueType> &ratios,
+                               std::vector<PosType> &grad_new) const
+  {
+    #pragma omp parallel for
+    for(int iw=0; iw<P_list.size(); iw++)
+      ratios[iw] = WFC_list[iw]->ratioGrad(*P_list[iw], iat, grad_new[iw]);
+  };
+
+  virtual void multi_acceptrestoreMove(const std::vector<WaveFunctionComponent *> &WFC_list,
+                                       const std::vector<ParticleSet *> &P_list,
+                                       const std::vector<bool> &isAccepted, int iat) const
+  {
+    #pragma omp parallel for
+    for(int iw=0; iw<P_list.size(); iw++)
+    {
+      if(isAccepted[iw]) WFC_list[iw]->acceptMove(*P_list[iw], iat);
+    }
+  };
+
+  virtual void multi_ratio(const std::vector<WaveFunctionComponent *> &WFC_list,
+                           const std::vector<ParticleSet *> &P_list, int iat,
+                           ParticleSet::ParticleValue_t &ratio_list) const
+  {
+    // TODO
+  };
+
+  virtual void multi_evaluateGL(const std::vector<WaveFunctionComponent *> &WFC_list,
+                                const std::vector<ParticleSet *> &P_list,
+                                const std::vector<ParticleSet::ParticleGradient_t *> &G_list,
+                                const std::vector<ParticleSet::ParticleLaplacian_t *> &L_list,
+                                bool fromscratch = false) const
+  {
+    #pragma omp parallel for
+    for(int iw=0; iw<P_list.size(); iw++)
+      WFC_list[iw]->evaluateGL(*P_list[iw], *G_list[iw], *L_list[iw], fromscratch);
+  };
 };
 }
 #endif
