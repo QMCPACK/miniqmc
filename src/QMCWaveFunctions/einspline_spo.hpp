@@ -321,6 +321,8 @@ struct einspline_spo : public SPOSet
 
   inline void multi_evaluate_vgh(const std::vector<SPOSet *> &spo_list, const std::vector<PosType> &p) const override
   {
+    ScopedTimer local_timer(timer);
+
     std::vector<self_type *> shadows;
     for(int iw = 0; iw<spo_list.size(); iw++)
       shadows.push_back(dynamic_cast<self_type *>(spo_list[iw]));
