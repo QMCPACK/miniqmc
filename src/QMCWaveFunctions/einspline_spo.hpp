@@ -193,7 +193,7 @@ struct einspline_spo : public SPOSet
   }
 
   /** evaluate psi */
-  inline void evaluate_v(const PosType &p)
+  inline void evaluate_v(const PosType &p) override
   {
     ScopedTimer local_timer(timer);
 
@@ -212,7 +212,7 @@ struct einspline_spo : public SPOSet
   }
 
   /** evaluate psi, grad and lap */
-  inline void evaluate_vgl(const PosType &p)
+  inline void evaluate_vgl(const PosType &p) override
   {
     auto u = Lattice.toUnit_floor(p);
     for (int i = 0; i < nBlocks; ++i)
@@ -233,7 +233,7 @@ struct einspline_spo : public SPOSet
   }
 
   /** evaluate psi, grad and hess */
-  inline void evaluate_vgh(const PosType &p)
+  inline void evaluate_vgh(const PosType &p) override
   {
     ScopedTimer local_timer(timer);
 
