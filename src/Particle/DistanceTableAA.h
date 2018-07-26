@@ -70,7 +70,7 @@ struct DistanceTableAA : public DTD_BConds<T, D, SC>, public DistanceTableData
 
   inline void evaluate(ParticleSet &P)
   {
-    CONSTEXPR T BigR = std::numeric_limits<T>::max();
+    constexpr T BigR = std::numeric_limits<T>::max();
     // P.RSoA.copyIn(P.R);
     for (int iat = 0; iat < Ntargets; ++iat)
     {
