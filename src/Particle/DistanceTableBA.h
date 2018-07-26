@@ -116,7 +116,7 @@ struct DistanceTableBA : public DTD_BConds<T, D, SC>, public DistanceTableData
     // Rmax is zero: no need to transpose the table.
     if (Rmax < std::numeric_limits<T>::epsilon()) return;
 
-    CONSTEXPR T cminus(-1);
+    constexpr T cminus(-1);
     for (int iat = 0; iat < Nsources; ++iat)
     {
       int nn                  = 0;
