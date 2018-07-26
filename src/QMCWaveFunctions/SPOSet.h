@@ -69,7 +69,7 @@ public:
   {
     #pragma omp parallel for
     for(int iw=0; iw<spo_list.size(); iw++)
-      spo_list[iw]->evaluate_vgl(pos_list[iw]);
+      spo_list[iw]->evaluate_vgh(pos_list[iw]);
   }
 
 };
