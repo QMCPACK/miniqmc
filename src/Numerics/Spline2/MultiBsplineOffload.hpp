@@ -84,7 +84,7 @@ inline void MultiBsplineOffload<T>::evaluate_v(const spliner_type *restrict spli
   const intptr_t ys = spline_m->y_stride;
   const intptr_t zs = spline_m->z_stride;
 
-  CONSTEXPR T zero(0);
+  constexpr T zero(0);
   OMPstd::fill_n(vals, num_splines, zero);
 
   for (size_t i = 0; i < 4; i++)
