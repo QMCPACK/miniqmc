@@ -138,8 +138,8 @@ template <class T> struct DTD_BConds<T, 3, PPPG + SOA_OFFSET>
     g12 = g(5);
     g22 = g(8);
 
-    CONSTEXPR T minusone(-1);
-    CONSTEXPR T zero(0);
+    constexpr T minusone(-1);
+    constexpr T zero(0);
 
     corners.resize(8);
     corners(0) = zero;
@@ -175,8 +175,8 @@ template <class T> struct DTD_BConds<T, 3, PPPG + SOA_OFFSET>
     const T *restrict cellz = corners.data(2);
     ASSUME_ALIGNED(cellz);
 
-    CONSTEXPR T minusone(-1);
-    CONSTEXPR T one(1);
+    constexpr T minusone(-1);
+    constexpr T one(1);
 #pragma omp simd aligned(temp_r, px, py, pz, dx, dy, dz)
     for (int iat = first; iat < last; ++iat)
     {
