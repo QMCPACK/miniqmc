@@ -123,7 +123,7 @@ struct DistanceTableData
   /// constructor using source and target ParticleSet
   DistanceTableData(const ParticleSet &source, const ParticleSet &target)
       : Origin(&source), N(0), Need_full_table_loadWalker(false)
-  { }
+  {}
 
   /// virutal destructor
   virtual ~DistanceTableData() {}
