@@ -178,7 +178,6 @@ int main(int argc, char **argv)
     els.addTable(els, DT_SOA);
     els_ref.addTable(els_ref, DT_SOA);
     const int ei_TableID = els_ref.addTable(ions, DT_SOA);
-    els_ref.DistTables[ei_TableID]->setRmax(Rmax);
 
     ParticlePos_t delta(nels);
 
@@ -368,29 +367,26 @@ int main(int argc, char **argv)
       r_ratio              = 0.0;
       constexpr int nknots = 12;
       int nsphere          = 0;
-      for (int iat = 0; iat < nions; ++iat)
+      for (int jel = 0; jel < els_ref.getTotalNum(); ++jel)
       {
-        for (int nj = 0, jmax = els_ref.DistTables[ei_TableID]->nadj(iat); nj < jmax; ++nj)
-        {
-          const RealType r = els_ref.DistTables[ei_TableID]->distance(iat, nj);
-          if (r < Rmax)
+        const auto &dist = els_ref.DistTables[ei_TableID]->Distances[jel];
+        for (int iat = 0; iat < nions; ++iat)
+          if (dist[iat] < Rmax)
           {
-            const int iel = els_ref.DistTables[ei_TableID]->iadj(iat, nj);
             nsphere++;
             random_th.generate_uniform(&delta[0][0], nknots * 3);
             for (int k = 0; k < nknots; ++k)
             {
-              els.makeMoveOnSphere(iel, delta[k]);
-              RealType r_soa = wfc->ratio(els, iel);
-              els.rejectMove(iel);
+              els.makeMoveOnSphere(jel, delta[k]);
+              RealType r_soa = wfc->ratio(els, jel);
+              els.rejectMove(jel);
 
-              els_ref.makeMoveOnSphere(iel, delta[k]);
-              RealType r_ref = wfc_ref->ratio(els_ref, iel);
-              els_ref.rejectMove(iel);
+              els_ref.makeMoveOnSphere(jel, delta[k]);
+              RealType r_ref = wfc_ref->ratio(els_ref, jel);
+              els_ref.rejectMove(jel);
               r_ratio += abs(r_soa / r_ref - 1);
             }
           }
-        }
       }
       cout << "ratio with SphereMove  Error = " << r_ratio / nsphere
            << " # of moves =" << nsphere << endl;

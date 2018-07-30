@@ -46,7 +46,6 @@ namespace qmcplusplus
 enum DistanceTimers
 {
   Timer_makeMove,
-  Timer_moveDone,
   Timer_setActive,
   Timer_acceptMove
 };
@@ -54,7 +53,6 @@ enum DistanceTimers
 TimerNameList_t<DistanceTimers> DistanceTimerNames
 {
   {Timer_makeMove, "Make move"},
-  {Timer_moveDone, "Move done"},
   {Timer_setActive, "Set active"},
   {Timer_acceptMove, "Accept move"},
 };
@@ -91,11 +89,11 @@ ParticleSet::ParticleSet(const ParticleSet &p)
     for (int i = 1; i < p.DistTables.size(); ++i)
       addTable(p.DistTables[i]->origin(), p.DistTables[i]->DTType);
   }
+
   for (int i = 0; i < p.DistTables.size(); ++i)
   {
     DistTables[i]->Need_full_table_loadWalker =
         p.DistTables[i]->Need_full_table_loadWalker;
-    DistTables[i]->Rmax = p.DistTables[i]->Rmax;
   }
   myTwist = p.myTwist;
 
@@ -245,7 +243,6 @@ int ParticleSet::addTable(const ParticleSet &psrc, int dt_type)
     myDistTableMap[myName] = 0;
     app_log() << "  ... ParticleSet::addTable Create Table #0 "
               << DistTables[0]->Name << std::endl;
-    DistTables[0]->ID = 0;
     if (psrc.getName() == myName) return 0;
   }
   if (psrc.getName() == myName)
@@ -267,7 +264,6 @@ int ParticleSet::addTable(const ParticleSet &psrc, int dt_type)
     tid = DistTables.size();
     DistTables.push_back(createDistanceTable(psrc, *this, dt_type));
     myDistTableMap[psrc.getName()] = tid;
-    DistTables[tid]->ID            = tid;
     app_log() << "  ... ParticleSet::addTable Create Table #" << tid << " "
               << DistTables[tid]->Name << std::endl;
   }
@@ -399,10 +395,6 @@ void ParticleSet::rejectMove(Index_t iat) { activePtcl = -1; }
 
 void ParticleSet::donePbyP(bool skipSK)
 {
-  ScopedTimer local_timer(timers[Timer_moveDone]);
-
-  for (size_t i = 0, nt = DistTables.size(); i < nt; i++)
-    DistTables[i]->donePbyP();
   activePtcl = -1;
 }
 

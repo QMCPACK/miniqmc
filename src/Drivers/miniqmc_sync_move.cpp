@@ -368,9 +368,6 @@ int main(int argc, char **argv)
     // create wavefunction per mover
     build_WaveFunction(useRef, thiswalker->wavefunction, ions, thiswalker->els, thiswalker->rng, enableJ3);
 
-    // set Rmax for ion-el distance table for PP
-    thiswalker->els.DistTables[thiswalker->wavefunction.get_ei_TableID()]->setRmax(Rmax);
-
     // initial computing
     thiswalker->els.update();
   }
@@ -506,35 +503,26 @@ int main(int argc, char **argv)
         ParticlePos_t rOnSphere(nknots);
         ecp.randomize(rOnSphere); // pick random sphere
         const DistanceTableData *d_ie = els.DistTables[wavefunction.get_ei_TableID()];
-    
-        for (int iat = 0; iat < nions; ++iat)
+
+        for (int jel = 0; jel < els.getTotalNum(); ++jel)
         {
-          const auto centerP = ions.R[iat];
-          for (int nj = 0, jmax = d_ie->nadj(iat); nj < jmax; ++nj)
-          {
-            const auto r = d_ie->distance(iat, nj);
-            if (r < Rmax)
-            {
-              const int iel = d_ie->iadj(iat, nj);
-              const auto dr = d_ie->displacement(iat, nj);
+          const auto &dist  = d_ie->Distances[jel];
+          const auto &displ = d_ie->Displacements[jel];
+          for (int iat = 0; iat < nions; ++iat)
+            if (dist[iat] < Rmax)
               for (int k = 0; k < nknots; k++)
               {
-                PosType deltar(r * rOnSphere[k] - dr);
-    
-                els.makeMoveOnSphere(iel, deltar);
-    
+                PosType deltar(dist[iat] * rOnSphere[k] - displ[iat]);
+
+                els.makeMoveOnSphere(jel, deltar);
+
                 Timers[Timer_Value]->start();
-    
-                spo.evaluate_v(els.R[iel]);
-    
-                wavefunction.ratio(els, iel);
-    
+                spo.evaluate_v(els.R[jel]);
+                wavefunction.ratio(els, jel);
                 Timers[Timer_Value]->stop();
-    
-                els.rejectMove(iel);
+
+                els.rejectMove(jel);
               }
-            }
-          }
         }
       }
       Timers[Timer_ECP]->stop();
