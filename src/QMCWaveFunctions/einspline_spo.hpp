@@ -239,27 +239,6 @@ struct einspline_spo : public SPOSet
   {
     ScopedTimer local_timer(timer);
 
-    auto u = Lattice.toUnit_floor(p);
-    for (int i = 0; i < nBlocks; ++i)
-      compute_engine.evaluate_vgh(einsplines[i], u[0], u[1], u[2],
-                                  psi[i].data(), grad[i].data(), hess[i].data(),
-                                  nSplinesPerBlock);
-  }
-
-  /** evaluate psi, grad and hess */
-  inline void evaluate_vgh_pfor(const PosType &p)
-  {
-    auto u = Lattice.toUnit_floor(p);
-    #pragma omp for nowait
-    for (int i = 0; i < nBlocks; ++i)
-      compute_engine.evaluate_vgh(einsplines[i], u[0], u[1], u[2],
-                                  psi[i].data(), grad[i].data(), hess[i].data(),
-                                  nSplinesPerBlock);
-  }
-
-  /** evaluate psi, grad and hess with offload */
-  inline void evaluate_vgh_offload(const PosType &p, bool need_transfer=false)
-  {
     if(nBlocks!=psi_shadows.size())
     {
       psi_shadows.resize(nBlocks);
@@ -319,6 +298,17 @@ struct einspline_spo : public SPOSet
       grad[i].update_from_device();
       hess[i].update_from_device();
     }
+  }
+
+  /** evaluate psi, grad and hess */
+  inline void evaluate_vgh_pfor(const PosType &p)
+  {
+    auto u = Lattice.toUnit_floor(p);
+    #pragma omp for nowait
+    for (int i = 0; i < nBlocks; ++i)
+      compute_engine.evaluate_vgh(einsplines[i], u[0], u[1], u[2],
+                                  psi[i].data(), grad[i].data(), hess[i].data(),
+                                  nSplinesPerBlock);
   }
 
   /** evaluate psi, grad and hess of multiple walkers with offload */
