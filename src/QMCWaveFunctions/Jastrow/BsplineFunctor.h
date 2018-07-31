@@ -240,7 +240,7 @@ inline T BsplineFunctor<T>::evaluateV(const int iat, const int iStart,
   }
 
   real_type d = 0.0;
-#pragma omp simd reduction(+ : d)
+  //#pragma omp simd reduction(+:d)
   for (int jat = 0; jat < iCount; jat++)
   {
     real_type r = distArrayCompressed[jat];

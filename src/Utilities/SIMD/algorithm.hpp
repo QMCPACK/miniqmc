@@ -29,7 +29,7 @@ namespace qmcplusplus {
     template<typename T1, typename T2>
       inline void copy_n(const T1* restrict first, size_t count, T2* restrict result)
       {
-//#pragma omp simd 
+        //#pragma omp simd
         for(size_t i=0; i<count; ++i)
           result[i]=static_cast<T2>(first[i]);
       }
@@ -37,7 +37,7 @@ namespace qmcplusplus {
     template<typename T1, typename T2>
     inline T2 accumulate_n(const T1* restrict in, size_t n, T2 res)
       {
-#pragma omp simd reduction(+:res)
+        //#pragma omp simd reduction(+:res)
         for(int i=0; i<n; ++i)
           res += in[i];
         return res;
