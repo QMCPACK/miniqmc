@@ -158,7 +158,7 @@ void print_help()
   app_summary() << "  -h  print help and exit"                                   << '\n';
   app_summary() << "  -j  enable three body Jastrow      default: off"           << '\n';
   app_summary() << "  -m  meshfactor                     default: 1.0"           << '\n';
-  app_summary() << "  -n  number of MC steps             default: 100"           << '\n';
+  app_summary() << "  -n  number of MC steps             default: 5"             << '\n';
   app_summary() << "  -N  number of MC substeps          default: 1"             << '\n';
   app_summary() << "  -r  set the Rmax.                  default: 1.7"           << '\n';
   app_summary() << "  -s  set the random seed.           default: 11"            << '\n';
@@ -188,7 +188,7 @@ int main(int argc, char **argv)
   int na      = 1;
   int nb      = 1;
   int nc      = 1;
-  int nsteps  = 100;
+  int nsteps  = 5;
   int iseed   = 11;
   int nx = 37, ny = 37, nz = 37;
   int nmovers = omp_get_max_threads();
