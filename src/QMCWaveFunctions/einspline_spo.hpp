@@ -178,7 +178,9 @@ struct einspline_spo : public SPOSet
         spline_type **restrict einsplines_ptr=einsplines.data();
         spline_type *restrict &tile_ptr=einsplines[i];
         T *restrict &coefs_ptr=einsplines[i]->coefs;
-        #pragma omp target enter data map(to:tile_ptr[0:1],coefs_ptr[0:einsplines[i]->coefs_size]) device(0)
+        #pragma omp target enter data map(to:tile_ptr[0:1]) device(0)
+        // Ye: I still don't understand why this line must be separated from the previous one.
+        #pragma omp target enter data map(to:coefs_ptr[0:einsplines[i]->coefs_size]) device(0)
         //std::cout << "YYYY offload size = " << einsplines[i]->coefs_size << std::endl;
         #pragma omp target map(to:i) device(0)
         {
