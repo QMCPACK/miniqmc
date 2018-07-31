@@ -29,7 +29,6 @@
 
 namespace qmcplusplus
 {
-PRAGMA_OMP("omp declare target")
 template <typename T> struct SplineBound
 {
   static inline void get(T x, T &dx, int &ind, int ng)
@@ -72,6 +71,6 @@ template <typename T> struct MultiBsplineData
   }
 };
 
-PRAGMA_OMP("omp end declare target")
 } /** qmcplusplus namespace */
+
 #endif

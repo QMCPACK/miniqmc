@@ -23,7 +23,6 @@
 #define QMCPLUSPLUS_MULTIEINSPLINE_COMMON_HPP
 
 #include <iostream>
-#include <Numerics/Spline2/bspline_allocator.hpp>
 #include <Numerics/Spline2/MultiBsplineData.hpp>
 #include <stdlib.h>
 
