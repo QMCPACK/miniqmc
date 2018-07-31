@@ -277,7 +277,6 @@ struct einspline_spo : public SPOSet
 #endif
     for (int i = 0; i < nBlocks; ++i)
     {
-      int dummy1 = nSplinesPerBlock;
 #ifdef ENABLE_OFFLOAD
         #pragma omp parallel num_threads(nSplinesPerBlock)
 #endif
@@ -286,7 +285,7 @@ struct einspline_spo : public SPOSet
                                            psi_shadows_ptr[i],
                                            grad_shadows_ptr[i],
                                            hess_shadows_ptr[i],
-                                           dummy1);
+                                           nSplinesPerBlock);
     }
   }
 
@@ -374,8 +373,6 @@ struct einspline_spo : public SPOSet
     for(size_t iw = 0; iw < nw; iw++)
       for (int i = 0; i < nBlocks; ++i)
       {
-        int dummy0 = nBlocks;
-        int dummy1 = nSplinesPerBlock;
 #ifdef ENABLE_OFFLOAD
         #pragma omp parallel
 #endif
@@ -383,10 +380,10 @@ struct einspline_spo : public SPOSet
                                              u_shadows_ptr[iw][0],
                                              u_shadows_ptr[iw][1],
                                              u_shadows_ptr[iw][2],
-                                             psi_shadows_ptr[iw*dummy0+i],
-                                             grad_shadows_ptr[iw*dummy0+i],
-                                             hess_shadows_ptr[iw*dummy0+i],
-                                             dummy1);
+                                             psi_shadows_ptr[iw*nBlocks+i],
+                                             grad_shadows_ptr[iw*nBlocks+i],
+                                             hess_shadows_ptr[iw*nBlocks+i],
+                                             nSplinesPerBlock);
       }
   }
 
