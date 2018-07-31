@@ -226,7 +226,7 @@ int main(int argc, char **argv)
   std::vector<std::vector<RealType> > ur_list(nmovers);
   std::vector<int> my_accepted_list(nmovers), my_vals_list(nmovers);
   std::vector<PosType> pos_list(nmovers);
-  std::vector<spo_type *> spo_shadows(nmovers);
+  std::vector<SPOSet *> spo_shadows(nmovers);
 
   #pragma omp parallel for
   for(size_t iw = 0; iw < mover_list.size(); iw++)
@@ -236,8 +236,8 @@ int main(int argc, char **argv)
     mover_list[iw] = thiswalker;
 
     // create a spo view in each Mover
-    spo_shadows[iw] = new spo_type(spo_main, 1, 0);
-    thiswalker->spo = dynamic_cast<SPOSet *>(spo_shadows[iw]);
+    thiswalker->spo = dynamic_cast<SPOSet *>(new spo_type(spo_main, 1, 0));
+    spo_shadows[iw] = thiswalker->spo;
     spo_ref_views[iw] = new spo_ref_type(spo_ref_main, 1, 0);
 
     // initial computing
@@ -292,7 +292,8 @@ int main(int argc, char **argv)
       }
 
       Timers[Timer_SPO_vgh]->start();
-      anon_spo->evaluate_multi_vgh(pos_list, spo_shadows, transfer);
+      anon_spo->multi_evaluate_vgh(spo_shadows, pos_list);
+      if(transfer) anon_spo->multi_transfer_from_device(spo_shadows);
       Timers[Timer_SPO_vgh]->stop();
 
       Timers[Timer_SPO_ref_vgh]->start();

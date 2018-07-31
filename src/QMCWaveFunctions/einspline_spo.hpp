@@ -307,32 +307,28 @@ struct einspline_spo : public SPOSet
                                            hess_shadows_ptr[i],
                                            dummy1);
     }
+  }
 
-    if(need_transfer)
+  void transfer_from_device()
+  {
+    for (int i = 0; i < nBlocks; ++i)
     {
-      for (int i = 0; i < nBlocks; ++i)
-      {
-        psi[i].update_from_device();
-        grad[i].update_from_device();
-        hess[i].update_from_device();
-      }
+      psi[i].update_from_device();
+      grad[i].update_from_device();
+      hess[i].update_from_device();
     }
   }
 
-  inline void multi_evaluate_vgh(const std::vector<SPOSet *> &spo_list, const std::vector<PosType> &p) const override
+  /** evaluate psi, grad and hess of multiple walkers with offload */
+  inline void multi_evaluate_vgh(const std::vector<SPOSet *> &spo_list, const std::vector<PosType> &p) override
   {
     ScopedTimer local_timer(timer);
 
+    const size_t nw = spo_list.size();
     std::vector<self_type *> shadows;
-    for(int iw = 0; iw<spo_list.size(); iw++)
+    for(int iw = 0; iw<nw; iw++)
       shadows.push_back(dynamic_cast<self_type *>(spo_list[iw]));
-    shadows[0]->evaluate_multi_vgh(p, shadows);
-  }
 
-  /** evaluate psi, grad and hess of multiple walkers with offload */
-  inline void evaluate_multi_vgh(const std::vector<PosType> &p, std::vector<self_type *> &shadows, bool need_transfer=false)
-  {
-    const size_t nw = shadows.size();
     if(nw*nBlocks!=psi_shadows.size())
     {
       psi_shadows.resize(nw*nBlocks);
@@ -400,20 +396,12 @@ struct einspline_spo : public SPOSet
                                              hess_shadows_ptr[iw*dummy0+i],
                                              dummy1);
       }
+  }
 
-    if(need_transfer)
-    {
-      for(size_t iw = 0; iw < nw; iw++)
-      {
-        auto &shadow = *shadows[iw];
-        for (int i = 0; i < nBlocks; ++i)
-        {
-          shadow.psi[i].update_from_device();
-          shadow.grad[i].update_from_device();
-          shadow.hess[i].update_from_device();
-        }
-      }
-    }
+  void multi_transfer_from_device(const std::vector<SPOSet *> &spo_list) const
+  {
+    for(size_t iw = 0; iw < spo_list.size(); iw++)
+      (dynamic_cast<self_type *>(spo_list[iw]))->transfer_from_device();
   }
 
   void print(std::ostream &os)
