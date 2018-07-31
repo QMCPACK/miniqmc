@@ -49,7 +49,7 @@ public:
 
   /// operates on multiple walkers
   virtual void multi_evaluate_v(const std::vector<SPOSet *> &spo_list,
-                                const std::vector<PosType> &pos_list) const
+                                const std::vector<PosType> &pos_list)
   {
     #pragma omp parallel for
     for(int iw=0; iw<spo_list.size(); iw++)
@@ -57,7 +57,7 @@ public:
   }
 
   virtual void multi_evaluate_vgl(const std::vector<SPOSet *> &spo_list,
-                                const std::vector<PosType> &pos_list) const
+                                const std::vector<PosType> &pos_list)
   {
     #pragma omp parallel for
     for(int iw=0; iw<spo_list.size(); iw++)
@@ -65,7 +65,7 @@ public:
   }
 
   virtual void multi_evaluate_vgh(const std::vector<SPOSet *> &spo_list,
-                                const std::vector<PosType> &pos_list) const
+                                const std::vector<PosType> &pos_list)
   {
     #pragma omp parallel for
     for(int iw=0; iw<spo_list.size(); iw++)
