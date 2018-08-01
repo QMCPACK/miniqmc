@@ -401,9 +401,7 @@ void ParticleSet::donePbyP(bool skipSK)
 void ParticleSet::loadWalker(Walker_t &awalker, bool pbyp)
 {
   R = awalker.R;
-#if defined(ENABLE_AA_SOA)
   RSoA.copyIn(R);
-#endif
   if (pbyp)
   {
     // in certain cases, full tables must be ready
