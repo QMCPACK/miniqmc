@@ -36,19 +36,19 @@ using namespace qmcplusplus;
 
 void print_help()
 {
-  //clang-format off
+  // clang-format off
   cout << "usage:" << '\n';
-  cout << "  check_determinant [-hvV] [-g \"n0 n1 n2\"] [-n steps]" << '\n';
-  cout << "             [-N substeps] [-s seed]" << '\n';
-  cout << "options:" << '\n';
-  cout << "  -g  set the 3D tiling.             default: 1 1 1" << '\n';
-  cout << "  -h  print help and exit" << '\n';
-  cout << "  -n  number of MC steps             default: 5" << '\n';
-  cout << "  -N  number of MC substeps          default: 1" << '\n';
-  cout << "  -s  set the random seed.           default: 11" << '\n';
-  cout << "  -v  verbose output" << '\n';
-  cout << "  -V  print version information and exit" << '\n';
-  //clang-format on
+  cout << "  check_determinant [-hvV] [-g \"n0 n1 n2\"] [-n steps]"     << '\n';
+  cout << "             [-N substeps] [-s seed]"                        << '\n';
+  cout << "options:"                                                    << '\n';
+  cout << "  -g  set the 3D tiling.             default: 1 1 1"         << '\n';
+  cout << "  -h  print help and exit"                                   << '\n';
+  cout << "  -n  number of MC steps             default: 5"             << '\n';
+  cout << "  -N  number of MC substeps          default: 1"             << '\n';
+  cout << "  -s  set the random seed.           default: 11"            << '\n';
+  cout << "  -v  verbose output"                                        << '\n';
+  cout << "  -V  print version information and exit"                    << '\n';
+  // clang-format on
 
   exit(1); // print help and exit
 }

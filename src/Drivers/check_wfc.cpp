@@ -44,20 +44,20 @@ using namespace qmcplusplus;
 
 void print_help()
 {
-  //clang-format off
+  // clang-format off
   cout << "usage:" << '\n';
-  cout << "  check_wfc [-hvV] [-f wfc_component] [-g \"n0 n1 n2\"]" << '\n';
-  cout << "            [-r rmax] [-s seed]" << '\n';
-  cout << "options:" << '\n';
-  cout << "  -f  specify wavefunction component to check" << '\n';
-  cout << "      one of: J1, J2, J3.            default: J2" << '\n';
-  cout << "  -g  set the 3D tiling.             default: 1 1 1" << '\n';
-  cout << "  -h  print help and exit" << '\n';
-  cout << "  -r  set the Rmax.                  default: 1.7" << '\n';
-  cout << "  -s  set the random seed.           default: 11" << '\n';
-  cout << "  -v  verbose output" << '\n';
-  cout << "  -V  print version information and exit" << '\n';
-  //clang-format on
+  cout << "  check_wfc [-hvV] [-f wfc_component] [-g \"n0 n1 n2\"]"     << '\n';
+  cout << "            [-r rmax] [-s seed]"                             << '\n';
+  cout << "options:"                                                    << '\n';
+  cout << "  -f  specify wavefunction component to check"               << '\n';
+  cout << "      one of: J1, J2, J3.            default: J2"            << '\n';
+  cout << "  -g  set the 3D tiling.             default: 1 1 1"         << '\n';
+  cout << "  -h  print help and exit"                                   << '\n';
+  cout << "  -r  set the Rmax.                  default: 1.7"           << '\n';
+  cout << "  -s  set the random seed.           default: 11"            << '\n';
+  cout << "  -v  verbose output"                                        << '\n';
+  cout << "  -V  print version information and exit"                    << '\n';
+  // clang-format on
 
   exit(1); // print help and exit
 }
@@ -320,7 +320,7 @@ int main(int argc, char** argv)
       cout << "evalGrad::G      Error = " << g_eval / nels << endl;
       cout << "ratioGrad::G     Error = " << g_ratio / nels << endl;
       cout << "ratioGrad::Ratio Error = " << r_ratio / nels << endl;
-      evalGrad_g_err += std::fabs(g_eval / nels);
+      evalGrad_g_err  += std::fabs(g_eval / nels);
       ratioGrad_g_err += std::fabs(g_ratio / nels);
       ratioGrad_r_err += std::fabs(r_ratio / nels);
 

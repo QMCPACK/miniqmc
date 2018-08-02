@@ -34,20 +34,20 @@ using namespace qmcplusplus;
 
 void print_help()
 {
-  //clang-format off
+  // clang-format off
   app_summary() << "usage:" << '\n';
-  app_summary() << "  check_spo [-hvV] [-g \"n0 n1 n2\"] [-m meshfactor]" << '\n';
-  app_summary() << "            [-n steps] [-r rmax] [-s seed]" << '\n';
-  app_summary() << "options:" << '\n';
-  app_summary() << "  -g  set the 3D tiling.             default: 1 1 1" << '\n';
-  app_summary() << "  -h  print help and exit" << '\n';
-  app_summary() << "  -m  meshfactor                     default: 1.0" << '\n';
-  app_summary() << "  -n  number of MC steps             default: 5" << '\n';
-  app_summary() << "  -r  set the Rmax.                  default: 1.7" << '\n';
-  app_summary() << "  -s  set the random seed.           default: 11" << '\n';
-  app_summary() << "  -v  verbose output" << '\n';
-  app_summary() << "  -V  print version information and exit" << '\n';
-  //clang-format on
+  app_summary() << "  check_spo [-hvV] [-g \"n0 n1 n2\"] [-m meshfactor]"        << '\n';
+  app_summary() << "            [-n steps] [-r rmax] [-s seed]"                  << '\n';
+  app_summary() << "options:"                                                    << '\n';
+  app_summary() << "  -g  set the 3D tiling.             default: 1 1 1"         << '\n';
+  app_summary() << "  -h  print help and exit"                                   << '\n';
+  app_summary() << "  -m  meshfactor                     default: 1.0"           << '\n';
+  app_summary() << "  -n  number of MC steps             default: 5"             << '\n';
+  app_summary() << "  -r  set the Rmax.                  default: 1.7"           << '\n';
+  app_summary() << "  -s  set the random seed.           default: 11"            << '\n';
+  app_summary() << "  -v  verbose output"                                        << '\n';
+  app_summary() << "  -V  print version information and exit"                    << '\n';
+  // clang-format on
 
   exit(1); // print help and exit
 }
@@ -304,7 +304,7 @@ int main(int argc, char** argv)
 
     } // steps.
 
-    ratio += RealType(my_accepted) / RealType(nels * nsteps);
+    ratio        += RealType(my_accepted) / RealType(nels * nsteps);
     nspheremoves += RealType(my_vals) / RealType(nsteps);
     dNumVGHCalls += nels;
 
