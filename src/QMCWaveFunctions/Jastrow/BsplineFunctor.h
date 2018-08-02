@@ -33,6 +33,7 @@
 #include "Numerics/OptimizableFunctorBase.h"
 #include "Utilities/SIMD/allocator.hpp"
 #include <cstdio>
+#include <Kokkos_Core.hpp>
 
 /*!
  * @file BsplineFunctor.h
@@ -46,8 +47,8 @@ template <class T> struct BsplineFunctor : public OptimizableFunctorBase
   typedef real_type value_type;
   int NumParams;
   int Dummy;
-  const TinyVector<real_type, 16> A, dA, d2A, d3A;
-  aligned_vector<real_type> SplineCoefs;
+  const Kokkos::Array<real_type, 16> A, dA, d2A, d3A;
+  Kokkos::View<real_type*,Kokkos::HostSpace> SplineCoefs;
 
   // static const real_type A[16], dA[16], d2A[16];
   real_type DeltaR, DeltaRInv;
@@ -55,7 +56,9 @@ template <class T> struct BsplineFunctor : public OptimizableFunctorBase
   real_type Y, dY, d2Y;
   // Stores the derivatives w.r.t. SplineCoefs
   // of the u, du/dr, and d2u/dr2
-  std::vector<real_type> Parameters;
+  //std::vector<real_type> Parameters;
+  Kokkos::View<real_type*[3],Kokkos::HostSpace> SplineDerivs;
+  Kokkos::View<real_type*,Kokkos::HostSpace> Parameters;
   std::vector<std::string> ParameterNames;
   std::string elementType, pairType;
   std::string fileName;
@@ -68,22 +71,22 @@ template <class T> struct BsplineFunctor : public OptimizableFunctorBase
   // clang-format off
   BsplineFunctor(real_type cusp=0.0) :
     NumParams(0),
-    A(-1.0/6.0,  3.0/6.0, -3.0/6.0, 1.0/6.0,
+    A{-1.0/6.0,  3.0/6.0, -3.0/6.0, 1.0/6.0,
       3.0/6.0, -6.0/6.0,  0.0/6.0, 4.0/6.0,
       -3.0/6.0,  3.0/6.0,  3.0/6.0, 1.0/6.0,
-      1.0/6.0,  0.0/6.0,  0.0/6.0, 0.0/6.0),
-    dA(0.0, -0.5,  1.0, -0.5,
+      1.0/6.0,  0.0/6.0,  0.0/6.0, 0.0/6.0},
+    dA{0.0, -0.5,  1.0, -0.5,
        0.0,  1.5, -2.0,  0.0,
        0.0, -1.5,  1.0,  0.5,
-       0.0,  0.5,  0.0,  0.0),
-    d2A(0.0, 0.0, -1.0,  1.0,
+       0.0,  0.5,  0.0,  0.0},
+    d2A{0.0, 0.0, -1.0,  1.0,
         0.0, 0.0,  3.0, -2.0,
         0.0, 0.0, -3.0,  1.0,
-        0.0, 0.0,  1.0,  0.0),
-    d3A(0.0, 0.0,  0.0, -1.0,
+        0.0, 0.0,  1.0,  0.0},
+    d3A{0.0, 0.0,  0.0, -1.0,
         0.0, 0.0,  0.0,  3.0,
         0.0, 0.0,  0.0, -3.0,
-        0.0, 0.0,  0.0,  1.0),
+        0.0, 0.0,  0.0,  1.0},
     CuspValue(cusp), ResetCount(0), notOpt(false), periodic(true)
   {
     cutoff_radius = 0.0;
@@ -97,8 +100,8 @@ template <class T> struct BsplineFunctor : public OptimizableFunctorBase
     int numKnots = numCoefs - 2;
     DeltaR       = cutoff_radius / (real_type)(numKnots - 1);
     DeltaRInv    = 1.0 / DeltaR;
-    Parameters.resize(n);
-    SplineCoefs.resize(numCoefs);
+    Parameters=Kokkos::View<real_type*,Kokkos::HostSpace>("Parameters",n);
+    SplineCoefs=Kokkos::View<real_type*,Kokkos::HostSpace>("SplineCoefs",numCoefs);
   }
 
   void reset()
@@ -107,25 +110,25 @@ template <class T> struct BsplineFunctor : public OptimizableFunctorBase
     int numKnots = numCoefs - 2;
     DeltaR       = cutoff_radius / (real_type)(numKnots - 1);
     DeltaRInv    = 1.0 / DeltaR;
-    for (int i = 0; i < SplineCoefs.size(); i++)
-      SplineCoefs[i] = 0.0;
+    for (int i = 0; i < SplineCoefs.dimension(0); i++)
+      SplineCoefs(i) = 0.0;
     // Ensure that cusp conditions is satsified at the origin
-    SplineCoefs[1] = Parameters[0];
-    SplineCoefs[2] = Parameters[1];
-    SplineCoefs[0] = Parameters[1] - 2.0 * DeltaR * CuspValue;
-    for (int i = 2; i < Parameters.size(); i++)
-      SplineCoefs[i + 1] = Parameters[i];
+    SplineCoefs(1) = Parameters(0);
+    SplineCoefs(2) = Parameters(1);
+    SplineCoefs(0) = Parameters(1) - 2.0 * DeltaR * CuspValue;
+    for (int i = 2; i < Parameters.dimension(0); i++)
+      SplineCoefs(i + 1) = Parameters(i);
   }
 
   void setupParameters(int n, real_type rcut, real_type cusp,
                        std::vector<real_type> &params)
   {
-    CuspValue     = cusp;
+    CuspValue = cusp;
     cutoff_radius = rcut;
     resize(n);
     for (int i = 0; i < n; i++)
     {
-      Parameters[i] = params[i];
+      Parameters(i) = params[i];
     }
     reset();
   }
@@ -174,10 +177,10 @@ template <class T> struct BsplineFunctor : public OptimizableFunctorBase
     tp[3] = 1.0;
     // clang-format off
     return
-      (SplineCoefs[i+0]*(A[ 0]*tp[0] + A[ 1]*tp[1] + A[ 2]*tp[2] + A[ 3]*tp[3])+
-       SplineCoefs[i+1]*(A[ 4]*tp[0] + A[ 5]*tp[1] + A[ 6]*tp[2] + A[ 7]*tp[3])+
-       SplineCoefs[i+2]*(A[ 8]*tp[0] + A[ 9]*tp[1] + A[10]*tp[2] + A[11]*tp[3])+
-       SplineCoefs[i+3]*(A[12]*tp[0] + A[13]*tp[1] + A[14]*tp[2] + A[15]*tp[3]));
+      (SplineCoefs(i+0)*(A[ 0]*tp[0] + A[ 1]*tp[1] + A[ 2]*tp[2] + A[ 3]*tp[3])+
+       SplineCoefs(i+1)*(A[ 4]*tp[0] + A[ 5]*tp[1] + A[ 6]*tp[2] + A[ 7]*tp[3])+
+       SplineCoefs(i+2)*(A[ 8]*tp[0] + A[ 9]*tp[1] + A[10]*tp[2] + A[11]*tp[3])+
+       SplineCoefs(i+3)*(A[12]*tp[0] + A[13]*tp[1] + A[14]*tp[2] + A[15]*tp[3]));
     // clang-format on
   }
 
@@ -199,23 +202,68 @@ template <class T> struct BsplineFunctor : public OptimizableFunctorBase
     tp[3] = 1.0;
     // clang-format off
     d2udr2 = DeltaRInv * DeltaRInv *
-             (SplineCoefs[i+0]*(d2A[ 0]*tp[0] + d2A[ 1]*tp[1] + d2A[ 2]*tp[2] + d2A[ 3]*tp[3])+
-              SplineCoefs[i+1]*(d2A[ 4]*tp[0] + d2A[ 5]*tp[1] + d2A[ 6]*tp[2] + d2A[ 7]*tp[3])+
-              SplineCoefs[i+2]*(d2A[ 8]*tp[0] + d2A[ 9]*tp[1] + d2A[10]*tp[2] + d2A[11]*tp[3])+
-              SplineCoefs[i+3]*(d2A[12]*tp[0] + d2A[13]*tp[1] + d2A[14]*tp[2] + d2A[15]*tp[3]));
+             (SplineCoefs(i+0)*(d2A[ 0]*tp[0] + d2A[ 1]*tp[1] + d2A[ 2]*tp[2] + d2A[ 3]*tp[3])+
+              SplineCoefs(i+1)*(d2A[ 4]*tp[0] + d2A[ 5]*tp[1] + d2A[ 6]*tp[2] + d2A[ 7]*tp[3])+
+              SplineCoefs(i+2)*(d2A[ 8]*tp[0] + d2A[ 9]*tp[1] + d2A[10]*tp[2] + d2A[11]*tp[3])+
+              SplineCoefs(i+3)*(d2A[12]*tp[0] + d2A[13]*tp[1] + d2A[14]*tp[2] + d2A[15]*tp[3]));
     dudr = DeltaRInv *
-           (SplineCoefs[i+0]*(dA[ 0]*tp[0] + dA[ 1]*tp[1] + dA[ 2]*tp[2] + dA[ 3]*tp[3])+
-            SplineCoefs[i+1]*(dA[ 4]*tp[0] + dA[ 5]*tp[1] + dA[ 6]*tp[2] + dA[ 7]*tp[3])+
-            SplineCoefs[i+2]*(dA[ 8]*tp[0] + dA[ 9]*tp[1] + dA[10]*tp[2] + dA[11]*tp[3])+
-            SplineCoefs[i+3]*(dA[12]*tp[0] + dA[13]*tp[1] + dA[14]*tp[2] + dA[15]*tp[3]));
+           (SplineCoefs(i+0)*(dA[ 0]*tp[0] + dA[ 1]*tp[1] + dA[ 2]*tp[2] + dA[ 3]*tp[3])+
+            SplineCoefs(i+1)*(dA[ 4]*tp[0] + dA[ 5]*tp[1] + dA[ 6]*tp[2] + dA[ 7]*tp[3])+
+            SplineCoefs(i+2)*(dA[ 8]*tp[0] + dA[ 9]*tp[1] + dA[10]*tp[2] + dA[11]*tp[3])+
+            SplineCoefs(i+3)*(dA[12]*tp[0] + dA[13]*tp[1] + dA[14]*tp[2] + dA[15]*tp[3]));
     return
-      (SplineCoefs[i+0]*(A[ 0]*tp[0] + A[ 1]*tp[1] + A[ 2]*tp[2] + A[ 3]*tp[3])+
-       SplineCoefs[i+1]*(A[ 4]*tp[0] + A[ 5]*tp[1] + A[ 6]*tp[2] + A[ 7]*tp[3])+
-       SplineCoefs[i+2]*(A[ 8]*tp[0] + A[ 9]*tp[1] + A[10]*tp[2] + A[11]*tp[3])+
-       SplineCoefs[i+3]*(A[12]*tp[0] + A[13]*tp[1] + A[14]*tp[2] + A[15]*tp[3]));
+      (SplineCoefs(i+0)*(A[ 0]*tp[0] + A[ 1]*tp[1] + A[ 2]*tp[2] + A[ 3]*tp[3])+
+       SplineCoefs(i+1)*(A[ 4]*tp[0] + A[ 5]*tp[1] + A[ 6]*tp[2] + A[ 7]*tp[3])+
+       SplineCoefs(i+2)*(A[ 8]*tp[0] + A[ 9]*tp[1] + A[10]*tp[2] + A[11]*tp[3])+
+       SplineCoefs(i+3)*(A[12]*tp[0] + A[13]*tp[1] + A[14]*tp[2] + A[15]*tp[3]));
     // clang-format on
   }
 
+  inline bool evaluateDerivatives(real_type r,
+                                  std::vector<TinyVector<real_type, 3>> &derivs)
+  {
+    if (r >= cutoff_radius) return false;
+    r *= DeltaRInv;
+    real_type ipart, t;
+    t     = std::modf(r, &ipart);
+    int i = (int)ipart;
+    real_type tp[4];
+    tp[0] = t * t * t;
+    tp[1] = t * t;
+    tp[2] = t;
+    tp[3] = 1.0;
+
+    // clang-format off
+    SplineDerivs(0,0) = 0.0;
+    SplineDerivs(0,1) = 0.0;
+    SplineDerivs(0,2) = 0.0;
+    // d/dp_i u(r)
+    SplineDerivs(i+0,0) = A[ 0]*tp[0] + A[ 1]*tp[1] + A[ 2]*tp[2] + A[ 3]*tp[3];
+    SplineDerivs(i+1,0) = A[ 4]*tp[0] + A[ 5]*tp[1] + A[ 6]*tp[2] + A[ 7]*tp[3];
+    SplineDerivs(i+2,0) = A[ 8]*tp[0] + A[ 9]*tp[1] + A[10]*tp[2] + A[11]*tp[3];
+    SplineDerivs(i+3,0) = A[12]*tp[0] + A[13]*tp[1] + A[14]*tp[2] + A[15]*tp[3];
+    // d/dp_i du/dr
+    SplineDerivs(i+0,1) = DeltaRInv * (dA[ 1]*tp[1] + dA[ 2]*tp[2] + dA[ 3]*tp[3]);
+    SplineDerivs(i+1,1) = DeltaRInv * (dA[ 5]*tp[1] + dA[ 6]*tp[2] + dA[ 7]*tp[3]);
+    SplineDerivs(i+2,1) = DeltaRInv * (dA[ 9]*tp[1] + dA[10]*tp[2] + dA[11]*tp[3]);
+    SplineDerivs(i+3,1) = DeltaRInv * (dA[13]*tp[1] + dA[14]*tp[2] + dA[15]*tp[3]);
+    // d/dp_i d2u/dr2
+    SplineDerivs(i+0,2) = DeltaRInv * DeltaRInv * (d2A[ 2]*tp[2] + d2A[ 3]*tp[3]);
+    SplineDerivs(i+1,2) = DeltaRInv * DeltaRInv * (d2A[ 6]*tp[2] + d2A[ 7]*tp[3]);
+    SplineDerivs(i+2,2) = DeltaRInv * DeltaRInv * (d2A[10]*tp[2] + d2A[11]*tp[3]);
+    SplineDerivs(i+3,2) = DeltaRInv * DeltaRInv * (d2A[14]*tp[2] + d2A[15]*tp[3]);
+    // clang-format on
+
+    int imin = std::max(i, 1);
+    int imax = std::min(i + 4, NumParams + 1);
+    for (int ix=0; ix<3; ix++){
+      for (int n      = imin; n < imax; ++n)
+        derivs[n - 1][ix] = SplineDerivs(n,ix);
+      derivs[1][ix] += SplineDerivs(0,ix);
+    }
+
+    return true;
+  }
 };
 
 template <typename T>
@@ -230,7 +278,7 @@ inline T BsplineFunctor<T>::evaluateV(const int iat, const int iStart,
   int iCount       = 0;
   const int iLimit = iEnd - iStart;
 
-#pragma vector always
+  #pragma vector always
   for (int jat = 0; jat < iLimit; jat++)
   {
     real_type r = distArray[jat];
@@ -240,7 +288,7 @@ inline T BsplineFunctor<T>::evaluateV(const int iat, const int iStart,
   }
 
   real_type d = 0.0;
-#pragma omp simd reduction(+ : d)
+  #pragma omp simd reduction(+:d)
   for (int jat = 0; jat < iCount; jat++)
   {
     real_type r = distArrayCompressed[jat];
@@ -252,13 +300,13 @@ inline T BsplineFunctor<T>::evaluateV(const int iat, const int iStart,
     real_type tp2 = t;
 
     real_type d1 =
-        SplineCoefs[i + 0] * (A[0] * tp0 + A[1] * tp1 + A[2] * tp2 + A[3]);
+        SplineCoefs(i + 0) * (A[0] * tp0 + A[1] * tp1 + A[2] * tp2 + A[3]);
     real_type d2 =
-        SplineCoefs[i + 1] * (A[4] * tp0 + A[5] * tp1 + A[6] * tp2 + A[7]);
+        SplineCoefs(i + 1) * (A[4] * tp0 + A[5] * tp1 + A[6] * tp2 + A[7]);
     real_type d3 =
-        SplineCoefs[i + 2] * (A[8] * tp0 + A[9] * tp1 + A[10] * tp2 + A[11]);
+        SplineCoefs(i + 2) * (A[8] * tp0 + A[9] * tp1 + A[10] * tp2 + A[11]);
     real_type d4 =
-        SplineCoefs[i + 3] * (A[12] * tp0 + A[13] * tp1 + A[14] * tp2 + A[15]);
+        SplineCoefs(i + 3) * (A[12] * tp0 + A[13] * tp1 + A[14] * tp2 + A[15]);
     d += (d1 + d2 + d3 + d4);
   }
   return d;
@@ -285,7 +333,7 @@ inline void BsplineFunctor<T>::evaluateVGL(
   real_type *gradArray       = _gradArray + iStart;
   real_type *laplArray       = _laplArray + iStart;
 
-#pragma vector always
+  #pragma vector always
   for (int jat = 0; jat < iLimit; jat++)
   {
     real_type r = distArray[jat];
@@ -297,7 +345,7 @@ inline void BsplineFunctor<T>::evaluateVGL(
     }
   }
 
-#pragma omp simd
+  #pragma omp simd
   for (int j = 0; j < iCount; j++)
   {
 
@@ -311,10 +359,10 @@ inline void BsplineFunctor<T>::evaluateVGL(
     real_type tp1 = t * t;
     real_type tp2 = t;
 
-    real_type sCoef0 = SplineCoefs[iGather + 0];
-    real_type sCoef1 = SplineCoefs[iGather + 1];
-    real_type sCoef2 = SplineCoefs[iGather + 2];
-    real_type sCoef3 = SplineCoefs[iGather + 3];
+    real_type sCoef0 = SplineCoefs(iGather + 0);
+    real_type sCoef1 = SplineCoefs(iGather + 1);
+    real_type sCoef2 = SplineCoefs(iGather + 2);
+    real_type sCoef3 = SplineCoefs(iGather + 3);
 
     // clang-format off
     laplArray[iScatter] = dSquareDeltaRinv *
