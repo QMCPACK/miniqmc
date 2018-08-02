@@ -107,7 +107,7 @@ struct OpSubtractAssign
   PETE_EMPTY_CONSTRUCTORS(OpSubtractAssign)
   template<class T1, class T2>
   inline typename BinaryReturn<T1, T2, OpSubtractAssign>::Type_t
-      operator()(const T1& a, const T2& b) const
+  operator()(const T1& a, const T2& b) const
   {
     (const_cast<T1&>(a) -= b);
     return const_cast<T1&>(a);
@@ -125,7 +125,7 @@ struct OpMultiplyAssign
   PETE_EMPTY_CONSTRUCTORS(OpMultiplyAssign)
   template<class T1, class T2>
   inline typename BinaryReturn<T1, T2, OpMultiplyAssign>::Type_t
-      operator()(const T1& a, const T2& b) const
+  operator()(const T1& a, const T2& b) const
   {
     (const_cast<T1&>(a) *= b);
     return const_cast<T1&>(a);
@@ -143,7 +143,7 @@ struct OpDivideAssign
   PETE_EMPTY_CONSTRUCTORS(OpDivideAssign)
   template<class T1, class T2>
   inline typename BinaryReturn<T1, T2, OpDivideAssign>::Type_t
-      operator()(const T1& a, const T2& b) const
+  operator()(const T1& a, const T2& b) const
   {
     (const_cast<T1&>(a) /= b);
     return const_cast<T1&>(a);

@@ -62,8 +62,7 @@ struct VectorSoAContainer
   /// destructor
   ~VectorSoAContainer()
   {
-    if (nAllocated > 0)
-      myAlloc.deallocate(myData, nAllocated);
+    if (nAllocated > 0) myAlloc.deallocate(myData, nAllocated);
   }
 
   /// default copy constructor
@@ -117,8 +116,7 @@ struct VectorSoAContainer
   template<typename T1>
   VectorSoAContainer& operator=(const ParticleAttrib<TinyVector<T1, D>>& in)
   {
-    if (nLocal != in.size())
-      resize(in.size());
+    if (nLocal != in.size()) resize(in.size());
     copyIn(in);
     return *this;
   }
@@ -148,8 +146,7 @@ struct VectorSoAContainer
    */
   __forceinline void resize(size_t n)
   {
-    if (nAllocated)
-      myAlloc.deallocate(myData, nAllocated);
+    if (nAllocated) myAlloc.deallocate(myData, nAllocated);
     nLocal     = n;
     nGhosts    = getAlignedSize<T>(n);
     nAllocated = nGhosts * D;

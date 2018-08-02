@@ -78,7 +78,7 @@ struct OTBinary<TinyVector<T1, D>, TinyVector<T2, D>, OP>
 {
   typedef typename BinaryReturn<T1, T2, OP>::Type_t Type_t;
   inline static TinyVector<Type_t, D>
-      apply(const TinyVector<T1, D>& lhs, const TinyVector<T2, D>& rhs, OP op)
+  apply(const TinyVector<T1, D>& lhs, const TinyVector<T2, D>& rhs, OP op)
   {
     TinyVector<Type_t, D> ret;
     for (unsigned d = 0; d < D; ++d)
@@ -161,7 +161,7 @@ struct OTDot<TinyVector<std::complex<T1>, 3>, TinyVector<std::complex<T2>, 3>>
 {
   typedef typename BinaryReturn<std::complex<T1>, std::complex<T2>, OpMultiply>::Type_t Type_t;
   inline static Type_t
-      apply(const TinyVector<std::complex<T1>, 3>& lhs, const TinyVector<std::complex<T2>, 3>& rhs)
+  apply(const TinyVector<std::complex<T1>, 3>& lhs, const TinyVector<std::complex<T2>, 3>& rhs)
   {
     return std::complex<T1>(lhs[0].real() * rhs[0].real() - lhs[0].imag() * rhs[0].imag() +
                                 lhs[1].real() * rhs[1].real() - lhs[1].imag() * rhs[1].imag() +

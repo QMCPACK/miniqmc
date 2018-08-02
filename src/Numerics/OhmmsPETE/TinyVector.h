@@ -216,7 +216,7 @@ OHMMS_META_BINARY_OPERATORS(TinyVector, operator/, OpDivide)
 //----------------------------------------------------------------------
 template<class T1, class T2, unsigned D>
 inline typename BinaryReturn<T1, T2, OpMultiply>::Type_t
-    dot(const TinyVector<T1, D>& lhs, const TinyVector<T2, D>& rhs)
+dot(const TinyVector<T1, D>& lhs, const TinyVector<T2, D>& rhs)
 {
   return OTDot<TinyVector<T1, D>, TinyVector<T2, D>>::apply(lhs, rhs);
 }
@@ -227,7 +227,7 @@ inline typename BinaryReturn<T1, T2, OpMultiply>::Type_t
 
 template<class T1, class T2, unsigned D>
 inline TinyVector<typename BinaryReturn<T1, T2, OpMultiply>::Type_t, D>
-    cross(const TinyVector<T1, D>& lhs, const TinyVector<T2, D>& rhs)
+cross(const TinyVector<T1, D>& lhs, const TinyVector<T2, D>& rhs)
 {
   return OTCross<TinyVector<T1, D>, TinyVector<T2, D>>::apply(lhs, rhs);
 }
@@ -238,14 +238,14 @@ inline TinyVector<typename BinaryReturn<T1, T2, OpMultiply>::Type_t, D>
 
 template<class T1, class T2, unsigned D>
 inline Tensor<typename BinaryReturn<T1, T2, OpMultiply>::Type_t, D>
-    outerProduct(const TinyVector<T1, D>& lhs, const TinyVector<T2, D>& rhs)
+outerProduct(const TinyVector<T1, D>& lhs, const TinyVector<T2, D>& rhs)
 {
   return OuterProduct<TinyVector<T1, D>, TinyVector<T2, D>>::apply(lhs, rhs);
 }
 
 template<class T1, unsigned D>
 inline TinyVector<Tensor<T1, D>, D>
-    outerdot(const TinyVector<T1, D>& lhs, const TinyVector<T1, D>& mhs, const TinyVector<T1, D>& rhs)
+outerdot(const TinyVector<T1, D>& lhs, const TinyVector<T1, D>& mhs, const TinyVector<T1, D>& rhs)
 {
   TinyVector<Tensor<T1, D>, D> ret;
   Tensor<T1, D> tmp = OuterProduct<TinyVector<T1, D>, TinyVector<T1, D>>::apply(lhs, mhs);
@@ -256,7 +256,7 @@ inline TinyVector<Tensor<T1, D>, D>
 
 template<class T1, class T2, class T3, unsigned D>
 inline TinyVector<Tensor<typename BinaryReturn<T1, T2, OpMultiply>::Type_t, D>, D>
-    symouterdot(const TinyVector<T1, D>& lhs, const TinyVector<T2, D>& mhs, const TinyVector<T3, D>& rhs)
+symouterdot(const TinyVector<T1, D>& lhs, const TinyVector<T2, D>& mhs, const TinyVector<T3, D>& rhs)
 {
   TinyVector<Tensor<typename BinaryReturn<T1, T2, OpMultiply>::Type_t, D>, D> ret;
   Tensor<typename BinaryReturn<T1, T2, OpMultiply>::Type_t, D> tmp =

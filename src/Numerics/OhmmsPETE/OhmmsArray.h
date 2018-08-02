@@ -94,8 +94,7 @@ struct Array
     int ntot = 1;
     for (int i = 0; i < D; ++i)
       ntot *= Length[i] = newdims[i];
-    if (ntot == 0)
-      return;
+    if (ntot == 0) return;
     X.resize(ntot);
   }
 

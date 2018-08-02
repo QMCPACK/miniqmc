@@ -67,13 +67,8 @@ void einspline_free(void* aligned)
 }
 #endif
 
-multi_UBspline_3d_s* einspline_create_multi_UBspline_3d_s(Ugrid x_grid,
-                                                          Ugrid y_grid,
-                                                          Ugrid z_grid,
-                                                          BCtype_s xBC,
-                                                          BCtype_s yBC,
-                                                          BCtype_s zBC,
-                                                          int num_splines)
+multi_UBspline_3d_s* einspline_create_multi_UBspline_3d_s(
+    Ugrid x_grid, Ugrid y_grid, Ugrid z_grid, BCtype_s xBC, BCtype_s yBC, BCtype_s zBC, int num_splines)
 {
   // Create new spline
   multi_UBspline_3d_s* restrict spline = (multi_UBspline_3d_s*)malloc(sizeof(multi_UBspline_3d_s));
@@ -145,7 +140,7 @@ multi_UBspline_3d_s* einspline_create_multi_UBspline_3d_s(Ugrid x_grid,
   const size_t zs = spline->z_stride;
 
   const float czero=0;
-  #pragma omp parallel for collapse(3)
+#pragma omp parallel for collapse(3)
   for(size_t i=0; i<Nx; ++i)
     for(size_t j=0; j<Ny; ++j)
       for(size_t k=0; k<Nz; ++k)
@@ -159,13 +154,8 @@ multi_UBspline_3d_s* einspline_create_multi_UBspline_3d_s(Ugrid x_grid,
   return spline;
 }
 
-multi_UBspline_3d_d* einspline_create_multi_UBspline_3d_d(Ugrid x_grid,
-                                                          Ugrid y_grid,
-                                                          Ugrid z_grid,
-                                                          BCtype_d xBC,
-                                                          BCtype_d yBC,
-                                                          BCtype_d zBC,
-                                                          int num_splines)
+multi_UBspline_3d_d* einspline_create_multi_UBspline_3d_d(
+    Ugrid x_grid, Ugrid y_grid, Ugrid z_grid, BCtype_d xBC, BCtype_d yBC, BCtype_d zBC, int num_splines)
 {
   // Create new spline
   multi_UBspline_3d_d* restrict spline = (multi_UBspline_3d_d*)malloc(sizeof(multi_UBspline_3d_d));
@@ -233,12 +223,8 @@ multi_UBspline_3d_d* einspline_create_multi_UBspline_3d_d(Ugrid x_grid,
   return spline;
 }
 
-UBspline_3d_d* einspline_create_UBspline_3d_d(Ugrid x_grid,
-                                              Ugrid y_grid,
-                                              Ugrid z_grid,
-                                              BCtype_d xBC,
-                                              BCtype_d yBC,
-                                              BCtype_d zBC)
+UBspline_3d_d* einspline_create_UBspline_3d_d(
+    Ugrid x_grid, Ugrid y_grid, Ugrid z_grid, BCtype_d xBC, BCtype_d yBC, BCtype_d zBC)
 {
   // Create new spline
   UBspline_3d_d* restrict spline = (UBspline_3d_d*)malloc(sizeof(UBspline_3d_d));
@@ -288,12 +274,8 @@ UBspline_3d_d* einspline_create_UBspline_3d_d(Ugrid x_grid,
   return spline;
 }
 
-UBspline_3d_s* einspline_create_UBspline_3d_s(Ugrid x_grid,
-                                              Ugrid y_grid,
-                                              Ugrid z_grid,
-                                              BCtype_s xBC,
-                                              BCtype_s yBC,
-                                              BCtype_s zBC)
+UBspline_3d_s* einspline_create_UBspline_3d_s(
+    Ugrid x_grid, Ugrid y_grid, Ugrid z_grid, BCtype_s xBC, BCtype_s yBC, BCtype_s zBC)
 {
   // Create new spline
   UBspline_3d_s* spline = (UBspline_3d_s*)malloc(sizeof(UBspline_3d_s));

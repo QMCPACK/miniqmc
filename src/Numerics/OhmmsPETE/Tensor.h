@@ -316,7 +316,7 @@ inline T traceAtB(const Tensor<T, D>& a, const Tensor<T, D>& b)
  */
 template<class T1, class T2, unsigned D>
 inline typename BinaryReturn<T1, T2, OpMultiply>::Type_t
-    traceAtB(const Tensor<T1, D>& a, const Tensor<T2, D>& b)
+traceAtB(const Tensor<T1, D>& a, const Tensor<T2, D>& b)
 {
   typedef typename BinaryReturn<T1, T2, OpMultiply>::Type_t T;
   T result = 0.0;
@@ -337,7 +337,7 @@ OHMMS_META_BINARY_OPERATORS(Tensor, operator/, OpDivide)
  */
 template<class T1, class T2, unsigned D>
 inline Tensor<typename BinaryReturn<T1, T2, OpMultiply>::Type_t, D>
-    dot(const Tensor<T1, D>& lhs, const Tensor<T2, D>& rhs)
+dot(const Tensor<T1, D>& lhs, const Tensor<T2, D>& rhs)
 {
   return OTDot<Tensor<T1, D>, Tensor<T2, D>>::apply(lhs, rhs);
 }
@@ -348,7 +348,7 @@ inline Tensor<typename BinaryReturn<T1, T2, OpMultiply>::Type_t, D>
  */
 template<class T1, class T2, unsigned D>
 inline TinyVector<typename BinaryReturn<T1, T2, OpMultiply>::Type_t, D>
-    dot(const TinyVector<T1, D>& lhs, const Tensor<T2, D>& rhs)
+dot(const TinyVector<T1, D>& lhs, const Tensor<T2, D>& rhs)
 {
   return OTDot<TinyVector<T1, D>, Tensor<T2, D>>::apply(lhs, rhs);
 }
@@ -359,7 +359,7 @@ inline TinyVector<typename BinaryReturn<T1, T2, OpMultiply>::Type_t, D>
  */
 template<class T1, class T2, unsigned D>
 inline TinyVector<typename BinaryReturn<T1, T2, OpMultiply>::Type_t, D>
-    dot(const Tensor<T1, D>& lhs, const TinyVector<T2, D>& rhs)
+dot(const Tensor<T1, D>& lhs, const TinyVector<T2, D>& rhs)
 {
   return OTDot<Tensor<T1, D>, TinyVector<T2, D>>::apply(lhs, rhs);
 }
@@ -378,8 +378,7 @@ std::ostream& operator<<(std::ostream& out, const Tensor<T, D>& rhs)
         out << rhs(i, j) << "  ";
       }
       out << rhs(i, D - 1) << " ";
-      if (i < D - 1)
-        out << std::endl;
+      if (i < D - 1) out << std::endl;
     }
   }
   else

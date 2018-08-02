@@ -65,7 +65,7 @@ inline void LUFactorization(int n, int m, std::complex<float>* restrict a, int n
 
 /** Inversion of a double matrix after LU factorization*/
 inline void
-    InvertLU(int n, double* restrict a, int n0, int* restrict piv, double* restrict work, int n1)
+InvertLU(int n, double* restrict a, int n0, int* restrict piv, double* restrict work, int n1)
 {
   int status;
   dgetri(n, a, n0, piv, work, n1, status);
@@ -139,8 +139,7 @@ inline T InvertWithLog(std::complex<T>* restrict x,
   {
     int ii = i * m + i;
     phase += std::arg(x[ii]);
-    if (pivot[i] != i + 1)
-      phase += M_PI;
+    if (pivot[i] != i + 1) phase += M_PI;
     logdet += std::log(x[ii].real() * x[ii].real() + x[ii].imag() * x[ii].imag());
     // slightly smaller error with the following
     //        logdet+=2.0*std::log(std::abs(x[ii]);
@@ -171,8 +170,7 @@ inline typename MatrixA::value_type invert_matrix(MatrixA& M, bool getdet = true
     int sign = 1;
     for (int i = 0; i < n; ++i)
     {
-      if (pivot[i] != i + 1)
-        sign *= -1;
+      if (pivot[i] != i + 1) sign *= -1;
       det0 *= M(i, i);
     }
     det0 *= static_cast<value_type>(sign);

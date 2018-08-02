@@ -63,10 +63,8 @@ public:
   // default assignment operator
   inline Vector& operator=(const Vector& rhs)
   {
-    if (this == &rhs)
-      return *this;
-    if (nLocal != rhs.nLocal)
-      resize(rhs.nLocal);
+    if (this == &rhs) return *this;
+    if (nLocal != rhs.nLocal) resize(rhs.nLocal);
     std::copy_n(rhs.data(), nLocal, X);
     return *this;
   }
@@ -77,8 +75,7 @@ public:
   {
     if (std::is_convertible<T1, T>::value)
     {
-      if (nLocal != rhs.nLocal)
-        resize(rhs.nLocal);
+      if (nLocal != rhs.nLocal) resize(rhs.nLocal);
       std::copy_n(rhs.data(), nLocal, X);
     }
     return *this;
@@ -95,10 +92,7 @@ public:
   //! Destructor
   virtual ~Vector()
   {
-    if (nAllocated)
-    {
-      mAllocator.deallocate(X, nAllocated);
-    }
+    if (nAllocated) { mAllocator.deallocate(X, nAllocated); }
   }
 
   // Attach to pre-allocated memory
@@ -140,10 +134,7 @@ public:
   /// free
   inline void free()
   {
-    if (nAllocated)
-    {
-      mAllocator.deallocate(X, nAllocated);
-    }
+    if (nAllocated) { mAllocator.deallocate(X, nAllocated); }
     nLocal     = 0;
     nAllocated = 0;
     X          = nullptr;
@@ -191,10 +182,7 @@ private:
 
   inline void resize_impl(size_t n)
   {
-    if (nAllocated)
-    {
-      mAllocator.deallocate(X, nAllocated);
-    }
+    if (nAllocated) { mAllocator.deallocate(X, nAllocated); }
     X          = mAllocator.allocate(n);
     nLocal     = n;
     nAllocated = n;

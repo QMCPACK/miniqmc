@@ -68,11 +68,11 @@ public:
 
   /// allocate a single bspline
   UBspline_3d_s*
-      allocateUBspline(Ugrid x_grid, Ugrid y_grid, Ugrid z_grid, BCtype_s xBC, BCtype_s yBC, BCtype_s zBC);
+  allocateUBspline(Ugrid x_grid, Ugrid y_grid, Ugrid z_grid, BCtype_s xBC, BCtype_s yBC, BCtype_s zBC);
 
   /// allocate a UBspline_3d_d
   UBspline_3d_d*
-      allocateUBspline(Ugrid x_grid, Ugrid y_grid, Ugrid z_grid, BCtype_d xBC, BCtype_d yBC, BCtype_d zBC);
+  allocateUBspline(Ugrid x_grid, Ugrid y_grid, Ugrid z_grid, BCtype_d xBC, BCtype_d yBC, BCtype_d zBC);
 
   /** allocate a multi_UBspline_3d_(s,d)
    * @tparam T datatype
@@ -81,7 +81,7 @@ public:
    */
   template<typename T, typename ValT, typename IntT>
   typename bspline_traits<T, 3>::SplineType*
-      createMultiBspline(T dummy, ValT& start, ValT& end, IntT& ng, bc_code bc, int num_splines);
+  createMultiBspline(T dummy, ValT& start, ValT& end, IntT& ng, bc_code bc, int num_splines);
 
   /** allocate a UBspline_3d_(s,d)
    * @tparam T datatype
@@ -90,7 +90,7 @@ public:
    */
   template<typename ValT, typename IntT, typename T>
   typename bspline_traits<T, 3>::SingleSplineType*
-      createUBspline(ValT& start, ValT& end, IntT& ng, bc_code bc);
+  createUBspline(ValT& start, ValT& end, IntT& ng, bc_code bc);
 
   /** Set coefficients for a single orbital (band)
    * @param i index of the orbital
@@ -118,7 +118,7 @@ void Allocator::setCoefficientsForOneOrbital(int i,
                                              Array<T, 3>& coeff,
                                              typename bspline_traits<T, 3>::SplineType* spline)
 {
-  #pragma omp parallel for collapse(3)
+#pragma omp parallel for collapse(3)
   for (int ix = 0; ix < spline->x_grid.num + 3; ix++)
   {
     for (int iy = 0; iy < spline->y_grid.num + 3; iy++)
@@ -136,7 +136,7 @@ void Allocator::setCoefficientsForOneOrbital(int i,
 
 template<typename T, typename ValT, typename IntT>
 typename bspline_traits<T, 3>::SplineType*
-    Allocator::createMultiBspline(T dummy, ValT& start, ValT& end, IntT& ng, bc_code bc, int num_splines)
+Allocator::createMultiBspline(T dummy, ValT& start, ValT& end, IntT& ng, bc_code bc, int num_splines)
 {
   Ugrid x_grid, y_grid, z_grid;
   typename bspline_traits<T, 3>::BCType xBC, yBC, zBC;
@@ -157,7 +157,7 @@ typename bspline_traits<T, 3>::SplineType*
 
 template<typename ValT, typename IntT, typename T>
 typename bspline_traits<T, 3>::SingleSplineType*
-    Allocator::createUBspline(ValT& start, ValT& end, IntT& ng, bc_code bc)
+Allocator::createUBspline(ValT& start, ValT& end, IntT& ng, bc_code bc)
 {
   Ugrid x_grid, y_grid, z_grid;
   typename bspline_traits<T, 3>::BCType xBC, yBC, zBC;

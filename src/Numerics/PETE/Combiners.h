@@ -134,14 +134,14 @@ inline typename Combine1<A, Op, Tag>::Type_t peteCombine(const A& a, const Op& o
 
 template<class A, class B, class Op, class Tag>
 inline typename Combine2<A, B, Op, Tag>::Type_t
-    peteCombine(const A& a, const B& b, const Op& op, const Tag& t)
+peteCombine(const A& a, const B& b, const Op& op, const Tag& t)
 {
   return Combine2<A, B, Op, Tag>::combine(a, b, op, t);
 }
 
 template<class A, class B, class C, class Op, class Tag>
 inline typename Combine3<A, B, C, Op, Tag>::Type_t
-    peteCombine(const A& a, const B& b, const C& c, const Op& op, const Tag& t)
+peteCombine(const A& a, const B& b, const C& c, const Op& op, const Tag& t)
 {
   return Combine3<A, B, C, Op, Tag>::combine(a, b, c, op, t);
 }
