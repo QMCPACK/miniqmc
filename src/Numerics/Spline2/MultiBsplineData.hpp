@@ -29,9 +29,10 @@
 
 namespace qmcplusplus
 {
-template <typename T> struct SplineBound
+template<typename T>
+struct SplineBound
 {
-  static inline void get(T x, T &dx, int &ind, int ng)
+  static inline void get(T x, T& dx, int& ind, int ng)
   {
     T ipart;
     dx  = std::modf(x, &ipart);
@@ -39,7 +40,8 @@ template <typename T> struct SplineBound
   }
 };
 
-template <typename T> struct MultiBsplineData
+template<typename T>
+struct MultiBsplineData
 {
   static const T A44[16];
   static const T dA44[16];
@@ -71,6 +73,6 @@ template <typename T> struct MultiBsplineData
   }
 };
 
-} /** qmcplusplus namespace */
+} // namespace qmcplusplus
 
 #endif

@@ -34,11 +34,10 @@
  */
 namespace qmcplusplus
 {
-
 /// forward declaration of WaveFunctionComponent
 class WaveFunctionComponent;
 
-typedef WaveFunctionComponent *WaveFunctionComponentPtr;
+typedef WaveFunctionComponent* WaveFunctionComponentPtr;
 
 /**@defgroup WaveFunctionComponent Wavefunction Component group
  * @brief Classes which constitute a many-body trial wave function
@@ -55,7 +54,6 @@ typedef WaveFunctionComponent *WaveFunctionComponentPtr;
  */
 struct WaveFunctionComponent : public QMCTraits
 {
-
   /// recasting enum of DistanceTableData to maintain consistency
   enum
   {
@@ -67,8 +65,8 @@ struct WaveFunctionComponent : public QMCTraits
   /** enum for a update mode */
   enum
   {
-    ORB_PBYP_RATIO, /*!< particle-by-particle ratio only */
-    ORB_PBYP_ALL, /*!< particle-by-particle, update Value-Gradient-Laplacian */
+    ORB_PBYP_RATIO,   /*!< particle-by-particle ratio only */
+    ORB_PBYP_ALL,     /*!< particle-by-particle, update Value-Gradient-Laplacian */
     ORB_PBYP_PARTIAL, /*!< particle-by-particle, update Value and Grdient */
     ORB_WALKER,       /*!< walker update */
     ORB_ALLWALKER     /*!< all walkers update */
@@ -106,9 +104,13 @@ struct WaveFunctionComponent : public QMCTraits
 
   /// default constructor
   WaveFunctionComponent()
-      : IsOptimizing(false), Optimizable(true), UpdateMode(ORB_WALKER),
-        LogValue(0.0), PhaseValue(0.0), WaveFunctionComponentName("WaveFunctionComponent")
-  { }
+      : IsOptimizing(false),
+        Optimizable(true),
+        UpdateMode(ORB_WALKER),
+        LogValue(0.0),
+        PhaseValue(0.0),
+        WaveFunctionComponentName("WaveFunctionComponent")
+  {}
 
   /// default destructor
   virtual ~WaveFunctionComponent() {}
@@ -121,30 +123,30 @@ struct WaveFunctionComponent : public QMCTraits
    * @param L Laplacians, \f$\nabla^2\ln\Psi\f$
    *
    */
-  virtual RealType evaluateLog(ParticleSet &P,
-                               ParticleSet::ParticleGradient_t &G,
-                               ParticleSet::ParticleLaplacian_t &L) = 0;
+  virtual RealType evaluateLog(ParticleSet& P,
+                               ParticleSet::ParticleGradient_t& G,
+                               ParticleSet::ParticleLaplacian_t& L) = 0;
 
   /** return the current gradient for the iat-th particle
    * @param Pquantum particle set
    * @param iat particle index
    * @return the gradient of the iat-th particle
    */
-  virtual GradType evalGrad(ParticleSet &P, int iat) = 0;
+  virtual GradType evalGrad(ParticleSet& P, int iat) = 0;
 
   /** evaluate the ratio of the new to old wavefunction component value
    * @param P the active ParticleSet
    * @param iat the index of a particle
    * @param grad_iat Gradient for the active particle
    */
-  virtual ValueType ratioGrad(ParticleSet &P, int iat, GradType &grad_iat) = 0;
+  virtual ValueType ratioGrad(ParticleSet& P, int iat, GradType& grad_iat) = 0;
 
   /** a move for iat-th particle is accepted. Update the content for the next
    * moves
    * @param P target ParticleSet
    * @param iat index of the particle whose new position was proposed
    */
-  virtual void acceptMove(ParticleSet &P, int iat) = 0;
+  virtual void acceptMove(ParticleSet& P, int iat) = 0;
 
   /** evalaute the ratio of the new to old wavefunction component value
    *@param P the active ParticleSet
@@ -153,7 +155,7 @@ struct WaveFunctionComponent : public QMCTraits
    *
    *Specialized for particle-by-particle move.
    */
-  virtual ValueType ratio(ParticleSet &P, int iat) = 0;
+  virtual ValueType ratio(ParticleSet& P, int iat) = 0;
 
   /** compute G and L after the sweep
    * @param P active ParticleSet
@@ -162,69 +164,74 @@ struct WaveFunctionComponent : public QMCTraits
    * @param fromscratch, recompute internal data if true
    *
    */
-  virtual void evaluateGL(ParticleSet &P, ParticleSet::ParticleGradient_t &G,
-                          ParticleSet::ParticleLaplacian_t &L,
+  virtual void evaluateGL(ParticleSet& P,
+                          ParticleSet::ParticleGradient_t& G,
+                          ParticleSet::ParticleLaplacian_t& L,
                           bool fromscratch = false) = 0;
 
   /// operates on multiple walkers
-  virtual void multi_evaluateLog(const std::vector<WaveFunctionComponent *> &WFC_list,
-                                 const std::vector<ParticleSet *> &P_list,
-                                 const std::vector<ParticleSet::ParticleGradient_t *> &G_list,
-                                 const std::vector<ParticleSet::ParticleLaplacian_t *> &L_list,
-                                 ParticleSet::ParticleValue_t &values)
+  virtual void multi_evaluateLog(const std::vector<WaveFunctionComponent*>& WFC_list,
+                                 const std::vector<ParticleSet*>& P_list,
+                                 const std::vector<ParticleSet::ParticleGradient_t*>& G_list,
+                                 const std::vector<ParticleSet::ParticleLaplacian_t*>& L_list,
+                                 ParticleSet::ParticleValue_t& values)
   {
-    #pragma omp parallel for
-    for(int iw=0; iw<P_list.size(); iw++)
+#pragma omp parallel for
+    for (int iw = 0; iw < P_list.size(); iw++)
       values[iw] = WFC_list[iw]->evaluateLog(*P_list[iw], *G_list[iw], *L_list[iw]);
   };
 
-  virtual void multi_evalGrad(const std::vector<WaveFunctionComponent *> &WFC_list,
-                              const std::vector<ParticleSet *> &P_list, int iat,
-                              std::vector<PosType> &grad_now)
+  virtual void multi_evalGrad(const std::vector<WaveFunctionComponent*>& WFC_list,
+                              const std::vector<ParticleSet*>& P_list,
+                              int iat,
+                              std::vector<PosType>& grad_now)
   {
     //#pragma omp parallel for
-    for(int iw=0; iw<P_list.size(); iw++)
+    for (int iw = 0; iw < P_list.size(); iw++)
       grad_now[iw] = WFC_list[iw]->evalGrad(*P_list[iw], iat);
   };
 
-  virtual void multi_ratioGrad(const std::vector<WaveFunctionComponent *> &WFC_list,
-                               const std::vector<ParticleSet *> &P_list, int iat,
-                               std::vector<ValueType> &ratios,
-                               std::vector<PosType> &grad_new)
+  virtual void multi_ratioGrad(const std::vector<WaveFunctionComponent*>& WFC_list,
+                               const std::vector<ParticleSet*>& P_list,
+                               int iat,
+                               std::vector<ValueType>& ratios,
+                               std::vector<PosType>& grad_new)
   {
-    #pragma omp parallel for
-    for(int iw=0; iw<P_list.size(); iw++)
+#pragma omp parallel for
+    for (int iw = 0; iw < P_list.size(); iw++)
       ratios[iw] = WFC_list[iw]->ratioGrad(*P_list[iw], iat, grad_new[iw]);
   };
 
-  virtual void multi_acceptrestoreMove(const std::vector<WaveFunctionComponent *> &WFC_list,
-                                       const std::vector<ParticleSet *> &P_list,
-                                       const std::vector<bool> &isAccepted, int iat)
+  virtual void multi_acceptrestoreMove(const std::vector<WaveFunctionComponent*>& WFC_list,
+                                       const std::vector<ParticleSet*>& P_list,
+                                       const std::vector<bool>& isAccepted,
+                                       int iat)
   {
-    #pragma omp parallel for
-    for(int iw=0; iw<P_list.size(); iw++)
+#pragma omp parallel for
+    for (int iw = 0; iw < P_list.size(); iw++)
     {
-      if(isAccepted[iw]) WFC_list[iw]->acceptMove(*P_list[iw], iat);
+      if (isAccepted[iw])
+        WFC_list[iw]->acceptMove(*P_list[iw], iat);
     }
   };
 
-  virtual void multi_ratio(const std::vector<WaveFunctionComponent *> &WFC_list,
-                           const std::vector<ParticleSet *> &P_list, int iat,
-                           ParticleSet::ParticleValue_t &ratio_list)
-  {
-    // TODO
+  virtual void multi_ratio(const std::vector<WaveFunctionComponent*>& WFC_list,
+                           const std::vector<ParticleSet*>& P_list,
+                           int iat,
+                           ParticleSet::ParticleValue_t& ratio_list){
+      // TODO
   };
 
-  virtual void multi_evaluateGL(const std::vector<WaveFunctionComponent *> &WFC_list,
-                                const std::vector<ParticleSet *> &P_list,
-                                const std::vector<ParticleSet::ParticleGradient_t *> &G_list,
-                                const std::vector<ParticleSet::ParticleLaplacian_t *> &L_list,
+  virtual void multi_evaluateGL(const std::vector<WaveFunctionComponent*>& WFC_list,
+                                const std::vector<ParticleSet*>& P_list,
+                                const std::vector<ParticleSet::ParticleGradient_t*>& G_list,
+                                const std::vector<ParticleSet::ParticleLaplacian_t*>& L_list,
                                 bool fromscratch = false)
   {
-    #pragma omp parallel for
-    for(int iw=0; iw<P_list.size(); iw++)
+#pragma omp parallel for
+    for (int iw = 0; iw < P_list.size(); iw++)
       WFC_list[iw]->evaluateGL(*P_list[iw], *G_list[iw], *L_list[iw], fromscratch);
   };
 };
-}
+} // namespace qmcplusplus
 #endif

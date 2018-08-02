@@ -148,31 +148,29 @@ void print_help()
 {
   //clang-format off
   app_summary() << "usage:" << '\n';
-  app_summary() << "  miniqmc   [-hjvV] [-g \"n0 n1 n2\"] [-m meshfactor]"       << '\n';
-  app_summary() << "            [-n steps] [-N substeps] [-r rmax] [-s seed]"    << '\n';
-  app_summary() << "            [-w walkers] [-a tile_size] [-t timer_level]"    << '\n';
-  app_summary() << "options:"                                                    << '\n';
-  app_summary() << "  -a  size of each spline tile       default: num of orbs"   << '\n';
-  app_summary() << "  -b  use reference implementations  default: off"           << '\n';
-  app_summary() << "  -g  set the 3D tiling.             default: 1 1 1"         << '\n';
-  app_summary() << "  -h  print help and exit"                                   << '\n';
-  app_summary() << "  -j  enable three body Jastrow      default: off"           << '\n';
-  app_summary() << "  -m  meshfactor                     default: 1.0"           << '\n';
-  app_summary() << "  -n  number of MC steps             default: 5"             << '\n';
-  app_summary() << "  -N  number of MC substeps          default: 1"             << '\n';
-  app_summary() << "  -r  set the Rmax.                  default: 1.7"           << '\n';
-  app_summary() << "  -s  set the random seed.           default: 11"            << '\n';
-  app_summary() << "  -t  timer level: coarse or fine    default: fine"          << '\n';
-  app_summary() << "  -w  number of walker(movers)       default: num of threads"<< '\n';
-  app_summary() << "  -v  verbose output"                                        << '\n';
-  app_summary() << "  -V  print version information and exit"                    << '\n';
+  app_summary() << "  miniqmc   [-hjvV] [-g \"n0 n1 n2\"] [-m meshfactor]" << '\n';
+  app_summary() << "            [-n steps] [-N substeps] [-r rmax] [-s seed]" << '\n';
+  app_summary() << "            [-w walkers] [-a tile_size] [-t timer_level]" << '\n';
+  app_summary() << "options:" << '\n';
+  app_summary() << "  -a  size of each spline tile       default: num of orbs" << '\n';
+  app_summary() << "  -b  use reference implementations  default: off" << '\n';
+  app_summary() << "  -g  set the 3D tiling.             default: 1 1 1" << '\n';
+  app_summary() << "  -h  print help and exit" << '\n';
+  app_summary() << "  -j  enable three body Jastrow      default: off" << '\n';
+  app_summary() << "  -m  meshfactor                     default: 1.0" << '\n';
+  app_summary() << "  -n  number of MC steps             default: 5" << '\n';
+  app_summary() << "  -N  number of MC substeps          default: 1" << '\n';
+  app_summary() << "  -r  set the Rmax.                  default: 1.7" << '\n';
+  app_summary() << "  -s  set the random seed.           default: 11" << '\n';
+  app_summary() << "  -t  timer level: coarse or fine    default: fine" << '\n';
+  app_summary() << "  -w  number of walker(movers)       default: num of threads" << '\n';
+  app_summary() << "  -v  verbose output" << '\n';
+  app_summary() << "  -V  print version information and exit" << '\n';
   //clang-format on
 }
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
-
-
   // clang-format off
   typedef QMCTraits::RealType           RealType;
   typedef ParticleSet::ParticlePos_t    ParticlePos_t;
@@ -185,11 +183,11 @@ int main(int argc, char **argv)
 
   // use the global generator
 
-  int na      = 1;
-  int nb      = 1;
-  int nc      = 1;
-  int nsteps  = 5;
-  int iseed   = 11;
+  int na     = 1;
+  int nb     = 1;
+  int nc     = 1;
+  int nsteps = 5;
+  int iseed  = 11;
   int nx = 37, ny = 37, nz = 37;
   int nmovers = omp_get_max_threads();
   // thread blocking
@@ -198,12 +196,12 @@ int main(int argc, char **argv)
   int nsubsteps = 1;
   // Set cutoff for NLPP use.
   RealType Rmax(1.7);
-  bool useRef = false;
+  bool useRef   = false;
   bool enableJ3 = false;
 
   PrimeNumberSet<uint32_t> myPrimes;
 
-  bool verbose = false;
+  bool verbose                 = false;
   std::string timer_level_name = "fine";
 
   if (!comm.root())
@@ -212,13 +210,15 @@ int main(int argc, char **argv)
   }
 
   int opt;
-  while(optind < argc)
+  while (optind < argc)
   {
     if ((opt = getopt(argc, argv, "bhjvVa:c:g:m:n:N:r:s:w:t:")) != -1)
     {
       switch (opt)
       {
-      case 'a': tileSize = atoi(optarg); break;
+      case 'a':
+        tileSize = atoi(optarg);
+        break;
       case 'b':
         useRef = true;
         break;
@@ -236,11 +236,13 @@ int main(int argc, char **argv)
         enableJ3 = true;
         break;
       case 'm':
-        {
-          const RealType meshfactor = atof(optarg);
-          nx *= meshfactor; ny *= meshfactor; nz *= meshfactor;
-        }
-        break;
+      {
+        const RealType meshfactor = atof(optarg);
+        nx *= meshfactor;
+        ny *= meshfactor;
+        nz *= meshfactor;
+      }
+      break;
       case 'n':
         nsteps = atoi(optarg);
         break;
@@ -256,7 +258,9 @@ int main(int argc, char **argv)
       case 't':
         timer_level_name = std::string(optarg);
         break;
-      case 'v': verbose = true; break;
+      case 'v':
+        verbose = true;
+        break;
       case 'V':
         print_version(true);
         return 1;
@@ -281,10 +285,14 @@ int main(int argc, char **argv)
   Tensor<int, 3> tmat(na, 0, 0, 0, nb, 0, 0, 0, nc);
 
   timer_levels timer_level = timer_level_fine;
-  if (timer_level_name == "coarse") {
+  if (timer_level_name == "coarse")
+  {
     timer_level = timer_level_coarse;
-  } else if (timer_level_name != "fine") {
-    app_error() << "Timer level should be 'coarse' or 'fine', name given: " << timer_level_name << endl;
+  }
+  else if (timer_level_name != "fine")
+  {
+    app_error() << "Timer level should be 'coarse' or 'fine', name given: " << timer_level_name
+                << endl;
     return 1;
   }
 
@@ -302,7 +310,7 @@ int main(int argc, char **argv)
 
   print_version(verbose);
 
-  SPOSet *spo_main;
+  SPOSet* spo_main;
   int nTiles = 1;
 
   ParticleSet ions;
@@ -310,15 +318,15 @@ int main(int argc, char **argv)
   {
     Tensor<OHMMS_PRECISION, 3> lattice_b;
     build_ions(ions, tmat, lattice_b);
-    const int nels        = count_electrons(ions, 1);
-    const int norb        = nels / 2;
-    tileSize              = (tileSize > 0) ? tileSize : norb;
-    nTiles                = norb / tileSize;
+    const int nels = count_electrons(ions, 1);
+    const int norb = nels / 2;
+    tileSize       = (tileSize > 0) ? tileSize : norb;
+    nTiles         = norb / tileSize;
 
     number_of_electrons = nels;
 
-    const size_t SPO_coeff_size = static_cast<size_t>(norb)
-      * (nx + 3) * (ny + 3) * (nz + 3) * sizeof(RealType);
+    const size_t SPO_coeff_size =
+        static_cast<size_t>(norb) * (nx + 3) * (ny + 3) * (nz + 3) * sizeof(RealType);
     const double SPO_coeff_size_MB = SPO_coeff_size * 1.0 / 1024 / 1024;
 
     app_summary() << "Number of orbitals/splines = " << norb << endl
@@ -332,35 +340,34 @@ int main(int argc, char **argv)
     app_summary() << "MPI processes = " << comm.size() << endl;
 #endif
 
-    app_summary() << "\nSPO coefficients size = " << SPO_coeff_size
-                  << " bytes (" << SPO_coeff_size_MB << " MB)" << endl;
+    app_summary() << "\nSPO coefficients size = " << SPO_coeff_size << " bytes ("
+                  << SPO_coeff_size_MB << " MB)" << endl;
 
     spo_main = build_SPOSet(useRef, nx, ny, nz, norb, nTiles, lattice_b);
   }
 
   if (!useRef)
     app_summary() << "Using SoA distance table, Jastrow + einspline, " << endl
-                << "and determinant update." << endl;
+                  << "and determinant update." << endl;
   else
     app_summary() << "Using the reference implementation for Jastrow, " << endl
-                << "determinant update, and distance table + einspline of the "
-                << endl
-                << "reference implementation " << endl;
+                  << "determinant update, and distance table + einspline of the " << endl
+                  << "reference implementation " << endl;
 
   Timers[Timer_Total]->start();
 
   Timers[Timer_Init]->start();
-  std::vector<Mover *> mover_list(nmovers, nullptr);
-  // prepare movers
-  #pragma omp parallel for
-  for(int iw = 0; iw<nmovers; iw++)
+  std::vector<Mover*> mover_list(nmovers, nullptr);
+// prepare movers
+#pragma omp parallel for
+  for (int iw = 0; iw < nmovers; iw++)
   {
-    const int ip = omp_get_thread_num();
+    const int ip        = omp_get_thread_num();
     const int member_id = ip % team_size;
 
     // create and initialize movers
-    Mover *thiswalker = new Mover(myPrimes[ip], ions);
-    mover_list[iw] = thiswalker;
+    Mover* thiswalker = new Mover(myPrimes[ip], ions);
+    mover_list[iw]    = thiswalker;
 
     // create a spo view in each Mover
     thiswalker->spo = build_SPOSet_view(useRef, spo_main, team_size, member_id);
@@ -373,15 +380,15 @@ int main(int argc, char **argv)
   }
 
   { // initial computing
-    const std::vector<ParticleSet *> P_list(extract_els_list(mover_list));
-    const std::vector<WaveFunction *> WF_list(extract_wf_list(mover_list));
+    const std::vector<ParticleSet*> P_list(extract_els_list(mover_list));
+    const std::vector<WaveFunction*> WF_list(extract_wf_list(mover_list));
     mover_list[0]->wavefunction.multi_evaluateLog(WF_list, P_list);
   }
   Timers[Timer_Init]->stop();
 
-  const int nions = ions.getTotalNum();
-  const int nels  = mover_list[0]->els.getTotalNum();
-  const int nels3 = 3 * nels;
+  const int nions    = ions.getTotalNum();
+  const int nels     = mover_list[0]->els.getTotalNum();
+  const int nels3    = 3 * nels;
   const int nmovers3 = 3 * nmovers;
 
   // this is the number of qudrature points for the non-local PP
@@ -410,17 +417,17 @@ int main(int argc, char **argv)
     {
       Timers[Timer_Diffusion]->start();
 
-      const std::vector<ParticleSet *> P_list(extract_els_list(mover_list));
-      const std::vector<WaveFunction *> WF_list(extract_wf_list(mover_list));
-      const Mover &anon_mover = *mover_list[0];
+      const std::vector<ParticleSet*> P_list(extract_els_list(mover_list));
+      const std::vector<WaveFunction*> WF_list(extract_wf_list(mover_list));
+      const Mover& anon_mover = *mover_list[0];
 
       for (int l = 0; l < nsubsteps; ++l) // drift-and-diffusion
       {
         for (int iel = 0; iel < nels; ++iel)
         {
-          // Operate on electron with index iel
-          #pragma omp parallel for
-          for(int iw = 0; iw<nmovers; iw++)
+// Operate on electron with index iel
+#pragma omp parallel for
+          for (int iw = 0; iw < nmovers; iw++)
             mover_list[iw]->els.setActive(iel);
 
           // Compute gradient at the current position
@@ -432,44 +439,44 @@ int main(int argc, char **argv)
           mover_list[0]->rng.generate_uniform(ur.data(), nmovers);
           mover_list[0]->rng.generate_normal(&delta[0][0], nmovers3);
 
-          #pragma omp parallel for
-          for(int iw = 0; iw<nmovers; iw++)
+#pragma omp parallel for
+          for (int iw = 0; iw < nmovers; iw++)
           {
-            PosType dr = sqrttau * delta[iw];
+            PosType dr  = sqrttau * delta[iw];
             isValid[iw] = mover_list[iw]->els.makeMoveAndCheck(iel, dr);
           }
 
-          std::vector<Mover *> valid_mover_list(filtered_list(mover_list,isValid));
+          std::vector<Mover*> valid_mover_list(filtered_list(mover_list, isValid));
           std::vector<bool> isAccepted(valid_mover_list.size());
 
-          const std::vector<ParticleSet *> valid_P_list(extract_els_list(valid_mover_list));
-          const std::vector<SPOSet *> valid_spo_list(extract_spo_list(valid_mover_list));
-          const std::vector<WaveFunction *> valid_WF_list(extract_wf_list(valid_mover_list));
+          const std::vector<ParticleSet*> valid_P_list(extract_els_list(valid_mover_list));
+          const std::vector<SPOSet*> valid_spo_list(extract_spo_list(valid_mover_list));
+          const std::vector<WaveFunction*> valid_WF_list(extract_wf_list(valid_mover_list));
 
           // Compute gradient at the trial position
           Timers[Timer_ratioGrad]->start();
           anon_mover.wavefunction.multi_ratioGrad(valid_WF_list, valid_P_list, iel, ratios, grad_new);
 
-          for(int iw = 0; iw<valid_mover_list.size(); iw++)
+          for (int iw = 0; iw < valid_mover_list.size(); iw++)
             pos_list[iw] = valid_mover_list[iw]->els.R[iel];
           anon_mover.spo->multi_evaluate_vgh(valid_spo_list, pos_list);
           Timers[Timer_ratioGrad]->stop();
 
           // Accept/reject the trial move
-          for(int iw = 0; iw<valid_mover_list.size(); iw++)
-            if (ur[iw]>accept)
-              isAccepted[iw]=true;
+          for (int iw = 0; iw < valid_mover_list.size(); iw++)
+            if (ur[iw] > accept)
+              isAccepted[iw] = true;
             else
-              isAccepted[iw]=false;
+              isAccepted[iw] = false;
 
           Timers[Timer_Update]->start();
           // update WF storage
           anon_mover.wavefunction.multi_acceptrestoreMove(valid_WF_list, valid_P_list, isAccepted, iel);
           Timers[Timer_Update]->stop();
 
-          // Update position
-          #pragma omp parallel for
-          for(int iw = 0; iw<valid_mover_list.size(); iw++)
+// Update position
+#pragma omp parallel for
+          for (int iw = 0; iw < valid_mover_list.size(); iw++)
           {
             if (isAccepted[iw]) // MC
               valid_mover_list[iw]->els.acceptMove(iel);
@@ -477,10 +484,10 @@ int main(int argc, char **argv)
               valid_mover_list[iw]->els.rejectMove(iel);
           }
         } // iel
-      } // substeps
+      }   // substeps
 
-      #pragma omp parallel for
-      for(int iw = 0; iw<nmovers; iw++)
+#pragma omp parallel for
+      for (int iw = 0; iw < nmovers; iw++)
       {
         mover_list[iw]->els.donePbyP();
         // evaluate Kinetic Energy
@@ -492,22 +499,22 @@ int main(int argc, char **argv)
       // Compute NLPP energy using integral over spherical points
       // Ye: I have not found a strategy for NLPP
       Timers[Timer_ECP]->start();
-      #pragma omp parallel for
-      for(int iw = 0; iw<nmovers; iw++)
+#pragma omp parallel for
+      for (int iw = 0; iw < nmovers; iw++)
       {
-        auto &els          = mover_list[iw]->els;
-        auto &spo          = *mover_list[iw]->spo;
-        auto &wavefunction = mover_list[iw]->wavefunction;
-        auto &ecp          = mover_list[iw]->nlpp;
-    
+        auto& els          = mover_list[iw]->els;
+        auto& spo          = *mover_list[iw]->spo;
+        auto& wavefunction = mover_list[iw]->wavefunction;
+        auto& ecp          = mover_list[iw]->nlpp;
+
         ParticlePos_t rOnSphere(nknots);
         ecp.randomize(rOnSphere); // pick random sphere
-        const DistanceTableData *d_ie = els.DistTables[wavefunction.get_ei_TableID()];
+        const DistanceTableData* d_ie = els.DistTables[wavefunction.get_ei_TableID()];
 
         for (int jel = 0; jel < els.getTotalNum(); ++jel)
         {
-          const auto &dist  = d_ie->Distances[jel];
-          const auto &displ = d_ie->Displacements[jel];
+          const auto& dist  = d_ie->Distances[jel];
+          const auto& displ = d_ie->Displacements[jel];
           for (int iat = 0; iat < nions; ++iat)
             if (dist[iat] < Rmax)
               for (int k = 0; k < nknots; k++)
@@ -527,13 +534,12 @@ int main(int argc, char **argv)
       }
       Timers[Timer_ECP]->stop();
     } // nsteps
-
   }
   Timers[Timer_Total]->stop();
 
-  // free all movers
-  #pragma omp parallel for
-  for(int iw = 0; iw<nmovers; iw++)
+// free all movers
+#pragma omp parallel for
+  for (int iw = 0; iw < nmovers; iw++)
     delete mover_list[iw];
   mover_list.clear();
   delete spo_main;
@@ -545,30 +551,31 @@ int main(int argc, char **argv)
     TimerManager.print();
 
     XMLDocument doc;
-    XMLNode *resources = doc.NewElement("resources");
-    XMLNode *hardware = doc.NewElement("hardware");
+    XMLNode* resources = doc.NewElement("resources");
+    XMLNode* hardware  = doc.NewElement("hardware");
     resources->InsertEndChild(hardware);
     doc.InsertEndChild(resources);
-    XMLNode *timing = TimerManager.output_timing(doc);
+    XMLNode* timing = TimerManager.output_timing(doc);
     resources->InsertEndChild(timing);
 
-    XMLNode *particle_info = doc.NewElement("particles");
+    XMLNode* particle_info = doc.NewElement("particles");
     resources->InsertEndChild(particle_info);
-    XMLNode *electron_info = doc.NewElement("particle");
-    electron_info->InsertEndChild(MakeTextElement(doc,"name","e"));
-    electron_info->InsertEndChild(MakeTextElement(doc,"size",std::to_string(number_of_electrons)));
+    XMLNode* electron_info = doc.NewElement("particle");
+    electron_info->InsertEndChild(MakeTextElement(doc, "name", "e"));
+    electron_info->InsertEndChild(MakeTextElement(doc, "size", std::to_string(number_of_electrons)));
     particle_info->InsertEndChild(electron_info);
 
 
-    XMLNode *run_info = doc.NewElement("run");
-    XMLNode *driver_info = doc.NewElement("driver");
-    driver_info->InsertEndChild(MakeTextElement(doc,"name","miniqmc"));
-    driver_info->InsertEndChild(MakeTextElement(doc,"steps",std::to_string(nsteps)));
-    driver_info->InsertEndChild(MakeTextElement(doc,"substeps",std::to_string(nsubsteps)));
+    XMLNode* run_info    = doc.NewElement("run");
+    XMLNode* driver_info = doc.NewElement("driver");
+    driver_info->InsertEndChild(MakeTextElement(doc, "name", "miniqmc"));
+    driver_info->InsertEndChild(MakeTextElement(doc, "steps", std::to_string(nsteps)));
+    driver_info->InsertEndChild(MakeTextElement(doc, "substeps", std::to_string(nsubsteps)));
     run_info->InsertEndChild(driver_info);
     resources->InsertEndChild(run_info);
 
-    std::string info_name = "info_" + std::to_string(na) + "_" + std::to_string(nb) + "_" + std::to_string(nc) + ".xml";
+    std::string info_name =
+        "info_" + std::to_string(na) + "_" + std::to_string(nb) + "_" + std::to_string(nc) + ".xml";
     doc.SaveFile(info_name.c_str());
   }
 

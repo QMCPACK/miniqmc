@@ -38,24 +38,22 @@ void print_help()
 {
   //clang-format off
   cout << "usage:" << '\n';
-  cout << "  check_determinant [-hvV] [-g \"n0 n1 n2\"] [-n steps]"     << '\n';
-  cout << "             [-N substeps] [-s seed]"                        << '\n';
-  cout << "options:"                                                    << '\n';
-  cout << "  -g  set the 3D tiling.             default: 1 1 1"         << '\n';
-  cout << "  -h  print help and exit"                                   << '\n';
-  cout << "  -n  number of MC steps             default: 5"             << '\n';
-  cout << "  -N  number of MC substeps          default: 1"             << '\n';
-  cout << "  -s  set the random seed.           default: 11"            << '\n';
-  cout << "  -v  verbose output"                                        << '\n';
-  cout << "  -V  print version information and exit"                    << '\n';
+  cout << "  check_determinant [-hvV] [-g \"n0 n1 n2\"] [-n steps]" << '\n';
+  cout << "             [-N substeps] [-s seed]" << '\n';
+  cout << "options:" << '\n';
+  cout << "  -g  set the 3D tiling.             default: 1 1 1" << '\n';
+  cout << "  -h  print help and exit" << '\n';
+  cout << "  -n  number of MC steps             default: 5" << '\n';
+  cout << "  -N  number of MC substeps          default: 1" << '\n';
+  cout << "  -s  set the random seed.           default: 11" << '\n';
+  cout << "  -v  verbose output" << '\n';
+  cout << "  -V  print version information and exit" << '\n';
   //clang-format on
 
   exit(1); // print help and exit
 }
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
-
-
   // clang-format off
   typedef QMCTraits::RealType           RealType;
   typedef ParticleSet::ParticlePos_t    ParticlePos_t;
@@ -75,7 +73,7 @@ int main(int argc, char **argv)
   bool verbose = false;
 
   int opt;
-  while(optind < argc)
+  while (optind < argc)
   {
     if ((opt = getopt(argc, argv, "hvVg:n:N:r:s:")) != -1)
     {
@@ -84,7 +82,9 @@ int main(int argc, char **argv)
       case 'g': // tiling1 tiling2 tiling3
         sscanf(optarg, "%d %d %d", &na, &nb, &nc);
         break;
-      case 'h': print_help(); break;
+      case 'h':
+        print_help();
+        break;
       case 'n':
         nsteps = atoi(optarg);
         break;
@@ -94,7 +94,9 @@ int main(int argc, char **argv)
       case 's':
         iseed = atoi(optarg);
         break;
-      case 'v': verbose = true; break;
+      case 'v':
+        verbose = true;
+        break;
       case 'V':
         print_version(true);
         return 1;
@@ -126,7 +128,7 @@ int main(int argc, char **argv)
 
   double accumulated_error = 0.0;
 
-#pragma omp parallel reduction(+:accumulated_error)
+#pragma omp parallel reduction(+ : accumulated_error)
   {
     int ip = omp_get_thread_num();
 
@@ -178,7 +180,8 @@ int main(int argc, char **argv)
           PosType dr   = sqrttau * delta[iel];
           bool isValid = els.makeMoveAndCheck(iel, dr);
 
-          if (!isValid) continue;
+          if (!isValid)
+            continue;
 
           // Compute gradient at the trial position
 
@@ -213,13 +216,12 @@ int main(int argc, char **argv)
 
   constexpr double small_err = std::numeric_limits<double>::epsilon() * 6e8;
 
-  cout << "total accumulated error of " << accumulated_error << " for " << np
-       << " procs" << '\n';
+  cout << "total accumulated error of " << accumulated_error << " for " << np << " procs" << '\n';
 
   if (accumulated_error / np > small_err)
   {
-    cout << "Checking failed with accumulated error: " << accumulated_error / np
-         << " > " << small_err << '\n';
+    cout << "Checking failed with accumulated error: " << accumulated_error / np << " > "
+         << small_err << '\n';
     return 1;
   }
   else

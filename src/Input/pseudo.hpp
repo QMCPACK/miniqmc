@@ -21,7 +21,8 @@
 
 namespace qmcplusplus
 {
-template <typename T> struct NonLocalPP
+template<typename T>
+struct NonLocalPP
 {
   /** dimension */
   enum
@@ -40,14 +41,14 @@ template <typename T> struct NonLocalPP
   /** positions on a sphere */
   std::vector<PosType> sgridxyz_m;
   /** default constructor with knots=12 */
-  NonLocalPP(const RandomGenerator<RealType> &rng) : myRNG(rng)
+  NonLocalPP(const RandomGenerator<RealType>& rng) : myRNG(rng)
   {
     // use fixed seed
     myRNG.init(0, 1, 11);
     weight_m.resize(12);
     sgridxyz_m.resize(12);
     const RealType w = RealType(1.0 / 12.0);
-    for (int i    = 0; i < 12; ++i)
+    for (int i = 0; i < 12; ++i)
       weight_m[i] = w;
 
     // clang-format off
@@ -68,22 +69,27 @@ template <typename T> struct NonLocalPP
 
   inline int size() const { return sgridxyz_m.size(); }
 
-  template <typename PA> inline void randomize(PA &rrotsgrid)
+  template<typename PA>
+  inline void randomize(PA& rrotsgrid)
   {
     // const RealType twopi(6.28318530718);
     // RealType phi(twopi*Random()),psi(twopi*Random()),cth(Random()-0.5),
-    RealType phi(TWOPI * (myRNG())), psi(TWOPI * (myRNG())),
-        cth((myRNG()) - 0.5);
-    RealType sph(std::sin(phi)), cph(std::cos(phi)),
-        sth(std::sqrt(1.0 - cth * cth)), sps(std::sin(psi)), cps(std::cos(psi));
-    TensorType rmat(cph * cth * cps - sph * sps, sph * cth * cps + cph * sps,
-                    -sth * cps, -cph * cth * sps - sph * cps,
-                    -sph * cth * sps + cph * cps, sth * sps, cph * sth,
-                    sph * sth, cth);
+    RealType phi(TWOPI * (myRNG())), psi(TWOPI * (myRNG())), cth((myRNG()) - 0.5);
+    RealType sph(std::sin(phi)), cph(std::cos(phi)), sth(std::sqrt(1.0 - cth * cth)),
+        sps(std::sin(psi)), cps(std::cos(psi));
+    TensorType rmat(cph * cth * cps - sph * sps,
+                    sph * cth * cps + cph * sps,
+                    -sth * cps,
+                    -cph * cth * sps - sph * cps,
+                    -sph * cth * sps + cph * cps,
+                    sth * sps,
+                    cph * sth,
+                    sph * sth,
+                    cth);
     const int n = sgridxyz_m.size();
-    for (int i     = 0; i < n; ++i)
+    for (int i = 0; i < n; ++i)
       rrotsgrid[i] = dot(rmat, sgridxyz_m[i]);
   }
 };
-}
+} // namespace qmcplusplus
 #endif

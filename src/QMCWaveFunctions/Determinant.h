@@ -25,34 +25,40 @@ namespace qmcplusplus
 {
 /**@{Determinant utilities */
 /** Inversion of a double matrix after LU factorization*/
-inline void getri(int n, double *restrict a, int lda, int *restrict piv,
-                  double *restrict work, int &lwork)
+inline void
+    getri(int n, double* restrict a, int lda, int* restrict piv, double* restrict work, int& lwork)
 {
   int status;
   dgetri(n, a, lda, piv, work, lwork, status);
 }
 
 /** Inversion of a float matrix after LU factorization*/
-inline void getri(int n, float *restrict a, int lda, int *restrict piv,
-                  float *restrict work, int &lwork)
+inline void
+    getri(int n, float* restrict a, int lda, int* restrict piv, float* restrict work, int& lwork)
 {
   int status;
   sgetri(n, a, lda, piv, work, lwork, status);
 }
 
 /** Inversion of a std::complex<double> matrix after LU factorization*/
-inline void getri(int n, std::complex<double> *restrict a, int lda,
-                  int *restrict piv, std::complex<double> *restrict work,
-                  int &lwork)
+inline void getri(int n,
+                  std::complex<double>* restrict a,
+                  int lda,
+                  int* restrict piv,
+                  std::complex<double>* restrict work,
+                  int& lwork)
 {
   int status;
   zgetri(n, a, lda, piv, work, lwork, status);
 }
 
 /** Inversion of a complex<float> matrix after LU factorization*/
-inline void getri(int n, std::complex<float> *restrict a, int lda,
-                  int *restrict piv, std::complex<float> *restrict work,
-                  int &lwork)
+inline void getri(int n,
+                  std::complex<float>* restrict a,
+                  int lda,
+                  int* restrict piv,
+                  std::complex<float>* restrict work,
+                  int& lwork)
 {
   int status;
   cgetri(n, a, lda, piv, work, lwork, status);
@@ -60,8 +66,8 @@ inline void getri(int n, std::complex<float> *restrict a, int lda,
 
 
 /** query the size of workspace for Xgetri after LU decompisiton */
-template <class T>
-inline int getGetriWorkspace(T *restrict x, int n, int lda, int *restrict pivot)
+template<class T>
+inline int getGetriWorkspace(T* restrict x, int n, int lda, int* restrict pivot)
 {
   T work;
   int lwork = -1;
@@ -74,9 +80,8 @@ inline int getGetriWorkspace(T *restrict x, int n, int lda, int *restrict pivot)
  *
  * Assume: in[n][lda] and out[n][lda]
  */
-template <typename TIN, typename TOUT>
-inline void transpose(const TIN *restrict in, TOUT *restrict out, int n,
-                      int lda)
+template<typename TIN, typename TOUT>
+inline void transpose(const TIN* restrict in, TOUT* restrict out, int n, int lda)
 {
   for (int i = 0; i < n; ++i)
     for (int j = 0; j < n; ++j)
@@ -84,9 +89,9 @@ inline void transpose(const TIN *restrict in, TOUT *restrict out, int n,
 }
 
 /// used only for debugging or walker move
-template <class T>
-inline T InvertWithLog(T *restrict x, int n, int lda, T *restrict work,
-                       int lwork, int *restrict pivot, T &phase)
+template<class T>
+inline T
+    InvertWithLog(T* restrict x, int n, int lda, T* restrict work, int lwork, int* restrict pivot, T& phase)
 {
   T logdet(0.0);
   LUFactorization(n, n, x, lda, pivot);
@@ -103,9 +108,8 @@ inline T InvertWithLog(T *restrict x, int n, int lda, T *restrict work,
 }
 
 /// inner product
-template <typename T1, typename T2, typename T3>
-inline T3 inner_product_n(const T1 *restrict a, const T2 *restrict b, int n,
-                          T3 res)
+template<typename T1, typename T2, typename T3>
+inline T3 inner_product_n(const T1* restrict a, const T2* restrict b, int n, T3 res)
 {
   for (int i = 0; i < n; ++i)
     res += a[i] * b[i];
@@ -113,9 +117,9 @@ inline T3 inner_product_n(const T1 *restrict a, const T2 *restrict b, int n,
 }
 
 /// recompute inverse, do not evaluate log|det|
-template <class T>
-inline void InvertOnly(T *restrict x, int n, int lda, T *restrict work,
-                       int *restrict pivot, int lwork)
+template<class T>
+inline void
+    InvertOnly(T* restrict x, int n, int lda, T* restrict work, int* restrict pivot, int lwork)
 {
   LUFactorization(n, n, x, lda, pivot);
   getri(n, x, lda, pivot, work, lwork);
@@ -123,9 +127,9 @@ inline void InvertOnly(T *restrict x, int n, int lda, T *restrict work,
 
 /** update Row as implemented in the full code */
 /** [UpdateRow] */
-template <typename T, typename RT>
-inline void updateRow(T *restrict pinv, const T *restrict tv, int m, int lda,
-                      int rowchanged, RT c_ratio_in)
+template<typename T, typename RT>
+inline void
+    updateRow(T* restrict pinv, const T* restrict tv, int m, int lda, int rowchanged, RT c_ratio_in)
 {
   constexpr T cone(1);
   constexpr T czero(0);
@@ -140,8 +144,8 @@ inline void updateRow(T *restrict pinv, const T *restrict tv, int m, int lda,
 /**@}*/
 
 // FIXME do we want to keep this in the miniapp?
-template <typename MT1, typename MT2>
-void checkIdentity(const MT1 &a, const MT2 &b, const std::string &tag)
+template<typename MT1, typename MT2>
+void checkIdentity(const MT1& a, const MT2& b, const std::string& tag)
 {
   constexpr double czero(0.0);
   constexpr double cone(1.0);
@@ -162,8 +166,8 @@ void checkIdentity(const MT1 &a, const MT2 &b, const std::string &tag)
 }
 
 // FIXME do we want to keep this in the miniapp?
-template <typename MT1, typename MT2>
-void checkDiff(const MT1 &a, const MT2 &b, const std::string &tag)
+template<typename MT1, typename MT2>
+void checkDiff(const MT1& a, const MT2& b, const std::string& tag)
 {
   const int nrows = a.rows();
   const int ncols = a.cols();
@@ -174,13 +178,14 @@ void checkDiff(const MT1 &a, const MT2 &b, const std::string &tag)
       error += std::abs(static_cast<double>(a(i, j) - b(i, j)));
 
 #pragma omp master
-  std::cout << tag << " difference between matrices (average per element) = " << error / nrows / nrows << std::endl;
+  std::cout << tag << " difference between matrices (average per element) = " << error / nrows / nrows
+            << std::endl;
 }
 
 struct DiracDeterminant : public WaveFunctionComponent
 {
-  DiracDeterminant(int nels, const RandomGenerator<RealType> &RNG, int First=0)
-  : FirstIndex(First), myRandom(RNG)
+  DiracDeterminant(int nels, const RandomGenerator<RealType>& RNG, int First = 0)
+      : FirstIndex(First), myRandom(RNG)
   {
     psiMinv.resize(nels, nels);
     psiV.resize(nels);
@@ -202,8 +207,7 @@ struct DiracDeterminant : public WaveFunctionComponent
 
     double phase;
     transpose(psiMsave.data(), psiM.data(), nels, nels);
-    LogValue = InvertWithLog(psiM.data(), nels, nels, work.data(), LWork,
-                             pivot.data(), phase);
+    LogValue = InvertWithLog(psiM.data(), nels, nels, work.data(), LWork, pivot.data(), phase);
     std::copy_n(psiM.data(), nels * nels, psiMinv.data());
   }
 
@@ -217,20 +221,24 @@ struct DiracDeterminant : public WaveFunctionComponent
     }
   }
 
-  RealType evaluateLog(ParticleSet &P, ParticleSet::ParticleGradient_t &G,
-                       ParticleSet::ParticleLaplacian_t &L)
+  RealType evaluateLog(ParticleSet& P,
+                       ParticleSet::ParticleGradient_t& G,
+                       ParticleSet::ParticleLaplacian_t& L)
   {
     recompute();
     // FIXME do we want remainder of evaluateLog?
     return 0.0;
   }
 
-  GradType evalGrad(ParticleSet &P, int iat) { return GradType();}
+  GradType evalGrad(ParticleSet& P, int iat) { return GradType(); }
 
-  ValueType ratioGrad(ParticleSet &P, int iat, GradType &grad) { return ratio(P, iat); }
+  ValueType ratioGrad(ParticleSet& P, int iat, GradType& grad) { return ratio(P, iat); }
 
-  void evaluateGL(ParticleSet &P, ParticleSet::ParticleGradient_t &G,
-                  ParticleSet::ParticleLaplacian_t &L, bool fromscratch = false) {}
+  void evaluateGL(ParticleSet& P,
+                  ParticleSet::ParticleGradient_t& G,
+                  ParticleSet::ParticleLaplacian_t& L,
+                  bool fromscratch = false)
+  {}
 
   /// recompute the inverse
   inline void recompute()
@@ -244,23 +252,23 @@ struct DiracDeterminant : public WaveFunctionComponent
   /** return determinant ratio for the row replacement
    * @param iel the row (active particle) index
    */
-  inline ValueType ratio(ParticleSet &P, int iel)
+  inline ValueType ratio(ParticleSet& P, int iel)
   {
     const int nels = psiV.size();
     constexpr double shift(0.5);
     constexpr double czero(0);
     for (int j = 0; j < nels; ++j)
       psiV[j] = myRandom() - shift;
-    curRatio = inner_product_n(psiV.data(), psiMinv[iel-FirstIndex], nels, czero);
+    curRatio = inner_product_n(psiV.data(), psiMinv[iel - FirstIndex], nels, czero);
     return curRatio;
   }
 
   /** accept the row and update the inverse */
-  inline void acceptMove(ParticleSet &P, int iel)
+  inline void acceptMove(ParticleSet& P, int iel)
   {
     const int nels = psiV.size();
-    updateRow(psiMinv.data(), psiV.data(), nels, nels, iel-FirstIndex, curRatio);
-    std::copy_n(psiV.data(), nels, psiMsave[iel-FirstIndex]);
+    updateRow(psiMinv.data(), psiV.data(), nels, nels, iel - FirstIndex, curRatio);
+    std::copy_n(psiV.data(), nels, psiMsave[iel - FirstIndex]);
   }
 
   /** accessor functions for checking */
@@ -290,6 +298,6 @@ private:
   aligned_vector<double> work;
   Matrix<RealType> psiMsave;
 };
-}
+} // namespace qmcplusplus
 
 #endif

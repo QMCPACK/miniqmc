@@ -35,7 +35,8 @@
 
 using std::complex;
 
-template <class T> struct PooledData
+template<class T>
+struct PooledData
 {
   typedef T value_type;
   typedef OHMMS_PRECISION_FULL fp_value_type;
@@ -111,10 +112,11 @@ template <class T> struct PooledData
   /// return i-th value
   inline T operator[](size_type i) const { return myData[i]; }
   /// return i-th value to assign
-  inline T &operator[](size_type i) { return myData[i]; }
+  inline T& operator[](size_type i) { return myData[i]; }
   /*@}*/
 
-  template <class T1> inline void add(T1 x)
+  template<class T1>
+  inline void add(T1 x)
   {
     Current++;
     myData.push_back(static_cast<T>(x));
@@ -126,63 +128,65 @@ template <class T> struct PooledData
     myData.push_back(x);
   }
 
-  inline void add(std::complex<T> &x)
+  inline void add(std::complex<T>& x)
   {
     Current += 2;
     myData.push_back(x.real());
     myData.push_back(x.imag());
   }
 
-  template <class _InputIterator>
+  template<class _InputIterator>
   inline void add(_InputIterator first, _InputIterator last)
   {
     Current += last - first;
     myData.insert(myData.end(), first, last);
   }
 
-  inline void add(T *first, T *last)
+  inline void add(T* first, T* last)
   {
     Current += last - first;
     myData.insert(myData.end(), first, last);
   }
 
-  template <class T1> inline void add(T1 *first, T1 *last)
+  template<class T1>
+  inline void add(T1* first, T1* last)
   {
     Current_DP += last - first;
     myData_DP.insert(myData_DP.end(), first, last);
   }
 
-  inline void add(std::complex<T> *first, std::complex<T> *last)
+  inline void add(std::complex<T>* first, std::complex<T>* last)
   {
     size_type dn = 2 * (last - first);
-    T *t         = reinterpret_cast<T *>(first);
+    T* t         = reinterpret_cast<T*>(first);
     myData.insert(myData.end(), t, t + dn);
     Current += dn;
   }
 
-  template <typename T1>
-  inline void add(std::complex<T1> *first, std::complex<T1> *last)
+  template<typename T1>
+  inline void add(std::complex<T1>* first, std::complex<T1>* last)
   {
     size_type dn = 2 * (last - first);
-    T1 *t        = reinterpret_cast<T1 *>(first);
+    T1* t        = reinterpret_cast<T1*>(first);
     myData_DP.insert(myData_DP.end(), t, t + dn);
     Current_DP += dn;
   }
 
-  template <class T1> inline void get(T1 &x)
+  template<class T1>
+  inline void get(T1& x)
   {
     x = static_cast<T1>(myData[Current++]);
   }
 
-  inline void get(T &x) { x = myData[Current++]; }
+  inline void get(T& x) { x = myData[Current++]; }
 
-  inline void get(std::complex<T> &x)
+  inline void get(std::complex<T>& x)
   {
     x = std::complex<T>(myData[Current], myData[Current + 1]);
     Current += 2;
   }
 
-  template <class _OutputIterator>
+  template<class _OutputIterator>
   inline void get(_OutputIterator first, _OutputIterator last)
   {
     size_type now = Current;
@@ -190,21 +194,22 @@ template <class T> struct PooledData
     copy(myData.begin() + now, myData.begin() + Current, first);
   }
 
-  inline void get(T *first, T *last)
+  inline void get(T* first, T* last)
   {
     size_type now = Current;
     Current += last - first;
     std::copy(myData.begin() + now, myData.begin() + Current, first);
   }
 
-  template <class T1> inline void get(T1 *first, T1 *last)
+  template<class T1>
+  inline void get(T1* first, T1* last)
   {
     size_type now = Current_DP;
     Current_DP += last - first;
     std::copy(myData_DP.begin() + now, myData_DP.begin() + Current_DP, first);
   }
 
-  inline void get(std::complex<T> *first, std::complex<T> *last)
+  inline void get(std::complex<T>* first, std::complex<T>* last)
   {
     while (first != last)
     {
@@ -214,45 +219,45 @@ template <class T> struct PooledData
     }
   }
 
-  template <typename T1>
-  inline void get(std::complex<T1> *first, std::complex<T1> *last)
+  template<typename T1>
+  inline void get(std::complex<T1>* first, std::complex<T1>* last)
   {
     while (first != last)
     {
-      (*first) =
-          std::complex<T1>(myData_DP[Current_DP], myData_DP[Current_DP + 1]);
+      (*first) = std::complex<T1>(myData_DP[Current_DP], myData_DP[Current_DP + 1]);
       ++first;
       Current_DP += 2;
     }
   }
 
   inline void put(T x) { myData[Current++] = x; }
-  inline void put(std::complex<T> &x)
+  inline void put(std::complex<T>& x)
   {
     myData[Current++] = x.real();
     myData[Current++] = x.imag();
   }
 
-  template <class _InputIterator>
+  template<class _InputIterator>
   inline void put(_InputIterator first, _InputIterator last)
   {
     copy(first, last, myData.begin() + Current);
     Current += last - first;
   }
 
-  inline void put(T *first, T *last)
+  inline void put(T* first, T* last)
   {
     std::copy(first, last, myData.begin() + Current);
     Current += last - first;
   }
 
-  template <class T1> inline void put(T1 *first, T1 *last)
+  template<class T1>
+  inline void put(T1* first, T1* last)
   {
     std::copy(first, last, myData_DP.begin() + Current_DP);
     Current_DP += last - first;
   }
 
-  inline void put(std::complex<T> *first, std::complex<T> *last)
+  inline void put(std::complex<T>* first, std::complex<T>* last)
   {
     while (first != last)
     {
@@ -262,8 +267,8 @@ template <class T> struct PooledData
     }
   }
 
-  template <typename T1>
-  inline void put(std::complex<T1> *first, std::complex<T1> *last)
+  template<typename T1>
+  inline void put(std::complex<T1>* first, std::complex<T1>* last)
   {
     while (first != last)
     {
@@ -274,37 +279,39 @@ template <class T> struct PooledData
   }
 
   /** return the address of the first element **/
-  inline T *data() { return &(myData[0]); }
+  inline T* data() { return &(myData[0]); }
 
   /** return the address of the first DP element **/
-  inline fp_value_type *data_DP() { return &(myData_DP[0]); }
+  inline fp_value_type* data_DP() { return &(myData_DP[0]); }
 
-  inline void print(std::ostream &os)
+  inline void print(std::ostream& os)
   {
     copy(myData.begin(), myData.end(), std::ostream_iterator<T>(os, " "));
   }
 
-  template <class Msg> inline Msg &putMessage(Msg &m)
+  template<class Msg>
+  inline Msg& putMessage(Msg& m)
   {
     m.Pack(&(myData[0]), myData.size());
     m.Pack(&(myData_DP[0]), myData_DP.size());
     return m;
   }
 
-  template <class Msg> inline Msg &getMessage(Msg &m)
+  template<class Msg>
+  inline Msg& getMessage(Msg& m)
   {
     m.Unpack(&(myData[0]), myData.size());
     m.Unpack(&(myData_DP[0]), myData_DP.size());
     return m;
   }
 
-  inline PooledData<T> &operator+=(const PooledData<T> &s)
+  inline PooledData<T>& operator+=(const PooledData<T>& s)
   {
     for (int i = 0; i < myData.size(); ++i)
       myData[i] += s[i];
     return *this;
   }
-  inline PooledData<T> &operator*=(T scale)
+  inline PooledData<T>& operator*=(T scale)
   {
     for (int i = 0; i < myData.size(); ++i)
       myData[i] *= scale;
@@ -313,27 +320,31 @@ template <class T> struct PooledData
 };
 
 /** operator to check if two buffers are identical */
-template <class T>
-bool operator==(const PooledData<T> &a, const PooledData<T> &b)
+template<class T>
+bool operator==(const PooledData<T>& a, const PooledData<T>& b)
 {
-  if (a.size() != b.size()) return false;
+  if (a.size() != b.size())
+    return false;
   // if(a.Current != b.Current) return false;
   for (typename PooledData<T>::size_type i = 0; i < a.size(); ++i)
   {
-    if (std::abs(a[i] - b[i]) > std::numeric_limits<T>::epsilon()) return false;
+    if (std::abs(a[i] - b[i]) > std::numeric_limits<T>::epsilon())
+      return false;
   }
   return true;
 }
 
 /** operator to check if two buffers are different */
-template <class T>
-bool operator!=(const PooledData<T> &a, const PooledData<T> &b)
+template<class T>
+bool operator!=(const PooledData<T>& a, const PooledData<T>& b)
 {
-  if (a.size() != b.size()) return true;
+  if (a.size() != b.size())
+    return true;
   // if(a.Current != b.Current) return true;
   for (typename PooledData<T>::size_type i = 0; i < a.size(); ++i)
   {
-    if (std::abs(a[i] - b[i]) > std::numeric_limits<T>::epsilon()) return true;
+    if (std::abs(a[i] - b[i]) > std::numeric_limits<T>::epsilon())
+      return true;
   }
   return false;
 }

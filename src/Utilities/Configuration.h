@@ -61,7 +61,6 @@ inline omp_int_t omp_get_num_threads() { return 1; }
 
 namespace qmcplusplus
 {
-
 /** traits for the common particle attributes
  *
  *This is an alternative to the global typedefs.
@@ -135,6 +134,6 @@ struct PtclOnLatticeTraits
 };
 
 
-}
+} // namespace qmcplusplus
 
 #endif

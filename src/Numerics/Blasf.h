@@ -92,6 +92,7 @@
 
 #endif
 
+// clang-format off
 // declaring Fortran interfaces
 extern "C" {
 
@@ -333,4 +334,5 @@ void dtgevc(const char *SIDE, const char *HOWMNY, const bool *SELECT,
             double *VL, const int *LDVL, double *VR, const int *LDVR,
             const int *MM, int *M, double *WORK, int *INFO);
 }
+// clang-format on
 #endif

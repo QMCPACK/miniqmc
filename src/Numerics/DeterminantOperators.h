@@ -35,58 +35,60 @@
 
 namespace qmcplusplus
 {
-
 /** LU factorization of double */
-inline void LUFactorization(int n, int m, double *restrict a, int n0,
-                            int *restrict piv)
+inline void LUFactorization(int n, int m, double* restrict a, int n0, int* restrict piv)
 {
   int status;
   dgetrf(n, m, a, n0, piv, status);
 }
 
 /** LU factorization of float */
-inline void LUFactorization(int n, int m, float *restrict a, const int &n0,
-                            int *restrict piv)
+inline void LUFactorization(int n, int m, float* restrict a, const int& n0, int* restrict piv)
 {
   int status;
   sgetrf(n, m, a, n0, piv, status);
 }
 
 /** LU factorization of std::complex<double> */
-inline void LUFactorization(int n, int m, std::complex<double> *restrict a,
-                            int n0, int *restrict piv)
+inline void LUFactorization(int n, int m, std::complex<double>* restrict a, int n0, int* restrict piv)
 {
   int status;
   zgetrf(n, m, a, n0, piv, status);
 }
 
 /** LU factorization of complex<float> */
-inline void LUFactorization(int n, int m, std::complex<float> *restrict a,
-                            int n0, int *restrict piv)
+inline void LUFactorization(int n, int m, std::complex<float>* restrict a, int n0, int* restrict piv)
 {
   int status;
   cgetrf(n, m, a, n0, piv, status);
 }
 
 /** Inversion of a double matrix after LU factorization*/
-inline void InvertLU(int n, double *restrict a, int n0, int *restrict piv,
-                     double *restrict work, int n1)
+inline void
+    InvertLU(int n, double* restrict a, int n0, int* restrict piv, double* restrict work, int n1)
 {
   int status;
   dgetri(n, a, n0, piv, work, n1, status);
 }
 
 /** Inversion of a float matrix after LU factorization*/
-inline void InvertLU(const int &n, float *restrict a, const int &n0,
-                     int *restrict piv, float *restrict work, const int &n1)
+inline void InvertLU(const int& n,
+                     float* restrict a,
+                     const int& n0,
+                     int* restrict piv,
+                     float* restrict work,
+                     const int& n1)
 {
   int status;
   sgetri(n, a, n0, piv, work, n1, status);
 }
 
 /** Inversion of a std::complex<double> matrix after LU factorization*/
-inline void InvertLU(int n, std::complex<double> *restrict a, int n0,
-                     int *restrict piv, std::complex<double> *restrict work,
+inline void InvertLU(int n,
+                     std::complex<double>* restrict a,
+                     int n0,
+                     int* restrict piv,
+                     std::complex<double>* restrict work,
                      int n1)
 {
   int status;
@@ -94,17 +96,19 @@ inline void InvertLU(int n, std::complex<double> *restrict a, int n0,
 }
 
 /** Inversion of a complex<float> matrix after LU factorization*/
-inline void InvertLU(int n, std::complex<float> *restrict a, int n0,
-                     int *restrict piv, std::complex<float> *restrict work,
+inline void InvertLU(int n,
+                     std::complex<float>* restrict a,
+                     int n0,
+                     int* restrict piv,
+                     std::complex<float>* restrict work,
                      int n1)
 {
   int status;
   cgetri(n, a, n0, piv, work, n1, status);
 }
 
-template <class T>
-inline T InvertWithLog(T *restrict x, int n, int m, T *restrict work,
-                       int *restrict pivot, T &phase)
+template<class T>
+inline T InvertWithLog(T* restrict x, int n, int m, T* restrict work, int* restrict pivot, T& phase)
 {
   T logdet(0.0);
   LUFactorization(n, m, x, n, pivot);
@@ -120,10 +124,13 @@ inline T InvertWithLog(T *restrict x, int n, int m, T *restrict work,
   return logdet;
 }
 
-template <class T>
-inline T InvertWithLog(std::complex<T> *restrict x, int n, int m,
-                       std::complex<T> *restrict work, int *restrict pivot,
-                       T &phase)
+template<class T>
+inline T InvertWithLog(std::complex<T>* restrict x,
+                       int n,
+                       int m,
+                       std::complex<T>* restrict work,
+                       int* restrict pivot,
+                       T& phase)
 {
   T logdet(0.0);
   LUFactorization(n, m, x, n, pivot);
@@ -132,9 +139,9 @@ inline T InvertWithLog(std::complex<T> *restrict x, int n, int m,
   {
     int ii = i * m + i;
     phase += std::arg(x[ii]);
-    if (pivot[i] != i + 1) phase += M_PI;
-    logdet +=
-        std::log(x[ii].real() * x[ii].real() + x[ii].imag() * x[ii].imag());
+    if (pivot[i] != i + 1)
+      phase += M_PI;
+    logdet += std::log(x[ii].real() * x[ii].real() + x[ii].imag() * x[ii].imag());
     // slightly smaller error with the following
     //        logdet+=2.0*std::log(std::abs(x[ii]);
   }
@@ -149,9 +156,8 @@ inline T InvertWithLog(std::complex<T> *restrict x, int n, int m,
  * \param getdet bool, if true, calculate the determinant
  * \return the determinant
  */
-template <class MatrixA>
-inline typename MatrixA::value_type invert_matrix(MatrixA &M,
-                                                  bool getdet = true)
+template<class MatrixA>
+inline typename MatrixA::value_type invert_matrix(MatrixA& M, bool getdet = true)
 {
   typedef typename MatrixA::value_type value_type;
   const int n = M.rows();
@@ -165,7 +171,8 @@ inline typename MatrixA::value_type invert_matrix(MatrixA &M,
     int sign = 1;
     for (int i = 0; i < n; ++i)
     {
-      if (pivot[i] != i + 1) sign *= -1;
+      if (pivot[i] != i + 1)
+        sign *= -1;
       det0 *= M(i, i);
     }
     det0 *= static_cast<value_type>(sign);
@@ -173,5 +180,5 @@ inline typename MatrixA::value_type invert_matrix(MatrixA &M,
   InvertLU(n, M.data(), n, pivot, work, n);
   return det0;
 }
-}
+} // namespace qmcplusplus
 #endif

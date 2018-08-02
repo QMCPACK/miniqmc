@@ -34,13 +34,11 @@
 
 namespace qmcplusplus
 {
-
 struct OpAdd
 {
   PETE_EMPTY_CONSTRUCTORS(OpAdd)
-  template <class T1, class T2>
-  inline typename BinaryReturn<T1, T2, OpAdd>::Type_t
-  operator()(const T1 &a, const T2 &b) const
+  template<class T1, class T2>
+  inline typename BinaryReturn<T1, T2, OpAdd>::Type_t operator()(const T1& a, const T2& b) const
   {
     return (a + b);
   }
@@ -49,9 +47,8 @@ struct OpAdd
 struct OpSubtract
 {
   PETE_EMPTY_CONSTRUCTORS(OpSubtract)
-  template <class T1, class T2>
-  inline typename BinaryReturn<T1, T2, OpSubtract>::Type_t
-  operator()(const T1 &a, const T2 &b) const
+  template<class T1, class T2>
+  inline typename BinaryReturn<T1, T2, OpSubtract>::Type_t operator()(const T1& a, const T2& b) const
   {
     return (a - b);
   }
@@ -60,9 +57,8 @@ struct OpSubtract
 struct OpMultiply
 {
   PETE_EMPTY_CONSTRUCTORS(OpMultiply)
-  template <class T1, class T2>
-  inline typename BinaryReturn<T1, T2, OpMultiply>::Type_t
-  operator()(const T1 &a, const T2 &b) const
+  template<class T1, class T2>
+  inline typename BinaryReturn<T1, T2, OpMultiply>::Type_t operator()(const T1& a, const T2& b) const
   {
     return (a * b);
   }
@@ -71,9 +67,8 @@ struct OpMultiply
 struct OpDivide
 {
   PETE_EMPTY_CONSTRUCTORS(OpDivide)
-  template <class T1, class T2>
-  inline typename BinaryReturn<T1, T2, OpDivide>::Type_t
-  operator()(const T1 &a, const T2 &b) const
+  template<class T1, class T2>
+  inline typename BinaryReturn<T1, T2, OpDivide>::Type_t operator()(const T1& a, const T2& b) const
   {
     return (a / b);
   }
@@ -82,9 +77,8 @@ struct OpDivide
 struct OpMod
 {
   PETE_EMPTY_CONSTRUCTORS(OpMod)
-  template <class T1, class T2>
-  inline typename BinaryReturn<T1, T2, OpMod>::Type_t
-  operator()(const T1 &a, const T2 &b) const
+  template<class T1, class T2>
+  inline typename BinaryReturn<T1, T2, OpMod>::Type_t operator()(const T1& a, const T2& b) const
   {
     return (a % b);
   }
@@ -94,104 +88,107 @@ struct OpMod
 struct OpAddAssign
 {
   PETE_EMPTY_CONSTRUCTORS(OpAddAssign)
-  template <class T1, class T2>
-  inline typename BinaryReturn<T1, T2, OpAddAssign>::Type_t
-  operator()(const T1 &a, const T2 &b) const
+  template<class T1, class T2>
+  inline typename BinaryReturn<T1, T2, OpAddAssign>::Type_t operator()(const T1& a, const T2& b) const
   {
-    (const_cast<T1 &>(a) += b);
-    return const_cast<T1 &>(a);
+    (const_cast<T1&>(a) += b);
+    return const_cast<T1&>(a);
   }
 };
 
-template <class T1, class T2> struct BinaryReturn<T1, T2, OpAddAssign>
+template<class T1, class T2>
+struct BinaryReturn<T1, T2, OpAddAssign>
 {
-  typedef T1 &Type_t;
+  typedef T1& Type_t;
 };
 
 struct OpSubtractAssign
 {
   PETE_EMPTY_CONSTRUCTORS(OpSubtractAssign)
-  template <class T1, class T2>
+  template<class T1, class T2>
   inline typename BinaryReturn<T1, T2, OpSubtractAssign>::Type_t
-  operator()(const T1 &a, const T2 &b) const
+      operator()(const T1& a, const T2& b) const
   {
-    (const_cast<T1 &>(a) -= b);
-    return const_cast<T1 &>(a);
+    (const_cast<T1&>(a) -= b);
+    return const_cast<T1&>(a);
   }
 };
 
-template <class T1, class T2> struct BinaryReturn<T1, T2, OpSubtractAssign>
+template<class T1, class T2>
+struct BinaryReturn<T1, T2, OpSubtractAssign>
 {
-  typedef T1 &Type_t;
+  typedef T1& Type_t;
 };
 
 struct OpMultiplyAssign
 {
   PETE_EMPTY_CONSTRUCTORS(OpMultiplyAssign)
-  template <class T1, class T2>
+  template<class T1, class T2>
   inline typename BinaryReturn<T1, T2, OpMultiplyAssign>::Type_t
-  operator()(const T1 &a, const T2 &b) const
+      operator()(const T1& a, const T2& b) const
   {
-    (const_cast<T1 &>(a) *= b);
-    return const_cast<T1 &>(a);
+    (const_cast<T1&>(a) *= b);
+    return const_cast<T1&>(a);
   }
 };
 
-template <class T1, class T2> struct BinaryReturn<T1, T2, OpMultiplyAssign>
+template<class T1, class T2>
+struct BinaryReturn<T1, T2, OpMultiplyAssign>
 {
-  typedef T1 &Type_t;
+  typedef T1& Type_t;
 };
 
 struct OpDivideAssign
 {
   PETE_EMPTY_CONSTRUCTORS(OpDivideAssign)
-  template <class T1, class T2>
+  template<class T1, class T2>
   inline typename BinaryReturn<T1, T2, OpDivideAssign>::Type_t
-  operator()(const T1 &a, const T2 &b) const
+      operator()(const T1& a, const T2& b) const
   {
-    (const_cast<T1 &>(a) /= b);
-    return const_cast<T1 &>(a);
+    (const_cast<T1&>(a) /= b);
+    return const_cast<T1&>(a);
   }
 };
 
-template <class T1, class T2> struct BinaryReturn<T1, T2, OpDivideAssign>
+template<class T1, class T2>
+struct BinaryReturn<T1, T2, OpDivideAssign>
 {
-  typedef T1 &Type_t;
+  typedef T1& Type_t;
 };
 
 struct OpModAssign
 {
   PETE_EMPTY_CONSTRUCTORS(OpModAssign)
-  template <class T1, class T2>
-  inline typename BinaryReturn<T1, T2, OpModAssign>::Type_t
-  operator()(const T1 &a, const T2 &b) const
+  template<class T1, class T2>
+  inline typename BinaryReturn<T1, T2, OpModAssign>::Type_t operator()(const T1& a, const T2& b) const
   {
-    (const_cast<T1 &>(a) %= b);
-    return const_cast<T1 &>(a);
+    (const_cast<T1&>(a) %= b);
+    return const_cast<T1&>(a);
   }
 };
 
-template <class T1, class T2> struct BinaryReturn<T1, T2, OpModAssign>
+template<class T1, class T2>
+struct BinaryReturn<T1, T2, OpModAssign>
 {
-  typedef T1 &Type_t;
+  typedef T1& Type_t;
 };
 
 
 struct OpAssign
 {
   PETE_EMPTY_CONSTRUCTORS(OpAssign)
-  template <class T1, class T2>
-  inline typename BinaryReturn<T1, T2, OpAssign>::Type_t
-  operator()(const T1 &a, const T2 &b) const
+  template<class T1, class T2>
+  inline typename BinaryReturn<T1, T2, OpAssign>::Type_t operator()(const T1& a, const T2& b) const
   {
-    return (const_cast<T1 &>(a) = b);
+    return (const_cast<T1&>(a) = b);
   }
 };
 
-template <class T1, class T2> struct BinaryReturn<T1, T2, OpAssign>
+template<class T1, class T2>
+struct BinaryReturn<T1, T2, OpAssign>
 {
-  typedef T1 &Type_t;
+  typedef T1& Type_t;
 };
 
-}
+} // namespace qmcplusplus
 #endif // PETE_PETE_OPERATORTAGS_H
