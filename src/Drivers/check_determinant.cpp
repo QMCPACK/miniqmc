@@ -43,7 +43,7 @@ void print_help()
   cout << "options:"                                                    << '\n';
   cout << "  -g  set the 3D tiling.             default: 1 1 1"         << '\n';
   cout << "  -h  print help and exit"                                   << '\n';
-  cout << "  -n  number of MC steps             default: 100"           << '\n';
+  cout << "  -n  number of MC steps             default: 5"             << '\n';
   cout << "  -N  number of MC substeps          default: 1"             << '\n';
   cout << "  -s  set the random seed.           default: 11"            << '\n';
   cout << "  -v  verbose output"                                        << '\n';
@@ -65,7 +65,7 @@ int main(int argc, char **argv)
   int na        = 1;
   int nb        = 1;
   int nc        = 1;
-  int nsteps    = 100;
+  int nsteps    = 5;
   int iseed     = 11;
   int nsubsteps = 1;
   int np        = omp_get_max_threads();

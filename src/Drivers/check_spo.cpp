@@ -64,7 +64,7 @@ void print_help()
   app_summary() << "  -f  results are not transfered back"                       << '\n';
   app_summary() << "  -h  print help and exit"                                   << '\n';
   app_summary() << "  -m  meshfactor                     default: 1.0"           << '\n';
-  app_summary() << "  -n  number of MC steps             default: 100"           << '\n';
+  app_summary() << "  -n  number of MC steps             default: 5"             << '\n';
   app_summary() << "  -r  set the Rmax.                  default: 1.7"           << '\n';
   app_summary() << "  -s  set the random seed.           default: 11"            << '\n';
   app_summary() << "  -v  verbose output"                                        << '\n';
@@ -91,7 +91,7 @@ int main(int argc, char **argv)
   int na      = 1;
   int nb      = 1;
   int nc      = 1;
-  int nsteps  = 100;
+  int nsteps  = 5;
   int nmovers = omp_get_max_threads();
   int iseed   = 11;
   // this is the cutoff from the non-local PP
