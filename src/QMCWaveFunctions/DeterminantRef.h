@@ -161,7 +161,7 @@ void checkIdentity(const MT1& a, const MT2& b, const std::string& tag)
       error += (i == j) ? std::abs(e - cone) : std::abs(e);
     }
   }
-#pragma omp master
+  #pragma omp master
   std::cout << tag << " difference from identity (average per element) = " << error / nrows / nrows
             << std::endl;
 }
@@ -178,7 +178,7 @@ void checkDiff(const MT1& a, const MT2& b, const std::string& tag)
     for (int j = 0; j < ncols; ++j)
       error += std::abs(static_cast<double>(a(i, j) - b(i, j)));
 
-#pragma omp master
+  #pragma omp master
   std::cout << tag << " difference between matrices (average per element) = " << error / nrows / nrows
             << std::endl;
 }

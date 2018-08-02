@@ -145,7 +145,7 @@ multi_UBspline_3d_s* einspline_create_multi_UBspline_3d_s(Ugrid x_grid,
   const size_t zs = spline->z_stride;
 
   const float czero=0;
-#pragma omp parallel for collapse(3)
+  #pragma omp parallel for collapse(3)
   for(size_t i=0; i<Nx; ++i)
     for(size_t j=0; j<Ny; ++j)
       for(size_t k=0; k<Nz; ++k)

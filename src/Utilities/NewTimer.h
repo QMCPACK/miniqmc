@@ -360,7 +360,7 @@ public:
 #endif
 
 #ifdef USE_STACK_TIMERS
-#pragma omp master
+      #pragma omp master
       {
         if (manager)
         {

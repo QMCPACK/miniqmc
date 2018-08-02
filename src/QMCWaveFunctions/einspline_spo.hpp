@@ -172,7 +172,7 @@ struct einspline_spo : public SPOSet
   inline void evaluate_v_pfor(const PosType& p)
   {
     auto u = Lattice.toUnit_floor(p);
-#pragma omp for nowait
+    #pragma omp for nowait
     for (int i = 0; i < nBlocks; ++i)
       compute_engine.evaluate_v(einsplines[i], u[0], u[1], u[2], psi[i].data(), nSplinesPerBlock);
   }
@@ -196,7 +196,7 @@ struct einspline_spo : public SPOSet
   inline void evaluate_vgl_pfor(const PosType& p)
   {
     auto u = Lattice.toUnit_floor(p);
-#pragma omp for nowait
+    #pragma omp for nowait
     for (int i = 0; i < nBlocks; ++i)
       compute_engine.evaluate_vgl(einsplines[i],
                                   u[0],
@@ -229,7 +229,7 @@ struct einspline_spo : public SPOSet
   inline void evaluate_vgh_pfor(const PosType& p)
   {
     auto u = Lattice.toUnit_floor(p);
-#pragma omp for nowait
+    #pragma omp for nowait
     for (int i = 0; i < nBlocks; ++i)
       compute_engine.evaluate_vgh(einsplines[i],
                                   u[0],

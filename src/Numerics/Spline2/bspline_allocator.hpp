@@ -118,7 +118,7 @@ void Allocator::setCoefficientsForOneOrbital(int i,
                                              Array<T, 3>& coeff,
                                              typename bspline_traits<T, 3>::SplineType* spline)
 {
-#pragma omp parallel for collapse(3)
+  #pragma omp parallel for collapse(3)
   for (int ix = 0; ix < spline->x_grid.num + 3; ix++)
   {
     for (int iy = 0; iy < spline->y_grid.num + 3; iy++)

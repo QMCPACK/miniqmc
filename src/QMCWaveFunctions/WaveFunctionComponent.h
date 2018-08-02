@@ -176,7 +176,7 @@ struct WaveFunctionComponent : public QMCTraits
                                  const std::vector<ParticleSet::ParticleLaplacian_t*>& L_list,
                                  ParticleSet::ParticleValue_t& values)
   {
-#pragma omp parallel for
+    #pragma omp parallel for
     for (int iw = 0; iw < P_list.size(); iw++)
       values[iw] = WFC_list[iw]->evaluateLog(*P_list[iw], *G_list[iw], *L_list[iw]);
   };
@@ -197,7 +197,7 @@ struct WaveFunctionComponent : public QMCTraits
                                std::vector<ValueType>& ratios,
                                std::vector<PosType>& grad_new)
   {
-#pragma omp parallel for
+    #pragma omp parallel for
     for (int iw = 0; iw < P_list.size(); iw++)
       ratios[iw] = WFC_list[iw]->ratioGrad(*P_list[iw], iat, grad_new[iw]);
   };
@@ -207,7 +207,7 @@ struct WaveFunctionComponent : public QMCTraits
                                        const std::vector<bool>& isAccepted,
                                        int iat)
   {
-#pragma omp parallel for
+    #pragma omp parallel for
     for (int iw = 0; iw < P_list.size(); iw++)
     {
       if (isAccepted[iw])
@@ -228,7 +228,7 @@ struct WaveFunctionComponent : public QMCTraits
                                 const std::vector<ParticleSet::ParticleLaplacian_t*>& L_list,
                                 bool fromscratch = false)
   {
-#pragma omp parallel for
+    #pragma omp parallel for
     for (int iw = 0; iw < P_list.size(); iw++)
       WFC_list[iw]->evaluateGL(*P_list[iw], *G_list[iw], *L_list[iw], fromscratch);
   };

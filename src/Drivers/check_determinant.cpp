@@ -128,7 +128,7 @@ int main(int argc, char** argv)
 
   double accumulated_error = 0.0;
 
-#pragma omp parallel reduction(+ : accumulated_error)
+  #pragma omp parallel reduction(+ : accumulated_error)
   {
     int ip = omp_get_thread_num();
 

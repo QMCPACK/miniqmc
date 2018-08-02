@@ -36,7 +36,7 @@ bool timer_max_level_exceeded = false;
 
 void TimerManagerClass::addTimer(NewTimer* t)
 {
-#pragma omp critical
+  #pragma omp critical
   {
     if (t->get_name().find(TIMER_STACK_SEPARATOR) != std::string::npos)
     {
@@ -249,7 +249,7 @@ void TimerManagerClass::print_flat()
   collate_flat_profile(p);
 
   {
-#pragma omp master
+    #pragma omp master
     {
       std::map<std::string, int>::iterator it(p.nameList.begin()), it_end(p.nameList.end());
       while (it != it_end)

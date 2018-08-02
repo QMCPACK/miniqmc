@@ -359,7 +359,7 @@ int main(int argc, char** argv)
   Timers[Timer_Init]->start();
   std::vector<Mover*> mover_list(nmovers, nullptr);
 // prepare movers
-#pragma omp parallel for
+  #pragma omp parallel for
   for (int iw = 0; iw < nmovers; iw++)
   {
     const int ip        = omp_get_thread_num();
@@ -426,7 +426,7 @@ int main(int argc, char** argv)
         for (int iel = 0; iel < nels; ++iel)
         {
 // Operate on electron with index iel
-#pragma omp parallel for
+          #pragma omp parallel for
           for (int iw = 0; iw < nmovers; iw++)
             mover_list[iw]->els.setActive(iel);
 
@@ -439,7 +439,7 @@ int main(int argc, char** argv)
           mover_list[0]->rng.generate_uniform(ur.data(), nmovers);
           mover_list[0]->rng.generate_normal(&delta[0][0], nmovers3);
 
-#pragma omp parallel for
+          #pragma omp parallel for
           for (int iw = 0; iw < nmovers; iw++)
           {
             PosType dr  = sqrttau * delta[iw];
@@ -474,8 +474,8 @@ int main(int argc, char** argv)
           anon_mover.wavefunction.multi_acceptrestoreMove(valid_WF_list, valid_P_list, isAccepted, iel);
           Timers[Timer_Update]->stop();
 
-// Update position
-#pragma omp parallel for
+          // Update position
+          #pragma omp parallel for
           for (int iw = 0; iw < valid_mover_list.size(); iw++)
           {
             if (isAccepted[iw]) // MC
@@ -486,7 +486,7 @@ int main(int argc, char** argv)
         } // iel
       }   // substeps
 
-#pragma omp parallel for
+      #pragma omp parallel for
       for (int iw = 0; iw < nmovers; iw++)
       {
         mover_list[iw]->els.donePbyP();
@@ -499,7 +499,7 @@ int main(int argc, char** argv)
       // Compute NLPP energy using integral over spherical points
       // Ye: I have not found a strategy for NLPP
       Timers[Timer_ECP]->start();
-#pragma omp parallel for
+      #pragma omp parallel for
       for (int iw = 0; iw < nmovers; iw++)
       {
         auto& els          = mover_list[iw]->els;
@@ -537,8 +537,8 @@ int main(int argc, char** argv)
   }
   Timers[Timer_Total]->stop();
 
-// free all movers
-#pragma omp parallel for
+  // free all movers
+  #pragma omp parallel for
   for (int iw = 0; iw < nmovers; iw++)
     delete mover_list[iw];
   mover_list.clear();

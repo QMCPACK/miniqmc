@@ -242,7 +242,7 @@ inline T BsplineFunctor<T>::evaluateV(const int iat,
   }
 
   real_type d = 0.0;
-#pragma omp simd reduction(+ : d)
+  #pragma omp simd reduction(+ : d)
   for (int jat = 0; jat < iCount; jat++)
   {
     real_type r = distArrayCompressed[jat];
@@ -299,7 +299,7 @@ inline void BsplineFunctor<T>::evaluateVGL(const int iat,
     }
   }
 
-#pragma omp simd
+  #pragma omp simd
   for (int j = 0; j < iCount; j++)
   {
     real_type r    = distArrayCompressed[j];

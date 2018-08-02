@@ -185,8 +185,8 @@ inline void MultiBspline<T>::evaluate_vgl(const spliner_type* restrict spline_m,
       const T* restrict coefs3zs = coefs + 3 * zs;
       ASSUME_ALIGNED(coefs3zs);
 
-#pragma noprefetch
-#pragma omp simd
+      #pragma noprefetch
+      #pragma omp simd
       for (int n = 0; n < num_splines; n++)
       {
         const T coefsv    = coefs[n];
@@ -215,7 +215,7 @@ inline void MultiBspline<T>::evaluate_vgl(const spliner_type* restrict spline_m,
   const T dyInv2 = dyInv * dyInv;
   const T dzInv2 = dzInv * dzInv;
 
-#pragma omp simd
+  #pragma omp simd
   for (int n = 0; n < num_splines; n++)
   {
     gx[n] *= dxInv;
@@ -308,7 +308,7 @@ inline void MultiBspline<T>::evaluate_vgh(const spliner_type* restrict spline_m,
       const T pre02 = a[i] * d2b[j];
 
       const int iSplitPoint = num_splines;
-#pragma omp simd
+      #pragma omp simd
       for (int n = 0; n < iSplitPoint; n++)
       {
         T coefsv    = coefs[n];
@@ -343,7 +343,7 @@ inline void MultiBspline<T>::evaluate_vgh(const spliner_type* restrict spline_m,
   const T dxz   = dxInv * dzInv;
   const T dyz   = dyInv * dzInv;
 
-#pragma omp simd
+  #pragma omp simd
   for (int n = 0; n < num_splines; n++)
   {
     gx[n]  *= dxInv;
