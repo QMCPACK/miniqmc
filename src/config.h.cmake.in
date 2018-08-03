@@ -8,128 +8,132 @@
 #ifndef QMCPLUSPLUS_CONFIGURATION_H
 #define QMCPLUSPLUS_CONFIGURATION_H
 
+// clang-format off
+
 /* define the major version */
-#define QMCPACK_VERSION_MAJOR @QMCPACK_VERSION_MAJOR @
+#define QMCPACK_VERSION_MAJOR  @QMCPACK_VERSION_MAJOR@
 
 /* define the minor version */
-#define QMCPACK_VERSION_MINOR @QMCPACK_VERSION_MINOR @
+#define QMCPACK_VERSION_MINOR  @QMCPACK_VERSION_MINOR@
 
 /* define the patch version */
-#define QMCPACK_VERSION_PATCH @QMCPACK_VERSION_PATCH @
+#define QMCPACK_VERSION_PATCH  @QMCPACK_VERSION_PATCH@
 
 /* define the release version */
-#cmakedefine QMCPACK_RELEASE @QMCAPCK_RELEASE @
+#cmakedefine QMCPACK_RELEASE  @QMCAPCK_RELEASE@
 
 /* define the git last commit date */
 // #cmakedefine QMCPLUSPLUS_LAST_CHANGED_DATE  "@QMCPLUSPLUS_LAST_CHANGED_DATE@"
 
 /* define QMC_BUILD_LEVEL */
-#cmakedefine QMC_BUILD_LEVEL @QMC_BUILD_LEVEL @
+#cmakedefine QMC_BUILD_LEVEL @QMC_BUILD_LEVEL@
 
 /* Enable OpenMP parallelization. */
-#cmakedefine ENABLE_OPENMP @ENABLE_OPENMP @
+#cmakedefine ENABLE_OPENMP @ENABLE_OPENMP@
 
 /* Define to 1 if you have the `hdf5' library (-lhdf5). */
-#cmakedefine HAVE_LIBHDF5 @HAVE_LIBHDF5 @
+#cmakedefine HAVE_LIBHDF5 @HAVE_LIBHDF5@
 
 /* Define to 1 if you want to use parallel hdf5 for frequent output */
-#cmakedefine ENABLE_PHDF5 @ENABLE_PHDF5 @
+#cmakedefine ENABLE_PHDF5 @ENABLE_PHDF5@
 
 /* Define to 1 if you have MPI library */
-#cmakedefine HAVE_MPI @HAVE_MPI @
+#cmakedefine HAVE_MPI @HAVE_MPI@
 
 /* Define the physical dimension of appliation. */
-#cmakedefine OHMMS_DIM @OHMMS_DIM @
+#cmakedefine OHMMS_DIM @OHMMS_DIM@
 
 /* Define the index type: int, long */
-#cmakedefine OHMMS_INDEXTYPE @OHMMS_INDEXTYPE @
+#cmakedefine OHMMS_INDEXTYPE @OHMMS_INDEXTYPE@
 
 /* Define the base precision: float, double */
-#cmakedefine OHMMS_PRECISION @OHMMS_PRECISION @
+#cmakedefine OHMMS_PRECISION @OHMMS_PRECISION@
 
 /* Define the full precision: double, long double */
-#cmakedefine OHMMS_PRECISION_FULL @OHMMS_PRECISION_FULL @
+#cmakedefine OHMMS_PRECISION_FULL @OHMMS_PRECISION_FULL@
 
 /* Define to 1 if precision is mixed, only for the CPU code */
-#cmakedefine MIXED_PRECISION @MIXED_PRECISION @
+#cmakedefine MIXED_PRECISION @MIXED_PRECISION@
 
 /* Define to 1 if complex wavefunctions are used */
-#cmakedefine QMC_COMPLEX @QMC_COMPLEX @
+#cmakedefine QMC_COMPLEX @QMC_COMPLEX@
 
 /* Define if the code is specialized for orthorhombic supercell */
-#define OHMMS_ORTHO @OHMMS_ORTHO @
+#define OHMMS_ORTHO @OHMMS_ORTHO@
 
 /* Define if sincos function exists */
-#cmakedefine HAVE_SINCOS @HAVE_SINCOS @
+#cmakedefine HAVE_SINCOS @HAVE_SINCOS@
 
 /* Define if posix_memalign function exists */
-#cmakedefine HAVE_POSIX_MEMALIGN @HAVE_POSIX_MEMALIGN @
+#cmakedefine HAVE_POSIX_MEMALIGN @HAVE_POSIX_MEMALIGN@
 
 /* Find mkl library */
-#cmakedefine HAVE_MKL @HAVE_MKL @
+#cmakedefine HAVE_MKL @HAVE_MKL@
 
 /* Find mkl/vml library */
-#cmakedefine HAVE_MKL_VML @HAVE_MKL_VML @
+#cmakedefine HAVE_MKL_VML @HAVE_MKL_VML@
 
 /* Find essl library */
-#cmakedefine HAVE_ESSL @HAVE_ESSL @
+#cmakedefine HAVE_ESSL @HAVE_ESSL@
 
 /* Fund acml library */
-#cmakedefine HAVE_ACML @HAVE_ACML @
+#cmakedefine HAVE_ACML @HAVE_ACML@
 
 /* For AFQMC compilation  */
-#cmakedefine BUILD_AFQMC @BUILD_AFQMC @
+#cmakedefine BUILD_AFQMC @BUILD_AFQMC@
 
 /* For FCIQMC compilation  */
-#cmakedefine BUILD_FCIQMC @BUILD_FCIQMC @
+#cmakedefine BUILD_FCIQMC @BUILD_FCIQMC@
 
-#cmakedefine DEBUG_PSIBUFFER_ON @DEBUG_PSIBUFFER_ON @
+#cmakedefine DEBUG_PSIBUFFER_ON @DEBUG_PSIBUFFER_ON@
 
 #if (__cplusplus >= 201103L)
-#if defined(__INTEL_COMPILER)
-#if defined(__KNC__) || defined(__AVX512F__)
-#define QMC_CLINE 64
-#define QMC_ALIGNAS alignas(64)
-#define ASSUME_ALIGNED(x) __assume_aligned(x, 64)
-#else
-#define QMC_CLINE 32
-#define QMC_ALIGNAS alignas(32)
-#define ASSUME_ALIGNED(x) __assume_aligned(x, 32)
-#endif
-#elif defined(__GNUC__) && !defined(__ibmxl__)
-#if defined(__AVX512F__)
-#define QMC_CLINE 64
-#define QMC_ALIGNAS alignas(64)
-#define ASSUME_ALIGNED(x) (x) = (__typeof__(x))__builtin_assume_aligned(x, 64)
-#else
-#define QMC_CLINE 32
-#define QMC_ALIGNAS alignas(32)
-#define ASSUME_ALIGNED(x) (x) = (__typeof__(x))__builtin_assume_aligned(x, 32)
-#endif
-#else
-#define QMC_CLINE 32
-#define QMC_ALIGNAS
-#define ASSUME_ALIGNED(x)
-#endif
+  #if defined(__INTEL_COMPILER)
+    #if defined(__KNC__) || defined(__AVX512F__)
+      #define QMC_CLINE 64
+      #define QMC_ALIGNAS alignas(64)
+      #define ASSUME_ALIGNED(x) __assume_aligned(x,64)
+    #else
+      #define QMC_CLINE 32
+      #define QMC_ALIGNAS alignas(32)
+      #define ASSUME_ALIGNED(x) __assume_aligned(x,32)
+    #endif
+  #elif defined(__GNUC__) && !defined(__ibmxl__)
+    #if defined(__AVX512F__)
+      #define QMC_CLINE 64
+      #define QMC_ALIGNAS alignas(64)
+      #define ASSUME_ALIGNED(x) (x) = (__typeof__(x)) __builtin_assume_aligned(x,64)
+    #else
+      #define QMC_CLINE 32
+      #define QMC_ALIGNAS alignas(32)
+      #define ASSUME_ALIGNED(x) (x) = (__typeof__(x)) __builtin_assume_aligned(x,32)
+    #endif
+  #else
+   #define QMC_CLINE 32
+   #define QMC_ALIGNAS
+   #define ASSUME_ALIGNED(x)
+  #endif
 
 #else //capture both C or non-c++11
-#if defined(__KNC__) || defined(__AVX512F__)
-#define QMC_CLINE 64
-#else
-#define QMC_CLINE 32
-#endif
-#define QMC_ALIGNAS
-#define ASSUME_ALIGNED(x)
-#ifndef nullptr
-#define nullptr NULL
-#endif
+  #if defined(__KNC__) || defined(__AVX512F__)
+    #define QMC_CLINE 64
+  #else
+    #define QMC_CLINE 32
+  #endif
+  #define QMC_ALIGNAS
+  #define ASSUME_ALIGNED(x)
+  #ifndef nullptr
+  #define nullptr NULL
+  #endif
 #endif
 
 /* Internal timers */
-#cmakedefine ENABLE_TIMERS @ENABLE_TIMERS @
+#cmakedefine ENABLE_TIMERS @ENABLE_TIMERS@
 
 /* Use VTune Task API with timers */
-#cmakedefine USE_VTUNE_TASKS @USE_VTUNE_TASKS @
+#cmakedefine USE_VTUNE_TASKS @USE_VTUNE_TASKS@
 
+// clang-format on
 
 #endif // QMCPLUSPLUS_CONFIGURATION_H
+
