@@ -258,25 +258,25 @@ int main(int argc, char **argv)
             evalVGH_v_err +=
                 std::fabs(spo.psi[ib][n] - spo_ref.psi[ib][n]);
             // grad
-            evalVGH_g_err += std::fabs(spo.grad[ib].data(0)[n] -
-                                       spo_ref.grad[ib].data(0)[n]);
-            evalVGH_g_err += std::fabs(spo.grad[ib].data(1)[n] -
-                                       spo_ref.grad[ib].data(1)[n]);
-            evalVGH_g_err += std::fabs(spo.grad[ib].data(2)[n] -
-                                       spo_ref.grad[ib].data(2)[n]);
+            evalVGH_g_err += std::fabs(spo.grad[ib](n,0) -
+                                       spo_ref.grad[ib](n,0));
+            evalVGH_g_err += std::fabs(spo.grad[ib](n,1) -
+                                       spo_ref.grad[ib](n,1));
+            evalVGH_g_err += std::fabs(spo.grad[ib](n,2) -
+                                       spo_ref.grad[ib](n,2));
             // hess
-            evalVGH_h_err += std::fabs(spo.hess[ib].data(0)[n] -
-                                       spo_ref.hess[ib].data(0)[n]);
-            evalVGH_h_err += std::fabs(spo.hess[ib].data(1)[n] -
-                                       spo_ref.hess[ib].data(1)[n]);
-            evalVGH_h_err += std::fabs(spo.hess[ib].data(2)[n] -
-                                       spo_ref.hess[ib].data(2)[n]);
-            evalVGH_h_err += std::fabs(spo.hess[ib].data(3)[n] -
-                                       spo_ref.hess[ib].data(3)[n]);
-            evalVGH_h_err += std::fabs(spo.hess[ib].data(4)[n] -
-                                       spo_ref.hess[ib].data(4)[n]);
-            evalVGH_h_err += std::fabs(spo.hess[ib].data(5)[n] -
-                                       spo_ref.hess[ib].data(5)[n]);
+            evalVGH_h_err += std::fabs(spo.hess[ib](n,0) -
+                                       spo_ref.hess[ib](n,0));
+            evalVGH_h_err += std::fabs(spo.hess[ib](n,1) -
+                                       spo_ref.hess[ib](n,1));
+            evalVGH_h_err += std::fabs(spo.hess[ib](n,2) -
+                                       spo_ref.hess[ib](n,2));
+            evalVGH_h_err += std::fabs(spo.hess[ib](n,3) -
+                                       spo_ref.hess[ib](n,3));
+            evalVGH_h_err += std::fabs(spo.hess[ib](n,4) -
+                                       spo_ref.hess[ib](n,4));
+            evalVGH_h_err += std::fabs(spo.hess[ib](n,5) - 
+                                       spo_ref.hess[ib](n,5));
           }
         if (ur[iel] > accept)
         {

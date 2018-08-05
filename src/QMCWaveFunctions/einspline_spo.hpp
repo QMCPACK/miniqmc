@@ -54,8 +54,6 @@ struct einspline_spo : public SPOSet
 
   /// define the einsplie data object type
   using spline_type = typename bspline_traits<T, 3>::SplineType;
-<<<<<<< HEAD
-  using pos_type        = TinyVector<T, 3>;
   using vContainer_type = Kokkos::View<T*>;
   using gContainer_type = Kokkos::View<T*[3],Kokkos::LayoutLeft>;
   using hContainer_type = Kokkos::View<T*[6],Kokkos::LayoutLeft>;
@@ -88,7 +86,7 @@ struct einspline_spo : public SPOSet
   Kokkos::View<hContainer_type*> hess;
 
   //Temporary position for communicating within Kokkos parallel sections.
-  pos_type tmp_pos;
+  PosType tmp_pos;
   /// Timer
   NewTimer *timer;
 
@@ -194,9 +192,8 @@ struct einspline_spo : public SPOSet
     {
       Owner = true;
       TinyVector<int, 3> ng(nx, ny, nz);
-<<<<<<< HEAD
-      pos_type start(0);
-      pos_type end(1);
+      PosType start(0);
+      PosType end(1);
       
 //    einsplines.resize(nBlocks);
       einsplines = Kokkos::View<spline_type*>("einsplines",nBlocks);
