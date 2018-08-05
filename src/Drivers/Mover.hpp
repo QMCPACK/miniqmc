@@ -26,8 +26,7 @@
 #include <Utilities/Configuration.h>
 #include <Utilities/RandomGenerator.h>
 #include <Particle/ParticleSet.h>
-#include <QMCWaveFunctions/einspline_spo.hpp>
-#include <Numerics/Spline2/MultiBspline.hpp>
+#include "QMCWaveFunctions/SPOSet.h"
 #include <QMCWaveFunctions/WaveFunction.h>
 #include <Particle/ParticleSet_builder.hpp>
 #include <Input/pseudo.hpp>
@@ -48,31 +47,63 @@ namespace qmcplusplus
   struct Mover
   {
     using RealType = QMCTraits::RealType;
-    using spo_type = einspline_spo<RealType, MultiBspline<RealType> >;
 
     /// random number generator
     RandomGenerator<RealType> rng;
     /// electrons
     ParticleSet               els;
     /// single particle orbitals
-    spo_type                  spo;
+    SPOSet                    *spo;
     /// wavefunction container
     WaveFunction              wavefunction;
     /// non-local pseudo-potentials
     NonLocalPP<RealType>      nlpp;
 
     /// constructor
-    Mover(const spo_type &spo_main,
-          const int team_size,
-          const int member_id,
-          const uint32_t myPrime,
+    Mover(const uint32_t myPrime,
           const ParticleSet &ions)
-      : spo(spo_main, team_size, member_id), rng(myPrime), nlpp(rng)
+      : spo(nullptr), rng(myPrime), nlpp(rng)
     {
       build_els(els, ions, rng);
     }
 
+    /// destructor
+    ~Mover() { if (spo!=nullptr) delete spo; }
+
   };
+
+  template <class T, typename TBOOL>
+  const std::vector<T *> filtered_list(const std::vector<T *> &input_list, const std::vector<TBOOL> &chosen)
+  {
+    std::vector<T *> final_list;
+    for(int iw=0; iw<input_list.size(); iw++)
+      if(chosen[iw]) final_list.push_back(input_list[iw]);
+    return final_list;
+  }
+
+  const std::vector<ParticleSet *> extract_els_list(const std::vector<Mover *> &mover_list)
+  {
+    std::vector<ParticleSet *> els_list;
+    for(auto it=mover_list.begin(); it!=mover_list.end(); it++)
+      els_list.push_back(&(*it)->els);
+    return els_list;
+  }
+
+  const std::vector<SPOSet *> extract_spo_list(const std::vector<Mover *> &mover_list)
+  {
+    std::vector<SPOSet *> spo_list;
+    for(auto it=mover_list.begin(); it!=mover_list.end(); it++)
+      spo_list.push_back((*it)->spo);
+    return spo_list;
+  }
+
+  const std::vector<WaveFunction *> extract_wf_list(const std::vector<Mover *> &mover_list)
+  {
+    std::vector<WaveFunction *> wf_list;
+    for(auto it=mover_list.begin(); it!=mover_list.end(); it++)
+      wf_list.push_back(&(*it)->wavefunction);
+    return wf_list;
+  }
 
 }
 

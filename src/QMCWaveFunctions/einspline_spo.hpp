@@ -26,12 +26,13 @@
 #include <Numerics/Spline2/MultiBspline.hpp>
 #include <Utilities/SIMD/allocator.hpp>
 #include "Numerics/OhmmsPETE/OhmmsArray.h"
+#include "QMCWaveFunctions/SPOSet.h"
 #include <iostream>
 
 namespace qmcplusplus
 {
-template <typename T, typename compute_engine_type = MultiBspline<T> >
-struct einspline_spo
+template <typename T>
+struct einspline_spo : public SPOSet
 {
   struct EvaluateVGHTag {};
   struct EvaluateVTag {};
@@ -53,6 +54,7 @@ struct einspline_spo
 
   /// define the einsplie data object type
   using spline_type = typename bspline_traits<T, 3>::SplineType;
+<<<<<<< HEAD
   using pos_type        = TinyVector<T, 3>;
   using vContainer_type = Kokkos::View<T*>;
   using gContainer_type = Kokkos::View<T*[3],Kokkos::LayoutLeft>;
@@ -78,7 +80,7 @@ struct einspline_spo
   /// use allocator
   einspline::Allocator myAllocator;
   /// compute engine
-  compute_engine_type compute_engine;
+  MultiBspline<T> compute_engine;
 
   Kokkos::View<spline_type *> einsplines;
   Kokkos::View<vContainer_type*> psi;
@@ -96,7 +98,7 @@ struct einspline_spo
         nBlocks(0), nSplines(0), firstBlock(0), lastBlock(0), tmp_pos(0),
         Owner(false), is_copy(false)
   {
-    timer = TimerManager.createTimer("Single-Particle Orbitals", timer_level_coarse);
+    timer = TimerManager.createTimer("Single-Particle Orbitals", timer_level_fine);
   }
   /// disable copy constructor
   einspline_spo(const einspline_spo &in) = default;
@@ -126,7 +128,7 @@ struct einspline_spo
     for (int i = 0, t = firstBlock; i < nBlocks; ++i, ++t)
       einsplines(i) = in.einsplines(t);
     resize();
-    timer = TimerManager.createTimer("Single-Particle Orbitals", timer_level_coarse);
+    timer = TimerManager.createTimer("Single-Particle Orbitals", timer_level_fine);
   }
 
   /// destructors
@@ -192,6 +194,7 @@ struct einspline_spo
     {
       Owner = true;
       TinyVector<int, 3> ng(nx, ny, nz);
+<<<<<<< HEAD
       pos_type start(0);
       pos_type end(1);
       
@@ -218,7 +221,7 @@ struct einspline_spo
   }
 
   /** evaluate psi */
-  inline void evaluate_v(const pos_type &p)
+  inline void evaluate_v(const PosType &p)
   {
     ScopedTimer local_timer(timer);
     tmp_pos=p;
@@ -255,7 +258,7 @@ struct einspline_spo
 
 
   /** evaluate psi */
-  inline void evaluate_v_pfor(const pos_type &p)
+  inline void evaluate_v_pfor(const PosType &p)
   {
     auto u = Lattice.toUnit_floor(p);
     #pragma omp for nowait
@@ -264,7 +267,7 @@ struct einspline_spo
   }
 
   /** evaluate psi, grad and lap */
-  inline void evaluate_vgl(const pos_type &p)
+  inline void evaluate_vgl(const PosType &p)
   {
     auto u = Lattice.toUnit_floor(p);
     for (int i = 0; i < nBlocks; ++i)
@@ -274,7 +277,7 @@ struct einspline_spo
   }
 
   /** evaluate psi, grad and lap */
-  inline void evaluate_vgl_pfor(const pos_type &p)
+  inline void evaluate_vgl_pfor(const PosType &p)
   {
     auto u = Lattice.toUnit_floor(p);
     #pragma omp for nowait
@@ -285,7 +288,7 @@ struct einspline_spo
   }
 
   /** evaluate psi, grad and hess */
-  inline void evaluate_vgh(const pos_type &p)
+  inline void evaluate_vgh(const PosType &p)
   {
     ScopedTimer local_timer(timer);
     tmp_pos=p;
@@ -323,7 +326,7 @@ struct einspline_spo
                                       psi(block).extent(0));
 }
   /** evaluate psi, grad and hess */
-  inline void evaluate_vgh_pfor(const pos_type &p)
+  inline void evaluate_vgh_pfor(const PosType &p)
   {
     auto u = Lattice.toUnit_floor(p);
     #pragma omp for nowait

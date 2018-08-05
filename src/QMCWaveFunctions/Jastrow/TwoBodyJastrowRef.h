@@ -14,7 +14,7 @@
 #ifndef QMCPLUSPLUS_TWOBODYJASTROW_REF_H
 #define QMCPLUSPLUS_TWOBODYJASTROW_REF_H
 #include "Utilities/Configuration.h"
-#include "QMCWaveFunctions/WaveFunctionComponentBase.h"
+#include "QMCWaveFunctions/WaveFunctionComponent.h"
 #include "Particle/DistanceTableData.h"
 #include <numeric>
 
@@ -42,7 +42,7 @@ using namespace qmcplusplus;
  * - double the loop counts
  * - Memory use is O(N).
  */
-template <class FT> struct TwoBodyJastrowRef : public WaveFunctionComponentBase
+template <class FT> struct TwoBodyJastrowRef : public WaveFunctionComponent
 {
   /// alias FuncType
   using FuncType = FT;
