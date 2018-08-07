@@ -26,12 +26,13 @@
 #include <limits>
 
 /// dummy declaration
-template <typename UIntType> struct PrimeConstants
-{
-};
+template<typename UIntType>
+struct PrimeConstants
+{};
 
 /// specialization for uint32_t
-template <> struct PrimeConstants<uint32_t>
+template<>
+struct PrimeConstants<uint32_t>
 {
   enum
   {
@@ -42,7 +43,8 @@ template <> struct PrimeConstants<uint32_t>
 };
 
 /// specialization for uint64_t
-template <> struct PrimeConstants<uint64_t>
+template<>
+struct PrimeConstants<uint64_t>
 {
   enum
   {
@@ -54,7 +56,7 @@ template <> struct PrimeConstants<uint64_t>
 
 /** class to generate prime numbers
  */
-template <typename UIntType>
+template<typename UIntType>
 struct PrimeNumberSet : public PrimeConstants<UIntType>
 {
   typedef UIntType result_type;
@@ -110,14 +112,13 @@ struct PrimeNumberSet : public PrimeConstants<UIntType>
    *
    * For i=[0,n), primes_add[i]=primes[offset+i]
    */
-  inline bool get(UIntType offset, int n, std::vector<UIntType> &primes_add)
+  inline bool get(UIntType offset, int n, std::vector<UIntType>& primes_add)
   {
     offset = offset % max_prime_offset; // roll back
     // have enough prime numbers, assign them in an array
     if (n + offset + 1 < primes.size())
     {
-      primes_add.insert(primes_add.end(), primes.begin() + offset,
-                        primes.begin() + offset + n);
+      primes_add.insert(primes_add.end(), primes.begin() + offset, primes.begin() + offset + n);
       return true;
     }
     UIntType largest = primes.back();
@@ -147,13 +148,12 @@ struct PrimeNumberSet : public PrimeConstants<UIntType>
     if (n2add)
     {
       std::ostringstream o;
-      o << "  PrimeNumberSet::get Failed to generate " << n2add
-        << " prime numbers among " << n << " requested.";
+      o << "  PrimeNumberSet::get Failed to generate " << n2add << " prime numbers among " << n
+        << " requested.";
       APP_ABORT(o.str());
       return false; // to make compiler happy
     }
-    primes_add.insert(primes_add.end(), primes.begin() + offset,
-                      primes.begin() + offset + n);
+    primes_add.insert(primes_add.end(), primes.begin() + offset, primes.begin() + offset + n);
     return true;
   }
 };

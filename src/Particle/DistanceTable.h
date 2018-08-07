@@ -23,7 +23,6 @@
 
 namespace qmcplusplus
 {
-
 /** Class to manage multiple DistanceTableData objects.
  *
  * \date  2008-09-19
@@ -41,10 +40,9 @@ namespace qmcplusplus
  */
 
 /// free function to create a distable table of s-s
-DistanceTableData *createDistanceTable(ParticleSet &s, int dt_type);
+DistanceTableData* createDistanceTable(ParticleSet& s, int dt_type);
 
 /// free function create a distable table of s-t
-DistanceTableData *createDistanceTable(const ParticleSet &s, ParticleSet &t,
-                                       int dt_type);
-}
+DistanceTableData* createDistanceTable(const ParticleSet& s, ParticleSet& t, int dt_type);
+} // namespace qmcplusplus
 #endif

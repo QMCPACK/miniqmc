@@ -133,7 +133,6 @@ class Communicate;
 
 namespace qmcplusplus
 {
-
 class NewTimer;
 
 enum timer_levels
@@ -155,7 +154,8 @@ extern bool timer_max_level_exceeded;
 
 // Key for tracking time per stack.  Parametered by size.
 
-template <int N> class StackKeyParam
+template<int N>
+class StackKeyParam
 {
 public:
   // The union is for a performance hack
@@ -165,7 +165,8 @@ public:
   // If timer_id_t is char, there can be up to 254 timers.
   // N is the number of long ints to store timer nesting levels.
   // Each N gives (64 bits/long int) / (8 bits/char) = 8 levels
-  union {
+  union
+  {
     long int long_buckets[N];
     timer_id_t short_buckets[sizeof(long int) * N / sizeof(timer_id_t)];
   };
@@ -199,7 +200,7 @@ public:
 
   timer_id_t get_id(int idx) const { return short_buckets[idx]; }
 
-  bool operator==(const StackKeyParam &rhs)
+  bool operator==(const StackKeyParam& rhs)
   {
     bool same = false;
     for (int j = 0; j < N; j++)
@@ -209,7 +210,7 @@ public:
     return same;
   }
 
-  bool operator<(const StackKeyParam &rhs) const
+  bool operator<(const StackKeyParam& rhs) const
   {
     for (int j = 0; j < N; j++)
     {
@@ -228,8 +229,8 @@ typedef StackKeyParam<2> StackKey;
 class TimerManagerClass
 {
 protected:
-  std::vector<NewTimer *> TimerList;
-  std::vector<NewTimer *> CurrentTimerStack;
+  std::vector<NewTimer*> TimerList;
+  std::vector<NewTimer*> CurrentTimerStack;
   timer_levels timer_threshold;
   timer_id_t max_timer_id;
   bool max_timers_exceeded;
@@ -238,22 +239,20 @@ protected:
 
 public:
 #ifdef USE_VTUNE_TASKS
-  __itt_domain *task_domain;
+  __itt_domain* task_domain;
 #endif
 
   TimerManagerClass()
-      : timer_threshold(timer_level_coarse), max_timer_id(1),
-        max_timers_exceeded(false)
+      : timer_threshold(timer_level_coarse), max_timer_id(1), max_timers_exceeded(false)
   {
 #ifdef USE_VTUNE_TASKS
     task_domain = __itt_domain_create("QMCPACK");
 #endif
   }
-  void addTimer(NewTimer *t);
-  NewTimer *createTimer(const std::string &myname,
-                        timer_levels mytimer = timer_level_fine);
+  void addTimer(NewTimer* t);
+  NewTimer* createTimer(const std::string& myname, timer_levels mytimer = timer_level_fine);
 
-  void push_timer(NewTimer *t)
+  void push_timer(NewTimer* t)
   {
     {
       CurrentTimerStack.push_back(t);
@@ -267,9 +266,9 @@ public:
     }
   }
 
-  NewTimer *current_timer()
+  NewTimer* current_timer()
   {
-    NewTimer *current = NULL;
+    NewTimer* current = NULL;
     if (CurrentTimerStack.size() > 0)
     {
       current = CurrentTimerStack.back();
@@ -286,7 +285,7 @@ public:
   void print_flat();
   void print_stack();
 
-  XMLNode* output_timing(XMLDocument &doc);
+  XMLNode* output_timing(XMLDocument& doc);
 
   typedef std::map<std::string, int> nameList_t;
   typedef std::vector<double> timeList_t;
@@ -309,14 +308,14 @@ public:
     callList_t callList;
   };
 
-  void collate_flat_profile(FlatProfileData &p);
+  void collate_flat_profile(FlatProfileData& p);
 
-  void collate_stack_profile(StackProfileData &p);
+  void collate_stack_profile(StackProfileData& p);
 
   // void output_timing(Communicate *comm, Libxml2Document &doc, xmlNodePtr
   // root);
 
-  void get_stack_name_from_id(const StackKey &key, std::string &name);
+  void get_stack_name_from_id(const StackKey& key, std::string& name);
 };
 
 extern TimerManagerClass TimerManager;
@@ -333,8 +332,8 @@ protected:
   timer_levels timer_level;
   timer_id_t timer_id;
 #ifdef USE_STACK_TIMERS
-  TimerManagerClass *manager;
-  NewTimer *parent;
+  TimerManagerClass* manager;
+  NewTimer* parent;
   StackKey current_stack_key;
 
   std::map<StackKey, double> per_stack_total_time;
@@ -342,7 +341,7 @@ protected:
 #endif
 
 #ifdef USE_VTUNE_TASKS
-  __itt_string_handle *task_name;
+  __itt_string_handle* task_name;
 #endif
 
 public:
@@ -357,12 +356,11 @@ public:
 
 #ifdef USE_VTUNE_TASKS
       __itt_id parent_task = __itt_null;
-      __itt_task_begin(manager->task_domain, __itt_null, parent_task,
-                       task_name);
+      __itt_task_begin(manager->task_domain, __itt_null, parent_task, task_name);
 #endif
 
 #ifdef USE_STACK_TIMERS
-#pragma omp master
+      #pragma omp master
       {
         if (manager)
         {
@@ -427,30 +425,21 @@ public:
 #endif
 
 #ifdef USE_STACK_TIMERS
-  std::map<StackKey, double> &get_per_stack_total_time()
-  {
-    return per_stack_total_time;
-  }
+  std::map<StackKey, double>& get_per_stack_total_time() { return per_stack_total_time; }
 
-  StackKey &get_stack_key() { return current_stack_key; }
+  StackKey& get_stack_key() { return current_stack_key; }
 #endif
 
   inline double get_total() const { return total_time; }
 
 #ifdef USE_STACK_TIMERS
-  inline double get_total(const StackKey &key)
-  {
-    return per_stack_total_time[key];
-  }
+  inline double get_total(const StackKey& key) { return per_stack_total_time[key]; }
 #endif
 
   inline long get_num_calls() const { return num_calls; }
 
 #ifdef USE_STACK_TIMERS
-  inline long get_num_calls(const StackKey &key)
-  {
-    return per_stack_num_calls[key];
-  }
+  inline long get_num_calls(const StackKey& key) { return per_stack_num_calls[key]; }
 #endif
 
   timer_id_t get_id() const { return timer_id; }
@@ -465,12 +454,17 @@ public:
     total_time = 0.0;
   }
 
-  NewTimer(const std::string &myname, timer_levels mytimer = timer_level_fine)
-      : total_time(0.0), num_calls(0), name(myname), active(true),
-        timer_level(mytimer), timer_id(0)
+  NewTimer(const std::string& myname, timer_levels mytimer = timer_level_fine)
+      : total_time(0.0),
+        num_calls(0),
+        name(myname),
+        active(true),
+        timer_level(mytimer),
+        timer_id(0)
 #ifdef USE_STACK_TIMERS
         ,
-        manager(NULL), parent(NULL)
+        manager(NULL),
+        parent(NULL)
 #endif
   {
 #ifdef USE_VTUNE_TASKS
@@ -478,13 +472,13 @@ public:
 #endif
   }
 
-  void set_name(const std::string &myname) { name = myname; }
+  void set_name(const std::string& myname) { name = myname; }
 
-  void set_active(const bool &is_active) { active = is_active; }
+  void set_active(const bool& is_active) { active = is_active; }
 
   void set_active_by_timer_threshold(const timer_levels threshold);
 
-  void set_manager(TimerManagerClass *mymanager)
+  void set_manager(TimerManagerClass* mymanager)
   {
 #ifdef USE_STACK_TIMERS
     manager = mymanager;
@@ -492,9 +486,9 @@ public:
   }
 
 #ifdef USE_STACK_TIMERS
-  NewTimer *get_parent() { return parent; }
+  NewTimer* get_parent() { return parent; }
 
-  void set_parent(NewTimer *new_parent) { parent = new_parent; }
+  void set_parent(NewTimer* new_parent) { parent = new_parent; }
 #endif
 };
 
@@ -502,32 +496,36 @@ public:
 class ScopedTimer
 {
 public:
-  ScopedTimer(NewTimer *t) : timer(t)
+  ScopedTimer(NewTimer* t) : timer(t)
   {
-    if (timer) timer->start();
+    if (timer)
+      timer->start();
   }
 
   ~ScopedTimer()
   {
-    if (timer) timer->stop();
+    if (timer)
+      timer->stop();
   }
 
 private:
-  NewTimer *timer;
+  NewTimer* timer;
 };
 
 // Helpers to make it easier to define a set of timers
 // See tests/test_timer.cpp for an example
 
-typedef std::vector<NewTimer *> TimerList_t;
+typedef std::vector<NewTimer*> TimerList_t;
 
-template <class T> struct TimerIDName_t
+template<class T>
+struct TimerIDName_t
 {
   T id;
   const std::string name;
 };
 
-template <class T> struct TimerIDNameLevel_t
+template<class T>
+struct TimerIDNameLevel_t
 {
   T id;
   const std::string name;
@@ -536,40 +534,41 @@ template <class T> struct TimerIDNameLevel_t
 
 // C++ 11 type aliasing
 #if __cplusplus >= 201103L
-template <class T> using TimerNameList_t = std::vector<TimerIDName_t<T>>;
-template <class T> using TimerNameLevelList_t = std::vector<TimerIDNameLevel_t<T>>;
+template<class T>
+using TimerNameList_t = std::vector<TimerIDName_t<T>>;
+template<class T>
+using TimerNameLevelList_t = std::vector<TimerIDNameLevel_t<T>>;
 
-template <class T>
-void setup_timers(TimerList_t &timers, TimerNameList_t<T> timer_list,
+template<class T>
+void setup_timers(TimerList_t& timers,
+                  TimerNameList_t<T> timer_list,
                   timer_levels timer_level = timer_level_fine)
 {
   timers.resize(timer_list.size());
   for (int i = 0; i < timer_list.size(); i++)
   {
-    timers[timer_list[i].id] =
-        TimerManager.createTimer(timer_list[i].name, timer_level);
+    timers[timer_list[i].id] = TimerManager.createTimer(timer_list[i].name, timer_level);
   }
 }
 
-template <class T>
-void setup_timers(TimerList_t &timers, TimerNameLevelList_t<T> timer_list)
+template<class T>
+void setup_timers(TimerList_t& timers, TimerNameLevelList_t<T> timer_list)
 {
   timers.resize(timer_list.size());
   for (int i = 0; i < timer_list.size(); i++)
   {
-    timers[timer_list[i].id] =
-        TimerManager.createTimer(timer_list[i].name, timer_list[i].level);
+    timers[timer_list[i].id] = TimerManager.createTimer(timer_list[i].name, timer_list[i].level);
   }
 }
 #endif
 
 struct TimerComparator
 {
-  inline bool operator()(const NewTimer *a, const NewTimer *b)
+  inline bool operator()(const NewTimer* a, const NewTimer* b)
   {
     return a->get_name() < b->get_name();
   }
 };
-}
+} // namespace qmcplusplus
 
 #endif

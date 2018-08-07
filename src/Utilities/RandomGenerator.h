@@ -45,8 +45,8 @@
 
 struct BoxMuller2
 {
-  template <typename RNG>
-  static inline void generate(RNG &rng, double *restrict a, int n)
+  template<typename RNG>
+  static inline void generate(RNG& rng, double* restrict a, int n)
   {
     for (int i = 0; i + 1 < n; i += 2)
     {
@@ -61,8 +61,8 @@ struct BoxMuller2
     }
   }
 
-  template <typename RNG>
-  static inline void generate(RNG &rng, float *restrict a, int n)
+  template<typename RNG>
+  static inline void generate(RNG& rng, float* restrict a, int n)
   {
     for (int i = 0; i + 1 < n; i += 2)
     {
@@ -87,7 +87,8 @@ inline uint32_t MakeSeed(int i, int n)
 #include "Utilities/StdRandom.h"
 namespace qmcplusplus
 {
-template <class T> using RandomGenerator = StdRandom<T>;
+template<class T>
+using RandomGenerator = StdRandom<T>;
 }
 
 #endif

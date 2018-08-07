@@ -22,12 +22,12 @@
 
 namespace qmcplusplus
 {
-
 /** expand the particle set to the supercell size
  * @param ref_ initial particle set in primitive cell
  * @param tmat tiling matrix
  */
-template <typename PS> void expandSuperCell(PS &ref_, const Tensor<int, 3> &tmat)
+template<typename PS>
+void expandSuperCell(PS& ref_, const Tensor<int, 3>& tmat)
 {
   typedef typename PS::SingleParticlePos_t SingleParticlePos_t;
 
@@ -39,14 +39,24 @@ template <typename PS> void expandSuperCell(PS &ref_, const Tensor<int, 3> &tmat
     identity = (I[ij] == tmat[ij]);
     ++ij;
   }
-  if (identity) return;
-  app_log() << "  TileMatrix != Identity. Expanding a simulation cell for "
-            << ref_.getName() << std::endl;
+  if (identity)
+    return;
+  app_log() << "  TileMatrix != Identity. Expanding a simulation cell for " << ref_.getName()
+            << std::endl;
   {
     char buff[500];
-    snprintf(buff, 500, "   tilematrix= %4d %4d %4d %4d %4d %4d %4d %4d %4d\n",
-             tmat[0], tmat[1], tmat[2], tmat[3], tmat[4], tmat[5], tmat[6],
-             tmat[7], tmat[8]);
+    snprintf(buff,
+             500,
+             "   tilematrix= %4d %4d %4d %4d %4d %4d %4d %4d %4d\n",
+             tmat[0],
+             tmat[1],
+             tmat[2],
+             tmat[3],
+             tmat[4],
+             tmat[5],
+             tmat[6],
+             tmat[7],
+             tmat[8]);
     app_log() << buff << std::endl;
   }
   // convert2unit
@@ -70,22 +80,28 @@ template <typename PS> void expandSuperCell(PS &ref_, const Tensor<int, 3> &tmat
         for (int i2 = -maxCopies; i2 <= maxCopies; i2++)
           for (int iat = 0; iat < primPos.size(); iat++)
           {
-            if (primTypes[iat] != ns) continue;
+            if (primTypes[iat] != ns)
+              continue;
             SingleParticlePos_t uPrim = primPos[iat];
             for (int i = 0; i < 3; i++)
               uPrim[i] -= std::floor(uPrim[i]);
-            SingleParticlePos_t r =
-                PrimCell.toCart(uPrim) + (double)i0 * PrimCell.a(0) +
+            SingleParticlePos_t r = PrimCell.toCart(uPrim) + (double)i0 * PrimCell.a(0) +
                 (double)i1 * PrimCell.a(1) + (double)i2 * PrimCell.a(2);
             SingleParticlePos_t uSuper = ref_.Lattice.toUnit(r);
-            if ((uSuper[0] >= -1.0e-6) && (uSuper[0] < 0.9999) &&
-                (uSuper[1] >= -1.0e-6) && (uSuper[1] < 0.9999) &&
-                (uSuper[2] >= -1.0e-6) && (uSuper[2] < 0.9999))
+            if ((uSuper[0] >= -1.0e-6) && (uSuper[0] < 0.9999) && (uSuper[1] >= -1.0e-6) &&
+                (uSuper[1] < 0.9999) && (uSuper[2] >= -1.0e-6) && (uSuper[2] < 0.9999))
             {
               char buff[500];
-              snprintf(buff, 500,
+              snprintf(buff,
+                       500,
                        "  %10.4f  %10.4f %10.4f   %12.6f %12.6f %12.6f %d\n",
-                       uSuper[0], uSuper[1], uSuper[2], r[0], r[1], r[2], ns);
+                       uSuper[0],
+                       uSuper[1],
+                       uSuper[2],
+                       r[0],
+                       r[1],
+                       r[2],
+                       ns);
               app_log() << buff;
               ref_.R[index]       = r;
               ref_.GroupID[index] = ns; // primTypes[iat];
@@ -99,5 +115,5 @@ template <typename PS> void expandSuperCell(PS &ref_, const Tensor<int, 3> &tmat
   ref_.Lattice.print(app_log());
   app_log() << std::endl;
 }
-}
+} // namespace qmcplusplus
 #endif

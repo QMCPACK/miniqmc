@@ -75,7 +75,6 @@ struct einspline_spo : public SPOSet
   OMPVector<T*> hess_shadows;
   OMPVector<OMPTinyVector<T, 3>> u_shadows;
 
-
   /// Timer
   NewTimer* timer;
 
@@ -112,7 +111,7 @@ struct einspline_spo : public SPOSet
 #ifdef ENABLE_OFFLOAD
       spline_type** einsplines_ptr = einsplines.data();
       auto& tile_ptr               = in.einsplines[t];
-#pragma omp target map(to : i) device(0)
+      #pragma omp target map(to : i) device(0)
       {
         einsplines_ptr[i] = tile_ptr;
       }
@@ -179,11 +178,11 @@ struct einspline_spo : public SPOSet
         spline_type** restrict einsplines_ptr = einsplines.data();
         spline_type* restrict& tile_ptr       = einsplines[i];
         T* restrict& coefs_ptr                = einsplines[i]->coefs;
-#pragma omp target enter data map(to : tile_ptr [0:1]) device(0)
-// Ye: I still don't understand why this line must be separated from the previous one.
-#pragma omp target enter data map(to : coefs_ptr [0:einsplines[i]->coefs_size]) device(0)
-//std::cout << "YYYY offload size = " << einsplines[i]->coefs_size << std::endl;
-#pragma omp target map(to : i) device(0)
+        #pragma omp target enter data map(to : tile_ptr [0:1]) device(0)
+        // Ye: I still don't understand why this line must be separated from the previous one.
+        #pragma omp target enter data map(to : coefs_ptr [0:einsplines[i]->coefs_size]) device(0)
+        //std::cout << "YYYY offload size = " << einsplines[i]->coefs_size << std::endl;
+        #pragma omp target map(to : i) device(0)
         {
           einsplines_ptr[i]        = tile_ptr;
           einsplines_ptr[i]->coefs = coefs_ptr;
@@ -209,7 +208,7 @@ struct einspline_spo : public SPOSet
   inline void evaluate_v_pfor(const PosType& p)
   {
     auto u = Lattice.toUnit_floor(p);
-#pragma omp for nowait
+    #pragma omp for nowait
     for (int i = 0; i < nBlocks; ++i)
       compute_engine.evaluate_v(einsplines[i], u[0], u[1], u[2], psi[i].data(), nSplinesPerBlock);
   }
@@ -233,7 +232,7 @@ struct einspline_spo : public SPOSet
   inline void evaluate_vgl_pfor(const PosType& p)
   {
     auto u = Lattice.toUnit_floor(p);
-#pragma omp for nowait
+    #pragma omp for nowait
     for (int i = 0; i < nBlocks; ++i)
       compute_engine.evaluate_vgl(einsplines[i],
                                   u[0],
@@ -265,7 +264,7 @@ struct einspline_spo : public SPOSet
         T* restrict grad_ptr = grad[i].data();
         T* restrict hess_ptr = hess[i].data();
 #ifdef ENABLE_OFFLOAD
-#pragma omp target map(to : i) device(0)
+        #pragma omp target map(to : i) device(0)
 #endif
         {
           psi_shadows_ptr[i]  = psi_ptr;
@@ -283,17 +282,15 @@ struct einspline_spo : public SPOSet
     spline_type** restrict einsplines_ptr = einsplines.data();
 
 #ifdef ENABLE_OFFLOAD
-#pragma omp target teams distribute num_teams(nBlocks) device(0) map(to                           \
-                                                                     : nBlocks, nSplinesPerBlock) \
-    map(always, to                                                                                \
-        : u)
+    #pragma omp target teams distribute num_teams(nBlocks) device(0) \
+    map(to : nBlocks, nSplinesPerBlock) map(always, to : u)
 #else
-#pragma omp parallel for
+    #pragma omp parallel for
 #endif
     for (int i = 0; i < nBlocks; ++i)
     {
 #ifdef ENABLE_OFFLOAD
-#pragma omp parallel num_threads(nSplinesPerBlock)
+      #pragma omp parallel num_threads(nSplinesPerBlock)
 #endif
       MultiBsplineOffload<T>::evaluate_vgh_v2(einsplines_ptr[i],
                                               u[0],
@@ -320,7 +317,7 @@ struct einspline_spo : public SPOSet
   inline void evaluate_vgh_pfor(const PosType& p)
   {
     auto u = Lattice.toUnit_floor(p);
-#pragma omp for nowait
+    #pragma omp for nowait
     for (int i = 0; i < nBlocks; ++i)
       compute_engine.evaluate_vgh(einsplines[i],
                                   u[0],
@@ -362,9 +359,9 @@ struct einspline_spo : public SPOSet
           T* restrict grad_ptr = shadow.grad[i].data();
           T* restrict hess_ptr = shadow.hess[i].data();
 #ifdef ENABLE_OFFLOAD
-//std::cout << "psi_shadows_ptr mapped already? " << omp_target_is_present(psi_shadows_ptr,0) << std::endl;
-//std::cout << "psi_ptr mapped already? " << omp_target_is_present(psi_ptr,0) << std::endl;
-#pragma omp target map(to : idx) device(0)
+          //std::cout << "psi_shadows_ptr mapped already? " << omp_target_is_present(psi_shadows_ptr,0) << std::endl;
+          //std::cout << "psi_ptr mapped already? " << omp_target_is_present(psi_ptr,0) << std::endl;
+          #pragma omp target map(to : idx) device(0)
 #endif
           {
             psi_shadows_ptr[idx]  = psi_ptr;
@@ -388,18 +385,16 @@ struct einspline_spo : public SPOSet
     OMPTinyVector<T, 3>* u_shadows_ptr    = u_shadows.data();
 
 #ifdef ENABLE_OFFLOAD
-#pragma omp target teams distribute collapse(2) num_teams(nw* nBlocks) device(0) \
-    map(to                                                                       \
-        : nw, nBlocks, nSplinesPerBlock) map(always, to                          \
-                                             : u_shadows_ptr [0:u_shadows.size()])
+    #pragma omp target teams distribute collapse(2) num_teams(nw* nBlocks) device(0) \
+        map(to : nw, nBlocks, nSplinesPerBlock) map(always, to : u_shadows_ptr [0:u_shadows.size()])
 #else
-#pragma omp parallel for collapse(2)
+    #pragma omp parallel for collapse(2)
 #endif
     for (size_t iw = 0; iw < nw; iw++)
       for (int i = 0; i < nBlocks; ++i)
       {
 #ifdef ENABLE_OFFLOAD
-#pragma omp parallel
+        #pragma omp parallel
 #endif
         MultiBsplineOffload<T>::evaluate_vgh_v2(einsplines_ptr[i],
                                                 u_shadows_ptr[iw][0],

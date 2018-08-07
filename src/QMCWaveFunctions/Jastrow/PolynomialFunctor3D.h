@@ -471,18 +471,18 @@ struct PolynomialFunctor3D : public OptimizableFunctorBase
     constexpr real_type ctwo(2);
 
     const real_type L = chalf * cutoff_radius;
-#pragma omp simd aligned(r_12_array,   \
-                         r_1I_array,   \
-                         r_2I_array,   \
-                         val_array,    \
-                         grad0_array,  \
-                         grad1_array,  \
-                         grad2_array,  \
-                         hess00_array, \
-                         hess11_array, \
-                         hess22_array, \
-                         hess01_array, \
-                         hess02_array)
+    #pragma omp simd aligned(r_12_array,   \
+                             r_1I_array,   \
+                             r_2I_array,   \
+                             val_array,    \
+                             grad0_array,  \
+                             grad1_array,  \
+                             grad2_array,  \
+                             hess00_array, \
+                             hess11_array, \
+                             hess22_array, \
+                             hess01_array, \
+                             hess02_array)
     for (int ptcl = 0; ptcl < Nptcl; ptcl++)
     {
       const real_type r_12 = r_12_array[ptcl];

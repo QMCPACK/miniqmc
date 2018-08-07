@@ -28,12 +28,11 @@
 
 namespace qmcplusplus
 {
-
 /** Adding SymmetricDTD to the list, e.g., el-el distance table
  *\param s source/target particle set
  *\return index of the distance table with the name
  */
-DistanceTableData *createDistanceTable(ParticleSet &s, int dt_type)
+DistanceTableData* createDistanceTable(ParticleSet& s, int dt_type)
 {
   typedef OHMMS_PRECISION RealType;
   enum
@@ -41,15 +40,13 @@ DistanceTableData *createDistanceTable(ParticleSet &s, int dt_type)
     DIM = OHMMS_DIM
   };
   int sc                = s.Lattice.SuperCellEnum;
-  DistanceTableData *dt = 0;
+  DistanceTableData* dt = 0;
   std::ostringstream o;
   bool useSoA = (dt_type == DT_SOA || dt_type == DT_SOA_PREFERRED);
-  o << "  Distance table for AA: source/target = " << s.getName()
-    << " useSoA =" << useSoA << "\n";
+  o << "  Distance table for AA: source/target = " << s.getName() << " useSoA =" << useSoA << "\n";
   if (sc == SUPERCELL_BULK)
   {
-    o << "  Using SoaDistanceTableAA<T,D,PPPG> of SoA layout " << PPPG
-      << std::endl;
+    o << "  Using SoaDistanceTableAA<T,D,PPPG> of SoA layout " << PPPG << std::endl;
     dt = new DistanceTableAA<RealType, DIM, PPPG + SOA_OFFSET>(s);
     o << "\n    Setting Rmax = " << s.Lattice.SimulationCellRadius;
   }

@@ -367,8 +367,7 @@ int main(int argc, char** argv)
             // accumulate error
             for (int ib = 0; ib < spo.nBlocks; ib++)
               for (int n = 0; n < spo.nSplinesPerBlock; n++)
-                evalV_v_err +=
-                    std::fabs(spo.psi[ib][n] - spo_ref.psi[ib][n]);
+                evalV_v_err += std::fabs(spo.psi[ib][n] - spo_ref.psi[ib][n]);
           }
         } // els
       } // ions

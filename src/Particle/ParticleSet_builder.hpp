@@ -19,15 +19,11 @@
 
 namespace qmcplusplus
 {
-  /// build the ParticleSet of ions
-  int build_ions(ParticleSet &ions,
-                 const Tensor<int, 3> &tmat,
-                 Tensor<QMCTraits::RealType, 3> &lattice);
+/// build the ParticleSet of ions
+int build_ions(ParticleSet& ions, const Tensor<int, 3>& tmat, Tensor<QMCTraits::RealType, 3>& lattice);
 
-  /// build the ParticleSet of electrons
-  int build_els(ParticleSet &els,
-                const ParticleSet &ions,
-                RandomGenerator<QMCTraits::RealType> &rng);
-}
+/// build the ParticleSet of electrons
+int build_els(ParticleSet& els, const ParticleSet& ions, RandomGenerator<QMCTraits::RealType>& rng);
+} // namespace qmcplusplus
 
 #endif

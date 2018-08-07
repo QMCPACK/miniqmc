@@ -51,7 +51,7 @@ void SpeciesSet::create(unsigned m)
   }
 }
 
-int SpeciesSet::addSpecies(const std::string &aname)
+int SpeciesSet::addSpecies(const std::string& aname)
 {
   int i = findSpecies(aname); // check if the name is registered
   if (i == TotalNum)
@@ -63,12 +63,13 @@ int SpeciesSet::addSpecies(const std::string &aname)
   return i; // return an index for a species
 }
 
-int SpeciesSet::addAttribute(const std::string &aname)
+int SpeciesSet::addAttribute(const std::string& aname)
 {
   int i = 0;
   while (i < attribName.size())
   {
-    if (attribName[i] == aname) return i;
+    if (attribName[i] == aname)
+      return i;
     i++;
   }
   attribName.push_back(aname);
@@ -77,18 +78,18 @@ int SpeciesSet::addAttribute(const std::string &aname)
   return n;
 }
 
-int SpeciesSet::getAttribute(const std::string &aname)
+int SpeciesSet::getAttribute(const std::string& aname)
 {
   for (int i = 0; i < attribName.size(); i++)
   {
-    if (attribName[i] == aname) return i;
+    if (attribName[i] == aname)
+      return i;
   }
   return attribName.size();
 }
 
-SpeciesSet::SpeciesSet(const SpeciesSet &species)
-    : TotalNum(species.TotalNum), speciesName(species.speciesName),
-      attribName(species.attribName)
+SpeciesSet::SpeciesSet(const SpeciesSet& species)
+    : TotalNum(species.TotalNum), speciesName(species.speciesName), attribName(species.attribName)
 {
   AttribList_t::const_iterator dit(species.d_attrib.begin());
   AttribList_t::const_iterator dit_end(species.d_attrib.end());
@@ -99,7 +100,7 @@ SpeciesSet::SpeciesSet(const SpeciesSet &species)
   }
 }
 
-SpeciesSet &SpeciesSet::operator=(const SpeciesSet &species)
+SpeciesSet& SpeciesSet::operator=(const SpeciesSet& species)
 {
   if (this != &species)
   {
