@@ -253,7 +253,9 @@ struct einspline_spo : public SPOSet
         T *restrict psi_ptr=psi[i].data();
         T *restrict grad_ptr=grad[i].data();
         T *restrict hess_ptr=hess[i].data();
+#ifdef ENABLE_OFFLOAD
         #pragma omp target map(to:i) device(0)
+#endif
         {
           psi_shadows_ptr[i] = psi_ptr;
           grad_shadows_ptr[i] = grad_ptr;
