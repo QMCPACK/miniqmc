@@ -40,7 +40,15 @@ typedef std::complex<double> complex_double;
 ////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////
 
-typedef enum { PERIODIC, DERIV1, DERIV2, FLAT, NATURAL, ANTIPERIODIC } bc_code;
+typedef enum
+{
+  PERIODIC,
+  DERIV1,
+  DERIV2,
+  FLAT,
+  NATURAL,
+  ANTIPERIODIC
+} bc_code;
 // clang-format off
 typedef enum { U1D       , U2D       , U3D      ,
                NU1D      , NU2D      , NU3D     ,
@@ -88,7 +96,7 @@ typedef struct
 {
   spline_code sp_code;
   type_code t_code;
-  void *restrict coefs;
+  void* restrict coefs;
 } Bspline;
 
 #endif

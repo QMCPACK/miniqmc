@@ -40,7 +40,6 @@
 
 namespace qmcplusplus
 {
-
 /// forward declaration of DistanceTableData
 class DistanceTableData;
 
@@ -53,7 +52,8 @@ class DistanceTableData;
  * - Variance   variance
  * - LivingFraction fraction of walkers alive each step.
  */
-template <typename T> struct MCDataType
+template<typename T>
+struct MCDataType
 {
   T NumSamples;
   T RNSamples;
@@ -139,7 +139,7 @@ public:
   SpeciesSet mySpecies;
 
   /// distance tables that need to be updated by moving this ParticleSet
-  std::vector<DistanceTableData *> DistTables;
+  std::vector<DistanceTableData*> DistTables;
 
   /// current MC step
   int current_step;
@@ -149,7 +149,7 @@ public:
   ParticleSet();
 
   /// copy constructor
-  ParticleSet(const ParticleSet &p);
+  ParticleSet(const ParticleSet& p);
 
   /// default destructor
   virtual ~ParticleSet();
@@ -161,13 +161,13 @@ public:
   /** create grouped particles
    * @param agroup number of particles per group
    */
-  void create(const std::vector<int> &agroup);
+  void create(const std::vector<int>& agroup);
 
   /// write to a std::ostream
-  bool get(std::ostream &) const;
+  bool get(std::ostream&) const;
 
   /// read from std::istream
-  bool put(std::istream &);
+  bool put(std::istream&);
 
   /// reset member data
   void reset();
@@ -180,7 +180,7 @@ public:
    *
    * Ensure that the distance for this-this is always created first.
    */
-  int addTable(const ParticleSet &psrc, int dt_type);
+  int addTable(const ParticleSet& psrc, int dt_type);
 
   /** update the internal data
    *@param skip SK update if skipSK is true
@@ -188,14 +188,14 @@ public:
   void update(bool skipSK = false);
 
   /// retrun the SpeciesSet of this particle set
-  inline SpeciesSet &getSpeciesSet() { return mySpecies; }
+  inline SpeciesSet& getSpeciesSet() { return mySpecies; }
   /// retrun the const SpeciesSet of this particle set
-  inline const SpeciesSet &getSpeciesSet() const { return mySpecies; }
+  inline const SpeciesSet& getSpeciesSet() const { return mySpecies; }
 
-  inline void setName(const std::string &aname) { myName = aname; }
+  inline void setName(const std::string& aname) { myName = aname; }
 
   /// return the name
-  inline const std::string &getName() const { return myName; }
+  inline const std::string& getName() const { return myName; }
 
   void resetGroups();
 
@@ -211,23 +211,20 @@ public:
    *
    * activePtcl=-1 is used to flag non-physical moves
    */
-  inline const PosType& activeR(int iat) const
-  {
-    return (activePtcl == iat)? activePos:R[iat];
-  }
+  inline const PosType& activeR(int iat) const { return (activePtcl == iat) ? activePos : R[iat]; }
 
   /** move a particle
    * @param iat the index of the particle to be moved
    * @param displ random displacement of the iat-th particle
    * @return true, if the move is valid
    */
-  bool makeMoveAndCheck(Index_t iat, const SingleParticlePos_t &displ);
+  bool makeMoveAndCheck(Index_t iat, const SingleParticlePos_t& displ);
 
   /** move a particle
    * @param iat the index of the particle to be moved
    * @param displ random displacement of the iat-th particle
    */
-  void makeMoveOnSphere(Index_t iat, const SingleParticlePos_t &displ);
+  void makeMoveOnSphere(Index_t iat, const SingleParticlePos_t& displ);
 
   /** accept the move
    *@param iat the index of the particle whose position and other attributes to
@@ -241,8 +238,8 @@ public:
 
   void clearDistanceTables();
 
-  void convert2Unit(ParticlePos_t &pout);
-  void convert2Cart(ParticlePos_t &pout);
+  void convert2Unit(ParticlePos_t& pout);
+  void convert2Cart(ParticlePos_t& pout);
 
   /** load a Walker_t to the current ParticleSet
    * @param awalker the reference to the walker to be loaded
@@ -250,25 +247,22 @@ public:
    *
    * PbyP requires the distance tables and Sk with awalker.R
    */
-  void loadWalker(Walker_t &awalker, bool pbyp);
+  void loadWalker(Walker_t& awalker, bool pbyp);
   /** save this to awalker
    */
-  void saveWalker(Walker_t &awalker);
+  void saveWalker(Walker_t& awalker);
 
   /** update the buffer
    *@param skip SK update if skipSK is true
    */
   void donePbyP(bool skipSK = false);
 
-  inline void setTwist(SingleParticlePos_t &t) { myTwist = t; }
+  inline void setTwist(SingleParticlePos_t& t) { myTwist = t; }
   inline SingleParticlePos_t getTwist() const { return myTwist; }
 
   /** get species name of particle i
    */
-  inline const std::string &species_from_index(int i)
-  {
-    return mySpecies.speciesName[GroupID[i]];
-  }
+  inline const std::string& species_from_index(int i) { return mySpecies.speciesName[GroupID[i]]; }
 
   inline int getTotalNum() const { return TotalNum; }
 
@@ -289,7 +283,7 @@ public:
     RSoA.resize(numPtcl);
   }
 
-  inline void assign(const ParticleSet &ptclin)
+  inline void assign(const ParticleSet& ptclin)
   {
     resize(ptclin.getTotalNum());
     Lattice          = ptclin.Lattice;
@@ -334,8 +328,10 @@ protected:
   TimerList_t timers;
 };
 
-const std::vector<ParticleSet::ParticleGradient_t *> extract_G_list(const std::vector<ParticleSet *> &P_list);
-const std::vector<ParticleSet::ParticleLaplacian_t *> extract_L_list(const std::vector<ParticleSet *> &P_list);
+const std::vector<ParticleSet::ParticleGradient_t*>
+    extract_G_list(const std::vector<ParticleSet*>& P_list);
+const std::vector<ParticleSet::ParticleLaplacian_t*>
+    extract_L_list(const std::vector<ParticleSet*>& P_list);
 
-}
+} // namespace qmcplusplus
 #endif

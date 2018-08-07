@@ -20,14 +20,12 @@
 
 namespace qmcplusplus
 {
-
-XMLNode *
-MakeTextElement(XMLDocument &doc, const std::string &name, const std::string &value)
+XMLNode* MakeTextElement(XMLDocument& doc, const std::string& name, const std::string& value)
 {
-  XMLNode* name_node = doc.NewElement(name.c_str());
+  XMLNode* name_node  = doc.NewElement(name.c_str());
   XMLText* value_node = doc.NewText("");
   value_node->SetValue(value.c_str());
   name_node->InsertEndChild(value_node);
   return name_node;
 }
-}
+} // namespace qmcplusplus

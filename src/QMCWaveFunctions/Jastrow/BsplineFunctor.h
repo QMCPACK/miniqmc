@@ -40,8 +40,8 @@
 
 namespace qmcplusplus
 {
-
-template <class T> struct BsplineFunctor : public OptimizableFunctorBase
+template<class T>
+struct BsplineFunctor : public OptimizableFunctorBase
 {
   typedef real_type value_type;
   int NumParams;
@@ -117,8 +117,7 @@ template <class T> struct BsplineFunctor : public OptimizableFunctorBase
       SplineCoefs[i + 1] = Parameters[i];
   }
 
-  void setupParameters(int n, real_type rcut, real_type cusp,
-                       std::vector<real_type> &params)
+  void setupParameters(int n, real_type rcut, real_type cusp, std::vector<real_type>& params)
   {
     CuspValue     = cusp;
     cutoff_radius = rcut;
@@ -156,13 +155,16 @@ template <class T> struct BsplineFunctor : public OptimizableFunctorBase
    * @param distArrayCompressed temp storage to filter r_j < cutoff_radius
    * @return \f$\sum u(r_j)\f$ for r_j < cutoff_radius
    */
-  T evaluateV(const int iat, const int iStart, const int iEnd,
-              const T *restrict _distArray,
-              T *restrict distArrayCompressed) const;
+  T evaluateV(const int iat,
+              const int iStart,
+              const int iEnd,
+              const T* restrict _distArray,
+              T* restrict distArrayCompressed) const;
 
   inline real_type evaluate(real_type r)
   {
-    if (r >= cutoff_radius) return 0.0;
+    if (r >= cutoff_radius)
+      return 0.0;
     r *= DeltaRInv;
     real_type ipart, t;
     t     = std::modf(r, &ipart);
@@ -181,7 +183,7 @@ template <class T> struct BsplineFunctor : public OptimizableFunctorBase
     // clang-format on
   }
 
-  inline real_type evaluate(real_type r, real_type &dudr, real_type &d2udr2)
+  inline real_type evaluate(real_type r, real_type& dudr, real_type& d2udr2)
   {
     if (r >= cutoff_radius)
     {
@@ -215,16 +217,16 @@ template <class T> struct BsplineFunctor : public OptimizableFunctorBase
        SplineCoefs[i+3]*(A[12]*tp[0] + A[13]*tp[1] + A[14]*tp[2] + A[15]*tp[3]));
     // clang-format on
   }
-
 };
 
-template <typename T>
-inline T BsplineFunctor<T>::evaluateV(const int iat, const int iStart,
+template<typename T>
+inline T BsplineFunctor<T>::evaluateV(const int iat,
+                                      const int iStart,
                                       const int iEnd,
-                                      const T *restrict _distArray,
-                                      T *restrict distArrayCompressed) const
+                                      const T* restrict _distArray,
+                                      T* restrict distArrayCompressed) const
 {
-  const real_type *restrict distArray = _distArray + iStart;
+  const real_type* restrict distArray = _distArray + iStart;
 
   ASSUME_ALIGNED(distArrayCompressed);
   int iCount       = 0;
@@ -240,7 +242,7 @@ inline T BsplineFunctor<T>::evaluateV(const int iat, const int iStart,
   }
 
   real_type d = 0.0;
-#pragma omp simd reduction(+ : d)
+  #pragma omp simd reduction(+ : d)
   for (int jat = 0; jat < iCount; jat++)
   {
     real_type r = distArrayCompressed[jat];
@@ -251,26 +253,26 @@ inline T BsplineFunctor<T>::evaluateV(const int iat, const int iStart,
     real_type tp1 = t * t;
     real_type tp2 = t;
 
-    real_type d1 =
-        SplineCoefs[i + 0] * (A[0] * tp0 + A[1] * tp1 + A[2] * tp2 + A[3]);
-    real_type d2 =
-        SplineCoefs[i + 1] * (A[4] * tp0 + A[5] * tp1 + A[6] * tp2 + A[7]);
-    real_type d3 =
-        SplineCoefs[i + 2] * (A[8] * tp0 + A[9] * tp1 + A[10] * tp2 + A[11]);
-    real_type d4 =
-        SplineCoefs[i + 3] * (A[12] * tp0 + A[13] * tp1 + A[14] * tp2 + A[15]);
+    real_type d1 = SplineCoefs[i + 0] * (A[0] * tp0 + A[1] * tp1 + A[2] * tp2 + A[3]);
+    real_type d2 = SplineCoefs[i + 1] * (A[4] * tp0 + A[5] * tp1 + A[6] * tp2 + A[7]);
+    real_type d3 = SplineCoefs[i + 2] * (A[8] * tp0 + A[9] * tp1 + A[10] * tp2 + A[11]);
+    real_type d4 = SplineCoefs[i + 3] * (A[12] * tp0 + A[13] * tp1 + A[14] * tp2 + A[15]);
     d += (d1 + d2 + d3 + d4);
   }
   return d;
 }
 
-template <typename T>
-inline void BsplineFunctor<T>::evaluateVGL(
-    const int iat, const int iStart, const int iEnd, const T *_distArray,
-    T *restrict _valArray, T *restrict _gradArray, T *restrict _laplArray,
-    T *restrict distArrayCompressed, int *restrict distIndices) const
+template<typename T>
+inline void BsplineFunctor<T>::evaluateVGL(const int iat,
+                                           const int iStart,
+                                           const int iEnd,
+                                           const T* _distArray,
+                                           T* restrict _valArray,
+                                           T* restrict _gradArray,
+                                           T* restrict _laplArray,
+                                           T* restrict distArrayCompressed,
+                                           int* restrict distIndices) const
 {
-
   real_type dSquareDeltaRinv = DeltaRInv * DeltaRInv;
   constexpr real_type cOne(1);
 
@@ -280,10 +282,10 @@ inline void BsplineFunctor<T>::evaluateVGL(
   ASSUME_ALIGNED(distArrayCompressed);
   int iCount                 = 0;
   int iLimit                 = iEnd - iStart;
-  const real_type *distArray = _distArray + iStart;
-  real_type *valArray        = _valArray + iStart;
-  real_type *gradArray       = _gradArray + iStart;
-  real_type *laplArray       = _laplArray + iStart;
+  const real_type* distArray = _distArray + iStart;
+  real_type* valArray        = _valArray + iStart;
+  real_type* gradArray       = _gradArray + iStart;
+  real_type* laplArray       = _laplArray + iStart;
 
 #pragma vector always
   for (int jat = 0; jat < iLimit; jat++)
@@ -297,10 +299,9 @@ inline void BsplineFunctor<T>::evaluateVGL(
     }
   }
 
-#pragma omp simd
+  #pragma omp simd
   for (int j = 0; j < iCount; j++)
   {
-
     real_type r    = distArrayCompressed[j];
     int iScatter   = distIndices[j];
     real_type rinv = cOne / r;

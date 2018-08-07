@@ -31,7 +31,6 @@
 
 namespace qmcplusplus
 {
-
 struct PolynomialFunctor3D : public OptimizableFunctorBase
 {
   typedef real_type value_type;
@@ -166,7 +165,8 @@ struct PolynomialFunctor3D : public OptimizableFunctorBase
             max_abs = abs_val;
           }
         }
-        if (max_abs < 1.0e-6) IndepVar[col] = true;
+        if (max_abs < 1.0e-6)
+          IndepVar[col] = true;
       } while (max_abs < 1.0e-6);
 #if ((__INTEL_COMPILER == 1700) && (__cplusplus < 201103L))
       // the swap_rows is sick with Intel compiler 17 update 1, c++11 off
@@ -211,7 +211,8 @@ struct PolynomialFunctor3D : public OptimizableFunctorBase
     // First, set all independent variables
     int var = 0;
     for (int i = 0; i < NumGamma; i++)
-      if (IndepVar[i]) GammaVec[i] = scale * Parameters[var++];
+      if (IndepVar[i])
+        GammaVec[i] = scale * Parameters[var++];
     assert(var == Parameters.size());
     // Now, set dependent variables
     var = 0;
@@ -220,7 +221,8 @@ struct PolynomialFunctor3D : public OptimizableFunctorBase
       {
         assert(std::abs(ConstraintMatrix(var, i) - 1.0) < 1.0e-6);
         for (int j = 0; j < NumGamma; j++)
-          if (i != j) GammaVec[i] -= ConstraintMatrix(var, j) * GammaVec[j];
+          if (i != j)
+            GammaVec[i] -= ConstraintMatrix(var, j) * GammaVec[j];
         var++;
       }
     int num = 0;
@@ -262,9 +264,8 @@ struct PolynomialFunctor3D : public OptimizableFunctorBase
       }
       if (std::abs(sum) > 1.0e-6)
       {
-        app_error()
-            << "e-e constraint not satisfied in PolynomialFunctor3D:  k=" << k
-            << "  sum=" << sum << std::endl;
+        app_error() << "e-e constraint not satisfied in PolynomialFunctor3D:  k=" << k
+                    << "  sum=" << sum << std::endl;
         abort();
       }
     }
@@ -282,23 +283,22 @@ struct PolynomialFunctor3D : public OptimizableFunctorBase
       }
       if (std::abs(sum) > 1.0e-6)
       {
-        app_error()
-            << "e-I constraint not satisfied in PolynomialFunctor3D:  k=" << k
-            << "  sum=" << sum << std::endl;
+        app_error() << "e-I constraint not satisfied in PolynomialFunctor3D:  k=" << k
+                    << "  sum=" << sum << std::endl;
         abort();
       }
     }
   }
 
-  inline real_type evaluate(real_type r_12, real_type r_1I,
-                            real_type r_2I) const
+  inline real_type evaluate(real_type r_12, real_type r_1I, real_type r_2I) const
   {
     constexpr real_type czero(0);
     constexpr real_type cone(1);
     constexpr real_type chalf(0.5);
 
     const real_type L = chalf * cutoff_radius;
-    if (r_1I >= L || r_2I >= L) return czero;
+    if (r_1I >= L || r_2I >= L)
+      return czero;
     real_type val = czero;
     real_type r2l(cone);
     for (int l = 0; l <= N_eI; l++)
@@ -322,9 +322,10 @@ struct PolynomialFunctor3D : public OptimizableFunctorBase
   }
 
   // assume r_1I < L && r_2I < L, compression and screening is handled outside
-  inline real_type evaluateV(int Nptcl, const real_type *restrict r_12_array,
-                             const real_type *restrict r_1I_array,
-                             const real_type *restrict r_2I_array) const
+  inline real_type evaluateV(int Nptcl,
+                             const real_type* restrict r_12_array,
+                             const real_type* restrict r_1I_array,
+                             const real_type* restrict r_2I_array) const
   {
     constexpr real_type czero(0);
     constexpr real_type cone(1);
@@ -333,7 +334,7 @@ struct PolynomialFunctor3D : public OptimizableFunctorBase
     const real_type L = chalf * cutoff_radius;
     real_type val_tot = czero;
 
-#pragma omp simd aligned(r_12_array,r_1I_array,r_2I_array) reduction(+:val_tot)
+#pragma omp simd aligned(r_12_array, r_1I_array, r_2I_array) reduction(+ : val_tot)
     for (int ptcl = 0; ptcl < Nptcl; ptcl++)
     {
       const real_type r_12 = r_12_array[ptcl];
@@ -365,9 +366,11 @@ struct PolynomialFunctor3D : public OptimizableFunctorBase
     return val_tot;
   }
 
-  inline real_type evaluate(real_type r_12, real_type r_1I, real_type r_2I,
-                            TinyVector<real_type, 3> &grad,
-                            Tensor<real_type, 3> &hess) const
+  inline real_type evaluate(real_type r_12,
+                            real_type r_1I,
+                            real_type r_2I,
+                            TinyVector<real_type, 3>& grad,
+                            Tensor<real_type, 3>& hess) const
   {
     constexpr real_type czero(0);
     constexpr real_type cone(1);
@@ -430,13 +433,11 @@ struct PolynomialFunctor3D : public OptimizableFunctorBase
     const real_type both_minus_L = r_2I_minus_L * r_1I_minus_L;
     for (int i = 0; i < C; i++)
     {
-
       hess(0, 0) = both_minus_L * hess(0, 0);
       hess(0, 1) = both_minus_L * hess(0, 1) + r_2I_minus_L * grad[0];
       hess(0, 2) = both_minus_L * hess(0, 2) + r_1I_minus_L * grad[0];
       hess(1, 1) = both_minus_L * hess(1, 1) + ctwo * r_2I_minus_L * grad[1];
-      hess(1, 2) = both_minus_L * hess(1, 2) + r_1I_minus_L * grad[1] +
-                   r_2I_minus_L * grad[2] + val;
+      hess(1, 2) = both_minus_L * hess(1, 2) + r_1I_minus_L * grad[1] + r_2I_minus_L * grad[2] + val;
       hess(2, 2) = both_minus_L * hess(2, 2) + ctwo * r_1I_minus_L * grad[2];
       grad[0]    = both_minus_L * grad[0];
       grad[1]    = both_minus_L * grad[1] + r_2I_minus_L * val;
@@ -450,14 +451,19 @@ struct PolynomialFunctor3D : public OptimizableFunctorBase
   }
 
   // assume r_1I < L && r_2I < L, compression and screening is handled outside
-  inline void evaluateVGL(
-      int Nptcl, const real_type *restrict r_12_array,
-      const real_type *restrict r_1I_array,
-      const real_type *restrict r_2I_array, real_type *restrict val_array,
-      real_type *restrict grad0_array, real_type *restrict grad1_array,
-      real_type *restrict grad2_array, real_type *restrict hess00_array,
-      real_type *restrict hess11_array, real_type *restrict hess22_array,
-      real_type *restrict hess01_array, real_type *restrict hess02_array) const
+  inline void evaluateVGL(int Nptcl,
+                          const real_type* restrict r_12_array,
+                          const real_type* restrict r_1I_array,
+                          const real_type* restrict r_2I_array,
+                          real_type* restrict val_array,
+                          real_type* restrict grad0_array,
+                          real_type* restrict grad1_array,
+                          real_type* restrict grad2_array,
+                          real_type* restrict hess00_array,
+                          real_type* restrict hess11_array,
+                          real_type* restrict hess22_array,
+                          real_type* restrict hess01_array,
+                          real_type* restrict hess02_array) const
   {
     constexpr real_type czero(0);
     constexpr real_type cone(1);
@@ -465,9 +471,17 @@ struct PolynomialFunctor3D : public OptimizableFunctorBase
     constexpr real_type ctwo(2);
 
     const real_type L = chalf * cutoff_radius;
-#pragma omp simd aligned(r_12_array, r_1I_array, r_2I_array, val_array,       \
-                         grad0_array, grad1_array, grad2_array, hess00_array, \
-                         hess11_array, hess22_array, hess01_array,            \
+    #pragma omp simd aligned(r_12_array,   \
+                             r_1I_array,   \
+                             r_2I_array,   \
+                         val_array,    \
+                         grad0_array,  \
+                         grad1_array,  \
+                         grad2_array,  \
+                         hess00_array, \
+                         hess11_array, \
+                         hess22_array, \
+                         hess01_array, \
                          hess02_array)
     for (int ptcl = 0; ptcl < Nptcl; ptcl++)
     {

@@ -25,28 +25,31 @@
 
 namespace qmcplusplus
 {
-
-void ParticleSet::convert2Unit(ParticlePos_t &pinout)
+void ParticleSet::convert2Unit(ParticlePos_t& pinout)
 {
   if (pinout.getUnit() == PosUnit::LatticeUnit)
     return;
   else
   {
     pinout.setUnit(PosUnit::LatticeUnit);
-    ConvertPosUnit<ParticlePos_t, Tensor_t, DIM, OHMMS_ORTHO>::apply(
-        pinout, Lattice.G, 0, pinout.size());
+    ConvertPosUnit<ParticlePos_t, Tensor_t, DIM, OHMMS_ORTHO>::apply(pinout,
+                                                                     Lattice.G,
+                                                                     0,
+                                                                     pinout.size());
   }
 }
 
-void ParticleSet::convert2Cart(ParticlePos_t &pinout)
+void ParticleSet::convert2Cart(ParticlePos_t& pinout)
 {
   if (pinout.getUnit() == PosUnit::CartesianUnit)
     return;
   else
   {
     pinout.setUnit(PosUnit::CartesianUnit);
-    ConvertPosUnit<ParticlePos_t, Tensor_t, DIM, OHMMS_ORTHO>::apply(
-        pinout, Lattice.R, 0, pinout.size());
+    ConvertPosUnit<ParticlePos_t, Tensor_t, DIM, OHMMS_ORTHO>::apply(pinout,
+                                                                     Lattice.R,
+                                                                     0,
+                                                                     pinout.size());
   }
 }
-}
+} // namespace qmcplusplus

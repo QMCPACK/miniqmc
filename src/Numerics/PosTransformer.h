@@ -19,7 +19,6 @@
 
 namespace qmcplusplus
 {
-
 /** General conversion function from AoS[nrows][ncols] to SoA[ncols][ldb]
  * @param nrows the first dimension
  * @param ncols the second dimension
@@ -30,13 +29,12 @@ namespace qmcplusplus
  *
  * Modeled after blas/lapack for lda/ldb
  */
-template <typename T1, typename T2>
-void PosAoS2SoA(int nrows, int ncols, const T1 *restrict iptr, int lda,
-                T2 *restrict out, int ldb)
+template<typename T1, typename T2>
+void PosAoS2SoA(int nrows, int ncols, const T1* restrict iptr, int lda, T2* restrict out, int ldb)
 {
-  T2 *restrict x = out;
-  T2 *restrict y = out + ldb;
-  T2 *restrict z = out + 2 * ldb;
+  T2* restrict x = out;
+  T2* restrict y = out + ldb;
+  T2* restrict z = out + 2 * ldb;
 #pragma omp simd aligned(x, y, z)
   for (int i = 0; i < nrows; ++i)
   {
@@ -56,13 +54,12 @@ void PosAoS2SoA(int nrows, int ncols, const T1 *restrict iptr, int lda,
  *
  * Modeled after blas/lapack for lda/ldb
  */
-template <typename T1, typename T2>
-void PosSoA2AoS(int nrows, int ncols, const T1 *restrict iptr, int lda,
-                T2 *restrict out, int ldb)
+template<typename T1, typename T2>
+void PosSoA2AoS(int nrows, int ncols, const T1* restrict iptr, int lda, T2* restrict out, int ldb)
 {
-  const T1 *restrict x = iptr;
-  const T1 *restrict y = iptr + lda;
-  const T1 *restrict z = iptr + 2 * lda;
+  const T1* restrict x = iptr;
+  const T1* restrict y = iptr + lda;
+  const T1* restrict z = iptr + 2 * lda;
 #pragma omp simd aligned(x, y, z)
   for (int i = 0; i < nrows; ++i)
   {
@@ -72,5 +69,5 @@ void PosSoA2AoS(int nrows, int ncols, const T1 *restrict iptr, int lda,
   }
 }
 
-}
+} // namespace qmcplusplus
 #endif

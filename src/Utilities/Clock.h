@@ -64,5 +64,5 @@ inline double cpu_clock()
 #endif //
 #endif
 #endif
-}
+} // namespace qmcplusplus
 #endif

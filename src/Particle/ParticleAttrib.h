@@ -21,7 +21,7 @@
 
 namespace qmcplusplus
 {
-template <class T, typename Alloc = std::allocator<T>>
+template<class T, typename Alloc = std::allocator<T>>
 class ParticleAttrib : public Vector<T, Alloc>
 {
   typedef Vector<T, Alloc> __my_base;
@@ -34,16 +34,14 @@ public:
   explicit inline ParticleAttrib(size_t n = 0) : __my_base(n), InUnit(0) {}
 
   /** constructor with an initialized ref */
-  explicit inline ParticleAttrib(T *ref, size_t n)
-      : __my_base(ref, n), InUnit(0)
-  {
-  }
+  explicit inline ParticleAttrib(T* ref, size_t n) : __my_base(ref, n), InUnit(0) {}
 
-  ParticleAttrib(const ParticleAttrib &rhs) = default;
-  inline ParticleAttrib &operator=(const ParticleAttrib &rhs) = default;
+  ParticleAttrib(const ParticleAttrib& rhs) = default;
+  inline ParticleAttrib& operator=(const ParticleAttrib& rhs) = default;
 
   /** assignment operator to enable PETE */
-  template <class RHS> inline ParticleAttrib &operator=(const RHS &rhs)
+  template<class RHS>
+  inline ParticleAttrib& operator=(const RHS& rhs)
   {
     assign(*this, rhs);
     return *this;
@@ -54,6 +52,6 @@ public:
   inline int getUnit() const { return InUnit; }
   //@}
 };
-}
+} // namespace qmcplusplus
 
 #endif // OHMMS_PARTICLEATTRIB_PEPE_H

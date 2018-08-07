@@ -42,6 +42,8 @@
  *  which BLAS routines are actually used.
  *  Note that symv can be call in many ways.
  */
+
+// clang-format off
 struct BLAS
 {
 
@@ -423,5 +425,5 @@ struct LAPACK
           ldvr, work, lwork, info);
   }
 };
-
+// clang-format on
 #endif // OHMMS_BLAS_H

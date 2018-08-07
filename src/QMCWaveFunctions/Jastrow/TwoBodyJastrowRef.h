@@ -24,7 +24,6 @@
 
 namespace miniqmcreference
 {
-
 using namespace qmcplusplus;
 
 /** @ingroup WaveFunctionComponent
@@ -42,7 +41,8 @@ using namespace qmcplusplus;
  * - double the loop counts
  * - Memory use is O(N).
  */
-template <class FT> struct TwoBodyJastrowRef : public WaveFunctionComponent
+template<class FT>
+struct TwoBodyJastrowRef : public WaveFunctionComponent
 {
   /// alias FuncType
   using FuncType = FT;
@@ -78,46 +78,47 @@ template <class FT> struct TwoBodyJastrowRef : public WaveFunctionComponent
   aligned_vector<valT> DistCompressed;
   aligned_vector<int> DistIndice;
   /// Container for \f$F[ig*NumGroups+jg]\f$
-  std::vector<FT *> F;
+  std::vector<FT*> F;
   /// Uniquue J2 set for cleanup
-  std::map<std::string, FT *> J2Unique;
+  std::map<std::string, FT*> J2Unique;
 
-  TwoBodyJastrowRef(ParticleSet &p);
-  TwoBodyJastrowRef(const TwoBodyJastrowRef &rhs) = delete;
+  TwoBodyJastrowRef(ParticleSet& p);
+  TwoBodyJastrowRef(const TwoBodyJastrowRef& rhs) = delete;
   ~TwoBodyJastrowRef();
 
   /* initialize storage */
-  void init(ParticleSet &p);
+  void init(ParticleSet& p);
 
   /** add functor for (ia,ib) pair */
-  void addFunc(int ia, int ib, FT *j);
+  void addFunc(int ia, int ib, FT* j);
 
-  RealType evaluateLog(ParticleSet &P, ParticleSet::ParticleGradient_t &G,
-                       ParticleSet::ParticleLaplacian_t &L);
+  RealType evaluateLog(ParticleSet& P,
+                       ParticleSet::ParticleGradient_t& G,
+                       ParticleSet::ParticleLaplacian_t& L);
 
   /** recompute internal data assuming distance table is fully ready */
-  void recompute(ParticleSet &P);
+  void recompute(ParticleSet& P);
 
-  ValueType ratio(ParticleSet &P, int iat);
-  GradType evalGrad(ParticleSet &P, int iat);
-  ValueType ratioGrad(ParticleSet &P, int iat, GradType &grad_iat);
-  void acceptMove(ParticleSet &P, int iat);
+  ValueType ratio(ParticleSet& P, int iat);
+  GradType evalGrad(ParticleSet& P, int iat);
+  ValueType ratioGrad(ParticleSet& P, int iat, GradType& grad_iat);
+  void acceptMove(ParticleSet& P, int iat);
 
   /** compute G and L after the sweep
    */
-  void evaluateGL(ParticleSet &P, ParticleSet::ParticleGradient_t &G,
-                  ParticleSet::ParticleLaplacian_t &L,
+  void evaluateGL(ParticleSet& P,
+                  ParticleSet::ParticleGradient_t& G,
+                  ParticleSet::ParticleLaplacian_t& L,
                   bool fromscratch = false);
 
   /*@{ internal compute engines*/
-  inline valT computeU(const ParticleSet &P, int iat,
-                       const RealType *restrict dist)
+  inline valT computeU(const ParticleSet& P, int iat, const RealType* restrict dist)
   {
     valT curUat(0);
     const int igt = P.GroupID[iat] * NumGroups;
     for (int jg = 0; jg < NumGroups; ++jg)
     {
-      const FuncType &f2(*F[igt + jg]);
+      const FuncType& f2(*F[igt + jg]);
       int iStart = P.first(jg);
       int iEnd   = P.last(jg);
       curUat += f2.evaluateV(iat, iStart, iEnd, dist, DistCompressed.data());
@@ -125,20 +126,22 @@ template <class FT> struct TwoBodyJastrowRef : public WaveFunctionComponent
     return curUat;
   }
 
-  inline void computeU3(const ParticleSet &P, int iat,
-                        const RealType *restrict dist, RealType *restrict u,
-                        RealType *restrict du, RealType *restrict d2u,
+  inline void computeU3(const ParticleSet& P,
+                        int iat,
+                        const RealType* restrict dist,
+                        RealType* restrict u,
+                        RealType* restrict du,
+                        RealType* restrict d2u,
                         bool triangle = false);
 
   /** compute gradient
    */
-  inline posT accumulateG(const valT *restrict du,
-                          const RowContainer &displ) const
+  inline posT accumulateG(const valT* restrict du, const RowContainer& displ) const
   {
     posT grad;
     for (int idim = 0; idim < OHMMS_DIM; ++idim)
     {
-      const valT *restrict dX = displ.data(idim);
+      const valT* restrict dX = displ.data(idim);
       valT s                  = valT();
 
       for (int jat = 0; jat < N; ++jat)
@@ -150,7 +153,8 @@ template <class FT> struct TwoBodyJastrowRef : public WaveFunctionComponent
   /**@} */
 };
 
-template <typename FT> TwoBodyJastrowRef<FT>::TwoBodyJastrowRef(ParticleSet &p)
+template<typename FT>
+TwoBodyJastrowRef<FT>::TwoBodyJastrowRef(ParticleSet& p)
 {
   init(p);
   FirstTime                 = true;
@@ -158,7 +162,8 @@ template <typename FT> TwoBodyJastrowRef<FT>::TwoBodyJastrowRef(ParticleSet &p)
   WaveFunctionComponentName = "TwoBodyJastrowRef";
 }
 
-template <typename FT> TwoBodyJastrowRef<FT>::~TwoBodyJastrowRef()
+template<typename FT>
+TwoBodyJastrowRef<FT>::~TwoBodyJastrowRef()
 {
   auto it = J2Unique.begin();
   while (it != J2Unique.end())
@@ -168,7 +173,8 @@ template <typename FT> TwoBodyJastrowRef<FT>::~TwoBodyJastrowRef()
   }
 } // need to clean up J2Unique
 
-template <typename FT> void TwoBodyJastrowRef<FT>::init(ParticleSet &p)
+template<typename FT>
+void TwoBodyJastrowRef<FT>::init(ParticleSet& p)
 {
   N         = p.getTotalNum();
   N_padded  = getAlignedSize<valT>(N);
@@ -188,8 +194,8 @@ template <typename FT> void TwoBodyJastrowRef<FT>::init(ParticleSet &p)
   DistIndice.resize(N);
 }
 
-template <typename FT>
-void TwoBodyJastrowRef<FT>::addFunc(int ia, int ib, FT *j)
+template<typename FT>
+void TwoBodyJastrowRef<FT>::addFunc(int ia, int ib, FT* j)
 {
   if (ia == ib)
   {
@@ -198,7 +204,8 @@ void TwoBodyJastrowRef<FT>::addFunc(int ia, int ib, FT *j)
       int ij = 0;
       for (int ig = 0; ig < NumGroups; ++ig)
         for (int jg = 0; jg < NumGroups; ++jg, ++ij)
-          if (F[ij] == nullptr) F[ij] = j;
+          if (F[ij] == nullptr)
+            F[ij] = j;
     }
     else
       F[ia * NumGroups + ib] = j;
@@ -234,12 +241,14 @@ void TwoBodyJastrowRef<FT>::addFunc(int ia, int ib, FT *j)
  * @param du starting first deriv
  * @param d2u starting second deriv
  */
-template <typename FT>
-inline void
-TwoBodyJastrowRef<FT>::computeU3(const ParticleSet &P, int iat,
-                                 const RealType *restrict dist,
-                                 RealType *restrict u, RealType *restrict du,
-                                 RealType *restrict d2u, bool triangle)
+template<typename FT>
+inline void TwoBodyJastrowRef<FT>::computeU3(const ParticleSet& P,
+                                             int iat,
+                                             const RealType* restrict dist,
+                                             RealType* restrict u,
+                                             RealType* restrict du,
+                                             RealType* restrict d2u,
+                                             bool triangle)
 {
   const int jelmax = triangle ? iat : N;
   constexpr valT czero(0);
@@ -250,20 +259,18 @@ TwoBodyJastrowRef<FT>::computeU3(const ParticleSet &P, int iat,
   const int igt = P.GroupID[iat] * NumGroups;
   for (int jg = 0; jg < NumGroups; ++jg)
   {
-    const FuncType &f2(*F[igt + jg]);
+    const FuncType& f2(*F[igt + jg]);
     int iStart = P.first(jg);
     int iEnd   = std::min(jelmax, P.last(jg));
-    f2.evaluateVGL(iat, iStart, iEnd, dist, u, du, d2u, DistCompressed.data(),
-                   DistIndice.data());
+    f2.evaluateVGL(iat, iStart, iEnd, dist, u, du, d2u, DistCompressed.data(), DistIndice.data());
   }
   // u[iat]=czero;
   // du[iat]=czero;
   // d2u[iat]=czero;
 }
 
-template <typename FT>
-typename TwoBodyJastrowRef<FT>::ValueType
-TwoBodyJastrowRef<FT>::ratio(ParticleSet &P, int iat)
+template<typename FT>
+typename TwoBodyJastrowRef<FT>::ValueType TwoBodyJastrowRef<FT>::ratio(ParticleSet& P, int iat)
 {
   // only ratio, ready to compute it again
   UpdateMode = ORB_PBYP_RATIO;
@@ -271,35 +278,31 @@ TwoBodyJastrowRef<FT>::ratio(ParticleSet &P, int iat)
   return std::exp(Uat[iat] - cur_Uat);
 }
 
-template <typename FT>
-typename TwoBodyJastrowRef<FT>::GradType
-TwoBodyJastrowRef<FT>::evalGrad(ParticleSet &P, int iat)
+template<typename FT>
+typename TwoBodyJastrowRef<FT>::GradType TwoBodyJastrowRef<FT>::evalGrad(ParticleSet& P, int iat)
 {
   return GradType(dUat[iat]);
 }
 
-template <typename FT>
+template<typename FT>
 typename TwoBodyJastrowRef<FT>::ValueType
-TwoBodyJastrowRef<FT>::ratioGrad(ParticleSet &P, int iat, GradType &grad_iat)
+    TwoBodyJastrowRef<FT>::ratioGrad(ParticleSet& P, int iat, GradType& grad_iat)
 {
-
   UpdateMode = ORB_PBYP_PARTIAL;
 
-  computeU3(P, iat, P.DistTables[0]->Temp_r.data(), cur_u.data(), cur_du.data(),
-            cur_d2u.data());
+  computeU3(P, iat, P.DistTables[0]->Temp_r.data(), cur_u.data(), cur_du.data(), cur_d2u.data());
   cur_Uat = std::accumulate(cur_u.begin(), cur_u.begin() + N, valT());
   DiffVal = Uat[iat] - cur_Uat;
   grad_iat += accumulateG(cur_du.data(), P.DistTables[0]->Temp_dr);
   return std::exp(DiffVal);
 }
 
-template <typename FT>
-void TwoBodyJastrowRef<FT>::acceptMove(ParticleSet &P, int iat)
+template<typename FT>
+void TwoBodyJastrowRef<FT>::acceptMove(ParticleSet& P, int iat)
 {
   // get the old u, du, d2u
-  const DistanceTableData *d_table = P.DistTables[0];
-  computeU3(P, iat, d_table->Distances[iat], old_u.data(), old_du.data(),
-            old_d2u.data());
+  const DistanceTableData* d_table = P.DistTables[0];
+  computeU3(P, iat, d_table->Distances[iat], old_u.data(), old_du.data(), old_d2u.data());
   if (UpdateMode == ORB_PBYP_RATIO)
   { // ratio-only during the move; need to compute derivatives
     const auto dist = d_table->Temp_r.data();
@@ -307,8 +310,8 @@ void TwoBodyJastrowRef<FT>::acceptMove(ParticleSet &P, int iat)
   }
 
   valT cur_d2Uat(0);
-  const auto &new_dr    = d_table->Temp_dr;
-  const auto &old_dr    = d_table->Displacements[iat];
+  const auto& new_dr    = d_table->Temp_dr;
+  const auto& old_dr    = d_table->Displacements[iat];
   constexpr valT lapfac = OHMMS_DIM - RealType(1);
   for (int jat = 0; jat < N; jat++)
   {
@@ -322,11 +325,11 @@ void TwoBodyJastrowRef<FT>::acceptMove(ParticleSet &P, int iat)
   posT cur_dUat;
   for (int idim = 0; idim < OHMMS_DIM; ++idim)
   {
-    const valT *restrict new_dX    = new_dr.data(idim);
-    const valT *restrict old_dX    = old_dr.data(idim);
-    const valT *restrict cur_du_pt = cur_du.data();
-    const valT *restrict old_du_pt = old_du.data();
-    valT *restrict save_g          = dUat.data(idim);
+    const valT* restrict new_dX    = new_dr.data(idim);
+    const valT* restrict old_dX    = old_dr.data(idim);
+    const valT* restrict cur_du_pt = cur_du.data();
+    const valT* restrict old_du_pt = old_du.data();
+    valT* restrict save_g          = dUat.data(idim);
     valT cur_g                     = cur_dUat[idim];
     for (int jat = 0; jat < N; jat++)
     {
@@ -343,29 +346,29 @@ void TwoBodyJastrowRef<FT>::acceptMove(ParticleSet &P, int iat)
   d2Uat[iat] = cur_d2Uat;
 }
 
-template <typename FT> void TwoBodyJastrowRef<FT>::recompute(ParticleSet &P)
+template<typename FT>
+void TwoBodyJastrowRef<FT>::recompute(ParticleSet& P)
 {
-  const DistanceTableData *d_table = P.DistTables[0];
+  const DistanceTableData* d_table = P.DistTables[0];
   for (int ig = 0; ig < NumGroups; ++ig)
   {
     const int igt = ig * NumGroups;
     for (int iat = P.first(ig), last = P.last(ig); iat < last; ++iat)
     {
-      computeU3(P, iat, d_table->Distances[iat], cur_u.data(), cur_du.data(),
-                cur_d2u.data(), true);
+      computeU3(P, iat, d_table->Distances[iat], cur_u.data(), cur_du.data(), cur_d2u.data(), true);
       Uat[iat] = std::accumulate(cur_u.begin(), cur_u.begin() + iat, valT());
       posT grad;
       valT lap(0);
-      const valT *restrict u    = cur_u.data();
-      const valT *restrict du   = cur_du.data();
-      const valT *restrict d2u  = cur_d2u.data();
-      const RowContainer &displ = d_table->Displacements[iat];
+      const valT* restrict u    = cur_u.data();
+      const valT* restrict du   = cur_du.data();
+      const valT* restrict d2u  = cur_d2u.data();
+      const RowContainer& displ = d_table->Displacements[iat];
       constexpr valT lapfac     = OHMMS_DIM - RealType(1);
       for (int jat = 0; jat < iat; ++jat)
         lap += d2u[jat] + lapfac * du[jat];
       for (int idim = 0; idim < OHMMS_DIM; ++idim)
       {
-        const valT *restrict dX = displ.data(idim);
+        const valT* restrict dX = displ.data(idim);
         valT s                  = valT();
         for (int jat = 0; jat < iat; ++jat)
           s += du[jat] * dX[jat];
@@ -381,8 +384,8 @@ template <typename FT> void TwoBodyJastrowRef<FT>::recompute(ParticleSet &P)
       }
       for (int idim = 0; idim < OHMMS_DIM; ++idim)
       {
-        valT *restrict save_g   = dUat.data(idim);
-        const valT *restrict dX = displ.data(idim);
+        valT* restrict save_g   = dUat.data(idim);
+        const valT* restrict dX = displ.data(idim);
         for (int jat = 0; jat < iat; jat++)
           save_g[jat] -= du[jat] * dX[jat];
       }
@@ -390,23 +393,24 @@ template <typename FT> void TwoBodyJastrowRef<FT>::recompute(ParticleSet &P)
   }
 }
 
-template <typename FT>
+template<typename FT>
 typename TwoBodyJastrowRef<FT>::RealType
-TwoBodyJastrowRef<FT>::evaluateLog(ParticleSet &P,
-                                   ParticleSet::ParticleGradient_t &G,
-                                   ParticleSet::ParticleLaplacian_t &L)
+    TwoBodyJastrowRef<FT>::evaluateLog(ParticleSet& P,
+                                       ParticleSet::ParticleGradient_t& G,
+                                       ParticleSet::ParticleLaplacian_t& L)
 {
   evaluateGL(P, G, L, true);
   return LogValue;
 }
 
-template <typename FT>
-void TwoBodyJastrowRef<FT>::evaluateGL(ParticleSet &P,
-                                       ParticleSet::ParticleGradient_t &G,
-                                       ParticleSet::ParticleLaplacian_t &L,
+template<typename FT>
+void TwoBodyJastrowRef<FT>::evaluateGL(ParticleSet& P,
+                                       ParticleSet::ParticleGradient_t& G,
+                                       ParticleSet::ParticleLaplacian_t& L,
                                        bool fromscratch)
 {
-  if (fromscratch) recompute(P);
+  if (fromscratch)
+    recompute(P);
   LogValue = valT(0);
   for (int iat = 0; iat < N; ++iat)
   {

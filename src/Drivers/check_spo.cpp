@@ -34,7 +34,7 @@ using namespace qmcplusplus;
 
 void print_help()
 {
-  //clang-format off
+  // clang-format off
   app_summary() << "usage:" << '\n';
   app_summary() << "  check_spo [-hvV] [-g \"n0 n1 n2\"] [-m meshfactor]"        << '\n';
   app_summary() << "            [-n steps] [-r rmax] [-s seed]"                  << '\n';
@@ -47,15 +47,13 @@ void print_help()
   app_summary() << "  -s  set the random seed.           default: 11"            << '\n';
   app_summary() << "  -v  verbose output"                                        << '\n';
   app_summary() << "  -V  print version information and exit"                    << '\n';
-  //clang-format on
+  // clang-format on
 
   exit(1); // print help and exit
 }
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
-
-
   // clang-format off
   typedef QMCTraits::RealType           RealType;
   typedef ParticleSet::ParticlePos_t    ParticlePos_t;
@@ -66,17 +64,17 @@ int main(int argc, char **argv)
 
   // use the global generator
 
-  int na      = 1;
-  int nb      = 1;
-  int nc      = 1;
-  int nsteps  = 5;
-  int iseed   = 11;
+  int na     = 1;
+  int nb     = 1;
+  int nc     = 1;
+  int nsteps = 5;
+  int iseed  = 11;
   RealType Rmax(1.7);
   int nx = 37, ny = 37, nz = 37;
   // thread blocking
   // int team_size=1; //default is 1
-  int tileSize = -1;
-  int team_size   = 1;
+  int tileSize  = -1;
+  int team_size = 1;
 
   bool verbose = false;
 
@@ -86,26 +84,32 @@ int main(int argc, char **argv)
   }
 
   int opt;
-  while(optind < argc)
+  while (optind < argc)
   {
     if ((opt = getopt(argc, argv, "hvVa:c:f:g:m:n:r:s:")) != -1)
     {
       switch (opt)
       {
-      case 'a': tileSize = atoi(optarg); break;
+      case 'a':
+        tileSize = atoi(optarg);
+        break;
       case 'c': // number of members per team
         team_size = atoi(optarg);
         break;
       case 'g': // tiling1 tiling2 tiling3
         sscanf(optarg, "%d %d %d", &na, &nb, &nc);
         break;
-      case 'h': print_help(); break;
-      case 'm':
-        {
-          const RealType meshfactor = atof(optarg);
-          nx *= meshfactor; ny *= meshfactor; nz *= meshfactor;
-        }
+      case 'h':
+        print_help();
         break;
+      case 'm':
+      {
+        const RealType meshfactor = atof(optarg);
+        nx *= meshfactor;
+        ny *= meshfactor;
+        nz *= meshfactor;
+      }
+      break;
       case 'n':
         nsteps = atoi(optarg);
         break;
@@ -115,7 +119,9 @@ int main(int argc, char **argv)
       case 's':
         iseed = atoi(optarg);
         break;
-      case 'v': verbose = true; break;
+      case 'v':
+        verbose = true;
+        break;
       case 'V':
         print_version(true);
         return 1;
@@ -156,12 +162,12 @@ int main(int argc, char **argv)
   {
     Tensor<OHMMS_PRECISION, 3> lattice_b;
     build_ions(ions, tmat, lattice_b);
-    const int norb        = count_electrons(ions, 1) / 2;
-    tileSize              = (tileSize > 0) ? tileSize : norb;
-    nTiles                = norb / tileSize;
+    const int norb = count_electrons(ions, 1) / 2;
+    tileSize       = (tileSize > 0) ? tileSize : norb;
+    nTiles         = norb / tileSize;
 
-    const size_t SPO_coeff_size = static_cast<size_t>(norb)
-      * (nx + 3) * (ny + 3) * (nz + 3) * sizeof(RealType);
+    const size_t SPO_coeff_size =
+        static_cast<size_t>(norb) * (nx + 3) * (ny + 3) * (nz + 3) * sizeof(RealType);
     const double SPO_coeff_size_MB = SPO_coeff_size * 1.0 / 1024 / 1024;
 
     app_summary() << "Number of orbitals/splines = " << norb << endl
@@ -174,8 +180,8 @@ int main(int argc, char **argv)
     app_summary() << "MPI processes = " << comm.size() << endl;
 #endif
 
-    app_summary() << "\nSPO coefficients size = " << SPO_coeff_size
-                  << " bytes (" << SPO_coeff_size_MB << " MB)" << endl;
+    app_summary() << "\nSPO coefficients size = " << SPO_coeff_size << " bytes ("
+                  << SPO_coeff_size_MB << " MB)" << endl;
 
     spo_main.set(nx, ny, nz, norb, nTiles);
     spo_main.Lattice.set(lattice_b);
@@ -191,14 +197,14 @@ int main(int argc, char **argv)
   double evalVGH_g_err = 0.0;
   double evalVGH_h_err = 0.0;
 
-// clang-format off
+  // clang-format off
   #pragma omp parallel reduction(+:ratio,nspheremoves,dNumVGHCalls) \
    reduction(+:evalV_v_err,evalVGH_v_err,evalVGH_g_err,evalVGH_h_err)
   // clang-format on
   {
-    const int np     = omp_get_num_threads();
-    const int ip     = omp_get_thread_num();
-    const int team_id = ip / team_size;
+    const int np        = omp_get_num_threads();
+    const int ip        = omp_get_thread_num();
+    const int team_id   = ip / team_size;
     const int member_id = ip % team_size;
 
     // create generator within the thread
@@ -232,8 +238,7 @@ int main(int argc, char **argv)
 
     vector<RealType> ur(nels);
     random_th.generate_uniform(ur.data(), nels);
-    const double zval =
-        1.0 * static_cast<double>(nels) / static_cast<double>(nions);
+    const double zval = 1.0 * static_cast<double>(nels) / static_cast<double>(nions);
 
     int my_accepted = 0, my_vals = 0;
 
@@ -253,28 +258,18 @@ int main(int argc, char **argv)
           for (int n = 0; n < spo.nSplinesPerBlock; n++)
           {
             // value
-            evalVGH_v_err +=
-                std::fabs(spo.psi[ib][n] - spo_ref.psi[ib][n]);
+            evalVGH_v_err += std::fabs(spo.psi[ib][n] - spo_ref.psi[ib][n]);
             // grad
-            evalVGH_g_err += std::fabs(spo.grad[ib].data(0)[n] -
-                                       spo_ref.grad[ib].data(0)[n]);
-            evalVGH_g_err += std::fabs(spo.grad[ib].data(1)[n] -
-                                       spo_ref.grad[ib].data(1)[n]);
-            evalVGH_g_err += std::fabs(spo.grad[ib].data(2)[n] -
-                                       spo_ref.grad[ib].data(2)[n]);
+            evalVGH_g_err += std::fabs(spo.grad[ib].data(0)[n] - spo_ref.grad[ib].data(0)[n]);
+            evalVGH_g_err += std::fabs(spo.grad[ib].data(1)[n] - spo_ref.grad[ib].data(1)[n]);
+            evalVGH_g_err += std::fabs(spo.grad[ib].data(2)[n] - spo_ref.grad[ib].data(2)[n]);
             // hess
-            evalVGH_h_err += std::fabs(spo.hess[ib].data(0)[n] -
-                                       spo_ref.hess[ib].data(0)[n]);
-            evalVGH_h_err += std::fabs(spo.hess[ib].data(1)[n] -
-                                       spo_ref.hess[ib].data(1)[n]);
-            evalVGH_h_err += std::fabs(spo.hess[ib].data(2)[n] -
-                                       spo_ref.hess[ib].data(2)[n]);
-            evalVGH_h_err += std::fabs(spo.hess[ib].data(3)[n] -
-                                       spo_ref.hess[ib].data(3)[n]);
-            evalVGH_h_err += std::fabs(spo.hess[ib].data(4)[n] -
-                                       spo_ref.hess[ib].data(4)[n]);
-            evalVGH_h_err += std::fabs(spo.hess[ib].data(5)[n] -
-                                       spo_ref.hess[ib].data(5)[n]);
+            evalVGH_h_err += std::fabs(spo.hess[ib].data(0)[n] - spo_ref.hess[ib].data(0)[n]);
+            evalVGH_h_err += std::fabs(spo.hess[ib].data(1)[n] - spo_ref.hess[ib].data(1)[n]);
+            evalVGH_h_err += std::fabs(spo.hess[ib].data(2)[n] - spo_ref.hess[ib].data(2)[n]);
+            evalVGH_h_err += std::fabs(spo.hess[ib].data(3)[n] - spo_ref.hess[ib].data(3)[n]);
+            evalVGH_h_err += std::fabs(spo.hess[ib].data(4)[n] - spo_ref.hess[ib].data(4)[n]);
+            evalVGH_h_err += std::fabs(spo.hess[ib].data(5)[n] - spo_ref.hess[ib].data(5)[n]);
           }
         if (ur[iel] > accept)
         {
@@ -302,15 +297,14 @@ int main(int argc, char **argv)
             // accumulate error
             for (int ib = 0; ib < spo.nBlocks; ib++)
               for (int n = 0; n < spo.nSplinesPerBlock; n++)
-                evalV_v_err +=
-                    std::fabs(spo.psi[ib][n] - spo_ref.psi[ib][n]);
+                evalV_v_err += std::fabs(spo.psi[ib][n] - spo_ref.psi[ib][n]);
           }
         } // els
       }   // ions
 
     } // steps.
 
-    ratio += RealType(my_accepted) / RealType(nels * nsteps);
+    ratio        += RealType(my_accepted) / RealType(nels * nsteps);
     nspheremoves += RealType(my_vals) / RealType(nsteps);
     dNumVGHCalls += nels;
 
@@ -318,7 +312,7 @@ int main(int argc, char **argv)
 
   outputManager.resume();
 
-  evalV_v_err /= nspheremoves;
+  evalV_v_err   /= nspheremoves;
   evalVGH_v_err /= dNumVGHCalls;
   evalVGH_g_err /= dNumVGHCalls;
   evalVGH_h_err /= dNumVGHCalls;
@@ -336,25 +330,23 @@ int main(int argc, char **argv)
   }
   if (evalVGH_v_err / np > small_v)
   {
-    app_log() << "Fail in evaluate_vgh, V error =" << evalVGH_v_err / np
-         << std::endl;
+    app_log() << "Fail in evaluate_vgh, V error =" << evalVGH_v_err / np << std::endl;
     nfail += 1;
   }
   if (evalVGH_g_err / np > small_g)
   {
-    app_log() << "Fail in evaluate_vgh, G error =" << evalVGH_g_err / np
-         << std::endl;
+    app_log() << "Fail in evaluate_vgh, G error =" << evalVGH_g_err / np << std::endl;
     nfail += 1;
   }
   if (evalVGH_h_err / np > small_h)
   {
-    app_log() << "Fail in evaluate_vgh, H error =" << evalVGH_h_err / np
-         << std::endl;
+    app_log() << "Fail in evaluate_vgh, H error =" << evalVGH_h_err / np << std::endl;
     nfail += 1;
   }
   comm.reduce(nfail);
 
-  if (nfail == 0) app_log() << "All checks passed for spo" << std::endl;
+  if (nfail == 0)
+    app_log() << "All checks passed for spo" << std::endl;
 
   return 0;
 }

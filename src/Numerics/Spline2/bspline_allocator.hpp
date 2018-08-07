@@ -24,7 +24,6 @@ namespace qmcplusplus
 {
 namespace einspline
 {
-
 class Allocator
 {
   /// Setting the allocation policy: default is using aligned allocator
@@ -35,57 +34,63 @@ public:
   Allocator();
 #if (__cplusplus >= 201103L)
   /// disable copy constructor
-  Allocator(const Allocator &) = delete;
+  Allocator(const Allocator&) = delete;
   /// disable assignement
-  Allocator &operator=(const Allocator &) = delete;
+  Allocator& operator=(const Allocator&) = delete;
 #endif
   /// destructor
   ~Allocator();
 
-  template <typename SplineType> void destroy(SplineType *spline)
+  template<typename SplineType>
+  void destroy(SplineType* spline)
   {
     einspline_free(spline->coefs);
     free(spline);
   }
 
   /// allocate a single multi-bspline
-  multi_UBspline_3d_s *allocateMultiBspline(Ugrid x_grid, Ugrid y_grid,
-                                            Ugrid z_grid, BCtype_s xBC,
-                                            BCtype_s yBC, BCtype_s zBC,
+  multi_UBspline_3d_s* allocateMultiBspline(Ugrid x_grid,
+                                            Ugrid y_grid,
+                                            Ugrid z_grid,
+                                            BCtype_s xBC,
+                                            BCtype_s yBC,
+                                            BCtype_s zBC,
                                             int num_splines);
 
   /// allocate a double multi-bspline
-  multi_UBspline_3d_d *allocateMultiBspline(Ugrid x_grid, Ugrid y_grid,
-                                            Ugrid z_grid, BCtype_d xBC,
-                                            BCtype_d yBC, BCtype_d zBC,
+  multi_UBspline_3d_d* allocateMultiBspline(Ugrid x_grid,
+                                            Ugrid y_grid,
+                                            Ugrid z_grid,
+                                            BCtype_d xBC,
+                                            BCtype_d yBC,
+                                            BCtype_d zBC,
                                             int num_splines);
 
   /// allocate a single bspline
-  UBspline_3d_s *allocateUBspline(Ugrid x_grid, Ugrid y_grid, Ugrid z_grid,
-                                  BCtype_s xBC, BCtype_s yBC, BCtype_s zBC);
+  UBspline_3d_s*
+  allocateUBspline(Ugrid x_grid, Ugrid y_grid, Ugrid z_grid, BCtype_s xBC, BCtype_s yBC, BCtype_s zBC);
 
   /// allocate a UBspline_3d_d
-  UBspline_3d_d *allocateUBspline(Ugrid x_grid, Ugrid y_grid, Ugrid z_grid,
-                                  BCtype_d xBC, BCtype_d yBC, BCtype_d zBC);
+  UBspline_3d_d*
+  allocateUBspline(Ugrid x_grid, Ugrid y_grid, Ugrid z_grid, BCtype_d xBC, BCtype_d yBC, BCtype_d zBC);
 
   /** allocate a multi_UBspline_3d_(s,d)
    * @tparam T datatype
    * @tparam ValT 3D container for start and end
    * @tparam IntT 3D container for ng
    */
-  template <typename T, typename ValT, typename IntT>
-  typename bspline_traits<T, 3>::SplineType *
-  createMultiBspline(T dummy, ValT &start, ValT &end, IntT &ng, bc_code bc,
-                     int num_splines);
+  template<typename T, typename ValT, typename IntT>
+  typename bspline_traits<T, 3>::SplineType*
+  createMultiBspline(T dummy, ValT& start, ValT& end, IntT& ng, bc_code bc, int num_splines);
 
   /** allocate a UBspline_3d_(s,d)
    * @tparam T datatype
    * @tparam ValT 3D container for start and end
    * @tparam IntT 3D container for ng
    */
-  template <typename ValT, typename IntT, typename T>
-  typename bspline_traits<T, 3>::SingleSplineType *
-  createUBspline(ValT &start, ValT &end, IntT &ng, bc_code bc);
+  template<typename ValT, typename IntT, typename T>
+  typename bspline_traits<T, 3>::SingleSplineType*
+  createUBspline(ValT& start, ValT& end, IntT& ng, bc_code bc);
 
   /** Set coefficients for a single orbital (band)
    * @param i index of the orbital
@@ -93,7 +98,9 @@ public:
    * @param spline target MultibsplineType
    */
   template<typename T>
-  void setCoefficientsForOneOrbital(int i, Array<T,3> &coeff, typename bspline_traits<T,3>::SplineType *spline);
+  void setCoefficientsForOneOrbital(int i,
+                                    Array<T, 3>& coeff,
+                                    typename bspline_traits<T, 3>::SplineType* spline);
 
   /** copy a UBSpline_3d_X to multi_UBspline_3d_X at i-th band
    * @param single  UBspline_3d_X
@@ -102,31 +109,34 @@ public:
    * @param offset starting offset for AoSoA
    * @param N shape of AoSoA
    */
-  template <typename UBT, typename MBT>
-  void copy(UBT *single, MBT *multi, int i, const int *offset, const int *N);
-
+  template<typename UBT, typename MBT>
+  void copy(UBT* single, MBT* multi, int i, const int* offset, const int* N);
 };
 
 template<typename T>
-void Allocator::setCoefficientsForOneOrbital(int i, Array<T,3> &coeff, typename bspline_traits<T,3>::SplineType *spline)
+void Allocator::setCoefficientsForOneOrbital(int i,
+                                             Array<T, 3>& coeff,
+                                             typename bspline_traits<T, 3>::SplineType* spline)
 {
-  #pragma omp parallel for collapse(3)
-  for (int ix = 0; ix < spline->x_grid.num + 3; ix++) {
-    for (int iy = 0; iy < spline->y_grid.num + 3; iy++) {
-      for (int iz = 0; iz < spline->z_grid.num + 3; iz++) {
-        intptr_t xs = spline->x_stride;
-        intptr_t ys = spline->y_stride;
-        intptr_t zs = spline->z_stride;
-        spline->coefs[ix*xs + iy*ys + iz*zs + i] = coeff(ix,iy,iz);
+#pragma omp parallel for collapse(3)
+  for (int ix = 0; ix < spline->x_grid.num + 3; ix++)
+  {
+    for (int iy = 0; iy < spline->y_grid.num + 3; iy++)
+    {
+      for (int iz = 0; iz < spline->z_grid.num + 3; iz++)
+      {
+        intptr_t xs                                    = spline->x_stride;
+        intptr_t ys                                    = spline->y_stride;
+        intptr_t zs                                    = spline->z_stride;
+        spline->coefs[ix * xs + iy * ys + iz * zs + i] = coeff(ix, iy, iz);
       }
     }
   }
 }
 
-template <typename T, typename ValT, typename IntT>
-typename bspline_traits<T, 3>::SplineType *
-Allocator::createMultiBspline(T dummy, ValT &start, ValT &end, IntT &ng,
-                              bc_code bc, int num_splines)
+template<typename T, typename ValT, typename IntT>
+typename bspline_traits<T, 3>::SplineType*
+Allocator::createMultiBspline(T dummy, ValT& start, ValT& end, IntT& ng, bc_code bc, int num_splines)
 {
   Ugrid x_grid, y_grid, z_grid;
   typename bspline_traits<T, 3>::BCType xBC, yBC, zBC;
@@ -142,13 +152,12 @@ Allocator::createMultiBspline(T dummy, ValT &start, ValT &end, IntT &ng,
   xBC.lCode = xBC.rCode = bc;
   yBC.lCode = yBC.rCode = bc;
   zBC.lCode = zBC.rCode = bc;
-  return allocateMultiBspline(x_grid, y_grid, z_grid, xBC, yBC, zBC,
-                              num_splines);
+  return allocateMultiBspline(x_grid, y_grid, z_grid, xBC, yBC, zBC, num_splines);
 }
 
-template <typename ValT, typename IntT, typename T>
-typename bspline_traits<T, 3>::SingleSplineType *
-Allocator::createUBspline(ValT &start, ValT &end, IntT &ng, bc_code bc)
+template<typename ValT, typename IntT, typename T>
+typename bspline_traits<T, 3>::SingleSplineType*
+Allocator::createUBspline(ValT& start, ValT& end, IntT& ng, bc_code bc)
 {
   Ugrid x_grid, y_grid, z_grid;
   typename bspline_traits<T, 3>::BCType xBC, yBC, zBC;
@@ -167,9 +176,8 @@ Allocator::createUBspline(ValT &start, ValT &end, IntT &ng, bc_code bc)
   return allocateUBspline(x_grid, y_grid, z_grid, xBC, yBC, zBC);
 }
 
-template <typename UBT, typename MBT>
-void Allocator::copy(UBT *single, MBT *multi, int i, const int *offset,
-                     const int *N)
+template<typename UBT, typename MBT>
+void Allocator::copy(UBT* single, MBT* multi, int i, const int* offset, const int* N)
 {
   typedef typename bspline_type<MBT>::value_type out_type;
   typedef typename bspline_type<UBT>::value_type in_type;
@@ -186,17 +194,15 @@ void Allocator::copy(UBT *single, MBT *multi, int i, const int *offset,
   for (intptr_t ix = 0; ix < n0; ++ix)
     for (intptr_t iy = 0; iy < n1; ++iy)
     {
-      out_type *restrict out =
-          multi->coefs + ix * x_stride_out + iy * y_stride_out + istart;
-      const in_type *restrict in = single->coefs +
-                                   (ix + offset0) * x_stride_in +
-                                   (iy + offset1) * y_stride_in + offset2;
+      out_type* restrict out = multi->coefs + ix * x_stride_out + iy * y_stride_out + istart;
+      const in_type* restrict in =
+          single->coefs + (ix + offset0) * x_stride_in + (iy + offset1) * y_stride_in + offset2;
       for (intptr_t iz = 0; iz < n2; ++iz)
       {
         out[iz * z_stride_out] = static_cast<out_type>(in[iz]);
       }
     }
 }
-}
-}
+} // namespace einspline
+} // namespace qmcplusplus
 #endif
