@@ -457,5 +457,6 @@ int main(int argc, char **argv)
   if (!fail) cout << "All checks passed for " << wfc_name << std::endl;
 
   }//end kokkos block
+  Kokkos::finalize();
   return 0;
 }
