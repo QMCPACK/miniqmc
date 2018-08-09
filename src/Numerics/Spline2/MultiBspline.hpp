@@ -142,7 +142,7 @@ KOKKOS_INLINE_FUNCTION void MultiBspline<T>::evaluate_v(const TeamType& team, co
   const intptr_t ys = spline_m->y_stride;
   const intptr_t zs = spline_m->z_stride;
 
-//  CONSTEXPR T zero(0);
+  constexpr T zero(0);
   ASSUME_ALIGNED(vals);
   //std::fill() not OK with CUDA
   //

@@ -99,7 +99,6 @@ SET(ENABLE_GCOV FALSE CACHE BOOL "Enable code coverage")
 SET(QMC_MPI 0 CACHE BOOL "Enable/disable MPI")
 SET(QMC_OMP 1 CACHE BOOL "Enable/disable OpenMP")
 SET(QMC_COMPLEX 0 CACHE INTEGER "Build for complex binary")
-SET(PRINT_DEBUG 0 CACHE BOOL "Enable/disable debug printing")
 
 ######################################################################
 # Standard test
@@ -147,13 +146,6 @@ SET(OHMMS_ORTHO 0)
 ######################################################################
 #SET(ENABLE_PHDF5 0 CACHE BOOL "Enable phdf5 for output")
 #SET(HAVE_LIBHDF5 0)
-SET(HAVE_LIBSPRNG 0)
-SET(HAVE_LIBBLITZ 0)
-SET(HAVE_LIBGSL 0)
-SET(MAC_VECLIB 0)
-SET(ENABLE_GTK_GUI 0)
-set(ENABLE_TAU_PROFILE 0 CACHE BOOL "Enable tau for profiling")
-set(TAU_HOME $ENV{TAU_HOME})
 
 ######################################################
 # Directory where customize cmake files reside
@@ -198,9 +190,6 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
   SET(HAVE_MKL 0)
   SET(HAVE_MKL_VML 0)
   SET(HAVE_ACML 0)
-  SET(USE_PREFETCH 0)
-  SET(PREFETCH_AHEAD 12)
-  SET(HAVE_C_VARARRAYS 1)
 
   ######################################################
   # Try to identify CPU identity
@@ -302,11 +291,9 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
     GET_FILENAME_COMPONENT(BASE_CXX_COMPILER_NAME ${CMAKE_CXX_COMPILER} NAME)
     if(${BASE_CXX_COMPILER_NAME} MATCHES "^mp")
       SET(HAVE_MPI 1)
-      SET(HAVE_OOMPI 1)
       SET(MPI_FOUND TRUE)
     elseif($ENV{CRAYPE_VERSION} MATCHES ".")
       SET(HAVE_MPI 1)
-      SET(HAVE_OOMPI 1)
       SET(MPI_FOUND TRUE)
     else()
       include(FindMPI)
@@ -330,12 +317,10 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
         IF(MPI_WORKS)
           MESSAGE(STATUS "MPI is enabled")
           SET(HAVE_MPI 1)
-          SET(HAVE_OOMPI 1)
           LINK_LIBRARIES(${MPI_CXX_LIBRARIES})
         ELSE(MPI_WORKS)
           MESSAGE(STATUS "MPI is disabled")
           SET(HAVE_MPI 0)
-          SET(HAVE_OOMPI 0)
           SET(MPI_LIBRARY "")
         ENDIF(MPI_WORKS)
       ELSE(MPI_FOUND)
@@ -433,7 +418,6 @@ ENDIF(HAVE_MPI)
 
 MESSAGE(STATUS "CXX compiler flags: ${CMAKE_CXX_FLAGS}")
 
-SET(HAVE_OOMPI ${HAVE_MPI})
 INCLUDE(${CMAKE_ROOT}/Modules/FindThreads.cmake)
 
 ####################################################################

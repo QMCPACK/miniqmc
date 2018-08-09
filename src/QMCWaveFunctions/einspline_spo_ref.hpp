@@ -15,7 +15,7 @@
 //    Intel Corp.
 // ////////////////////////////////////////////////////////////////////////////////
 // -*- C++ -*-
-/** @file einspline_spo.hpp
+/** @file einspline_spo_ref.hpp
  */
 #ifndef QMCPLUSPLUS_EINSPLINE_SPO_REF_HPP
 #define QMCPLUSPLUS_EINSPLINE_SPO_REF_HPP
@@ -23,19 +23,22 @@
 #include <Utilities/NewTimer.h>
 #include <Particle/ParticleSet.h>
 #include <Numerics/Spline2/bspline_allocator.hpp>
-#include <Numerics/Spline2/MultiBspline.hpp>
+#include <Numerics/Spline2/MultiBsplineRef.hpp>
 #include <Utilities/SIMD/allocator.hpp>
 #include "Numerics/OhmmsPETE/OhmmsArray.h"
+#include "QMCWaveFunctions/SPOSet.h"
 #include <iostream>
 
-namespace qmcplusplus
+namespace miniqmcreference
 {
-template <typename T, typename compute_engine_type = MultiBspline<T> >
-struct einspline_spo_ref
+
+using namespace qmcplusplus;
+
+template <typename T>
+struct einspline_spo_ref : public SPOSet
 {
   /// define the einsplie data object type
   using spline_type = typename bspline_traits<T, 3>::SplineType;
-  using pos_type        = TinyVector<T, 3>;
   using vContainer_type = Kokkos::View<T*>;
   using gContainer_type = Kokkos::View<T*[3],Kokkos::LayoutLeft>;
   using hContainer_type = Kokkos::View<T*[6],Kokkos::LayoutLeft>;
@@ -57,13 +60,12 @@ struct einspline_spo_ref
   /// use allocator
   einspline::Allocator myAllocator;
   /// compute engine
-  compute_engine_type compute_engine;
+  MultiBsplineRef<T> compute_engine;
 
   Kokkos::View<spline_type *> einsplines;
   Kokkos::View<vContainer_type*> psi;
   Kokkos::View<gContainer_type*> grad;
   Kokkos::View<hContainer_type*> hess;
-
 
   /// Timer
   NewTimer *timer;
@@ -72,7 +74,7 @@ struct einspline_spo_ref
   einspline_spo_ref()
       : nBlocks(0), nSplines(0), firstBlock(0), lastBlock(0), Owner(false)
   {
-    timer = TimerManager.createTimer("Single-Particle Orbitals", timer_level_coarse);
+    timer = TimerManager.createTimer("Single-Particle Orbitals Ref", timer_level_fine);
   }
   /// disable copy constructor
   einspline_spo_ref(const einspline_spo_ref &in) = delete;
@@ -80,13 +82,13 @@ struct einspline_spo_ref
   einspline_spo_ref &operator=(const einspline_spo_ref &in) = delete;
 
   /** copy constructor
-   * @param in einspline_spo
+   * @param in einspline_spo_ref
    * @param team_size number of members in a team
    * @param member_id id of this member in a team
    *
    * Create a view of the big object. A simple blocking & padding  method.
    */
-  einspline_spo_ref(einspline_spo_ref &in, int team_size, int member_id)
+  einspline_spo_ref(const einspline_spo_ref &in, int team_size, int member_id)
       : Owner(false), Lattice(in.Lattice)
   {
     nSplines         = in.nSplines;
@@ -100,7 +102,7 @@ struct einspline_spo_ref
     for (int i = 0, t = firstBlock; i < nBlocks; ++i, ++t)
       einsplines(i) = in.einsplines(t);
     resize();
-    timer = TimerManager.createTimer("Single-Particle Orbitals", timer_level_coarse);
+    timer = TimerManager.createTimer("Single-Particle Orbitals Ref", timer_level_fine);
   }
 
   /// destructors
@@ -157,8 +159,8 @@ struct einspline_spo_ref
     {
       Owner = true;
       TinyVector<int, 3> ng(nx, ny, nz);
-      pos_type start(0);
-      pos_type end(1);
+      PosType start(0);
+      PosType end(1);
       
 //    einsplines.resize(nBlocks);
       einsplines = Kokkos::View<spline_type*>("einsplines",nBlocks);
@@ -183,7 +185,7 @@ struct einspline_spo_ref
   }
 
   /** evaluate psi */
-  inline void evaluate_v(const pos_type &p)
+  inline void evaluate_v(const PosType &p)
   {
     ScopedTimer local_timer(timer);
 
@@ -193,7 +195,7 @@ struct einspline_spo_ref
   }
 
   /** evaluate psi */
-  inline void evaluate_v_pfor(const pos_type &p)
+  inline void evaluate_v_pfor(const PosType &p)
   {
     auto u = Lattice.toUnit_floor(p);
     #pragma omp for nowait
@@ -202,7 +204,7 @@ struct einspline_spo_ref
   }
 
   /** evaluate psi, grad and lap */
-  inline void evaluate_vgl(const pos_type &p)
+  inline void evaluate_vgl(const PosType &p)
   {
     auto u = Lattice.toUnit_floor(p);
     for (int i = 0; i < nBlocks; ++i)
@@ -212,7 +214,7 @@ struct einspline_spo_ref
   }
 
   /** evaluate psi, grad and lap */
-  inline void evaluate_vgl_pfor(const pos_type &p)
+  inline void evaluate_vgl_pfor(const PosType &p)
   {
     auto u = Lattice.toUnit_floor(p);
     #pragma omp for nowait
@@ -223,7 +225,7 @@ struct einspline_spo_ref
   }
 
   /** evaluate psi, grad and hess */
-  inline void evaluate_vgh(const pos_type &p)
+  inline void evaluate_vgh(const PosType &p)
   {
     ScopedTimer local_timer(timer);
 
@@ -235,7 +237,7 @@ struct einspline_spo_ref
   }
 
   /** evaluate psi, grad and hess */
-  inline void evaluate_vgh_pfor(const pos_type &p)
+  inline void evaluate_vgh_pfor(const PosType &p)
   {
     auto u = Lattice.toUnit_floor(p);
     #pragma omp for nowait

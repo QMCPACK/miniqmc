@@ -11,7 +11,7 @@
 #ifndef QMCPLUSPLUS_EEIJASTROW_REF_H
 #define QMCPLUSPLUS_EEIJASTROW_REF_H
 #include "Utilities/Configuration.h"
-#include "QMCWaveFunctions/WaveFunctionComponentBase.h"
+#include "QMCWaveFunctions/WaveFunctionComponent.h"
 #include "Particle/DistanceTableData.h"
 #include <numeric>
 
@@ -28,7 +28,7 @@ using namespace qmcplusplus;
  *For electrons, distinct pair correlation functions are used
  *for spins up-up/down-down and up-down/down-up.
  */
-template <class FT> class ThreeBodyJastrowRef : public WaveFunctionComponentBase
+template <class FT> class ThreeBodyJastrowRef : public WaveFunctionComponent
 {
   /// type of each component U, dU, d2U;
   using valT = typename FT::real_type;

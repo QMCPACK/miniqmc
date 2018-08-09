@@ -12,7 +12,7 @@
 #ifndef QMCPLUSPLUS_ONEBODYJASTROW_H
 #define QMCPLUSPLUS_ONEBODYJASTROW_H
 #include "Utilities/Configuration.h"
-#include "QMCWaveFunctions/WaveFunctionComponentBase.h"
+#include "QMCWaveFunctions/WaveFunctionComponent.h"
 #include <Utilities/SIMD/allocator.hpp>
 #include <Utilities/SIMD/algorithm.hpp>
 #include <numeric>
@@ -27,7 +27,7 @@ namespace qmcplusplus
 /** @ingroup WaveFunctionComponent
  *  @brief Specialization for one-body Jastrow function using multiple functors
  */
-template <class FT> struct OneBodyJastrow : public WaveFunctionComponentBase
+template <class FT> struct OneBodyJastrow : public WaveFunctionComponent
 {
   /// alias FuncType
   using FuncType = FT;
@@ -198,7 +198,7 @@ template <class FT> struct OneBodyJastrow : public WaveFunctionComponentBase
   {
     if (NumGroups > 0)
     { // ions are grouped
-      CONSTEXPR valT czero(0);
+      constexpr valT czero(0);
       std::fill_n(U.data(), Nions, czero);
       std::fill_n(dU.data(), Nions, czero);
       std::fill_n(d2U.data(), Nions, czero);

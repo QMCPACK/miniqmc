@@ -22,7 +22,7 @@
 #include "Numerics/OhmmsPETE/OhmmsMatrix.h"
 #include "Numerics/DeterminantOperators.h"
 #include "Particle/ParticleSet.h"
-#include "QMCWaveFunctions/WaveFunctionComponentBase.h"
+#include "QMCWaveFunctions/WaveFunctionComponent.h"
 
 
 namespace miniqmcreference
@@ -180,7 +180,7 @@ void checkDiff(const MT1 &a, const MT2 &b, const std::string &tag)
 
 }
 
-struct DiracDeterminantRef : public qmcplusplus::WaveFunctionComponentBase
+struct DiracDeterminantRef : public qmcplusplus::WaveFunctionComponent
 {
   using ParticleSet = qmcplusplus::ParticleSet;
 
