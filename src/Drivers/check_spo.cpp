@@ -298,11 +298,10 @@ int main(int argc, char** argv)
 
       Timers[Timer_SPO_vgh]->start();
       anon_spo->multi_evaluate_vgh(spo_shadows, pos_list);
+      Timers[Timer_SPO_vgh]->stop();
       if (transfer)
         anon_spo->multi_transfer_from_device(spo_shadows);
-      Timers[Timer_SPO_vgh]->stop();
 
-      Timers[Timer_SPO_ref_vgh]->start();
 #pragma omp parallel for reduction(+ : evalVGH_v_err, evalVGH_g_err, evalVGH_h_err)
       for (size_t iw = 0; iw < mover_list.size(); iw++)
       {
@@ -313,8 +312,10 @@ int main(int argc, char** argv)
         auto& els         = mover.els;
         auto& ur          = ur_list[iw];
         auto& my_accepted = my_accepted_list[iw];
+        Timers[Timer_SPO_ref_vgh]->start();
         if (transfer)
           spo_ref.evaluate_vgh(pos);
+        Timers[Timer_SPO_ref_vgh]->stop();
         // accumulate error
         for (int ib = 0; ib < spo.nBlocks; ib++)
           for (int n = 0; n < spo.nSplinesPerBlock; n++)
@@ -339,7 +340,6 @@ int main(int argc, char** argv)
           my_accepted++;
         }
       }
-      Timers[Timer_SPO_ref_vgh]->stop();
     }
 
 #if 0
