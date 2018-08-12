@@ -125,6 +125,35 @@ inline void
   getri(n, x, lda, pivot, work, lwork);
 }
 
+/// gemv offload to accelerator
+template <class T>
+inline void gemv_offload(int n, T alpha, const T *restrict A, const T *restrict V, T *restrict Vout)
+{
+  PRAGMA_OMP("omp target teams distribute parallel for map(to:n, V[:n]) map(from:Vout[:n])")
+  for(size_t row=0; row<n; row++)
+  {
+    T sum = T(0);
+    const T *restrict A_row = A+row*n;
+    for(size_t col=0; col<n; col++)
+      sum += A_row[col]*V[col];
+    Vout[row] = sum*alpha;
+  }
+}
+
+/// ger offload to accelerator
+/// A = alpha Y * X^T + A
+template <class T>
+inline void ger_offload(T alpha, const T *restrict X, const T *restrict Y, T *restrict A, int n)
+{
+  PRAGMA_OMP(" omp target teams distribute parallel for map(to:n, X[:n], Y[:n])")
+  for(size_t row=0; row<n; row++)
+  {
+    T *restrict A_row = A+row*n;
+    for(size_t col=0; col<n; col++)
+      A_row[col] += X[col]*Y[row]*alpha;
+  }
+}
+
 /** update Row as implemented in the full code */
 /** [UpdateRow] */
 template<typename T, typename RT>
@@ -135,10 +164,12 @@ inline void
   constexpr T czero(0);
   T temp[m], rcopy[m];
   T c_ratio = cone / c_ratio_in;
-  BLAS::gemv('T', m, m, c_ratio, pinv, m, tv, 1, czero, temp, 1);
+  //BLAS::gemv('T', m, m, c_ratio, pinv, m, tv, 1, czero, temp, 1);
+  gemv_offload(m, c_ratio, pinv, tv, temp);
   temp[rowchanged] = cone - c_ratio;
   std::copy_n(pinv + m * rowchanged, m, rcopy);
-  BLAS::ger(m, m, -cone, rcopy, 1, temp, 1, pinv, m);
+  //BLAS::ger(m, m, -cone, rcopy, 1, temp, 1, pinv, m);
+  ger_offload(-cone, rcopy, temp, pinv, m);
 }
 /** [UpdateRow] */
 /**@}*/
