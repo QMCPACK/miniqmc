@@ -129,7 +129,7 @@ inline void
 template <class T>
 inline void gemv_offload(int n, T alpha, const T *restrict A, const T *restrict V, T *restrict Vout)
 {
-  PRAGMA_OMP("omp target teams distribute parallel for map(to:n, V[:n]) map(from:Vout[:n])")
+  PRAGMA_OMP("omp target teams distribute parallel for map(to:A[:n*n]) map(to:n, V[:n]) map(from:Vout[:n])")
   for(size_t row=0; row<n; row++)
   {
     T sum = T(0);
@@ -145,7 +145,7 @@ inline void gemv_offload(int n, T alpha, const T *restrict A, const T *restrict 
 template <class T>
 inline void ger_offload(T alpha, const T *restrict X, const T *restrict Y, T *restrict A, int n)
 {
-  PRAGMA_OMP(" omp target teams distribute parallel for map(to:n, X[:n], Y[:n])")
+  PRAGMA_OMP(" omp target teams distribute parallel for map(tofrom:A[:n*n]) map(to:n, X[:n], Y[:n])")
   for(size_t row=0; row<n; row++)
   {
     T *restrict A_row = A+row*n;
