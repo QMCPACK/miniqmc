@@ -18,9 +18,9 @@ namespace qmcplusplus
 {
 
 template<typename T, class Container = std::vector<T>>
-class OMPVector:public Container
+class OMPVector : public Container
 {
-  private:
+  protected:
   size_t device_id;
   T * vec_ptr;
 
