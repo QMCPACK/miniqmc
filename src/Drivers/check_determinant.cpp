@@ -207,6 +207,8 @@ int main(int argc, char** argv)
       els.donePbyP();
     }
 
+    determinant.transfer_from_device();
+
     // accumulate error
     for (int i = 0; i < determinant_ref.size(); i++)
     {

@@ -18,6 +18,7 @@
 #ifndef QMCPLUSPLUS_DETERMINANT_H
 #define QMCPLUSPLUS_DETERMINANT_H
 #include "Numerics/OhmmsPETE/OhmmsMatrix.h"
+#include <OMP_target_test/OMPMatrix.h>
 #include "Numerics/DeterminantOperators.h"
 #include "QMCWaveFunctions/WaveFunctionComponent.h"
 
@@ -129,7 +130,7 @@ inline void
 template <class T>
 inline void gemv_offload(int n, T alpha, const T *restrict A, const T *restrict V, T *restrict Vout)
 {
-  PRAGMA_OMP("omp target teams distribute parallel for map(to:A[:n*n]) map(to:n, V[:n]) map(from:Vout[:n])")
+  PRAGMA_OMP("omp target teams distribute parallel for map(to:n, V[:n]) map(from:Vout[:n])")
   for(size_t row=0; row<n; row++)
   {
     T sum = T(0);
@@ -145,7 +146,7 @@ inline void gemv_offload(int n, T alpha, const T *restrict A, const T *restrict 
 template <class T>
 inline void ger_offload(T alpha, const T *restrict X, const T *restrict Y, T *restrict A, int n)
 {
-  PRAGMA_OMP(" omp target teams distribute parallel for map(tofrom:A[:n*n]) map(to:n, X[:n], Y[:n])")
+  PRAGMA_OMP("omp target teams distribute parallel for map(to:n, X[:n], Y[:n])")
   for(size_t row=0; row<n; row++)
   {
     T *restrict A_row = A+row*n;
@@ -240,6 +241,8 @@ struct DiracDeterminant : public WaveFunctionComponent
     transpose(psiMsave.data(), psiM.data(), nels, nels);
     LogValue = InvertWithLog(psiM.data(), nels, nels, work.data(), LWork, pivot.data(), phase);
     std::copy_n(psiM.data(), nels * nels, psiMinv.data());
+    // keep the device consistent
+    psiMinv.update_to_device();
   }
 
   void checkMatrix()
@@ -278,6 +281,8 @@ struct DiracDeterminant : public WaveFunctionComponent
     transpose(psiMsave.data(), psiM.data(), nels, nels);
     InvertOnly(psiM.data(), nels, nels, work.data(), pivot.data(), LWork);
     std::copy_n(psiM.data(), nels * nels, psiMinv.data());
+    // keep the device consistent
+    psiMinv.update_to_device();
   }
 
   /** return determinant ratio for the row replacement
@@ -290,6 +295,7 @@ struct DiracDeterminant : public WaveFunctionComponent
     constexpr double czero(0);
     for (int j = 0; j < nels; ++j)
       psiV[j] = myRandom() - shift;
+    psiMinv.update_row_from_device(iel - FirstIndex);
     curRatio = inner_product_n(psiV.data(), psiMinv[iel - FirstIndex], nels, czero);
     return curRatio;
   }
@@ -300,6 +306,11 @@ struct DiracDeterminant : public WaveFunctionComponent
     const int nels = psiV.size();
     updateRow(psiMinv.data(), psiV.data(), nels, nels, iel - FirstIndex, curRatio);
     std::copy_n(psiV.data(), nels, psiMsave[iel - FirstIndex]);
+  }
+
+  inline void transfer_from_device()
+  {
+    psiMinv.update_from_device();
   }
 
   /** accessor functions for checking */
@@ -316,7 +327,7 @@ private:
   /// initial particle index
   const int FirstIndex;
   /// inverse matrix to be update
-  Matrix<RealType> psiMinv;
+  OMPMatrix<RealType> psiMinv;
   /// a SPO set for the row update
   aligned_vector<RealType> psiV;
   /// internal storage to perform inversion correctly
