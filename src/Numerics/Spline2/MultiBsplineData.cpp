@@ -19,6 +19,7 @@
 
 namespace qmcplusplus
 {
+// clang-format off
 /** initialization of static data for MultiBsplineData<float> */
 template <>
 QMC_ALIGNAS const float MultiBsplineData<float>::A44[16] = {
@@ -53,4 +54,5 @@ template <>
 QMC_ALIGNAS const double MultiBsplineData<double>::d2A44[16] = {
     0.0, 0.0, -1.0, 1.0, 0.0, 0.0, 3.0, -2.0,
     0.0, 0.0, -3.0, 1.0, 0.0, 0.0, 1.0, 0.0};
-}
+// clang-format on
+} // namespace qmcplusplus

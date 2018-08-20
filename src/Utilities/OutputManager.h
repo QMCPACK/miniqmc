@@ -19,8 +19,19 @@
 #include <Utilities/InfoStream.h>
 
 
-enum class Verbosity {LOW, HIGH, DEBUG};
-enum class LogType {SUMMARY, APP, ERROR, DEBUG};
+enum class Verbosity
+{
+  LOW,
+  HIGH,
+  DEBUG
+};
+enum class LogType
+{
+  SUMMARY,
+  APP,
+  ERROR,
+  DEBUG
+};
 
 extern InfoStream infoSummary;
 extern InfoStream infoLog;
@@ -32,24 +43,20 @@ class OutputManagerClass
   Verbosity global_verbosity_level;
 
 public:
-  OutputManagerClass(Verbosity level=Verbosity::LOW) { setVerbosity(level); }
+  OutputManagerClass(Verbosity level = Verbosity::LOW) { setVerbosity(level); }
 
   void setVerbosity(Verbosity level);
 
   bool isActive(Verbosity level);
 
-  bool isDebugActive()
-  {
-    return isActive(Verbosity::DEBUG);
-  }
+  bool isDebugActive() { return isActive(Verbosity::DEBUG); }
 
-  bool isHighActive()
-  {
-    return isActive(Verbosity::HIGH);
-  }
+  bool isHighActive() { return isActive(Verbosity::HIGH); }
 
-  std::ostream& getStream(LogType log) {
-    switch (log) {
+  std::ostream& getStream(LogType log)
+  {
+    switch (log)
+    {
     case LogType::SUMMARY:
       return infoSummary.getStream();
     case LogType::APP:
@@ -74,17 +81,11 @@ public:
 
 extern OutputManagerClass outputManager;
 
-namespace qmcplusplus {
-
-inline std::ostream& app_summary()
+namespace qmcplusplus
 {
-  return outputManager.getStream(LogType::SUMMARY);
-}
+inline std::ostream& app_summary() { return outputManager.getStream(LogType::SUMMARY); }
 
-inline std::ostream& app_log()
-{
-  return outputManager.getStream(LogType::APP);
-}
+inline std::ostream& app_log() { return outputManager.getStream(LogType::APP); }
 
 inline std::ostream& app_error()
 {
@@ -98,15 +99,15 @@ inline std::ostream& app_warning()
   return outputManager.getStream(LogType::ERROR);
 }
 
-inline std::ostream& app_debug_stream()
-{
-  return outputManager.getStream(LogType::DEBUG);
-}
+inline std::ostream& app_debug_stream() { return outputManager.getStream(LogType::DEBUG); }
 
 // From https://stackoverflow.com/questions/11826554/standard-no-op-output-stream
 // If debugging is not active, this skips evaluation of the arguments
-#define app_debug if (!outputManager.isDebugActive()) {} else app_debug_stream
+#define app_debug                        \
+  if (!outputManager.isDebugActive()) {} \
+  else                                   \
+    app_debug_stream
 
-};
+}; // namespace qmcplusplus
 
 #endif

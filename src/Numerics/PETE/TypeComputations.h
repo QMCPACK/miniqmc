@@ -60,7 +60,8 @@ namespace qmcplusplus
 //
 //-----------------------------------------------------------------------------
 
-template <class T, class Op> struct UnaryReturn
+template<class T, class Op>
+struct UnaryReturn
 {
   typedef T Type_t;
 };
@@ -78,266 +79,316 @@ template <class T, class Op> struct UnaryReturn
 
 // Base template: don't do anything by default.
 
-template <class T1, class T2> struct Promote
+template<class T1, class T2>
+struct Promote
 {
   typedef T1 Type_t;
 };
 
 // bool
 
-template <> struct Promote<bool, bool>
+template<>
+struct Promote<bool, bool>
 {
   typedef bool Type_t;
 };
 
-template <> struct Promote<bool, char>
+template<>
+struct Promote<bool, char>
 {
   typedef char Type_t;
 };
 
-template <> struct Promote<bool, short>
+template<>
+struct Promote<bool, short>
 {
   typedef short Type_t;
 };
 
-template <> struct Promote<bool, int>
+template<>
+struct Promote<bool, int>
 {
   typedef int Type_t;
 };
 
-template <> struct Promote<bool, long>
+template<>
+struct Promote<bool, long>
 {
   typedef long Type_t;
 };
 
-template <> struct Promote<bool, float>
+template<>
+struct Promote<bool, float>
 {
   typedef float Type_t;
 };
 
-template <> struct Promote<bool, double>
+template<>
+struct Promote<bool, double>
 {
   typedef double Type_t;
 };
 
 // char
 
-template <> struct Promote<char, bool>
+template<>
+struct Promote<char, bool>
 {
   typedef char Type_t;
 };
 
-template <> struct Promote<char, char>
+template<>
+struct Promote<char, char>
 {
   typedef char Type_t;
 };
 
-template <> struct Promote<char, short>
+template<>
+struct Promote<char, short>
 {
   typedef short Type_t;
 };
 
-template <> struct Promote<char, int>
+template<>
+struct Promote<char, int>
 {
   typedef int Type_t;
 };
 
-template <> struct Promote<char, long>
+template<>
+struct Promote<char, long>
 {
   typedef long Type_t;
 };
 
-template <> struct Promote<char, float>
+template<>
+struct Promote<char, float>
 {
   typedef float Type_t;
 };
 
-template <> struct Promote<char, double>
+template<>
+struct Promote<char, double>
 {
   typedef double Type_t;
 };
 
 // short
 
-template <> struct Promote<short, bool>
+template<>
+struct Promote<short, bool>
 {
   typedef short Type_t;
 };
 
-template <> struct Promote<short, char>
+template<>
+struct Promote<short, char>
 {
   typedef short Type_t;
 };
 
-template <> struct Promote<short, short>
+template<>
+struct Promote<short, short>
 {
   typedef short Type_t;
 };
 
-template <> struct Promote<short, int>
+template<>
+struct Promote<short, int>
 {
   typedef int Type_t;
 };
 
-template <> struct Promote<short, long>
+template<>
+struct Promote<short, long>
 {
   typedef long Type_t;
 };
 
-template <> struct Promote<short, float>
+template<>
+struct Promote<short, float>
 {
   typedef float Type_t;
 };
 
-template <> struct Promote<short, double>
+template<>
+struct Promote<short, double>
 {
   typedef double Type_t;
 };
 
 // int
 
-template <> struct Promote<int, bool>
+template<>
+struct Promote<int, bool>
 {
   typedef int Type_t;
 };
 
-template <> struct Promote<int, char>
+template<>
+struct Promote<int, char>
 {
   typedef int Type_t;
 };
 
-template <> struct Promote<int, short>
+template<>
+struct Promote<int, short>
 {
   typedef int Type_t;
 };
 
-template <> struct Promote<int, int>
+template<>
+struct Promote<int, int>
 {
   typedef int Type_t;
 };
 
-template <> struct Promote<int, long>
+template<>
+struct Promote<int, long>
 {
   typedef long Type_t;
 };
 
-template <> struct Promote<int, float>
+template<>
+struct Promote<int, float>
 {
   typedef float Type_t;
 };
 
-template <> struct Promote<int, double>
+template<>
+struct Promote<int, double>
 {
   typedef double Type_t;
 };
 
 // long
 
-template <> struct Promote<long, bool>
+template<>
+struct Promote<long, bool>
 {
   typedef long Type_t;
 };
 
-template <> struct Promote<long, char>
+template<>
+struct Promote<long, char>
 {
   typedef long Type_t;
 };
 
-template <> struct Promote<long, short>
+template<>
+struct Promote<long, short>
 {
   typedef long Type_t;
 };
 
-template <> struct Promote<long, int>
+template<>
+struct Promote<long, int>
 {
   typedef long Type_t;
 };
 
-template <> struct Promote<long, long>
+template<>
+struct Promote<long, long>
 {
   typedef long Type_t;
 };
 
-template <> struct Promote<long, float>
+template<>
+struct Promote<long, float>
 {
   typedef float Type_t;
 };
 
-template <> struct Promote<long, double>
+template<>
+struct Promote<long, double>
 {
   typedef double Type_t;
 };
 
 // float
 
-template <> struct Promote<float, bool>
+template<>
+struct Promote<float, bool>
 {
   typedef float Type_t;
 };
 
-template <> struct Promote<float, char>
+template<>
+struct Promote<float, char>
 {
   typedef float Type_t;
 };
 
-template <> struct Promote<float, short>
+template<>
+struct Promote<float, short>
 {
   typedef float Type_t;
 };
 
-template <> struct Promote<float, int>
+template<>
+struct Promote<float, int>
 {
   typedef float Type_t;
 };
 
-template <> struct Promote<float, long>
+template<>
+struct Promote<float, long>
 {
   typedef float Type_t;
 };
 
-template <> struct Promote<float, float>
+template<>
+struct Promote<float, float>
 {
   typedef float Type_t;
 };
 
-template <> struct Promote<float, double>
+template<>
+struct Promote<float, double>
 {
   typedef double Type_t;
 };
 
 // double
 
-template <> struct Promote<double, bool>
+template<>
+struct Promote<double, bool>
 {
   typedef double Type_t;
 };
 
-template <> struct Promote<double, char>
+template<>
+struct Promote<double, char>
 {
   typedef double Type_t;
 };
 
-template <> struct Promote<double, short>
+template<>
+struct Promote<double, short>
 {
   typedef double Type_t;
 };
 
-template <> struct Promote<double, int>
+template<>
+struct Promote<double, int>
 {
   typedef double Type_t;
 };
 
-template <> struct Promote<double, long>
+template<>
+struct Promote<double, long>
 {
   typedef double Type_t;
 };
 
-template <> struct Promote<double, float>
+template<>
+struct Promote<double, float>
 {
   typedef double Type_t;
 };
 
-template <> struct Promote<double, double>
+template<>
+struct Promote<double, double>
 {
   typedef double Type_t;
 };
@@ -375,7 +426,8 @@ template <> struct Promote<double, double>
 //
 //-----------------------------------------------------------------------------
 
-template <class T1, class T2, class Op> struct BinaryReturn
+template<class T1, class T2, class Op>
+struct BinaryReturn
 {
   typedef typename Promote<T1, T2>::Type_t Type_t;
 };
@@ -397,11 +449,12 @@ template <class T1, class T2, class Op> struct BinaryReturn
 //
 //-----------------------------------------------------------------------------
 
-template <class T1, class T2, class T3, class Op> struct TrinaryReturn
+template<class T1, class T2, class T3, class Op>
+struct TrinaryReturn
 {
   typedef typename BinaryReturn<T2, T3, Op>::Type_t Type_t;
 };
-}
+} // namespace qmcplusplus
 
 #endif // PETE_PETE_TYPE_COMPUTATIONS_H
 

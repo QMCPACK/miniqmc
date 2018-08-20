@@ -38,7 +38,8 @@ void print_version(bool verbose)
   app_summary() << "miniqmc git branch: " << QMCPACK_GIT_BRANCH << endl;
   app_summary() << "miniqmc git commit: " << QMCPACK_GIT_HASH << endl;
 
-  if (verbose) {
+  if (verbose)
+  {
     app_summary() << "miniqmc git commit date: " << QMCPACK_GIT_COMMIT_LAST_CHANGED << endl;
     app_summary() << "miniqmc git commit subject: " << QMCPACK_GIT_COMMIT_SUBJECT << endl;
   }

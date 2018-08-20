@@ -18,53 +18,46 @@
 
 namespace qmcplusplus
 {
-
-template<class T1, class C1,class RHS>
-inline
-Vector<T1, C1>& assign(Vector<T1, C1>& lhs,const RHS& rhs)
+template<class T1, class C1, class RHS>
+inline Vector<T1, C1>& assign(Vector<T1, C1>& lhs, const RHS& rhs)
 {
   typedef typename CreateLeaf<RHS>::Leaf_t Leaf_t;
-  evaluate(lhs,OpAssign(),MakeReturn<Leaf_t>::make(CreateLeaf<RHS>::make(rhs)));
+  evaluate(lhs, OpAssign(), MakeReturn<Leaf_t>::make(CreateLeaf<RHS>::make(rhs)));
   return lhs;
 }
 
-template<class T1, class C1,class RHS>
-inline
-Vector<T1, C1>& operator+=(Vector<T1, C1>& lhs,const RHS& rhs)
+template<class T1, class C1, class RHS>
+inline Vector<T1, C1>& operator+=(Vector<T1, C1>& lhs, const RHS& rhs)
 {
   typedef typename CreateLeaf<RHS>::Leaf_t Leaf_t;
-  evaluate(lhs,OpAddAssign(),MakeReturn<Leaf_t>::make(CreateLeaf<RHS>::make(rhs)));
+  evaluate(lhs, OpAddAssign(), MakeReturn<Leaf_t>::make(CreateLeaf<RHS>::make(rhs)));
   return lhs;
 }
 
-template<class T1, class C1,class RHS>
-inline
-Vector<T1, C1>& operator-=(Vector<T1, C1>& lhs,const RHS& rhs)
+template<class T1, class C1, class RHS>
+inline Vector<T1, C1>& operator-=(Vector<T1, C1>& lhs, const RHS& rhs)
 {
   typedef typename CreateLeaf<RHS>::Leaf_t Leaf_t;
-  evaluate(lhs,OpSubtractAssign(),MakeReturn<Leaf_t>::make(CreateLeaf<RHS>::make(rhs)));
+  evaluate(lhs, OpSubtractAssign(), MakeReturn<Leaf_t>::make(CreateLeaf<RHS>::make(rhs)));
   return lhs;
 }
 
-template<class T1, class C1,class RHS>
-inline
-Vector<T1, C1>& operator*=(Vector<T1, C1>& lhs,const RHS& rhs)
+template<class T1, class C1, class RHS>
+inline Vector<T1, C1>& operator*=(Vector<T1, C1>& lhs, const RHS& rhs)
 {
   typedef typename CreateLeaf<RHS>::Leaf_t Leaf_t;
-  evaluate(lhs,OpMultiplyAssign(),MakeReturn<Leaf_t>::make(CreateLeaf<RHS>::make(rhs)));
+  evaluate(lhs, OpMultiplyAssign(), MakeReturn<Leaf_t>::make(CreateLeaf<RHS>::make(rhs)));
   return lhs;
 }
 
-template<class T1, class C1,class RHS>
-inline
-Vector<T1, C1>& operator/=(Vector<T1, C1>& lhs,const RHS& rhs)
+template<class T1, class C1, class RHS>
+inline Vector<T1, C1>& operator/=(Vector<T1, C1>& lhs, const RHS& rhs)
 {
   typedef typename CreateLeaf<RHS>::Leaf_t Leaf_t;
-  evaluate(lhs,OpDivideAssign(),MakeReturn<Leaf_t>::make(CreateLeaf<RHS>::make(rhs)));
+  evaluate(lhs, OpDivideAssign(), MakeReturn<Leaf_t>::make(CreateLeaf<RHS>::make(rhs)));
   return lhs;
 }
 
-}
+} // namespace qmcplusplus
 
 #endif //  GENERATED_OPERATORS_H
-

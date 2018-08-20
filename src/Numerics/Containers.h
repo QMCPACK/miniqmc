@@ -35,7 +35,8 @@ namespace qmcplusplus
 /** SoA adaptor class for ParticleAttrib<TinyVector<T,D> >
  * @tparm T data type, float, double, complex<float>, complex<double>
  */
-template <typename T, unsigned D> struct VectorSoAContainer
+template<typename T, unsigned D>
+struct VectorSoAContainer
 {
 #if (__cplusplus >= 201103L)
   using Type_t    = TinyVector<T, D>;
@@ -53,7 +54,7 @@ template <typename T, unsigned D> struct VectorSoAContainer
   /// number of elements allocated by myAlloc
   size_t nAllocated;
   /// pointer: what type????
-  T *myData;
+  T* myData;
   /// allocator
   aligned_allocator<T> myAlloc;
   /// default constructor
@@ -65,7 +66,7 @@ template <typename T, unsigned D> struct VectorSoAContainer
   }
 
   /// default copy constructor
-  VectorSoAContainer(const VectorSoAContainer &in)
+  VectorSoAContainer(const VectorSoAContainer& in)
   {
     setDefaults();
     resize(in.nLocal);
@@ -73,7 +74,7 @@ template <typename T, unsigned D> struct VectorSoAContainer
   }
 
   /// default copy operator
-  VectorSoAContainer &operator=(const VectorSoAContainer &in)
+  VectorSoAContainer& operator=(const VectorSoAContainer& in)
   {
     if (myData != in.myData)
     {
@@ -85,8 +86,7 @@ template <typename T, unsigned D> struct VectorSoAContainer
 
 #if (__cplusplus >= 201103L)
   /// move constructor
-  VectorSoAContainer(VectorSoAContainer &&in)
-      : nLocal(in.nLocal), nGhosts(in.nGhosts)
+  VectorSoAContainer(VectorSoAContainer&& in) : nLocal(in.nLocal), nGhosts(in.nGhosts)
   {
     nAllocated    = in.nAllocated;
     myData        = in.myData;
@@ -105,16 +105,16 @@ template <typename T, unsigned D> struct VectorSoAContainer
   }
 
   /** constructor with ParticleAttrib<T1,D> */
-  template <typename T1>
-  VectorSoAContainer(const ParticleAttrib<TinyVector<T1, D>> &in)
+  template<typename T1>
+  VectorSoAContainer(const ParticleAttrib<TinyVector<T1, D>>& in)
   {
     setDefaults();
     resize(in.size());
     copyIn(in);
   }
 
-  template <typename T1>
-  VectorSoAContainer &operator=(const ParticleAttrib<TinyVector<T1, D>> &in)
+  template<typename T1>
+  VectorSoAContainer& operator=(const ParticleAttrib<TinyVector<T1, D>>& in)
   {
     if (nLocal != in.size()) resize(in.size());
     copyIn(in);
@@ -123,7 +123,8 @@ template <typename T, unsigned D> struct VectorSoAContainer
 
   /** need A=0.0;
    */
-  template <typename T1> VectorSoAContainer &operator=(T1 in)
+  template<typename T1>
+  VectorSoAContainer& operator=(T1 in)
   {
     std::fill(myData, myData + nGhosts * D, static_cast<T>(in));
     return *this;
@@ -159,9 +160,11 @@ template <typename T, unsigned D> struct VectorSoAContainer
    *
    * Free existing memory and reset the internal variables
    */
-  __forceinline void attachReference(size_t n, size_t n_padded, T *ptr)
+  __forceinline void attachReference(size_t n, size_t n_padded, T* ptr)
   {
-    if(nAllocated) throw std::runtime_error("Pointer attaching is not allowed on VectorSoAContainer with allocated memory.");
+    if (nAllocated)
+      throw std::runtime_error(
+          "Pointer attaching is not allowed on VectorSoAContainer with allocated memory.");
     nAllocated = 0;
     nLocal     = n;
     nGhosts    = n_padded;
@@ -177,51 +180,47 @@ template <typename T, unsigned D> struct VectorSoAContainer
    *
    * The same sizes are assumed.
    */
-  template <typename T1>
-  void copyIn(const ParticleAttrib<TinyVector<T1, D>> &in)
+  template<typename T1>
+  void copyIn(const ParticleAttrib<TinyVector<T1, D>>& in)
   {
     // if(nLocal!=in.size()) resize(in.size());
-    PosAoS2SoA(nLocal, D, reinterpret_cast<const T1 *>(in.first_address()), D,
-               myData, nGhosts);
+    PosAoS2SoA(nLocal, D, reinterpret_cast<const T1*>(in.first_address()), D, myData, nGhosts);
   }
 
   /** SoA to AoS : copy to ParticleAttrib<>
    *
    * The same sizes are assumed.
    */
-  template <typename T1>
-  void copyOut(ParticleAttrib<TinyVector<T1, D>> &out) const
+  template<typename T1>
+  void copyOut(ParticleAttrib<TinyVector<T1, D>>& out) const
   {
-    PosSoA2AoS(nLocal, D, myData, nGhosts,
-               reinterpret_cast<T1 *>(out.first_address()), D);
+    PosSoA2AoS(nLocal, D, myData, nGhosts, reinterpret_cast<T1*>(out.first_address()), D);
   }
 
   /** return TinyVector<T,D>
    */
-  __forceinline const Type_t operator[](size_t i) const
-  {
-    return Type_t(myData + i, nGhosts);
-  }
+  __forceinline const Type_t operator[](size_t i) const { return Type_t(myData + i, nGhosts); }
 
   /// helper class for operator ()(size_t i) to assign a value
   struct Accessor
   {
     size_t M;
-    T *_base;
-    __forceinline Accessor(T *a, size_t ng) : _base(a), M(ng) {}
-    __forceinline Accessor &operator=(const TinyVector<T, D> &rhs)
+    T* _base;
+    __forceinline Accessor(T* a, size_t ng) : _base(a), M(ng) {}
+    __forceinline Accessor& operator=(const TinyVector<T, D>& rhs)
     {
-      #pragma unroll
-      for (size_t i      = 0; i < D; ++i)
+#pragma unroll
+      for (size_t i = 0; i < D; ++i)
         *(_base + M * i) = rhs[i];
       return *this;
     }
 
     /** asign value */
-    template <typename T1> __forceinline Accessor &operator=(T1 rhs)
+    template<typename T1>
+    __forceinline Accessor& operator=(T1 rhs)
     {
-      #pragma unroll
-      for (size_t i      = 0; i < D; ++i)
+#pragma unroll
+      for (size_t i = 0; i < D; ++i)
         *(_base + M * i) = rhs;
       return *this;
     }
@@ -231,33 +230,27 @@ template <typename T, unsigned D> struct VectorSoAContainer
    *
    * Use for (*this)[i]=TinyVector<T,D>;
    */
-  __forceinline Accessor operator()(size_t i)
-  {
-    return Accessor(myData + i, nGhosts);
-  }
+  __forceinline Accessor operator()(size_t i) { return Accessor(myData + i, nGhosts); }
   /// return the base
-  __forceinline T *data() { return myData; }
+  __forceinline T* data() { return myData; }
   /// return the base
-  __forceinline const T *data() const { return myData; }
+  __forceinline const T* data() const { return myData; }
   /// return the pointer of the i-th components
-  __forceinline T *restrict data(size_t i) { return myData + i * nGhosts; }
+  __forceinline T* restrict data(size_t i) { return myData + i * nGhosts; }
   /// return the const pointer of the i-th components
-  __forceinline const T *restrict data(size_t i) const
-  {
-    return myData + i * nGhosts;
-  }
+  __forceinline const T* restrict data(size_t i) const { return myData + i * nGhosts; }
 
   /** serialization function */
-  template <class Archive>
-  void serialize(Archive &ar, const unsigned int version)
+  template<class Archive>
+  void serialize(Archive& ar, const unsigned int version)
   {
     // ar & m_data;
-    ar &nLocal &nGhosts &myData;
+    ar& nLocal& nGhosts& myData;
   }
 };
 
 // Incorrect: provide wrapper class
 // BOOST_CLASS_TRACKING(Pos3DSoA<double,3>, boost::serialization::track_never)
 // BOOST_CLASS_TRACKING(Pos3DSoA<float,3>, boost::serialization::track_never)
-}
+} // namespace qmcplusplus
 #endif

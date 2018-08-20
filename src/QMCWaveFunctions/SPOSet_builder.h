@@ -16,19 +16,18 @@
 
 namespace qmcplusplus
 {
-
 /// build the einspline SPOSet.
 SPOSet* build_SPOSet(bool useRef,
-                     int nx, int ny, int nz,
-                     int num_splines, int nblocks,
-                     const Tensor<OHMMS_PRECISION, 3> &lattice_b,
+                     int nx,
+                     int ny,
+                     int nz,
+                     int num_splines,
+                     int nblocks,
+                     const Tensor<OHMMS_PRECISION, 3>& lattice_b,
                      bool init_random = true);
 
 /// build the einspline SPOSet as a view of the main one.
-SPOSet* build_SPOSet_view(bool useRef, const SPOSet* SPOSet_main,
-                           int team_size, int member_id);
+SPOSet* build_SPOSet_view(bool useRef, const SPOSet* SPOSet_main, int team_size, int member_id);
 
-}
+} // namespace qmcplusplus
 #endif
-
-

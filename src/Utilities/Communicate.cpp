@@ -16,7 +16,7 @@
 #include <Utilities/Communicate.h>
 #include <iostream>
 
-Communicate::Communicate(int argc, char **argv)
+Communicate::Communicate(int argc, char** argv)
 {
 #ifdef HAVE_MPI
   MPI_Init(&argc, &argv);
@@ -36,8 +36,7 @@ Communicate::~Communicate()
 #endif
 }
 
-void
-Communicate::reduce(int &value)
+void Communicate::reduce(int& value)
 {
 #ifdef HAVE_MPI
   int local_value = value;

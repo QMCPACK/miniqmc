@@ -45,13 +45,13 @@
 
 #define PETE_EMPTY_CONSTRUCTORS(CLASS) \
   CLASS() {}                           \
-  CLASS(const CLASS &) {}              \
-  CLASS &operator=(const CLASS &) { return *this; }
+  CLASS(const CLASS&) {}               \
+  CLASS& operator=(const CLASS&) { return *this; }
 
 #define PETE_EMPTY_CONSTRUCTORS_TEMPLATE(CLASS, ARG) \
   CLASS() {}                                         \
-  CLASS(const CLASS<ARG> &) {}                       \
-  CLASS &operator=(const CLASS<ARG> &) { return *this; }
+  CLASS(const CLASS<ARG>&) {}                        \
+  CLASS& operator=(const CLASS<ARG>&) { return *this; }
 
 #else
 
