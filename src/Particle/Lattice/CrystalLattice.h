@@ -48,7 +48,6 @@
 
 namespace qmcplusplus
 {
-
 /** enumeration to classify a CrystalLattice
  *
  * Use std::bitset<3> for all the dimension
@@ -87,9 +86,9 @@ struct PosUnit
  *expression template operations with variable-cell algorithms.
  *
  */
-template <class T, unsigned D, bool ORTHO = false> struct CrystalLattice
+template<class T, unsigned D, bool ORTHO = false>
+struct CrystalLattice
 {
-
   enum
   {
     IsOrthogonal = OHMMS_ORTHO
@@ -184,14 +183,14 @@ template <class T, unsigned D, bool ORTHO = false> struct CrystalLattice
   /** Convert a cartesian vector to a unit vector.
    * Boundary conditions are not applied.
    */
-  template <class T1>
-  KOKKOS_INLINE_FUNCTION SingleParticlePos_t toUnit(const TinyVector<T1, D> &r) const
+  template<class T1>
+  KOKKOS_INLINE_FUNCTION SingleParticlePos_t toUnit(const TinyVector<T1, D>& r) const
   {
     return dot(r, G);
   }
 
-  template <class T1>
-  KOKKOS_INLINE_FUNCTION SingleParticlePos_t toUnit_floor(const TinyVector<T1, D> &r) const
+  template<class T1>
+  KOKKOS_INLINE_FUNCTION SingleParticlePos_t toUnit_floor(const TinyVector<T1, D>& r) const
   {
     SingleParticlePos_t val_dot;
     val_dot = toUnit(r);
@@ -206,13 +205,13 @@ template <class T, unsigned D, bool ORTHO = false> struct CrystalLattice
   /** Convert a unit vector to a cartesian vector.
    * Boundary conditions are not applied.
    */
-  template <class T1>
-  inline SingleParticlePos_t toCart(const TinyVector<T1, D> &c) const
+  template<class T1>
+  inline SingleParticlePos_t toCart(const TinyVector<T1, D>& c) const
   {
     return dot(c, R);
   }
 
-  inline bool isValid(const TinyVector<T, D> &u) const
+  inline bool isValid(const TinyVector<T, D>& u) const
   {
 #if defined(USE_BOXBCONDS)
     return CheckBoxConds<T, D>::inside(u, BoxBConds);
@@ -224,10 +223,11 @@ template <class T, unsigned D, bool ORTHO = false> struct CrystalLattice
 #endif
   }
 
-  inline bool outOfBound(const TinyVector<T, D> &u) const
+  inline bool outOfBound(const TinyVector<T, D>& u) const
   {
     for (int i = 0; i < D; ++i)
-      if (std::abs(u[i]) > 0.5) return true;
+      if (std::abs(u[i]) > 0.5)
+        return true;
     return false;
   }
 
@@ -239,8 +239,7 @@ template <class T, unsigned D, bool ORTHO = false> struct CrystalLattice
    @note The distance between two cartesian vectors are handled
    *by dot function defined in OhmmsPETE/TinyVector.h
    */
-  inline T Dot(const SingleParticlePos_t &ra,
-               const SingleParticlePos_t &rb) const
+  inline T Dot(const SingleParticlePos_t& ra, const SingleParticlePos_t& rb) const
   {
     return dot(ra, dot(M, rb));
   }
@@ -249,7 +248,7 @@ template <class T, unsigned D, bool ORTHO = false> struct CrystalLattice
    *@param kin an input reciprocal vector in the Reciprocal-vector unit
    *@return k(reciprocal vector) in cartesian unit
   */
-  inline SingleParticlePos_t k_cart(const SingleParticlePos_t &kin) const
+  inline SingleParticlePos_t k_cart(const SingleParticlePos_t& kin) const
   {
     return TWOPI * dot(G, kin);
   }
@@ -258,7 +257,7 @@ template <class T, unsigned D, bool ORTHO = false> struct CrystalLattice
    *@param kin an input reciprocal vector in cartesian form
    *@return k(reciprocal vector) as unit vector
   */
-  inline SingleParticlePos_t k_unit(const SingleParticlePos_t &kin) const
+  inline SingleParticlePos_t k_unit(const SingleParticlePos_t& kin) const
   {
     return dot(R, kin) / TWOPI;
   }
@@ -268,15 +267,11 @@ template <class T, unsigned D, bool ORTHO = false> struct CrystalLattice
    *@param kin an input reciprocal vector in reciprocal-vector unit
    *@return \f$k_{in}^2\f$
    */
-  inline T ksq(const SingleParticlePos_t &kin) const
-  {
-    return dot(kin, dot(Mg, kin));
-  }
+  inline T ksq(const SingleParticlePos_t& kin) const { return dot(kin, dot(Mg, kin)); }
 
   /// assignment operator
-  template <typename T1>
-  CrystalLattice<T, D, ORTHO> &
-  operator=(const CrystalLattice<T1, D, ORTHO> &rhs)
+  template<typename T1>
+  CrystalLattice<T, D, ORTHO>& operator=(const CrystalLattice<T1, D, ORTHO>& rhs)
   {
     BoxBConds = rhs.BoxBConds;
     R         = rhs.R;
@@ -287,8 +282,8 @@ template <class T, unsigned D, bool ORTHO = false> struct CrystalLattice
   /** assignment operator
    *@param rhs a tensor representing a unit cell
    */
-  template <typename T1>
-  CrystalLattice<T, D, ORTHO> &operator=(const Tensor<T1, D> &rhs)
+  template<typename T1>
+  CrystalLattice<T, D, ORTHO>& operator=(const Tensor<T1, D>& rhs)
   {
     R = rhs;
     reset();
@@ -299,33 +294,34 @@ template <class T, unsigned D, bool ORTHO = false> struct CrystalLattice
    *@param sc the scaling value
    *@return a new CrystalLattice
    */
-  CrystalLattice<T, D, ORTHO> &operator*=(T sc);
+  CrystalLattice<T, D, ORTHO>& operator*=(T sc);
 
   /** set the lattice vector by an array containing DxD T
    *@param sc a scalar to scale the input lattice parameters
    *@param lat the starting address of DxD T-elements representing a supercell
    */
-  void set(T sc, T *lat = 0);
+  void set(T sc, T* lat = 0);
 
   /** set the lattice vector by a CrystalLattice and expand it by integers
    *@param oldlat An input supercell to be copied.
    *@param uc An array to expand a supercell.
    */
-  void set(const CrystalLattice<T, D, ORTHO> &oldlat, int *uc = 0);
+  void set(const CrystalLattice<T, D, ORTHO>& oldlat, int* uc = 0);
 
   /** set the lattice vector from the command-line options
    *@param lat a tensor representing a supercell
    */
-  template <class TT> void set(const Tensor<TT, D> &lat);
+  template<class TT>
+  void set(const Tensor<TT, D>& lat);
 
   /** Evaluate the reciprocal vectors, volume and metric tensor
    */
   void reset();
 
   //! Print out CrystalLattice Data
-  void print(std::ostream &, int level = 2) const;
+  void print(std::ostream&, int level = 2) const;
 };
-}
+} // namespace qmcplusplus
 // including the definitions of the member functions
 #include "Particle/Lattice/CrystalLattice.cpp"
 
