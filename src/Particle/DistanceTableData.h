@@ -33,7 +33,6 @@
 
 namespace qmcplusplus
 {
-
 /** enumerator for DistanceTableData::DTType
  *
  * - DT_AOS Use original AoS type
@@ -121,7 +120,7 @@ struct DistanceTableData
   /// name of the table
   std::string Name;
   /// constructor using source and target ParticleSet
-  DistanceTableData(const ParticleSet &source, const ParticleSet &target)
+  DistanceTableData(const ParticleSet& source, const ParticleSet& target)
       : Origin(&source), N(0), Need_full_table_loadWalker(false)
   {}
 
@@ -131,11 +130,11 @@ struct DistanceTableData
   /// return the name of table
   inline std::string getName() const { return Name; }
   /// set the name of table
-  inline void setName(const std::string &tname) { Name = tname; }
+  inline void setName(const std::string& tname) { Name = tname; }
 
   /// returns the reference the origin particleset
-  const ParticleSet &origin() const { return *Origin; }
-  inline void reset(const ParticleSet *newcenter) { Origin = newcenter; }
+  const ParticleSet& origin() const { return *Origin; }
+  inline void reset(const ParticleSet* newcenter) { Origin = newcenter; }
 
   inline bool is_same_type(int dt_type) const { return DTType == dt_type; }
 
@@ -149,22 +148,21 @@ struct DistanceTableData
   inline IndexType size(int i) const { return N[i]; }
 
   /// evaluate the Distance Table using only with position array
-  virtual void evaluate(ParticleSet &P) = 0;
+  virtual void evaluate(ParticleSet& P) = 0;
 
   /// evaluate the Distance Table
-  virtual void evaluate(ParticleSet &P, int jat) = 0;
+  virtual void evaluate(ParticleSet& P, int jat) = 0;
 
   /// evaluate the temporary pair relations
-  virtual void move(const ParticleSet &P, const PosType &rnew) = 0;
+  virtual void move(const ParticleSet& P, const PosType& rnew) = 0;
 
   /// evaluate the distance tables with a sphere move
-  virtual void moveOnSphere(const ParticleSet &P, const PosType &rnew) = 0;
+  virtual void moveOnSphere(const ParticleSet& P, const PosType& rnew) = 0;
 
   /// update the distance table by the pair relations
   virtual void update(IndexType jat) = 0;
 
-  const ParticleSet *Origin;
-
+  const ParticleSet* Origin;
 };
 } // namespace qmcplusplus
 #endif

@@ -37,7 +37,6 @@
 #include <deque>
 namespace qmcplusplus
 {
-
 /** an enum denoting index of physical properties
  *
  * LOCALPOTENTIAL should be always the last enumeation
@@ -55,8 +54,8 @@ enum
   DRIFTSCALE,      /*!< scaling value for the drift */
   ALTERNATEENERGY, /*!< alternatelocal energy, the sum of all the components */
   LOCALENERGY,     /*!< local energy, the sum of all the components */
-  LOCALPOTENTIAL, /*!< local potential energy = local energy - kinetic energy */
-  NUMPROPERTIES   /*!< the number of properties */
+  LOCALPOTENTIAL,  /*!< local potential energy = local energy - kinetic energy */
+  NUMPROPERTIES    /*!< the number of properties */
 };
 
 /** A container class to represent a walker.
@@ -75,7 +74,8 @@ enum
  * index and second index >=NUMPROPERTIES.
  * - DataSet : anonymous container.
  */
-template <typename t_traits, typename p_traits> struct Walker
+template<typename t_traits, typename p_traits>
+struct Walker
 {
   enum
   {
@@ -137,17 +137,19 @@ template <typename t_traits, typename p_traits> struct Walker
     Weight       = 1.0;
     Multiplicity = 1.0;
     Properties.resize(1, NUMPROPERTIES);
-    if (nptcl > 0) resize(nptcl);
+    if (nptcl > 0)
+      resize(nptcl);
   }
 
-  inline Walker(const Walker &a) = default;
+  inline Walker(const Walker& a) = default;
   inline ~Walker() {}
 
   /// assignment operator
-  inline Walker &operator=(const Walker &a)
+  inline Walker& operator=(const Walker& a)
   {
     // make deep copy
-    if (this != &a) makeCopy(a);
+    if (this != &a)
+      makeCopy(a);
     return *this;
   }
 
@@ -158,7 +160,7 @@ template <typename t_traits, typename p_traits> struct Walker
   inline void resize(int nptcl) { R.resize(nptcl); }
 
   /// copy the content of a walker
-  inline void makeCopy(const Walker &a)
+  inline void makeCopy(const Walker& a)
   {
     ID           = a.ID;
     ParentID     = a.ParentID;
@@ -166,7 +168,8 @@ template <typename t_traits, typename p_traits> struct Walker
     Age          = a.Age;
     Weight       = a.Weight;
     Multiplicity = a.Multiplicity;
-    if (R.size() != a.R.size()) resize(a.R.size());
+    if (R.size() != a.R.size())
+      resize(a.R.size());
     R       = a.R;
     DataSet = a.DataSet;
   }
@@ -181,20 +184,27 @@ template <typename t_traits, typename p_traits> struct Walker
     return bsize;
   }
 
-  template <class Msg> inline Msg &putMessage(Msg &m) { return m; }
+  template<class Msg>
+  inline Msg& putMessage(Msg& m)
+  {
+    return m;
+  }
 
-  template <class Msg> inline Msg &getMessage(Msg &m) { return m; }
+  template<class Msg>
+  inline Msg& getMessage(Msg& m)
+  {
+    return m;
+  }
 };
 
-template <class RealType, class PA>
-std::ostream &operator<<(std::ostream &out, const Walker<RealType, PA> &rhs)
+template<class RealType, class PA>
+std::ostream& operator<<(std::ostream& out, const Walker<RealType, PA>& rhs)
 {
-  copy(rhs.Properties.begin(), rhs.Properties.end(),
-       std::ostream_iterator<double>(out, " "));
+  copy(rhs.Properties.begin(), rhs.Properties.end(), std::ostream_iterator<double>(out, " "));
   out << std::endl;
   out << rhs.R;
   return out;
 }
-}
+} // namespace qmcplusplus
 
 #endif

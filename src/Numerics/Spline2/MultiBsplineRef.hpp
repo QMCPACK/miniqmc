@@ -315,9 +315,9 @@ inline void MultiBsplineRef<T>::evaluate_vgh(const spliner_type* restrict spline
 
   for (int n = 0; n < num_splines; n++)
   {
-    gx[n] *= dxInv;
-    gy[n] *= dyInv;
-    gz[n] *= dzInv;
+    gx[n]  *= dxInv;
+    gy[n]  *= dyInv;
+    gz[n]  *= dzInv;
     hxx[n] *= dxx;
     hyy[n] *= dyy;
     hzz[n] *= dzz;

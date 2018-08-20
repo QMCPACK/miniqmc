@@ -44,7 +44,7 @@ using namespace qmcplusplus;
 
 void print_help()
 {
-  //clang-format off
+  // clang-format off
   cout << "usage:" << '\n';
   cout << "  check_wfc [-hvV] [-f wfc_component] [-g \"n0 n1 n2\"]" << '\n';
   cout << "            [-r rmax] [-s seed]" << '\n';
@@ -69,9 +69,9 @@ int main(int argc, char** argv)
 
 
     // clang-format off
-  typedef QMCTraits::RealType           RealType;
-  typedef ParticleSet::ParticlePos_t    ParticlePos_t;
-  typedef ParticleSet::PosType          PosType;
+    typedef QMCTraits::RealType           RealType;
+    typedef ParticleSet::ParticlePos_t    ParticlePos_t;
+    typedef ParticleSet::PosType          PosType;
     // clang-format on
 
     // use the global generator

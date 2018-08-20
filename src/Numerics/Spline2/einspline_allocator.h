@@ -27,9 +27,9 @@
 #define EINSPLINE_ALIGNED_ALLOC_H
 
 
-void *einspline_alloc(size_t size, size_t alignment);
+void* einspline_alloc(size_t size, size_t alignment);
 
-void einspline_free(void *ptr);
+void einspline_free(void* ptr);
 
 
 #endif

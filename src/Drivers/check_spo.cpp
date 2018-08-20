@@ -34,7 +34,7 @@ using namespace qmcplusplus;
 
 void print_help()
 {
-  //clang-format off
+  // clang-format off
   app_summary() << "usage:" << '\n';
   app_summary() << "  check_spo [-hvV] [-g \"n0 n1 n2\"] [-m meshfactor]" << '\n';
   app_summary() << "            [-n steps] [-r rmax] [-s seed]" << '\n';
@@ -59,9 +59,9 @@ int main(int argc, char** argv)
 
 
     // clang-format off
-  typedef QMCTraits::RealType           RealType;
-  typedef ParticleSet::ParticlePos_t    ParticlePos_t;
-  typedef ParticleSet::PosType          PosType;
+    typedef QMCTraits::RealType           RealType;
+    typedef ParticleSet::ParticlePos_t    ParticlePos_t;
+    typedef ParticleSet::PosType          PosType;
     // clang-format on
 
     Communicate comm(argc, argv);

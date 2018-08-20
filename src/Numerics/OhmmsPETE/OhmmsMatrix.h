@@ -25,21 +25,20 @@
 
 namespace qmcplusplus
 {
-
-template <class T, typename Alloc = std::allocator<T>> class Matrix
+template<class T, typename Alloc = std::allocator<T>>
+class Matrix
 {
 public:
   typedef T Type_t;
   typedef T value_type;
-  typedef T *pointer;
-  typedef const T *const_pointer;
+  typedef T* pointer;
+  typedef const T* const_pointer;
   typedef Vector<T, Alloc> Container_t;
   typedef typename Container_t::size_type size_type;
   typedef typename Container_t::iterator iterator;
   typedef Matrix<T, Alloc> This_t;
 
-  Matrix()
-      : D1(0), D2(0), TotSize(0) {} // Default Constructor initializes to zero.
+  Matrix() : D1(0), D2(0), TotSize(0) {} // Default Constructor initializes to zero.
 
   Matrix(size_type n)
   {
@@ -54,13 +53,10 @@ public:
   }
 
   /** constructor with an initialized ref */
-  inline Matrix(T *ref, size_type n, size_type m)
-      : D1(n), D2(m), TotSize(n * m), X(ref, n * m)
-  {
-  }
+  inline Matrix(T* ref, size_type n, size_type m) : D1(n), D2(m), TotSize(n * m), X(ref, n * m) {}
 
   // Copy Constructor
-  Matrix(const Matrix<T, Alloc> &rhs) { copy(rhs); }
+  Matrix(const Matrix<T, Alloc>& rhs) { copy(rhs); }
 
   // Destructor
   ~Matrix() {}
@@ -80,20 +76,11 @@ public:
 
   inline typename Container_t::iterator begin() { return X.begin(); }
   inline typename Container_t::iterator end() { return X.end(); }
-  inline typename Container_t::const_iterator begin() const
-  {
-    return X.begin();
-  }
+  inline typename Container_t::const_iterator begin() const { return X.begin(); }
   inline typename Container_t::const_iterator end() const { return X.end(); }
 
-  inline typename Container_t::iterator begin(int i)
-  {
-    return X.begin() + i * D2;
-  }
-  inline typename Container_t::const_iterator begin(int i) const
-  {
-    return X.begin() + i * D2;
-  }
+  inline typename Container_t::iterator begin(int i) { return X.begin() + i * D2; }
+  inline typename Container_t::const_iterator begin(int i) const { return X.begin() + i * D2; }
 
   inline void resize(size_type n, size_type m)
   {
@@ -107,9 +94,9 @@ public:
   inline void free() { X.free(); }
 
   // Attach to pre-allocated memory
-  inline void attachReference(T *ref) { X.attachReference(ref, TotSize); }
+  inline void attachReference(T* ref) { X.attachReference(ref, TotSize); }
 
-  inline void attachReference(T *ref, size_type n, size_type m)
+  inline void attachReference(T* ref, size_type n, size_type m)
   {
     D1      = n;
     D2      = m;
@@ -123,25 +110,23 @@ public:
     D1 += n;
   }
 
-  inline void copy(const Matrix<T, Alloc> &rhs)
+  inline void copy(const Matrix<T, Alloc>& rhs)
   {
     resize(rhs.D1, rhs.D2);
     assign(*this, rhs);
   }
 
   // Assignment Operators
-  inline This_t &operator=(const Matrix<T, Alloc> &rhs)
+  inline This_t& operator=(const Matrix<T, Alloc>& rhs)
   {
     resize(rhs.D1, rhs.D2);
     return assign(*this, rhs);
   }
 
-  inline const This_t &operator=(const Matrix<T, Alloc> &rhs) const
-  {
-    return assign(*this, rhs);
-  }
+  inline const This_t& operator=(const Matrix<T, Alloc>& rhs) const { return assign(*this, rhs); }
 
-  template <class RHS> This_t &operator=(const RHS &rhs)
+  template<class RHS>
+  This_t& operator=(const RHS& rhs)
   {
     return assign(*this, rhs);
   }
@@ -154,10 +139,10 @@ public:
   inline const_pointer data() const { return X.data(); }
 
   // returns a const pointer of i-th row
-  inline const Type_t *data(size_type i) const { return X.data() + i * D2; }
+  inline const Type_t* data(size_type i) const { return X.data() + i * D2; }
 
   /// returns a pointer of i-th row, g++ iterator problem
-  inline Type_t *data(size_type i) { return X.data() + i * D2; }
+  inline Type_t* data(size_type i) { return X.data() + i * D2; }
 
   inline pointer first_address() { return X.data(); }
 
@@ -167,29 +152,23 @@ public:
   inline pointer last_address() { return X.data() + TotSize; }
 
   // returns a pointer of i-th row
-  inline const Type_t *last_address() const { return X.data() + TotSize; }
+  inline const Type_t* last_address() const { return X.data() + TotSize; }
 
   // returns a const pointer of i-th row
-  inline const Type_t *operator[](size_type i) const
-  {
-    return X.data() + i * D2;
-  }
+  inline const Type_t* operator[](size_type i) const { return X.data() + i * D2; }
 
   /// returns a pointer of i-th row, g++ iterator problem
-  inline Type_t *operator[](size_type i) { return X.data() + i * D2; }
+  inline Type_t* operator[](size_type i) { return X.data() + i * D2; }
 
-  inline Type_t &operator()(size_type i) { return X[i]; }
+  inline Type_t& operator()(size_type i) { return X[i]; }
   // returns the i-th value in D1*D2 vector
   inline Type_t operator()(size_type i) const { return X[i]; }
 
   // returns val(i,j)
-  inline Type_t &operator()(size_type i, size_type j) { return X[i * D2 + j]; }
+  inline Type_t& operator()(size_type i, size_type j) { return X[i * D2 + j]; }
 
   // returns val(i,j)
-  inline Type_t operator()(size_type i, size_type j) const
-  {
-    return X[i * D2 + j];
-  }
+  inline Type_t operator()(size_type i, size_type j) const { return X[i * D2 + j]; }
 
   inline void swap_rows(int r1, int r2)
   {
@@ -211,19 +190,22 @@ public:
     }
   }
 
-  template <class IT> inline void replaceRow(IT first, size_type i)
+  template<class IT>
+  inline void replaceRow(IT first, size_type i)
   {
     std::copy(first, first + D2, X.begin() + i * D2);
   }
 
-  template <class IT> inline void replaceColumn(IT first, size_type j)
+  template<class IT>
+  inline void replaceColumn(IT first, size_type j)
   {
     typename Container_t::iterator ii(X.begin() + j);
     for (int i = 0; i < D1; i++, ii += D2)
       *ii = *first++;
   }
 
-  template <class IT> inline void add2Column(IT first, size_type j)
+  template<class IT>
+  inline void add2Column(IT first, size_type j)
   {
     typename Container_t::iterator ii(X.begin() + j);
     for (int i = 0; i < D1; i++, ii += D2)
@@ -237,9 +219,8 @@ public:
    * \param i0  starting row where the copying is done
    * \param j0  starting column where the copying is done
    */
-  template <class T1>
-  inline void add(const T1 *sub, size_type d1, size_type d2, size_type i0,
-                  size_type j0)
+  template<class T1>
+  inline void add(const T1* sub, size_type d1, size_type d2, size_type i0, size_type j0)
   {
     int ii = 0;
     for (int i = 0; i < d1; i++)
@@ -252,9 +233,8 @@ public:
     }
   }
 
-  template <class T1>
-  inline void add(const T1 *sub, size_type d1, size_type d2, size_type i0,
-                  size_type j0, const T &phi)
+  template<class T1>
+  inline void add(const T1* sub, size_type d1, size_type d2, size_type i0, size_type j0, const T& phi)
   {
     size_type ii = 0;
     for (size_type i = 0; i < d1; i++)
@@ -266,8 +246,8 @@ public:
       }
     }
   }
-  template <class SubMat_t>
-  inline void add(const SubMat_t &sub, unsigned int i0, unsigned int j0)
+  template<class SubMat_t>
+  inline void add(const SubMat_t& sub, unsigned int i0, unsigned int j0)
   {
     size_type ii = 0;
     for (size_type i = 0; i < sub.rows(); i++)
@@ -279,7 +259,7 @@ public:
       }
     }
   }
-  inline void add(const This_t &sub, unsigned int i0, unsigned int j0)
+  inline void add(const This_t& sub, unsigned int i0, unsigned int j0)
   {
     size_type ii = 0;
     for (size_type i = 0; i < sub.rows(); i++)
@@ -292,13 +272,15 @@ public:
     }
   }
 
-  template <class Msg> inline Msg &putMessage(Msg &m)
+  template<class Msg>
+  inline Msg& putMessage(Msg& m)
   {
     m.Pack(X.data(), D1 * D2);
     return m;
   }
 
-  template <class Msg> inline Msg &getMessage(Msg &m)
+  template<class Msg>
+  inline Msg& getMessage(Msg& m)
   {
     m.Unpack(X.data(), D1 * D2);
     return m;
@@ -311,8 +293,8 @@ protected:
 };
 
 // I/O
-template <class T, typename Alloc>
-std::ostream &operator<<(std::ostream &out, const Matrix<T, Alloc> &rhs)
+template<class T, typename Alloc>
+std::ostream& operator<<(std::ostream& out, const Matrix<T, Alloc>& rhs)
 {
   typedef typename Matrix<T, Alloc>::size_type size_type;
   size_type ii = 0;
@@ -325,8 +307,8 @@ std::ostream &operator<<(std::ostream &out, const Matrix<T, Alloc> &rhs)
   return out;
 }
 
-template <class T, typename Alloc>
-std::istream &operator>>(std::istream &is, Matrix<T, Alloc> &rhs)
+template<class T, typename Alloc>
+std::istream& operator>>(std::istream& is, Matrix<T, Alloc>& rhs)
 {
   typedef typename Matrix<T, Alloc>::size_type size_type;
   size_type ii = 0;
@@ -340,10 +322,11 @@ std::istream &operator>>(std::istream &is, Matrix<T, Alloc> &rhs)
 // We need to specialize CreateLeaf<T> for our class, so that operators
 // know what to stick in the leaves of the expression tree.
 //-----------------------------------------------------------------------------
-template <class T, typename Alloc> struct CreateLeaf<Matrix<T, Alloc>>
+template<class T, typename Alloc>
+struct CreateLeaf<Matrix<T, Alloc>>
 {
   typedef Reference<Matrix<T, Alloc>> Leaf_t;
-  inline static Leaf_t make(const Matrix<T, Alloc> &a) { return Leaf_t(a); }
+  inline static Leaf_t make(const Matrix<T, Alloc>& a) { return Leaf_t(a); }
 };
 
 //-----------------------------------------------------------------------------
@@ -357,34 +340,30 @@ public:
   typedef int size_type;
 
   SizeLeaf2(size_type s, size_type p) : size_m(s), size_n(p) {}
-  SizeLeaf2(const SizeLeaf2 &model) : size_m(model.size_m), size_n(model.size_n)
-  {
-  }
+  SizeLeaf2(const SizeLeaf2& model) : size_m(model.size_m), size_n(model.size_n) {}
 
-  bool operator()(size_type s, size_type p) const
-  {
-    return ((size_m == s) && (size_n == p));
-  }
+  bool operator()(size_type s, size_type p) const { return ((size_m == s) && (size_n == p)); }
 
 private:
   size_type size_m, size_n;
 };
 
-template <class T> struct LeafFunctor<Scalar<T>, SizeLeaf2>
+template<class T>
+struct LeafFunctor<Scalar<T>, SizeLeaf2>
 {
   typedef bool Type_t;
-  inline static bool apply(const Scalar<T> &, const SizeLeaf2 &)
+  inline static bool apply(const Scalar<T>&, const SizeLeaf2&)
   {
     // Scalars always conform.
     return true;
   }
 };
 
-template <class T, typename Alloc>
+template<class T, typename Alloc>
 struct LeafFunctor<Matrix<T, Alloc>, SizeLeaf2>
 {
   typedef bool Type_t;
-  inline static bool apply(const Matrix<T, Alloc> &v, const SizeLeaf2 &s)
+  inline static bool apply(const Matrix<T, Alloc>& v, const SizeLeaf2& s)
   {
     return s(v.rows(), v.cols());
   }
@@ -408,11 +387,11 @@ struct LeafFunctor<Matrix<T, Alloc>, SizeLeaf2>
 // EvalLeaf2 is used to evaluate expression with matrices.
 // (It's already defined for Scalar values.)
 //-----------------------------------------------------------------------------
-template <class T, typename Alloc>
+template<class T, typename Alloc>
 struct LeafFunctor<Matrix<T, Alloc>, EvalLeaf2>
 {
   typedef T Type_t;
-  inline static Type_t apply(const Matrix<T, Alloc> &mat, const EvalLeaf2 &f)
+  inline static Type_t apply(const Matrix<T, Alloc>& mat, const EvalLeaf2& f)
   {
     return mat(f.val1(), f.val2());
   }
@@ -421,9 +400,8 @@ struct LeafFunctor<Matrix<T, Alloc>, EvalLeaf2>
 ///////////////////////////////////////////////////////////////////////////////
 // LOOP is done by evaluate function
 ///////////////////////////////////////////////////////////////////////////////
-template <class T, typename Alloc, class Op, class RHS>
-inline void evaluate(Matrix<T, Alloc> &lhs, const Op &op,
-                     const Expression<RHS> &rhs)
+template<class T, typename Alloc, class Op, class RHS>
+inline void evaluate(Matrix<T, Alloc>& lhs, const Op& op, const Expression<RHS>& rhs)
 {
   if (forEach(rhs, SizeLeaf2(lhs.rows(), lhs.cols()), AndCombine()))
   {
@@ -440,8 +418,7 @@ inline void evaluate(Matrix<T, Alloc> &lhs, const Op &op,
   }
   else
   {
-    std::cerr << "Error: LHS and RHS don't conform in OhmmsMatrix."
-              << std::endl;
+    std::cerr << "Error: LHS and RHS don't conform in OhmmsMatrix." << std::endl;
     abort();
   }
 }

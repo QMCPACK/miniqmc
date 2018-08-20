@@ -17,7 +17,6 @@
 
 namespace qmcplusplus
 {
-
 /** base class for Single-particle orbital sets
  *
  * SPOSet stands for S(ingle)P(article)O(rbital)Set which contains
@@ -33,48 +32,42 @@ private:
 
 public:
   /// return the size of the orbital set
-  inline int size() const
-  {
-    return OrbitalSetSize;
-  }
+  inline int size() const { return OrbitalSetSize; }
 
   /// destructor
-  virtual ~SPOSet() { }
+  virtual ~SPOSet() {}
 
   /// operates on a single walker
   /// evaluating SPOs
-  virtual void evaluate_v(const PosType &p) = 0;
-  virtual void evaluate_vgl(const PosType &p) = 0;
-  virtual void evaluate_vgh(const PosType &p) = 0;
+  virtual void evaluate_v(const PosType& p)   = 0;
+  virtual void evaluate_vgl(const PosType& p) = 0;
+  virtual void evaluate_vgh(const PosType& p) = 0;
 
   /// operates on multiple walkers
-  virtual void multi_evaluate_v(const std::vector<SPOSet *> &spo_list,
-                                const std::vector<PosType> &pos_list)
+  virtual void
+      multi_evaluate_v(const std::vector<SPOSet*>& spo_list, const std::vector<PosType>& pos_list)
   {
     #pragma omp parallel for
-    for(int iw=0; iw<spo_list.size(); iw++)
+    for (int iw = 0; iw < spo_list.size(); iw++)
       spo_list[iw]->evaluate_v(pos_list[iw]);
   }
 
-  virtual void multi_evaluate_vgl(const std::vector<SPOSet *> &spo_list,
-                                const std::vector<PosType> &pos_list)
+  virtual void
+      multi_evaluate_vgl(const std::vector<SPOSet*>& spo_list, const std::vector<PosType>& pos_list)
   {
     #pragma omp parallel for
-    for(int iw=0; iw<spo_list.size(); iw++)
+    for (int iw = 0; iw < spo_list.size(); iw++)
       spo_list[iw]->evaluate_vgl(pos_list[iw]);
   }
 
-  virtual void multi_evaluate_vgh(const std::vector<SPOSet *> &spo_list,
-                                const std::vector<PosType> &pos_list)
+  virtual void
+      multi_evaluate_vgh(const std::vector<SPOSet*>& spo_list, const std::vector<PosType>& pos_list)
   {
     #pragma omp parallel for
-    for(int iw=0; iw<spo_list.size(); iw++)
+    for (int iw = 0; iw < spo_list.size(); iw++)
       spo_list[iw]->evaluate_vgh(pos_list[iw]);
   }
-
 };
 
-}
+} // namespace qmcplusplus
 #endif
-
-

@@ -10,7 +10,6 @@
 //////////////////////////////////////////////////////////////////////////////////////
 
 
-
 #include <Utilities/OutputManager.h>
 
 
@@ -22,29 +21,30 @@ InfoStream infoDebug(&std::cout);
 OutputManagerClass outputManager(Verbosity::LOW);
 
 
-void
-OutputManagerClass::setVerbosity(Verbosity level)
+void OutputManagerClass::setVerbosity(Verbosity level)
 {
   global_verbosity_level = level;
-  if (isActive(Verbosity::DEBUG)) {
+  if (isActive(Verbosity::DEBUG))
+  {
     infoSummary.resume();
     infoLog.resume();
     infoDebug.resume();
-  } else if (isActive(Verbosity::HIGH)) {
+  }
+  else if (isActive(Verbosity::HIGH))
+  {
     infoSummary.resume();
     infoLog.resume();
     infoDebug.pause();
-  } else if (isActive(Verbosity::LOW)) {
+  }
+  else if (isActive(Verbosity::LOW))
+  {
     infoSummary.resume();
     infoLog.pause();
     infoDebug.pause();
   }
 }
 
-bool OutputManagerClass::isActive(Verbosity level)
-{
-  return level <= global_verbosity_level;
-}
+bool OutputManagerClass::isActive(Verbosity level) { return level <= global_verbosity_level; }
 
 void OutputManagerClass::pause()
 {
@@ -65,4 +65,3 @@ void OutputManagerClass::shutOff()
   infoError.shutOff();
   infoDebug.shutOff();
 }
-

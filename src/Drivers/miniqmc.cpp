@@ -146,7 +146,7 @@ TimerNameList_t<MiniQMCTimers> MiniQMCTimerNames = {
 
 void print_help()
 {
-  //clang-format off
+  // clang-format off
   app_summary() << "usage:" << '\n';
   app_summary() << "  miniqmc   [-hjvV] [-g \"n0 n1 n2\"] [-m meshfactor]" << '\n';
   app_summary() << "            [-n steps] [-N substeps] [-r rmax] [-s seed]" << '\n';

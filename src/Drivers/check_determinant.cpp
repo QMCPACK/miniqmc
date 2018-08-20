@@ -36,7 +36,7 @@ using namespace qmcplusplus;
 
 void print_help()
 {
-  //clang-format off
+  // clang-format off
   cout << "usage:" << '\n';
   cout << "  check_determinant [-hvV] [-g \"n0 n1 n2\"] [-n steps]" << '\n';
   cout << "             [-N substeps] [-s seed]" << '\n';
@@ -58,9 +58,9 @@ int main(int argc, char** argv)
   { //Begin kokkos block.
 
     // clang-format off
-  typedef QMCTraits::RealType           RealType;
-  typedef ParticleSet::ParticlePos_t    ParticlePos_t;
-  typedef ParticleSet::PosType          PosType;
+    typedef QMCTraits::RealType           RealType;
+    typedef ParticleSet::ParticlePos_t    ParticlePos_t;
+    typedef ParticleSet::PosType          PosType;
     // clang-format on
 
     int na        = 1;
