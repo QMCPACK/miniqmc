@@ -220,7 +220,6 @@ struct BsplineFunctor : public OptimizableFunctorBase
        SplineCoefs(i+3)*(A[12]*tp[0] + A[13]*tp[1] + A[14]*tp[2] + A[15]*tp[3]));
     // clang-format on
   }
-<<<<<<< HEAD
 
   inline bool evaluateDerivatives(real_type r,
                                   std::vector<TinyVector<real_type, 3>> &derivs)
