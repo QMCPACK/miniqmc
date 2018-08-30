@@ -46,15 +46,16 @@
     inline omp_int_t omp_get_max_threads() { return 1; }
     inline omp_int_t omp_get_num_threads() { return 1; }
   #endif
-#endif
-
-#if defined(QMC_USE_KOKKOS)
-
-#include <Kokkos_Core.hpp>
-typedef int omp_int_t;
-inline omp_int_t omp_get_thread_num() { return 0; }
-inline omp_int_t omp_get_max_threads() { return 1; }
-inline omp_int_t omp_get_num_threads() { return 1; }
+#else //means Kokkos is enabled.
+  #include <Kokkos_Core.hpp>
+  #if defined(KOKKOS_ENABLE_OPENMP) && !defined(KOKKOS_ENABLE_CUDA)
+    //Do nothing.  OpenMP is included.
+  #else
+     typedef int omp_int_t;
+     inline omp_int_t omp_get_thread_num() { return 0; }
+     inline omp_int_t omp_get_max_threads() { return 1; }
+     inline omp_int_t omp_get_num_threads() { return 1; }
+  #endif
 #endif
 
 // define empty DEBUG_MEMORY

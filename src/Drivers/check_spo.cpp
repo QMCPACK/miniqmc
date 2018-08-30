@@ -202,7 +202,7 @@ int main(int argc, char** argv)
     double evalVGH_h_err = 0.0;
 
     // clang-format off
-  #pragma omp parallel reduction(+:ratio,nspheremoves,dNumVGHCalls) \
+//  #pragma omp parallel reduction(+:ratio,nspheremoves,dNumVGHCalls) \
    reduction(+:evalV_v_err,evalVGH_v_err,evalVGH_g_err,evalVGH_h_err)
     // clang-format on
     {
