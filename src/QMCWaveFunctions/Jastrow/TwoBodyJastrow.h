@@ -73,10 +73,10 @@ struct TwoBodyJastrow : public WaveFunctionComponent
   ///\f$d2Uat[i] = sum_(j) d2u_{i,j}\f$
   Vector<valT> d2Uat;
   valT cur_Uat;
-  aligned_vector<valT> cur_u, cur_du, cur_d2u;
-  aligned_vector<valT> old_u, old_du, old_d2u;
-  aligned_vector<valT> DistCompressed;
-  aligned_vector<int> DistIndice;
+  Kokkos::View<valT*> cur_u, cur_du, cur_d2u;
+  Kokkos::View<valT*> old_u, old_du, old_d2u;
+  Kokkos::View<valT*> DistCompressed;
+  Kokkos::View<int*> DistIndice;
   /// Container for \f$F[ig*NumGroups+jg]\f$
   std::vector<FT*> F;
   /// Uniquue J2 set for cleanup
@@ -183,15 +183,18 @@ void TwoBodyJastrow<FT>::init(ParticleSet& p)
   Uat.resize(N);
   dUat.resize(N);
   d2Uat.resize(N);
-  cur_u.resize(N);
-  cur_du.resize(N);
-  cur_d2u.resize(N);
-  old_u.resize(N);
-  old_du.resize(N);
-  old_d2u.resize(N);
+
+  //And now the Kokkos vectors
+  cur_u   = Kokkos::View<valT*>("cur_u",N);
+  cur_du  = Kokkos::View<valT*>("cur_du",N);
+  cur_d2u = Kokkos::View<valT*>("cur_d2u",N);
+  old_u   = Kokkos::View<valT*>("old_u",N);
+  old_du  = Kokkos::View<valT*>("old_du",N);
+  old_d2u = Kokkos::View<valT*>("old_d2u",N);
+  DistIndice=Kokkos::View<int*>("DistIndice",N);
+  DistCompressed=Kokkos::View<valT*>("DistCompressed",N);
+
   F.resize(NumGroups * NumGroups, nullptr);
-  DistCompressed.resize(N);
-  DistIndice.resize(N);
 }
 
 template<typename FT>
