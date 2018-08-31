@@ -78,9 +78,9 @@ struct TwoBodyJastrow : public WaveFunctionComponent
   Kokkos::View<valT*> DistCompressed;
   Kokkos::View<int*> DistIndice;
   /// Container for \f$F[ig*NumGroups+jg]\f$
-  std::vector<FT*> F;
+  Kokkos::View<FT*> F;
   /// Uniquue J2 set for cleanup
-  std::map<std::string, FT*> J2Unique;
+//  std::map<std::string, FT*> J2Unique;
 
   TwoBodyJastrow(ParticleSet& p);
   TwoBodyJastrow(const TwoBodyJastrow& rhs) = delete;
@@ -118,7 +118,7 @@ struct TwoBodyJastrow : public WaveFunctionComponent
     const int igt = P.GroupID[iat] * NumGroups;
     for (int jg = 0; jg < NumGroups; ++jg)
     {
-      const FuncType& f2(*F[igt + jg]);
+      const FuncType& f2(F[igt + jg]);
       int iStart = P.first(jg);
       int iEnd   = P.last(jg);
       curUat += f2.evaluateV(iat, iStart, iEnd, dist, DistCompressed.data());
@@ -165,12 +165,12 @@ TwoBodyJastrow<FT>::TwoBodyJastrow(ParticleSet& p)
 template<typename FT>
 TwoBodyJastrow<FT>::~TwoBodyJastrow()
 {
-  auto it = J2Unique.begin();
-  while (it != J2Unique.end())
-  {
-    delete ((*it).second);
-    ++it;
-  }
+//  auto it = J2Unique.begin();
+//  while (it != J2Unique.end())
+//  {
+//    delete ((*it).second);
+//    ++it;
+ // }
 } // need to clean up J2Unique
 
 template<typename FT>
@@ -194,7 +194,10 @@ void TwoBodyJastrow<FT>::init(ParticleSet& p)
   DistIndice=Kokkos::View<int*>("DistIndice",N);
   DistCompressed=Kokkos::View<valT*>("DistCompressed",N);
 
-  F.resize(NumGroups * NumGroups, nullptr);
+  F = Kokkos::View<FT*>("FT",NumGroups * NumGroups);
+  for(int i=0; i<NumGroups*NumGroups; i++){
+    new(&F(i)) FT();
+  }
 }
 
 template<typename FT>
@@ -207,11 +210,10 @@ void TwoBodyJastrow<FT>::addFunc(int ia, int ib, FT* j)
       int ij = 0;
       for (int ig = 0; ig < NumGroups; ++ig)
         for (int jg = 0; jg < NumGroups; ++jg, ++ij)
-          if (F[ij] == nullptr)
-            F[ij] = j;
+            F[ij] = *j;
     }
     else
-      F[ia * NumGroups + ib] = j;
+      F[ia * NumGroups + ib] = *j;
   }
   else
   {
@@ -221,18 +223,18 @@ void TwoBodyJastrow<FT>::addFunc(int ia, int ib, FT* j)
       // uu/dd was prevented by the builder
       for (int ig = 0; ig < NumGroups; ++ig)
         for (int jg = 0; jg < NumGroups; ++jg)
-          F[ig * NumGroups + jg] = j;
+          F[ig * NumGroups + jg] = *j;
     }
     else
     {
       // generic case
-      F[ia * NumGroups + ib] = j;
-      F[ib * NumGroups + ia] = j;
+      F[ia * NumGroups + ib] = *j;
+      F[ib * NumGroups + ia] = *j;
     }
   }
   std::stringstream aname;
   aname << ia << ib;
-  J2Unique[aname.str()] = j;
+//  J2Unique[aname.str()] = *j;
   FirstTime             = false;
 }
 
@@ -262,7 +264,7 @@ inline void TwoBodyJastrow<FT>::computeU3(const ParticleSet& P,
   const int igt = P.GroupID[iat] * NumGroups;
   for (int jg = 0; jg < NumGroups; ++jg)
   {
-    const FuncType& f2(*F[igt + jg]);
+    const FuncType& f2(F[igt + jg]);
     int iStart = P.first(jg);
     int iEnd   = std::min(jelmax, P.last(jg));
     f2.evaluateVGL(iat, iStart, iEnd, dist, u, du, d2u, DistCompressed.data(), DistIndice.data());
