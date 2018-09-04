@@ -339,7 +339,8 @@ int main(int argc, char** argv)
                   << "Tile size = " << tileSize << endl
                   << "Number of tiles = " << nTiles << endl
                   << "Number of electrons = " << nels << endl
-                  << "Rmax = " << Rmax << endl;
+                  << "Rmax = " << Rmax << endl
+                  << "AcceptanceRatio = " << accept << endl;
     app_summary() << "Iterations = " << nsteps << endl;
     app_summary() << "OpenMP threads = " << omp_get_max_threads() << endl;
 #ifdef HAVE_MPI
