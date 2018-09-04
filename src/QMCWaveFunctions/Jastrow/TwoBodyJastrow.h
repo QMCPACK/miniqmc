@@ -78,7 +78,12 @@ struct TwoBodyJastrow : public WaveFunctionComponent
   Kokkos::View<valT*> DistCompressed;
   Kokkos::View<int*> DistIndice;
   /// Container for \f$F[ig*NumGroups+jg]\f$
-  Kokkos::View<FT*> F;
+  typedef Kokkos::Device<
+            Kokkos::DefaultHostExecutionSpace,
+            typename Kokkos::DefaultExecutionSpace::memory_space>
+    F_device_type;
+
+  Kokkos::View<FT*,F_device_type> F;
   /// Uniquue J2 set for cleanup
 //  std::map<std::string, FT*> J2Unique;
 
@@ -194,7 +199,7 @@ void TwoBodyJastrow<FT>::init(ParticleSet& p)
   DistIndice=Kokkos::View<int*>("DistIndice",N);
   DistCompressed=Kokkos::View<valT*>("DistCompressed",N);
 
-  F = Kokkos::View<FT*>("FT",NumGroups * NumGroups);
+  F = Kokkos::View<FT*,F_device_type>("FT",NumGroups * NumGroups);
   for(int i=0; i<NumGroups*NumGroups; i++){
     new(&F(i)) FT();
   }
