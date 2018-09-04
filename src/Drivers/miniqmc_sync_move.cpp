@@ -162,7 +162,7 @@ void print_help()
   app_summary() << "  -n  number of MC steps             default: 5"             << '\n';
   app_summary() << "  -N  number of MC substeps          default: 1"             << '\n';
   app_summary() << "  -r  set the Rmax.                  default: 1.7"           << '\n';
-  app_summary() << "  -r  set the acceptance ratio.      default: 0.5"           << '\n';
+  app_summary() << "  -R  set the acceptance ratio.      default: 0.5"           << '\n';
   app_summary() << "  -s  set the random seed.           default: 11"            << '\n';
   app_summary() << "  -t  timer level: coarse or fine    default: fine"          << '\n';
   app_summary() << "  -w  number of walker(movers)       default: num of threads"<< '\n';
