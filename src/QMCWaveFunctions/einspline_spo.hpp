@@ -303,7 +303,13 @@ struct einspline_spo : public SPOSet
     }
   }
 
-  void transfer_from_device()
+  void transfer_v_from_device()
+  {
+    for (int i = 0; i < nBlocks; ++i)
+      psi[i].update_from_device();
+  }
+
+  void transfer_vgh_from_device()
   {
     for (int i = 0; i < nBlocks; ++i)
     {
@@ -407,10 +413,10 @@ struct einspline_spo : public SPOSet
       }
   }
 
-  void multi_transfer_from_device(const std::vector<SPOSet*>& spo_list) const
+  void multi_transfer_vgh_from_device(const std::vector<SPOSet*>& spo_list) const
   {
     for (size_t iw = 0; iw < spo_list.size(); iw++)
-      (dynamic_cast<self_type*>(spo_list[iw]))->transfer_from_device();
+      (dynamic_cast<self_type*>(spo_list[iw]))->transfer_vgh_from_device();
   }
 
   void print(std::ostream& os)

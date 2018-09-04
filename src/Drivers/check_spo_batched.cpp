@@ -300,7 +300,7 @@ int main(int argc, char** argv)
       anon_spo->multi_evaluate_vgh(spo_shadows, pos_list);
       Timers[Timer_SPO_vgh]->stop();
       if (transfer)
-        anon_spo->multi_transfer_from_device(spo_shadows);
+        anon_spo->multi_transfer_vgh_from_device(spo_shadows);
 
 #pragma omp parallel for reduction(+ : evalVGH_v_err, evalVGH_g_err, evalVGH_h_err)
       for (size_t iw = 0; iw < mover_list.size(); iw++)

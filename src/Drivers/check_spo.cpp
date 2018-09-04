@@ -252,6 +252,7 @@ int main(int argc, char** argv)
       {
         PosType pos = els.R[iel] + sqrttau * delta[iel];
         spo.evaluate_vgh(pos);
+        spo.transfer_vgh_from_device();
         spo_ref.evaluate_vgh(pos);
         // accumulate error
         for (int ib = 0; ib < spo.nBlocks; ib++)
@@ -293,6 +294,7 @@ int main(int argc, char** argv)
           {
             PosType pos = centerP + r * rOnSphere[k];
             spo.evaluate_v(pos);
+            spo.transfer_v_from_device();
             spo_ref.evaluate_v(pos);
             // accumulate error
             for (int ib = 0; ib < spo.nBlocks; ib++)
