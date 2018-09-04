@@ -271,7 +271,7 @@ int main(int argc, char** argv)
             evalVGH_h_err += std::fabs(spo.hess[ib].data(4)[n] - spo_ref.hess[ib].data(4)[n]);
             evalVGH_h_err += std::fabs(spo.hess[ib].data(5)[n] - spo_ref.hess[ib].data(5)[n]);
           }
-        if (ur[iel] > accept)
+        if (ur[iel] < accept)
         {
           els.R[iel] = pos;
           my_accepted++;

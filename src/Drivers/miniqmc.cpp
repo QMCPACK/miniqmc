@@ -148,9 +148,10 @@ void print_help()
 {
   // clang-format off
   app_summary() << "usage:" << '\n';
-  app_summary() << "  miniqmc   [-hjvV] [-g \"n0 n1 n2\"] [-m meshfactor]"       << '\n';
-  app_summary() << "            [-n steps] [-N substeps] [-r rmax] [-s seed]"    << '\n';
-  app_summary() << "            [-w walkers] [-a tile_size] [-t timer_level]"    << '\n';
+  app_summary() << "  miniqmc   [-bhjvV] [-g \"n0 n1 n2\"] [-m meshfactor]"      << '\n';
+  app_summary() << "            [-n steps] [-N substeps] [-r rmax]"              << '\n';
+  app_summary() << "            [-R AcceptanceRatio] [-s seed] [-w walkers]"     << '\n';
+  app_summary() << "            [-a tile_size] [-t timer_level]"                 << '\n';
   app_summary() << "options:"                                                    << '\n';
   app_summary() << "  -a  size of each spline tile       default: num of orbs"   << '\n';
   app_summary() << "  -b  use reference implementations  default: off"           << '\n';
@@ -161,6 +162,7 @@ void print_help()
   app_summary() << "  -n  number of MC steps             default: 5"             << '\n';
   app_summary() << "  -N  number of MC substeps          default: 1"             << '\n';
   app_summary() << "  -r  set the Rmax.                  default: 1.7"           << '\n';
+  app_summary() << "  -r  set the acceptance ratio.      default: 0.5"           << '\n';
   app_summary() << "  -s  set the random seed.           default: 11"            << '\n';
   app_summary() << "  -t  timer level: coarse or fine    default: fine"          << '\n';
   app_summary() << "  -w  number of walker(movers)       default: num of threads"<< '\n';
@@ -194,6 +196,7 @@ int main(int argc, char** argv)
   int nsubsteps = 1;
   // Set cutoff for NLPP use.
   RealType Rmax(1.7);
+  RealType accept  = 0.5;
   bool useRef   = false;
   bool enableJ3 = false;
 
@@ -210,7 +213,7 @@ int main(int argc, char** argv)
   int opt;
   while (optind < argc)
   {
-    if ((opt = getopt(argc, argv, "bhjvVa:c:g:m:n:N:r:s:w:t:")) != -1)
+    if ((opt = getopt(argc, argv, "bhjvVa:c:g:m:n:N:r:R:s:w:t:")) != -1)
     {
       switch (opt)
       {
@@ -249,6 +252,9 @@ int main(int argc, char** argv)
         break;
       case 'r': // rmax
         Rmax = atof(optarg);
+        break;
+      case 'R':
+        accept = atof(optarg);
         break;
       case 's':
         iseed = atoi(optarg);
@@ -331,7 +337,8 @@ int main(int argc, char** argv)
                   << "Tile size = " << tileSize << endl
                   << "Number of tiles = " << nTiles << endl
                   << "Number of electrons = " << nels << endl
-                  << "Rmax = " << Rmax << endl;
+                  << "Rmax = " << Rmax << endl
+                  << "AcceptanceRatio = " << accept << endl;
     app_summary() << "Iterations = " << nsteps << endl;
     app_summary() << "OpenMP threads = " << omp_get_max_threads() << endl;
 #ifdef HAVE_MPI
@@ -392,7 +399,6 @@ int main(int argc, char** argv)
   const RealType tau = 2.0;
 
   RealType sqrttau = std::sqrt(tau);
-  RealType accept  = 0.5;
 
   #pragma omp parallel for
   for (int iw = 0; iw < nmovers; iw++)
@@ -443,7 +449,7 @@ int main(int argc, char** argv)
           Timers[Timer_ratioGrad]->stop();
 
           // Accept/reject the trial move
-          if (ur[iel] > accept) // MC
+          if (ur[iel] < accept) // MC
           {
             // Update position, and update temporary storage
             Timers[Timer_Update]->start();
