@@ -149,8 +149,8 @@ void print_help()
   // clang-format off
   app_summary() << "usage:" << '\n';
   app_summary() << "  miniqmc   [-bhjvV] [-g \"n0 n1 n2\"] [-m meshfactor]"      << '\n';
-  app_summary() << "            [-n steps] [-N substeps] [-r rmax]"              << '\n';
-  app_summary() << "            [-R AcceptanceRatio] [-s seed] [-w walkers]"     << '\n';
+  app_summary() << "            [-n steps] [-N substeps] [-x rmax]"              << '\n';
+  app_summary() << "            [-r AcceptanceRatio] [-s seed] [-w walkers]"     << '\n';
   app_summary() << "            [-a tile_size] [-t timer_level]"                 << '\n';
   app_summary() << "options:"                                                    << '\n';
   app_summary() << "  -a  size of each spline tile       default: num of orbs"   << '\n';
@@ -161,13 +161,13 @@ void print_help()
   app_summary() << "  -m  meshfactor                     default: 1.0"           << '\n';
   app_summary() << "  -n  number of MC steps             default: 5"             << '\n';
   app_summary() << "  -N  number of MC substeps          default: 1"             << '\n';
-  app_summary() << "  -r  set the Rmax.                  default: 1.7"           << '\n';
-  app_summary() << "  -R  set the acceptance ratio.      default: 0.5"           << '\n';
+  app_summary() << "  -r  set the acceptance ratio.      default: 0.5"           << '\n';
   app_summary() << "  -s  set the random seed.           default: 11"            << '\n';
   app_summary() << "  -t  timer level: coarse or fine    default: fine"          << '\n';
   app_summary() << "  -w  number of walker(movers)       default: num of threads"<< '\n';
   app_summary() << "  -v  verbose output"                                        << '\n';
   app_summary() << "  -V  print version information and exit"                    << '\n';
+  app_summary() << "  -x  set the Rmax.                  default: 1.7"           << '\n';
   // clang-format on
 }
 
@@ -213,7 +213,7 @@ int main(int argc, char** argv)
   int opt;
   while (optind < argc)
   {
-    if ((opt = getopt(argc, argv, "bhjvVa:c:g:m:n:N:r:R:s:w:t:")) != -1)
+    if ((opt = getopt(argc, argv, "bhjvVa:c:g:m:n:N:r:s:t:w:x:")) != -1)
     {
       switch (opt)
       {
@@ -250,10 +250,7 @@ int main(int argc, char** argv)
       case 'N':
         nsubsteps = atoi(optarg);
         break;
-      case 'r': // rmax
-        Rmax = atof(optarg);
-        break;
-      case 'R':
+      case 'r':
         accept = atof(optarg);
         break;
       case 's':
@@ -271,6 +268,9 @@ int main(int argc, char** argv)
         break;
       case 'w': // number of nmovers
         nmovers = atoi(optarg);
+        break;
+      case 'x': // rmax
+        Rmax = atof(optarg);
         break;
       default:
         print_help();
