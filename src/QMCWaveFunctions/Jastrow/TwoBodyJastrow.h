@@ -90,7 +90,7 @@ struct TwoBodyJastrow : public WaveFunctionComponent
 //  std::map<std::string, FT*> J2Unique;
 
   TwoBodyJastrow(ParticleSet& p);
-  TwoBodyJastrow(const TwoBodyJastrow& rhs) = delete;
+  TwoBodyJastrow(const TwoBodyJastrow& rhs) = default;
   ~TwoBodyJastrow();
 
   /* initialize storage */
@@ -140,6 +140,8 @@ struct TwoBodyJastrow : public WaveFunctionComponent
                         RealType* restrict du,
                         RealType* restrict d2u,
                         bool triangle = false);
+
+  inline void operator()(const typename policy_t::member_type& team) const;
 
   /** compute gradient
    */
@@ -275,10 +277,17 @@ inline void TwoBodyJastrow<FT>::computeU3(const ParticleSet& P,
     int iStart = P.first(jg);
     int iEnd   = std::min(jelmax, P.last(jg));
     f2.evaluateVGL(iat, iStart, iEnd, dist, u, du, d2u, DistCompressed.data(), DistIndice.data());
+    Kokkos::parallel_for(policy_t(1,1,32),*this);
   }
   // u[iat]=czero;
   // du[iat]=czero;
   // d2u[iat]=czero;
+}
+
+template<typename FT>
+KOKKOS_INLINE_FUNCTION void TwoBodyJastrow<FT>::operator() (const typename policy_t::member_type& team) const {
+
+  printf("Hi %d %d %d\n",team.league_rank(),team.team_size(),team.team_rank());
 }
 
 template<typename FT>
