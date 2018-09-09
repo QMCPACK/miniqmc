@@ -89,6 +89,17 @@ struct TwoBodyJastrow : public WaveFunctionComponent
   /// Uniquue J2 set for cleanup
 //  std::map<std::string, FT*> J2Unique;
 
+  //These are needed because the kokkos class function operator() for
+  //parallel exeuction doesn't really take arguments...  just has
+  //access to class variables.  
+  int iat, igt, jg_hack;
+  const RealType* dist;
+  RealType* u;
+  RealType* du;
+  RealType* d2u;
+  int first[2]; //We have up and down electrons.  This should be generalizd to nspecies.
+  int last[2];
+
   TwoBodyJastrow(ParticleSet& p);
   TwoBodyJastrow(const TwoBodyJastrow& rhs) = default;
   ~TwoBodyJastrow();
@@ -257,26 +268,33 @@ void TwoBodyJastrow<FT>::addFunc(int ia, int ib, FT* j)
  */
 template<typename FT>
 inline void TwoBodyJastrow<FT>::computeU3(const ParticleSet& P,
-                                          int iat,
-                                          const RealType* restrict dist,
-                                          RealType* restrict u,
-                                          RealType* restrict du,
-                                          RealType* restrict d2u,
+                                          int iat_,
+                                          const RealType* restrict dist_,
+                                          RealType* restrict u_,
+                                          RealType* restrict du_,
+                                          RealType* restrict d2u_,
                                           bool triangle)
 {
+  iat = iat_;
+  dist = dist_;
+  u = u_;
+  du = du_;
+  d2u = d2u_;
+
   const int jelmax = triangle ? iat : N;
   constexpr valT czero(0);
   std::fill_n(u, jelmax, czero);
   std::fill_n(du, jelmax, czero);
   std::fill_n(d2u, jelmax, czero);
 
-  const int igt = P.GroupID[iat] * NumGroups;
+  igt = P.GroupID[iat] * NumGroups;
   for (int jg = 0; jg < NumGroups; ++jg)
   {
     const FuncType& f2(F[igt + jg]);
-    int iStart = P.first(jg);
-    int iEnd   = std::min(jelmax, P.last(jg));
-    f2.evaluateVGL(iat, iStart, iEnd, dist, u, du, d2u, DistCompressed.data(), DistIndice.data());
+    jg_hack = jg;
+    first[jg]  = P.first(jg);
+    last[jg]   = std::min(jelmax, P.last(jg));
+   // f2.evaluateVGL(iat, iStart, iEnd, dist, u, du, d2u, DistCompressed.data(), DistIndice.data());
     Kokkos::parallel_for(policy_t(1,1,32),*this);
   }
   // u[iat]=czero;
@@ -286,8 +304,12 @@ inline void TwoBodyJastrow<FT>::computeU3(const ParticleSet& P,
 
 template<typename FT>
 KOKKOS_INLINE_FUNCTION void TwoBodyJastrow<FT>::operator() (const typename policy_t::member_type& team) const {
-
-  printf("Hi %d %d %d\n",team.league_rank(),team.team_size(),team.team_rank());
+  int jg = jg_hack;
+  int iStart = first[jg];
+  int iEnd = last[jg];
+ // printf("Hi %d %d %d\n",jg,iStart,iEnd);
+  F[igt+jg].evaluateVGL(iat,iStart, iEnd, dist, u, du, d2u, DistCompressed.data(),
+                        DistIndice.data());
 }
 
 template<typename FT>
