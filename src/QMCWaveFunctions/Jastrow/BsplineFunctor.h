@@ -47,7 +47,7 @@ struct BsplineFunctor : public OptimizableFunctorBase
   int NumParams;
   int Dummy;
   TinyVector<real_type, 16> A, dA, d2A, d3A;
-  aligned_vector<real_type> SplineCoefs;
+  Kokkos::View<real_type*> SplineCoefs;
 
   // static const real_type A[16], dA[16], d2A[16];
   real_type DeltaR, DeltaRInv;
@@ -55,7 +55,7 @@ struct BsplineFunctor : public OptimizableFunctorBase
   real_type Y, dY, d2Y;
   // Stores the derivatives w.r.t. SplineCoefs
   // of the u, du/dr, and d2u/dr2
-  std::vector<real_type> Parameters;
+  Kokkos::View<real_type*> Parameters;
   std::vector<std::string> ParameterNames;
   std::string elementType, pairType;
   std::string fileName;
@@ -97,8 +97,8 @@ struct BsplineFunctor : public OptimizableFunctorBase
     int numKnots = numCoefs - 2;
     DeltaR       = cutoff_radius / (real_type)(numKnots - 1);
     DeltaRInv    = 1.0 / DeltaR;
-    Parameters.resize(n);
-    SplineCoefs.resize(numCoefs);
+    Parameters   = Kokkos::View<real_type*>("Parameters",n);
+    SplineCoefs  = Kokkos::View<real_type*>("SplineCoefs",numCoefs);;
   }
 
   void reset()
@@ -290,21 +290,25 @@ KOKKOS_INLINE_FUNCTION void BsplineFunctor<T>::evaluateVGL(const TeamType& team,
   real_type* gradArray       = _gradArray + iStart;
   real_type* laplArray       = _laplArray + iStart;
 
-#pragma vector always
-  for (int jat = 0; jat < iLimit; jat++)
-  {
+  Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(team,iLimit), [&](const int& jat, int& count){
     real_type r = distArray[jat];
-    if (r < cutoff_radius && iStart + jat != iat)
-    {
-      distIndices[iCount]         = jat;
-      distArrayCompressed[iCount] = r;
-      iCount++;
-    }
-  }
+    if( r < cutoff_radius && iStart + jat != iat)
+      count++;
+  },iCount);
 
-  #pragma omp simd
-  for (int j = 0; j < iCount; j++)
-  {
+  Kokkos::parallel_scan(Kokkos::ThreadVectorRange(team,iLimit), [&](const int& jat, int& count, const bool& final){
+    real_type r = distArray[jat];
+    if( r < cutoff_radius && iStart + jat != iat)
+    {
+      if(final){
+        distIndices[count]         = jat;
+        distArrayCompressed[count] = r;
+      }
+      count++;
+    }
+  }); 
+
+  Kokkos::parallel_for(Kokkos::ThreadVectorRange(team,iCount), [&](const int& j){
     real_type r    = distArrayCompressed[j];
     int iScatter   = distIndices[j];
     real_type rinv = cOne / r;
@@ -338,7 +342,7 @@ KOKKOS_INLINE_FUNCTION void BsplineFunctor<T>::evaluateVGL(const TeamType& team,
         sCoef2*(A[ 8]*tp0 + A[ 9]*tp1 + A[10]*tp2 + A[11])+
         sCoef3*(A[12]*tp0 + A[13]*tp1 + A[14]*tp2 + A[15]));
     // clang-format on
-  }
+  });
 }
 } // namespace qmcplusplus
 #endif
