@@ -308,7 +308,7 @@ KOKKOS_INLINE_FUNCTION void TwoBodyJastrow<FT>::operator() (const typename polic
   int iStart = first[jg];
   int iEnd = last[jg];
  // printf("Hi %d %d %d\n",jg,iStart,iEnd);
-  F[igt+jg].evaluateVGL(iat,iStart, iEnd, dist, u, du, d2u, DistCompressed.data(),
+  F[igt+jg].evaluateVGL(team,iat,iStart, iEnd, dist, u, du, d2u, DistCompressed.data(),
                         DistIndice.data());
 }
 

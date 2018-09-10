@@ -140,7 +140,8 @@ struct BsplineFunctor : public OptimizableFunctorBase
    * @param distIndices temp storage for the compressed index
    */
   // clang-format off
-  void evaluateVGL(const int iat, const int iStart, const int iEnd, 
+  template <typename TeamType>
+  void evaluateVGL(const TeamType& team, const int iat, const int iStart, const int iEnd, 
       const T* _distArray,  
       T* restrict _valArray,
       T* restrict _gradArray, 
@@ -263,7 +264,9 @@ inline T BsplineFunctor<T>::evaluateV(const int iat,
 }
 
 template<typename T>
-inline void BsplineFunctor<T>::evaluateVGL(const int iat,
+template<typename TeamType>
+KOKKOS_INLINE_FUNCTION void BsplineFunctor<T>::evaluateVGL(const TeamType& team,
+                                           const int iat,
                                            const int iStart,
                                            const int iEnd,
                                            const T* _distArray,
