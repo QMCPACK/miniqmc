@@ -189,7 +189,7 @@ int main(int argc, char** argv)
           determinant.ratio(els, iel);
 
           // Accept/reject the trial move
-          if (ur[iel] > accept) // MC
+          if (ur[iel] < accept) // MC
           {
             // Update position, and update temporary storage
             els.acceptMove(iel);
