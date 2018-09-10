@@ -32,6 +32,7 @@
 #include <QMCWaveFunctions/Jastrow/ThreeBodyJastrowRef.h>
 #include <QMCWaveFunctions/Jastrow/ThreeBodyJastrow.h>
 #include <QMCWaveFunctions/Jastrow/BsplineFunctor.h>
+#include <QMCWaveFunctions/Jastrow/BsplineFunctorRef.h>
 #include <QMCWaveFunctions/Jastrow/OneBodyJastrowRef.h>
 #include <QMCWaveFunctions/Jastrow/OneBodyJastrow.h>
 #include <QMCWaveFunctions/Jastrow/TwoBodyJastrowRef.h>
@@ -159,7 +160,7 @@ int main(int argc, char** argv)
     PrimeNumberSet<uint32_t> myPrimes;
 
     // clang-format off
-  #pragma omp parallel reduction(+:evaluateLog_v_err,evaluateLog_g_err,evaluateLog_l_err,evalGrad_g_err) \
+//  #pragma omp parallel reduction(+:evaluateLog_v_err,evaluateLog_g_err,evaluateLog_l_err,evalGrad_g_err) \
    reduction(+:ratioGrad_r_err,ratioGrad_g_err,evaluateGL_g_err,evaluateGL_l_err,ratio_err)
     // clang-format on
     {
@@ -200,8 +201,8 @@ int main(int argc, char** argv)
         buildJ2(*J, els.Lattice.WignerSeitzRadius);
         wfc = dynamic_cast<WaveFunctionComponentPtr>(J);
         cout << "Built J2" << endl;
-        miniqmcreference::TwoBodyJastrowRef<BsplineFunctor<RealType>>* J_ref =
-            new miniqmcreference::TwoBodyJastrowRef<BsplineFunctor<RealType>>(els_ref);
+        miniqmcreference::TwoBodyJastrowRef<BsplineFunctorRef<RealType>>* J_ref =
+            new miniqmcreference::TwoBodyJastrowRef<BsplineFunctorRef<RealType>>(els_ref);
         buildJ2(*J_ref, els.Lattice.WignerSeitzRadius);
         wfc_ref = dynamic_cast<WaveFunctionComponentPtr>(J_ref);
         cout << "Built J2_ref" << endl;
@@ -213,8 +214,8 @@ int main(int argc, char** argv)
         buildJ1(*J, els.Lattice.WignerSeitzRadius);
         wfc = dynamic_cast<WaveFunctionComponentPtr>(J);
         cout << "Built J1" << endl;
-        miniqmcreference::OneBodyJastrowRef<BsplineFunctor<RealType>>* J_ref =
-            new miniqmcreference::OneBodyJastrowRef<BsplineFunctor<RealType>>(ions, els_ref);
+        miniqmcreference::OneBodyJastrowRef<BsplineFunctorRef<RealType>>* J_ref =
+            new miniqmcreference::OneBodyJastrowRef<BsplineFunctorRef<RealType>>(ions, els_ref);
         buildJ1(*J_ref, els.Lattice.WignerSeitzRadius);
         wfc_ref = dynamic_cast<WaveFunctionComponentPtr>(J_ref);
         cout << "Built J1_ref" << endl;

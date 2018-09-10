@@ -19,6 +19,7 @@
 #include <QMCWaveFunctions/Determinant.h>
 #include <QMCWaveFunctions/DeterminantRef.h>
 #include <QMCWaveFunctions/Jastrow/BsplineFunctor.h>
+#include <QMCWaveFunctions/Jastrow/BsplineFunctorRef.h>
 #include <QMCWaveFunctions/Jastrow/PolynomialFunctor3D.h>
 #include <QMCWaveFunctions/Jastrow/OneBodyJastrowRef.h>
 #include <QMCWaveFunctions/Jastrow/OneBodyJastrow.h>
@@ -60,8 +61,8 @@ void build_WaveFunction(bool useRef,
 
   if (useRef)
   {
-    using J1OrbType = miniqmcreference::OneBodyJastrowRef<BsplineFunctor<valT>>;
-    using J2OrbType = miniqmcreference::TwoBodyJastrowRef<BsplineFunctor<valT>>;
+    using J1OrbType = miniqmcreference::OneBodyJastrowRef<BsplineFunctorRef<valT>>;
+    using J2OrbType = miniqmcreference::TwoBodyJastrowRef<BsplineFunctorRef<valT>>;
     using J3OrbType = miniqmcreference::ThreeBodyJastrowRef<PolynomialFunctor3D>;
     using DetType   = miniqmcreference::DiracDeterminantRef;
 

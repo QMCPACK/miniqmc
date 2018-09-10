@@ -19,7 +19,6 @@
 #include <Utilities/SIMD/allocator.hpp>
 #include <Utilities/SIMD/algorithm.hpp>
 #include <numeric>
-#include <Kokkos_Core.hpp>
 
 /*!
  * @file TwoBodyJastrow.h
@@ -45,6 +44,8 @@ namespace qmcplusplus
 template<class FT>
 struct TwoBodyJastrow : public WaveFunctionComponent
 {
+  //Serial Kokkos execution for now:
+  typedef Kokkos::TeamPolicy<Kokkos::Serial> policy_t;
   /// alias FuncType
   using FuncType = FT;
   /// type of each component U, dU, d2U;
@@ -67,25 +68,40 @@ struct TwoBodyJastrow : public WaveFunctionComponent
   /// Correction
   RealType KEcorr;
   ///\f$Uat[i] = sum_(j) u_{i,j}\f$
-  //Vector<valT> Uat;
-  Kokkos::View<valT*, Kokkos::HostSpace> Uat;
+  Vector<valT> Uat;
   ///\f$dUat[i] = sum_(j) du_{i,j}\f$
   using gContainer_type = VectorSoAContainer<valT, OHMMS_DIM>;
   gContainer_type dUat;
   ///\f$d2Uat[i] = sum_(j) d2u_{i,j}\f$
   Vector<valT> d2Uat;
   valT cur_Uat;
-  aligned_vector<valT> cur_u, cur_du, cur_d2u;
-  aligned_vector<valT> old_u, old_du, old_d2u;
-  aligned_vector<valT> DistCompressed;
-  aligned_vector<int> DistIndice;
+  Kokkos::View<valT*> cur_u, cur_du, cur_d2u;
+  Kokkos::View<valT*> old_u, old_du, old_d2u;
+  Kokkos::View<valT*> DistCompressed;
+  Kokkos::View<int*> DistIndice;
   /// Container for \f$F[ig*NumGroups+jg]\f$
-  std::vector<FT*> F;
+  typedef Kokkos::Device<
+            Kokkos::DefaultHostExecutionSpace,
+            typename Kokkos::DefaultExecutionSpace::memory_space>
+    F_device_type;
+
+  Kokkos::View<FT*,F_device_type> F;
   /// Uniquue J2 set for cleanup
-  std::map<std::string, FT*> J2Unique;
+//  std::map<std::string, FT*> J2Unique;
+
+  //These are needed because the kokkos class function operator() for
+  //parallel exeuction doesn't really take arguments...  just has
+  //access to class variables.  
+  int iat, igt, jg_hack;
+  const RealType* dist;
+  RealType* u;
+  RealType* du;
+  RealType* d2u;
+  int first[2]; //We have up and down electrons.  This should be generalizd to nspecies.
+  int last[2];
 
   TwoBodyJastrow(ParticleSet& p);
-  TwoBodyJastrow(const TwoBodyJastrow& rhs) = delete;
+  TwoBodyJastrow(const TwoBodyJastrow& rhs) = default;
   ~TwoBodyJastrow();
 
   /* initialize storage */
@@ -120,7 +136,7 @@ struct TwoBodyJastrow : public WaveFunctionComponent
     const int igt = P.GroupID[iat] * NumGroups;
     for (int jg = 0; jg < NumGroups; ++jg)
     {
-      const FuncType& f2(*F[igt + jg]);
+      const FuncType& f2(F[igt + jg]);
       int iStart = P.first(jg);
       int iEnd   = P.last(jg);
       curUat += f2.evaluateV(iat, iStart, iEnd, dist, DistCompressed.data());
@@ -135,6 +151,8 @@ struct TwoBodyJastrow : public WaveFunctionComponent
                         RealType* restrict du,
                         RealType* restrict d2u,
                         bool triangle = false);
+
+  inline void operator()(const typename policy_t::member_type& team) const;
 
   /** compute gradient
    */
@@ -167,12 +185,12 @@ TwoBodyJastrow<FT>::TwoBodyJastrow(ParticleSet& p)
 template<typename FT>
 TwoBodyJastrow<FT>::~TwoBodyJastrow()
 {
-  auto it = J2Unique.begin();
-  while (it != J2Unique.end())
-  {
-    delete ((*it).second);
-    ++it;
-  }
+//  auto it = J2Unique.begin();
+//  while (it != J2Unique.end())
+//  {
+//    delete ((*it).second);
+//    ++it;
+ // }
 } // need to clean up J2Unique
 
 template<typename FT>
@@ -182,19 +200,24 @@ void TwoBodyJastrow<FT>::init(ParticleSet& p)
   N_padded  = getAlignedSize<valT>(N);
   NumGroups = p.groups();
 
-  // Uat.resize(N);
-  Uat = Kokkos::View<valT*, Kokkos::HostSpace>("Uat", N);
+  Uat.resize(N);
   dUat.resize(N);
   d2Uat.resize(N);
-  cur_u.resize(N);
-  cur_du.resize(N);
-  cur_d2u.resize(N);
-  old_u.resize(N);
-  old_du.resize(N);
-  old_d2u.resize(N);
-  F.resize(NumGroups * NumGroups, nullptr);
-  DistCompressed.resize(N);
-  DistIndice.resize(N);
+
+  //And now the Kokkos vectors
+  cur_u   = Kokkos::View<valT*>("cur_u",N);
+  cur_du  = Kokkos::View<valT*>("cur_du",N);
+  cur_d2u = Kokkos::View<valT*>("cur_d2u",N);
+  old_u   = Kokkos::View<valT*>("old_u",N);
+  old_du  = Kokkos::View<valT*>("old_du",N);
+  old_d2u = Kokkos::View<valT*>("old_d2u",N);
+  DistIndice=Kokkos::View<int*>("DistIndice",N);
+  DistCompressed=Kokkos::View<valT*>("DistCompressed",N);
+
+  F = Kokkos::View<FT*,F_device_type>("FT",NumGroups * NumGroups);
+  for(int i=0; i<NumGroups*NumGroups; i++){
+    new(&F(i)) FT();
+  }
 }
 
 template<typename FT>
@@ -207,11 +230,10 @@ void TwoBodyJastrow<FT>::addFunc(int ia, int ib, FT* j)
       int ij = 0;
       for (int ig = 0; ig < NumGroups; ++ig)
         for (int jg = 0; jg < NumGroups; ++jg, ++ij)
-          if (F[ij] == nullptr)
-            F[ij] = j;
+            F[ij] = *j;
     }
     else
-      F[ia * NumGroups + ib] = j;
+      F[ia * NumGroups + ib] = *j;
   }
   else
   {
@@ -221,18 +243,18 @@ void TwoBodyJastrow<FT>::addFunc(int ia, int ib, FT* j)
       // uu/dd was prevented by the builder
       for (int ig = 0; ig < NumGroups; ++ig)
         for (int jg = 0; jg < NumGroups; ++jg)
-          F[ig * NumGroups + jg] = j;
+          F[ig * NumGroups + jg] = *j;
     }
     else
     {
       // generic case
-      F[ia * NumGroups + ib] = j;
-      F[ib * NumGroups + ia] = j;
+      F[ia * NumGroups + ib] = *j;
+      F[ib * NumGroups + ia] = *j;
     }
   }
   std::stringstream aname;
   aname << ia << ib;
-  J2Unique[aname.str()] = j;
+//  J2Unique[aname.str()] = *j;
   FirstTime             = false;
 }
 
@@ -246,30 +268,48 @@ void TwoBodyJastrow<FT>::addFunc(int ia, int ib, FT* j)
  */
 template<typename FT>
 inline void TwoBodyJastrow<FT>::computeU3(const ParticleSet& P,
-                                          int iat,
-                                          const RealType* restrict dist,
-                                          RealType* restrict u,
-                                          RealType* restrict du,
-                                          RealType* restrict d2u,
+                                          int iat_,
+                                          const RealType* restrict dist_,
+                                          RealType* restrict u_,
+                                          RealType* restrict du_,
+                                          RealType* restrict d2u_,
                                           bool triangle)
 {
+  iat = iat_;
+  dist = dist_;
+  u = u_;
+  du = du_;
+  d2u = d2u_;
+
   const int jelmax = triangle ? iat : N;
   constexpr valT czero(0);
   std::fill_n(u, jelmax, czero);
   std::fill_n(du, jelmax, czero);
   std::fill_n(d2u, jelmax, czero);
 
-  const int igt = P.GroupID[iat] * NumGroups;
+  igt = P.GroupID[iat] * NumGroups;
   for (int jg = 0; jg < NumGroups; ++jg)
   {
-    const FuncType& f2(*F[igt + jg]);
-    int iStart = P.first(jg);
-    int iEnd   = std::min(jelmax, P.last(jg));
-    f2.evaluateVGL(iat, iStart, iEnd, dist, u, du, d2u, DistCompressed.data(), DistIndice.data());
+    const FuncType& f2(F[igt + jg]);
+    jg_hack = jg;
+    first[jg]  = P.first(jg);
+    last[jg]   = std::min(jelmax, P.last(jg));
+   // f2.evaluateVGL(iat, iStart, iEnd, dist, u, du, d2u, DistCompressed.data(), DistIndice.data());
+    Kokkos::parallel_for(policy_t(1,1,32),*this);
   }
   // u[iat]=czero;
   // du[iat]=czero;
   // d2u[iat]=czero;
+}
+
+template<typename FT>
+KOKKOS_INLINE_FUNCTION void TwoBodyJastrow<FT>::operator() (const typename policy_t::member_type& team) const {
+  int jg = jg_hack;
+  int iStart = first[jg];
+  int iEnd = last[jg];
+ // printf("Hi %d %d %d\n",jg,iStart,iEnd);
+  F[igt+jg].evaluateVGL(team,iat,iStart, iEnd, dist, u, du, d2u, DistCompressed.data(),
+                        DistIndice.data());
 }
 
 template<typename FT>
@@ -278,8 +318,7 @@ typename TwoBodyJastrow<FT>::ValueType TwoBodyJastrow<FT>::ratio(ParticleSet& P,
   // only ratio, ready to compute it again
   UpdateMode = ORB_PBYP_RATIO;
   cur_Uat    = computeU(P, iat, P.DistTables[0]->Temp_r.data());
-  //return std::exp(Uat[iat] - cur_Uat);
-  return std::exp(Uat(iat) - cur_Uat);
+  return std::exp(Uat[iat] - cur_Uat);
 }
 
 template<typename FT>
@@ -296,8 +335,7 @@ typename TwoBodyJastrow<FT>::ValueType
 
   computeU3(P, iat, P.DistTables[0]->Temp_r.data(), cur_u.data(), cur_du.data(), cur_d2u.data());
   cur_Uat = simd::accumulate_n(cur_u.data(), N, valT());
-  // DiffVal = Uat[iat] - cur_Uat;
-  DiffVal = Uat(iat) - cur_Uat;
+  DiffVal = Uat[iat] - cur_Uat;
   grad_iat += accumulateG(cur_du.data(), P.DistTables[0]->Temp_dr);
   return std::exp(DiffVal);
 }
@@ -323,8 +361,7 @@ void TwoBodyJastrow<FT>::acceptMove(ParticleSet& P, int iat)
     const valT du   = cur_u[jat] - old_u[jat];
     const valT newl = cur_d2u[jat] + lapfac * cur_du[jat];
     const valT dl   = old_d2u[jat] + lapfac * old_du[jat] - newl;
-    // Uat[jat] += du;
-    Uat(jat) += du;
+    Uat[jat] += du;
     d2Uat[jat] += dl;
     cur_d2Uat -= newl;
   }
@@ -346,8 +383,8 @@ void TwoBodyJastrow<FT>::acceptMove(ParticleSet& P, int iat)
     }
     cur_dUat[idim] = cur_g;
   }
-  LogValue += Uat(iat) - cur_Uat;
-  Uat(iat)   = cur_Uat;
+  LogValue += Uat[iat] - cur_Uat;
+  Uat[iat]   = cur_Uat;
   dUat(iat)  = cur_dUat;
   d2Uat[iat] = cur_d2Uat;
 }
@@ -362,8 +399,7 @@ void TwoBodyJastrow<FT>::recompute(ParticleSet& P)
     for (int iat = P.first(ig), last = P.last(ig); iat < last; ++iat)
     {
       computeU3(P, iat, d_table->Distances[iat], cur_u.data(), cur_du.data(), cur_d2u.data(), true);
-      // Uat[iat] = simd::accumulate_n(cur_u.data(), iat, valT());
-      Uat(iat) = simd::accumulate_n(cur_u.data(), N, valT());
+      Uat[iat] = simd::accumulate_n(cur_u.data(), iat, valT());
       posT grad;
       valT lap(0);
       const valT* restrict u    = cur_u.data();
@@ -386,7 +422,7 @@ void TwoBodyJastrow<FT>::recompute(ParticleSet& P)
       // add the contribution from the upper triangle
       for (int jat = 0; jat < iat; jat++)
       {
-        Uat(jat) += u[jat];
+        Uat[jat] += u[jat];
         d2Uat[jat] -= d2u[jat] + lapfac * du[jat];
       }
       for (int idim = 0; idim < OHMMS_DIM; ++idim)
@@ -421,8 +457,7 @@ void TwoBodyJastrow<FT>::evaluateGL(ParticleSet& P,
   LogValue = valT(0);
   for (int iat = 0; iat < N; ++iat)
   {
-    //  LogValue += Uat[iat];
-    LogValue += Uat(iat);
+    LogValue += Uat[iat];
     G[iat] += dUat[iat];
     L[iat] += d2Uat[iat];
   }
