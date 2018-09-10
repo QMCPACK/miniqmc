@@ -209,8 +209,8 @@ int main(int argc, char** argv)
       }
       else if (wfc_name == "J1")
       {
-        OneBodyJastrow<BsplineFunctorRef<RealType>>* J =
-            new OneBodyJastrow<BsplineFunctorRef<RealType>>(ions, els);
+        OneBodyJastrow<BsplineFunctor<RealType>>* J =
+            new OneBodyJastrow<BsplineFunctor<RealType>>(ions, els);
         buildJ1(*J, els.Lattice.WignerSeitzRadius);
         wfc = dynamic_cast<WaveFunctionComponentPtr>(J);
         cout << "Built J1" << endl;

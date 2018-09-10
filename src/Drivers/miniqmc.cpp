@@ -359,7 +359,7 @@ int main(int argc, char** argv)
     Timers[Timer_Init]->start();
     std::vector<Mover*> mover_list(nmovers, nullptr);
 // prepare movers
-#pragma omp parallel for
+//#pragma omp parallel for
     for (int iw = 0; iw < nmovers; iw++)
     {
       const int ip        = omp_get_thread_num();
