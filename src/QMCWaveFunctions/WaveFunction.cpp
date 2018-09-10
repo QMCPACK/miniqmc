@@ -98,7 +98,7 @@ void build_WaveFunction(bool useRef,
   }
   else
   {
-    using J1OrbType = OneBodyJastrow<BsplineFunctorRef<valT>>;
+    using J1OrbType = OneBodyJastrow<BsplineFunctor<valT>>;
     using J2OrbType = TwoBodyJastrow<BsplineFunctor<valT>>;
     using J3OrbType = ThreeBodyJastrow<PolynomialFunctor3D>;
     using DetType   = DiracDeterminant;
