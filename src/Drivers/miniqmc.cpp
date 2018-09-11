@@ -164,10 +164,11 @@ void print_help()
   app_summary() << "  -r  set the acceptance ratio.      default: 0.5"           << '\n';
   app_summary() << "  -s  set the random seed.           default: 11"            << '\n';
   app_summary() << "  -t  timer level: coarse or fine    default: fine"          << '\n';
-  app_summary() << "  -w  number of walker(movers)       default: num of threads"<< '\n';
+  app_summary() << "  -w  number of walker(movers)       default: 1"             << '\n';
   app_summary() << "  -v  verbose output"                                        << '\n';
   app_summary() << "  -V  print version information and exit"                    << '\n';
   app_summary() << "  -x  set the Rmax.                  default: 1.7"           << '\n';
+  app_summary() << "  -z  number of crews for walker partitioning.   default: 1" << '\n';
   // clang-format on
 }
 
@@ -191,11 +192,12 @@ int main(int argc, char** argv)
     int nsteps = 5;
     int iseed  = 11;
     int nx = 37, ny = 37, nz = 37;
-    int nmovers = omp_get_max_threads();
+    int nmovers = 1;
     // thread blocking
     int tileSize  = -1;
     int team_size = 1;
     int nsubsteps = 1;
+    int ncrews = 1;
     // Set cutoff for NLPP use.
     RealType Rmax(1.7);
     bool useRef   = false;
@@ -273,6 +275,8 @@ int main(int argc, char** argv)
         case 'x': // rmax
           Rmax = atof(optarg);
           break;
+        case 'z': //number of crews 
+          ncrews = atoi(optarg);
         default:
           print_help();
           return 1;
@@ -361,37 +365,18 @@ int main(int argc, char** argv)
 
     Timers[Timer_Total]->start();
 
-    Timers[Timer_Init]->start();
-    std::vector<Mover*> mover_list(nmovers, nullptr);
-// prepare movers
-//#pragma omp parallel for
-    for (int iw = 0; iw < nmovers; iw++)
-    {
-      const int ip        = omp_get_thread_num();
-      const int member_id = ip % team_size;
-
-      // create and initialize movers
-      Mover* thiswalker = new Mover(myPrimes[ip], ions);
-      mover_list[iw]    = thiswalker;
-
-      // create a spo view in each Mover
-      thiswalker->spo = build_SPOSet_view(useRef, spo_main, team_size, member_id);
-
-      // create wavefunction per mover
-      build_WaveFunction(useRef, thiswalker->wavefunction, ions, thiswalker->els, thiswalker->rng, enableJ3);
-
-      // initial computing
-      thiswalker->els.update();
-      thiswalker->wavefunction.evaluateLog(thiswalker->els);
-    }
-    Timers[Timer_Init]->stop();
 
     const int nions = ions.getTotalNum();
-    const int nels  = mover_list[0]->els.getTotalNum();
+    //const int nels  = mover_list[0]->els.getTotalNum();
+    const int nels  = count_electrons(ions,1);
     const int nels3 = 3 * nels;
 
     // this is the number of quadrature points for the non-local PP
-    const int nknots(mover_list[0]->nlpp.size());
+    
+    // Clearly this is not general, but for now, 12 point quadrature is hard coded in 
+    // NonLocalPP.  Thus, we bypass the need to initialize the whole set of movers to 
+    // read this hard coded number.
+    const int nknots = 12; 
 
     // For VMC, tau is large and should result in an acceptance ratio of roughly
     // 50%
@@ -400,15 +385,35 @@ int main(int argc, char** argv)
 
     RealType sqrttau = std::sqrt(tau);
     RealType accept  = 0.5;
-
-    //  #pragma omp parallel for
-    for (int iw = 0; iw < nmovers; iw++)
+   
+    //Now lets figure out what threading sizes are needed:
+    //  For walker level parallelism:
+   
+ 
+    auto main_function = [&](int partition_id, int num_partitions)
     {
-      auto& els          = mover_list[iw]->els;
-      auto& spo          = *mover_list[iw]->spo;
-      auto& random_th    = mover_list[iw]->rng;
-      auto& wavefunction = mover_list[iw]->wavefunction;
-      auto& ecp          = mover_list[iw]->nlpp;
+      //Since we've merged initialization and execution, we get rid of the 
+      // mover_list vector.
+      const int teamID = partition_id;
+      Timers[Timer_Init]->start();
+      // create and initialize movers
+      Mover thiswalker(myPrimes[teamID], ions);
+      // create a spo view in each Mover
+      thiswalker.spo = build_SPOSet_view(useRef, spo_main, team_size, teamID);
+
+      // create wavefunction per mover
+      build_WaveFunction(useRef, thiswalker.wavefunction, ions, thiswalker.els, thiswalker.rng, enableJ3);
+
+      // initial computing
+      thiswalker.els.update();
+      thiswalker.wavefunction.evaluateLog(thiswalker.els);
+      Timers[Timer_Init]->stop();
+
+      auto& els          = thiswalker.els;
+      auto& spo          = *thiswalker.spo;
+      auto& random_th    = thiswalker.rng;
+      auto& wavefunction = thiswalker.wavefunction;
+      auto& ecp          = thiswalker.nlpp;
 
       ParticlePos_t delta(nels);
       ParticlePos_t rOnSphere(nknots);
@@ -504,14 +509,18 @@ int main(int argc, char** argv)
 
       } // nsteps
 
-    } // end of mover loop
+    }; // end of mover loop
+
+  #if defined(KOKKOS_ENABLE_OPENMP) && !defined(KOKKOS_ENABLE_CUDA)
+    int num_threads = Kokkos::OpenMP::thread_pool_size();
+    int crewsize = std::max(1,num_threads/ncrews); 
+    Kokkos::OpenMP::partition_master(main_function,nmovers,crewsize);
+  #else
+    main_function(0,1);
+  #endif  
+ 
     Timers[Timer_Total]->stop();
 
-    // free all movers
-    //  #pragma omp parallel for
-    for (int iw = 0; iw < nmovers; iw++)
-      delete mover_list[iw];
-    mover_list.clear();
     delete spo_main;
 
     if (comm.root())
