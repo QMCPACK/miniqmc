@@ -168,6 +168,7 @@ void print_help()
   app_summary() << "  -v  verbose output"                                        << '\n';
   app_summary() << "  -V  print version information and exit"                    << '\n';
   app_summary() << "  -x  set the Rmax.                  default: 1.7"           << '\n';
+  app_summary() << "  -z  number of crews for walker partitioning.   default: 1" << '\n';
   // clang-format on
 }
 
@@ -196,6 +197,7 @@ int main(int argc, char** argv)
     int tileSize  = -1;
     int team_size = 1;
     int nsubsteps = 1;
+    int ncrews = 1;
     // Set cutoff for NLPP use.
     RealType Rmax(1.7);
     bool useRef   = false;
@@ -273,6 +275,8 @@ int main(int argc, char** argv)
         case 'x': // rmax
           Rmax = atof(optarg);
           break;
+        case 'z': //number of crews 
+          ncrews = atoi(optarg);
         default:
           print_help();
           return 1;
@@ -361,9 +365,7 @@ int main(int argc, char** argv)
 
     Timers[Timer_Total]->start();
 
-//    Timers[Timer_Init]->start();
-    std::vector<Mover*> mover_list(nmovers, nullptr);
-    
+
     const int nions = ions.getTotalNum();
     //const int nels  = mover_list[0]->els.getTotalNum();
     const int nels  = count_electrons(ions,1);
@@ -383,36 +385,35 @@ int main(int argc, char** argv)
 
     RealType sqrttau = std::sqrt(tau);
     RealType accept  = 0.5;
-    
-   //This timer is messed up because we've consolidated the thread initialization and execution
-   //into the same loop.
-//    Timers[Timer_Init]->stop();
-    
-    for (int iw = 0; iw < nmovers; iw++)
+   
+    //Now lets figure out what threading sizes are needed:
+    //  For walker level parallelism:
+   
+ 
+    auto main_function = [&](int partition_id, int num_partitions)
     {
-      const int ip        = omp_get_thread_num();
-      const int member_id = ip % team_size;
+      //Since we've merged initialization and execution, we get rid of the 
+      // mover_list vector.
+      const int teamID = partition_id;
       Timers[Timer_Init]->start();
       // create and initialize movers
-      Mover* thiswalker = new Mover(myPrimes[ip], ions);
-      mover_list[iw]    = thiswalker;
-
+      Mover thiswalker(myPrimes[teamID], ions);
       // create a spo view in each Mover
-      thiswalker->spo = build_SPOSet_view(useRef, spo_main, team_size, member_id);
+      thiswalker.spo = build_SPOSet_view(useRef, spo_main, team_size, teamID);
 
       // create wavefunction per mover
-      build_WaveFunction(useRef, thiswalker->wavefunction, ions, thiswalker->els, thiswalker->rng, enableJ3);
+      build_WaveFunction(useRef, thiswalker.wavefunction, ions, thiswalker.els, thiswalker.rng, enableJ3);
 
       // initial computing
-      thiswalker->els.update();
-      thiswalker->wavefunction.evaluateLog(thiswalker->els);
+      thiswalker.els.update();
+      thiswalker.wavefunction.evaluateLog(thiswalker.els);
       Timers[Timer_Init]->stop();
 
-      auto& els          = mover_list[iw]->els;
-      auto& spo          = *mover_list[iw]->spo;
-      auto& random_th    = mover_list[iw]->rng;
-      auto& wavefunction = mover_list[iw]->wavefunction;
-      auto& ecp          = mover_list[iw]->nlpp;
+      auto& els          = thiswalker.els;
+      auto& spo          = *thiswalker.spo;
+      auto& random_th    = thiswalker.rng;
+      auto& wavefunction = thiswalker.wavefunction;
+      auto& ecp          = thiswalker.nlpp;
 
       ParticlePos_t delta(nels);
       ParticlePos_t rOnSphere(nknots);
@@ -508,14 +509,18 @@ int main(int argc, char** argv)
 
       } // nsteps
 
-    } // end of mover loop
+    }; // end of mover loop
+
+  #if defined(KOKKOS_ENABLE_OPENMP) && !defined(KOKKOS_ENABLE_CUDA)
+    int num_threads = Kokkos::OpenMP::thread_pool_size();
+    int crewsize = std::max(1,num_threads/ncrews); 
+    Kokkos::OpenMP::partition_master(main_function,nmovers,crewsize);
+  #else
+    main_function(0,1);
+  #endif  
+ 
     Timers[Timer_Total]->stop();
 
-    // free all movers
-    //  #pragma omp parallel for
-    for (int iw = 0; iw < nmovers; iw++)
-      delete mover_list[iw];
-    mover_list.clear();
     delete spo_main;
 
     if (comm.root())
