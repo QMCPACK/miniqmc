@@ -266,6 +266,11 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
   IF (QMC_USE_KOKKOS)
     #leave the flags alone, NVCC etc. don't accept the GNU flags
     MESSAGE("leaving flags alone")
+    #Kokkos sets the important flags, but MKL detection 
+    # needs to know if the compiler is intel.  An ugly workaround.
+    IF ( ${COMPILER} MATCHES "Intel" )
+      SET( INTEL_COMPILER 1 )
+    ENDIF()
   ELSEIF( ${COMPILER} MATCHES "IBM" )
     INCLUDE(${PROJECT_CMAKE}/IBMCompilers.cmake)
   ELSEIF( ${COMPILER} MATCHES "Intel" )
