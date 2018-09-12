@@ -44,8 +44,11 @@ namespace qmcplusplus
 template<class FT>
 struct TwoBodyJastrow : public WaveFunctionComponent
 {
-  //Serial Kokkos execution for now:
+#ifdef QMC_PARALLEL_JASTROW
+  typedef Kokkos::TeamPolicy<> policy_t;
+#else
   typedef Kokkos::TeamPolicy<Kokkos::Serial> policy_t;
+#endif
   /// alias FuncType
   using FuncType = FT;
   /// type of each component U, dU, d2U;
