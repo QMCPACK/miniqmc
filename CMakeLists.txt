@@ -374,6 +374,14 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
     MESSAGE(FATAL_ERROR "Could not find required libraries LAPACK &/or BLAS") 
   ENDIF()
 
+  #We're going to see if we're running CUDA.  If so, include/link CUBLAS.
+  IF ( KOKKOS_ENABLE_CUDA )
+    MESSAGE(STATUS "Searching for CUDA libraries")
+    FIND_PACKAGE(CUDA)
+    MESSAGE(STATUS " --Link to cuBLAS")
+    LINK_LIBRARIES("-lcublas -lcurand")
+  ENDIF()
+
   INCLUDE(CMake/FindVectorMath.cmake)
 
 ENDIF(CMAKE_TOOLCHAIN_FILE)
