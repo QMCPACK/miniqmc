@@ -23,7 +23,7 @@
 
 #include <inttypes.h>
 #include <stdlib.h>
-
+#include <Kokkos_Core.hpp>
 ///////////////////////////
 // Single precision real //
 ///////////////////////////
@@ -50,17 +50,19 @@ typedef struct
   int num_splines;
 } multi_UBspline_2d_s;
 
-typedef struct
+struct multi_UBspline_3d_s
 {
+  typedef Kokkos::View<float****, Kokkos::LayoutRight> coefs_view_t;
   spline_code spcode;
   type_code tcode;
   float* restrict coefs;
+  coefs_view_t coefs_view;
   intptr_t x_stride, y_stride, z_stride;
   Ugrid x_grid, y_grid, z_grid;
   BCtype_s xBC, yBC, zBC;
   int num_splines;
   size_t coefs_size;
-} multi_UBspline_3d_s;
+};
 
 ///////////////////////////
 // Double precision real //
@@ -88,17 +90,19 @@ typedef struct
   int num_splines;
 } multi_UBspline_2d_d;
 
-typedef struct
+struct multi_UBspline_3d_d
 {
+  typedef Kokkos::View<double****, Kokkos::LayoutRight> coefs_view_t;
   spline_code spcode;
   type_code tcode;
   double* restrict coefs;
+  coefs_view_t coefs_view;
   intptr_t x_stride, y_stride, z_stride;
   Ugrid x_grid, y_grid, z_grid;
   BCtype_d xBC, yBC, zBC;
   int num_splines;
   size_t coefs_size;
-} multi_UBspline_3d_d;
+};
 
 //////////////////////////////
 // Single precision complex //

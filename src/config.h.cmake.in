@@ -86,6 +86,11 @@
 #cmakedefine BUILD_FCIQMC @BUILD_FCIQMC@
 
 #cmakedefine DEBUG_PSIBUFFER_ON @DEBUG_PSIBUFFER_ON@
+/* Enable Kokkos */
+#cmakedefine QMC_USE_KOKKOS @QMC_USE_KOKKOS@
+
+/* Kokkos optional parallelization flags */
+#cmakedefine QMC_PARALLEL_JASTROW @QMC_PARALLEL_JASTROW@
 
 #if (__cplusplus >= 201103L)
   #if defined(__INTEL_COMPILER)

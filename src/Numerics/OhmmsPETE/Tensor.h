@@ -24,6 +24,7 @@
 
 #include "Numerics/PETE/PETE.h"
 #include "Numerics/OhmmsPETE/OhmmsTinyMeta.h"
+#include <Kokkos_Core.hpp>
 /***************************************************************************
  *
  * The POOMA Framework
@@ -113,19 +114,19 @@ public:
   ~Tensor(){};
 
   // assignment operators
-  inline Tensor<T, D>& operator=(const Tensor<T, D>& rhs)
+  KOKKOS_INLINE_FUNCTION Tensor<T, D>& operator=(const Tensor<T, D>& rhs)
   {
     OTAssign<Tensor<T, D>, Tensor<T, D>, OpAssign>::apply(*this, rhs, OpAssign());
     return *this;
   }
 
   template<class T1>
-  inline Tensor<T, D>& operator=(const Tensor<T1, D>& rhs)
+  KOKKOS_INLINE_FUNCTION Tensor<T, D>& operator=(const Tensor<T1, D>& rhs)
   {
     OTAssign<Tensor<T, D>, Tensor<T1, D>, OpAssign>::apply(*this, rhs, OpAssign());
     return *this;
   }
-  inline Tensor<T, D>& operator=(const T& rhs)
+  KOKKOS_INLINE_FUNCTION Tensor<T, D>& operator=(const T& rhs)
   {
     OTAssign<Tensor<T, D>, T, OpAssign>::apply(*this, rhs, OpAssign());
     return *this;
@@ -133,51 +134,51 @@ public:
 
   // accumulation operators
   template<class T1>
-  inline Tensor<T, D>& operator+=(const Tensor<T1, D>& rhs)
+  KOKKOS_INLINE_FUNCTION Tensor<T, D>& operator+=(const Tensor<T1, D>& rhs)
   {
     OTAssign<Tensor<T, D>, Tensor<T1, D>, OpAddAssign>::apply(*this, rhs, OpAddAssign());
     return *this;
   }
-  inline Tensor<T, D>& operator+=(const T& rhs)
+  KOKKOS_INLINE_FUNCTION Tensor<T, D>& operator+=(const T& rhs)
   {
     OTAssign<Tensor<T, D>, T, OpAddAssign>::apply(*this, rhs, OpAddAssign());
     return *this;
   }
 
   template<class T1>
-  inline Tensor<T, D>& operator-=(const Tensor<T1, D>& rhs)
+  KOKKOS_INLINE_FUNCTION Tensor<T, D>& operator-=(const Tensor<T1, D>& rhs)
   {
     OTAssign<Tensor<T, D>, Tensor<T1, D>, OpSubtractAssign>::apply(*this, rhs, OpSubtractAssign());
     return *this;
   }
 
-  inline Tensor<T, D>& operator-=(const T& rhs)
+  KOKKOS_INLINE_FUNCTION Tensor<T, D>& operator-=(const T& rhs)
   {
     OTAssign<Tensor<T, D>, T, OpSubtractAssign>::apply(*this, rhs, OpSubtractAssign());
     return *this;
   }
 
   template<class T1>
-  inline Tensor<T, D>& operator*=(const Tensor<T1, D>& rhs)
+  KOKKOS_INLINE_FUNCTION Tensor<T, D>& operator*=(const Tensor<T1, D>& rhs)
   {
     OTAssign<Tensor<T, D>, Tensor<T1, D>, OpMultiplyAssign>::apply(*this, rhs, OpMultiplyAssign());
     return *this;
   }
 
-  inline Tensor<T, D>& operator*=(const T& rhs)
+  KOKKOS_INLINE_FUNCTION Tensor<T, D>& operator*=(const T& rhs)
   {
     OTAssign<Tensor<T, D>, T, OpMultiplyAssign>::apply(*this, rhs, OpMultiplyAssign());
     return *this;
   }
 
   template<class T1>
-  inline Tensor<T, D>& operator/=(const Tensor<T1, D>& rhs)
+  KOKKOS_INLINE_FUNCTION Tensor<T, D>& operator/=(const Tensor<T1, D>& rhs)
   {
     OTAssign<Tensor<T, D>, Tensor<T1, D>, OpDivideAssign>::apply(*this, rhs, OpDivideAssign());
     return *this;
   }
 
-  inline Tensor<T, D>& operator/=(const T& rhs)
+  KOKKOS_INLINE_FUNCTION Tensor<T, D>& operator/=(const T& rhs)
   {
     OTAssign<Tensor<T, D>, T, OpDivideAssign>::apply(*this, rhs, OpDivideAssign());
     return *this;
@@ -185,53 +186,56 @@ public:
 
   // Methods
 
-  inline void diagonal(const T& rhs)
+  KOKKOS_INLINE_FUNCTION void diagonal(const T& rhs)
   {
     for (int i = 0; i < D; i++)
       (*this)(i, i) = rhs;
   }
 
-  inline void add2diagonal(T rhs)
+  KOKKOS_INLINE_FUNCTION void add2diagonal(T rhs)
   {
     for (int i = 0; i < D; i++)
       (*this)(i, i) += rhs;
   }
 
   /// return the size
-  inline int len() const { return Size; }
+  KOKKOS_INLINE_FUNCTION int len() const { return Size; }
   /// return the size
-  inline int size() const { return Size; }
+  KOKKOS_INLINE_FUNCTION int size() const { return Size; }
 
   /** return the i-th value or assign
    * @param i index [0,D*D)
    */
-  inline Type_t& operator[](unsigned int i) { return X[i]; }
+  KOKKOS_INLINE_FUNCTION Type_t& operator[](unsigned int i) { return X[i]; }
 
   /** return the i-th value
    * @param i index [0,D*D)
    */
-  inline Type_t operator[](unsigned int i) const { return X[i]; }
+  KOKKOS_INLINE_FUNCTION Type_t operator[](unsigned int i) const { return X[i]; }
 
   // TJW: add these 12/16/97 to help with NegReflectAndZeroFace BC:
   // These are the same as operator[] but with () instead:
-  inline Type_t& operator()(unsigned int i) { return X[i]; }
+  KOKKOS_INLINE_FUNCTION Type_t& operator()(unsigned int i) { return X[i]; }
 
-  inline Type_t operator()(unsigned int i) const { return X[i]; }
+  KOKKOS_INLINE_FUNCTION Type_t operator()(unsigned int i) const { return X[i]; }
   // TJW.
 
   /** return the (i,j) component
    * @param i index [0,D)
    * @param j index [0,D)
    */
-  inline Type_t operator()(unsigned int i, unsigned int j) const { return X[i * D + j]; }
+  KOKKOS_INLINE_FUNCTION Type_t operator()(unsigned int i, unsigned int j) const
+  {
+    return X[i * D + j];
+  }
 
   /** return/assign the (i,j) component
    * @param i index [0,D)
    * @param j index [0,D)
    */
-  inline Type_t& operator()(unsigned int i, unsigned int j) { return X[i * D + j]; }
+  KOKKOS_INLINE_FUNCTION Type_t& operator()(unsigned int i, unsigned int j) { return X[i * D + j]; }
 
-  inline TinyVector<T, D> getRow(unsigned int i)
+  KOKKOS_INLINE_FUNCTION TinyVector<T, D> getRow(unsigned int i)
   {
     TinyVector<T, D> res;
     for (int j = 0; j < D; j++)
@@ -239,7 +243,7 @@ public:
     return res;
   }
 
-  inline TinyVector<T, D> getColumn(unsigned int i)
+  KOKKOS_INLINE_FUNCTION TinyVector<T, D> getColumn(unsigned int i)
   {
     TinyVector<T, D> res;
     for (int j = 0; j < D; j++)
@@ -247,12 +251,12 @@ public:
     return res;
   }
 
-  inline Type_t* data() { return X; }
-  inline const Type_t* data() const { return X; }
-  inline Type_t* begin() { return X; }
-  inline const Type_t* begin() const { return X; }
-  inline Type_t* end() { return X + Size; }
-  inline const Type_t* end() const { return X + Size; }
+  KOKKOS_INLINE_FUNCTION Type_t* data() { return X; }
+  KOKKOS_INLINE_FUNCTION const Type_t* data() const { return X; }
+  KOKKOS_INLINE_FUNCTION Type_t* begin() { return X; }
+  KOKKOS_INLINE_FUNCTION const Type_t* begin() const { return X; }
+  KOKKOS_INLINE_FUNCTION Type_t* end() { return X + Size; }
+  KOKKOS_INLINE_FUNCTION const Type_t* end() const { return X + Size; }
 
 private:
   // The elements themselves.
@@ -269,7 +273,7 @@ private:
  * @param rhs a tensor
  */
 template<class T, unsigned D>
-inline T trace(const Tensor<T, D>& rhs)
+KOKKOS_INLINE_FUNCTION T trace(const Tensor<T, D>& rhs)
 {
   T result = 0.0;
   for (int i = 0; i < D; i++)
@@ -280,7 +284,7 @@ inline T trace(const Tensor<T, D>& rhs)
 /** transpose a tensor
  */
 template<class T, unsigned D>
-inline Tensor<T, D> transpose(const Tensor<T, D>& rhs)
+KOKKOS_INLINE_FUNCTION Tensor<T, D> transpose(const Tensor<T, D>& rhs)
 {
   Tensor<T, D> result; // = Tensor<T,D>::DontInitialize();
   for (int j = 0; j < D; j++)
@@ -292,7 +296,7 @@ inline Tensor<T, D> transpose(const Tensor<T, D>& rhs)
 /** Tr(a*b), \f$ \sum_i\sum_j a(i,j)*b(j,i) \f$
  */
 template<class T1, class T2, unsigned D>
-inline T1 trace(const Tensor<T1, D>& a, const Tensor<T2, D>& b)
+KOKKOS_INLINE_FUNCTION T1 trace(const Tensor<T1, D>& a, const Tensor<T2, D>& b)
 {
   T1 result = 0.0;
   for (int i = 0; i < D; i++)
@@ -304,7 +308,7 @@ inline T1 trace(const Tensor<T1, D>& a, const Tensor<T2, D>& b)
 /** Tr(a^t *b), \f$ \sum_i\sum_j a(i,j)*b(i,j) \f$
  */
 template<class T, unsigned D>
-inline T traceAtB(const Tensor<T, D>& a, const Tensor<T, D>& b)
+KOKKOS_INLINE_FUNCTION T traceAtB(const Tensor<T, D>& a, const Tensor<T, D>& b)
 {
   T result = 0.0;
   for (int i = 0; i < D * D; i++)
@@ -315,8 +319,8 @@ inline T traceAtB(const Tensor<T, D>& a, const Tensor<T, D>& b)
 /** Tr(a^t *b), \f$ \sum_i\sum_j a(i,j)*b(i,j) \f$
  */
 template<class T1, class T2, unsigned D>
-inline typename BinaryReturn<T1, T2, OpMultiply>::Type_t
-traceAtB(const Tensor<T1, D>& a, const Tensor<T2, D>& b)
+KOKKOS_INLINE_FUNCTION typename BinaryReturn<T1, T2, OpMultiply>::Type_t
+    traceAtB(const Tensor<T1, D>& a, const Tensor<T2, D>& b)
 {
   typedef typename BinaryReturn<T1, T2, OpMultiply>::Type_t T;
   T result = 0.0;
@@ -336,8 +340,8 @@ OHMMS_META_BINARY_OPERATORS(Tensor, operator/, OpDivide)
  * @param rhs  a tensor
  */
 template<class T1, class T2, unsigned D>
-inline Tensor<typename BinaryReturn<T1, T2, OpMultiply>::Type_t, D>
-dot(const Tensor<T1, D>& lhs, const Tensor<T2, D>& rhs)
+KOKKOS_INLINE_FUNCTION Tensor<typename BinaryReturn<T1, T2, OpMultiply>::Type_t, D>
+    dot(const Tensor<T1, D>& lhs, const Tensor<T2, D>& rhs)
 {
   return OTDot<Tensor<T1, D>, Tensor<T2, D>>::apply(lhs, rhs);
 }
@@ -347,8 +351,8 @@ dot(const Tensor<T1, D>& lhs, const Tensor<T2, D>& rhs)
  * @param rhs  a tensor
  */
 template<class T1, class T2, unsigned D>
-inline TinyVector<typename BinaryReturn<T1, T2, OpMultiply>::Type_t, D>
-dot(const TinyVector<T1, D>& lhs, const Tensor<T2, D>& rhs)
+KOKKOS_INLINE_FUNCTION TinyVector<typename BinaryReturn<T1, T2, OpMultiply>::Type_t, D>
+    dot(const TinyVector<T1, D>& lhs, const Tensor<T2, D>& rhs)
 {
   return OTDot<TinyVector<T1, D>, Tensor<T2, D>>::apply(lhs, rhs);
 }
@@ -358,8 +362,8 @@ dot(const TinyVector<T1, D>& lhs, const Tensor<T2, D>& rhs)
  * @param rhs  a vector
  */
 template<class T1, class T2, unsigned D>
-inline TinyVector<typename BinaryReturn<T1, T2, OpMultiply>::Type_t, D>
-dot(const Tensor<T1, D>& lhs, const TinyVector<T2, D>& rhs)
+KOKKOS_INLINE_FUNCTION TinyVector<typename BinaryReturn<T1, T2, OpMultiply>::Type_t, D>
+    dot(const Tensor<T1, D>& lhs, const TinyVector<T2, D>& rhs)
 {
   return OTDot<Tensor<T1, D>, TinyVector<T2, D>>::apply(lhs, rhs);
 }
@@ -378,7 +382,8 @@ std::ostream& operator<<(std::ostream& out, const Tensor<T, D>& rhs)
         out << rhs(i, j) << "  ";
       }
       out << rhs(i, D - 1) << " ";
-      if (i < D - 1) out << std::endl;
+      if (i < D - 1)
+        out << std::endl;
     }
   }
   else

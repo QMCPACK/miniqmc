@@ -87,6 +87,7 @@ ELSE(QMC_MIXED_PRECISION)
 ENDIF(QMC_MIXED_PRECISION)
 MESSAGE("   Base precision = ${OHMMS_PRECISION}")
 MESSAGE("   Full precision = ${OHMMS_PRECISION_FULL}")
+SET(QMC_USE_KOKKOS 0 CACHE BOOL "Whether to use Kokkos")
 
 # Code coverage
 SET(GCOV_SUPPORTED FALSE)
@@ -251,10 +252,21 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
   ENDIF()
   MESSAGE(STATUS "Compiler: ${COMPILER}")
 
+  IF(QMC_USE_KOKKOS)
+    SET(KOKKOS_PREFIX "" CACHE PATH "Path to Kokkos install")
+    MESSAGE("searching in ${KOKKOS_PREFIX}/")
+    ADD_SUBDIRECTORY(${KOKKOS_PREFIX} ${qmcpack_BINARY_DIR}/kokkos)
+    INCLUDE_DIRECTORIES(${Kokkos_INCLUDE_DIRS_RET})
+    LINK_LIBRARIES(kokkos)
+  ENDIF()
+
   #------------------------------------
   # Include compiler-specific cmake file
   #------------------------------------
-  IF( ${COMPILER} MATCHES "IBM" )
+  IF (QMC_USE_KOKKOS)
+    #leave the flags alone, NVCC etc. don't accept the GNU flags
+    MESSAGE("leaving flags alone")
+  ELSEIF( ${COMPILER} MATCHES "IBM" )
     INCLUDE(${PROJECT_CMAKE}/IBMCompilers.cmake)
   ELSEIF( ${COMPILER} MATCHES "Intel" )
     INCLUDE(${PROJECT_CMAKE}/IntelCompilers.cmake)
@@ -418,7 +430,7 @@ SET(QMC_UTIL_LIBS ${LAPACK_LIBRARY} ${BLAS_LIBRARY})
 SET(QMC_UTIL_LIBS ${QMC_UTIL_LIBS} ${FORTRAN_LIBRARIES})
 
 #find_package(ZLIB)
-   
+
 #set(HDF5_USE_STATIC_LIBRARIES off)
 #if(QMC_BUILD_STATIC)
 #  set(HDF5_USE_STATIC_LIBRARIES on)

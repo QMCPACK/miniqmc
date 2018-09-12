@@ -34,6 +34,7 @@
 #include <Numerics/OhmmsPETE/Tensor.h>
 #include <Numerics/OhmmsPETE/TinyVector.h>
 #include <limits>
+#include <Kokkos_Core.hpp>
 
 #ifndef TWOPI
 #ifndef M_PI
@@ -183,13 +184,13 @@ struct CrystalLattice
    * Boundary conditions are not applied.
    */
   template<class T1>
-  inline SingleParticlePos_t toUnit(const TinyVector<T1, D>& r) const
+  KOKKOS_INLINE_FUNCTION SingleParticlePos_t toUnit(const TinyVector<T1, D>& r) const
   {
     return dot(r, G);
   }
 
   template<class T1>
-  inline SingleParticlePos_t toUnit_floor(const TinyVector<T1, D>& r) const
+  KOKKOS_INLINE_FUNCTION SingleParticlePos_t toUnit_floor(const TinyVector<T1, D>& r) const
   {
     SingleParticlePos_t val_dot;
     val_dot = toUnit(r);

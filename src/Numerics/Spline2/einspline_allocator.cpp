@@ -67,11 +67,16 @@ void einspline_free(void* aligned)
 }
 #endif
 
-multi_UBspline_3d_s* einspline_create_multi_UBspline_3d_s(
-    Ugrid x_grid, Ugrid y_grid, Ugrid z_grid, BCtype_s xBC, BCtype_s yBC, BCtype_s zBC, int num_splines)
+multi_UBspline_3d_s* einspline_create_multi_UBspline_3d_s(Ugrid x_grid,
+                                                          Ugrid y_grid,
+                                                          Ugrid z_grid,
+                                                          BCtype_s xBC,
+                                                          BCtype_s yBC,
+                                                          BCtype_s zBC,
+                                                          int num_splines)
 {
   // Create new spline
-  multi_UBspline_3d_s* restrict spline = (multi_UBspline_3d_s*)malloc(sizeof(multi_UBspline_3d_s));
+  multi_UBspline_3d_s* restrict spline = new multi_UBspline_3d_s;
   if (!spline)
   {
     fprintf(stderr, "Out of memory allocating spline in create_multi_UBspline_3d_s.\n");
@@ -114,16 +119,32 @@ multi_UBspline_3d_s* einspline_create_multi_UBspline_3d_s(
   spline->z_grid   = z_grid;
 
   const int ND   = QMC_CLINE / sizeof(float);
-  const size_t N = ((num_splines + ND - 1) / ND) * ND;
-  // int N= (num_splines%ND) ? (num_splines+ND-num_splines%ND) : num_splines;
+  int N        = (num_splines % ND) ? (num_splines + ND - num_splines % ND) : num_splines;
   spline->x_stride = (size_t)Ny * (size_t)Nz * (size_t)N;
   spline->y_stride = (size_t)Nz * N;
   spline->z_stride = N;
 
   spline->coefs_size = (size_t)Nx * spline->x_stride;
-  spline->coefs      = (float*)einspline_alloc(sizeof(float) * spline->coefs_size, QMC_CLINE);
-  // printf("Einepline allocator %d %d %d %zd (%d)  %zu
-  // %d\n",Nx,Ny,Nz,N,num_splines,spline->coefs_size,QMC_CLINE);
+
+  spline->coefs_view = multi_UBspline_3d_s::coefs_view_t("Multi_UBspline_3d_s", Nx, Ny, Nz, N);
+
+
+  //Check that data layout is as expected
+  //
+  int strides[4];
+  spline->coefs_view.stride(strides);
+  if (spline->x_stride != strides[0] || spline->y_stride != strides[1] ||
+      spline->z_stride != strides[2] || 1 != strides[3])
+    fprintf(stderr,
+            "Kokkos View has non-compatible strides %i %i | %i %i | %i %i\n",
+            spline->x_stride,
+            strides[0],
+            spline->y_stride,
+            strides[1],
+            spline->z_stride,
+            strides[2]);
+
+  spline->coefs = spline->coefs_view.data();
 
   if (!spline->coefs)
   {
@@ -154,11 +175,16 @@ multi_UBspline_3d_s* einspline_create_multi_UBspline_3d_s(
   return spline;
 }
 
-multi_UBspline_3d_d* einspline_create_multi_UBspline_3d_d(
-    Ugrid x_grid, Ugrid y_grid, Ugrid z_grid, BCtype_d xBC, BCtype_d yBC, BCtype_d zBC, int num_splines)
+multi_UBspline_3d_d* einspline_create_multi_UBspline_3d_d(Ugrid x_grid,
+                                                          Ugrid y_grid,
+                                                          Ugrid z_grid,
+                                                          BCtype_d xBC,
+                                                          BCtype_d yBC,
+                                                          BCtype_d zBC,
+                                                          int num_splines)
 {
   // Create new spline
-  multi_UBspline_3d_d* restrict spline = (multi_UBspline_3d_d*)malloc(sizeof(multi_UBspline_3d_d));
+  multi_UBspline_3d_d* restrict spline = new multi_UBspline_3d_d;
 
   if (!spline)
   {
@@ -210,7 +236,25 @@ multi_UBspline_3d_d* einspline_create_multi_UBspline_3d_d(
   spline->z_stride = N;
 
   spline->coefs_size = (size_t)Nx * spline->x_stride;
-  spline->coefs      = (double*)einspline_alloc(sizeof(double) * spline->coefs_size, QMC_CLINE);
+
+  spline->coefs_view = multi_UBspline_3d_d::coefs_view_t("Multi_UBspline_3d_d", Nx, Ny, Nz, N);
+
+  //Check that data layout is as expected
+  //
+  int strides[4];
+  spline->coefs_view.stride(strides);
+  if (spline->x_stride != strides[0] || spline->y_stride != strides[1] ||
+      spline->z_stride != strides[2] || 1 != strides[3])
+    fprintf(stderr,
+            "Kokkos View has non-compatible strides %i %i | %i %i | %i %i\n",
+            spline->x_stride,
+            strides[0],
+            spline->y_stride,
+            strides[1],
+            spline->z_stride,
+            strides[2]);
+
+  spline->coefs = spline->coefs_view.data();
 
   if (!spline->coefs)
   {
@@ -223,8 +267,12 @@ multi_UBspline_3d_d* einspline_create_multi_UBspline_3d_d(
   return spline;
 }
 
-UBspline_3d_d* einspline_create_UBspline_3d_d(
-    Ugrid x_grid, Ugrid y_grid, Ugrid z_grid, BCtype_d xBC, BCtype_d yBC, BCtype_d zBC)
+UBspline_3d_d* einspline_create_UBspline_3d_d(Ugrid x_grid,
+                                              Ugrid y_grid,
+                                              Ugrid z_grid,
+                                              BCtype_d xBC,
+                                              BCtype_d yBC,
+                                              BCtype_d zBC)
 {
   // Create new spline
   UBspline_3d_d* restrict spline = (UBspline_3d_d*)malloc(sizeof(UBspline_3d_d));
@@ -274,8 +322,12 @@ UBspline_3d_d* einspline_create_UBspline_3d_d(
   return spline;
 }
 
-UBspline_3d_s* einspline_create_UBspline_3d_s(
-    Ugrid x_grid, Ugrid y_grid, Ugrid z_grid, BCtype_s xBC, BCtype_s yBC, BCtype_s zBC)
+UBspline_3d_s* einspline_create_UBspline_3d_s(Ugrid x_grid,
+                                              Ugrid y_grid,
+                                              Ugrid z_grid,
+                                              BCtype_s xBC,
+                                              BCtype_s yBC,
+                                              BCtype_s zBC)
 {
   // Create new spline
   UBspline_3d_s* spline = (UBspline_3d_s*)malloc(sizeof(UBspline_3d_s));

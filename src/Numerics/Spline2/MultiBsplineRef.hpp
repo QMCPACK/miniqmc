@@ -36,7 +36,7 @@ struct MultiBsplineRef
   using spliner_type = typename bspline_traits<T, 3>::SplineType;
 
   MultiBsplineRef() {}
-  MultiBsplineRef(const MultiBsplineRef& in) = delete;
+  MultiBsplineRef(const MultiBsplineRef& in) = default;
   MultiBsplineRef& operator=(const MultiBsplineRef& in) = delete;
 
   /** compute values vals[0,num_splines)
@@ -45,8 +45,12 @@ struct MultiBsplineRef
    * evaluate_vgh(r,psi,grad,hess,ip).
    */
 
-  void evaluate_v(
-      const spliner_type* restrict spline_m, T x, T y, T z, T* restrict vals, size_t num_splines) const;
+  void evaluate_v(const spliner_type* restrict spline_m,
+                  T x,
+                  T y,
+                  T z,
+                  T* restrict vals,
+                  size_t num_splines) const;
 
   void evaluate_vgl(const spliner_type* restrict spline_m,
                     T x,
@@ -68,8 +72,12 @@ struct MultiBsplineRef
 };
 
 template<typename T>
-inline void MultiBsplineRef<T>::evaluate_v(
-    const spliner_type* restrict spline_m, T x, T y, T z, T* restrict vals, size_t num_splines) const
+inline void MultiBsplineRef<T>::evaluate_v(const spliner_type* restrict spline_m,
+                                           T x,
+                                           T y,
+                                           T z,
+                                           T* restrict vals,
+                                           size_t num_splines) const
 {
   x -= spline_m->x_grid.start;
   y -= spline_m->y_grid.start;
@@ -175,12 +183,12 @@ inline void MultiBsplineRef<T>::evaluate_vgl(const spliner_type* restrict spline
         T sum0 = c[0] * coefsv + c[1] * coefsvzs + c[2] * coefsv2zs + c[3] * coefsv3zs;
         T sum1 = dc[0] * coefsv + dc[1] * coefsvzs + dc[2] * coefsv2zs + dc[3] * coefsv3zs;
         T sum2 = d2c[0] * coefsv + d2c[1] * coefsvzs + d2c[2] * coefsv2zs + d2c[3] * coefsv3zs;
-        gx[n]   += pre10 * sum0;
-        gy[n]   += pre01 * sum0;
-        gz[n]   += pre00 * sum1;
-        lx[n]   += pre20 * sum0;
-        ly[n]   += pre02 * sum0;
-        lz[n]   += pre00 * sum2;
+        gx[n] += pre10 * sum0;
+        gy[n] += pre01 * sum0;
+        gz[n] += pre00 * sum1;
+        lx[n] += pre20 * sum0;
+        ly[n] += pre02 * sum0;
+        lz[n] += pre00 * sum2;
         vals[n] += pre00 * sum0;
       }
     }
@@ -282,15 +290,15 @@ inline void MultiBsplineRef<T>::evaluate_vgh(const spliner_type* restrict spline
         T sum1 = dc[0] * coefsv + dc[1] * coefsvzs + dc[2] * coefsv2zs + dc[3] * coefsv3zs;
         T sum2 = d2c[0] * coefsv + d2c[1] * coefsvzs + d2c[2] * coefsv2zs + d2c[3] * coefsv3zs;
 
-        hxx[n]  += pre20 * sum0;
-        hxy[n]  += pre11 * sum0;
-        hxz[n]  += pre10 * sum1;
-        hyy[n]  += pre02 * sum0;
-        hyz[n]  += pre01 * sum1;
-        hzz[n]  += pre00 * sum2;
-        gx[n]   += pre10 * sum0;
-        gy[n]   += pre01 * sum0;
-        gz[n]   += pre00 * sum1;
+        hxx[n] += pre20 * sum0;
+        hxy[n] += pre11 * sum0;
+        hxz[n] += pre10 * sum1;
+        hyy[n] += pre02 * sum0;
+        hyz[n] += pre01 * sum1;
+        hzz[n] += pre00 * sum2;
+        gx[n] += pre10 * sum0;
+        gy[n] += pre01 * sum0;
+        gz[n] += pre00 * sum1;
         vals[n] += pre00 * sum0;
       }
     }
