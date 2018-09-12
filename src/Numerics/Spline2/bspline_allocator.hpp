@@ -46,7 +46,8 @@ public:
   {
     //Assign coefs_view to empty view because of Kokkos reference counting
     // and garbage collection.
-    spline->coefs_view = multi_UBspline_3d_d::coefs_view_t();
+    //spline->coefs_view = multi_UBspline_3d_d::coefs_view_t();
+    spline->coefs_view = SplineType::coefs_view_t();
     free(spline);
   }
 
