@@ -216,7 +216,7 @@ int main(int argc, char** argv)
     int opt;
     while (optind < argc)
     {
-      if ((opt = getopt(argc, argv, "bhjvVa:c:g:m:n:N:r:s:t:w:x:")) != -1)
+      if ((opt = getopt(argc, argv, "bhjvVa:c:g:m:n:N:r:s:t:w:x:z:")) != -1)
       {
         switch (opt)
         {
@@ -277,6 +277,7 @@ int main(int argc, char** argv)
           break;
         case 'z': //number of crews 
           ncrews = atoi(optarg);
+          break;
         default:
           print_help();
           return 1;
@@ -392,6 +393,7 @@ int main(int argc, char** argv)
  
     auto main_function = [&](int partition_id, int num_partitions)
     {
+      printf(" partition_id = %d\n",partition_id);
       //Since we've merged initialization and execution, we get rid of the 
       // mover_list vector.
       const int teamID = partition_id;
@@ -513,7 +515,9 @@ int main(int argc, char** argv)
 
   #if defined(KOKKOS_ENABLE_OPENMP) && !defined(KOKKOS_ENABLE_CUDA)
     int num_threads = Kokkos::OpenMP::thread_pool_size();
+    
     int crewsize = std::max(1,num_threads/ncrews); 
+    printf(" In partition master with %d threads, %d crews, and %d movers.  Crewsize = %d \n",num_threads,ncrews,nmovers,crewsize);
     Kokkos::OpenMP::partition_master(main_function,nmovers,crewsize);
   #else
     main_function(0,1);
