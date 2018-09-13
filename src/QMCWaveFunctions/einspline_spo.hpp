@@ -199,9 +199,46 @@ struct einspline_spo : public SPOSet
   {
     ScopedTimer local_timer(timer);
 
-    auto u = Lattice.toUnit_floor(p);
+    if (nBlocks != psi_shadows.size())
+    {
+      psi_shadows.resize(nBlocks);
+
+      T** restrict psi_shadows_ptr  = psi_shadows.data();
+      for (int i = 0; i < nBlocks; ++i)
+      {
+        T* restrict psi_ptr  = psi[i].data();
+#ifdef ENABLE_OFFLOAD
+        #pragma omp target map(to : i) device(0)
+#endif
+        {
+          psi_shadows_ptr[i]  = psi_ptr;
+        }
+      }
+    }
+
+    OMPTinyVector<T, 3> u = Lattice.toUnit_floor(p);
+
+    T** restrict psi_shadows_ptr          = psi_shadows.data();
+    spline_type** restrict einsplines_ptr = einsplines.data();
+
+#ifdef ENABLE_OFFLOAD
+    #pragma omp target teams distribute num_teams(nBlocks) device(0) \
+    map(to : nBlocks, nSplinesPerBlock) map(always, to : u)
+#else
+    #pragma omp parallel for
+#endif
     for (int i = 0; i < nBlocks; ++i)
-      compute_engine.evaluate_v(einsplines[i], u[0], u[1], u[2], psi[i].data(), nSplinesPerBlock);
+    {
+#ifdef ENABLE_OFFLOAD
+      #pragma omp parallel num_threads(nSplinesPerBlock)
+#endif
+      MultiBsplineOffload<T>::evaluate_v_v2(einsplines_ptr[i],
+                                            u[0],
+                                            u[1],
+                                            u[2],
+                                            psi_shadows_ptr[i],
+                                            nSplinesPerBlock);
+    }
   }
 
   /** evaluate psi */
