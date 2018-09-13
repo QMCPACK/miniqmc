@@ -22,6 +22,7 @@
 #include <impl/Kokkos_Timer.hpp>
 #include <cstdio>
 #include <cstdlib>
+#include <type_traits>
 #ifdef KOKKOS_ENABLE_CUDA
 #include "cublas_v2.h"
 #endif
@@ -45,7 +46,10 @@
 #define sger sger_
 #define zgeru zgeru_
 #define cgeru cgeru_
-
+#define dgemm dgemm_
+#define sgemm sgemm_
+#define zgemm zgemm_
+#define cgemm cgemm_
 
 
 extern "C" {
@@ -99,24 +103,23 @@ void cgeru(const int *m, const int *n, const std::complex<float>* alpha,
            const std::complex<float> *x, const int *incx,
            const std::complex<float> *y, const int *incy,
            std::complex<float> *a, const int *lda);
+void dgemm(const char &, const char &, const int &, const int &, const int &,
+           const double &, const double *, const int &, const double *,
+           const int &, const double &, double *, const int &);
 
-  /*
-void dger(const int &m, const int &n, const double &alpha, const double *x,
-          const int &incx, const double *y, const int &incy, double *a,
-          const int &lda);
+void sgemm(const char &, const char &, const int &, const int &, const int &,
+           const float &, const float *, const int &, const float *,
+           const int &, const float &, float *, const int &);
 
-void sger(const int &m, const int &n, const float &alpha, const float *x,
-          const int &incx, const float *y, const int &incy, float *a,
-          const int &lda);
-void zgeru(const int &m, const int &n, const std::complex<double>& alpha,
-           const std::complex<double> *x, const int &incx,
-           const std::complex<double> *y, const int &incy,
-           std::complex<double> *a, const int &lda);
-void cgeru(const int &m, const int &n, const std::complex<float>& alpha,
-           const std::complex<float> *x, const int &incx,
-           const std::complex<float> *y, const int &incy,
-           std::complex<float> *a, const int &lda);
-  */
+void zgemm(const char &, const char &, const int &, const int &, const int &,
+           const std::complex<double> &, const std::complex<double> *,
+           const int &, const std::complex<double> *, const int &,
+           const std::complex<double> &, std::complex<double> *, const int &);
+
+void cgemm(const char &, const char &, const int &, const int &, const int &,
+           const std::complex<float> &, const std::complex<float> *,
+           const int &, const std::complex<float> *, const int &,
+           const std::complex<float> &, std::complex<float> *, const int &);
 }
 
 
@@ -125,6 +128,77 @@ void cgeru(const int &m, const int &n, const std::complex<float>& alpha,
 
 namespace qmcplusplus
 {
+// assuming both views have the same dimensionality and 
+// that the types they hold can assigned between
+// CURRENTLY ONLY IMPLEMENTED UP TO RANK 5 tensors
+template<class ViewType1, class ViewType2>
+void elementWiseCopy(ViewType1 destination, ViewType2 source, 
+		     typename std::enable_if<ViewType1::rank==1>::type* = 0,
+		     typename std::enable_if<ViewType2::rank==1>::type* = 0) {
+  for (int i = 0; i < ViewType1::rank; i++) {
+    assert(destination.extent(i) == source.extent(i));
+  }
+  Kokkos::parallel_for("elementWiseCopy::copy_elements_rk1", 
+		       Kokkos::MDRangePolicy<Kokkos::Rank<1,Kokkos::Iterate::Left> >({0}, {destination.extent(0)}), 
+		       KOKKOS_LAMBDA(const int& i0) {
+			 destination(i0) = source(i0);
+		       });
+}
+template<class ViewType1, class ViewType2>
+void elementWiseCopy(ViewType1 destination, ViewType2 source, 
+		     typename std::enable_if<ViewType1::rank==2>::type* = 0,
+		     typename std::enable_if<ViewType2::rank==2>::type* = 0) {
+  for (int i = 0; i < ViewType1::rank; i++) {
+    assert(destination.extent(i) == source.extent(i));
+  }
+  Kokkos::parallel_for("elementWiseCopy::copy_elements_rk2", 
+		       Kokkos::MDRangePolicy<Kokkos::Rank<2,Kokkos::Iterate::Left> >({0,0}, {destination.extent(0),destination.extent(1)}), 
+		       KOKKOS_LAMBDA(const int& i0, const int& i1) {
+			 destination(i0, i1) = source(i0, i1);
+		       });		       
+}
+template<class ViewType1, class ViewType2>
+void elementWiseCopy(ViewType1 destination, ViewType2 source, 
+		     typename std::enable_if<ViewType1::rank==3>::type* = 0,
+		     typename std::enable_if<ViewType2::rank==3>::type* = 0) {
+  for (int i = 0; i < ViewType1::rank; i++) {
+    assert(destination.extent(i) == source.extent(i));
+  }
+  Kokkos::parallel_for("elementWiseCopy::copy_elements_rk3", 
+			 Kokkos::MDRangePolicy<Kokkos::Rank<3,Kokkos::Iterate::Left> >({0,0,0}, {destination.extent(0),destination.extent(1),destination.extent(2)}), 
+			 KOKKOS_LAMBDA(const int& i0, const int& i1, const int& i2) {
+			   destination(i0, i1, i2) = source(i0, i1, i2);
+			 });
+}
+template<class ViewType1, class ViewType2>
+void elementWiseCopy(ViewType1 destination, ViewType2 source, 
+		     typename std::enable_if<ViewType1::rank==4>::type* = 0,
+		     typename std::enable_if<ViewType2::rank==4>::type* = 0) {
+  for (int i = 0; i < ViewType1::rank; i++) {
+    assert(destination.extent(i) == source.extent(i));
+  }
+  Kokkos::parallel_for("elementWiseCopy::copy_elements_rk4", 
+		       Kokkos::MDRangePolicy<Kokkos::Rank<4,Kokkos::Iterate::Left> >({0,0,0,0}, {destination.extent(0),destination.extent(1),destination.extent(2),destination.extent(3)}), 
+		       KOKKOS_LAMBDA(const int& i0, const int& i1, const int& i2, const int& i3) {
+			 destination(i0, i1, i2, i3) = source(i0, i1, i2, i3);
+		       });
+}
+template<class ViewType1, class ViewType2>
+void elementWiseCopy(ViewType1 destination, ViewType2 source, 
+		     typename std::enable_if<ViewType1::rank==5>::type* = 0,
+		     typename std::enable_if<ViewType2::rank==5>::type* = 0) {
+  for (int i = 0; i < ViewType1::rank; i++) {
+    assert(destination.extent(i) == source.extent(i));
+  }
+  Kokkos::parallel_for("elementWiseCopy::copy_elements_rk5", 
+		       Kokkos::MDRangePolicy<Kokkos::Rank<5,Kokkos::Iterate::Left> >({0,0,0,0,0}, {destination.extent(0),destination.extent(1),destination.extent(2),destination.extent(3),destination.extent(4)}), 
+		       KOKKOS_LAMBDA(const int& i0, const int& i1, const int& i2, const int& i3, const int& i4) {
+			 destination(i0, i1, i2, i3, i4) = source(i0, i1, i2, i3, i4);
+		       });
+}
+
+
+
 template<typename valueType, typename arrayLayout, typename memorySpace>
 void checkTemplateParams() {
   static_assert(std::is_same<arrayLayout, Kokkos::LayoutLeft>::value, "Require LayoutLeft Views for the time being to interface with linear algebra libraries");
@@ -218,6 +292,26 @@ void ger_cpu_impl(const int& m, const int& n, const std::complex<double>& alpha,
 		  const int& lda) {
   zgeru(&m, &n, &alpha, x, &incx, y, &incy, a, &lda);
 }
+void gemm_cpu_impl(const char& transa, const char& transb, const int& rowsa, const int& columnsb, 
+		   const int& columnsa, const float* alpha, const float* a, const int& lda,
+		   const float* b, const int& ldb, const float* beta, float* c, const int& ldc) {
+  sgemm(transa, transb, rowsa, columnsb, columnsa, *alpha, a, lda, b, ldb, *beta, c, ldc);
+}
+void gemm_cpu_impl(const char& transa, const char& transb, const int& rowsa, const int& columnsb, 
+		   const int& columnsa, const double* alpha, const double* a, const int& lda,
+		   const double* b, const int& ldb, const double* beta, double* c, const int& ldc) {
+  dgemm(transa, transb, rowsa, columnsb, columnsa, *alpha, a, lda, b, ldb, *beta, c, ldc);
+}
+void gemm_cpu_impl(const char& transa, const char& transb, const int& rowsa, const int& columnsb, 
+		   const int& columnsa, const std::complex<float>* alpha, const std::complex<float>* a, const int& lda,
+		   const std::complex<float>* b, const int& ldb, const std::complex<float>* beta, std::complex<float>* c, const int& ldc) {
+  cgemm(transa, transb, rowsa, columnsb, columnsa, *alpha, a, lda, b, ldb, *beta, c, ldc);
+}
+void gemm_cpu_impl(const char& transa, const char& transb, const int& rowsa, const int& columnsb, 
+		   const int& columnsa, const std::complex<double> *alpha, const std::complex<double>* a, const int& lda,
+		   const std::complex<double>* b, const int& ldb, const std::complex<double>* beta, std::complex<double>* c, const int& ldc) {
+  zgemm(transa, transb, rowsa, columnsb, columnsa, *alpha, a, lda, b, ldb, *beta, c, ldc);
+}
 
 
 #ifdef KOKKOS_ENABLE_CUDA
@@ -287,6 +381,34 @@ void ger_gpu_impl(cublasHandle_t& handle, const int& m, const int& n, const cuDo
 		  const int& incx, const cuDoubleComplex *y, const int& incy, cuDoubleComplex *a,
 		  const int& lda) {
   cublasZgeru(handle, m, n, alpha, x, incx, y, incy, a, lda);
+}
+void gemm_gpu_impl(cublasHandle_t& handle, cublasOperation_t transa, cublasOperation_t transb,
+		   const int& rowsa, const int& columnsb, const int& columnsa, const float *alpha, 
+		   const float* a, const int& lda,
+		   const float* b, const int& ldb, 
+		   const float* beta, float* c, const int& ldc) {
+  cublasSgemm(handle, transa, transb, rowsa, columnsb, columnsa, alpha, a, lda, b, ldb, beta, c, ldc);
+}
+void gemm_gpu_impl(cublasHandle_t& handle, cublasOperation_t transa, cublasOperation_t transb,
+		   const int& rowsa, const int& columnsb, const int& columnsa, const double *alpha, 
+		   const double* a, const int& lda,
+		   const double* b, const int& ldb, 
+		   const double* beta, double* c, const int& ldc) {
+  cublasDgemm(handle, transa, transb, rowsa, columnsb, columnsa, alpha, a, lda, b, ldb, beta, c, ldc);
+}
+void gemm_gpu_impl(cublasHandle_t& handle, cublasOperation_t transa, cublasOperation_t transb,
+		   const int& rowsa, const int& columnsb, const int& columnsa, const cuFloatComplex *alpha, 
+		   const cuFloatComplex* a, const int& lda,
+		   const cuFloatComplex* b, const int& ldb, 
+		   const cuFloatComplex* beta, cuFloatComplex* c, const int& ldc) {
+  cublasCgemm(handle, transa, transb, rowsa, columnsb, columnsa, alpha, a, lda, b, ldb, beta, c, ldc);
+}
+void gemm_gpu_impl(cublasHandle_t& handle, cublasOperation_t transa, cublasOperation_t transb,
+		   const int& rowsa, const int& columnsb, const int& columnsa, const cuDoubleComplex *alpha, 
+		   const cuDoubleComplex* a, const int& lda,
+		   const cuDoubleComplex* b, const int& ldb, 
+		   const cuDoubleComplex* beta, cuDoubleComplex* c, const int& ldc) {
+  cublasZgemm(handle, transa, transb, rowsa, columnsb, columnsa, alpha, a, lda, b, ldb, beta, c, ldc);
 }
 #endif
 
@@ -377,6 +499,51 @@ public:
     ger_cpu_impl(A.extent(0), A.extent(1), alpha, pointerConverter(x.data()), 1, pointerConverter(y.data()), 1,
 		 pointerConverter(A.data()), A.extent(0));
   }
+  void gemmNN(viewType A, viewType B, viewType C, valueType alpha, valueType beta) {
+    gemm_cpu_impl('N', 'N', A.extent(0), B.extent(1), A.extent(1), pointerConverter(&alpha),
+		  pointerConverter(A.data()), A.extent(0), pointerConverter(B.data()), B.extent(0),
+		  pointerConverter(&beta), pointerConverter(C.data()), C.extent(0));
+  }
+  void gemmNT(viewType A, viewType B, viewType C, valueType alpha, valueType beta) {
+    gemm_cpu_impl('N', 'T', A.extent(0), B.extent(1), A.extent(1), pointerConverter(&alpha),
+		  pointerConverter(A.data()), A.extent(0), pointerConverter(B.data()), B.extent(0),
+		  pointerConverter(&beta), pointerConverter(C.data()), C.extent(0));
+  }
+  void gemmNC(viewType A, viewType B, viewType C, valueType alpha, valueType beta) {
+    gemm_cpu_impl('N', 'C', A.extent(0), B.extent(1), A.extent(1), pointerConverter(&alpha),
+		  pointerConverter(A.data()), A.extent(0), pointerConverter(B.data()), B.extent(0),
+		  pointerConverter(&beta), pointerConverter(C.data()), C.extent(0));
+  }
+  void gemmCN(viewType A, viewType B, viewType C, valueType alpha, valueType beta) {
+    gemm_cpu_impl('C', 'N', A.extent(0), B.extent(1), A.extent(1), pointerConverter(&alpha),
+		  pointerConverter(A.data()), A.extent(0), pointerConverter(B.data()), B.extent(0),
+		  pointerConverter(&beta), pointerConverter(C.data()), C.extent(0));
+  }
+  void gemmCT(viewType A, viewType B, viewType C, valueType alpha, valueType beta) {
+    gemm_cpu_impl('C', 'T', A.extent(0), B.extent(1), A.extent(1), pointerConverter(&alpha),
+		  pointerConverter(A.data()), A.extent(0), pointerConverter(B.data()), B.extent(0),
+		  pointerConverter(&beta), pointerConverter(C.data()), C.extent(0));
+  }
+  void gemmCC(viewType A, viewType B, viewType C, valueType alpha, valueType beta) {
+    gemm_cpu_impl('C', 'C', A.extent(0), B.extent(1), A.extent(1), pointerConverter(&alpha),
+		  pointerConverter(A.data()), A.extent(0), pointerConverter(B.data()), B.extent(0),
+		  pointerConverter(&beta), pointerConverter(C.data()), C.extent(0));
+  }
+  void gemmTN(viewType A, viewType B, viewType C, valueType alpha, valueType beta) {
+    gemm_cpu_impl('T', 'N', A.extent(0), B.extent(1), A.extent(1), pointerConverter(&alpha),
+		  pointerConverter(A.data()), A.extent(0), pointerConverter(B.data()), B.extent(0),
+		  pointerConverter(&beta), pointerConverter(C.data()), C.extent(0));
+  }
+  void gemmTT(viewType A, viewType B, viewType C, valueType alpha, valueType beta) {
+    gemm_cpu_impl('T', 'T', A.extent(0), B.extent(1), A.extent(1), pointerConverter(&alpha),
+		  pointerConverter(A.data()), A.extent(0), pointerConverter(B.data()), B.extent(0),
+		  pointerConverter(&beta), pointerConverter(C.data()), C.extent(0));
+  }
+  void gemmTC(viewType A, viewType B, viewType C, valueType alpha, valueType beta) {
+    gemm_cpu_impl('T', 'C', A.extent(0), B.extent(1), A.extent(1), pointerConverter(&alpha),
+		  pointerConverter(A.data()), A.extent(0), pointerConverter(B.data()), B.extent(0),
+		  pointerConverter(&beta), pointerConverter(C.data()), C.extent(0));
+  }
 };  
 
 #ifdef KOKKOS_ENABLE_CUDA
@@ -450,6 +617,7 @@ public:
     if(piv.extent(0) != ext) {
       Kokkos::resize(piv, ext);
     }
+    Kokkos::Profiling::pushRegion("getri_pointer_setup");
     valueType* tmp = view.data();
     valueType** temp_host_ptr = &tmp; // taking the address on the host
     cudaMemcpy(devPtrPtr,temp_host_ptr,sizeof(temp_host_ptr),cudaMemcpyHostToDevice); // copy the address to dev_ptr
@@ -460,9 +628,14 @@ public:
     tmp = outView.data();
     temp_host_ptr = &tmp; // taking the address on the host
     cudaMemcpy(devOutPtrPtr,temp_host_ptr,sizeof(temp_host_ptr),cudaMemcpyHostToDevice); // copy the address to dev_ptr
+    Kokkos::Profiling::popRegion();
 
+    Kokkos::Profiling::pushRegion("getri::cublas");
     getri_gpu_impl(ext,pointerConverter(devPtrPtr),pointerConverter(devOutPtrPtr),piv.data(),info.data(),cublas_handle);
-    Kokkos::deep_copy(outView, view);
+    Kokkos::Profiling::popRegion();
+    Kokkos::deep_copy(view, outView);
+
+    
   }
   void invertMatrix(viewType view) {
     getrf(view);
@@ -488,6 +661,51 @@ public:
     ger_gpu_impl(cublas_handle, A.extent(0), A.extent(1), pointerConverter(&alpha), pointerConverter(x.data()), 
 		 1, pointerConverter(y.data()), 1, pointerConverter(A.data()), A.extent(0));
   }
+    void gemmNN(viewType A, viewType B, viewType C, valueType alpha, valueType beta) {
+    gemm_gpu_impl(cublas_handle, CUBLAS_OP_N, CUBLAS_OP_N, A.extent(0), B.extent(1), A.extent(1), pointerConverter(&alpha),
+		  pointerConverter(A.data()), A.extent(0), pointerConverter(B.data()), B.extent(0),
+		  pointerConverter(&beta), pointerConverter(C.data()), C.extent(0));
+  }
+  void gemmNT(viewType A, viewType B, viewType C, valueType alpha, valueType beta) {
+    gemm_gpu_impl(cublas_handle, CUBLAS_OP_N, CUBLAS_OP_T, A.extent(0), B.extent(1), A.extent(1), pointerConverter(&alpha),
+		  pointerConverter(A.data()), A.extent(0), pointerConverter(B.data()), B.extent(0),
+		  pointerConverter(&beta), pointerConverter(C.data()), C.extent(0));
+  }
+  void gemmNC(viewType A, viewType B, viewType C, valueType alpha, valueType beta) {
+    gemm_gpu_impl(cublas_handle, CUBLAS_OP_N, CUBLAS_OP_C, A.extent(0), B.extent(1), A.extent(1), pointerConverter(&alpha),
+		  pointerConverter(A.data()), A.extent(0), pointerConverter(B.data()), B.extent(0),
+		  pointerConverter(&beta), pointerConverter(C.data()), C.extent(0));
+  }
+  void gemmTN(viewType A, viewType B, viewType C, valueType alpha, valueType beta) {
+    gemm_gpu_impl(cublas_handle, CUBLAS_OP_T, CUBLAS_OP_N, A.extent(0), B.extent(1), A.extent(1), pointerConverter(&alpha),
+		  pointerConverter(A.data()), A.extent(0), pointerConverter(B.data()), B.extent(0),
+		  pointerConverter(&beta), pointerConverter(C.data()), C.extent(0));
+  }
+  void gemmTT(viewType A, viewType B, viewType C, valueType alpha, valueType beta) {
+    gemm_gpu_impl(cublas_handle, CUBLAS_OP_T, CUBLAS_OP_T, A.extent(0), B.extent(1), A.extent(1), pointerConverter(&alpha),
+		  pointerConverter(A.data()), A.extent(0), pointerConverter(B.data()), B.extent(0),
+		  pointerConverter(&beta), pointerConverter(C.data()), C.extent(0));
+  }
+  void gemmTC(viewType A, viewType B, viewType C, valueType alpha, valueType beta) {
+    gemm_gpu_impl(cublas_handle, CUBLAS_OP_T, CUBLAS_OP_C, A.extent(0), B.extent(1), A.extent(1), pointerConverter(&alpha),
+		  pointerConverter(A.data()), A.extent(0), pointerConverter(B.data()), B.extent(0),
+		  pointerConverter(&beta), pointerConverter(C.data()), C.extent(0));
+  }
+  void gemmCN(viewType A, viewType B, viewType C, valueType alpha, valueType beta) {
+    gemm_gpu_impl(cublas_handle, CUBLAS_OP_C, CUBLAS_OP_N, A.extent(0), B.extent(1), A.extent(1), pointerConverter(&alpha),
+		  pointerConverter(A.data()), A.extent(0), pointerConverter(B.data()), B.extent(0),
+		  pointerConverter(&beta), pointerConverter(C.data()), C.extent(0));
+  }
+  void gemmCT(viewType A, viewType B, viewType C, valueType alpha, valueType beta) {
+    gemm_gpu_impl(cublas_handle, CUBLAS_OP_C, CUBLAS_OP_T, A.extent(0), B.extent(1), A.extent(1), pointerConverter(&alpha),
+		  pointerConverter(A.data()), A.extent(0), pointerConverter(B.data()), B.extent(0),
+		  pointerConverter(&beta), pointerConverter(C.data()), C.extent(0));
+  }
+  void gemmCC(viewType A, viewType B, viewType C, valueType alpha, valueType beta) {
+    gemm_gpu_impl(cublas_handle, CUBLAS_OP_C, CUBLAS_OP_C, A.extent(0), B.extent(1), A.extent(1), pointerConverter(&alpha),
+		  pointerConverter(A.data()), A.extent(0), pointerConverter(B.data()), B.extent(0),
+		  pointerConverter(&beta), pointerConverter(C.data()), C.extent(0));
+  }
 
 };
   
@@ -503,18 +721,20 @@ class linalgHelper<valueType,Kokkos::LayoutLeft,Kokkos::CudaUVMSpace> : public g
 
 
 // does matrix operation a * b and then checks whether average value is 
-template<class viewType1, class viewType2>
-void checkIdentity(viewType1 a, viewType2 b, const std::string& tag) {
+template<class viewType1, class viewType2, class linAlgHelper>
+void checkIdentity(viewType1 a, viewType2 b, const std::string& tag, linAlgHelper& lah) {
   using vt = typename viewType1::value_type;
   vt error = 0.0;
   vt cone = 1.0;
+  viewType1 result("result", a.extent(0), a.extent(1));
+  auto result_h = Kokkos::create_mirror_view(result);
+  lah.gemmNT(a, b, result, 1.0, 0.0);
+
+  Kokkos::deep_copy(result_h, result);
+
   for (int i = 0; i < a.extent(0); i++) {
     for (int j = 0; j < b.extent(1); j++) {
-      vt e = 0.0;
-      Kokkos::parallel_reduce( a.extent(0), KOKKOS_LAMBDA (int ii, vt& update) {
-	  update += a(i,ii)*b(ii,j);
-      }, e);
-      error += (i == j) ? std::abs(e - cone) : std::abs(e);
+      error += (i == j) ? std::abs(result_h(i,j) - cone) : std::abs(result_h(i,j));
     }
   }
   std::cout << tag << " difference from identity (average per element) = " << error / a.extent(0) / a.extent(1) << std::endl;
@@ -577,18 +797,20 @@ void updateRow(ViewType pinv, ArrayViewType tv, int rowchanged, value_type c_rat
   lah.ger(pinv, rcopy, temp, -cone);
 }
 
+			 
+
+      
+
 struct DiracDeterminant : public WaveFunctionComponent
 {
   DiracDeterminant(int nels, const RandomGenerator<RealType>& RNG, int First = 0) 
     : FirstIndex(First), myRandom(RNG), psiMinv("psiMinv", nels, nels), 
     psiMsave("psiMsave", nels, nels), psiV("psiV", nels), psiM("psiM", nels, nels)
   {
-    std::cout << "in constructor for diracDeterminant" << std::endl;
     psiMinv_host = Kokkos::create_mirror_view(psiMinv);
     psiMsave_host = Kokkos::create_mirror_view(psiMsave);
     psiM_host = Kokkos::create_mirror_view(psiM);
     psiV_host = Kokkos::create_mirror_view(psiV);
-    std::cout << "created all of the mirror views" << std::endl;
 
     
 
@@ -620,13 +842,15 @@ struct DiracDeterminant : public WaveFunctionComponent
     */
 
     LogValue = InvertWithLog(psiM, lah, phase);
-    Kokkos::deep_copy(psiMinv, psiM);
+    elementWiseCopy(psiMinv, psiM);
   }
   void checkMatrix()
   {
-    checkIdentity(psiMsave, psiM, "Psi_0 * psiM(T)");
-    checkIdentity(psiMsave, psiMinv, "Psi_0 * psiMinv(T)");
-    checkDiff(psiM, psiMinv, "psiM - psiMinv(T)");
+    MatType psiMRealType("psiM_RealType", psiM.extent(0), psiM.extent(0));
+    elementWiseCopy(psiMRealType, psiM);
+    checkIdentity(psiMsave, psiMRealType, "Psi_0 * psiM(T)", lah);
+    checkIdentity(psiMsave, psiMinv, "Psi_0 * psiMinv(T)", lah);
+    checkDiff(psiMRealType, psiMinv, "psiM - psiMinv(T)");
   }
   RealType evaluateLog(ParticleSet& P,
 		       ParticleSet::ParticleGradient_t& G,
@@ -645,13 +869,9 @@ struct DiracDeterminant : public WaveFunctionComponent
   {}
   inline void recompute()
   {
-    Kokkos::parallel_for(psiMsave.extent(0)*psiMsave.extent(1), KOKKOS_LAMBDA(int i) {
-	int x = i / psiMsave.extent(0);
-	int y = i % psiMsave.extent(0);
-	psiM(x,y) = psiMsave(y,x);
-    });
+    elementWiseCopy(psiM, psiMsave);
     lah.invertMatrix(psiM);
-    Kokkos::deep_copy(psiMinv, psiM);
+    elementWiseCopy(psiMinv, psiM);
   }
   inline ValueType ratio(ParticleSet& P, int iel)
   {
@@ -704,15 +924,17 @@ private:
   /// matrix type and mirror type
   using MatType = Kokkos::View<RealType**, Kokkos::LayoutLeft>;  
   using MatMirrorType = MatType::HostMirror;
-  /// inverse matrix to be updated and host mirror
+  using DoubleMatType = Kokkos::View<double**, Kokkos::LayoutLeft>;  
+  using DoubleMatMirrorType = DoubleMatType::HostMirror;
+  /// inverse matrix to be updated and host mirror (kept in double regardless of RealType)
   MatType psiMinv;
   MatMirrorType psiMinv_host;
   /// storage for the row update and host mirror
   Kokkos::View<RealType*> psiV;
   Kokkos::View<RealType*>::HostMirror psiV_host;
   /// internal storage to perform inversion correctly and host mirror
-  MatType psiM;
-  MatMirrorType psiM_host;
+  DoubleMatType psiM;
+  DoubleMatMirrorType psiM_host;
   /// temporary workspace for inversion and host mirror
   MatType psiMsave;
   MatMirrorType psiMsave_host;
