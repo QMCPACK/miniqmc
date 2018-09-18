@@ -54,6 +54,7 @@ void print_help()
 }
 int main(int argc, char** argv)
 {
+  int error_code=0;
   Kokkos::initialize(argc, argv);
   { //Begin kokkos block.
 
@@ -131,8 +132,8 @@ int main(int argc, char** argv)
 
     double accumulated_error = 0.0;
 
-#pragma omp parallel reduction(+ : accumulated_error)
-    {
+    //#pragma omp parallel reduction(+ : accumulated_error)
+//    {
       int ip = omp_get_thread_num();
 
       // create generator within the thread
@@ -190,7 +191,6 @@ int main(int argc, char** argv)
 
             determinant_ref.ratio(els, iel);
             determinant.ratio(els, iel);
-
             // Accept/reject the trial move
             if (ur[iel] > accept) // MC
             {
@@ -215,7 +215,7 @@ int main(int argc, char** argv)
       {
         accumulated_error += std::fabs(determinant_ref(i) - determinant(i));
       }
-    } // end of omp parallel
+//    } // end of omp parallel
 
     constexpr double small_err = std::numeric_limits<double>::epsilon() * 6e8;
 
@@ -225,12 +225,12 @@ int main(int argc, char** argv)
     {
       cout << "Checking failed with accumulated error: " << accumulated_error / np << " > "
            << small_err << '\n';
-      return 1;
+      error_code=1;
     }
     else
       cout << "All checks passed for determinant" << '\n';
 
   } //end kokkos block
   Kokkos::finalize();
-  return 0;
+  return error_code;
 }
