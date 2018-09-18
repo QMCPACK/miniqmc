@@ -728,11 +728,11 @@ public:
 
 };
   
-template<typename valueType>
+template<typename valueType, typename layoutType, typename memorySpace>
 class linalgHelper<valueType,layoutType,Kokkos::CudaSpace> : public gpuLinalgHelper<valueType,layoutType> {
 };
 
-template<typename valueType>
+template<typename valueType, typename layoutType, typename memorySpace>
 class linalgHelper<valueType,layoutType,Kokkos::CudaUVMSpace> : public gpuLinalgHelper<valueType,layoutType> {
 };
 
