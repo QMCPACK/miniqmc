@@ -139,10 +139,11 @@ void elementWiseCopy(ViewType1 destination, ViewType2 source,
     assert(destination.extent(i) == source.extent(i));
   }
   Kokkos::parallel_for("elementWiseCopy::copy_elements_rk1", 
-		       Kokkos::MDRangePolicy<Kokkos::Rank<1,Kokkos::Iterate::Left> >({0}, {destination.extent(0)}), 
+		       destination.extent(0),
 		       KOKKOS_LAMBDA(const int& i0) {
 			 destination(i0) = source(i0);
 		       });
+  Kokkos::fence();
 }
 template<class ViewType1, class ViewType2>
 void elementWiseCopy(ViewType1 destination, ViewType2 source, 
@@ -155,7 +156,22 @@ void elementWiseCopy(ViewType1 destination, ViewType2 source,
 		       Kokkos::MDRangePolicy<Kokkos::Rank<2,Kokkos::Iterate::Left> >({0,0}, {destination.extent(0),destination.extent(1)}), 
 		       KOKKOS_LAMBDA(const int& i0, const int& i1) {
 			 destination(i0, i1) = source(i0, i1);
-		       });		       
+		       });
+  Kokkos::fence();
+}
+ template<class ViewType1, class ViewType2>
+void elementWiseCopyTrans(ViewType1 destination, ViewType2 source, 
+			  typename std::enable_if<ViewType1::rank==2>::type* = 0,
+			  typename std::enable_if<ViewType2::rank==2>::type* = 0) {
+   assert(destination.extent(0) == source.extent(1));
+   assert(destination.extent(1) == source.extent(0));
+
+   Kokkos::parallel_for("elementWiseCopy::copy_elements_rk2", 
+		       Kokkos::MDRangePolicy<Kokkos::Rank<2,Kokkos::Iterate::Left> >({0,0}, {destination.extent(0),destination.extent(1)}), 
+		       KOKKOS_LAMBDA(const int& i0, const int& i1) {
+			 destination(i0, i1) = source(i1, i0);
+		       });
+   Kokkos::fence();
 }
 template<class ViewType1, class ViewType2>
 void elementWiseCopy(ViewType1 destination, ViewType2 source, 
@@ -169,6 +185,7 @@ void elementWiseCopy(ViewType1 destination, ViewType2 source,
 			 KOKKOS_LAMBDA(const int& i0, const int& i1, const int& i2) {
 			   destination(i0, i1, i2) = source(i0, i1, i2);
 			 });
+  Kokkos::fence();
 }
 template<class ViewType1, class ViewType2>
 void elementWiseCopy(ViewType1 destination, ViewType2 source, 
@@ -182,6 +199,7 @@ void elementWiseCopy(ViewType1 destination, ViewType2 source,
 		       KOKKOS_LAMBDA(const int& i0, const int& i1, const int& i2, const int& i3) {
 			 destination(i0, i1, i2, i3) = source(i0, i1, i2, i3);
 		       });
+  Kokkos::fence();
 }
 template<class ViewType1, class ViewType2>
 void elementWiseCopy(ViewType1 destination, ViewType2 source, 
@@ -195,6 +213,7 @@ void elementWiseCopy(ViewType1 destination, ViewType2 source,
 		       KOKKOS_LAMBDA(const int& i0, const int& i1, const int& i2, const int& i3, const int& i4) {
 			 destination(i0, i1, i2, i3, i4) = source(i0, i1, i2, i3, i4);
 		       });
+  Kokkos::fence();
 }
 
 
@@ -434,7 +453,7 @@ private:
   
 public:
   linalgHelper() {
-    checkTemplateParams<valueType, arrayLayout, memorySpace>();
+    //checkTemplateParams<valueType, arrayLayout, memorySpace>();
     Kokkos::resize(piv, 1);
     Kokkos::resize(work, 1);
     status = -1;
@@ -548,10 +567,10 @@ public:
 
 #ifdef KOKKOS_ENABLE_CUDA
 
-template<typename valueType>
+template<typename valueType, typename layoutType>
 class gpuLinalgHelper {
 public:
-  using viewType = Kokkos::View<valueType**, Kokkos::LayoutLeft>;
+  using viewType = Kokkos::View<valueType**, layoutType>;
   using arrType = Kokkos::View<valueType*>;
 private:
   double* pointerConverter(double* d) {  return d; }
@@ -710,17 +729,17 @@ public:
 };
   
 template<typename valueType>
-class linalgHelper<valueType,Kokkos::LayoutLeft,Kokkos::CudaSpace> : public gpuLinalgHelper<valueType> {
+class linalgHelper<valueType,layoutType,Kokkos::CudaSpace> : public gpuLinalgHelper<valueType,layoutType> {
 };
 
 template<typename valueType>
-class linalgHelper<valueType,Kokkos::LayoutLeft,Kokkos::CudaUVMSpace> : public gpuLinalgHelper<valueType> {
+class linalgHelper<valueType,layoutType,Kokkos::CudaUVMSpace> : public gpuLinalgHelper<valueType,layoutType> {
 };
 
 #endif
 
 
-// does matrix operation a * b and then checks whether average value is 
+// does matrix operation a * transpose(b) and then checks whether this is different from the identity
 template<class viewType1, class viewType2, class linAlgHelper>
 void checkIdentity(viewType1 a, viewType2 b, const std::string& tag, linAlgHelper& lah) {
   using vt = typename viewType1::value_type;
@@ -751,6 +770,7 @@ void checkDiff(viewType1 a, viewType2 b, const std::string& tag) {
       int j = ii % dim0;
       update += abs(a(i,j) -b(i,j));
   }, error);
+  Kokkos::fence();
   std::cout << tag << " difference between matrices (average per element) = " << error / dim0 / dim1 << std::endl;
 }
 
@@ -780,7 +800,7 @@ void updateRow(ViewType pinv, ArrayViewType tv, int rowchanged, value_type c_rat
   value_type c_ratio = cone / c_ratio_in;
   lah.gemvTrans(pinv, tv, temp, c_ratio, czero);
 
-  // hard work to modivy one element of temp on the device
+  // hard work to modify one element of temp on the device
   auto devElem = subview(temp, rowchanged);
   auto devElem_mirror = Kokkos::create_mirror_view(devElem);
   devElem_mirror(0) = cone - c_ratio;
@@ -790,8 +810,9 @@ void updateRow(ViewType pinv, ArrayViewType tv, int rowchanged, value_type c_rat
   // in previous version this looked like: std::copy_n(pinv + m * rowchanged, m, rcopy);
   // a little concerned about getting the ordering wrong
   Kokkos::parallel_for(tv.extent(0), KOKKOS_LAMBDA(int i) {
-      rcopy(i) = pinv(i,rowchanged);
+      rcopy(i) = pinv(rowchanged,i);
   });
+  Kokkos::fence();
       
   // now do ger
   lah.ger(pinv, rcopy, temp, -cone);
@@ -804,9 +825,13 @@ void updateRow(ViewType pinv, ArrayViewType tv, int rowchanged, value_type c_rat
 struct DiracDeterminant : public WaveFunctionComponent
 {
   DiracDeterminant(int nels, const RandomGenerator<RealType>& RNG, int First = 0) 
-    : FirstIndex(First), myRandom(RNG), psiMinv("psiMinv", nels, nels), 
-    psiMsave("psiMsave", nels, nels), psiV("psiV", nels), psiM("psiM", nels, nels)
+    : FirstIndex(First), myRandom(RNG)
   {
+    psiMinv = DoubleMatType("psiMinv",nels,nels);
+    psiM = DoubleMatType("psiM",nels,nels);
+    psiMsave = DoubleMatType("psiMsave",nels,nels);
+    psiV = Kokkos::View<RealType*>("psiV",nels);
+
     psiMinv_host = Kokkos::create_mirror_view(psiMinv);
     psiMsave_host = Kokkos::create_mirror_view(psiMsave);
     psiM_host = Kokkos::create_mirror_view(psiM);
@@ -817,6 +842,10 @@ struct DiracDeterminant : public WaveFunctionComponent
     // basically we are generating uniform random number for
     // each entry of psiMsave in the interval [-0.5, 0.5]
     constexpr double shift(0.5);
+
+    // change this to match data ordering of DeterminantRef
+    // recall that psiMsave has as its fast index the leftmost index
+    // however int the c style matrix in DeterminantRef 
     for (int i = 0; i < nels; i++) {
       for (int j = 0; j < nels; j++) {
 	psiMsave_host(i,j) = myRandom.rand()-shift;
@@ -832,14 +861,6 @@ struct DiracDeterminant : public WaveFunctionComponent
       }
     }
     Kokkos::deep_copy(psiM, psiM_host);
-
-    /*
-    Kokkos::parallel_for(psiMsave.extent(0)*psiMsave.extent(1), KOKKOS_LAMBDA(int i) {
-	int x = i / psiMsave.extent(0);
-	int y = i % psiMsave.extent(0);
-	psiM(x,y) = psiMsave(y,x);
-    });
-    */
 
     LogValue = InvertWithLog(psiM, lah, phase);
     elementWiseCopy(psiMinv, psiM);
@@ -869,7 +890,8 @@ struct DiracDeterminant : public WaveFunctionComponent
   {}
   inline void recompute()
   {
-    elementWiseCopy(psiM, psiMsave);
+    //elementWiseCopy(psiM, psiMsave); // needs to be transposed!
+    elementWiseCopyTrans(psiM, psiMsave); // needs to be transposed!
     lah.invertMatrix(psiM);
     elementWiseCopy(psiMinv, psiM);
   }
@@ -885,9 +907,16 @@ struct DiracDeterminant : public WaveFunctionComponent
     // in main line previous version this looked like:
     // curRatio = inner_product_n(psiV.data(), psiMinv[iel - FirstIndex], nels, czero);
     // same issues with indexing
+    const int FirstIndex_ = FirstIndex;
+    const int iel_=iel;
+    double curRatio_=0;
+    Kokkos::View<RealType*> psiV_=psiV;
+    DoubleMatType psiMinv_=psiMinv; 
     Kokkos::parallel_reduce( nels, KOKKOS_LAMBDA (int i, ValueType& update) {
-	update += psiV(i) * psiMinv(iel-FirstIndex,i);
-    }, curRatio);
+	update += psiV_(i) * psiMinv_(iel_-FirstIndex_,i);
+    }, curRatio_);
+    Kokkos::fence();
+    curRatio=curRatio_;
     return curRatio;
   }
   inline void acceptMove(ParticleSet& P, int iel) {
@@ -895,11 +924,20 @@ struct DiracDeterminant : public WaveFunctionComponent
     updateRow(psiMinv, psiV, iel, curRatio, lah);
     // in main line previous version this looked like:
     //std::copy_n(psiV.data(), nels, psiMsave[iel - FirstIndex]);
-    // it is not clear why this indexing makes sense on phiMsave which is a nels x nels matrix
-    // trying to replicate something like this
+    // note 1: copy_n copies data from psiV to psiMsave
+    //
+    // note 2: the single argument call to psiMsave[] returned a pointer to
+    // the iel-FirstIndex ROW of the underlying data structure, so
+    // the operation was like (psiMsave.data() + (iel-FirstIndex)*D2)
+    // note that then to iterate through the data it was going sequentially
+    const int FirstIndex_ = FirstIndex;
+    Kokkos::View<RealType*> psiV_=psiV;
+    const int iel_=iel;
+    DoubleMatType psiMsave_=psiMsave; 
     Kokkos::parallel_for( nels, KOKKOS_LAMBDA (int i) {
-	psiMsave(iel-FirstIndex, i) = psiV(i);
+    	psiMsave_(iel_-FirstIndex_, i) = psiV_(i);
       });
+    Kokkos::fence();
   }
 
   // accessor functions for checking
@@ -922,9 +960,11 @@ private:
   /// initial particle index
   const int FirstIndex;
   /// matrix type and mirror type
-  using MatType = Kokkos::View<RealType**, Kokkos::LayoutLeft>;  
+  //using MatType = Kokkos::View<RealType**, Kokkos::LayoutLeft>;
+  using MatType = Kokkos::View<RealType**, Kokkos::LayoutRight>;
   using MatMirrorType = MatType::HostMirror;
-  using DoubleMatType = Kokkos::View<double**, Kokkos::LayoutLeft>;  
+  //using DoubleMatType = Kokkos::View<double**, Kokkos::LayoutLeft>;
+  using DoubleMatType = Kokkos::View<double**, Kokkos::LayoutRight>;
   using DoubleMatMirrorType = DoubleMatType::HostMirror;
   /// inverse matrix to be updated and host mirror (kept in double regardless of RealType)
   MatType psiMinv;
