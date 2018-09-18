@@ -921,7 +921,7 @@ struct DiracDeterminant : public WaveFunctionComponent
   }
   inline void acceptMove(ParticleSet& P, int iel) {
     const int nels = psiV.extent(0);
-    updateRow(psiMinv, psiV, iel, curRatio, lah);
+    updateRow(psiMinv, psiV, iel-FirstIndex, curRatio, lah);
     // in main line previous version this looked like:
     //std::copy_n(psiV.data(), nels, psiMsave[iel - FirstIndex]);
     // note 1: copy_n copies data from psiV to psiMsave
