@@ -278,7 +278,9 @@ void gemv_cpu_impl(const char& trans, const int& nr, const int& nc, const float 
 void gemv_cpu_impl(const char& trans, const int& nr, const int& nc, const double &alpha,
 		   const double *amat, const int &lda, const double *bv, const int &incx,
 		   const double &beta, double *cv, const int &incy) {
+  Kokkos::Profiling::pushRegion("gemv_cpu_impl::dgemv");
   dgemv(trans, nr, nc, alpha, amat, lda, bv, incx, beta, cv, incy);
+  Kokkos::Profiling::popRegion();
 }
 void gemv_cpu_impl(const char& trans, const int& nr, const int& nc, const std::complex<float> &alpha,
 		   const std::complex<float> *amat, const int &lda, const std::complex<float> *bv, const int &incx,
@@ -299,7 +301,9 @@ void ger_cpu_impl(const int& m, const int& n, const float& alpha, const float *x
 void ger_cpu_impl(const int& m, const int& n, const double& alpha, const double *x,
 		  const int& incx, const double *y, const int& incy, double *a,
 		  const int& lda) {
+  Kokkos::Profiling::pushRegion("ger_cpu_impl");
   dger(&m, &n, &alpha, x, &incx, y, &incy, a, &lda);
+  Kokkos::Profiling::popRegion();
 }
 void ger_cpu_impl(const int& m, const int& n, const std::complex<float>& alpha, const std::complex<float> *x,
 		  const int& incx, const std::complex<float> *y, const int& incy, std::complex<float> *a,
@@ -438,6 +442,10 @@ class linalgHelper {
  public:
   using viewType = Kokkos::View<valueType**, arrayLayout, memorySpace>;
   using arrType = Kokkos::View<valueType*, memorySpace>;
+  
+  using arrPolicyParallel_t = Kokkos::RangePolicy<>;
+  using arrPolicySerial_t = Kokkos::RangePolicy<Kokkos::Serial>;
+  int arrPolicySerialThreshold;
 
 private:
   int status;
@@ -452,11 +460,12 @@ private:
   std::complex<double>* pointerConverter(Kokkos::complex<double>* d) { return (std::complex<double>*)d; }
   
 public:
-  linalgHelper() {
+  linalgHelper(int serialThreshold = 32768) {
     //checkTemplateParams<valueType, arrayLayout, memorySpace>();
     Kokkos::resize(piv, 1);
     Kokkos::resize(work, 1);
     status = -1;
+    arrPolicySerialThreshold = serialThreshold;
   }
 
   typename Kokkos::View<int*, memorySpace>::HostMirror extractPivot() {
@@ -515,8 +524,10 @@ public:
 		  1, beta, pointerConverter(y.data()), 1);
   }
   void ger(viewType A, arrType x, arrType y, valueType alpha) {
-    ger_cpu_impl(A.extent(0), A.extent(1), alpha, pointerConverter(x.data()), 1, pointerConverter(y.data()), 1,
-		 pointerConverter(A.data()), A.extent(0));
+    Kokkos::Profiling::pushRegion("linAlgHelper::ger_cpu_impl");
+    ger_cpu_impl(A.extent_int(0), A.extent_int(1), alpha, pointerConverter(x.data()), 1, pointerConverter(y.data()), 1,
+		 pointerConverter(A.data()), A.extent_int(0));
+    Kokkos::Profiling::popRegion();
   }
   void gemmNN(viewType A, viewType B, viewType C, valueType alpha, valueType beta) {
     gemm_cpu_impl('N', 'N', A.extent(0), B.extent(1), A.extent(1), pointerConverter(&alpha),
@@ -563,7 +574,56 @@ public:
 		  pointerConverter(A.data()), A.extent(0), pointerConverter(B.data()), B.extent(0),
 		  pointerConverter(&beta), pointerConverter(C.data()), C.extent(0));
   }
-};  
+
+  void copyChangedRow(int rowchanged, viewType pinv, arrType rcopy) {
+    if (rcopy.extent(0) > arrPolicySerialThreshold) {
+      Kokkos::parallel_for(arrPolicyParallel_t(0, rcopy.extent(0)), KOKKOS_LAMBDA(int i) {
+	  rcopy(i) = pinv(rowchanged,i);
+	});
+    } else {
+      Kokkos::parallel_for(arrPolicySerial_t(0, rcopy.extent(0)), KOKKOS_LAMBDA(int i) {
+	  rcopy(i) = pinv(rowchanged,i);
+	});
+    }
+    Kokkos::fence();
+  }
+  
+  template<typename doubleViewType>
+  valueType updateRatio(arrType psiV, doubleViewType psiMinv, int firstIndex) {
+    arrType psiV_ = psiV;
+    doubleViewType psiMinv_ = psiMinv;
+    valueType curRatio_ = 0.0;
+    int firstIndex_ = firstIndex;
+    if (psiV_.extent(0) > arrPolicySerialThreshold) {
+      Kokkos::parallel_reduce(arrPolicyParallel_t(0, psiV_.extent(0)), KOKKOS_LAMBDA(int i, valueType& update) {
+	  update += psiV_(i) * psiMinv_(firstIndex_,i);
+	}, curRatio_);
+    } else {
+      Kokkos::parallel_reduce(arrPolicySerial_t(0, psiV_.extent(0)), KOKKOS_LAMBDA(int i, valueType& update) {
+	  update += psiV_(i) * psiMinv_(firstIndex_,i);
+	}, curRatio_);
+    }
+    Kokkos::fence();
+    return curRatio_;
+  }
+
+  template<typename doubleViewType>
+  void copyBack(doubleViewType psiMsave, arrType psiV, int firstIndex) {
+    doubleViewType psiMsave_ = psiMsave;
+    arrType psiV_ = psiV;
+    int firstIndex_ = firstIndex;
+    if (psiV_.extent(0) > arrPolicySerialThreshold) {
+      Kokkos::parallel_for(arrPolicyParallel_t(0, psiV_.extent(0)), KOKKOS_LAMBDA(int i) {
+	  psiMsave_(firstIndex_, i) = psiV_(i);
+	});
+    } else {
+      Kokkos::parallel_for(arrPolicySerial_t(0, psiV_.extent(0)), KOKKOS_LAMBDA(int i) {
+	  psiMsave_(firstIndex_, i) = psiV_(i);
+	});
+    }
+    Kokkos::fence();
+  }
+};
 
 #ifdef KOKKOS_ENABLE_CUDA
 
@@ -725,6 +785,32 @@ public:
 		  pointerConverter(A.data()), A.extent(0), pointerConverter(B.data()), B.extent(0),
 		  pointerConverter(&beta), pointerConverter(C.data()), C.extent(0));
   }
+  void copyChangedRow(int rowchanged, viewType pinv, arrType rcopy) {
+    Kokkos::parallel_for(rcopy.extent(0), KOKKOS_LAMBDA(int i) {
+	rcopy(i) = pinv(rowchanged,i);
+      });
+    Kokkos::fence();
+  }
+  template<typename doubleViewType>
+  valueType updateRatio(arrType psiV, doubleViewType psiMinv, int firstIndex) {
+    arrType psiV_ = psiV;
+    doubleViewType psiMinv_ = psiMinv;
+    valueType curRatio_ = 0.0;
+    int firstIndex_ = firstIndex;
+    Kokkos::parallel_reduce( psiV_.extent_int(0), KOKKOS_LAMBDA (int i, valueType& update) {
+	update += psiV_(i) * psiMinv_(firstIndex_,i);
+    }, curRatio_);
+  }
+  template<typename doubleViewType>
+  void copyBack(doubleViewType psiMsave, arrType psiV, int firstIndex) {
+    doubleViewType psiMsave_ = psiMsave;
+    arrType psiV_ = psiV;
+    int firstIndex_ = firstIndex;
+    Kokkos::parallel_for( psiV_.extent_int(0), KOKKOS_LAMBDA (int i) {
+    	psiMsave_(firstIndex_, i) = psiV_(i);
+      });
+    Kokkos::fence();
+  }
 
 };
   
@@ -798,24 +884,30 @@ void updateRow(ViewType pinv, ArrayViewType tv, int rowchanged, value_type c_rat
   ArrayViewType temp("temp", tv.extent(0));
   ArrayViewType rcopy("rcopy", tv.extent(0));
   value_type c_ratio = cone / c_ratio_in;
+  Kokkos::Profiling::pushRegion("updateRow::gemvTrans");
   lah.gemvTrans(pinv, tv, temp, c_ratio, czero);
+  Kokkos::Profiling::popRegion();
 
   // hard work to modify one element of temp on the device
+  Kokkos::Profiling::pushRegion("updateRow::pokeSingleValue");
   auto devElem = subview(temp, rowchanged);
   auto devElem_mirror = Kokkos::create_mirror_view(devElem);
   devElem_mirror(0) = cone - c_ratio;
   Kokkos::deep_copy(devElem, devElem_mirror);
+  Kokkos::Profiling::popRegion();
 
   // now extract the proper part of pinv into rcopy
   // in previous version this looked like: std::copy_n(pinv + m * rowchanged, m, rcopy);
   // a little concerned about getting the ordering wrong
-  Kokkos::parallel_for(tv.extent(0), KOKKOS_LAMBDA(int i) {
-      rcopy(i) = pinv(rowchanged,i);
-  });
-  Kokkos::fence();
+  Kokkos::Profiling::pushRegion("updateRow::populateRcopy");
+
+  lah.copyChangedRow(rowchanged, pinv, rcopy);
+  Kokkos::Profiling::popRegion();
       
   // now do ger
+  Kokkos::Profiling::pushRegion("updateRow::ger");
   lah.ger(pinv, rcopy, temp, -cone);
+  Kokkos::Profiling::popRegion();
 }
 
 			 
@@ -907,21 +999,17 @@ struct DiracDeterminant : public WaveFunctionComponent
     // in main line previous version this looked like:
     // curRatio = inner_product_n(psiV.data(), psiMinv[iel - FirstIndex], nels, czero);
     // same issues with indexing
-    const int FirstIndex_ = FirstIndex;
-    const int iel_=iel;
-    double curRatio_=0;
-    Kokkos::View<RealType*> psiV_=psiV;
-    DoubleMatType psiMinv_=psiMinv; 
-    Kokkos::parallel_reduce( nels, KOKKOS_LAMBDA (int i, ValueType& update) {
-	update += psiV_(i) * psiMinv_(iel_-FirstIndex_,i);
-    }, curRatio_);
-    Kokkos::fence();
-    curRatio=curRatio_;
+    curRatio = lah.updateRatio(psiV, psiMinv, iel-FirstIndex);
+
     return curRatio;
   }
   inline void acceptMove(ParticleSet& P, int iel) {
+    Kokkos::Profiling::pushRegion("Determinant::acceptMove");
     const int nels = psiV.extent(0);
+    
+    Kokkos::Profiling::pushRegion("Determinant::acceptMove::updateRow");
     updateRow(psiMinv, psiV, iel-FirstIndex, curRatio, lah);
+    Kokkos::Profiling::popRegion();
     // in main line previous version this looked like:
     //std::copy_n(psiV.data(), nels, psiMsave[iel - FirstIndex]);
     // note 1: copy_n copies data from psiV to psiMsave
@@ -930,14 +1018,24 @@ struct DiracDeterminant : public WaveFunctionComponent
     // the iel-FirstIndex ROW of the underlying data structure, so
     // the operation was like (psiMsave.data() + (iel-FirstIndex)*D2)
     // note that then to iterate through the data it was going sequentially
+    Kokkos::Profiling::pushRegion("Determinant::acceptMove::copyBack");
+    lah.copyBack(psiMsave, psiV, iel-FirstIndex);
+
+    /*
     const int FirstIndex_ = FirstIndex;
     Kokkos::View<RealType*> psiV_=psiV;
     const int iel_=iel;
     DoubleMatType psiMsave_=psiMsave; 
+
+
+
     Kokkos::parallel_for( nels, KOKKOS_LAMBDA (int i) {
     	psiMsave_(iel_-FirstIndex_, i) = psiV_(i);
       });
     Kokkos::fence();
+    */
+    Kokkos::Profiling::popRegion();
+    Kokkos::Profiling::popRegion();
   }
 
   // accessor functions for checking
