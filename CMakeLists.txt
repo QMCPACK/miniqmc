@@ -384,7 +384,7 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
     MESSAGE(STATUS "Searching for CUDA libraries")
     FIND_PACKAGE(CUDA)
     MESSAGE(STATUS " --Link to cuBLAS")
-    LINK_LIBRARIES("-lcublas -lcurand")
+    LINK_LIBRARIES("-lcusolver -lcublas -lcurand")
   ENDIF()
 
   INCLUDE(CMake/FindVectorMath.cmake)
