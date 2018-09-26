@@ -25,6 +25,7 @@
 #include <type_traits>
 #ifdef KOKKOS_ENABLE_CUDA
 #include "cublas_v2.h"
+#include "cusolverDn.h"
 #endif
 
 #include "QMCWaveFunctions/WaveFunctionComponent.h"
@@ -338,31 +339,55 @@ void gemm_cpu_impl(const char& transa, const char& transb, const int& rowsa, con
 
 
 #ifdef KOKKOS_ENABLE_CUDA
-void getrf_gpu_impl(const int &n, float** a, int* piv, int* info, cublasHandle_t& handle) {
-  int st = cublasSgetrfBatched(handle, n, a, n, piv, info, 1);
+void getrf_gpu_impl(int m, int n, float* a, int lda, float* workspace, int* devIpiv, int* devInfo, cusolverDnHandle_t& handle) {
+  auto st = cusolverDnSgetrf(handle, m, n, a, lda, workspace, devIpiv, devInfo);
 }
-void getrf_gpu_impl(const int &n, double** a, int* piv, int* info, cublasHandle_t& handle) {
-  int st = cublasDgetrfBatched(handle, n, a, n, piv, info, 1);
+void getrf_gpu_impl(int m, int n, double* a, int lda, double* workspace, int* devIpiv, int* devInfo, cusolverDnHandle_t& handle) {
+  auto st = cusolverDnDgetrf(handle, m, n, a, lda, workspace, devIpiv, devInfo);
 }
-void getrf_gpu_impl(const int &n, cuFloatComplex** a, int* piv, int* info, cublasHandle_t& handle) {
-  int st = cublasCgetrfBatched(handle, n, a, n, piv, info, 1);
+void getrf_gpu_impl(int m, int n, cuFloatComplex* a, int lda, cuFloatComplex* workspace, int* devIpiv, int* devInfo, cusolverDnHandle_t& handle) {
+  auto st = cusolverDnCgetrf(handle, m, n, a, lda, workspace, devIpiv, devInfo);
 }
-void getrf_gpu_impl(const int &n, cuDoubleComplex** a, int* piv, int* info, cublasHandle_t& handle) {
-  int st = cublasZgetrfBatched(handle, n, a, n, piv, info, 1);
+void getrf_gpu_impl(int m, int n, cuDoubleComplex* a, int lda, cuDoubleComplex* workspace, int* devIpiv, int* devInfo, cusolverDnHandle_t& handle) {
+  auto st = cusolverDnZgetrf(handle, m, n, a, lda, workspace, devIpiv, devInfo);
 }
 
-void getri_gpu_impl(const int &n, float** a, float**b, int* piv, int* info, cublasHandle_t& handle) {
-  int st = cublasSgetriBatched(handle,n,a,n,piv,b,n,info,1);
+int getrf_gpu_buffer_size(int m, int n, float* a, int lda, cusolverDnHandle_t& handle) {
+  int lwork;
+  auto st = cusolverDnSgetrf_bufferSize(handle, m, n, a, lda, &lwork);
+  return lwork;
 }
-void getri_gpu_impl(const int &n, double** a, double**b, int* piv, int* info, cublasHandle_t& handle) {
-  int st = cublasDgetriBatched(handle,n,a,n,piv,b,n,info,1);
+int getrf_gpu_buffer_size(int m, int n, double* a, int lda, cusolverDnHandle_t& handle) {
+  int lwork;
+  auto st = cusolverDnDgetrf_bufferSize(handle, m, n, a, lda, &lwork);
+  return lwork;
 }
-void getri_gpu_impl(const int &n, cuFloatComplex** a, cuFloatComplex**b, int* piv, int* info, cublasHandle_t& handle) {
-  int st = cublasCgetriBatched(handle,n,a,n,piv,b,n,info,1);
+int getrf_gpu_buffer_size(int m, int n, cuFloatComplex* a, int lda, cusolverDnHandle_t& handle) {
+  int lwork;
+  auto st = cusolverDnCgetrf_bufferSize(handle, m, n, a, lda, &lwork);
+  return lwork;
 }
-void getri_gpu_impl(const int &n, cuDoubleComplex** a, cuDoubleComplex**b, int* piv, int* info, cublasHandle_t& handle) {
-  int st = cublasZgetriBatched(handle,n,a,n,piv,b,n,info,1);
+int getrf_gpu_buffer_size(int m, int n, cuDoubleComplex* a, int lda, cusolverDnHandle_t& handle) {
+  int lwork;
+  auto st = cusolverDnZgetrf_bufferSize(handle, m, n, a, lda, &lwork);
+  return lwork;
 }
+
+// note on input b should be an n by n identity matrix
+// also, all strides should be 1
+void getri_gpu_impl(const int n, float* a, int* piv, float* b, int* info, cusolverDnHandle_t& handle) {
+  auto st = cusolverDnSgetrs(handle, CUBLAS_OP_N, n, n, a, n, piv, b, n, info);
+}
+void getri_gpu_impl(const int n, double* a, int* piv, double* b, int* info, cusolverDnHandle_t& handle) {
+  auto st = cusolverDnDgetrs(handle, CUBLAS_OP_N, n, n, a, n, piv, b, n, info);
+}
+void getri_gpu_impl(const int n, cuFloatComplex* a, int* piv, cuFloatComplex* b, int* info, cusolverDnHandle_t& handle) {
+  auto st = cusolverDnCgetrs(handle, CUBLAS_OP_N, n, n, a, n, piv, b, n, info);
+}
+void getri_gpu_impl(const int n, cuDoubleComplex* a, int* piv, cuDoubleComplex* b, int* info, cusolverDnHandle_t& handle) {
+  auto st = cusolverDnZgetrs(handle, CUBLAS_OP_N, n, n, a, n, piv, b, n, info);
+}
+
 
 void gemv_gpu_impl(cublasHandle_t& handle, cublasOperation_t trans, const int& nr, const int& nc, const float *alpha,
 		   const float *amat, const int &lda, const float *bv, const int &incx,
@@ -642,18 +667,9 @@ private:
   cuDoubleComplex* pointerConverter(std::complex<double>* d) { return (cuDoubleComplex*)d; }
   cuDoubleComplex* pointerConverter(Kokkos::complex<double>* d) { return (cuDoubleComplex*)d; }
 
-  double** pointerConverter(double** d) {  return d; }
-  float** pointerConverter(float** d) {  return d; }
-  cuFloatComplex** pointerConverter(cuFloatComplex** d) { return d; }
-  cuFloatComplex** pointerConverter(std::complex<float>** d) { return (cuFloatComplex**)d; }
-  cuFloatComplex** pointerConverter(Kokkos::complex<float>** d) { return (cuFloatComplex**)d; }
-  cuDoubleComplex** pointerConverter(cuDoubleComplex** d) { return d; }
-  cuDoubleComplex** pointerConverter(std::complex<double>** d) { return (cuDoubleComplex**)d; }
-  cuDoubleComplex** pointerConverter(Kokkos::complex<double>** d) { return (cuDoubleComplex**)d; }
 private:
   cublasHandle_t cublas_handle;
-  valueType** devPtrPtr;
-  valueType** devOutPtrPtr;
+  cusolverDnHandle_t cusolver_handle;
   int status;
   Kokkos::View<int*> piv;
   Kokkos::View<int*> info;
@@ -665,14 +681,12 @@ public:
     status = -1;
 
     cublasCreate(&cublas_handle);
-    cudaMalloc<valueType*>(&devPtrPtr, sizeof(valueType*));
-    cudaMalloc<valueType*>(&devOutPtrPtr, sizeof(valueType*));
+    cusolverDnCreate(&cusolver_handle);
   }
 
   ~gpuLinalgHelper() {
     cublasDestroy(cublas_handle);
-    cudaFree(devPtrPtr);
-    cudaFree(devOutPtrPtr);
+    cusolverDnDestroy(cusolver_handle);
   }
 
   Kokkos::View<int*>::HostMirror extractPivot() {
@@ -682,40 +696,31 @@ public:
   }
 
   void getrf(viewType view) {
-    int ext = view.extent(0);
-    if(piv.extent(0) != ext) {
-      Kokkos::resize(piv, ext);
-    }
-    valueType* tmp = view.data();
-    valueType** temp_host_ptr = &tmp; // taking the address on the host
-    cudaMemcpy(devPtrPtr,temp_host_ptr,sizeof(temp_host_ptr),cudaMemcpyHostToDevice); // copy the address to dev_ptr
-    getrf_gpu_impl(ext,pointerConverter(devPtrPtr),piv.data(),info.data(),cublas_handle);
-  }
-  void getri(viewType view) {
-    int ext = view.extent(0);
-    if(piv.extent(0) != ext) {
-      Kokkos::resize(piv, ext);
-    }
-    Kokkos::Profiling::pushRegion("getri_pointer_setup");
-    valueType* tmp = view.data();
-    valueType** temp_host_ptr = &tmp; // taking the address on the host
-    cudaMemcpy(devPtrPtr,temp_host_ptr,sizeof(temp_host_ptr),cudaMemcpyHostToDevice); // copy the address to dev_ptr
-
-    if (outView.extent(0) != ext || outView.extent(1) != ext) {
-      Kokkos::resize(outView, ext, ext);
-    }
-    tmp = outView.data();
-    temp_host_ptr = &tmp; // taking the address on the host
-    cudaMemcpy(devOutPtrPtr,temp_host_ptr,sizeof(temp_host_ptr),cudaMemcpyHostToDevice); // copy the address to dev_ptr
-    Kokkos::Profiling::popRegion();
-
-    Kokkos::Profiling::pushRegion("getri::cublas");
-    getri_gpu_impl(ext,pointerConverter(devPtrPtr),pointerConverter(devOutPtrPtr),piv.data(),info.data(),cublas_handle);
-    Kokkos::Profiling::popRegion();
-    Kokkos::deep_copy(view, outView);
-
+    int m = view.extent(0);
+    int n = view.extent(1);
     
+    int worksize = getrf_gpu_buffer_size(m, n, pointerConverter(view.data()), m, cusolver_handle);
+    arrType workspace("getrf_workspace", worksize);
+    
+    if(piv.extent(0) != m) {
+      Kokkos::resize(piv,m);
+    }
+    getrf_gpu_impl(m, n, pointerConverter(view.data()), m, pointerConverter(workspace.data()), piv.data(), info.data(), cusolver_handle);
   }
+
+  void getri(viewType view) {
+    int n = view.extent(0);
+    // make identity matrix for right hand side
+    viewType outView("outputView", n, n);
+    Kokkos::parallel_for(n, KOKKOS_LAMBDA(int i) {
+      outView(i,i) = 1.0;
+      });
+    getri_gpu_impl(n, pointerConverter(view.data()), piv.data(), pointerConverter(outView.data()), info.data(), cusolver_handle);
+    // now copy back to view from outputView
+    //Kokkos::deep_copy(view, outView);
+    elementWiseCopy(view, outView);
+  }
+
   void invertMatrix(viewType view) {
     getrf(view);
     getri(view);
@@ -786,8 +791,10 @@ public:
 		  pointerConverter(&beta), pointerConverter(C.data()), C.extent(0));
   }
   void copyChangedRow(int rowchanged, viewType pinv, arrType rcopy) {
-    Kokkos::parallel_for(rcopy.extent(0), KOKKOS_LAMBDA(int i) {
-	rcopy(i) = pinv(rowchanged,i);
+    viewType pinv_ = pinv;
+    arrType rcopy_ = rcopy;
+    Kokkos::parallel_for(rcopy_.extent(0), KOKKOS_LAMBDA(int i) {
+	rcopy_(i) = pinv_(rowchanged,i);
       });
     Kokkos::fence();
   }
@@ -800,6 +807,7 @@ public:
     Kokkos::parallel_reduce( psiV_.extent_int(0), KOKKOS_LAMBDA (int i, valueType& update) {
 	update += psiV_(i) * psiMinv_(firstIndex_,i);
     }, curRatio_);
+    return curRatio_;
   }
   template<typename doubleViewType>
   void copyBack(doubleViewType psiMsave, arrType psiV, int firstIndex) {
