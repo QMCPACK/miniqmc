@@ -131,6 +131,7 @@ enum MiniQMCTimers
   Timer_evalGrad,
   Timer_ratioGrad,
   Timer_Update,
+  Timer_Setup,
 };
 
 TimerNameList_t<MiniQMCTimers> MiniQMCTimerNames = {
@@ -142,6 +143,7 @@ TimerNameList_t<MiniQMCTimers> MiniQMCTimerNames = {
     {Timer_evalGrad, "Current Gradient"},
     {Timer_ratioGrad, "New Gradient"},
     {Timer_Update, "Update"},
+    {Timer_Setup, "Setup"},
 };
 
 void print_help()
@@ -320,6 +322,7 @@ int main(int argc, char** argv)
   ParticleSet ions;
   // initialize ions and splines which are shared by all threads later
   {
+    Timers[Timer_Setup]->start();
     Tensor<OHMMS_PRECISION, 3> lattice_b;
     build_ions(ions, tmat, lattice_b);
     const int nels = count_electrons(ions, 1);
@@ -349,6 +352,7 @@ int main(int argc, char** argv)
                   << SPO_coeff_size_MB << " MB)" << endl;
 
     spo_main = build_SPOSet(useRef, nx, ny, nz, norb, nTiles, lattice_b);
+    Timers[Timer_Setup]->stop();
   }
 
   if (!useRef)
