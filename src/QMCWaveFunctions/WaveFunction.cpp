@@ -17,6 +17,12 @@
 
 #include <QMCWaveFunctions/WaveFunction.h>
 #include <QMCWaveFunctions/Determinant.h>
+#ifdef FUTURE_WAVEFUNCTIONS
+#include <QMCWaveFunctions/future/Determinant.h>
+#include <QMCWaveFunctions/future/DeterminantDevice.h>
+#include <QMCWaveFunctions/future/DeterminantDeviceImp.h>
+#include <QMCWaveFunctions/future/DeterminantDeviceImpKOKKOS.h>
+#endif
 #include <QMCWaveFunctions/DeterminantRef.h>
 #include <QMCWaveFunctions/Jastrow/BsplineFunctor.h>
 #include <QMCWaveFunctions/Jastrow/BsplineFunctorRef.h>
@@ -101,8 +107,11 @@ void build_WaveFunction(bool useRef,
     using J1OrbType = OneBodyJastrow<BsplineFunctor<valT>>;
     using J2OrbType = TwoBodyJastrow<BsplineFunctor<valT>>;
     using J3OrbType = ThreeBodyJastrow<PolynomialFunctor3D>;
+#ifdef FUTURE_WAVEFUNCTIONS
+    using DetType   = future::DiracDeterminant<DeterminantDeviceImp<KOKKOS>>;
+#else
     using DetType   = DiracDeterminant;
-
+#endif
     ions.RSoA = ions.R;
     els.RSoA  = els.R;
 

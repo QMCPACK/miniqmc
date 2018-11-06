@@ -263,22 +263,6 @@ struct einspline_spo : public SPOSet
                               psi(block).extent(0));
   }
 
-  KOKKOS_INLINE_FUNCTION
-  void operator()(const EvaluateVTag&, const team_v_parallel_t& team) const
-  {
-    int block               = team.league_rank();
-    auto u                  = Lattice.toUnit_floor(tmp_pos);
-    einsplines(block).coefs = einsplines(block).coefs_view.data();
-    compute_engine.evaluate_v(team,
-                              &einsplines(block),
-                              u[0],
-                              u[1],
-                              u[2],
-                              psi(block).data(),
-                              psi(block).extent(0));
-  }
-
-
   /** evaluate psi */
   inline void evaluate_v_pfor(const PosType& p)
   {
@@ -338,22 +322,6 @@ struct einspline_spo : public SPOSet
     //  compute_engine.evaluate_vgh(&einsplines(i), u[0], u[1], u[2],
     //                              psi(i).data(), grad(i).data(), hess(i).data(),
     //                              nSplinesPerBlock);
-  }
-
-  KOKKOS_INLINE_FUNCTION
-  void operator()(const EvaluateVGHTag&, const team_vgh_parallel_t& team) const
-  {
-    int block = team.league_rank();
-    auto u    = Lattice.toUnit_floor(tmp_pos);
-    compute_engine.evaluate_vgh(team,
-                                &einsplines[block],
-                                u[0],
-                                u[1],
-                                u[2],
-                                psi(block).data(),
-                                grad(block).data(),
-                                hess(block).data(),
-                                psi(block).extent(0));
   }
 
   KOKKOS_INLINE_FUNCTION
