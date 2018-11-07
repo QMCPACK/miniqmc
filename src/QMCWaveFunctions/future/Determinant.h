@@ -26,7 +26,6 @@
 
 #include "QMCWaveFunctions/WaveFunctionComponent.h"
 #include "QMCWaveFunctions/future/DeterminantDevice.h"
-#include "QMCWaveFunctions/future/DeterminantDeviceImpKOKKOS.h"
 //#include "Utilities/RandomGenerator.h"
 
 namespace qmcplusplus
@@ -37,30 +36,35 @@ namespace future
 template<class DEVICE>
 struct DiracDeterminant : public WaveFunctionComponent
 {
-  DiracDeterminant(int nels, const RandomGenerator<RealType>& RNG, int First = 0) 
-    : determinant_device<DEVICE>(nels, RNG, First), FirstIndex(First), myRandom(RNG)
+  DiracDeterminant(int nels, const RandomGenerator<RealType>& RNG, int First = 0)
   {
+    determinant_device = new DEVICE(nels, RNG, First);
+  }
+
+  ~DiracDeterminant()
+  {
+    delete determinant_device;
   }
   
   void checkMatrix()
   {
-    determinant_device.checkMatrix();
+    determinant_device->checkMatrix();
   }
   
   RealType evaluateLog(ParticleSet& P,
 		       ParticleSet::ParticleGradient_t& G,
 		       ParticleSet::ParticleLaplacian_t& L)
   {
-    return determinant_device.recompute(P, G, L);
+    return determinant_device->evaluateLog(P, G, L);
   }
 
   GradType evalGrad(ParticleSet& P, int iat)
   {
-    return determinant_device.GradType(P, iat);
+    return determinant_device->evalGrad(P, iat);
   }
   ValueType ratioGrad(ParticleSet& P, int iat, GradType& grad)
   {
-    return determinant_device.ratioGrad(P, iat, grad);
+    return determinant_device->ratioGrad(P, iat, grad);
   }
 
   void evaluateGL(ParticleSet& P,
@@ -68,32 +72,32 @@ struct DiracDeterminant : public WaveFunctionComponent
                   ParticleSet::ParticleLaplacian_t& L,
                   bool fromscratch = false)
   {
-    determinant_device.ratioGrad(P, G, L, fromscratch);
+    determinant_device->evaluateGL(P, G, L, fromscratch);
   }
 
   inline void recompute()
   {
-    determinant_device.recompute();
+    determinant_device->recompute();
   }
   
   inline ValueType ratio(ParticleSet& P, int iel)
   {
-    return determinant_device.ratio(P, iel);
+    return determinant_device->ratio(P, iel);
   }
   
   inline void acceptMove(ParticleSet& P, int iel) {
-    determinant_device.acceptMove(P, iel);
+    determinant_device->acceptMove(P, iel);
   }
 
   // accessor functions for checking
-  inline double operator()(int i) const {
-    return determinant_device.operator()(i);
+  inline double operator()(int i) {
+    return determinant_device->operator()(i);
   }
   
-  inline int size() const { determinant_device.size(); }
+  inline int size() const { determinant_device->size(); }
 
 private:
-
+  DeterminantDevice<DEVICE>* determinant_device;
 };
 
 } // namespace future

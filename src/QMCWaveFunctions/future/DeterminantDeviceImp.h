@@ -9,12 +9,13 @@ namespace future
 
 enum DeterminantDeviceType
 {
+  CPU,
   KOKKOS,
   OMPOL
-}
+};
 
-template<DeterminantDeviceType DT, Batching B>
-class DeterminantDeviceTypeImp;
+template<DeterminantDeviceType DT>
+class DeterminantDeviceImp;
 
 }
 }

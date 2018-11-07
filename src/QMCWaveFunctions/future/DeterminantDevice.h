@@ -27,7 +27,7 @@
 #include "cublas_v2.h"
 #include "cusolverDn.h"
 #endif
-
+#include "Utilities/Configuration.h"
 #include "QMCWaveFunctions/WaveFunctionComponent.h"
 //#include "Utilities/RandomGenerator.h"
 namespace qmcplusplus
@@ -38,26 +38,31 @@ namespace future
 template<class DEVICETYPE>
 class DeterminantDevice
 {
+public:
+  using QMCT = QMCTraits;
+
+  DeterminantDevice(int nels, const RandomGenerator<QMCT::RealType>& RNG,
+		    int First) {}
   void checkMatrix()
   {
-    static_cast<DEVICETYPE*>(this)->checkMatrix();
+    static_cast<DEVICETYPE*>(this)->checkMatrixImp();
   }
 
-  RealType evaluateLog(ParticleSet& P,
+  QMCT::RealType evaluateLog(ParticleSet& P,
 		       ParticleSet::ParticleGradient_t& G,
 		       ParticleSet::ParticleLaplacian_t& L)
   {
-    return static_cast<DEVICETYPE*>(this)->evaluateLog(P, G, L);
+    return static_cast<DEVICETYPE*>(this)->evaluateLogImp(P, G, L);
   }
 
-  GradType evalGrad(ParticleSet& P, int iat)
+  QMCT::GradType evalGrad(ParticleSet& P, int iat)
   {
-    return static_cast<DEVICETYPE*>(this)->GradType(P, iat);
+    return static_cast<DEVICETYPE*>(this)->evalGradImp(P, iat);
   }
   
-  ValueType ratioGrad(ParticleSet& P, int iat, GradType& grad)
+  QMCT::ValueType ratioGrad(ParticleSet& P, int iat, QMCT::GradType& grad)
   {
-    return static_cast<DEVICETYPE*>(this)->ratio(P, iat);
+    return static_cast<DEVICETYPE*>(this)->ratioImp(P, iat);
   }
   
   void evaluateGL(ParticleSet& P,
@@ -65,30 +70,33 @@ class DeterminantDevice
                   ParticleSet::ParticleLaplacian_t& L,
                   bool fromscratch = false)
   {
-    static_cast<DEVICETYPE*>(this)->evaluateGL(P, G, L, fromscratch);
+    static_cast<DEVICETYPE*>(this)->evaluateGLImp(P, G, L, fromscratch);
   }
   
   inline void recompute()
   {
-    static_cast<DEVICETYPE*>(this)->recompute();
+    static_cast<DEVICETYPE*>(this)->recomputeImp();
   }
   
-  inline ValueType ratio(ParticleSet& P, int iel)
+  inline QMCT::ValueType ratio(ParticleSet& P, int iel)
   {
-    return static_cast<DEVICETYPE*>(this)->ratio(P, iel);
+    return static_cast<DEVICETYPE*>(this)->ratioImp(P, iel);
   }
   
   inline void acceptMove(ParticleSet& P, int iel) {
-    static_cast<DEVICETYPE*>(this)->acceptMove(P, iel);
+    static_cast<DEVICETYPE*>(this)->acceptMoveImp(P, iel);
   }
 
-  // accessor functions for checking
-  inline double operator()(int i) const
+  /** accessor functions for checking?
+   *
+   *  would like to have const on here but with CRTP...
+   */
+  inline double operator()(int i) 
   {
-    return static_cast<DEVICETYPE*>(this)->operator()(i);
+    return static_cast<DEVICETYPE*>(this)->operatorParImp(i);
   }
 
-  inline int size() const { return static_cast<DEVICETYPE*>(this)->size(); }
+  inline int size() const { return static_cast<DEVICETYPE*>(this)->sizeImp(); }
 };
 } // namespace future
 } // namespace qmcplusplus

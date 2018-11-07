@@ -108,7 +108,7 @@ void build_WaveFunction(bool useRef,
     using J2OrbType = TwoBodyJastrow<BsplineFunctor<valT>>;
     using J3OrbType = ThreeBodyJastrow<PolynomialFunctor3D>;
 #ifdef FUTURE_WAVEFUNCTIONS
-    using DetType   = future::DiracDeterminant<DeterminantDeviceImp<KOKKOS>>;
+    using DetType   = future::DiracDeterminant<future::DeterminantDeviceImp<future::KOKKOS>>;
 #else
     using DetType   = DiracDeterminant;
 #endif

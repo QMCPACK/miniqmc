@@ -15,20 +15,22 @@
  * @brief Determinant piece of the wave function
  */
 
-#ifndef QMCPLUSPLUS_DETERMINANT_DEVICE_H
-#define QMCPLUSPLUS_DETERMINANT_DEVICE_H
+#ifndef QMCPLUSPLUS_DETERMINANT_DEVICE_IMP_KOKKOS_H
+#define QMCPLUSPLUS_DETERMINANT_DEVICE_IMP_KOKKOS_H
 
 #include <Kokkos_Core.hpp>
 #include <impl/Kokkos_Timer.hpp>
 #include <cstdio>
 #include <cstdlib>
 #include <type_traits>
+#include "Utilities/Configuration.h"
 #ifdef KOKKOS_ENABLE_CUDA
 #include "cublas_v2.h"
 #include "cusolverDn.h"
 #endif
 
 #include "QMCWaveFunctions/WaveFunctionComponent.h"
+#include "QMCWaveFunctions/future/DeterminantDeviceImp.h"
 //#include "Utilities/RandomGenerator.h"
 
 #define dgetrf dgetrf_
@@ -924,13 +926,18 @@ template<>
 class DeterminantDeviceImp<KOKKOS>
   : public DeterminantDevice<DeterminantDeviceImp<KOKKOS>>
 {
-  DiracDeterminantImp(int nels, const RandomGenerator<RealType>& RNG, int First = 0) 
-    : FirstIndex(First), myRandom(RNG)
+public:
+  using QMCT = QMCTraits;
+
+  DeterminantDeviceImp(int nels, const RandomGenerator<QMCT::RealType>& RNG, int First = 0)
+    : DeterminantDevice( nels, RNG, First),
+      FirstIndex(First),
+      myRandom(RNG)
   {
     psiMinv = DoubleMatType("psiMinv",nels,nels);
     psiM = DoubleMatType("psiM",nels,nels);
     psiMsave = DoubleMatType("psiMsave",nels,nels);
-    psiV = Kokkos::View<RealType*>("psiV",nels);
+    psiV = Kokkos::View<QMCT::RealType*>("psiV",nels);
 
     psiMinv_host = Kokkos::create_mirror_view(psiMinv);
     psiMsave_host = Kokkos::create_mirror_view(psiMsave);
@@ -951,7 +958,7 @@ class DeterminantDeviceImp<KOKKOS>
     }
     Kokkos::deep_copy(psiMsave, psiMsave_host);
 
-    RealType phase;
+    QMCT::RealType phase;
 
     for (int i = 0; i < nels; i++) {
       for (int j = 0; j < nels; j++) {
@@ -963,7 +970,7 @@ class DeterminantDeviceImp<KOKKOS>
     LogValue = InvertWithLog(psiM, lah, phase);
     elementWiseCopy(psiMinv, psiM);
   }
-  void checkMatrix()
+  void checkMatrixImp()
   {
     MatType psiMRealType("psiM_RealType", psiM.extent(0), psiM.extent(0));
     elementWiseCopy(psiMRealType, psiM);
@@ -971,7 +978,8 @@ class DeterminantDeviceImp<KOKKOS>
     checkIdentity(psiMsave, psiMinv, "Psi_0 * psiMinv(T)", lah);
     checkDiff(psiMRealType, psiMinv, "psiM - psiMinv(T)");
   }
-  RealType evaluateLog(ParticleSet& P,
+  
+  QMCT::RealType evaluateLogImp(ParticleSet& P,
 		       ParticleSet::ParticleGradient_t& G,
 		       ParticleSet::ParticleLaplacian_t& L)
   {
@@ -979,20 +987,21 @@ class DeterminantDeviceImp<KOKKOS>
     return 0.0;
   }
 
-  GradType evalGrad(ParticleSet& P, int iat) { return GradType(); }
-  ValueType ratioGrad(ParticleSet& P, int iat, GradType& grad) { return ratio(P, iat); }
-  void evaluateGL(ParticleSet& P,
+  QMCT::GradType evalGradImp(ParticleSet& P, int iat) { return QMCT::GradType(); }
+  QMCT::ValueType ratioGradImp(ParticleSet& P, int iat, QMCT::GradType& grad) { return ratio(P, iat); }
+  void evaluateGLImp(ParticleSet& P,
                   ParticleSet::ParticleGradient_t& G,
                   ParticleSet::ParticleLaplacian_t& L,
                   bool fromscratch = false)
   {}
-  inline void recompute()
+  
+  inline void recomputeImp()
   {
     elementWiseCopyTrans(psiM, psiMsave); // needs to be transposed!
     lah.invertMatrix(psiM);
     elementWiseCopy(psiMinv, psiM);
   }
-  inline ValueType ratio(ParticleSet& P, int iel)
+  inline QMCT::ValueType ratioImp(ParticleSet& P, int iel)
   {
     const int nels = psiV.extent(0);
     constexpr double shift(0.5);
@@ -1008,7 +1017,7 @@ class DeterminantDeviceImp<KOKKOS>
 
     return curRatio;
   }
-  inline void acceptMove(ParticleSet& P, int iel) {
+  inline void acceptMoveImp(ParticleSet& P, int iel) {
     Kokkos::Profiling::pushRegion("Determinant::acceptMove");
     const int nels = psiV.extent(0);
     
@@ -1044,7 +1053,7 @@ class DeterminantDeviceImp<KOKKOS>
   }
 
   // accessor functions for checking
-  inline double operator()(int i) const {
+  inline double operatorParImp(int i) const {
     Kokkos::deep_copy(psiMinv, psiMinv_host);
     int x = i / psiMinv_host.extent(0);
     int y = i % psiMinv_host.extent(0);
@@ -1053,7 +1062,7 @@ class DeterminantDeviceImp<KOKKOS>
     Kokkos::deep_copy(dev_subview_host, dev_subview);
     return dev_subview_host(0,0);
   }
-  inline int size() const { return psiMinv.extent(0)*psiMinv.extent(1); }
+  inline int sizeImp() const { return psiMinv.extent(0)*psiMinv.extent(1); }
 
 private:
   /// log|det|
@@ -1061,10 +1070,10 @@ private:
   /// current ratio
   double curRatio;
   /// initial particle index
-  const int FirstIndex;
+  int FirstIndex;
   /// matrix type and mirror type
   //using MatType = Kokkos::View<RealType**, Kokkos::LayoutLeft>;
-  using MatType = Kokkos::View<RealType**, Kokkos::LayoutRight>;
+  using MatType = Kokkos::View<QMCT::RealType**, Kokkos::LayoutRight>;
   using MatMirrorType = MatType::HostMirror;
   //using DoubleMatType = Kokkos::View<double**, Kokkos::LayoutLeft>;
   using DoubleMatType = Kokkos::View<double**, Kokkos::LayoutRight>;
@@ -1073,8 +1082,8 @@ private:
   MatType psiMinv;
   MatMirrorType psiMinv_host;
   /// storage for the row update and host mirror
-  Kokkos::View<RealType*> psiV;
-  Kokkos::View<RealType*>::HostMirror psiV_host;
+  Kokkos::View<QMCT::RealType*> psiV;
+  Kokkos::View<QMCT::RealType*>::HostMirror psiV_host;
   /// internal storage to perform inversion correctly and host mirror
   DoubleMatType psiM;
   DoubleMatMirrorType psiM_host;
@@ -1082,11 +1091,12 @@ private:
   MatType psiMsave;
   MatMirrorType psiMsave_host;
   /// random number generator for testing
-  RandomGenerator<RealType> myRandom;
+  RandomGenerator<QMCT::RealType> myRandom;
   /// Helper class to handle linear algebra
   /// Holds for instance space for pivots and workspace
   linalgHelper<MatType::value_type, MatType::array_layout, MatType::memory_space> lah;
 };
+
 }
 } // namespace qmcplusplus
 

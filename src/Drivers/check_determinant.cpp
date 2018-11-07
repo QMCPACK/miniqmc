@@ -27,6 +27,15 @@
 #include <Utilities/qmcpack_version.h>
 #include <Input/Input.hpp>
 #include <QMCWaveFunctions/Determinant.h>
+#ifdef FUTURE_WAVEFUNCTIONS
+#include <QMCWaveFunctions/future/Determinant.h>
+#include <QMCWaveFunctions/future/DeterminantDevice.h>
+#include <QMCWaveFunctions/future/DeterminantDeviceImp.h>
+#include <QMCWaveFunctions/future/DeterminantDeviceImpCPU.h>
+#ifdef QMC_USE_KOKKOS
+#include <QMCWaveFunctions/future/DeterminantDeviceImpKOKKOS.h>
+#endif
+#endif
 #include <QMCWaveFunctions/DeterminantRef.h>
 #include <getopt.h>
 
@@ -131,7 +140,7 @@ int main(int argc, char** argv)
       outputManager.setVerbosity(Verbosity::LOW);
 
     double accumulated_error = 0.0;
-
+    double accumulated_error_cpu = 0.0;
     //#pragma omp parallel reduction(+ : accumulated_error)
 //    {
       int ip = omp_get_thread_num();
@@ -149,8 +158,14 @@ int main(int argc, char** argv)
 
       miniqmcreference::DiracDeterminantRef determinant_ref(nels, random_th);
       determinant_ref.checkMatrix();
+#ifdef FUTURE_WAVEFUNCTIONS
+      future::DiracDeterminant<future::DeterminantDeviceImp<future::CPU>> determinantCPU(nels, random_th);
+      future::DiracDeterminant<future::DeterminantDeviceImp<future::KOKKOS>> determinant(nels, random_th);
+#else
       DiracDeterminant determinant(nels, random_th);
+#endif
       determinant.checkMatrix();
+      determinantCPU.checkMatrix();
 
       // For VMC, tau is large and should result in an acceptance ratio of roughly
       // 50%
@@ -172,6 +187,7 @@ int main(int argc, char** argv)
       {
         determinant_ref.recompute();
         determinant.recompute();
+	determinantCPU.recompute();
         for (int l = 0; l < nsubsteps; ++l) // drift-and-diffusion
         {
           random_th.generate_normal(&delta[0][0], nels3);
@@ -191,6 +207,7 @@ int main(int argc, char** argv)
 
             determinant_ref.ratio(els, iel);
             determinant.ratio(els, iel);
+            determinantCPU.ratio(els, iel);
             // Accept/reject the trial move
             if (ur[iel] > accept) // MC
             {
@@ -198,6 +215,7 @@ int main(int argc, char** argv)
               els.acceptMove(iel);
               determinant_ref.acceptMove(els, iel);
               determinant.acceptMove(els, iel);
+	      determinantCPU.acceptMove(els, iel);
               my_accepted++;
             }
             else
@@ -214,6 +232,9 @@ int main(int argc, char** argv)
       for (int i = 0; i < determinant_ref.size(); i++)
       {
         accumulated_error += std::fabs(determinant_ref(i) - determinant(i));
+#ifdef FUTURE_WAVEFUNCTIONS
+        accumulated_error_cpu += std::fabs(determinant_ref(i) - determinantCPU(i));
+#endif
       }
 //    } // end of omp parallel
 
@@ -221,6 +242,23 @@ int main(int argc, char** argv)
 
     cout << "total accumulated error of " << accumulated_error << " for " << np << " procs" << '\n';
 
+#ifdef FUTURE_WAVEFUNCTIONS
+    cout << "total accumulated error of CPU implementation " << accumulated_error << " for " << np << " procs" << '\n';
+    if (accumulated_error / np > small_err)
+    {
+      cout << "Checking failed with accumulated error: " << accumulated_error / np << " > "
+           << small_err << '\n';
+      error_code=1;
+    }
+    else if(accumulated_error_cpu / np > small_err)
+    {
+      cout << "Checking failed with accumulated error cpu: " << accumulated_error / np << " > "
+           << small_err << '\n';
+      error_code=1;
+    }
+    else
+      cout << "All checks passed for determinant" << '\n';
+#else 
     if (accumulated_error / np > small_err)
     {
       cout << "Checking failed with accumulated error: " << accumulated_error / np << " > "
@@ -229,7 +267,8 @@ int main(int argc, char** argv)
     }
     else
       cout << "All checks passed for determinant" << '\n';
-
+#endif
+   
   } //end kokkos block
   Kokkos::finalize();
   return error_code;
