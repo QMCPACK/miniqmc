@@ -165,8 +165,9 @@ int main(int argc, char** argv)
       DiracDeterminant determinant(nels, random_th);
 #endif
       determinant.checkMatrix();
+#ifdef FUTURE_WAVEFUNCTIONS
       determinantCPU.checkMatrix();
-
+#endif
       // For VMC, tau is large and should result in an acceptance ratio of roughly
       // 50%
       // For DMC, tau is small and should result in an acceptance ratio of 99%
@@ -187,7 +188,9 @@ int main(int argc, char** argv)
       {
         determinant_ref.recompute();
         determinant.recompute();
+#ifdef FUTURE_WAVEFUNCTIONS
 	determinantCPU.recompute();
+#endif	
         for (int l = 0; l < nsubsteps; ++l) // drift-and-diffusion
         {
           random_th.generate_normal(&delta[0][0], nels3);
@@ -207,7 +210,9 @@ int main(int argc, char** argv)
 
             determinant_ref.ratio(els, iel);
             determinant.ratio(els, iel);
+#ifdef FUTURE_WAVEFUNCTIONS
             determinantCPU.ratio(els, iel);
+#endif
             // Accept/reject the trial move
             if (ur[iel] > accept) // MC
             {
@@ -215,7 +220,9 @@ int main(int argc, char** argv)
               els.acceptMove(iel);
               determinant_ref.acceptMove(els, iel);
               determinant.acceptMove(els, iel);
+#ifdef FUTURE_WAVEFUNCTIONS
 	      determinantCPU.acceptMove(els, iel);
+#endif
               my_accepted++;
             }
             else
