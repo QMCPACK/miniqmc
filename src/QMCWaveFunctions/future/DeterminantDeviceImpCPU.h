@@ -186,8 +186,8 @@ void checkDiffCPU(const MT1& a, const MT2& b, const std::string& tag)
 }
 
 template<>
-class DeterminantDeviceImp<CPU>
-  : public DeterminantDevice<DeterminantDeviceImp<CPU>>
+class DeterminantDeviceImp<DDT::CPU>
+  : public DeterminantDevice<DeterminantDeviceImp<DDT::CPU>>
 {
 public:
   using QMCT = QMCTraits;

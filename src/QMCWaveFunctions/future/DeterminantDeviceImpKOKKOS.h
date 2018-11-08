@@ -923,8 +923,8 @@ void updateRow(ViewType pinv, ArrayViewType tv, int rowchanged, value_type c_rat
 }
 
 template<>
-class DeterminantDeviceImp<KOKKOS>
-  : public DeterminantDevice<DeterminantDeviceImp<KOKKOS>>
+class DeterminantDeviceImp<DDT::KOKKOS>
+  : public DeterminantDevice<DeterminantDeviceImp<DDT::KOKKOS>>
 {
 public:
   using QMCT = QMCTraits;

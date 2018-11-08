@@ -28,13 +28,12 @@
 #include <Input/Input.hpp>
 #include <QMCWaveFunctions/Determinant.h>
 #ifdef FUTURE_WAVEFUNCTIONS
-#include <QMCWaveFunctions/future/Determinant.h>
-#include <QMCWaveFunctions/future/DeterminantDevice.h>
-#include <QMCWaveFunctions/future/DeterminantDeviceImp.h>
-#include <QMCWaveFunctions/future/DeterminantDeviceImpCPU.h>
-#ifdef QMC_USE_KOKKOS
-#include <QMCWaveFunctions/future/DeterminantDeviceImpKOKKOS.h>
-#endif
+#include "QMCWaveFunctions/future/Determinant.h"
+#include "QMCWaveFunctions/future/DeterminantDevice.h"
+#include "QMCWaveFunctions/future/DeterminantDeviceImp.h"
+#include <boost/hana/for_each.hpp>
+#include <boost/hana/functional/apply.hpp>
+#include "Drivers/check_determinant.h"
 #endif
 #include <QMCWaveFunctions/DeterminantRef.h>
 #include <getopt.h>
@@ -61,6 +60,260 @@ void print_help()
 
   exit(1); // print help and exit
 }
+
+#ifdef FUTURE_WAVEFUNCTIONS
+namespace hana = boost::hana;
+
+template<future::DeterminantDeviceType DT>
+void CheckDeterminantHelpers<DT>::initialize(int argc, char** argv)
+{}
+  
+template<>
+void CheckDeterminantHelpers<future::DDT::KOKKOS>::initialize(int argc, char** argv)
+{
+  Kokkos::initialize(argc, argv);
+}
+
+template<future::DeterminantDeviceType DT>
+void CheckDeterminantHelpers<DT>::test(int& error, ParticleSet& ions,
+				       int& nsteps,
+				       int& nsubsteps,
+				       int& np)
+{
+  int ip = omp_get_thread_num();
+
+  PrimeNumberSet<uint32_t> myPrimes;
+
+  // create generator within the thread
+  RandomGenerator<QMCT::RealType> random_th(myPrimes[ip]);
+
+  ParticleSet els;
+  build_els(els, ions, random_th);
+  els.update();
+
+  const int nions = ions.getTotalNum();
+  const int nels  = els.getTotalNum();
+  const int nels3 = 3 * nels;
+
+  miniqmcreference::DiracDeterminantRef determinant_ref(nels, random_th);
+  std::cout << "Reference" << '\n';
+  determinant_ref.checkMatrix();
+
+  future::DiracDeterminant<future::DeterminantDeviceImp<DT>> determinant_device(nels, random_th);
+  std::string enum_name = future::ddt_names[hana::int_c<static_cast<int>(DT)>];
+  std::cout << enum_name << '\n';
+  determinant_device.checkMatrix();
+
+  // For VMC, tau is large and should result in an acceptance ratio of roughly
+  // 50%
+  // For DMC, tau is small and should result in an acceptance ratio of 99%
+  const QMCT::RealType tau = 2.0;
+
+  typedef ParticleSet::ParticlePos_t    ParticlePos_t;
+  typedef ParticleSet::PosType          PosType;
+
+  ParticlePos_t delta(nels);
+  
+  QMCT::RealType sqrttau = std::sqrt(tau);
+  QMCT::RealType accept  = 0.5;
+
+  aligned_vector<QMCT::RealType> ur(nels);
+  random_th.generate_uniform(ur.data(), nels);
+
+  els.update();
+
+  double accumulated_error = 0.0;
+  int error_code = 0;
+  int my_accepted = 0;
+  for (int mc = 0; mc < nsteps; ++mc)
+  {
+    determinant_ref.recompute();
+    determinant_device.recompute();
+    for (int l = 0; l < nsubsteps; ++l) // drift-and-diffusion
+    {
+          random_th.generate_normal(&delta[0][0], nels3);
+          for (int iel = 0; iel < nels; ++iel)
+          {
+            // Operate on electron with index iel
+            els.setActive(iel);
+
+            // Construct trial move
+            PosType dr   = sqrttau * delta[iel];
+            bool isValid = els.makeMoveAndCheck(iel, dr);
+
+            if (!isValid)
+              continue;
+
+            // Compute gradient at the trial position
+
+            determinant_ref.ratio(els, iel);
+            determinant_device.ratio(els, iel);
+            // Accept/reject the trial move
+            if (ur[iel] > accept) // MC
+            {
+              // Update position, and update temporary storage
+              els.acceptMove(iel);
+              determinant_ref.acceptMove(els, iel);
+              determinant_device.acceptMove(els, iel);
+              my_accepted++;
+            }
+            else
+            {
+              els.rejectMove(iel);
+            }
+          } // iel
+        }   // substeps
+
+        els.donePbyP();
+      }
+
+      // accumulate error
+      for (int i = 0; i < determinant_ref.size(); i++)
+      {
+        accumulated_error += std::fabs(determinant_ref(i) - determinant_device(i));
+      }
+//    } // end of omp parallel
+
+    constexpr double small_err = std::numeric_limits<double>::epsilon() * 6e8;
+
+    cout << "total accumulated error of " << accumulated_error << " for " << np << " procs" << '\n';
+
+    if (accumulated_error / np > small_err)
+    {
+      cout << "Checking failed with accumulated error: " << accumulated_error / np << " > "
+           << small_err << '\n';
+      error_code = 1;
+    }
+    error += error_code;
+}
+
+template<future::DeterminantDeviceType DT>
+void CheckDeterminantHelpers<DT>::finalize()
+{}
+  
+template<>
+void CheckDeterminantHelpers<future::DDT::KOKKOS>::finalize()
+{
+  Kokkos::finalize();
+}
+
+
+void CheckDeterminantTest::setup(int argc, char** argv)
+{
+  np = omp_get_max_threads();
+  Tensor<int, 3> tmat(na, 0, 0, 0, nb, 0, 0, 0, nc);
+  
+  int opt;
+  while (optind < argc)
+    {
+      if ((opt = getopt(argc, argv, "hvVg:n:N:r:s:")) != -1)
+      {
+        switch (opt)
+        {
+        case 'g': // tiling1 tiling2 tiling3
+          sscanf(optarg, "%d %d %d", &na, &nb, &nc);
+          break;
+        case 'h':
+          print_help();
+          break;
+        case 'n':
+          nsteps = atoi(optarg);
+          break;
+        case 'N':
+          nsubsteps = atoi(optarg);
+          break;
+        case 's':
+          iseed = atoi(optarg);
+          break;
+        case 'v':
+          verbose = true;
+          break;
+        case 'V':
+          print_version(true);
+          
+          break;
+        default:
+          print_help();
+        }
+      }
+      else // disallow non-option arguments
+      {
+        cerr << "Non-option arguments not allowed" << endl;
+        print_help();
+      }
+    }
+    
+    // setup ions
+    build_ions(ions, tmat, lattice_b);
+
+    print_version(verbose);
+ 
+    if (verbose)
+      outputManager.setVerbosity(Verbosity::HIGH);
+    else
+      outputManager.setVerbosity(Verbosity::LOW);
+  }
+
+int CheckDeterminantTest::run_test()
+  {
+    // We know which device types we support at compile time
+    error = 0;
+    // for(int dt = static_cast<int>(future::DDT::CPU);
+    // 	dt != static_cast<int>(future::DDT::LAST);
+    // 	dt++)
+    // {
+    //   CheckDeterminantHelpers<static_cast<future::DDT>(dt)>::test(error, ions, CheckDeterminantTest* this);
+    // }
+
+      hana::for_each(future::ddt_range,
+		 [&](auto x) {
+		   CheckDeterminantHelpers<static_cast<future::DDT>(decltype(x)::value)>::test(error, ions, nsteps,
+											       nsubsteps, np);});
+		 
+
+    if(error > 0)
+      return 1;
+    else
+      return 0;
+  }
+  
+
+
+// template<typename DT>
+// void initialize(DT dt, int arc, char** argv)
+// {}
+
+// template<>
+// void initialize(future::DeterminantDeviceImp<future::DDT::KOKKOS> dt, int argc, char** argv)
+// {
+//   Kokkos::initialize(argc, argv);
+// }
+
+
+
+int main(int argc, char** argv)
+{
+  int error_code=0;
+  // hana::for_each(ddts, [&](auto x) {
+  // 			 initialize(x, argc, argc);
+  // 		       });
+  hana::for_each(future::ddt_range,
+		 [&](auto x) {
+		   CheckDeterminantHelpers<static_cast<future::DDT>(decltype(x)::value)>::initialize(argc, argv);
+		       });
+
+  CheckDeterminantTest test;
+  test.setup(argc, argv);
+  error_code = test.run_test();
+  hana::for_each(future::ddt_range,
+		 [&](auto x) {
+		   CheckDeterminantHelpers<static_cast<future::DDT>(decltype(x)::value)>::finalize();
+		       });
+  return error_code;
+}
+
+#else
+
 int main(int argc, char** argv)
 {
   int error_code=0;
@@ -159,8 +412,8 @@ int main(int argc, char** argv)
       miniqmcreference::DiracDeterminantRef determinant_ref(nels, random_th);
       determinant_ref.checkMatrix();
 #ifdef FUTURE_WAVEFUNCTIONS
-      future::DiracDeterminant<future::DeterminantDeviceImp<future::CPU>> determinantCPU(nels, random_th);
-      future::DiracDeterminant<future::DeterminantDeviceImp<future::KOKKOS>> determinant(nels, random_th);
+      future::DiracDeterminant<future::DeterminantDeviceImp<future::DDT::CPU>> determinantCPU(nels, random_th);
+      future::DiracDeterminant<future::DeterminantDeviceImp<future::DDT::KOKKOS>> determinant(nels, random_th);
 #else
       DiracDeterminant determinant(nels, random_th);
 #endif
@@ -280,3 +533,4 @@ int main(int argc, char** argv)
   Kokkos::finalize();
   return error_code;
 }
+#endif

@@ -42,7 +42,7 @@ public:
   using QMCT = QMCTraits;
 
   DeterminantDevice(int nels, const RandomGenerator<QMCT::RealType>& RNG,
-		    int First) {}
+		    int First = 0) {}
   void checkMatrix()
   {
     static_cast<DEVICETYPE*>(this)->checkMatrixImp();
