@@ -151,7 +151,7 @@ struct TinyVector
   }
 
   // Destructor
-  ~TinyVector() {}
+  KOKKOS_INLINE_FUNCTION ~TinyVector() {}
 
   KOKKOS_INLINE_FUNCTION int size() const { return D; }
 

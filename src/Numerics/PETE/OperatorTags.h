@@ -28,6 +28,7 @@
 
 #include <cstdlib>
 #include <cmath>
+#include <Kokkos_Core.hpp>
 
 #ifndef PETE_PETE_OPERATORTAGS_H
 #define PETE_PETE_OPERATORTAGS_H
@@ -178,7 +179,7 @@ struct OpAssign
 {
   PETE_EMPTY_CONSTRUCTORS(OpAssign)
   template<class T1, class T2>
-  inline typename BinaryReturn<T1, T2, OpAssign>::Type_t operator()(const T1& a, const T2& b) const
+  KOKKOS_INLINE_FUNCTION typename BinaryReturn<T1, T2, OpAssign>::Type_t operator()(const T1& a, const T2& b) const
   {
     return (const_cast<T1&>(a) = b);
   }
