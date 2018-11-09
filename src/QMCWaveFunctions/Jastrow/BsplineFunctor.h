@@ -141,7 +141,7 @@ struct BsplineFunctor : public OptimizableFunctorBase
    */
   // clang-format off
   template <typename TeamType>
-  void evaluateVGL(const TeamType& team, const int iat, const int iStart, const int iEnd, 
+  KOKKOS_INLINE_FUNCTION void evaluateVGL(const TeamType& team, const int iat, const int iStart, const int iEnd, 
       const T* _distArray,  
       T* restrict _valArray,
       T* restrict _gradArray, 
@@ -265,7 +265,8 @@ inline T BsplineFunctor<T>::evaluateV(const int iat,
 
 template<typename T>
 template<typename TeamType>
-KOKKOS_INLINE_FUNCTION void BsplineFunctor<T>::evaluateVGL(const TeamType& team,
+KOKKOS_INLINE_FUNCTION void BsplineFunctor<T>::
+evaluateVGL(const TeamType& team,
                                            const int iat,
                                            const int iStart,
                                            const int iEnd,
