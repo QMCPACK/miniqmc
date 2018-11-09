@@ -155,7 +155,7 @@ struct TwoBodyJastrow : public WaveFunctionComponent
                         RealType* restrict d2u,
                         bool triangle = false);
 
-  inline void operator()(const typename policy_t::member_type& team) const;
+  KOKKOS_INLINE_FUNCTION void operator()(const typename policy_t::member_type& team) const;
 
   /** compute gradient
    */
