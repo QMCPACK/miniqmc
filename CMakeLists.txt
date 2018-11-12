@@ -510,6 +510,14 @@ if(CMAKE_CXX_LINKER)
 endif()
 
 ###################################################
+# FUTURE WAVEFUNCTION settings
+###################################################
+if(QMC_FUTURE_WAVEFUNCTIONS)
+  INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/external_codes/hana/include)
+  set(CMAKE_CXX_FLAGS "-DFUTURE_WAVEFUNCTIONS ${CMAKE_CXX_FLAGS}")
+endif(QMC_FUTURE_WAVEFUNCTIONS)
+
+###################################################
 # Add user extra flags
 ###################################################
 IF(QMC_INCLUDE)
