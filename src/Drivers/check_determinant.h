@@ -38,8 +38,19 @@ class CheckDeterminantHelpers
 public:
   using QMCT = QMCTraits;
   static void initialize(int arc, char** argv);
+  static double runThreads(int np, PrimeNumberSet<uint32_t>& myPrimes,
+			  ParticleSet& ions, int& nsteps,
+			 int& nsubsteps);
   static void test(int& error, ParticleSet& ions, int& nsteps, int& nsubsteps, int& np);
   static void finalize();
+private:
+  static void thread_main(const int ip,
+			  const PrimeNumberSet<uint32_t>& myPrimes,
+			  const ParticleSet& ions,
+			  const int& nsteps,
+			  const int& nsubsteps,
+			  double& accumulated_error);
+  static void updateFromDevice(future::DiracDeterminant<future::DeterminantDeviceImp<DT>>& determinant_device);
 };
 
 

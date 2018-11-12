@@ -75,16 +75,93 @@ void CheckDeterminantHelpers<future::DDT::KOKKOS>::initialize(int argc, char** a
 }
 
 template<future::DeterminantDeviceType DT>
-void CheckDeterminantHelpers<DT>::test(int& error, ParticleSet& ions,
-				       int& nsteps,
-				       int& nsubsteps,
-				       int& np)
+void CheckDeterminantHelpers<DT>::updateFromDevice(future::DiracDeterminant<future::DeterminantDeviceImp<DT>>& determinant_device)
 {
-  int ip = omp_get_thread_num();
+}
 
-  PrimeNumberSet<uint32_t> myPrimes;
+#ifdef QMC_USE_OMPOL
+template<future::DeterminantDeviceType::OMPOL>
+void CheckDeterminantHelpers<DT>::updateFromDevice(future::DiracDeterminant<DT>& determinant_device)
+{
+  determinant_device.transfer_from_device();
+}
+#endif
 
+template<future::DeterminantDeviceType DT>
+double CheckDeterminantHelpers<DT>::runThreads(int np,
+							      PrimeNumberSet<uint32_t>& myPrimes,
+							      ParticleSet& ions,
+							      int& nsteps,
+							      int& nsubsteps)
+{
+  double accumulated_error = 0.0;
+  CheckDeterminantHelpers<DT>
+    ::thread_main(1, myPrimes, ions, nsteps, nsubsteps, accumulated_error);
+  return accumulated_error;
+}
+
+template<>
+double CheckDeterminantHelpers<future::DDT::KOKKOS>::runThreads(int np,
+							      PrimeNumberSet<uint32_t>& myPrimes,
+							      ParticleSet& ions,
+							      int& nsteps,
+							      int& nsubsteps)
+{
+  auto main_function = KOKKOS_LAMBDA (int thread_id, double& accumulated_error)
+  {
+    printf(" thread_id = %d\n",thread_id);
+    CheckDeterminantHelpers<future::DDT::KOKKOS>
+    ::thread_main(thread_id, myPrimes, ions, nsteps, nsubsteps, accumulated_error);
+  };
+  double accumulated_error = 0.0;
+#if defined(KOKKOS_ENABLE_OPENMP) && !defined(KOKKOS_ENABLE_CUDA)
+  int num_threads = Kokkos::OpenMP::thread_pool_size();
+  int ncrews = 1;   
+  int crewsize = std::max(1,num_threads/ncrews); 
+  printf(" In partition master with %d threads, %d crews.  Crewsize = %d \n",num_threads,ncrews,crewsize);
+  Kokkos::parallel_reduce(crewsize, main_function, accumulated_error);
+  //Kokkos::OpenMP::partition_master(main_function,nmovers,crewsize);
+#else
+  accumulated_error = main_function(0,1);
+#endif  
+  return accumulated_error;
+}
+
+#ifdef QMC_USE_OMPOL
+template<>
+CheckDeterminantHelpers<future::DDT:OMPOL>::runThreads(int np,
+						       PrimeNumberSet<uint32_t>& myPrimes,
+			  ParticleSet& ions, int& nsteps,
+						       int& nsubsteps)
+{
+  double accumulated_error = 0.0;
+#pragma omp parallel reduction(+ : accumulated_error)
+  {
+    accumulated_error += this->thread_main(PrimeNumberSet<uint32_t>& myPrimes,
+		      ParticleSet& ions, int& nsteps,
+		      int& nsubsteps)
+
+    // accumulate error
+    for (int i = 0; i < determinant_ref.size(); i++)
+    {
+      accumulated_error += std::fabs(determinant_ref(i) - determinant(i));
+    }
+  } // end of omp parallel
+
+  return accumulated_error;
+}
+#endif
+
+template<future::DeterminantDeviceType DT>
+void CheckDeterminantHelpers<DT>::thread_main(const int ip,
+					      const PrimeNumberSet<uint32_t>& myPrimes,
+					      const ParticleSet& ions,
+					      const int& nsteps,
+					      const int& nsubsteps,
+					      double& accumulated_error)
+{
   // create generator within the thread
+  
   RandomGenerator<QMCT::RealType> random_th(myPrimes[ip]);
 
   ParticleSet els;
@@ -122,7 +199,7 @@ void CheckDeterminantHelpers<DT>::test(int& error, ParticleSet& ions,
 
   els.update();
 
-  double accumulated_error = 0.0;
+  //double accumulated_error = 0.0;
   int error_code = 0;
   int my_accepted = 0;
   for (int mc = 0; mc < nsteps; ++mc)
@@ -131,60 +208,79 @@ void CheckDeterminantHelpers<DT>::test(int& error, ParticleSet& ions,
     determinant_device.recompute();
     for (int l = 0; l < nsubsteps; ++l) // drift-and-diffusion
     {
-          random_th.generate_normal(&delta[0][0], nels3);
-          for (int iel = 0; iel < nels; ++iel)
-          {
-            // Operate on electron with index iel
-            els.setActive(iel);
-
-            // Construct trial move
-            PosType dr   = sqrttau * delta[iel];
-            bool isValid = els.makeMoveAndCheck(iel, dr);
-
-            if (!isValid)
-              continue;
-
-            // Compute gradient at the trial position
-
-            determinant_ref.ratio(els, iel);
-            determinant_device.ratio(els, iel);
-            // Accept/reject the trial move
-            if (ur[iel] > accept) // MC
-            {
-              // Update position, and update temporary storage
-              els.acceptMove(iel);
-              determinant_ref.acceptMove(els, iel);
-              determinant_device.acceptMove(els, iel);
-              my_accepted++;
-            }
-            else
-            {
-              els.rejectMove(iel);
-            }
-          } // iel
-        }   // substeps
-
-        els.donePbyP();
-      }
-
-      // accumulate error
-      for (int i = 0; i < determinant_ref.size(); i++)
+      random_th.generate_normal(&delta[0][0], nels3);
+      for (int iel = 0; iel < nels; ++iel)
       {
-        accumulated_error += std::fabs(determinant_ref(i) - determinant_device(i));
-      }
+	// Operate on electron with index iel
+	els.setActive(iel);
+
+	// Construct trial move
+	PosType dr   = sqrttau * delta[iel];
+	bool isValid = els.makeMoveAndCheck(iel, dr);
+
+	if (!isValid)
+	  continue;
+
+	// Compute gradient at the trial position
+
+	determinant_ref.ratio(els, iel);
+	determinant_device.ratio(els, iel);
+	// Accept/reject the trial move
+	if (ur[iel] > accept) // MC
+	{
+	  // Update position, and update temporary storage
+	  els.acceptMove(iel);
+	  determinant_ref.acceptMove(els, iel);
+	  determinant_device.acceptMove(els, iel);
+	  my_accepted++;
+	}
+	else
+	{
+	  els.rejectMove(iel);
+	}
+      } // iel
+    }   // substeps
+
+    els.donePbyP();
+  }
+
+  CheckDeterminantHelpers<DT>::updateFromDevice(determinant_device);
+  
+  // accumulate error
+  for (int i = 0; i < determinant_ref.size(); i++)
+  {
+    accumulated_error += std::fabs(determinant_ref(i) - determinant_device(i));
+  }
+  
+}
+
+template<future::DeterminantDeviceType DT>
+void CheckDeterminantHelpers<DT>::test(int& error, ParticleSet& ions,
+				       int& nsteps,
+				       int& nsubsteps,
+				       int& np)
+{
+  PrimeNumberSet<uint32_t> myPrimes;
+
+  double accumulated_error;
+  accumulated_error = CheckDeterminantHelpers<DT>::runThreads(np, myPrimes,
+					    ions, nsteps,
+					    nsubsteps);
+  
 //    } // end of omp parallel
 
-    constexpr double small_err = std::numeric_limits<double>::epsilon() * 6e8;
+  constexpr double small_err = std::numeric_limits<double>::epsilon() * 6e8;
 
-    cout << "total accumulated error of " << accumulated_error << " for " << np << " procs" << '\n';
+  cout << "total accumulated error of " << accumulated_error << " for " << np << " procs" << '\n';
 
-    if (accumulated_error / np > small_err)
-    {
-      cout << "Checking failed with accumulated error: " << accumulated_error / np << " > "
-           << small_err << '\n';
-      error_code = 1;
-    }
-    error += error_code;
+  int error_code = 0;
+  if (accumulated_error / np > small_err)
+  {
+    cout << "Checking failed with accumulated error: " << accumulated_error / np << " > "
+	 << small_err << '\n';
+    error_code = 1;
+  }
+  error += error_code;
 }
 
 template<future::DeterminantDeviceType DT>
@@ -256,20 +352,12 @@ void CheckDeterminantTest::setup(int argc, char** argv)
 
 int CheckDeterminantTest::run_test()
   {
-    // We know which device types we support at compile time
     error = 0;
-    // for(int dt = static_cast<int>(future::DDT::CPU);
-    // 	dt != static_cast<int>(future::DDT::LAST);
-    // 	dt++)
-    // {
-    //   CheckDeterminantHelpers<static_cast<future::DDT>(dt)>::test(error, ions, CheckDeterminantTest* this);
-    // }
-
-      hana::for_each(future::ddt_range,
+    // ddt_range has the index range of implementations at compile time.
+    hana::for_each(future::ddt_range,
 		 [&](auto x) {
 		   CheckDeterminantHelpers<static_cast<future::DDT>(decltype(x)::value)>::test(error, ions, nsteps,
 											       nsubsteps, np);});
-		 
 
     if(error > 0)
       return 1;
@@ -411,16 +499,8 @@ int main(int argc, char** argv)
 
       miniqmcreference::DiracDeterminantRef determinant_ref(nels, random_th);
       determinant_ref.checkMatrix();
-#ifdef FUTURE_WAVEFUNCTIONS
-      future::DiracDeterminant<future::DeterminantDeviceImp<future::DDT::CPU>> determinantCPU(nels, random_th);
-      future::DiracDeterminant<future::DeterminantDeviceImp<future::DDT::KOKKOS>> determinant(nels, random_th);
-#else
       DiracDeterminant determinant(nels, random_th);
-#endif
       determinant.checkMatrix();
-#ifdef FUTURE_WAVEFUNCTIONS
-      determinantCPU.checkMatrix();
-#endif
       // For VMC, tau is large and should result in an acceptance ratio of roughly
       // 50%
       // For DMC, tau is small and should result in an acceptance ratio of 99%
@@ -441,9 +521,6 @@ int main(int argc, char** argv)
       {
         determinant_ref.recompute();
         determinant.recompute();
-#ifdef FUTURE_WAVEFUNCTIONS
-	determinantCPU.recompute();
-#endif	
         for (int l = 0; l < nsubsteps; ++l) // drift-and-diffusion
         {
           random_th.generate_normal(&delta[0][0], nels3);
@@ -463,9 +540,6 @@ int main(int argc, char** argv)
 
             determinant_ref.ratio(els, iel);
             determinant.ratio(els, iel);
-#ifdef FUTURE_WAVEFUNCTIONS
-            determinantCPU.ratio(els, iel);
-#endif
             // Accept/reject the trial move
             if (ur[iel] > accept) // MC
             {
@@ -473,9 +547,6 @@ int main(int argc, char** argv)
               els.acceptMove(iel);
               determinant_ref.acceptMove(els, iel);
               determinant.acceptMove(els, iel);
-#ifdef FUTURE_WAVEFUNCTIONS
-	      determinantCPU.acceptMove(els, iel);
-#endif
               my_accepted++;
             }
             else
@@ -492,9 +563,6 @@ int main(int argc, char** argv)
       for (int i = 0; i < determinant_ref.size(); i++)
       {
         accumulated_error += std::fabs(determinant_ref(i) - determinant(i));
-#ifdef FUTURE_WAVEFUNCTIONS
-        accumulated_error_cpu += std::fabs(determinant_ref(i) - determinantCPU(i));
-#endif
       }
 //    } // end of omp parallel
 
@@ -502,23 +570,6 @@ int main(int argc, char** argv)
 
     cout << "total accumulated error of " << accumulated_error << " for " << np << " procs" << '\n';
 
-#ifdef FUTURE_WAVEFUNCTIONS
-    cout << "total accumulated error of CPU implementation " << accumulated_error << " for " << np << " procs" << '\n';
-    if (accumulated_error / np > small_err)
-    {
-      cout << "Checking failed with accumulated error: " << accumulated_error / np << " > "
-           << small_err << '\n';
-      error_code=1;
-    }
-    else if(accumulated_error_cpu / np > small_err)
-    {
-      cout << "Checking failed with accumulated error cpu: " << accumulated_error / np << " > "
-           << small_err << '\n';
-      error_code=1;
-    }
-    else
-      cout << "All checks passed for determinant" << '\n';
-#else 
     if (accumulated_error / np > small_err)
     {
       cout << "Checking failed with accumulated error: " << accumulated_error / np << " > "
@@ -527,7 +578,6 @@ int main(int argc, char** argv)
     }
     else
       cout << "All checks passed for determinant" << '\n';
-#endif
    
   } //end kokkos block
   Kokkos::finalize();
