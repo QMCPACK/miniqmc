@@ -122,7 +122,7 @@ double CheckDeterminantHelpers<future::DDT::KOKKOS>::runThreads(int np,
   Kokkos::parallel_reduce(crewsize, main_function, accumulated_error);
   //Kokkos::OpenMP::partition_master(main_function,nmovers,crewsize);
 #else
-  accumulated_error = main_function(0,1);
+  main_function(0, accumulated_error );
 #endif  
   return accumulated_error;
 }

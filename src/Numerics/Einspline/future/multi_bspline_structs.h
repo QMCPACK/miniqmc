@@ -24,15 +24,31 @@
 #include <inttypes.h>
 #include <stdlib.h>
 #include "clean_inlining.h"
+#include "future/Devices.h"
+
 ///////////////////////////
 // Single precision real //
 ///////////////////////////
+namespace future
+{
+template <DeviceType DT>
 struct multi_UBspline_3d_s
 {
-#ifdef QMC_USE_KOKKOS
+  spline_code spcode;
+  type_code tcode;
+  float* restrict coefs;
+  intptr_t x_stride, y_stride, z_stride;
+  Ugrid x_grid, y_grid, z_grid;
+  BCtype_s xBC, yBC, zBC;
+  int num_splines;
+  size_t coefs_size;
+};
+
+template<>
+struct multi_UBspline_3d_s<DeviceType::KOKKOS>
+{
   typedef Kokkos::View<float****, Kokkos::LayoutRight> coefs_view_t;
   coefs_view_t coefs_view;
-#endif
   spline_code spcode;
   type_code tcode;
   float* restrict coefs;
@@ -46,7 +62,21 @@ struct multi_UBspline_3d_s
 ///////////////////////////
 // Double precision real //
 ///////////////////////////
+template<DeviceType DT>
 struct multi_UBspline_3d_d
+{
+  spline_code spcode;
+  type_code tcode;
+  double* restrict coefs;
+  intptr_t x_stride, y_stride, z_stride;
+  Ugrid x_grid, y_grid, z_grid;
+  BCtype_d xBC, yBC, zBC;
+  int num_splines;
+  size_t coefs_size;
+};
+
+template<>
+struct multi_UBspline_3d_d<DeviceType::KOKKOS>
 {
 #ifdef QMC_USE_KOKKOS
   typedef Kokkos::View<double****, Kokkos::LayoutRight> coefs_view_t;
@@ -95,5 +125,5 @@ struct multi_UBspline_3d_z
   // temporary storage for laplacian components
   complex_double* restrict lapl3;
 };
-
+}
 #endif

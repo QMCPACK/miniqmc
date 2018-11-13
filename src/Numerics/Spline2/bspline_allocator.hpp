@@ -95,6 +95,17 @@ public:
   typename bspline_traits<T, 3>::SingleSplineType*
       createUBspline(ValT& start, ValT& end, IntT& ng, bc_code bc);
 
+   /** Set coefficients for a single orbital (band)
+   * @param i index of the orbital
+   * @param coeff array of coefficients
+   * @param spline target MultibsplineType
+   */
+  template<typename T>
+  void setCoefficientsForOneOrbital(int i,
+                                    Array<T, 3>& coeff,
+                                    typename bspline_traits<T, 3>::SplineType* spline);
+
+#ifdef QMC_USE_KOKKOS
   /** Set coefficients for a single orbital (band)
    * @param i index of the orbital
    * @param coeff array of coefficients
@@ -104,6 +115,7 @@ public:
   void setCoefficientsForOneOrbital(int i,
                                     Kokkos::View<T***>& coeff,
                                     typename bspline_traits<T, 3>::SplineType* spline);
+#endif
 
   /** copy a UBSpline_3d_X to multi_UBspline_3d_X at i-th band
    * @param single  UBspline_3d_X
@@ -116,6 +128,28 @@ public:
   void copy(UBT* single, MBT* multi, int i, const int* offset, const int* N);
 };
 
+template<typename T>
+void Allocator::setCoefficientsForOneOrbital(int i,
+                                             Array<T, 3>& coeff,
+                                             typename bspline_traits<T, 3>::SplineType* spline)
+{
+#pragma omp parallel for collapse(3)
+  for (int ix = 0; ix < spline->x_grid.num + 3; ix++)
+  {
+    for (int iy = 0; iy < spline->y_grid.num + 3; iy++)
+    {
+      for (int iz = 0; iz < spline->z_grid.num + 3; iz++)
+      {
+        intptr_t xs                                    = spline->x_stride;
+        intptr_t ys                                    = spline->y_stride;
+        intptr_t zs                                    = spline->z_stride;
+        spline->coefs[ix * xs + iy * ys + iz * zs + i] = coeff(ix, iy, iz);
+      }
+    }
+  }
+}
+
+#ifdef QMC_USE_KOKKOS
 template<typename T>
 void Allocator::setCoefficientsForOneOrbital(int i,
                                              Kokkos::View<T***>& coeff,
@@ -136,6 +170,7 @@ void Allocator::setCoefficientsForOneOrbital(int i,
     }
   }
 }
+#endif
 
 template<typename T, typename ValT, typename IntT>
 typename bspline_traits<T, 3>::SplineType*
