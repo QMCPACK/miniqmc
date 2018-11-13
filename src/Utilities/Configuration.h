@@ -47,7 +47,7 @@
     inline omp_int_t omp_get_num_threads() { return 1; }
   #endif
 #else //means Kokkos is enabled.
-  #include <Kokkos_Core.hpp>
+  #include "clean_inlining.h"
   #if defined(KOKKOS_ENABLE_OPENMP) && !defined(KOKKOS_ENABLE_CUDA)
     //Do nothing.  OpenMP is included.
   #else

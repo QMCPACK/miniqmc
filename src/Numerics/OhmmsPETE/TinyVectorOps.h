@@ -16,7 +16,7 @@
 #ifndef OHMMS_TINYVECTOR_OPERATORS_H
 #define OHMMS_TINYVECTOR_OPERATORS_H
 #include <complex>
-#include <Kokkos_Core.hpp>
+#include "clean_inlining.h"
 
 namespace qmcplusplus
 {

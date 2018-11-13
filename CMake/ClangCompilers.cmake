@@ -7,7 +7,11 @@ ENDIF()
 # Enable OpenMP
 IF(QMC_OMP)
   SET(ENABLE_OPENMP 1)
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
+  IF(ENABLE_OFFLOAD)
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp -fopenmp-targets=nvptx64-nvidia-cuda")
+  ELSE()
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
+  ENDIF()
 ENDIF(QMC_OMP)
 
 # Set clang specfic flags (which we always want)
@@ -37,7 +41,9 @@ IF((NOT $ENV{CRAYPE_VERSION} MATCHES ".") AND (NOT CMAKE_SYSTEM_PROCESSOR MATCHE
 if(CMAKE_CXX_FLAGS MATCHES "-march=")
 else() #(CMAKE_CXX_FLAGS MATCHES "-march=")
   # use -march=native
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
+  if(NOT ENABLE_OFFLOAD)
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
+  endif()
 endif() #(CMAKE_CXX_FLAGS MATCHES "-march=")
 
 ENDIF((NOT $ENV{CRAYPE_VERSION} MATCHES ".") AND (NOT CMAKE_SYSTEM_PROCESSOR MATCHES "ppc64"))

@@ -18,7 +18,7 @@
 #ifndef QMCPLUSPLUS_DETERMINANT_DEVICE_IMP_KOKKOS_H
 #define QMCPLUSPLUS_DETERMINANT_DEVICE_IMP_KOKKOS_H
 
-#include <Kokkos_Core.hpp>
+#include "clean_inlining.h"
 #include <impl/Kokkos_Timer.hpp>
 #include <cstdio>
 #include <cstdlib>

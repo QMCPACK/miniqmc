@@ -34,7 +34,7 @@
 #include <Numerics/OhmmsPETE/Tensor.h>
 #include <Numerics/OhmmsPETE/TinyVector.h>
 #include <limits>
-#include <Kokkos_Core.hpp>
+#include "clean_inlining.h"
 
 #ifndef TWOPI
 #ifndef M_PI

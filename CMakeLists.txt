@@ -88,6 +88,7 @@ ENDIF(QMC_MIXED_PRECISION)
 MESSAGE("   Base precision = ${OHMMS_PRECISION}")
 MESSAGE("   Full precision = ${OHMMS_PRECISION_FULL}")
 SET(QMC_USE_KOKKOS 0 CACHE BOOL "Whether to use Kokkos")
+SET(QMC_USE_OMPOL 0 CACHE BOOL "Whether to use openMP offload")
 
 # Code coverage
 SET(GCOV_SUPPORTED FALSE)
@@ -251,6 +252,10 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
     MESSAGE(WARNING "No compiler identified")
   ENDIF()
   MESSAGE(STATUS "Compiler: ${COMPILER}")
+
+  IF(QMC_USE_OMPOL)
+    set(CMAKE_CXX_FLAGS "-DQMC_USE_OMPOL ${CMAKE_CXX_FLAGS}")
+  ENDIF()
 
   IF(QMC_USE_KOKKOS)
     SET(KOKKOS_PREFIX "" CACHE PATH "Path to Kokkos install")

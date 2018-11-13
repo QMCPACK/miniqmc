@@ -24,7 +24,7 @@
 
 #include "Numerics/PETE/PETE.h"
 #include "Numerics/OhmmsPETE/OhmmsTinyMeta.h"
-#include <Kokkos_Core.hpp>
+#include "clean_inlining.h"
 /***************************************************************************
  *
  * The POOMA Framework

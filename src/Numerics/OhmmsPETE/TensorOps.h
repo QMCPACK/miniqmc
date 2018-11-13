@@ -16,7 +16,7 @@
 #ifndef OHMMS_TENSOR_OPERATORS_H
 #define OHMMS_TENSOR_OPERATORS_H
 
-#include <Kokkos_Core.hpp>
+#include "clean_inlining.h"
 
 /*** Tenor operators.  Generic operators are specialized for 1,2 and 3 D
  */
