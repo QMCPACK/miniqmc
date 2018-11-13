@@ -934,6 +934,7 @@ public:
       FirstIndex(First),
       myRandom(RNG)
   {
+    std::cout << "DeterminantDeviceImp<KOKKOS>::DeterminantDeviceImp(...)" << '\n';
     psiMinv = DoubleMatType("psiMinv",nels,nels);
     psiM = DoubleMatType("psiM",nels,nels);
     psiMsave = DoubleMatType("psiMsave",nels,nels);

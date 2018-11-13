@@ -70,7 +70,8 @@ void CheckDeterminantHelpers<DT>::initialize(int argc, char** argv)
   
 template<>
 void CheckDeterminantHelpers<future::DDT::KOKKOS>::initialize(int argc, char** argv)
-{
+{ 
+  std::cout << "CheckDeterminantHelpers<future::DDT::KOKKOS>::initialize" << '\n';
   Kokkos::initialize(argc, argv);
 }
 
@@ -115,7 +116,10 @@ double CheckDeterminantHelpers<future::DDT::KOKKOS>::runThreads(int np,
   };
   double accumulated_error = 0.0;
 #if defined(KOKKOS_ENABLE_OPENMP) && !defined(KOKKOS_ENABLE_CUDA)
-  int num_threads = Kokkos::OpenMP::thread_pool_size();
+  // The kokkos check_determinant was never threaded
+  // could be with
+  // Kokkos::OpenMP::thread_pool_size();
+  int num_threads = 1; 
   int ncrews = 1;   
   int crewsize = std::max(1,num_threads/ncrews); 
   printf(" In partition master with %d threads, %d crews.  Crewsize = %d \n",num_threads,ncrews,crewsize);
