@@ -4,9 +4,16 @@ if(QMC_BUILD_LEVEL GREATER 4)
 SET(ESTEST check_wfc check_spo check_determinant)
 
 FOREACH(p ${ESTEST})
-  ADD_EXECUTABLE( ${p}  ${p}.cpp)
+  ADD_EXECUTABLE( ${p}  ${p}.cpp ${ETEST_KOKKOS_SRC})
   TARGET_LINK_LIBRARIES(${p} qmcbase qmcutil ${QMC_UTIL_LIBS} ${MPI_LIBRARY})
 ENDFOREACH(p ${ESTEST})
+
+# SET(THIS_TEST check_determinant)
+# IF(QMC_USE_KOKKOS)
+#   SET(ETEST_KOKKOS_SRC "test/CheckDeterminantHelpersKOKKOS.cpp")
+# ENDIF(QMC_USE_KOKKOS)
+# ADD_EXECUTABLE( ${THIS_TEST}  ${THIS_TEST}.cpp ${ETEST_KOKKOS_SRC})
+# TARGET_LINK_LIBRARIES(${THIS_TEST} qmcbase qmcutil ${QMC_UTIL_LIBS} ${MPI_LIBRARY})
 
 ADD_LIBRARY(miniwfs ../QMCWaveFunctions/WaveFunction.cpp ../QMCWaveFunctions/SPOSet_builder.cpp)
 

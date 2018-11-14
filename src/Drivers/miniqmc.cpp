@@ -102,6 +102,7 @@
 
 // clang-format on
 
+#include <boost/hana/for_each.hpp>
 #include <Utilities/Configuration.h>
 #include <Utilities/Communicate.h>
 #include <Particle/ParticleSet.h>
@@ -112,14 +113,19 @@
 #include <Utilities/RandomGenerator.h>
 #include <Utilities/qmcpack_version.h>
 #include <Input/Input.hpp>
+#include "Devices.h"
 #include <QMCWaveFunctions/SPOSet.h>
 #include <QMCWaveFunctions/SPOSet_builder.h>
 #include <QMCWaveFunctions/WaveFunction.h>
 #include <Drivers/Mover.hpp>
 #include <getopt.h>
 
+//using namespace qmcplusplus;
+
 using namespace std;
-using namespace qmcplusplus;
+namespace qmcplusplus
+{
+namespace hana = boost::hana;
 
 enum MiniQMCTimers
 {
@@ -146,7 +152,6 @@ TimerNameList_t<MiniQMCTimers> MiniQMCTimerNames = {
 
 void print_help()
 {
-  // clang-format off
   app_summary() << "usage:" << '\n';
   app_summary() << "  miniqmc   [-bhjvV] [-g \"n0 n1 n2\"] [-m meshfactor]"      << '\n';
   app_summary() << "            [-n steps] [-N substeps] [-x rmax]"              << '\n';
@@ -169,9 +174,17 @@ void print_help()
   app_summary() << "  -V  print version information and exit"                    << '\n';
   app_summary() << "  -x  set the Rmax.                  default: 1.7"           << '\n';
   app_summary() << "  -z  number of crews for walker partitioning.   default: 1" << '\n';
-  // clang-format on
+  app_summary() << "  -D  device implementation.         default: CPU          " << '\n';
+  app_summary() << "      Available devices: CPU";
+  hana::for_each(devices_range,
+		 [&](auto x) {
+		   std::string enum_name = device_names[x];
+		   app_summary() << "                         " << x <<".  " << enum_name << '\n';
+		 });
+}
 }
 
+using namespace qmcplusplus;
 int main(int argc, char** argv)
 {
   Kokkos::initialize(argc, argv);
@@ -285,7 +298,7 @@ int main(int argc, char** argv)
       }
       else // disallow non-option arguments
       {
-        app_error() << "Non-option arguments not allowed" << endl;
+        app_error() << "Non-option arguments not allowed" << std::endl;
         print_help();
       }
     }
@@ -302,7 +315,7 @@ int main(int argc, char** argv)
     else if (timer_level_name != "fine")
     {
       app_error() << "Timer level should be 'coarse' or 'fine', name given: " << timer_level_name
-                  << endl;
+                  << '\n';
       return 1;
     }
 
@@ -565,3 +578,4 @@ int main(int argc, char** argv)
   Kokkos::finalize();
   return 0;
 }
+

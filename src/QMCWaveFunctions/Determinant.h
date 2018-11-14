@@ -2,9 +2,10 @@
 // This file is distributed under the University of Illinois/NCSA Open Source
 // License.  See LICENSE file in top directory for details.
 //
-// Copyright (c) 2017 QMCPACK developers.
+// Copyright (c) 2018 QMCPACK developers.
 //
-// File developed by: M. Graham Lopez
+// File developed by: Peter Doak, doakpw@ornl.gov, Oak Ridge National Lab
+//                    M. Graham Lopez
 //
 // File created by: M. Graham Lopez
 ////////////////////////////////////////////////////////////////////////////////
@@ -25,12 +26,10 @@
 #include <type_traits>
 
 #include "QMCWaveFunctions/WaveFunctionComponent.h"
-#include "QMCWaveFunctions/future/DeterminantDevice.h"
+#include "QMCWaveFunctions/DeterminantDevice.h"
 //#include "Utilities/RandomGenerator.h"
 
 namespace qmcplusplus
-{
-namespace future
 {
 
 template<class DEVICE>
@@ -100,7 +99,6 @@ private:
   DeterminantDevice<DEVICE>* determinant_device;
 };
 
-} // namespace future
 } // namespace qmcplusplus
 
 #endif

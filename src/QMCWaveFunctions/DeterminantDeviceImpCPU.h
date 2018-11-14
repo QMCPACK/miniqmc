@@ -17,14 +17,15 @@
 
 #ifndef QMCPLUSPLUS_DETERMINANT_DEVICE_IMP_CPU_H
 #define QMCPLUSPLUS_DETERMINANT_DEVICE_IMP_CPU_H
+#include "Devices.h"
 #include "Numerics/OhmmsPETE/OhmmsMatrix.h"
 #include "Numerics/DeterminantOperators.h"
+#include "DeterminantDevice.h"
 #include "QMCWaveFunctions/WaveFunctionComponent.h"
+
 #include "Utilities/Configuration.h"
 
 namespace qmcplusplus
-{
-namespace future
 {
 /**@{Determinant utilities */
 /** Inversion of a double matrix after LU factorization*/
@@ -186,8 +187,8 @@ void checkDiffCPU(const MT1& a, const MT2& b, const std::string& tag)
 }
 
 template<>
-class DeterminantDeviceImp<DDT::CPU>
-  : public DeterminantDevice<DeterminantDeviceImp<DDT::CPU>>
+class DeterminantDeviceImp<Devices::CPU>
+  : public DeterminantDevice<DeterminantDeviceImp<Devices::CPU>>
 {
 public:
   using QMCT = QMCTraits;
@@ -308,7 +309,6 @@ private:
   aligned_vector<double> work;
   Matrix<QMCT::RealType> psiMsave;
 };
-}
 } // namespace qmcplusplus
 
 #endif

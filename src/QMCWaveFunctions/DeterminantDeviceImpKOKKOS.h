@@ -2,17 +2,19 @@
 // This file is distributed under the University of Illinois/NCSA Open Source
 // License.  See LICENSE file in top directory for details.
 //
-// Copyright (c) 2017 QMCPACK developers.
+// Copyright (c) 2018 QMCPACK developers.
 //
-// File developed by: M. Graham Lopez
+// File developed by:
+// Peter Doak, doakpw@ornl.gov, Oak Ridge National Lab
 //
-// File created by: M. Graham Lopez
+// File created by:
+// Peter Doak, doakpw@ornl.gov, Oak Ridge National Lab
 ////////////////////////////////////////////////////////////////////////////////
 // -*- C++ -*-
 
 /**
- * @file Determinant.h
- * @brief Determinant piece of the wave function
+ * @file
+ * @brief Kokkos implementation of Determinant
  */
 
 #ifndef QMCPLUSPLUS_DETERMINANT_DEVICE_IMP_KOKKOS_H
@@ -30,7 +32,7 @@
 #endif
 
 #include "QMCWaveFunctions/WaveFunctionComponent.h"
-#include "QMCWaveFunctions/future/DeterminantDeviceImp.h"
+#include "QMCWaveFunctions/DeterminantDeviceImp.h"
 //#include "Utilities/RandomGenerator.h"
 
 #define dgetrf dgetrf_
@@ -130,8 +132,6 @@ void cgemm(const char &, const char &, const int &, const int &, const int &,
 // cusolver and likely cuBlas will require
 
 namespace qmcplusplus
-{
-namespace future
 {
 // assuming both views have the same dimensionality and 
 // that the types they hold can assigned between
@@ -923,8 +923,8 @@ void updateRow(ViewType pinv, ArrayViewType tv, int rowchanged, value_type c_rat
 }
 
 template<>
-class DeterminantDeviceImp<DDT::KOKKOS>
-  : public DeterminantDevice<DeterminantDeviceImp<DDT::KOKKOS>>
+class DeterminantDeviceImp<Devices::KOKKOS>
+  : public DeterminantDevice<DeterminantDeviceImp<Devices::KOKKOS>>
 {
 public:
   using QMCT = QMCTraits;
@@ -1098,13 +1098,5 @@ private:
   linalgHelper<MatType::value_type, MatType::array_layout, MatType::memory_space> lah;
 };
 
-}
 } // namespace qmcplusplus
-
-
-
-
-
-
-
 #endif

@@ -29,12 +29,9 @@
 #endif
 #include "Utilities/Configuration.h"
 #include "QMCWaveFunctions/WaveFunctionComponent.h"
-//#include "Utilities/RandomGenerator.h"
+#include "Utilities/RandomGenerator.h"
 namespace qmcplusplus
 {
-namespace future
-{
-
 template<class DEVICETYPE>
 class DeterminantDevice
 {
@@ -43,6 +40,7 @@ public:
 
   DeterminantDevice(int nels, const RandomGenerator<QMCT::RealType>& RNG,
 		    int First = 0) {}
+  
   void checkMatrix()
   {
     static_cast<DEVICETYPE*>(this)->checkMatrixImp();
@@ -98,7 +96,6 @@ public:
 
   inline int size() const { return static_cast<DEVICETYPE*>(this)->sizeImp(); }
 };
-} // namespace future
 } // namespace qmcplusplus
 
 #endif
