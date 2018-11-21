@@ -10,32 +10,17 @@
 // File created by:
 // Peter Doak, doakpw@ornl.gov, Oak Ridge National Lab
 ////////////////////////////////////////////////////////////////////////////////
+// -*- C++ -*-
 
-#ifndef QMCPLUSPLUS_DETERMINANT_DEVICE_IMP_H
-#define QMCPLUSPLUS_DETERMINANT_DEVICE_IMP_H
-
-#include "Devices.h" 
-
-/** @file
- * Here compiled determinant implmentations
- * are included.
- */
-
-namespace qmcplusplus
-{
-template<Devices DT>
-class DeterminantDeviceImp
-{};
-}
-
-#include "QMCWaveFunctions/DeterminantDeviceImpCPU.h"
+#ifndef QMCPLUSPLUS_CLEAN_INLINING_H
+#define QMCPLUSPLUS_CLEAN_INLINING_H
 #ifdef QMC_USE_KOKKOS
-#include "QMCWaveFunctions/DeterminantDeviceImpKOKKOS.h"
+#include <Kokkos_Core.hpp>
+#else
+#define KOKKOS_INLINE_FUNCTION inline
 #endif
 
-namespace qmcplusplus
-{
-  extern template class DeterminantDeviceImp<Devices::CPU>;
-}
-
+/** @file
+ *  @brief Performance portability includes not requiring Kokkos
+ */
 #endif

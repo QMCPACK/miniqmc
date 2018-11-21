@@ -20,6 +20,8 @@
 #ifndef OHMMS_PARTICLE_INPUTOUTPUT_UTILITY_H
 #define OHMMS_PARTICLE_INPUTOUTPUT_UTILITY_H
 
+#include "ParticleSet.h"
+
 namespace qmcplusplus
 {
 /** expand the particle set to the supercell size
