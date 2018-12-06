@@ -27,20 +27,16 @@
 #include <Utilities/qmcpack_version.h>
 #include <Input/Input.hpp>
 #include <QMCWaveFunctions/Determinant.h>
-#ifdef FUTURE_WAVEFUNCTIONS
-#include "QMCWaveFunctions/future/Determinant.h"
-#include "QMCWaveFunctions/future/DeterminantDevice.h"
-#include "QMCWaveFunctions/future/DeterminantDeviceImp.h"
+#include "QMCWaveFunctions/DeterminantDevice.h"
+#include "QMCWaveFunctions/DeterminantDeviceImp.h"
 #include <boost/hana/for_each.hpp>
-#include <boost/hana/functional/apply.hpp>
 #include "Drivers/check_determinant.h"
-#endif
 #include <QMCWaveFunctions/DeterminantRef.h>
 #include <getopt.h>
-
+#include "Devices.h"
 using namespace std;
-using namespace qmcplusplus;
-
+namespace qmcplusplus
+{
 
 void print_help()
 {
@@ -61,39 +57,24 @@ void print_help()
   exit(1); // print help and exit
 }
 
-#ifdef FUTURE_WAVEFUNCTIONS
 namespace hana = boost::hana;
+auto device_defined = hana::is_valid([](auto&& p) -> decltype((void)p.defined) {});
 
-template<future::DeterminantDeviceType DT>
+template<Devices DT>
 void CheckDeterminantHelpers<DT>::initialize(int argc, char** argv)
 {}
-  
-template<>
-void CheckDeterminantHelpers<future::DDT::KOKKOS>::initialize(int argc, char** argv)
-{ 
-  std::cout << "CheckDeterminantHelpers<future::DDT::KOKKOS>::initialize" << '\n';
-  Kokkos::initialize(argc, argv);
-}
 
-template<future::DeterminantDeviceType DT>
-void CheckDeterminantHelpers<DT>::updateFromDevice(future::DiracDeterminant<future::DeterminantDeviceImp<DT>>& determinant_device)
+template<Devices DT>
+void CheckDeterminantHelpers<DT>::updateFromDevice(DiracDeterminant<DeterminantDeviceImp<DT>>& determinant_device)
 {
 }
 
-#ifdef QMC_USE_OMPOL
-template<future::DeterminantDeviceType::OMPOL>
-void CheckDeterminantHelpers<DT>::updateFromDevice(future::DiracDeterminant<DT>& determinant_device)
-{
-  determinant_device.transfer_from_device();
-}
-#endif
-
-template<future::DeterminantDeviceType DT>
+template<Devices DT>
 double CheckDeterminantHelpers<DT>::runThreads(int np,
-							      PrimeNumberSet<uint32_t>& myPrimes,
-							      ParticleSet& ions,
-							      int& nsteps,
-							      int& nsubsteps)
+					       PrimeNumberSet<uint32_t>& myPrimes,
+					       ParticleSet& ions,
+					       int& nsteps,
+					       int& nsubsteps)
 {
   double accumulated_error = 0.0;
   CheckDeterminantHelpers<DT>
@@ -101,62 +82,7 @@ double CheckDeterminantHelpers<DT>::runThreads(int np,
   return accumulated_error;
 }
 
-template<>
-double CheckDeterminantHelpers<future::DDT::KOKKOS>::runThreads(int np,
-							      PrimeNumberSet<uint32_t>& myPrimes,
-							      ParticleSet& ions,
-							      int& nsteps,
-							      int& nsubsteps)
-{
-  auto main_function = KOKKOS_LAMBDA (int thread_id, double& accumulated_error)
-  {
-    printf(" thread_id = %d\n",thread_id);
-    CheckDeterminantHelpers<future::DDT::KOKKOS>
-    ::thread_main(thread_id, myPrimes, ions, nsteps, nsubsteps, accumulated_error);
-  };
-  double accumulated_error = 0.0;
-#if defined(KOKKOS_ENABLE_OPENMP) && !defined(KOKKOS_ENABLE_CUDA)
-  // The kokkos check_determinant was never threaded
-  // could be with
-  // Kokkos::OpenMP::thread_pool_size();
-  int num_threads = 1; 
-  int ncrews = 1;   
-  int crewsize = std::max(1,num_threads/ncrews); 
-  printf(" In partition master with %d threads, %d crews.  Crewsize = %d \n",num_threads,ncrews,crewsize);
-  Kokkos::parallel_reduce(crewsize, main_function, accumulated_error);
-  //Kokkos::OpenMP::partition_master(main_function,nmovers,crewsize);
-#else
-  main_function(0, accumulated_error );
-#endif  
-  return accumulated_error;
-}
-
-#ifdef QMC_USE_OMPOL
-template<>
-CheckDeterminantHelpers<future::DDT:OMPOL>::runThreads(int np,
-						       PrimeNumberSet<uint32_t>& myPrimes,
-			  ParticleSet& ions, int& nsteps,
-						       int& nsubsteps)
-{
-  double accumulated_error = 0.0;
-#pragma omp parallel reduction(+ : accumulated_error)
-  {
-    accumulated_error += this->thread_main(PrimeNumberSet<uint32_t>& myPrimes,
-		      ParticleSet& ions, int& nsteps,
-		      int& nsubsteps)
-
-    // accumulate error
-    for (int i = 0; i < determinant_ref.size(); i++)
-    {
-      accumulated_error += std::fabs(determinant_ref(i) - determinant(i));
-    }
-  } // end of omp parallel
-
-  return accumulated_error;
-}
-#endif
-
-template<future::DeterminantDeviceType DT>
+template<Devices DT>
 void CheckDeterminantHelpers<DT>::thread_main(const int ip,
 					      const PrimeNumberSet<uint32_t>& myPrimes,
 					      const ParticleSet& ions,
@@ -164,8 +90,7 @@ void CheckDeterminantHelpers<DT>::thread_main(const int ip,
 					      const int& nsubsteps,
 					      double& accumulated_error)
 {
-  // create generator within the thread
-  
+  // create generator within the thread  
   RandomGenerator<QMCT::RealType> random_th(myPrimes[ip]);
 
   ParticleSet els;
@@ -180,8 +105,8 @@ void CheckDeterminantHelpers<DT>::thread_main(const int ip,
   std::cout << "Reference" << '\n';
   determinant_ref.checkMatrix();
 
-  future::DiracDeterminant<future::DeterminantDeviceImp<DT>> determinant_device(nels, random_th);
-  std::string enum_name = future::ddt_names[hana::int_c<static_cast<int>(DT)>];
+  DiracDeterminant<DeterminantDeviceImp<DT>> determinant_device(nels, random_th);
+  std::string enum_name = device_names[hana::int_c<static_cast<int>(DT)>];
   std::cout << enum_name << '\n';
   determinant_device.checkMatrix();
 
@@ -258,7 +183,7 @@ void CheckDeterminantHelpers<DT>::thread_main(const int ip,
   
 }
 
-template<future::DeterminantDeviceType DT>
+template<Devices DT>
 void CheckDeterminantHelpers<DT>::test(int& error, ParticleSet& ions,
 				       int& nsteps,
 				       int& nsubsteps,
@@ -287,16 +212,9 @@ void CheckDeterminantHelpers<DT>::test(int& error, ParticleSet& ions,
   error += error_code;
 }
 
-template<future::DeterminantDeviceType DT>
+template<Devices DT>
 void CheckDeterminantHelpers<DT>::finalize()
 {}
-  
-template<>
-void CheckDeterminantHelpers<future::DDT::KOKKOS>::finalize()
-{
-  Kokkos::finalize();
-}
-
 
 void CheckDeterminantTest::setup(int argc, char** argv)
 {
@@ -349,18 +267,18 @@ void CheckDeterminantTest::setup(int argc, char** argv)
     print_version(verbose);
  
     if (verbose)
-      outputManager.setVerbosity(Verbosity::HIGH);
+      OutputManagerClass::get().setVerbosity(Verbosity::HIGH);
     else
-      outputManager.setVerbosity(Verbosity::LOW);
+      OutputManagerClass::get().setVerbosity(Verbosity::LOW);
   }
 
 int CheckDeterminantTest::run_test()
   {
     error = 0;
     // ddt_range has the index range of implementations at compile time.
-    hana::for_each(future::ddt_range,
+    hana::for_each(devices_range,
 		 [&](auto x) {
-		   CheckDeterminantHelpers<static_cast<future::DDT>(decltype(x)::value)>::test(error, ions, nsteps,
+		   CheckDeterminantHelpers<static_cast<Devices>(decltype(x)::value)>::test(error, ions, nsteps,
 											       nsubsteps, np);});
 
     if(error > 0)
@@ -376,11 +294,12 @@ int CheckDeterminantTest::run_test()
 // {}
 
 // template<>
-// void initialize(future::DeterminantDeviceImp<future::DDT::KOKKOS> dt, int argc, char** argv)
+// void initialize(DeterminantDeviceImp<DDT::KOKKOS> dt, int argc, char** argv)
 // {
 //   Kokkos::initialize(argc, argv);
 // }
-
+}
+using namespace qmcplusplus;
 
 
 int main(int argc, char** argv)
@@ -389,23 +308,22 @@ int main(int argc, char** argv)
   // hana::for_each(ddts, [&](auto x) {
   // 			 initialize(x, argc, argc);
   // 		       });
-  hana::for_each(future::ddt_range,
+  hana::for_each(devices_range,
 		 [&](auto x) {
-		   CheckDeterminantHelpers<static_cast<future::DDT>(decltype(x)::value)>::initialize(argc, argv);
+		   CheckDeterminantHelpers<static_cast<Devices>(decltype(x)::value)>::initialize(argc, argv);
 		       });
 
   CheckDeterminantTest test;
   test.setup(argc, argv);
   error_code = test.run_test();
-  hana::for_each(future::ddt_range,
+  hana::for_each(devices_range,
 		 [&](auto x) {
-		   CheckDeterminantHelpers<static_cast<future::DDT>(decltype(x)::value)>::finalize();
+		   CheckDeterminantHelpers<static_cast<Devices>(decltype(x)::value)>::finalize();
 		       });
   return error_code;
 }
 
-#else
-
+#ifndef FUTURE_WAVEFUNCTIONS
 int main(int argc, char** argv)
 {
   int error_code=0;
@@ -480,9 +398,9 @@ int main(int argc, char** argv)
     print_version(verbose);
 
     if (verbose)
-      outputManager.setVerbosity(Verbosity::HIGH);
+      OutputManagerClass::get().setVerbosity(Verbosity::HIGH);
     else
-      outputManager.setVerbosity(Verbosity::LOW);
+      OutputManagerClass::get().setVerbosity(Verbosity::LOW);
 
     double accumulated_error = 0.0;
     double accumulated_error_cpu = 0.0;

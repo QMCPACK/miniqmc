@@ -228,6 +228,16 @@ typedef StackKeyParam<2> StackKey;
 
 class TimerManagerClass
 {
+private:
+  TimerManagerClass()
+      : timer_threshold(timer_level_coarse), max_timer_id(1), max_timers_exceeded(false)
+  {
+#ifdef USE_VTUNE_TASKS
+    task_domain = __itt_domain_create("QMCPACK");
+#endif
+  }
+  ~TimerManagerClass() {}
+
 protected:
   std::vector<NewTimer*> TimerList;
   std::vector<NewTimer*> CurrentTimerStack;
@@ -238,18 +248,17 @@ protected:
   std::map<std::string, timer_id_t> timer_name_to_id;
 
 public:
+  static TimerManagerClass& get()
+  {
+    static TimerManagerClass instance;
+    return instance;
+  }
 #ifdef USE_VTUNE_TASKS
   __itt_domain* task_domain;
 #endif
 
-  TimerManagerClass()
-      : timer_threshold(timer_level_coarse), max_timer_id(1), max_timers_exceeded(false)
-  {
-#ifdef USE_VTUNE_TASKS
-    task_domain = __itt_domain_create("QMCPACK");
-#endif
-  }
-  void addTimer(NewTimer* t);
+  
+  void __attribute__((no_sanitize("memory"))) addTimer(NewTimer* t);
   NewTimer* createTimer(const std::string& myname, timer_levels mytimer = timer_level_fine);
 
   void push_timer(NewTimer* t)
@@ -317,8 +326,6 @@ public:
 
   void get_stack_name_from_id(const StackKey& key, std::string& name);
 };
-
-extern TimerManagerClass TimerManager;
 
 /* Timer using omp_get_wtime  */
 class NewTimer
@@ -547,7 +554,7 @@ void setup_timers(TimerList_t& timers,
   timers.resize(timer_list.size());
   for (int i = 0; i < timer_list.size(); i++)
   {
-    timers[timer_list[i].id] = TimerManager.createTimer(timer_list[i].name, timer_level);
+    timers[timer_list[i].id] = TimerManagerClass::get().createTimer(timer_list[i].name, timer_level);
   }
 }
 
@@ -557,7 +564,7 @@ void setup_timers(TimerList_t& timers, TimerNameLevelList_t<T> timer_list)
   timers.resize(timer_list.size());
   for (int i = 0; i < timer_list.size(); i++)
   {
-    timers[timer_list[i].id] = TimerManager.createTimer(timer_list[i].name, timer_list[i].level);
+    timers[timer_list[i].id] = TimerManagerClass::get().createTimer(timer_list[i].name, timer_list[i].level);
   }
 }
 #endif

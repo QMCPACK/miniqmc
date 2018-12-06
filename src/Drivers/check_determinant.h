@@ -1,6 +1,24 @@
+////////////////////////////////////////////////////////////////////////////////
+// This file is distributed under the University of Illinois/NCSA Open Source
+// License.  See LICENSE file in top directory for details.
+//
+// Copyright (c) 2018 QMCPACK developers.
+//
+// File developed by:
+// Peter Doak, doakpw@ornl.gov, Oak Ridge National Lab
+//
+// File created by:
+// Peter Doak, doakpw@ornl.gov, Oak Ridge National Lab
+////////////////////////////////////////////////////////////////////////////////
+
 #ifndef QMCPLUSPLUS_CHECK_DETERMINANT_H
 #define QMCPLUSPLUS_CHECK_DETERMINANT_H
-#include "QMCWaveFunctions/future/DeterminantDeviceImp.h"
+#include "QMCWaveFunctions/Determinant.h"
+#include "QMCWaveFunctions/DeterminantDevice.h"
+#include "QMCWaveFunctions/DeterminantDeviceImp.h"
+#include "Utilities/PrimeNumberSet.h"
+
+
 namespace qmcplusplus
 {
 
@@ -32,7 +50,7 @@ public:
   int run_test();  
 };
 
-template<future::DeterminantDeviceType DT>
+template<Devices DT>
 class CheckDeterminantHelpers
 {
 public:
@@ -50,10 +68,12 @@ private:
 			  const int& nsteps,
 			  const int& nsubsteps,
 			  double& accumulated_error);
-  static void updateFromDevice(future::DiracDeterminant<future::DeterminantDeviceImp<DT>>& determinant_device);
+  static void updateFromDevice(DiracDeterminant<DeterminantDeviceImp<DT>>& determinant_device);
 };
-
-
- 
 }
+#ifdef QMC_USE_KOKKOS
+#include "Drivers/test/CheckDeterminantHelpersKOKKOS.hpp"
+  //extern template class CheckDeterminantHelpers<Devices::KOKKOS>;
+#endif
+
 #endif

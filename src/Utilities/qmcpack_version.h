@@ -14,6 +14,6 @@
 #ifndef QMCPACK_VERSION_INCLUDE
 #define QMCPACK_VERSION_INCLUDE
 
-void print_version(bool verbose);
+void __attribute__((no_sanitize("memory"))) print_version(bool verbose);
 
 #endif

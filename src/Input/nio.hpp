@@ -11,6 +11,9 @@
 // -*- C++ -*-
 #include <Particle/ParticleIOUtility.h>
 
+#ifndef QMCPLUSPLUS_NIO_HPP
+#define QMCPLUSPLUS_NIO_HPP
+
 namespace qmcplusplus
 {
 template<typename T>
@@ -241,3 +244,4 @@ void buildJeeI(JeeIType& JeeI, double rcut)
   }
 }
 } // namespace qmcplusplus
+#endif

@@ -24,7 +24,9 @@
 #include <Particle/ParticleSet_builder.hpp>
 #include <Utilities/RandomGenerator.h>
 #include <Input/Input.hpp>
-#include <QMCWaveFunctions/einspline_spo.hpp>
+#include <QMCWaveFunctions/EinsplineSPO.hpp>
+#include "QMCWaveFunctions/EinsplineSPODevice.hpp"
+#include "QMCWaveFunctions/EinsplineSPODeviceImp.hpp"
 #include <QMCWaveFunctions/einspline_spo_ref.hpp>
 #include <Utilities/qmcpack_version.h>
 #include <getopt.h>
@@ -54,7 +56,9 @@ void print_help()
 
 int main(int argc, char** argv)
 {
+  #ifdef QMC_USE_KOKKOS
   Kokkos::initialize(argc, argv);
+  #endif
   { //Begin kokkos block.
 
 
@@ -84,7 +88,7 @@ int main(int argc, char** argv)
 
     if (!comm.root())
     {
-      outputManager.shutOff();
+      OutputManagerClass::get().shutOff();
     }
 
     int opt;
@@ -144,9 +148,9 @@ int main(int argc, char** argv)
     if (comm.root())
     {
       if (verbose)
-        outputManager.setVerbosity(Verbosity::HIGH);
+        OutputManagerClass::get().setVerbosity(Verbosity::HIGH);
       else
-        outputManager.setVerbosity(Verbosity::LOW);
+        OutputManagerClass::get().setVerbosity(Verbosity::LOW);
     }
 
     print_version(verbose);
@@ -154,10 +158,14 @@ int main(int argc, char** argv)
     Tensor<int, 3> tmat(na, 0, 0, 0, nb, 0, 0, 0, nc);
 
     OHMMS_PRECISION ratio = 0.0;
+#ifdef QMC_USE_KOKKOS_
+    using spo_type = EinsplineSPO<Devices::KOKKOS, OHMMS_PRECISION>;
+#else
+    using spo_type = EinsplineSPO<Devices::CPU, OHMMS_PRECISION>;
+#endif
 
-    using spo_type = einspline_spo<OHMMS_PRECISION>;
     spo_type spo_main;
-    using spo_ref_type = miniqmcreference::einspline_spo_ref<OHMMS_PRECISION>;
+    using spo_ref_type = miniqmcreference::EinsplineSPO_ref<OHMMS_PRECISION>;
     spo_ref_type spo_ref_main;
     int nTiles = 1;
 
@@ -188,7 +196,7 @@ int main(int argc, char** argv)
                     << SPO_coeff_size_MB << " MB)" << endl;
 
       spo_main.set(nx, ny, nz, norb, nTiles);
-      spo_main.Lattice.set(lattice_b);
+      spo_main.setLattice(lattice_b);
       spo_ref_main.set(nx, ny, nz, norb, nTiles);
       spo_ref_main.Lattice.set(lattice_b);
     }
@@ -246,6 +254,8 @@ int main(int argc, char** argv)
 
       int my_accepted = 0, my_vals = 0;
 
+      const EinsplineSPOParams<RealType>& spop = spo.getParams();
+
       for (int mc = 0; mc < nsteps; ++mc)
       {
         random_th.generate_normal(&delta[0][0], nels3);
@@ -258,22 +268,22 @@ int main(int argc, char** argv)
           spo.evaluate_vgh(pos);
           spo_ref.evaluate_vgh(pos);
           // accumulate error
-          for (int ib = 0; ib < spo.nBlocks; ib++)
-            for (int n = 0; n < spo.nSplinesPerBlock; n++)
+          for (int ib = 0; ib < spop.nBlocks; ib++)
+            for (int n = 0; n < spop.nSplinesPerBlock; n++)
             {
               // value
-              evalVGH_v_err += std::fabs(spo.psi[ib][n] - spo_ref.psi[ib][n]);
+              evalVGH_v_err += std::fabs(spo.getPsi(ib, n) - spo_ref.psi[ib][n]);
               // grad
-              evalVGH_g_err += std::fabs(spo.grad[ib](n, 0) - spo_ref.grad[ib](n, 0));
-              evalVGH_g_err += std::fabs(spo.grad[ib](n, 1) - spo_ref.grad[ib](n, 1));
-              evalVGH_g_err += std::fabs(spo.grad[ib](n, 2) - spo_ref.grad[ib](n, 2));
+              evalVGH_g_err += std::fabs(spo.getGrad(ib, n, 0) - spo_ref.getGrad(ib, n, 0));
+              evalVGH_g_err += std::fabs(spo.getGrad(ib, n, 1) - spo_ref.getGrad(ib, n, 1));
+              evalVGH_g_err += std::fabs(spo.getGrad(ib, n, 2) - spo_ref.getGrad(ib, n, 2));
               // hess
-              evalVGH_h_err += std::fabs(spo.hess[ib](n, 0) - spo_ref.hess[ib](n, 0));
-              evalVGH_h_err += std::fabs(spo.hess[ib](n, 1) - spo_ref.hess[ib](n, 1));
-              evalVGH_h_err += std::fabs(spo.hess[ib](n, 2) - spo_ref.hess[ib](n, 2));
-              evalVGH_h_err += std::fabs(spo.hess[ib](n, 3) - spo_ref.hess[ib](n, 3));
-              evalVGH_h_err += std::fabs(spo.hess[ib](n, 4) - spo_ref.hess[ib](n, 4));
-              evalVGH_h_err += std::fabs(spo.hess[ib](n, 5) - spo_ref.hess[ib](n, 5));
+              evalVGH_h_err += std::fabs(spo.getHess(ib, n, 0) - spo_ref.getHess(ib, n, 0));
+              evalVGH_h_err += std::fabs(spo.getHess(ib, n, 1) - spo_ref.getHess(ib, n, 1));
+              evalVGH_h_err += std::fabs(spo.getHess(ib, n, 2) - spo_ref.getHess(ib, n, 2));
+              evalVGH_h_err += std::fabs(spo.getHess(ib, n, 3) - spo_ref.getHess(ib, n, 3));
+              evalVGH_h_err += std::fabs(spo.getHess(ib, n, 4) - spo_ref.getHess(ib, n, 4));
+              evalVGH_h_err += std::fabs(spo.getHess(ib, n, 5) - spo_ref.getHess(ib, n, 5));
             }
           if (ur[iel] > accept)
           {
@@ -299,9 +309,9 @@ int main(int argc, char** argv)
               spo.evaluate_v(pos);
               spo_ref.evaluate_v(pos);
               // accumulate error
-              for (int ib = 0; ib < spo.nBlocks; ib++)
-                for (int n = 0; n < spo.nSplinesPerBlock; n++)
-                  evalV_v_err += std::fabs(spo.psi[ib][n] - spo_ref.psi[ib][n]);
+              for (int ib = 0; ib < spop.nBlocks; ib++)
+                for (int n = 0; n < spop.nSplinesPerBlock; n++)
+                  evalV_v_err += std::fabs(spo.getPsi(ib, n) - spo_ref.psi[ib][n]);
             }
           } // els
         }   // ions
@@ -314,7 +324,7 @@ int main(int argc, char** argv)
 
     } // end of omp parallel
 
-    outputManager.resume();
+    OutputManagerClass::get().resume();
 
     evalV_v_err /= nspheremoves;
     evalVGH_v_err /= dNumVGHCalls;
@@ -353,6 +363,8 @@ int main(int argc, char** argv)
       app_log() << "All checks passed for spo" << std::endl;
 
   } //end kokkos block
+#ifdef QMC_USE_KOKKOS
   Kokkos::finalize();
+#endif
   return 0;
 }

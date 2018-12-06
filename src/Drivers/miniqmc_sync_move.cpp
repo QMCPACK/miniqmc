@@ -66,7 +66,7 @@
 
   The Single Particle Orbitals (SPO) depend only on individual electron coordinates and are represented by a 3D spline.
   The 3D spline code is located in \ref src/Numerics/Spline2, with the evaluation code in the \ref qmcplusplus::MultiBspline "MultiBspline" class.
-  The connection from the wavefunction to the spline functions is located in the \ref qmcplusplus::einspline_spo "einspline_spo" class.
+  The connection from the wavefunction to the spline functions is located in the \ref qmcplusplus::EinsplineSPO "EinsplineSPO" class.
 
   The core evaluation routine evaluates the value, the gradient, and the Laplacian at a given electron coordinate.
 
@@ -209,7 +209,7 @@ int main(int argc, char** argv)
 
   if (!comm.root())
   {
-    outputManager.shutOff();
+    OutputManagerClass::get().shutOff();
   }
 
   int opt;
@@ -309,9 +309,9 @@ int main(int argc, char** argv)
   if (comm.root())
   {
     if (verbose)
-      outputManager.setVerbosity(Verbosity::HIGH);
+      OutputManagerClass::get().setVerbosity(Verbosity::HIGH);
     else
-      outputManager.setVerbosity(Verbosity::LOW);
+      OutputManagerClass::get().setVerbosity(Verbosity::LOW);
   }
 
   print_version(verbose);

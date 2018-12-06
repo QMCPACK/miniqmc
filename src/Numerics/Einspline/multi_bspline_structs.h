@@ -1,5 +1,6 @@
 /////////////////////////////////////////////////////////////////////////////
 //  einspline:  a library for creating and evaluating B-splines            //
+//  Modified Peter Doak 2018
 //  Copyright (C) 2007 Kenneth P. Esler, Jr.                               //
 //                                                                         //
 //  This program is free software; you can redistribute it and/or modify   //
@@ -23,16 +24,17 @@
 
 #include <inttypes.h>
 #include <stdlib.h>
+#include "Devices.h"
+#include "Numerics/Einspline/bspline_base.h"
 #include "clean_inlining.h"
+
+using qmcplusplus::Devices;
+
 ///////////////////////////
 // Single precision real //
 ///////////////////////////
-struct multi_UBspline_3d_s
+struct multi_UBspline_3d_s_common
 {
-#ifdef QMC_USE_KOKKOS
-  typedef Kokkos::View<float****, Kokkos::LayoutRight> coefs_view_t;
-  coefs_view_t coefs_view;
-#endif
   spline_code spcode;
   type_code tcode;
   float* restrict coefs;
@@ -43,15 +45,16 @@ struct multi_UBspline_3d_s
   size_t coefs_size;
 };
 
+template<Devices D>
+struct multi_UBspline_3d_s : public multi_UBspline_3d_s_common
+{
+};
+
 ///////////////////////////
 // Double precision real //
 ///////////////////////////
-struct multi_UBspline_3d_d
+struct multi_UBspline_3d_d_common
 {
-#ifdef QMC_USE_KOKKOS
-  typedef Kokkos::View<double****, Kokkos::LayoutRight> coefs_view_t;
-  coefs_view_t coefs_view;
-#endif
   spline_code spcode;
   type_code tcode;
   double* restrict coefs;
@@ -62,10 +65,17 @@ struct multi_UBspline_3d_d
   size_t coefs_size;
 };
 
+template<Devices D>
+struct multi_UBspline_3d_d : public multi_UBspline_3d_d_common
+{
+};
+
+
+
 //////////////////////////////
 // Single precision complex //
 //////////////////////////////
-struct multi_UBspline_3d_c
+struct multi_UBspline_3d_c_common
 {
   spline_code spcode;
   type_code tcode;
@@ -79,10 +89,16 @@ struct multi_UBspline_3d_c
   complex_float* restrict lapl3;
 };
 
+template<Devices D>
+struct multi_UBspline_3d_c : public multi_UBspline_3d_c_common
+{
+};
+
+
 //////////////////////////////
 // Double precision complex //
 //////////////////////////////
-struct multi_UBspline_3d_z
+struct multi_UBspline_3d_z_common
 {
   spline_code spcode;
   type_code tcode;
@@ -95,5 +111,16 @@ struct multi_UBspline_3d_z
   // temporary storage for laplacian components
   complex_double* restrict lapl3;
 };
+
+template<Devices D>
+struct multi_UBspline_3d_z : public multi_UBspline_3d_z_common
+{
+};
+
+//if needed bring in KOKKOS and other device specializations
+#ifdef QMC_USE_KOKKOS
+#include "Numerics/Einspline/multi_bspline_structs_kokkos.h"
+#endif
+
 
 #endif

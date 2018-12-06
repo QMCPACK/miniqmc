@@ -55,4 +55,8 @@ QMC_ALIGNAS const double MultiBsplineData<double>::d2A44[16] = {
     0.0, 0.0, -1.0, 1.0, 0.0, 0.0, 3.0, -2.0,
     0.0, 0.0, -3.0, 1.0, 0.0, 0.0, 1.0, 0.0};
 // clang-format on
+
+template class MultiBsplineData<double>;
+template class MultiBsplineData<float>;
+
 } // namespace qmcplusplus

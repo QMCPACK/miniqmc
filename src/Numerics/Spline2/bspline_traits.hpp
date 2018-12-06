@@ -17,30 +17,31 @@
 #ifndef QMCPLUSPLUS_BSPLINE_SPLINE2_TRAITS_H
 #define QMCPLUSPLUS_BSPLINE_SPLINE2_TRAITS_H
 
+#include "Devices.h"
 #include <Numerics/Einspline/bspline.h>
 
 namespace qmcplusplus
 {
 /** trait class to map (datatype,D) to Einspline engine type */
-template<typename T, unsigned D>
+template<Devices D, typename T, unsigned DIM>
 struct bspline_traits
 {};
 
-template<>
-struct bspline_traits<float, 3>
+template<Devices D>
+struct bspline_traits<D, float, 3>
 {
-  typedef multi_UBspline_3d_s SplineType;
-  typedef UBspline_3d_s SingleSplineType;
+  typedef multi_UBspline_3d_s<D> SplineType;
+  typedef UBspline_3d_s<D> SingleSplineType;
   typedef BCtype_s BCType;
   typedef float real_type;
   typedef float value_type;
 };
 
-template<>
-struct bspline_traits<double, 3>
+template<Devices D>
+struct bspline_traits<D, double, 3>
 {
-  typedef multi_UBspline_3d_d SplineType;
-  typedef UBspline_3d_d SingleSplineType;
+  typedef multi_UBspline_3d_d<D> SplineType;
+  typedef UBspline_3d_d<D> SingleSplineType;
   typedef BCtype_d BCType;
   typedef double real_type;
   typedef double value_type;
@@ -52,26 +53,26 @@ template<typename ST>
 struct bspline_type
 {};
 
-template<>
-struct bspline_type<multi_UBspline_3d_s>
+template<Devices D>
+struct bspline_type<multi_UBspline_3d_s<D>>
 {
   typedef float value_type;
 };
 
-template<>
-struct bspline_type<multi_UBspline_3d_d>
+template<Devices D>
+struct bspline_type<multi_UBspline_3d_d<D>>
 {
   typedef double value_type;
 };
 
-template<>
-struct bspline_type<UBspline_3d_s>
+template<Devices D>
+struct bspline_type<UBspline_3d_s<D>>
 {
   typedef float value_type;
 };
 
-template<>
-struct bspline_type<UBspline_3d_d>
+template<Devices D>
+struct bspline_type<UBspline_3d_d<D>>
 {
   typedef double value_type;
 };

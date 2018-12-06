@@ -39,6 +39,8 @@ struct Mallocator
 
   T* allocate(std::size_t n)
   {
+    if(n == 0)
+      return nullptr;
 #if __GLIBC__ == 2 && __GLIBC_MINOR__ >= 16
     return static_cast<T*>(aligned_alloc(Align, n * sizeof(T)));
 #else
@@ -47,7 +49,7 @@ struct Mallocator
     return static_cast<T*>(pt);
 #endif
   }
-  void deallocate(T* p, std::size_t) { free(p); }
+  void deallocate(T* p, std::size_t) { if ( p != nullptr) free(p); }
 };
 
 template<class T1, size_t Align1, class T2, size_t Align2>

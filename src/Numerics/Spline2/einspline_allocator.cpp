@@ -1,5 +1,6 @@
 /////////////////////////////////////////////////////////////////////////////
 //  einspline:  a library for creating and evaluating B-splines            //
+//  Modified 2018 Peter Doak
 //  Copyright (C) 2007 Kenneth P. Esler, Jr.                               //
 //                                                                         //
 //  This program is free software; you can redistribute it and/or modify   //
@@ -25,13 +26,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <inttypes.h>
+#include "Devices.h"
 #include "config.h"
 #include "Numerics/Einspline/bspline.h"
-#ifdef FUTURE_WAVEFUNCTIONS
 #include "Numerics/Spline2/einspline_allocator.h"
-#else
-#include "Numerics/Spline2/future/einspline_allocator.h"
-#endif
 
 #if defined(HAVE_POSIX_MEMALIGN)
 
@@ -71,16 +69,13 @@ void einspline_free(void* aligned)
 }
 #endif
 
-multi_UBspline_3d_s* einspline_create_multi_UBspline_3d_s(Ugrid x_grid,
-                                                          Ugrid y_grid,
-                                                          Ugrid z_grid,
-                                                          BCtype_s xBC,
-                                                          BCtype_s yBC,
-                                                          BCtype_s zBC,
-                                                          int num_splines)
+template<Devices D>
+void einspline_create_multi_UBspline_3d_s(multi_UBspline_3d_s<D>*& restrict spline, Ugrid x_grid,
+                                          Ugrid y_grid, Ugrid z_grid, BCtype_s xBC, BCtype_s yBC,
+                                          BCtype_s zBC, int num_splines)
 {
   // Create new spline
-  multi_UBspline_3d_s* restrict spline = new multi_UBspline_3d_s;
+  spline = new multi_UBspline_3d_s<D>;
   if (!spline)
   {
     fprintf(stderr, "Out of memory allocating spline in create_multi_UBspline_3d_s.\n");
@@ -122,33 +117,15 @@ multi_UBspline_3d_s* einspline_create_multi_UBspline_3d_s(Ugrid x_grid,
   z_grid.delta_inv = 1.0 / z_grid.delta;
   spline->z_grid   = z_grid;
 
-  const int ND   = QMC_CLINE / sizeof(float);
-  int N        = (num_splines % ND) ? (num_splines + ND - num_splines % ND) : num_splines;
+  const int ND     = QMC_CLINE / sizeof(float);
+  const size_t N   = ((num_splines + ND - 1) / ND) * ND;
   spline->x_stride = (size_t)Ny * (size_t)Nz * (size_t)N;
   spline->y_stride = (size_t)Nz * N;
   spline->z_stride = N;
 
   spline->coefs_size = (size_t)Nx * spline->x_stride;
 
-  spline->coefs_view = multi_UBspline_3d_s::coefs_view_t("Multi_UBspline_3d_s", Nx, Ny, Nz, N);
-
-
-  //Check that data layout is as expected
-  //
-  int strides[4];
-  spline->coefs_view.stride(strides);
-  if (spline->x_stride != strides[0] || spline->y_stride != strides[1] ||
-      spline->z_stride != strides[2] || 1 != strides[3])
-    fprintf(stderr,
-            "Kokkos View has non-compatible strides %i %i | %i %i | %i %i\n",
-            spline->x_stride,
-            strides[0],
-            spline->y_stride,
-            strides[1],
-            spline->z_stride,
-            strides[2]);
-
-  spline->coefs = spline->coefs_view.data();
+  einspline_create_multi_UBspline_3d_s_coefs<D>(spline, Nx, Ny, Nz, N);
 
   if (!spline->coefs)
   {
@@ -157,38 +134,16 @@ multi_UBspline_3d_s* einspline_create_multi_UBspline_3d_s(Ugrid x_grid,
             "create_multi_UBspline_3d_s.\n");
     abort();
   }
-
-#if 0
-  //test first-touch later
-  const size_t xs = spline->x_stride;
-  const size_t ys = spline->y_stride;
-  const size_t zs = spline->z_stride;
-
-  const float czero=0;
-#pragma omp parallel for collapse(3)
-  for(size_t i=0; i<Nx; ++i)
-    for(size_t j=0; j<Ny; ++j)
-      for(size_t k=0; k<Nz; ++k)
-      {
-        float* restrict coefs = spline->coefs + i*xs + j*ys + k*zs; 
-        for(size_t s=0; s<N; ++s)
-          coefs[s]=czero;
-      }
-#endif
-
-  return spline;
 }
 
-multi_UBspline_3d_d* einspline_create_multi_UBspline_3d_d(Ugrid x_grid,
-                                                          Ugrid y_grid,
-                                                          Ugrid z_grid,
-                                                          BCtype_d xBC,
-                                                          BCtype_d yBC,
-                                                          BCtype_d zBC,
-                                                          int num_splines)
+
+template<Devices D>
+void einspline_create_multi_UBspline_3d_d(multi_UBspline_3d_d<D>*& spline, Ugrid x_grid,
+                                          Ugrid y_grid, Ugrid z_grid, BCtype_d xBC, BCtype_d yBC,
+                                          BCtype_d zBC, int num_splines)
 {
   // Create new spline
-  multi_UBspline_3d_d* restrict spline = new multi_UBspline_3d_d;
+  spline = new multi_UBspline_3d_d<D>;
 
   if (!spline)
   {
@@ -232,33 +187,16 @@ multi_UBspline_3d_d* einspline_create_multi_UBspline_3d_d(Ugrid x_grid,
   z_grid.delta_inv = 1.0 / z_grid.delta;
   spline->z_grid   = z_grid;
 
-  const int ND = QMC_CLINE / sizeof(double);
-  int N        = (num_splines % ND) ? (num_splines + ND - num_splines % ND) : num_splines;
+  const int ND   = QMC_CLINE / sizeof(double);
+  const size_t N = ((num_splines + ND - 1) / ND) * ND;
 
-  spline->x_stride = (size_t)Ny * (size_t)Nz * (size_t)N;
+  spline->x_stride = (size_t)Ny * (size_t)Nz * N;
   spline->y_stride = Nz * N;
   spline->z_stride = N;
 
   spline->coefs_size = (size_t)Nx * spline->x_stride;
 
-  spline->coefs_view = multi_UBspline_3d_d::coefs_view_t("Multi_UBspline_3d_d", Nx, Ny, Nz, N);
-
-  //Check that data layout is as expected
-  //
-  int strides[4];
-  spline->coefs_view.stride(strides);
-  if (spline->x_stride != strides[0] || spline->y_stride != strides[1] ||
-      spline->z_stride != strides[2] || 1 != strides[3])
-    fprintf(stderr,
-            "Kokkos View has non-compatible strides %i %i | %i %i | %i %i\n",
-            spline->x_stride,
-            strides[0],
-            spline->y_stride,
-            strides[1],
-            spline->z_stride,
-            strides[2]);
-
-  spline->coefs = spline->coefs_view.data();
+  einspline_create_multi_UBspline_3d_d_coefs<D>(spline, Nx, Ny, Nz, N);
 
   if (!spline->coefs)
   {
@@ -267,24 +205,19 @@ multi_UBspline_3d_d* einspline_create_multi_UBspline_3d_d(Ugrid x_grid,
             "create_multi_UBspline_3d_d.\n");
     abort();
   }
-
-  return spline;
 }
 
-UBspline_3d_d* einspline_create_UBspline_3d_d(Ugrid x_grid,
-                                              Ugrid y_grid,
-                                              Ugrid z_grid,
-                                              BCtype_d xBC,
-                                              BCtype_d yBC,
-                                              BCtype_d zBC)
+template<Devices D>
+void einspline_create_UBspline_3d_d(UBspline_3d_d<D>*& spline, Ugrid x_grid, Ugrid y_grid,
+                                    Ugrid z_grid, BCtype_d xBC, BCtype_d yBC, BCtype_d zBC)
 {
   // Create new spline
-  UBspline_3d_d* restrict spline = (UBspline_3d_d*)malloc(sizeof(UBspline_3d_d));
-  spline->spcode                 = U3D;
-  spline->tcode                  = DOUBLE_REAL;
-  spline->xBC                    = xBC;
-  spline->yBC                    = yBC;
-  spline->zBC                    = zBC;
+  spline         = (UBspline_3d_d<D>*)malloc(sizeof(UBspline_3d_d<D>));
+  spline->spcode = U3D;
+  spline->tcode  = DOUBLE_REAL;
+  spline->xBC    = xBC;
+  spline->yBC    = yBC;
+  spline->zBC    = zBC;
 
   // Setup internal variables
   int Mx = x_grid.num;
@@ -320,26 +253,20 @@ UBspline_3d_d* einspline_create_UBspline_3d_d(Ugrid x_grid,
   spline->y_stride = Nz;
 
   spline->coefs_size = (size_t)Nx * (size_t)Ny * (size_t)Nz;
-
-  spline->coefs = (double*)einspline_alloc(sizeof(double) * spline->coefs_size, QMC_CLINE);
-
-  return spline;
+  einspline_create_UBspline_3d_d_coefs<D>(spline, Nx, Ny, Nz);
 }
 
-UBspline_3d_s* einspline_create_UBspline_3d_s(Ugrid x_grid,
-                                              Ugrid y_grid,
-                                              Ugrid z_grid,
-                                              BCtype_s xBC,
-                                              BCtype_s yBC,
-                                              BCtype_s zBC)
+template<Devices D>
+void einspline_create_UBspline_3d_s(UBspline_3d_s<D>*& spline, Ugrid x_grid, Ugrid y_grid,
+                                    Ugrid z_grid, BCtype_s xBC, BCtype_s yBC, BCtype_s zBC)
 {
   // Create new spline
-  UBspline_3d_s* spline = (UBspline_3d_s*)malloc(sizeof(UBspline_3d_s));
-  spline->spcode        = U3D;
-  spline->tcode         = SINGLE_REAL;
-  spline->xBC           = xBC;
-  spline->yBC           = yBC;
-  spline->zBC           = zBC;
+  spline         = (UBspline_3d_s<D>*)malloc(sizeof(UBspline_3d_s<D>));
+  spline->spcode = U3D;
+  spline->tcode  = SINGLE_REAL;
+  spline->xBC    = xBC;
+  spline->yBC    = yBC;
+  spline->zBC    = zBC;
   // Setup internal variables
   int Mx = x_grid.num;
   int My = y_grid.num;
@@ -374,7 +301,48 @@ UBspline_3d_s* einspline_create_UBspline_3d_s(Ugrid x_grid,
   spline->y_stride = Nz;
 
   spline->coefs_size = (size_t)Nx * (size_t)Ny * (size_t)Nz;
-  spline->coefs      = (float*)einspline_alloc(sizeof(float) * spline->coefs_size, QMC_CLINE);
-
-  return spline;
+  einspline_create_UBspline_3d_s_coefs<D>(spline, Nx, Ny, Nz);
 }
+
+// This is necessary boilerplate to avoid unecessary multiple compilation.
+// Looking into metaprogramming solution or refactor that eleminates the need
+// for so much explicit instantiation
+
+template void
+einspline_create_multi_UBspline_3d_s(multi_UBspline_3d_s<Devices::CPU>*& spline,
+                                     Ugrid x_grid, Ugrid y_grid, Ugrid z_grid, BCtype_s xBC,
+                                     BCtype_s yBC, BCtype_s zBC, int num_splines);
+
+template void einspline_create_multi_UBspline_3d_d(multi_UBspline_3d_d<Devices::CPU>*& spline,
+                                                   Ugrid x_grid, Ugrid y_grid, Ugrid z_grid,
+                                                   BCtype_d xBC, BCtype_d yBC, BCtype_d zBC,
+                                                   int num_splines);
+
+template void einspline_create_UBspline_3d_s(UBspline_3d_s<Devices::CPU>*& spline, Ugrid x_grid,
+                                             Ugrid y_grid, Ugrid z_grid, BCtype_s xBC, BCtype_s yBC,
+                                             BCtype_s zBC);
+
+template void einspline_create_UBspline_3d_d(UBspline_3d_d<Devices::CPU>*& spline, Ugrid x_grid,
+                                             Ugrid y_grid, Ugrid z_grid, BCtype_d xBC, BCtype_d yBC,
+                                             BCtype_d zBC);
+
+#ifdef QMC_USE_KOKKOS
+template void
+einspline_create_multi_UBspline_3d_s(multi_UBspline_3d_s<Devices::KOKKOS>*& restrict spline,
+                                     Ugrid x_grid, Ugrid y_grid, Ugrid z_grid, BCtype_s xBC,
+                                     BCtype_s yBC, BCtype_s zBC, int num_splines);
+
+template void einspline_create_multi_UBspline_3d_d(multi_UBspline_3d_d<Devices::KOKKOS>*& spline,
+                                                   Ugrid x_grid, Ugrid y_grid, Ugrid z_grid,
+                                                   BCtype_d xBC, BCtype_d yBC, BCtype_d zBC,
+                                                   int num_splines);
+template void einspline_create_UBspline_3d_s(UBspline_3d_s<Devices::KOKKOS>*& spline, Ugrid x_grid,
+                                             Ugrid y_grid, Ugrid z_grid, BCtype_s xBC, BCtype_s yBC,
+                                             BCtype_s zBC);
+
+
+template void einspline_create_UBspline_3d_d(UBspline_3d_d<Devices::KOKKOS>*& spline, Ugrid x_grid,
+                                             Ugrid y_grid, Ugrid z_grid, BCtype_d xBC, BCtype_d yBC,
+                                             BCtype_d zBC);
+
+#endif

@@ -65,7 +65,10 @@ void print_help()
 
 int main(int argc, char** argv)
 {
+  #ifdef QMC_USE_KOKKOS
   Kokkos::initialize(argc, argv);
+  #endif
+  constexpr Devices DT = Devices::CPU;
   { //Begin kokkos block.
 
 
@@ -81,7 +84,7 @@ int main(int argc, char** argv)
     int nb    = 1;
     int nc    = 1;
     int iseed = 11;
-    RealType Rmax(1.7);
+    RealType Rmax = 1.7;
     string wfc_name("J2");
 
     bool verbose = false;
@@ -129,9 +132,9 @@ int main(int argc, char** argv)
     print_version(verbose);
 
     if (verbose)
-      outputManager.setVerbosity(Verbosity::HIGH);
+      OutputManagerClass::get().setVerbosity(Verbosity::HIGH);
     else
-      outputManager.setVerbosity(Verbosity::LOW);
+      OutputManagerClass::get().setVerbosity(Verbosity::LOW);
 
     if (wfc_name != "J1" && wfc_name != "J2" && wfc_name != "J3" && wfc_name != "JeeI")
     {
@@ -196,8 +199,8 @@ int main(int argc, char** argv)
       WaveFunctionComponentPtr wfc_ref = nullptr;
       if (wfc_name == "J2")
       {
-        TwoBodyJastrow<BsplineFunctor<RealType>>* J =
-            new TwoBodyJastrow<BsplineFunctor<RealType>>(els);
+        TwoBodyJastrow<DT, BsplineFunctor<DT, RealType>>* J =
+	  new TwoBodyJastrow<DT, BsplineFunctor<DT, RealType>>(els);
         buildJ2(*J, els.Lattice.WignerSeitzRadius);
         wfc = dynamic_cast<WaveFunctionComponentPtr>(J);
         cout << "Built J2" << endl;
@@ -209,8 +212,8 @@ int main(int argc, char** argv)
       }
       else if (wfc_name == "J1")
       {
-        OneBodyJastrow<BsplineFunctor<RealType>>* J =
-            new OneBodyJastrow<BsplineFunctor<RealType>>(ions, els);
+        OneBodyJastrow<DT, BsplineFunctor<DT, RealType>>* J =
+	  new OneBodyJastrow<DT, BsplineFunctor<DT, RealType>>(ions, els);
         buildJ1(*J, els.Lattice.WignerSeitzRadius);
         wfc = dynamic_cast<WaveFunctionComponentPtr>(J);
         cout << "Built J1" << endl;
@@ -222,8 +225,8 @@ int main(int argc, char** argv)
       }
       else if (wfc_name == "JeeI" || wfc_name == "J3")
       {
-        ThreeBodyJastrow<PolynomialFunctor3D>* J =
-            new ThreeBodyJastrow<PolynomialFunctor3D>(ions, els);
+        ThreeBodyJastrow<DT, PolynomialFunctor3D>* J =
+	  new ThreeBodyJastrow<DT, PolynomialFunctor3D>(ions, els);
         buildJeeI(*J, els.Lattice.WignerSeitzRadius);
         wfc = dynamic_cast<WaveFunctionComponentPtr>(J);
         cout << "Built JeeI" << endl;
@@ -456,6 +459,8 @@ int main(int argc, char** argv)
       cout << "All checks passed for " << wfc_name << std::endl;
 
   } //end kokkos block
+  #ifdef QMC_USE_KOKKOS
   Kokkos::finalize();
+  #endif
   return 0;
 }

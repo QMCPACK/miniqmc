@@ -2,29 +2,33 @@
 // This file is distributed under the University of Illinois/NCSA Open Source
 // License.  See LICENSE file in top directory for details.
 //
-// Copyright (c) 2017 QMCPACK developers.
+// Copyright (c) 2018 QMCPACK developers.
 //
-// File developed by: M. Graham Lopez
+// File developed by:
+// Peter Doak, doakpw@ornl.gov, Oak Ridge National Lab
 //
-// File created by: M. Graham Lopez
+// File created by:
+// Peter Doak, doakpw@ornl.gov, Oak Ridge National Lab
 ////////////////////////////////////////////////////////////////////////////////
 // -*- C++ -*-
 
 /**
- * @file Determinant.h
- * @brief Determinant piece of the wave function
+ * @file
+ * @brief CPU implementation of Determinant
  */
 
 #ifndef QMCPLUSPLUS_DETERMINANT_DEVICE_IMP_CPU_H
 #define QMCPLUSPLUS_DETERMINANT_DEVICE_IMP_CPU_H
+#include "Devices.h"
 #include "Numerics/OhmmsPETE/OhmmsMatrix.h"
 #include "Numerics/DeterminantOperators.h"
+#include "DeterminantDevice.h"
+#include "DeterminantDeviceImp.h"
 #include "QMCWaveFunctions/WaveFunctionComponent.h"
+
 #include "Utilities/Configuration.h"
 
 namespace qmcplusplus
-{
-namespace future
 {
 /**@{Determinant utilities */
 /** Inversion of a double matrix after LU factorization*/
@@ -186,8 +190,8 @@ void checkDiffCPU(const MT1& a, const MT2& b, const std::string& tag)
 }
 
 template<>
-class DeterminantDeviceImp<DDT::CPU>
-  : public DeterminantDevice<DeterminantDeviceImp<DDT::CPU>>
+class DeterminantDeviceImp<Devices::CPU>
+  : public DeterminantDevice<DeterminantDeviceImp<Devices::CPU>>
 {
 public:
   using QMCT = QMCTraits;
@@ -308,7 +312,9 @@ private:
   aligned_vector<double> work;
   Matrix<QMCT::RealType> psiMsave;
 };
-}
+
+extern template class DeterminantDeviceImp<Devices::CPU>;
+
 } // namespace qmcplusplus
 
 #endif

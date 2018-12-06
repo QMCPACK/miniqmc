@@ -22,7 +22,7 @@
 #include <Numerics/OhmmsPETE/Tensor.h>
 #include <Utilities/SIMD/allocator.hpp>
 #include <Numerics/PosTransformer.h>
-
+#include "Particle/ParticleAttrib.h"
 /* Soa Container for D-dim vectors
  *
  * Alternative to Container<TinyVector<T,D> > to support SoA algorithms
