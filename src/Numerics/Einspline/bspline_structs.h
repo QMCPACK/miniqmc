@@ -21,11 +21,14 @@
 #ifndef BSPLINE_STRUCTS_STD_H
 #define BSPLINE_STRUCTS_STD_H
 #include <stdlib.h>
+#include "Devices.h"
+
+using qmcplusplus::Devices;
 
 ///////////////////////////
 // Single precision real //
 ///////////////////////////
-struct UBspline_3d_s
+struct UBspline_3d_s_common
 {
   spline_code spcode;
   type_code tcode;
@@ -36,10 +39,15 @@ struct UBspline_3d_s
   size_t coefs_size;
 };
 
+template<Devices D>
+struct UBspline_3d_s : public UBspline_3d_s_common
+{
+};
+
 ///////////////////////////
 // Double precision real //
 ///////////////////////////
-struct UBspline_3d_d
+struct UBspline_3d_d_common
 {
   spline_code spcode;
   type_code tcode;
@@ -50,10 +58,16 @@ struct UBspline_3d_d
   size_t coefs_size;
 };
 
+template<Devices D>
+struct UBspline_3d_d : public UBspline_3d_d_common
+{
+};
+
+
 //////////////////////////////
 // Single precision complex //
 //////////////////////////////
-struct UBspline_3d_c
+struct UBspline_3d_c_common
 {
   spline_code spcode;
   type_code tcode;
@@ -63,10 +77,15 @@ struct UBspline_3d_c
   BCtype_c xBC, yBC, zBC;
 };
 
+template<Devices D>
+struct UBspline_3d_c : public UBspline_3d_c_common
+{
+};
+
 //////////////////////////////
 // Double precision complex //
 //////////////////////////////
-struct UBspline_3d_z
+struct UBspline_3d_z_common
 {
   spline_code spcode;
   type_code tcode;
@@ -75,5 +94,11 @@ struct UBspline_3d_z
   Ugrid x_grid, y_grid, z_grid;
   BCtype_z xBC, yBC, zBC;
 };
+
+template<Devices D>
+struct UBspline_3d_z : public UBspline_3d_z_common
+{
+};
+
 
 #endif

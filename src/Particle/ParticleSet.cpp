@@ -42,18 +42,6 @@
 
 namespace qmcplusplus
 {
-enum DistanceTimers
-{
-  Timer_makeMove,
-  Timer_setActive,
-  Timer_acceptMove
-};
-
-TimerNameList_t<DistanceTimers> DistanceTimerNames{
-    {Timer_makeMove, "Make move"},
-    {Timer_setActive, "Set active"},
-    {Timer_acceptMove, "Accept move"},
-};
 
 ParticleSet::ParticleSet()
     : UseBoundBox(true), IsGrouped(true), myName("none"), SameMass(true), myTwist(0.0), activePtcl(-1)

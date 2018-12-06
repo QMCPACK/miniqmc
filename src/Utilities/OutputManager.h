@@ -16,8 +16,11 @@
 #ifndef OUTPUTMANAGER_H
 #define OUTPUTMANAGER_H
 
-#include <Utilities/InfoStream.h>
+#include <iostream>
+#include <iostream>
+#include <iomanip>
 
+#include <Utilities/InfoStream.h>
 
 enum class Verbosity
 {
@@ -33,17 +36,48 @@ enum class LogType
   DEBUG
 };
 
-extern InfoStream infoSummary;
-extern InfoStream infoLog;
-extern InfoStream infoError;
-extern InfoStream infoDebug;
+class ISSingle
+{
+private:
+  ISSingle() : infoSummary(&std::cout),
+	       infoLog(&std::cout),
+	       infoError(&std::cerr),
+	       infoDebug(&std::cout)
+  {}
+  ~ISSingle() {}
+  ISSingle(const ISSingle&) = delete;
+  ISSingle& operator=(const ISSingle&) = delete;
+  ISSingle(ISSingle&) = delete;
+  ISSingle& operator=(ISSingle&) = delete;
+public:
+  static ISSingle& get()
+  {
+    static ISSingle instance;
+    return instance;
+  }
+  InfoStream infoSummary;
+  InfoStream infoLog;
+  InfoStream infoError;
+  InfoStream infoDebug;
+};
 
 class OutputManagerClass
 {
+public:
+  using IS = ISSingle;
   Verbosity global_verbosity_level;
 
+private:
+  OutputManagerClass(){ setVerbosity(Verbosity::LOW); }
+  OutputManagerClass(const OutputManagerClass&) = delete;
+  OutputManagerClass& operator=(const OutputManagerClass&) = delete;
+  
 public:
-  OutputManagerClass(Verbosity level = Verbosity::LOW) { setVerbosity(level); }
+  static OutputManagerClass& get()
+  {
+    static OutputManagerClass instance;;
+    return instance;
+  }
 
   void setVerbosity(Verbosity level);
 
@@ -58,15 +92,15 @@ public:
     switch (log)
     {
     case LogType::SUMMARY:
-      return infoSummary.getStream();
+      return IS::get().infoSummary.getStream();
     case LogType::APP:
-      return infoLog.getStream();
+      return IS::get().infoLog.getStream();
     case LogType::ERROR:
-      return infoError.getStream();
+      return IS::get().infoError.getStream();
     case LogType::DEBUG:
-      return infoDebug.getStream();
+      return IS::get().infoDebug.getStream();
     }
-    return infoDebug.getStream();
+    return IS::get().infoDebug.getStream();
   }
 
   /// Pause the summary and log streams
@@ -79,32 +113,30 @@ public:
   void shutOff();
 };
 
-extern OutputManagerClass outputManager;
-
 namespace qmcplusplus
 {
-inline std::ostream& app_summary() { return outputManager.getStream(LogType::SUMMARY); }
+  inline std::ostream& app_summary() { return OutputManagerClass::get().getStream(LogType::SUMMARY); }
 
-inline std::ostream& app_log() { return outputManager.getStream(LogType::APP); }
+inline std::ostream& app_log() { return OutputManagerClass::get().getStream(LogType::APP); }
 
 inline std::ostream& app_error()
 {
-  outputManager.getStream(LogType::ERROR) << "ERROR ";
-  return outputManager.getStream(LogType::ERROR);
+  OutputManagerClass::get().getStream(LogType::ERROR) << "ERROR ";
+  return OutputManagerClass::get().getStream(LogType::ERROR);
 }
 
 inline std::ostream& app_warning()
 {
-  outputManager.getStream(LogType::ERROR) << "WARNING ";
-  return outputManager.getStream(LogType::ERROR);
+  OutputManagerClass::get().getStream(LogType::ERROR) << "WARNING ";
+  return OutputManagerClass::get().getStream(LogType::ERROR);
 }
 
-inline std::ostream& app_debug_stream() { return outputManager.getStream(LogType::DEBUG); }
+inline std::ostream& app_debug_stream() { return OutputManagerClass::get().getStream(LogType::DEBUG); }
 
 // From https://stackoverflow.com/questions/11826554/standard-no-op-output-stream
 // If debugging is not active, this skips evaluation of the arguments
 #define app_debug                        \
-  if (!outputManager.isDebugActive()) {} \
+  if (!OutputManagerClass::get().isDebugActive()) {} \
   else                                   \
     app_debug_stream
 

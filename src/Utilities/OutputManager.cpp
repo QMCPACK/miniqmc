@@ -12,35 +12,26 @@
 
 #include <Utilities/OutputManager.h>
 
-
-InfoStream infoSummary(&std::cout);
-InfoStream infoLog(&std::cout);
-InfoStream infoError(&std::cerr);
-InfoStream infoDebug(&std::cout);
-
-OutputManagerClass outputManager(Verbosity::LOW);
-
-
 void OutputManagerClass::setVerbosity(Verbosity level)
 {
   global_verbosity_level = level;
   if (isActive(Verbosity::DEBUG))
   {
-    infoSummary.resume();
-    infoLog.resume();
-    infoDebug.resume();
+    IS::get().infoSummary.resume();
+    IS::get().infoLog.resume();
+    IS::get().infoDebug.resume();
   }
   else if (isActive(Verbosity::HIGH))
   {
-    infoSummary.resume();
-    infoLog.resume();
-    infoDebug.pause();
+    IS::get().infoSummary.resume();
+    IS::get().infoLog.resume();
+    IS::get().infoDebug.pause();
   }
   else if (isActive(Verbosity::LOW))
   {
-    infoSummary.resume();
-    infoLog.pause();
-    infoDebug.pause();
+    IS::get().infoSummary.resume();
+    IS::get().infoLog.pause();
+    IS::get().infoDebug.pause();
   }
 }
 
@@ -48,20 +39,20 @@ bool OutputManagerClass::isActive(Verbosity level) { return level <= global_verb
 
 void OutputManagerClass::pause()
 {
-  infoSummary.pause();
-  infoLog.pause();
+  IS::get().infoSummary.pause();
+  IS::get().infoLog.pause();
 }
 
 void OutputManagerClass::resume()
 {
-  infoSummary.resume();
-  infoLog.resume();
+  IS::get().infoSummary.resume();
+  IS::get().infoLog.resume();
 }
 
 void OutputManagerClass::shutOff()
 {
-  infoSummary.shutOff();
-  infoLog.shutOff();
-  infoError.shutOff();
-  infoDebug.shutOff();
+  IS::get().infoSummary.shutOff();
+  IS::get().infoLog.shutOff();
+  IS::get().infoError.shutOff();
+  IS::get().infoDebug.shutOff();
 }

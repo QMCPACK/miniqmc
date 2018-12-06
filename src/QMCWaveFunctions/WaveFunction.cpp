@@ -10,19 +10,15 @@
 ////////////////////////////////////////////////////////////////////////////////
 // -*- C++ -*-
 
-/*!
+/**
  * @file WaveFunction.cpp
-   @brief Wavefunction based on Structure of Arrays (SoA) storage
+ * @brief Wavefunction based on Structure of Arrays (SoA) storage
  */
 
 #include <QMCWaveFunctions/WaveFunction.h>
 #include <QMCWaveFunctions/Determinant.h>
-#ifdef FUTURE_WAVEFUNCTIONS
-#include <QMCWaveFunctions/future/Determinant.h>
-#include <QMCWaveFunctions/future/DeterminantDevice.h>
-#include <QMCWaveFunctions/future/DeterminantDeviceImp.h>
-#include <QMCWaveFunctions/future/DeterminantDeviceImpKOKKOS.h>
-#endif
+#include <QMCWaveFunctions/DeterminantDevice.h>
+#include <QMCWaveFunctions/DeterminantDeviceImp.h>
 #include <QMCWaveFunctions/DeterminantRef.h>
 #include <QMCWaveFunctions/Jastrow/BsplineFunctor.h>
 #include <QMCWaveFunctions/Jastrow/BsplineFunctorRef.h>
@@ -37,116 +33,6 @@
 
 namespace qmcplusplus
 {
-enum WaveFunctionTimers
-{
-  Timer_Det,
-  Timer_GL,
-};
-
-TimerNameLevelList_t<WaveFunctionTimers> WaveFunctionTimerNames =
-    {{Timer_Det, "Determinant", timer_level_fine}, {Timer_GL, "Kinetic Energy", timer_level_coarse}};
-
-
-void build_WaveFunction(bool useRef,
-                        WaveFunction& WF,
-                        ParticleSet& ions,
-                        ParticleSet& els,
-                        const RandomGenerator<QMCTraits::RealType>& RNG,
-                        bool enableJ3)
-{
-  using valT = WaveFunction::valT;
-  using posT = WaveFunction::posT;
-
-  if (WF.Is_built)
-  {
-    app_log() << "The wavefunction was built before!" << std::endl;
-    return;
-  }
-
-  const int nelup = els.getTotalNum() / 2;
-
-  if (useRef)
-  {
-    using J1OrbType = miniqmcreference::OneBodyJastrowRef<BsplineFunctorRef<valT>>;
-    using J2OrbType = miniqmcreference::TwoBodyJastrowRef<BsplineFunctorRef<valT>>;
-    using J3OrbType = miniqmcreference::ThreeBodyJastrowRef<PolynomialFunctor3D>;
-    using DetType   = miniqmcreference::DiracDeterminantRef;
-
-    ions.RSoA = ions.R;
-    els.RSoA  = els.R;
-
-    // distance tables
-    els.addTable(els, DT_SOA);
-    WF.ei_TableID = els.addTable(ions, DT_SOA);
-
-    // determinant component
-    WF.nelup  = nelup;
-    WF.Det_up = new DetType(nelup, RNG, 0);
-    WF.Det_dn = new DetType(els.getTotalNum() - nelup, RNG, nelup);
-
-    // J1 component
-    J1OrbType* J1 = new J1OrbType(ions, els);
-    buildJ1(*J1, els.Lattice.WignerSeitzRadius);
-    WF.Jastrows.push_back(J1);
-
-    // J2 component
-    J2OrbType* J2 = new J2OrbType(els);
-    buildJ2(*J2, els.Lattice.WignerSeitzRadius);
-    WF.Jastrows.push_back(J2);
-
-    // J3 component
-    if (enableJ3)
-    {
-      J3OrbType* J3 = new J3OrbType(ions, els);
-      buildJeeI(*J3, els.Lattice.WignerSeitzRadius);
-      WF.Jastrows.push_back(J3);
-    }
-  }
-  else
-  {
-    using J1OrbType = OneBodyJastrow<BsplineFunctor<valT>>;
-    using J2OrbType = TwoBodyJastrow<BsplineFunctor<valT>>;
-    using J3OrbType = ThreeBodyJastrow<PolynomialFunctor3D>;
-#ifdef FUTURE_WAVEFUNCTIONS
-    using DetType   = future::DiracDeterminant<future::DeterminantDeviceImp<future::DDT::KOKKOS>>;
-#else
-    using DetType   = DiracDeterminant;
-#endif
-    ions.RSoA = ions.R;
-    els.RSoA  = els.R;
-
-    // distance tables
-    els.addTable(els, DT_SOA);
-    WF.ei_TableID = els.addTable(ions, DT_SOA);
-
-    // determinant component
-    WF.nelup  = nelup;
-    WF.Det_up = new DetType(nelup, RNG, 0);
-    WF.Det_dn = new DetType(els.getTotalNum() - nelup, RNG, nelup);
-
-    // J1 component
-    J1OrbType* J1 = new J1OrbType(ions, els);
-    buildJ1(*J1, els.Lattice.WignerSeitzRadius);
-    WF.Jastrows.push_back(J1);
-
-    // J2 component
-    J2OrbType* J2 = new J2OrbType(els);
-    buildJ2(*J2, els.Lattice.WignerSeitzRadius);
-    WF.Jastrows.push_back(J2);
-
-    // J3 component
-    if (enableJ3)
-    {
-      J3OrbType* J3 = new J3OrbType(ions, els);
-      buildJeeI(*J3, els.Lattice.WignerSeitzRadius);
-      WF.Jastrows.push_back(J3);
-    }
-  }
-
-  WF.setupTimers();
-
-  WF.Is_built = true;
-}
 
 WaveFunction::~WaveFunction()
 {
@@ -161,11 +47,14 @@ WaveFunction::~WaveFunction()
 
 void WaveFunction::setupTimers()
 {
+  TimerNameLevelList_t<WaveFunctionTimers> WaveFunctionTimerNames =
+    {{Timer_Det, "Determinant", timer_level_fine}, {Timer_GL, "Kinetic Energy", timer_level_coarse}};
+
   setup_timers(timers, WaveFunctionTimerNames);
   for (int i = 0; i < Jastrows.size(); i++)
   {
     jastrow_timers.push_back(
-        TimerManager.createTimer(Jastrows[i]->WaveFunctionComponentName, timer_level_fine));
+			     TimerManagerClass::get().createTimer(Jastrows[i]->WaveFunctionComponentName, timer_level_fine));
   }
 }
 

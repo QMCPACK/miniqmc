@@ -76,8 +76,21 @@ struct MCDataType
  * decompositions
  * for efficient evaluations for the interactions with a finite cutoff.
  */
+enum DistanceTimers
+{
+  Timer_makeMove,
+  Timer_setActive,
+  Timer_acceptMove
+};
+
+  
 class ParticleSet : public QMCTraits, public PtclOnLatticeTraits
 {
+  TimerNameList_t<DistanceTimers> DistanceTimerNames{
+    {Timer_makeMove, "Make move"},
+    {Timer_setActive, "Set active"},
+    {Timer_acceptMove, "Accept move"},
+  };
 public:
   /// walker type
   typedef Walker<QMCTraits, PtclOnLatticeTraits> Walker_t;

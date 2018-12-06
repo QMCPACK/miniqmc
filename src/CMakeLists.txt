@@ -138,20 +138,29 @@ ENDIF()
     Utilities/XMLWriter.cpp
     Utilities/tinyxml/tinyxml2.cpp
     Utilities/qmcpack_version.cpp
+    Numerics/Spline2/einspline_allocator.cpp
     Numerics/Spline2/bspline_allocator.cpp
     Numerics/Spline2/MultiBsplineData.cpp
     ${GITREV_TMP}
     )
 
-  if(QMC_FUTURE_WAVEFUNCTIONS)
-    SET(UTILITIES Numerics/Spline2/future/einspline_allocator.cpp ${UTILITIES})
-  else(QMC_FUTURE_WAVEFUNCTIONS)
-    SET(UTILITIES Numerics/Spline2/einspline_allocator.cpp ${UTILITIES})
-  endif(QMC_FUTURE_WAVEFUNCTIONS)
+  # IF(QMC_USE_KOKKOS)
+  #   SET(UTILITIES Numerics/Spline2/einspline_allocator_kokkos.cpp ${UTILITIES})
+  # ENDIF(QMC_USE_KOKKOS)
   
   ADD_LIBRARY(qmcutil ${UTILITIES})
 
+  if(QMC_USE_KOKKOS)
+    target_link_libraries(qmcutil kokkos)
+    set(KOKKOS_SRC QMCWaveFunctions/DeterminantDeviceImpKOKKOS.cpp
+      QMCWaveFunctions/EinsplineSPODeviceImpKOKKOS.cpp)
+    set(QMCDEVICE_LINK_LIBRARIES kokkos)
+  endif(QMC_USE_KOKKOS)
 
+  ADD_LIBRARY(qmcdevice QMCWaveFunctions/DeterminantDeviceImpCPU.cpp
+    QMCWaveFunctions/EinsplineSPODeviceImpCPU.cpp ${KOKKOS_SRC})
+  target_link_libraries(qmcdevice ${QMCDEVICE_LINK_LIBRARIES})
+  
   # For unit tests, enable use for the fake RNG
   FUNCTION( USE_FAKE_RNG TARGET )
     TARGET_COMPILE_DEFINITIONS(${TARGET} PRIVATE "USE_FAKE_RNG")

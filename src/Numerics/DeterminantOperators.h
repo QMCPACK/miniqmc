@@ -32,6 +32,7 @@
 #include <Numerics/OhmmsPETE/OhmmsVector.h>
 #include <Numerics/OhmmsPETE/OhmmsMatrix.h>
 #include <Numerics/OhmmsBlas.h>
+#include "Particle/Lattice/CrystalLattice.h"
 
 namespace qmcplusplus
 {

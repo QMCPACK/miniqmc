@@ -30,7 +30,6 @@
 
 namespace qmcplusplus
 {
-TimerManagerClass TimerManager;
 
 bool timer_max_level_exceeded = false;
 
@@ -40,11 +39,10 @@ void TimerManagerClass::addTimer(NewTimer* t)
   {
     if (t->get_name().find(TIMER_STACK_SEPARATOR) != std::string::npos)
     {
-      app_log() << "Warning: Timer name (" << t->get_name() << ") should not contain the character "
-                << TIMER_STACK_SEPARATOR << std::endl;
+      // app_log() << "Warning: Timer name (" << t->get_name() << ") should not contain the character "
+      //           << TIMER_STACK_SEPARATOR << std::endl;
     }
-
-    if (timer_name_to_id.find(t->get_name()) == timer_name_to_id.end())
+    if (timer_name_to_id.count(t->get_name()) == 0)
     {
       t->set_id(max_timer_id);
       timer_id_name[t->get_id()]      = t->get_name();

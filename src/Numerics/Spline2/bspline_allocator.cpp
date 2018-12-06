@@ -15,11 +15,14 @@
  * Allocator::Policy is not defined precisely yet but is intended to select
  * the specialized allocator.
  */
+#include "Devices.h"
 #include "Numerics/Spline2/bspline_allocator.hpp"
 #include "Numerics/Spline2/einspline_allocator.h"
 
 
-multi_UBspline_3d_s* einspline_create_multi_UBspline_3d_s(Ugrid x_grid,
+template<Devices D>
+void einspline_create_multi_UBspline_3d_s(multi_UBspline_3d_s<D>*& spline,
+					  Ugrid x_grid,
                                                           Ugrid y_grid,
                                                           Ugrid z_grid,
                                                           BCtype_s xBC,
@@ -27,10 +30,14 @@ multi_UBspline_3d_s* einspline_create_multi_UBspline_3d_s(Ugrid x_grid,
                                                           BCtype_s zBC,
                                                           int num_splines);
 
-UBspline_3d_s* einspline_create_UBspline_3d_s(
-    Ugrid x_grid, Ugrid y_grid, Ugrid z_grid, BCtype_s xBC, BCtype_s yBC, BCtype_s zBC);
+template<Devices D>
+void einspline_create_UBspline_3d_s(
+				    UBspline_3d_s<D>*& spline,
+				    Ugrid x_grid, Ugrid y_grid, Ugrid z_grid, BCtype_s xBC, BCtype_s yBC, BCtype_s zBC);
 
-multi_UBspline_3d_d* einspline_create_multi_UBspline_3d_d(Ugrid x_grid,
+template<Devices D>
+void einspline_create_multi_UBspline_3d_d(multi_UBspline_3d_d<D>*& spline,
+					  Ugrid x_grid,
                                                           Ugrid y_grid,
                                                           Ugrid z_grid,
                                                           BCtype_d xBC,
@@ -38,41 +45,75 @@ multi_UBspline_3d_d* einspline_create_multi_UBspline_3d_d(Ugrid x_grid,
                                                           BCtype_d zBC,
                                                           int num_splines);
 
-UBspline_3d_d* einspline_create_UBspline_3d_d(
+template<Devices D>
+void einspline_create_UBspline_3d_d(UBspline_3d_d<D>*& spline,
     Ugrid x_grid, Ugrid y_grid, Ugrid z_grid, BCtype_d xBC, BCtype_d yBC, BCtype_d zBC);
 
 namespace qmcplusplus
 {
 namespace einspline
 {
-Allocator::Allocator() : Policy(0) {}
+template<Devices D>
+Allocator<D>::Allocator() : Policy(0) {}
 
-Allocator::~Allocator() {}
+template<Devices D>
+Allocator<D>::~Allocator() {}
 
-multi_UBspline_3d_s* Allocator::allocateMultiBspline(
+#ifdef QMC_USE_KOKKOS
+template<>
+template<typename SplineType>
+void Allocator<Devices::KOKKOS>::destroy(SplineType* spline)
+{
+    //Assign coefs_view to empty view because of Kokkos reference counting
+    // and garbage collection.
+    //spline->coefs_view = multi_UBspline_3d_d::coefs_view_t();
+    spline->coefs_view = SplineType::coefs_view_t();
+    free(spline);
+}
+#endif
+
+template<>
+template<typename SplineType>
+void Allocator<Devices::CPU>::destroy(SplineType* spline)
+{
+  einspline_free(spline->coefs);
+  free(spline);
+}
+
+template<Devices D>
+void Allocator<D>::allocateMultiBspline(multi_UBspline_3d_s<D>*& spline,
     Ugrid x_grid, Ugrid y_grid, Ugrid z_grid, BCtype_s xBC, BCtype_s yBC, BCtype_s zBC, int num_splines)
 {
-  return einspline_create_multi_UBspline_3d_s(x_grid, y_grid, z_grid, xBC, yBC, zBC, num_splines);
+  einspline_create_multi_UBspline_3d_s(spline, x_grid, y_grid, z_grid, xBC, yBC, zBC, num_splines);
 }
 
-multi_UBspline_3d_d* Allocator::allocateMultiBspline(
+template<Devices D>
+void Allocator<D>::allocateMultiBspline(multi_UBspline_3d_d<D>*& spline,
     Ugrid x_grid, Ugrid y_grid, Ugrid z_grid, BCtype_d xBC, BCtype_d yBC, BCtype_d zBC, int num_splines)
 {
-  return einspline_create_multi_UBspline_3d_d(x_grid, y_grid, z_grid, xBC, yBC, zBC, num_splines);
+  einspline_create_multi_UBspline_3d_d(spline, x_grid, y_grid, z_grid, xBC, yBC, zBC, num_splines);
 }
 
-UBspline_3d_d* Allocator::allocateUBspline(
+template<Devices D>
+void Allocator<D>::allocateUBspline(UBspline_3d_d<D>*& spline,
     Ugrid x_grid, Ugrid y_grid, Ugrid z_grid, BCtype_d xBC, BCtype_d yBC, BCtype_d zBC)
 {
-  return einspline_create_UBspline_3d_d(x_grid, y_grid, z_grid, xBC, yBC, zBC);
+  einspline_create_UBspline_3d_d(spline, x_grid, y_grid, z_grid, xBC, yBC, zBC);
 }
 
-UBspline_3d_s* Allocator::allocateUBspline(
+template<Devices D>
+void  Allocator<D>::allocateUBspline(UBspline_3d_s<D>*& spline,
     Ugrid x_grid, Ugrid y_grid, Ugrid z_grid, BCtype_s xBC, BCtype_s yBC, BCtype_s zBC)
 {
-  return einspline_create_UBspline_3d_s(x_grid, y_grid, z_grid, xBC, yBC, zBC);
+  return einspline_create_UBspline_3d_s(spline, x_grid, y_grid, z_grid, xBC, yBC, zBC);
 }
 
+template class Allocator<Devices::CPU>;
+template void Allocator<Devices::CPU>::destroy(multi_UBspline_3d_s<Devices::CPU>*);
+template void Allocator<Devices::CPU>::destroy(multi_UBspline_3d_d<Devices::CPU>*);
+#ifdef QMC_USE_KOKKOS
+template class Allocator<Devices::KOKKOS>;
+#endif
 
 } // namespace einspline
 } // namespace qmcplusplus

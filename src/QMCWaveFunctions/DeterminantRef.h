@@ -137,21 +137,10 @@ inline void
   constexpr T czero(0);
   T temp[m], rcopy[m];
   T c_ratio = cone / c_ratio_in;
-  Kokkos::Profiling::pushRegion("updateRow::gemvTrans");
   BLAS::gemv('T', m, m, c_ratio, pinv, m, tv, 1, czero, temp, 1);
-  Kokkos::Profiling::popRegion();
-
-  Kokkos::Profiling::pushRegion("updateRow::pokeSingleValue");
   temp[rowchanged] = cone - c_ratio;
-  Kokkos::Profiling::popRegion();
-
-  Kokkos::Profiling::pushRegion("updateRow::populateRcopy");
   std::copy_n(pinv + m * rowchanged, m, rcopy);
-  Kokkos::Profiling::popRegion();
-
-  Kokkos::Profiling::pushRegion("updateRow::ger");
   BLAS::ger(m, m, -cone, rcopy, 1, temp, 1, pinv, m);
-  Kokkos::Profiling::popRegion();
 }
 /**@}*/
 
@@ -266,7 +255,6 @@ struct DiracDeterminantRef : public qmcplusplus::WaveFunctionComponent
    */
   inline ValueType ratio(ParticleSet& P, int iel)
   {
-    
     const int nels = psiV.size();
     constexpr double shift(0.5);
     constexpr double czero(0);
@@ -279,16 +267,9 @@ struct DiracDeterminantRef : public qmcplusplus::WaveFunctionComponent
   /** accept the row and update the inverse */
   inline void acceptMove(ParticleSet& P, int iel)
   {
-    Kokkos::Profiling::pushRegion("Determinant::acceptMove");
     const int nels = psiV.size();
-    Kokkos::Profiling::pushRegion("Determinant::acceptMove::updateRow");
     updateRow(psiMinv.data(), psiV.data(), nels, nels, iel - FirstIndex, curRatio);
-    Kokkos::Profiling::popRegion();
-
-    Kokkos::Profiling::pushRegion("Determinant::acceptMove::copy_back");
     std::copy_n(psiV.data(), nels, psiMsave[iel - FirstIndex]);
-    Kokkos::Profiling::popRegion();
-    Kokkos::Profiling::popRegion();
   }
 
   /** accessor functions for checking */

@@ -35,6 +35,7 @@
 #include <Numerics/OhmmsPETE/TinyVector.h>
 #include <limits>
 #include "clean_inlining.h"
+#include "config.h"
 
 #ifndef TWOPI
 #ifndef M_PI

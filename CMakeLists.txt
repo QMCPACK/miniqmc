@@ -262,7 +262,8 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
     MESSAGE("searching in ${KOKKOS_PREFIX}/")
     ADD_SUBDIRECTORY(${KOKKOS_PREFIX} ${qmcpack_BINARY_DIR}/kokkos)
     INCLUDE_DIRECTORIES(${Kokkos_INCLUDE_DIRS_RET})
-    LINK_LIBRARIES(kokkos)
+    SET(CMAKE_CXX_FLAGS "-DQMC_USE_KOKKOS ${CMAKE_CXX_FLAGS}")
+    #LINK_LIBRARIES(kokkos)
   ENDIF()
 
   #------------------------------------
@@ -271,11 +272,16 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
   IF (QMC_USE_KOKKOS)
     #leave the flags alone, NVCC etc. don't accept the GNU flags
     MESSAGE("leaving flags alone")
-    #Kokkos sets the important flags, but MKL detection 
+    #Its not really accecptable to have Kokkos take over our build
+    #in such an opaque way
+    # For instance sets the important flags, but MKL detection
     # needs to know if the compiler is intel.  An ugly workaround.
     IF ( ${COMPILER} MATCHES "Intel" )
       SET( INTEL_COMPILER 1 )
     ENDIF()
+    IF( ${COMPILER} MATCHES "Clang" )
+      INCLUDE(${PROJECT_CMAKE}/ClangCompilers.cmake)
+    endif()
   ELSEIF( ${COMPILER} MATCHES "IBM" )
     INCLUDE(${PROJECT_CMAKE}/IBMCompilers.cmake)
   ELSEIF( ${COMPILER} MATCHES "Intel" )
@@ -565,6 +571,10 @@ endif()
 
 EXECUTE_PROCESS(COMMAND hostname OUTPUT_VARIABLE QMC_HOSTNAME OUTPUT_STRIP_TRAILING_WHITESPACE)
 CONFIGURE_FILE(${qmcpack_SOURCE_DIR}/qmcpack.settings ${qmcpack_BINARY_DIR}/bin/qmcpack.settings)
+
+# With ninja this allows you to see individual file build times
+# set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CMAKE_COMMAND} -E time")
+
 
 SUBDIRS(src)
 

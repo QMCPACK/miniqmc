@@ -32,7 +32,7 @@
 using std::endl;
 using qmcplusplus::app_summary;
 
-void print_version(bool verbose)
+void __attribute__((no_sanitize("memory"))) print_version(bool verbose)
 {
 #ifdef QMCPACK_GIT_BRANCH
   app_summary() << "miniqmc git branch: " << QMCPACK_GIT_BRANCH << endl;

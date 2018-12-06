@@ -97,7 +97,8 @@ struct QMCTraits
   // clang-format off
   enum {DIM = OHMMS_DIM};
   typedef OHMMS_INDEXTYPE                IndexType;
-  typedef OHMMS_PRECISION                RealType;
+  using RealType = double;
+  //typedef OHMMS_PRECISION                RealType;
   typedef OHMMS_PRECISION_FULL           EstimatorRealType;
 #if defined(QMC_COMPLEX)
   typedef std::complex<OHMMS_PRECISION>  ValueType;
