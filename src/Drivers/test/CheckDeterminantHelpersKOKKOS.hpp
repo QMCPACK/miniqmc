@@ -49,10 +49,11 @@ double CheckDeterminantHelpers<Devices::KOKKOS>::runThreads(int np,
 #if defined(KOKKOS_ENABLE_OPENMP) && !defined(KOKKOS_ENABLE_CUDA)
   // The kokkos check_determinant was never threaded
   // could be with
-  // Kokkos::OpenMP::thread_pool_size();
-  int num_threads = 1; 
-  int ncrews = 1;   
-  int crewsize = std::max(1,num_threads/ncrews); 
+  // 
+  int num_threads = Kokkos::OpenMP::thread_pool_size(); 
+  int ncrews = num_threads;   
+  int crewsize = 1;
+  //Its my belieif this is what the CPU implementation does
   printf(" In partition master with %d threads, %d crews.  Crewsize = %d \n",num_threads,ncrews,crewsize);
   Kokkos::parallel_reduce(crewsize, main_function, accumulated_error);
   //Kokkos::OpenMP::partition_master(main_function,nmovers,crewsize);
