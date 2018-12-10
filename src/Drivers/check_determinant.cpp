@@ -82,7 +82,7 @@ double CheckDeterminantHelpers<DT>::runThreads(int np,
 #pragma omp parallel reduction(+:accumulated_error)
   {
   CheckDeterminantHelpers<DT>
-    ::thread_main(1, myPrimes, ions, nsteps, nsubsteps, accumulated_error);
+    ::thread_main(omp_get_thread_num(), myPrimes, ions, nsteps, nsubsteps, accumulated_error);
   }
   return accumulated_error;
 }

@@ -244,7 +244,7 @@ public:
   /** evaluate psi, grad and hess */
   inline void evaluate_vgh(const QMCT::PosType& p)
   {
-    ScopedTimer local_timer(timer);
+
     tmp_pos = p;
 
     esp.is_copy = true;

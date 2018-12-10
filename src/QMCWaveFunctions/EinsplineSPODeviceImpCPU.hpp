@@ -20,12 +20,11 @@
 #ifndef QMCPLUSPLUS_EINSPLINE_SPO_DEVICE_IMP_CPU_H
 #define QMCPLUSPLUS_EINSPLINE_SPO_DEVICE_IMP_CPU_H
 
-#include <boost/hana/fwd/define_struct.hpp>
-#include "Devices.h"
-#include "clean_inlining.h"
 #include <cstdio>
 #include <cstdlib>
 #include <type_traits>
+#include "Devices.h"
+#include "clean_inlining.h"
 #include "Numerics/Containers.h"
 #include "Utilities/SIMD/allocator.hpp"
 #include "Utilities/Configuration.h"
@@ -45,9 +44,9 @@ class EinsplineSPODeviceImp<Devices::CPU, T>
     : public EinsplineSPODevice<EinsplineSPODeviceImp<Devices::CPU, T>, T>
 {
   using QMCT = QMCTraits;
-  /// define the einsplie data object type
+  /// define the einspline data object type
   using spline_type     = typename bspline_traits<Devices::CPU, T, 3>::SplineType;
-  using vContainer_type = std::vector<T>; // aligned_vector<T>;
+  using vContainer_type = aligned_vector<T>;
   using gContainer_type = VectorSoAContainer<T, 3>;
   using hContainer_type = VectorSoAContainer<T, 6>;
   using lattice_type    = CrystalLattice<T, 3>;
@@ -110,6 +109,8 @@ public:
     esp.firstBlock                     = esp.nBlocks * member_id;
     esp.lastBlock                      = std::min(inesp.nBlocks, esp.nBlocks * (member_id + 1));
     esp.nBlocks                        = esp.lastBlock - esp.firstBlock;
+    esp.lattice                        = inesp.lattice;
+    esp.is_copy                        = true;
     einsplines.resize(esp.nBlocks);
     for (int i = 0, t = esp.firstBlock; i < esp.nBlocks; ++i, ++t)
       einsplines[i] = static_cast<spline_type*>(in.getEinspline(t));
@@ -192,6 +193,7 @@ public:
   {
     auto u = esp.lattice.toUnit_floor(p);
     for (int i = 0; i < esp.nBlocks; ++i)
+    {
       compute_engine.evaluate_vgh(einsplines[i],
                                   u[0],
                                   u[1],
@@ -200,6 +202,7 @@ public:
                                   grad[i].data(),
                                   hess[i].data(),
                                   esp.nSplinesPerBlock);
+    }
   }
 
   void evaluate_vgl(const QMCT::PosType& p)
@@ -218,9 +221,9 @@ public:
 
   T getPsi(int ib, int n) { return psi[ib][n]; }
 
-  T getGrad(int ib, int n, int m) { return grad[ib].data(n)[m]; }
+  T getGrad(int ib, int n, int m) { return grad[ib].data(m)[n]; }
 
-  T getHess(int ib, int n, int m) { return hess[ib].data(n)[m]; }
+  T getHess(int ib, int n, int m) { return hess[ib].data(m)[n]; }
 };
 
 extern template class EinsplineSPODeviceImp<Devices::CPU, float>;

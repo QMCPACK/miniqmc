@@ -27,7 +27,7 @@
 #include <Utilities/SIMD/allocator.hpp>
 #include "Numerics/OhmmsPETE/OhmmsArray.h"
 #include "QMCWaveFunctions/SPOSetImp.h"
-#include <iostream>
+
 
 namespace miniqmcreference
 {
@@ -213,9 +213,9 @@ struct EinsplineSPO_ref : public qmcplusplus::SPOSetImp<Devices::CPU>
   inline void evaluate_vgh(const PosType& p)
   {
     ScopedTimer local_timer(timer);
-
     auto u = Lattice.toUnit_floor(p);
     for (int i = 0; i < nBlocks; ++i)
+    {
       compute_engine.evaluate_vgh(einsplines[i],
                                   u[0],
                                   u[1],
@@ -224,6 +224,7 @@ struct EinsplineSPO_ref : public qmcplusplus::SPOSetImp<Devices::CPU>
                                   grad[i].data(),
                                   hess[i].data(),
                                   nSplinesPerBlock);
+    }
   }
 
   /** evaluate psi, grad and hess */

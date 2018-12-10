@@ -44,154 +44,55 @@ struct DummyTeamType
 
 template<Devices D, typename T>
 struct MultiBspline;
-// {
-//   /// define the einspline object type
-//   using spliner_type = typename bspline_traits<D, T, 3>::SplineType;
-
-//   MultiBspline() {}
-//   MultiBspline(const MultiBspline& in) = default;
-//   MultiBspline& operator=(const MultiBspline& in) = delete;
-
-//   T A44[16];
-//   T dA44[16];
-//   T d2A44[16];
-
-//   void copy_A44()
-//   {
-//     for (int i = 0; i < 16; i++)
-//     {
-//       A44[i]   = MultiBsplineData<T>::A44[i];
-//       dA44[i]  = MultiBsplineData<T>::dA44[i];
-//       d2A44[i] = MultiBsplineData<T>::d2A44[i];
-//     }
-//   }
-
-//   KOKKOS_INLINE_FUNCTION void compute_prefactors(T a[4], T tx) const
-//   {
-//     a[0] = ((A44[0] * tx + A44[1]) * tx + A44[2]) * tx + A44[3];
-//     a[1] = ((A44[4] * tx + A44[5]) * tx + A44[6]) * tx + A44[7];
-//     a[2] = ((A44[8] * tx + A44[9]) * tx + A44[10]) * tx + A44[11];
-//     a[3] = ((A44[12] * tx + A44[13]) * tx + A44[14]) * tx + A44[15];
-//   }
-
-//   KOKKOS_INLINE_FUNCTION void compute_prefactors(T a[4], T da[4], T d2a[4], T tx) const
-//   {
-//     a[0]   = ((A44[0] * tx + A44[1]) * tx + A44[2]) * tx + A44[3];
-//     a[1]   = ((A44[4] * tx + A44[5]) * tx + A44[6]) * tx + A44[7];
-//     a[2]   = ((A44[8] * tx + A44[9]) * tx + A44[10]) * tx + A44[11];
-//     a[3]   = ((A44[12] * tx + A44[13]) * tx + A44[14]) * tx + A44[15];
-//     da[0]  = ((dA44[0] * tx + dA44[1]) * tx + dA44[2]) * tx + dA44[3];
-//     da[1]  = ((dA44[4] * tx + dA44[5]) * tx + dA44[6]) * tx + dA44[7];
-//     da[2]  = ((dA44[8] * tx + dA44[9]) * tx + dA44[10]) * tx + dA44[11];
-//     da[3]  = ((dA44[12] * tx + dA44[13]) * tx + dA44[14]) * tx + dA44[15];
-//     d2a[0] = ((d2A44[0] * tx + d2A44[1]) * tx + d2A44[2]) * tx + d2A44[3];
-//     d2a[1] = ((d2A44[4] * tx + d2A44[5]) * tx + d2A44[6]) * tx + d2A44[7];
-//     d2a[2] = ((d2A44[8] * tx + d2A44[9]) * tx + d2A44[10]) * tx + d2A44[11];
-//     d2a[3] = ((d2A44[12] * tx + d2A44[13]) * tx + d2A44[14]) * tx + d2A44[15];
-//   }
-
-// #define MYMAX(a, b) (a < b ? b : a)
-// #define MYMIN(a, b) (a > b ? b : a)
-//   KOKKOS_INLINE_FUNCTION void get(T x, T& dx, int& ind, int ng) const
-//   {
-//     T ipart;
-//     dx  = std::modf(x, &ipart);
-//     ind = MYMIN(MYMAX(int(0), static_cast<int>(ipart)), ng);
-//   }
-// #undef MYMAX
-// #undef MYMIN
-//   //  KOKKOS_INLINE_FUNCTION void get(T x, T &dx, int &ind, int ng) const
-//   //  {
-//   //    T ipart;
-//   //    dx  = std::modf(x, &ipart);
-//   //    ind = std::min(std::max(int(0), static_cast<int>(ipart)), ng);
-//   //  }
-//   /** compute values vals[0,num_splines)
-//    *
-//    * The base address for vals, grads and lapl are set by the callers, e.g.,
-//    * evaluate_vgh(r,psi,grad,hess,ip).
-//    */
-//   template<class TeamType>
-//   KOKKOS_INLINE_FUNCTION void
-//   evaluate_v(const typename bspline_traits<D, T, 3>::SplineType* restrict spline_m,
-//              T x,
-//              T y,
-//              T z,
-//              T* restrict vals,
-//              size_t num_splines,
-//              const TeamType& team) const;
-
-//   KOKKOS_INLINE_FUNCTION
-//   void evaluate_vgl(const typename bspline_traits<D, T, 3>::SplineType* restrict spline_m,
-//                     T x,
-//                     T y,
-//                     T z,
-//                     T* restrict vals,
-//                     T* restrict grads,
-//                     T* restrict lapl,
-//                     size_t num_splines) const;
-
-
-//   template<class TeamType>
-//   KOKKOS_INLINE_FUNCTION void
-//   evaluate_vgh(const typename bspline_traits<D, T, 3>::SplineType* restrict spline_m,
-//                T x,
-//                T y,
-//                T z,
-//                T* restrict vals,
-//                T* restrict grads,
-//                T* restrict hess,
-//                size_t num_splines,
-//                const TeamType& team) const;
-// };
 
 template<typename T>
 struct MultiBspline<Devices::CPU, T>
 {
+  static constexpr Devices D = Devices::CPU;
   /// define the einspline object type
-  //using spliner_type = typename bspline_traits<D, T, 3>::SplineType;
+  using spliner_type = typename bspline_traits<D, T, 3>::SplineType;
 
   MultiBspline() {}
   MultiBspline(const MultiBspline& in) = default;
   MultiBspline& operator=(const MultiBspline& in) = delete;
 
-  T A44[16];
-  T dA44[16];
-  T d2A44[16];
+  // T A44[16];
+  // T dA44[16];
+  // T d2A44[16];
 
-  void copy_A44()
-  {
-    for (int i = 0; i < 16; i++)
-    {
-      A44[i]   = MultiBsplineData<T>::A44[i];
-      dA44[i]  = MultiBsplineData<T>::dA44[i];
-      d2A44[i] = MultiBsplineData<T>::d2A44[i];
-    }
-  }
+  // void copy_A44()
+  // {
+  //   for (int i = 0; i < 16; i++)
+  //   {
+  //     A44[i]   = MultiBsplineData<T>::A44[i];
+  //     dA44[i]  = MultiBsplineData<T>::dA44[i];
+  //     d2A44[i] = MultiBsplineData<T>::d2A44[i];
+  //   }
+  // }
 
-  KOKKOS_INLINE_FUNCTION void compute_prefactors(T a[4], T tx) const
-  {
-    a[0] = ((A44[0] * tx + A44[1]) * tx + A44[2]) * tx + A44[3];
-    a[1] = ((A44[4] * tx + A44[5]) * tx + A44[6]) * tx + A44[7];
-    a[2] = ((A44[8] * tx + A44[9]) * tx + A44[10]) * tx + A44[11];
-    a[3] = ((A44[12] * tx + A44[13]) * tx + A44[14]) * tx + A44[15];
-  }
+  // KOKKOS_INLINE_FUNCTION void compute_prefactors(T a[4], T tx) const
+  // {
+  //   a[0] = ((A44[0] * tx + A44[1]) * tx + A44[2]) * tx + A44[3];
+  //   a[1] = ((A44[4] * tx + A44[5]) * tx + A44[6]) * tx + A44[7];
+  //   a[2] = ((A44[8] * tx + A44[9]) * tx + A44[10]) * tx + A44[11];
+  //   a[3] = ((A44[12] * tx + A44[13]) * tx + A44[14]) * tx + A44[15];
+  // }
 
-  KOKKOS_INLINE_FUNCTION void compute_prefactors(T a[4], T da[4], T d2a[4], T tx) const
-  {
-    a[0]   = ((A44[0] * tx + A44[1]) * tx + A44[2]) * tx + A44[3];
-    a[1]   = ((A44[4] * tx + A44[5]) * tx + A44[6]) * tx + A44[7];
-    a[2]   = ((A44[8] * tx + A44[9]) * tx + A44[10]) * tx + A44[11];
-    a[3]   = ((A44[12] * tx + A44[13]) * tx + A44[14]) * tx + A44[15];
-    da[0]  = ((dA44[0] * tx + dA44[1]) * tx + dA44[2]) * tx + dA44[3];
-    da[1]  = ((dA44[4] * tx + dA44[5]) * tx + dA44[6]) * tx + dA44[7];
-    da[2]  = ((dA44[8] * tx + dA44[9]) * tx + dA44[10]) * tx + dA44[11];
-    da[3]  = ((dA44[12] * tx + dA44[13]) * tx + dA44[14]) * tx + dA44[15];
-    d2a[0] = ((d2A44[0] * tx + d2A44[1]) * tx + d2A44[2]) * tx + d2A44[3];
-    d2a[1] = ((d2A44[4] * tx + d2A44[5]) * tx + d2A44[6]) * tx + d2A44[7];
-    d2a[2] = ((d2A44[8] * tx + d2A44[9]) * tx + d2A44[10]) * tx + d2A44[11];
-    d2a[3] = ((d2A44[12] * tx + d2A44[13]) * tx + d2A44[14]) * tx + d2A44[15];
-  }
+  // KOKKOS_INLINE_FUNCTION void compute_prefactors(T a[4], T da[4], T d2a[4], T tx) const
+  // {
+  //   a[0]   = ((A44[0] * tx + A44[1]) * tx + A44[2]) * tx + A44[3];
+  //   a[1]   = ((A44[4] * tx + A44[5]) * tx + A44[6]) * tx + A44[7];
+  //   a[2]   = ((A44[8] * tx + A44[9]) * tx + A44[10]) * tx + A44[11];
+  //   a[3]   = ((A44[12] * tx + A44[13]) * tx + A44[14]) * tx + A44[15];
+  //   da[0]  = ((dA44[0] * tx + dA44[1]) * tx + dA44[2]) * tx + dA44[3];
+  //   da[1]  = ((dA44[4] * tx + dA44[5]) * tx + dA44[6]) * tx + dA44[7];
+  //   da[2]  = ((dA44[8] * tx + dA44[9]) * tx + dA44[10]) * tx + dA44[11];
+  //   da[3]  = ((dA44[12] * tx + dA44[13]) * tx + dA44[14]) * tx + dA44[15];
+  //   d2a[0] = ((d2A44[0] * tx + d2A44[1]) * tx + d2A44[2]) * tx + d2A44[3];
+  //   d2a[1] = ((d2A44[4] * tx + d2A44[5]) * tx + d2A44[6]) * tx + d2A44[7];
+  //   d2a[2] = ((d2A44[8] * tx + d2A44[9]) * tx + d2A44[10]) * tx + d2A44[11];
+  //   d2a[3] = ((d2A44[12] * tx + d2A44[13]) * tx + d2A44[14]) * tx + d2A44[15];
+  // }
 
 #define MYMAX(a, b) (a < b ? b : a)
 #define MYMIN(a, b) (a > b ? b : a)
@@ -215,7 +116,7 @@ struct MultiBspline<Devices::CPU, T>
    * evaluate_vgh(r,psi,grad,hess,ip).
    */
   KOKKOS_INLINE_FUNCTION void
-  evaluate_v(const typename bspline_traits<Devices::CPU, T, 3>::SplineType* restrict spline_m,
+  evaluate_v(const spliner_type* restrict spline_m,
              T x,
              T y,
              T z,
@@ -223,7 +124,7 @@ struct MultiBspline<Devices::CPU, T>
              size_t num_splines) const;
 
   KOKKOS_INLINE_FUNCTION
-  void evaluate_vgl(const typename bspline_traits<Devices::CPU, T, 3>::SplineType* restrict spline_m,
+  void evaluate_vgl(const spliner_type* restrict spline_m,
                     T x,
                     T y,
                     T z,
@@ -234,7 +135,7 @@ struct MultiBspline<Devices::CPU, T>
 
 
   KOKKOS_INLINE_FUNCTION void
-  evaluate_vgh(const typename bspline_traits<Devices::CPU, T, 3>::SplineType* restrict spline_m,
+  evaluate_vgh(const spliner_type* restrict spline_m,
                T x,
                T y,
                T z,
@@ -246,7 +147,7 @@ struct MultiBspline<Devices::CPU, T>
 
 template<typename T>
 KOKKOS_INLINE_FUNCTION void MultiBspline<Devices::CPU, T>::evaluate_v(
-    const typename bspline_traits<Devices::CPU, T, 3>::SplineType* restrict spline_m,
+								      const MultiBspline<Devices::CPU, T>::spliner_type* restrict spline_m,
     T x,
     T y,
     T z,
@@ -272,7 +173,7 @@ KOKKOS_INLINE_FUNCTION void MultiBspline<Devices::CPU, T>::evaluate_v(
   const intptr_t zs = spline_m->z_stride;
 
   constexpr T zero(0);
-  ASSUME_ALIGNED(vals);
+  //ASSUME_ALIGNED(vals);
   std::fill(vals, vals + num_splines, zero);
 
   for (size_t i = 0; i < 4; i++)
@@ -280,7 +181,7 @@ KOKKOS_INLINE_FUNCTION void MultiBspline<Devices::CPU, T>::evaluate_v(
     {
       const T pre00           = a[i] * b[j];
       const T* restrict coefs = spline_m->coefs + ((ix + i) * xs + (iy + j) * ys + iz * zs);
-      ASSUME_ALIGNED(coefs);
+      //ASSUME_ALIGNED(coefs);
       //#pragma omp simd
       for (size_t n = 0; n < num_splines; n++)
         vals[n] += pre00 *
@@ -290,15 +191,15 @@ KOKKOS_INLINE_FUNCTION void MultiBspline<Devices::CPU, T>::evaluate_v(
 }
 
 template<typename T>
-KOKKOS_INLINE_FUNCTION void
-MultiBspline<Devices::CPU, T>::evaluate_vgl(const typename bspline_traits<Devices::CPU, T, 3>::SplineType* restrict spline_m,
-                                 T x,
-                                 T y,
-                                 T z,
-                                 T* restrict vals,
-                                 T* restrict grads,
-                                 T* restrict lapl,
-                                 size_t num_splines) const
+KOKKOS_INLINE_FUNCTION void MultiBspline<Devices::CPU, T>::evaluate_vgl(
+    const MultiBspline<Devices::CPU, T>::spliner_type* restrict spline_m,
+    T x,
+    T y,
+    T z,
+    T* restrict vals,
+    T* restrict grads,
+    T* restrict lapl,
+    size_t num_splines) const
 {
   x -= spline_m->x_grid.start;
   y -= spline_m->y_grid.start;
@@ -311,9 +212,9 @@ MultiBspline<Devices::CPU, T>::evaluate_vgl(const typename bspline_traits<Device
 
   T a[4], b[4], c[4], da[4], db[4], dc[4], d2a[4], d2b[4], d2c[4];
 
-  compute_prefactors(a, da, d2a, tx);
-  compute_prefactors(b, db, d2b, ty);
-  compute_prefactors(c, dc, d2c, tz);
+  MultiBsplineData<T>::compute_prefactors(a, da, d2a, tx);
+  MultiBsplineData<T>::compute_prefactors(b, db, d2b, ty);
+  MultiBsplineData<T>::compute_prefactors(c, dc, d2c, tz);
 
   const intptr_t xs = spline_m->x_stride;
   const intptr_t ys = spline_m->y_stride;
@@ -321,19 +222,19 @@ MultiBspline<Devices::CPU, T>::evaluate_vgl(const typename bspline_traits<Device
 
   const size_t out_offset = spline_m->num_splines;
 
-  ASSUME_ALIGNED(vals);
+  //ASSUME_ALIGNED(vals);
   T* restrict gx = grads;
-  ASSUME_ALIGNED(gx);
+  //ASSUME_ALIGNED(gx);
   T* restrict gy = grads + out_offset;
-  ASSUME_ALIGNED(gy);
+  //ASSUME_ALIGNED(gy);
   T* restrict gz = grads + 2 * out_offset;
-  ASSUME_ALIGNED(gz);
+  //ASSUME_ALIGNED(gz);
   T* restrict lx = lapl;
-  ASSUME_ALIGNED(lx);
+  //ASSUME_ALIGNED(lx);
   T* restrict ly = lapl + out_offset;
-  ASSUME_ALIGNED(ly);
+  //ASSUME_ALIGNED(ly);
   T* restrict lz = lapl + 2 * out_offset;
-  ASSUME_ALIGNED(lz);
+  //ASSUME_ALIGNED(lz);
 
   // std::fill() Not OK with CUDA.
   //
@@ -367,16 +268,16 @@ MultiBspline<Devices::CPU, T>::evaluate_vgl(const typename bspline_traits<Device
       const T pre02 = a[i] * d2b[j];
 
       const T* restrict coefs = spline_m->coefs + ((ix + i) * xs + (iy + j) * ys + iz * zs);
-      ASSUME_ALIGNED(coefs);
+      //ASSUME_ALIGNED(coefs);
       const T* restrict coefszs = coefs + zs;
-      ASSUME_ALIGNED(coefszs);
+      //ASSUME_ALIGNED(coefszs);
       const T* restrict coefs2zs = coefs + 2 * zs;
-      ASSUME_ALIGNED(coefs2zs);
+      //ASSUME_ALIGNED(coefs2zs);
       const T* restrict coefs3zs = coefs + 3 * zs;
-      ASSUME_ALIGNED(coefs3zs);
+      //ASSUME_ALIGNED(coefs3zs);
 
-#pragma noprefetch
-#pragma omp simd
+      //#pragma noprefetch
+      //#pragma omp simd
       for (int n = 0; n < num_splines; n++)
       {
         const T coefsv    = coefs[n];
@@ -405,7 +306,7 @@ MultiBspline<Devices::CPU, T>::evaluate_vgl(const typename bspline_traits<Device
   const T dyInv2 = dyInv * dyInv;
   const T dzInv2 = dzInv * dzInv;
 
-#pragma omp simd
+  //#pragma omp simd
   for (int n = 0; n < num_splines; n++)
   {
     gx[n] *= dxInv;
@@ -416,8 +317,10 @@ MultiBspline<Devices::CPU, T>::evaluate_vgl(const typename bspline_traits<Device
 }
 
 template<typename T>
-inline void MultiBspline<Devices::CPU, T>::evaluate_vgh(
-    const typename bspline_traits<Devices::CPU, T, 3>::SplineType* restrict spline_m, T x, T y, T z,
+inline void MultiBspline<Devices::CPU, T>::evaluate_vgh(const MultiBspline<Devices::CPU, T>::spliner_type* restrict spline_m,
+							T x,
+							T y,
+							T z,
     T* restrict vals, T* restrict grads, T* restrict hess, size_t num_splines) const
 {
   int ix, iy, iz;
@@ -441,26 +344,26 @@ inline void MultiBspline<Devices::CPU, T>::evaluate_vgh(
 
   const size_t out_offset = spline_m->num_splines;
 
-  ASSUME_ALIGNED(vals);
+  //ASSUME_ALIGNED(vals);
   T* restrict gx = grads;
-  ASSUME_ALIGNED(gx);
+  //ASSUME_ALIGNED(gx);
   T* restrict gy = grads + out_offset;
-  ASSUME_ALIGNED(gy);
+  //ASSUME_ALIGNED(gy);
   T* restrict gz = grads + 2 * out_offset;
-  ASSUME_ALIGNED(gz);
+  //ASSUME_ALIGNED(gz);
 
   T* restrict hxx = hess;
-  ASSUME_ALIGNED(hxx);
+  //ASSUME_ALIGNED(hxx);
   T* restrict hxy = hess + out_offset;
-  ASSUME_ALIGNED(hxy);
+  //ASSUME_ALIGNED(hxy);
   T* restrict hxz = hess + 2 * out_offset;
-  ASSUME_ALIGNED(hxz);
+  //ASSUME_ALIGNED(hxz);
   T* restrict hyy = hess + 3 * out_offset;
-  ASSUME_ALIGNED(hyy);
+  //ASSUME_ALIGNED(hyy);
   T* restrict hyz = hess + 4 * out_offset;
-  ASSUME_ALIGNED(hyz);
+  //ASSUME_ALIGNED(hyz);
   T* restrict hzz = hess + 5 * out_offset;
-  ASSUME_ALIGNED(hzz);
+  //ASSUME_ALIGNED(hzz);
 
   std::fill(vals, vals + num_splines, T());
   std::fill(gx, gx + num_splines, T());
@@ -477,13 +380,13 @@ inline void MultiBspline<Devices::CPU, T>::evaluate_vgh(
     for (int j = 0; j < 4; j++)
     {
       const T* restrict coefs = spline_m->coefs + ((ix + i) * xs + (iy + j) * ys + iz * zs);
-      ASSUME_ALIGNED(coefs);
+      //ASSUME_ALIGNED(coefs);
       const T* restrict coefszs = coefs + zs;
-      ASSUME_ALIGNED(coefszs);
+      //ASSUME_ALIGNED(coefszs);
       const T* restrict coefs2zs = coefs + 2 * zs;
-      ASSUME_ALIGNED(coefs2zs);
+      //ASSUME_ALIGNED(coefs2zs);
       const T* restrict coefs3zs = coefs + 3 * zs;
-      ASSUME_ALIGNED(coefs3zs);
+      //ASSUME_ALIGNED(coefs3zs);
 
       const T pre20 = d2a[i] * b[j];
       const T pre10 = da[i] * b[j];
@@ -493,7 +396,7 @@ inline void MultiBspline<Devices::CPU, T>::evaluate_vgh(
       const T pre02 = a[i] * d2b[j];
 
       const int iSplitPoint = num_splines;
-#pragma omp simd
+      //#pragma omp simd
       for (int n = 0; n < iSplitPoint; n++)
       {
         T coefsv    = coefs[n];
@@ -528,7 +431,7 @@ inline void MultiBspline<Devices::CPU, T>::evaluate_vgh(
   const T dxz   = dxInv * dzInv;
   const T dyz   = dyInv * dzInv;
 
-#pragma omp simd
+  //#pragma omp simd
   for (int n = 0; n < num_splines; n++)
   {
     gx[n] *= dxInv;
