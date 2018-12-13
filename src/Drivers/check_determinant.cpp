@@ -295,7 +295,9 @@ int CheckDeterminantTest::run_test()
   }
   
 
-
+#ifdef QMC_USE_KOKKOS
+template class CheckDeterminantHelpers<Devices::KOKKOS>;
+#endif
 // template<typename DT>
 // void initialize(DT dt, int arc, char** argv)
 // {}

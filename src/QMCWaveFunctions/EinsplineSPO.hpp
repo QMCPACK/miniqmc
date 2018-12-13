@@ -56,23 +56,30 @@ public:
     timer = TimerManagerClass::get().createTimer("Single-Particle Orbitals", timer_level_fine);
   }
 
-  /// disable copy constructor
-  EinsplineSPO(const EinsplineSPO& in) = delete;
-  /// disable copy operator
+  EinsplineSPO(const EinsplineSPO& in)
+    : einspline_spo_device(in.einspline_spo_device)
+  {
+    timer = TimerManagerClass::get().createTimer("Single-Particle Orbitals", timer_level_fine);
+  }
+
+  // EinsplineSPO(const EinsplineSPO& in)
+  //     : einspline_spo_device(in.enspline_spo_device)
+  // {}
+  
+  /// disable assignment operator
   EinsplineSPO& operator=(const EinsplineSPO& in) = delete;
 
-  /** copy constructor
+  /** "Fat" copy constructor
    * @param in EinsplineSPO
    * @param team_size number of members in a team
    * @param member_id id of this member in a team
    *
    * Create a view of the big object. A simple blocking & padding  method.
+   * However this isn't the way kokkos does it.
    */
   EinsplineSPO(const EinsplineSPO& in, int team_size, int member_id)
       : einspline_spo_device(in.einspline_spo_device, team_size, member_id)
   {
-    std::cout << "EinsplineSPO Fat Copy called\n";
-    // einsplines.resize(nBlocks);
     timer = TimerManagerClass::get().createTimer("Single-Particle Orbitals", timer_level_fine);
   }
 

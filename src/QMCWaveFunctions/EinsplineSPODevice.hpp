@@ -38,6 +38,11 @@ protected:
     std::cout << "EinsplineSPODevice Fat Copy constructor called\n";
   }
 
+  EinsplineSPODevice(const EinsplineSPODevice<DEVICEIMP ,T>& espd)
+  {
+    std::cout << "EinsplineSPODevice Copy constructor called\n";
+  }
+
   EinsplineSPODevice()
   {
     std::cout << "EinsplineDevice() called \n";

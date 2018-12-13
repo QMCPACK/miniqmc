@@ -94,7 +94,29 @@ public:
     //hess = {};
   }
 
-  //Copy Constructor only supports CPU to CPU
+  /** CPU to CPU Constructor
+   */
+  EinsplineSPODeviceImp(const EinsplineSPODevice<EinsplineSPODeviceImp<Devices::CPU, T>, T>& in)
+  {
+    std::cout << "EinsplineSPODeviceImpCPU Fat Copy constructor called" << '\n';
+    const EinsplineSPOParams<T>& inesp = in.getParams();
+    esp.nSplinesSerialThreshold_V      = inesp.nSplinesSerialThreshold_V;
+    esp.nSplinesSerialThreshold_VGH    = inesp.nSplinesSerialThreshold_VGH;
+    esp.nSplines                       = inesp.nSplines;
+    esp.nSplinesPerBlock               = inesp.nSplinesPerBlock;
+    esp.nBlocks                        = inesp.nBlocks;
+    esp.firstBlock                     = 0;
+    esp.lastBlock                      = inesp.nBlocks;
+    esp.lattice                        = inesp.lattice;
+    esp.is_copy                        = true;
+    einsplines.resize(esp.nBlocks);
+    for (int i = 0, t = esp.firstBlock; i < esp.nBlocks; ++i, ++t)
+      einsplines[i] = static_cast<spline_type*>(in.getEinspline(t));
+    resize();
+  }
+  
+  /** "Fat" Copy Constructor only supports CPU to CPU
+   */
   EinsplineSPODeviceImp(const EinsplineSPODevice<EinsplineSPODeviceImp<Devices::CPU, T>, T>& in,
                         int team_size,
                         int member_id)

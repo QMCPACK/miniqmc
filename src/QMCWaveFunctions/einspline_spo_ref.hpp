@@ -75,12 +75,30 @@ struct EinsplineSPO_ref : public qmcplusplus::SPOSetImp<Devices::CPU>
   {
     timer = TimerManagerClass::get().createTimer("Single-Particle Orbitals Ref", timer_level_fine);
   }
-  /// disable copy constructor
-  EinsplineSPO_ref(const EinsplineSPO_ref& in) = delete;
-  /// disable copy operator
+
+  /** Copy constructor
+   * Needed for Kokkos since it needs pass by copy
+   * Of course you'd also need this if you were doing
+   * MPI in a straight forward way
+   */
+  EinsplineSPO_ref(const EinsplineSPO_ref& in)
+      : Owner(false), Lattice(in.Lattice)
+  {
+    nSplines         = in.nSplines;
+    nSplinesPerBlock = in.nSplinesPerBlock;
+    nBlocks          = in.nBlocks;
+    firstBlock       = 0;
+    lastBlock        = in.nBlocks;
+    einsplines.resize(nBlocks);
+    for (int i = 0, t = firstBlock; i < nBlocks; ++i, ++t)
+      einsplines[i] = in.einsplines[t];
+    resize();
+    timer = TimerManagerClass::get().createTimer("Single-Particle Orbitals Ref", timer_level_fine);
+  }
+
   EinsplineSPO_ref& operator=(const EinsplineSPO_ref& in) = delete;
 
-  /** copy constructor
+  /** "Fat" copy constructor
    * @param in EinsplineSPO_ref
    * @param team_size number of members in a team
    * @param member_id id of this member in a team

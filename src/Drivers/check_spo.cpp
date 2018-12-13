@@ -58,7 +58,7 @@ void CheckSPOSteps<DT>::test(int& error,
                              const double Rmax)
 {
   std::string enum_name = device_names[hana::int_c<static_cast<int>(DT)>];
-  std::cout << "Testing Determinant Device Implementation: "<< enum_name << '\n';
+  std::cout << "Testing Determinant Device Implementation: " << enum_name << '\n';
 
   SPODevImp spo_main;
   SPORef spo_ref_main;
@@ -70,8 +70,7 @@ void CheckSPOSteps<DT>::test(int& error,
   tileSize       = (tileSize > 0) ? tileSize : norb;
   int nTiles     = norb / tileSize;
 
-  const size_t SPO_coeff_size =
-      static_cast<size_t>(norb) * (nx + 3) * (ny + 3) * (nz + 3) * sizeof(QMCT::RealType);
+  const size_t SPO_coeff_size    = static_cast<size_t>(norb) * (nx + 3) * (ny + 3) * (nz + 3) * sizeof(QMCT::RealType);
   const double SPO_coeff_size_MB = SPO_coeff_size * 1.0 / 1024 / 1024;
 
   app_summary() << "Number of orbitals/splines = " << norb << endl
@@ -81,8 +80,7 @@ void CheckSPOSteps<DT>::test(int& error,
   app_summary() << "Iterations = " << nsteps << endl;
   app_summary() << "OpenMP threads = " << omp_get_max_threads() << endl;
 
-  app_summary() << "\nSPO coefficients size = " << SPO_coeff_size << " bytes (" << SPO_coeff_size_MB
-                << " MB)" << endl;
+  app_summary() << "\nSPO coefficients size = " << SPO_coeff_size << " bytes (" << SPO_coeff_size_MB << " MB)" << endl;
 
   spo_main.set(nx, ny, nz, norb, nTiles);
   spo_main.setLattice(lattice_b);
@@ -133,13 +131,12 @@ void CheckSPOSteps<DT>::test(int& error,
 
 template<Devices DT>
 template<typename T>
-typename CheckSPOSteps<DT>::template CheckSPOData<T>
-    CheckSPOSteps<DT>::runThreads(int team_size,
-                                  ParticleSet& ions,
-                                  SPODevImp& spo_main,
-                                  SPORef& spo_ref_main,
-                                  int nsteps,
-                                  T Rmax)
+CheckSPOData<T> CheckSPOSteps<DT>::runThreads(int team_size,
+                                                                                   ParticleSet& ions,
+                                                                                   SPODevImp& spo_main,
+                                                                                   SPORef& spo_ref_main,
+                                                                                   int nsteps,
+                                                                                   T Rmax)
 {
   T ratio         = 0.0;
   T nspheremoves  = 0;
@@ -152,7 +149,11 @@ typename CheckSPOSteps<DT>::template CheckSPOData<T>
 #pragma omp parallel reduction(+:ratio,nspheremoves,dNumVGHCalls) \
    reduction(+:evalV_v_err,evalVGH_v_err,evalVGH_g_err,evalVGH_h_err)
   {
-    CheckSPOSteps<DT>::thread_main(team_size,
+    const int np        = omp_get_num_threads();
+    const int ip        = omp_get_thread_num();
+    CheckSPOSteps<DT>::thread_main(np,
+				   ip,
+				   team_size,
                                    ions,
                                    spo_main,
                                    spo_ref_main,
@@ -166,22 +167,23 @@ typename CheckSPOSteps<DT>::template CheckSPOData<T>
                                    evalVGH_g_err,
                                    evalVGH_h_err);
   }
-  return CheckSPOData<T>{ratio,
-                         nspheremoves,
-                         dNumVGHCalls,
-                         evalV_v_err,
-                         evalVGH_v_err,
-                         evalVGH_g_err,
-                         evalVGH_h_err};
+  return CheckSPOData<T>{ratio, nspheremoves, dNumVGHCalls, evalV_v_err, evalVGH_v_err, evalVGH_g_err, evalVGH_h_err};
 }
 
 
+/** The inside of the parallel reduction for test.
+ *  Since kokkos could magically marshall over MPI
+ *  we have to pass by copy even if that is inefficient
+ *  for on node parallelism like here.
+ */
 template<Devices DT>
 template<typename T>
-void CheckSPOSteps<DT>::thread_main(const int team_size,
-                                    ParticleSet& ions,
-                                    SPODevImp& spo_main,
-                                    SPORef& spo_ref_main,
+void CheckSPOSteps<DT>::thread_main(const int np,
+				    const int ip,
+				    const int team_size,
+                                    const ParticleSet ions,
+                                    const SPODevImp spo_main,
+                                    const SPORef spo_ref_main,
                                     const int nsteps,
                                     const QMCT::RealType Rmax,
                                     T& ratio,
@@ -192,8 +194,6 @@ void CheckSPOSteps<DT>::thread_main(const int team_size,
                                     T& evalVGH_g_err,
                                     T& evalVGH_h_err)
 {
-  const int np        = omp_get_num_threads();
-  const int ip        = omp_get_thread_num();
   const int team_id   = ip / team_size;
   const int member_id = ip % team_size;
 
@@ -237,39 +237,39 @@ void CheckSPOSteps<DT>::thread_main(const int team_size,
   {
     random_th.generate_normal(&delta[0][0], nels3);
     random_th.generate_uniform(ur.data(), nels);
-for (int ib = 0; ib < esp.nBlocks; ib++)
-    
-    // VMC
-    for (int iel = 0; iel < nels; ++iel)
-    {
-      QMCT::PosType pos = els.R[iel] + sqrttau * delta[iel];
-      
-      spo.evaluate_vgh(pos);
-      spo_ref.evaluate_vgh(pos);
-      // accumulate error
-      for (int ib = 0; ib < esp.nBlocks; ib++)
-        for (int n = 0; n < esp.nSplinesPerBlock; n++)
-        {
-          // value
-          evalVGH_v_err += std::fabs(spo.getPsi(ib, n) - spo_ref.psi[ib][n]);
-          // grad
-          evalVGH_g_err += std::fabs(spo.getGrad(ib, n, 0) - spo_ref.grad[ib].data(0)[n]);
-          evalVGH_g_err += std::fabs(spo.getGrad(ib, n, 1) - spo_ref.grad[ib].data(1)[n]);
-          evalVGH_g_err += std::fabs(spo.getGrad(ib, n, 2) - spo_ref.grad[ib].data(2)[n]);
-          // hess
-          evalVGH_h_err += std::fabs(spo.getHess(ib, n, 0) - spo_ref.hess[ib].data(0)[n]);
-          evalVGH_h_err += std::fabs(spo.getHess(ib, n, 1) - spo_ref.hess[ib].data(1)[n]);
-          evalVGH_h_err += std::fabs(spo.getHess(ib, n, 2) - spo_ref.hess[ib].data(2)[n]);
-          evalVGH_h_err += std::fabs(spo.getHess(ib, n, 3) - spo_ref.hess[ib].data(3)[n]);
-          evalVGH_h_err += std::fabs(spo.getHess(ib, n, 4) - spo_ref.hess[ib].data(4)[n]);
-          evalVGH_h_err += std::fabs(spo.getHess(ib, n, 5) - spo_ref.hess[ib].data(5)[n]);
-        }
-      if (ur[iel] < accept)
+    for (int ib = 0; ib < esp.nBlocks; ib++)
+
+      // VMC
+      for (int iel = 0; iel < nels; ++iel)
       {
-        els.R[iel] = pos;
-        my_accepted++;
+        QMCT::PosType pos = els.R[iel] + sqrttau * delta[iel];
+
+        spo.evaluate_vgh(pos);
+        spo_ref.evaluate_vgh(pos);
+        // accumulate error
+        for (int ib = 0; ib < esp.nBlocks; ib++)
+          for (int n = 0; n < esp.nSplinesPerBlock; n++)
+          {
+            // value
+            evalVGH_v_err += std::fabs(spo.getPsi(ib, n) - spo_ref.psi[ib][n]);
+            // grad
+            evalVGH_g_err += std::fabs(spo.getGrad(ib, n, 0) - spo_ref.grad[ib].data(0)[n]);
+            evalVGH_g_err += std::fabs(spo.getGrad(ib, n, 1) - spo_ref.grad[ib].data(1)[n]);
+            evalVGH_g_err += std::fabs(spo.getGrad(ib, n, 2) - spo_ref.grad[ib].data(2)[n]);
+            // hess
+            evalVGH_h_err += std::fabs(spo.getHess(ib, n, 0) - spo_ref.hess[ib].data(0)[n]);
+            evalVGH_h_err += std::fabs(spo.getHess(ib, n, 1) - spo_ref.hess[ib].data(1)[n]);
+            evalVGH_h_err += std::fabs(spo.getHess(ib, n, 2) - spo_ref.hess[ib].data(2)[n]);
+            evalVGH_h_err += std::fabs(spo.getHess(ib, n, 3) - spo_ref.hess[ib].data(3)[n]);
+            evalVGH_h_err += std::fabs(spo.getHess(ib, n, 4) - spo_ref.hess[ib].data(4)[n]);
+            evalVGH_h_err += std::fabs(spo.getHess(ib, n, 5) - spo_ref.hess[ib].data(5)[n]);
+          }
+        if (ur[iel] < accept)
+        {
+          els.R[iel] = pos;
+          my_accepted++;
+        }
       }
-    }
 
     random_th.generate_uniform(ur.data(), nels);
     ecp.randomize(rOnSphere); // pick random sphere
@@ -413,6 +413,10 @@ int CheckSPOTest::runTests()
     return 0;
 
 }
+
+#ifdef QMC_USE_KOKKOS
+template class CheckSPOSteps<Devices::KOKKOS>;
+#endif
 
 }
 
