@@ -62,9 +62,7 @@ class EinsplineSPODeviceImp<Devices::CPU, T>
   aligned_vector<vContainer_type> psi;
   aligned_vector<gContainer_type> grad;
   aligned_vector<hContainer_type> hess;
-
   EinsplineSPOParams<T> esp;
-
 public:
   EinsplineSPODeviceImp()
   {
@@ -74,24 +72,11 @@ public:
     esp.firstBlock = 0;
     esp.lastBlock  = 0;
     esp.Owner      = false;
+    esp.is_copy    = false;
     einsplines     = {};
     psi            = {};
     grad           = {};
     hess           = {};
-  }
-
-  void construct()
-  {
-    std::cout << "EinsplineSPODeviceImpCPU::construct() called" << '\n';
-    esp.nBlocks    = 0;
-    esp.nSplines   = 0;
-    esp.firstBlock = 0;
-    esp.lastBlock  = 0;
-    esp.Owner      = false;
-    einsplines     = {};
-    //psi = {};
-    //grad = {};
-    //hess = {};
   }
 
   /** CPU to CPU Constructor
@@ -109,12 +94,13 @@ public:
     esp.lastBlock                      = inesp.nBlocks;
     esp.lattice                        = inesp.lattice;
     esp.is_copy                        = true;
+    esp.Owner                          = false;
     einsplines.resize(esp.nBlocks);
     for (int i = 0, t = esp.firstBlock; i < esp.nBlocks; ++i, ++t)
       einsplines[i] = static_cast<spline_type*>(in.getEinspline(t));
     resize();
   }
-  
+
   /** "Fat" Copy Constructor only supports CPU to CPU
    */
   EinsplineSPODeviceImp(const EinsplineSPODevice<EinsplineSPODeviceImp<Devices::CPU, T>, T>& in,
@@ -133,6 +119,7 @@ public:
     esp.nBlocks                        = esp.lastBlock - esp.firstBlock;
     esp.lattice                        = inesp.lattice;
     esp.is_copy                        = true;
+    esp.Owner                          = false;
     einsplines.resize(esp.nBlocks);
     for (int i = 0, t = esp.firstBlock; i < esp.nBlocks; ++i, ++t)
       einsplines[i] = static_cast<spline_type*>(in.getEinspline(t));
@@ -164,7 +151,7 @@ public:
     }
   }
 
-  void set(int nx, int ny, int nz, int num_splines, int nblocks, bool init_random = true)
+  void set_i(int nx, int ny, int nz, int num_splines, int nblocks, bool init_random = true)
   {
     this->esp.nSplines         = num_splines;
     this->esp.nBlocks          = nblocks;
@@ -198,20 +185,20 @@ public:
     resize();
   }
 
-  const EinsplineSPOParams<T>& getParams() const { return this->esp; }
+  const EinsplineSPOParams<T>& getParams_i() const { return this->esp; }
 
-  void* getEinspline(int i) const { return einsplines[i]; }
+  void* getEinspline_i(int i) const { return einsplines[i]; }
 
-  void setLattice(const Tensor<T, 3>& lattice) { esp.lattice.set(lattice); }
+  void setLattice_i(const Tensor<T, 3>& lattice) { esp.lattice.set(lattice); }
 
-  inline void evaluate_v(const QMCT::PosType& p)
+  inline void evaluate_v_i(const QMCT::PosType& p)
   {
     auto u = esp.lattice.toUnit_floor(p);
     for (int i = 0; i < esp.nBlocks; ++i)
       compute_engine.evaluate_v(einsplines[i], u[0], u[1], u[2], psi[i].data(), esp.nSplinesPerBlock);
   }
 
-  inline void evaluate_vgh(const QMCT::PosType& p)
+  inline void evaluate_vgh_i(const QMCT::PosType& p)
   {
     auto u = esp.lattice.toUnit_floor(p);
     for (int i = 0; i < esp.nBlocks; ++i)
@@ -227,7 +214,7 @@ public:
     }
   }
 
-  void evaluate_vgl(const QMCT::PosType& p)
+  void evaluate_vgl_i(const QMCT::PosType& p)
   {
     auto u = esp.lattice.toUnit_floor(p);
     for (int i = 0; i < esp.nBlocks; ++i)
@@ -241,11 +228,11 @@ public:
                                   esp.nSplinesPerBlock);
   }
 
-  T getPsi(int ib, int n) { return psi[ib][n]; }
+  T getPsi_i(int ib, int n) { return psi[ib][n]; }
 
-  T getGrad(int ib, int n, int m) { return grad[ib].data(m)[n]; }
+  T getGrad_i(int ib, int n, int m) { return grad[ib].data(m)[n]; }
 
-  T getHess(int ib, int n, int m) { return hess[ib].data(m)[n]; }
+  T getHess_i(int ib, int n, int m) { return hess[ib].data(m)[n]; }
 };
 
 extern template class EinsplineSPODeviceImp<Devices::CPU, float>;

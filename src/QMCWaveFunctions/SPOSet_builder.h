@@ -1,9 +1,10 @@
 // This file is distributed under the University of Illinois/NCSA Open Source
 // License. See LICENSE file in top directory for details.
 //
-// Copyright (c) 2016 Jeongnim Kim and QMCPACK developers.
+// Copyright (c) 2018 QMCPACK developers.
 //
-// File developed by: Ye Luo, yeluo@anl.gov, Argonne National Laboratory
+// File developed by: Peter Doak, doakpw@ornl.gov, Oak Ridege National Laboratory
+//                    Ye Luo, yeluo@anl.gov, Argonne National Laboratory
 //
 // File created by: Ye Luo, yeluo@anl.gov, Argonne National Laboratory
 //////////////////////////////////////////////////////////////////////////////////////
@@ -65,8 +66,15 @@ public:
     auto* spo_view = new EinsplineSPO<DT, OHMMS_PRECISION>(*temp_ptr, team_size, member_id);
     return dynamic_cast<SPOSet*>(spo_view);
   }
+  
 }
 
+  static SPOSet* buildView(bool useRef, const SPOSet& SPOSet_main, int team_size, int member_id)
+  {
+    return SPOSetBuilder::buildView(useRef, &SPOSet_main, team_size, member_id);
+  }
+
+  
 };
 
 

@@ -132,11 +132,11 @@ void CheckSPOSteps<DT>::test(int& error,
 template<Devices DT>
 template<typename T>
 CheckSPOData<T> CheckSPOSteps<DT>::runThreads(int team_size,
-                                                                                   ParticleSet& ions,
-                                                                                   SPODevImp& spo_main,
-                                                                                   SPORef& spo_ref_main,
-                                                                                   int nsteps,
-                                                                                   T Rmax)
+                                              ParticleSet& ions,
+                                              const SPODevImp& spo_main,
+                                              const SPORef& spo_ref_main,
+                                              int nsteps,
+                                              T Rmax)
 {
   T ratio         = 0.0;
   T nspheremoves  = 0;
@@ -149,11 +149,11 @@ CheckSPOData<T> CheckSPOSteps<DT>::runThreads(int team_size,
 #pragma omp parallel reduction(+:ratio,nspheremoves,dNumVGHCalls) \
    reduction(+:evalV_v_err,evalVGH_v_err,evalVGH_g_err,evalVGH_h_err)
   {
-    const int np        = omp_get_num_threads();
-    const int ip        = omp_get_thread_num();
+    const int np = omp_get_num_threads();
+    const int ip = omp_get_thread_num();
     CheckSPOSteps<DT>::thread_main(np,
-				   ip,
-				   team_size,
+                                   ip,
+                                   team_size,
                                    ions,
                                    spo_main,
                                    spo_ref_main,
@@ -179,8 +179,8 @@ CheckSPOData<T> CheckSPOSteps<DT>::runThreads(int team_size,
 template<Devices DT>
 template<typename T>
 void CheckSPOSteps<DT>::thread_main(const int np,
-				    const int ip,
-				    const int team_size,
+                                    const int ip,
+                                    const int team_size,
                                     const ParticleSet ions,
                                     const SPODevImp spo_main,
                                     const SPORef spo_ref_main,
@@ -211,7 +211,8 @@ void CheckSPOSteps<DT>::thread_main(const int np,
   // create pseudopp
   NonLocalPP<OHMMS_PRECISION> ecp(random_th);
   // create spo per thread
-  SPODevImp spo(spo_main, team_size, member_id);
+  SPODevImp spo(spo_main, team_size,member_id);
+  //SPODevImp& spo = *dynamic_cast<SPODevImp*>(SPOSetBuilder<DT>::buildView(false, spo_main, team_size, member_id));
   SPORef spo_ref(spo_ref_main, team_size, member_id);
 
   // use teams
@@ -425,10 +426,7 @@ using namespace qmcplusplus;
 int main(int argc, char** argv)
 {
   int error_code=0;
-  // hana::for_each(ddts, [&](auto x) {
-  // 			 initialize(x, argc, argc);
-  // 		       });
-  // This was necessary because Kokkos would blow up if anything happend before Kokkos initialize was called
+  // This is necessary because Kokkos needs to be initialized.
   hana::for_each(devices_range,
 		 [&](auto x) {
 		   CheckSPOSteps<static_cast<Devices>(decltype(x)::value)>::initialize(argc, argv);

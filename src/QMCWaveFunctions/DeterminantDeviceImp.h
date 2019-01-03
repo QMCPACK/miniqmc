@@ -33,8 +33,4 @@ class DeterminantDeviceImp
 #include "QMCWaveFunctions/DeterminantDeviceImpKOKKOS.h"
 #endif
 
-namespace qmcplusplus
-{
-}
-
 #endif

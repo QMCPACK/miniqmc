@@ -2,32 +2,21 @@
 // This file is distributed under the University of Illinois/NCSA Open Source
 // License.  See LICENSE file in top directory for details.
 //
-// Copyright (c) 2016 Jeongnim Kim and QMCPACK developers.
+// Copyright (c) 2018 QMCPACK developers.
 //
 // File developed by:
-// John R. Gergely,  University of Illinois at Urbana-Champaign
-// Ken Esler, kpesler@gmail.com,
-//    University of Illinois at Urbana-Champaign
-// Miguel Morales, moralessilva2@llnl.gov,
-//    Lawrence Livermore National Laboratory
-// Raymond Clay III, j.k.rofling@gmail.com,
-//    Lawrence Livermore National Laboratory
-// Jeremy McMinnis, jmcminis@gmail.com,
-//    University of Illinois at Urbana-Champaign
-// Jeongnim Kim, jeongnim.kim@gmail.com,
-//    University of Illinois at Urbana-Champaign
-// Jaron T. Krogel, krogeljt@ornl.gov,
-//    Oak Ridge National Laboratory
-// Mark A. Berrill, berrillma@ornl.gov,
-//    Oak Ridge National Laboratory
-// Amrita Mathuriya, amrita.mathuriya@intel.com,
-//    Intel Corp.
+// Peter Doak, doakpw@ornl.gov, Oak Ridge National Lab
 //
 // File created by:
-// Ken Esler, kpesler@gmail.com,
-//    University of Illinois at Urbana-Champaign
+// Peter Doak, doakpw@ornl.gov, Oak Ridge National Lab
+// From BsplineFunction.h in Kokkos branch
 ////////////////////////////////////////////////////////////////////////////////
+// -*- C++ -*-
 
+/**
+ * @file
+ * @brief CRTP base class for Determinant Devices
+ */
 #ifndef QMCPLUSPLUS_BSPLINE_FUNCTOR_KOKKOS_H
 #define QMCPLUSPLUS_BSPLINE_FUNCTOR_KOKKOS_H
 #include "Numerics/OptimizableFunctorBase.h"

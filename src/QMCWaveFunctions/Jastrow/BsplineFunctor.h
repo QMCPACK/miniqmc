@@ -5,6 +5,7 @@
 // Copyright (c) 2016 Jeongnim Kim and QMCPACK developers.
 //
 // File developed by:
+// Peter Doak, doakpw@ornl.gov, Oak Ridge National Laboratory
 // John R. Gergely,  University of Illinois at Urbana-Champaign
 // Ken Esler, kpesler@gmail.com,
 //    University of Illinois at Urbana-Champaign

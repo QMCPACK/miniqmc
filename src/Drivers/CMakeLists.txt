@@ -17,7 +17,7 @@ ENDFOREACH(p ${ESTEST})
 # TARGET_LINK_LIBRARIES(${THIS_TEST} qmcbase qmcutil ${QMC_UTIL_LIBS} ${MPI_LIBRARY})
 
 ADD_LIBRARY(miniwfs ../QMCWaveFunctions/WaveFunction.cpp
-  ../QMCWaveFunctions/SPOSet_builder.cpp ../QMCWaveFunctions/WaveFunctionBuilder.cpp ${KOKKOS_SRCS})
+  ../QMCWaveFunctions/WaveFunctionBuilder.cpp ${KOKKOS_SRCS})
 TARGET_LINK_LIBRARIES(miniwfs qmcutil)
 SET(DRIVERS miniqmc) # miniqmc_sync_move)
 
