@@ -18,20 +18,20 @@
 namespace qmcplusplus
 {
 template<>
-void CheckDeterminantHelpers<Devices::KOKKOS>::finalize()
+void CheckDeterminantSteps<Devices::KOKKOS>::finalize()
 {
   Kokkos::finalize();
 }
 
 template<>
-void CheckDeterminantHelpers<Devices::KOKKOS>::initialize(int argc, char** argv)
+void CheckDeterminantSteps<Devices::KOKKOS>::initialize(int argc, char** argv)
 {
-  std::cout << "CheckDeterminantHelpers<DDT::KOKKOS>::initialize" << '\n';
+  std::cout << "CheckDeterminantSteps<DDT::KOKKOS>::initialize" << '\n';
   Kokkos::initialize(argc, argv);
 }
 
 template<>
-double CheckDeterminantHelpers<Devices::KOKKOS>::runThreads(int np,
+double CheckDeterminantSteps<Devices::KOKKOS>::runThreads(int np,
                                                             PrimeNumberSet<uint32_t>& myPrimes,
                                                             ParticleSet& ions,
                                                             int& nsteps,
@@ -40,7 +40,7 @@ double CheckDeterminantHelpers<Devices::KOKKOS>::runThreads(int np,
   auto main_function = KOKKOS_LAMBDA(int thread_id, double& accumulated_error)
   {
     printf(" thread_id = %d\n", thread_id);
-    CheckDeterminantHelpers<Devices::KOKKOS>::thread_main(thread_id,
+    CheckDeterminantSteps<Devices::KOKKOS>::thread_main(thread_id,
                                                           myPrimes,
                                                           ions,
                                                           nsteps,
@@ -66,7 +66,7 @@ double CheckDeterminantHelpers<Devices::KOKKOS>::runThreads(int np,
   return accumulated_error;
 }
 
-extern template class CheckDeterminantHelpers<Devices::KOKKOS>;
+extern template class CheckDeterminantSteps<Devices::KOKKOS>;
 } // namespace qmcplusplus
 
 #endif

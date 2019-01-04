@@ -11,7 +11,7 @@ ENDFOREACH(p ${ESTEST})
 
 # SET(THIS_TEST check_determinant)
 # IF(QMC_USE_KOKKOS)
-#   SET(ETEST_KOKKOS_SRC "test/CheckDeterminantHelpersKOKKOS.cpp")
+#   SET(ETEST_KOKKOS_SRC "test/CheckDeterminantStepsKOKKOS.cpp")
 # ENDIF(QMC_USE_KOKKOS)
 # ADD_EXECUTABLE( ${THIS_TEST}  ${THIS_TEST}.cpp ${ETEST_KOKKOS_SRC})
 # TARGET_LINK_LIBRARIES(${THIS_TEST} qmcbase qmcutil ${QMC_UTIL_LIBS} ${MPI_LIBRARY})
