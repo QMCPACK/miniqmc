@@ -17,12 +17,17 @@
 #include "Devices.h" 
 
 /** @file
- * Here compiled determinant implmentations
+ * Here determinant implmentations
  * are included.
  */
 
 namespace qmcplusplus
 {
+/**
+ * Collects device implementations into class templates rather
+ * than separate classes.
+ * This faciliates other generic code using the device enumeration.
+ */
 template<Devices DT>
 class DeterminantDeviceImp
 {};

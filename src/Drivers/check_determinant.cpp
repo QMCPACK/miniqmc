@@ -298,15 +298,6 @@ int CheckDeterminantTest::run_test()
 #ifdef QMC_USE_KOKKOS
 template class CheckDeterminantHelpers<Devices::KOKKOS>;
 #endif
-// template<typename DT>
-// void initialize(DT dt, int arc, char** argv)
-// {}
-
-// template<>
-// void initialize(DeterminantDeviceImp<DDT::KOKKOS> dt, int argc, char** argv)
-// {
-//   Kokkos::initialize(argc, argv);
-// }
 }
 using namespace qmcplusplus;
 
@@ -314,9 +305,11 @@ using namespace qmcplusplus;
 int main(int argc, char** argv)
 {
   int error_code=0;
-  // hana::for_each(ddts, [&](auto x) {
-  // 			 initialize(x, argc, argc);
-  // 		       });
+  /**
+   * Run initialize on each DeterminantDeviceImp
+   * assumes initializes do not conflict with each other
+   * at the moment just due to Kokkos
+   */
   hana::for_each(devices_range,
 		 [&](auto x) {
 		   CheckDeterminantHelpers<static_cast<Devices>(decltype(x)::value)>::initialize(argc, argv);
@@ -325,6 +318,11 @@ int main(int argc, char** argv)
   CheckDeterminantTest test;
   test.setup(argc, argv);
   error_code = test.run_test();
+  /**
+   * Run finalize on each DeterminantDeviceImp
+   * assumes finalizes do not conflict with each other
+   * at the moment just due to Kokkos
+   */
   hana::for_each(devices_range,
 		 [&](auto x) {
 		   CheckDeterminantHelpers<static_cast<Devices>(decltype(x)::value)>::finalize();

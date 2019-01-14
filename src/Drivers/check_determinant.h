@@ -51,7 +51,7 @@ public:
 };
 
 template<Devices DT>
-class CheckDeterminantHelpers
+class CheckDeterminantSteps
 {
 public:
   using QMCT = QMCTraits;
