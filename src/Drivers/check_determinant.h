@@ -72,8 +72,8 @@ private:
 };
 }
 #ifdef QMC_USE_KOKKOS
-#include "Drivers/test/CheckDeterminantHelpersKOKKOS.hpp"
-  //extern template class CheckDeterminantHelpers<Devices::KOKKOS>;
+#include "Drivers/test/CheckDeterminantStepsKOKKOS.hpp"
+  //extern template class CheckDeterminantSteps<Devices::KOKKOS>;
 #endif
 
 #endif

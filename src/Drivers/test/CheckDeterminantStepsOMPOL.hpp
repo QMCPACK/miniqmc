@@ -4,13 +4,13 @@ namespace qmcplusplus
 {
 
 template<>
-void CheckDeterminantHelpers<Devices::OMPOL>::updateFromDevice(DiracDeterminant<DT>& determinant_device)
+void CheckDeterminantSteps<Devices::OMPOL>::updateFromDevice(DiracDeterminant<DT>& determinant_device)
 {
   determinant_device.transfer_from_device();
 }
 
 template<>
-CheckDeterminantHelpers<DDT:OMPOL>::runThreads(int np,
+CheckDeterminantSteps<DDT:OMPOL>::runThreads(int np,
 						       PrimeNumberSet<uint32_t>& myPrimes,
 			  ParticleSet& ions, int& nsteps,
 						       int& nsubsteps)

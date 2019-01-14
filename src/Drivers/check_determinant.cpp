@@ -63,16 +63,16 @@ namespace hana = boost::hana;
 auto device_defined = hana::is_valid([](auto&& p) -> decltype((void)p.defined) {});
 
 template<Devices DT>
-void CheckDeterminantHelpers<DT>::initialize(int argc, char** argv)
+void CheckDeterminantSteps<DT>::initialize(int argc, char** argv)
 {}
 
 template<Devices DT>
-void CheckDeterminantHelpers<DT>::updateFromDevice(DiracDeterminant<DeterminantDeviceImp<DT>>& determinant_device)
+void CheckDeterminantSteps<DT>::updateFromDevice(DiracDeterminant<DeterminantDeviceImp<DT>>& determinant_device)
 {
 }
 
 template<Devices DT>
-double CheckDeterminantHelpers<DT>::runThreads(int np,
+double CheckDeterminantSteps<DT>::runThreads(int np,
 					       PrimeNumberSet<uint32_t>& myPrimes,
 					       ParticleSet& ions,
 					       int& nsteps,
@@ -81,14 +81,14 @@ double CheckDeterminantHelpers<DT>::runThreads(int np,
   double accumulated_error = 0.0;
 #pragma omp parallel reduction(+:accumulated_error)
   {
-  CheckDeterminantHelpers<DT>
+  CheckDeterminantSteps<DT>
     ::thread_main(omp_get_thread_num(), myPrimes, ions, nsteps, nsubsteps, accumulated_error);
   }
   return accumulated_error;
 }
 
 template<Devices DT>
-void CheckDeterminantHelpers<DT>::thread_main(const int ip,
+void CheckDeterminantSteps<DT>::thread_main(const int ip,
 					      const PrimeNumberSet<uint32_t>& myPrimes,
 					      const ParticleSet& ions,
 					      const int& nsteps,
@@ -178,7 +178,7 @@ void CheckDeterminantHelpers<DT>::thread_main(const int ip,
     els.donePbyP();
   }
 
-  CheckDeterminantHelpers<DT>::updateFromDevice(determinant_devimp);
+  CheckDeterminantSteps<DT>::updateFromDevice(determinant_devimp);
   
   // accumulate error
   for (int i = 0; i < determinant_ref.size(); i++)
@@ -189,7 +189,7 @@ void CheckDeterminantHelpers<DT>::thread_main(const int ip,
 }
 
 template<Devices DT>
-void CheckDeterminantHelpers<DT>::test(int& error, ParticleSet& ions,
+void CheckDeterminantSteps<DT>::test(int& error, ParticleSet& ions,
 				       int& nsteps,
 				       int& nsubsteps,
 				       int& np)
@@ -200,7 +200,7 @@ void CheckDeterminantHelpers<DT>::test(int& error, ParticleSet& ions,
   std::cout << "Testing Determinant Device Implementation: "<< enum_name << '\n';
   
   double accumulated_error;
-  accumulated_error = CheckDeterminantHelpers<DT>::runThreads(np, myPrimes,
+  accumulated_error = CheckDeterminantSteps<DT>::runThreads(np, myPrimes,
 					    ions, nsteps,
 					    nsubsteps);
 
@@ -220,7 +220,7 @@ void CheckDeterminantHelpers<DT>::test(int& error, ParticleSet& ions,
 }
 
 template<Devices DT>
-void CheckDeterminantHelpers<DT>::finalize()
+void CheckDeterminantSteps<DT>::finalize()
 {}
 
 void CheckDeterminantTest::setup(int argc, char** argv)
@@ -285,7 +285,7 @@ int CheckDeterminantTest::run_test()
     // ddt_range has the index range of implementations at compile time.
     hana::for_each(devices_range,
 		 [&](auto x) {
-		   CheckDeterminantHelpers<static_cast<Devices>(decltype(x)::value)>::test(error, ions, nsteps,
+		   CheckDeterminantSteps<static_cast<Devices>(decltype(x)::value)>::test(error, ions, nsteps,
 											       nsubsteps, np);});
 
     if(error > 0)
@@ -296,7 +296,7 @@ int CheckDeterminantTest::run_test()
   
 
 #ifdef QMC_USE_KOKKOS
-template class CheckDeterminantHelpers<Devices::KOKKOS>;
+template class CheckDeterminantSteps<Devices::KOKKOS>;
 #endif
 }
 using namespace qmcplusplus;
@@ -312,7 +312,7 @@ int main(int argc, char** argv)
    */
   hana::for_each(devices_range,
 		 [&](auto x) {
-		   CheckDeterminantHelpers<static_cast<Devices>(decltype(x)::value)>::initialize(argc, argv);
+		   CheckDeterminantSteps<static_cast<Devices>(decltype(x)::value)>::initialize(argc, argv);
 		       });
 
   CheckDeterminantTest test;
@@ -325,7 +325,7 @@ int main(int argc, char** argv)
    */
   hana::for_each(devices_range,
 		 [&](auto x) {
-		   CheckDeterminantHelpers<static_cast<Devices>(decltype(x)::value)>::finalize();
+		   CheckDeterminantSteps<static_cast<Devices>(decltype(x)::value)>::finalize();
 		       });
   return error_code;
 }
