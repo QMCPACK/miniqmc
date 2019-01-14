@@ -1,6 +1,0 @@
-#include "Drivers/test/CheckDeterminantHelpersKOKKOS.hpp"
-
-namespace qmcplusplus
-{
-template class CheckDeterminantHelpers<Devices::KOKKOS>;
-}

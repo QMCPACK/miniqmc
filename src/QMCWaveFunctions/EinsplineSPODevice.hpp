@@ -32,15 +32,18 @@ public:
 protected:
   EinsplineSPODevice(const EinsplineSPODevice<DEVICEIMP, T>& espd, int team_size, int member_id)
   {
-    std::cout << "EinsplineSPODevice Fat Copy constructor called\n";
+    //std::cout << "EinsplineSPODevice Fat Copy constructor called\n";
   }
 
   EinsplineSPODevice(const EinsplineSPODevice<DEVICEIMP, T>& espd)
   {
-    std::cout << "EinsplineSPODevice Copy constructor called\n";
+    //std::cout << "EinsplineSPODevice Copy constructor called\n";
   }
 
-  EinsplineSPODevice() { std::cout << "EinsplineDevice() called \n"; };
+  EinsplineSPODevice()
+  {
+    //std::cout << "EinsplineDevice() called \n";
+  };
 
 public:
   void set(int nx, int ny, int nz, int num_splines, int nblocks, bool init_random = true)

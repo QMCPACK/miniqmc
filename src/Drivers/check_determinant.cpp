@@ -96,7 +96,6 @@ void CheckDeterminantSteps<DT>::thread_main(const int ip,
 					      double& accumulated_error)
 {
   // create generator within the thread
-  std::cout << "woo main function\n";
   RandomGenerator<QMCT::RealType> random_th(myPrimes[ip]);
 
   ParticleSet els;

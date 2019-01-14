@@ -66,7 +66,7 @@ class EinsplineSPODeviceImp<Devices::CPU, T>
 public:
   EinsplineSPODeviceImp()
   {
-    std::cout << "EinsplineSPODeviceImpCPU() called" << '\n';
+    //std::cout << "EinsplineSPODeviceImpCPU() called" << '\n';
     esp.nBlocks    = 0;
     esp.nSplines   = 0;
     esp.firstBlock = 0;
@@ -83,7 +83,7 @@ public:
    */
   EinsplineSPODeviceImp(const EinsplineSPODevice<EinsplineSPODeviceImp<Devices::CPU, T>, T>& in)
   {
-    std::cout << "EinsplineSPODeviceImpCPU Fat Copy constructor called" << '\n';
+    //std::cout << "EinsplineSPODeviceImpCPU Fat Copy constructor called" << '\n';
     const EinsplineSPOParams<T>& inesp = in.getParams();
     esp.nSplinesSerialThreshold_V      = inesp.nSplinesSerialThreshold_V;
     esp.nSplinesSerialThreshold_VGH    = inesp.nSplinesSerialThreshold_VGH;

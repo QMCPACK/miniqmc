@@ -1593,7 +1593,7 @@ public:
   DeterminantDeviceImp(int nels, const RandomGenerator<QMCT::RealType>& RNG, int First = 0)
       : DeterminantDevice(nels, RNG, First), FirstIndex(First), myRandom(RNG)
   {
-    std::cout << "DeterminantDeviceImp<KOKKOS>::DeterminantDeviceImp(...)" << '\n';
+    //std::cout << "DeterminantDeviceImp<KOKKOS>::DeterminantDeviceImp(...)" << '\n';
     psiMinv  = DoubleMatType("psiMinv", nels, nels);
     psiM     = DoubleMatType("psiM", nels, nels);
     psiMsave = DoubleMatType("psiMsave", nels, nels);
@@ -1633,7 +1633,6 @@ public:
 
     LogValue = InvertWithLog(psiM, lah, phase);
     elementWiseCopy(psiMinv, psiM);
-    std::cout << "Survived Constructor\n";
   }
 
   void checkMatrixImp()
