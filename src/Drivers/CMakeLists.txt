@@ -22,7 +22,7 @@ TARGET_LINK_LIBRARIES(miniwfs qmcutil)
 SET(DRIVERS miniqmc) # miniqmc_sync_move)
 
 
-SET(MINI_FUNCTIONS_SRC MiniqmcDriverFunctions.cpp)
+SET(MINI_FUNCTIONS_SRC Movers.cpp MiniqmcDriverFunctions.cpp)
 IF(QMC_USE_KOKKOS)
   SET(MINI_FUNCTIONS_SRC ${MINI_FUNCTIONS_SRC} MiniqmcDriverFunctionsKokkos.cpp)
 ENDIF(QMC_USE_KOKKOS)

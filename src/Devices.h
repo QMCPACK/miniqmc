@@ -22,28 +22,6 @@ namespace qmcplusplus
 {
 namespace hana = boost::hana;
 
-/* struct DefinedCPU */
-/* { */
-/*   int defined; */
-/* }; */
-/* constexpr DefinedCPU defined_cpu(); */
-
-/* struct DefinedKOKKOS */
-/* { */
-/* #ifdef QMC_USE_KOKKOS */
-/*   int defined; */
-/* #endif */
-/* }; */
-/* constexpr DefinedKOKKOS defined_kokkos(); */
-
-/* struct DefinedOMPOL */
-/* { */
-/* #ifdef QMC_USE_OMPOL */
-/*   int defined; */
-/* #endif */
-/* }; */
-
-
 /** Enum of Devices supported by this build
  *  used as a template parameter for device specializations
  *  and for template metaprogramming.

@@ -37,6 +37,9 @@ namespace qmcplusplus
     Timer_Update,
   };
 
+/** reads and holds the options
+ *  composed into MiniqmcDriver
+ */
 class MiniqmcOptions
 {
 public:
@@ -106,6 +109,8 @@ public:
   bool verbose                 = false;
   std::string timer_level_name = "fine";
   TimerList_t Timers;
+
+  int pack_size = 1;
   
   MiniqmcOptions() = default;
   MiniqmcOptions(const MiniqmcOptions&) = default; // { std::cout << "MiniqmcOptions copy made" << '\n'; }

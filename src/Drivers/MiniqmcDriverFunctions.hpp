@@ -17,8 +17,10 @@
 #include <functional>
 #include <boost/hana/map.hpp>
 #include "Devices.h"
+#include "Batching.h"
 #include "Drivers/MiniqmcOptions.hpp"
 #include "Drivers/Mover.hpp"
+#include "Drivers/Movers.hpp"
 #include "Particle/ParticleSet.h"
 #include "Input/nio.hpp"
 #include "QMCWaveFunctions/Determinant.h"
@@ -32,10 +34,9 @@ namespace qmcplusplus
 {
 
 /** A purely functional class implementing miniqmcdriver functions
- *  This is a cleaner alternative to defining functions on the spot
- *  and using ifdef's to isolate different device/model specific code.
+ *  functions can be specialized for a particular device
+ *  drive steps are clearly broken up.
  */
-
 
 template<Devices DT>
 class MiniqmcDriverFunctions

@@ -13,6 +13,7 @@
 #ifndef QMCPLUSPLUS_SINGLEPARTICLEORBITALSET_BUILDER_H
 #define QMCPLUSPLUS_SINGLEPARTICLEORBITALSET_BUILDER_H
 
+#include "Batching.h"
 #include "QMCWaveFunctions/SPOSetImp.h"
 #include "QMCWaveFunctions/EinsplineSPO.hpp"
 #include "QMCWaveFunctions/einspline_spo_ref.hpp"
@@ -25,13 +26,13 @@ class SPOSetBuilder
 {
 public:
   static SPOSet* build(bool useRef,
-			  int nx,
-			  int ny,
-			  int nz,
-			  int num_splines,
-			  int nblocks,
-			  const Tensor<OHMMS_PRECISION, 3>& lattice_b,
-			  bool init_random = true)
+		       int nx,
+		       int ny,
+		       int nz,
+		       int num_splines,
+		       int nblocks,
+		       const Tensor<OHMMS_PRECISION, 3>& lattice_b,
+		       bool init_random = true)
     {
   if (useRef)
   {
