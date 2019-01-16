@@ -106,8 +106,16 @@ public:
       {
         return run_cases(my_, i, IntList<N...>());
       }
-      decltype(
+      if(my_.mq_opt_.enableMovers)
+      {
+	decltype(
+          +device_tuple[hana::size_c<I::value>])::type::movers_runThreads(my_.mq_opt_, my_.myPrimes, my_.ions, my_.spo_main);
+      }
+      else
+      {
+		decltype(
           +device_tuple[hana::size_c<I::value>])::type::runThreads(my_.mq_opt_, my_.myPrimes, my_.ions, my_.spo_main);
+      }
     }
 
     void initialize_cases(int argc, char** argv, int, IntList<>)

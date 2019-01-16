@@ -53,9 +53,19 @@ public:
                          const PrimeNumberSet<uint32_t>& myPrimes,
                          ParticleSet& ions,
 			 const SPOSet* spo_main);
+  static void movers_runThreads(MiniqmcOptions& mq_opt,
+                         const PrimeNumberSet<uint32_t>& myPrimes,
+                         ParticleSet& ions,
+			 const SPOSet* spo_main);
   static void finalize();
 private:
   static void mover_info();
+  static void movers_thread_main(const int ip,
+			  const int team_size,
+			  MiniqmcOptions& mq_opt,
+                          const PrimeNumberSet<uint32_t>& myPrimes,
+                          ParticleSet ions,
+			  const SPOSet* spo_main);
   static void thread_main(const int ip,
 			  const int team_size,
 			  MiniqmcOptions& mq_opt,

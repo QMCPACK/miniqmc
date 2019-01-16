@@ -49,6 +49,9 @@ MiniqmcOptions readOptions(int argc, char** argv)
       case 'N':
         mq_opt.nsubsteps = atoi(optarg);
         break;
+      case 'p': // pack_size
+        mq_opt.pack_size = atoi(optarg);
+        break;
       case 'r': // rmax
         mq_opt.Rmax = atof(optarg);
         break;

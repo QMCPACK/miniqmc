@@ -26,7 +26,7 @@
 
 #include "QMCWaveFunctions/WaveFunctionComponent.h"
 #include "QMCWaveFunctions/DeterminantDevice.h"
-
+ 
 namespace qmcplusplus
 {
 
