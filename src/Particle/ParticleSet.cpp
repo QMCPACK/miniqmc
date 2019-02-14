@@ -301,23 +301,16 @@ bool ParticleSet::makeMoveAndCheck(Index_t iat, const SingleParticlePos_t& displ
 
   activePtcl = iat;
   activePos  = R[iat] + displ;
+  
   if (UseBoundBox)
   {
-    if (Lattice.outOfBound(Lattice.toUnit(displ)))
-    {
-      activePtcl = -1;
-      return false;
-    }
     newRedPos = Lattice.toUnit(activePos);
-    if (Lattice.isValid(newRedPos))
-    {
-      for (int i = 0; i < DistTables.size(); ++i)
-        DistTables[i]->move(*this, activePos);
-      return true;
-    }
-    // out of bound
-    activePtcl = -1;
-    return false;
+    //This seems like the move algorithm is questionable
+    if (!Lattice.isValid(newRedPos))
+      newRedPos = Lattice.toUnit_floor(activePos);
+    for (int i = 0; i < DistTables.size(); ++i)
+      DistTables[i]->move(*this, activePos);
+    return true;
   }
   else
   {
