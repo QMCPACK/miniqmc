@@ -238,6 +238,8 @@ private:
 };
 
 extern template class Movers<Devices::CPU>;
-
+#ifdef QMC_USE_KOKKOS
+extern template class Movers<Devices::KOKKOS>;
+#endif 
 } // namespace qmcplusplus
 #endif //QMCPLUSPLUS_MOVERS_HPP

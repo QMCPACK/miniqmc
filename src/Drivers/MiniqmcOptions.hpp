@@ -80,7 +80,7 @@ public:
     app_summary() << "  -V  print version information and exit" << '\n';
     app_summary() << "  -x  set the Rmax.                  default: 1.7" << '\n';
     app_summary() << "  -z  number of crews for walker partitioning.   default: 1" << '\n';
-    app_summary() << "  -D  device implementation.         default: CPU          " << '\n';
+    app_summary() << "  -d  device implementation.         default: CPU          " << '\n';
     app_summary() << "      Available devices:" << '\n';
     hana::for_each(devices_range, [&](auto x) {
       std::string enum_name = device_names[x];

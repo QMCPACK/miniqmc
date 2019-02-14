@@ -208,4 +208,7 @@ void Movers<DT>::constructTrialMoves(int iel)
 }
 
 template class Movers<Devices::CPU>;
+#ifdef QMC_USE_KOKKOS
+template class Movers<Devices::KOKKOS>;
+#endif
 } // namespace qmcplusplus

@@ -192,5 +192,38 @@ void MiniqmcDriverFunctions<Devices::KOKKOS>::runThreads(MiniqmcOptions& mq_opt,
 #endif
 }
 
+
+template<>
+void MiniqmcDriverFunctions<Devices::KOKKOS>::movers_runThreads(MiniqmcOptions& mq_opt,
+                                            const PrimeNumberSet<uint32_t>& myPrimes,
+                                            ParticleSet& ions,
+                                            const SPOSet* spo_main)
+{
+  auto main_function = KOKKOS_LAMBDA(int thread_id, int team_size)
+  {
+    printf(" thread_id = %d\n", thread_id);
+    MiniqmcDriverFunctions<Devices::KOKKOS>::movers_thread_main(thread_id, team_size,
+								const_cast<MiniqmcOptions&>(mq_opt),
+								myPrimes,
+								ions,
+								spo_main);
+    
+  };
+#if defined(KOKKOS_ENABLE_OPENMP) && !defined(KOKKOS_ENABLE_CUDA)
+  int num_threads = Kokkos::OpenMP::thread_pool_size();
+  int crewsize = std::max(1, num_threads / mq_opt.ncrews);
+  printf(" In partition master with %d threads, %d crews, and %d movers.  Crewsize = %d \n",
+         num_threads,
+         mq_opt.ncrews,
+         mq_opt.nmovers,
+         crewsize);
+  Kokkos::OpenMP::partition_master(main_function, mq_opt.nmovers, crewsize);
+  #else
+  main_function(0,1);
+  #endif
+
+}
+
 template class MiniqmcDriverFunctions<Devices::KOKKOS>;
+
 } // namespace qmcplusplus
