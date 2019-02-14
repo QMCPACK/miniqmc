@@ -29,6 +29,7 @@
 
 #include <numeric>
 #include <iomanip>
+#include <stdexcept>
 #include "Particle/ParticleSet.h"
 #include "Particle/DistanceTableData.h"
 #include "Particle/DistanceTable.h"
@@ -302,13 +303,12 @@ bool ParticleSet::makeMoveAndCheck(Index_t iat, const SingleParticlePos_t& displ
 
   activePtcl = iat;
   activePos  = R[iat] + displ;
-  
+  //This is wrong in at least one way.
   if (UseBoundBox)
   {
-    newRedPos = Lattice.toUnit(activePos);
-    //This seems like the move algorithm is questionable
-    if (!Lattice.isValid(newRedPos))
-      newRedPos = Lattice.toUnit_floor(activePos);
+    activePos = Lattice.toUnit_floor(activePos);
+    if (!Lattice.isValid(activePos))
+      throw std::logic_error("This should never occur");
     for (int i = 0; i < DistTables.size(); ++i)
       DistTables[i]->move(*this, activePos);
     return true;

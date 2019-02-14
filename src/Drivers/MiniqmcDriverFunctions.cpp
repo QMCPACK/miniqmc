@@ -26,6 +26,7 @@ void MiniqmcDriverFunctions<Devices::CPU>::movers_thread_main(const int ip,
   // create and initialize movers
   app_summary() << "pack size:" << mq_opt.pack_size << '\n';
   app_summary() << "thread:" << ip << " starting up \n";
+  int my_accepts = 0;
   Movers<Devices::CPU> movers(ip, myPrimes, ions, mq_opt.pack_size);
 
   // For VMC, tau is large and should result in an acceptance ratio of roughly
@@ -95,7 +96,7 @@ void MiniqmcDriverFunctions<Devices::CPU>::movers_thread_main(const int ip,
 	// Accept/reject the trial move
         mq_opt.Timers[Timer_Update]->start();
 
-	movers.acceptRestoreMoves(iel, mq_opt.accept);
+	my_accepts += movers.acceptRestoreMoves(iel, mq_opt.accept);
 
         mq_opt.Timers[Timer_Update]->stop();
       }//iel
@@ -188,6 +189,8 @@ void MiniqmcDriverFunctions<Devices::CPU>::thread_main(const int ip,
 {
   const int member_id = ip % team_size;
   // create and initialize movers
+  app_summary() << "thread:" << ip << " starting up \n";
+
   Mover* thiswalker = new Mover(myPrimes[ip], ions);
   //mover_list[iw]    = thiswalker;
 
@@ -342,7 +345,7 @@ void MiniqmcDriverFunctions<DT>::movers_runThreads(MiniqmcOptions& mq_opt,
                                             ParticleSet& ions,
                                             const SPOSet* spo_main)
 {
-
+#pragma omp parallel for
   for (int iw = 0; iw < mq_opt.nmovers; iw++)
   {
     MiniqmcDriverFunctions<DT>::movers_thread_main(iw, 1, mq_opt, myPrimes, ions, spo_main);

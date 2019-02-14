@@ -17,6 +17,7 @@
 #include <memory>
 #include <functional>
 #include <type_traits>
+#include <stdexcept>
 #include <boost/tuple/tuple.hpp>
 #include <boost/iterator/zip_iterator.hpp>
 
@@ -105,7 +106,9 @@ class Movers
 		    int&>& t) const
     {
       QMCT::PosType dr = sqrttau_ * t.get<0>()[iel_];
-      t.get<2>() = t.get<1>().makeMoveAndCheck(iel_, dr);
+      int isValid = t.get<1>().makeMoveAndCheck(iel_, dr);
+      if(isValid == 0)
+	throw std::logic_error("moves must be valid");
     }
   };
 public:
@@ -215,7 +218,7 @@ public:
   void donePbyP();
   void constructTrialMoves(int iels);
   void updatePosFromCurrentEls(int iels);
-  void acceptRestoreMoves(int iels, QMCT::RealType accept);
+  int acceptRestoreMoves(int iels, QMCT::RealType accept);
 private:
   int pack_size_;
   static constexpr QMCT::RealType tau = 2.0;
