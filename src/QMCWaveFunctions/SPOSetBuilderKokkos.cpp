@@ -14,8 +14,8 @@
 namespace qmcplusplus
 {
 
-template<typename T>
-static SPOSet* SPOSetBuilder<Devices::KOKKOS>::buildView(bool useRef, const SPOSet* SPOSet_main, int team_size, int member_id)
+template<>
+SPOSet* SPOSetBuilder<Devices::KOKKOS>::buildView(bool useRef, const SPOSet* SPOSet_main, int team_size, int member_id)
     {
   if (useRef)
   {
@@ -27,8 +27,8 @@ static SPOSet* SPOSetBuilder<Devices::KOKKOS>::buildView(bool useRef, const SPOS
   }
   else
   {
-    auto* temp_ptr = dynamic_cast<const EinsplineSPO<DT, OHMMS_PRECISION>*>(SPOSet_main);
-    auto* spo_view = new EinsplineSPO<DT, OHMMS_PRECISION>(*temp_ptr, team_size, member_id);
+    auto* temp_ptr = dynamic_cast<const EinsplineSPO<Devices::KOKKOS, OHMMS_PRECISION>*>(SPOSet_main);
+    auto* spo_view = new EinsplineSPO<Devices::KOKKOS, OHMMS_PRECISION>(*temp_ptr, team_size, member_id);
     return dynamic_cast<SPOSet*>(spo_view);
   }
 }

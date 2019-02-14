@@ -27,6 +27,7 @@ IF(QMC_USE_KOKKOS)
   SET(MINI_FUNCTIONS_SRC ${MINI_FUNCTIONS_SRC} MiniqmcDriverFunctionsKokkos.cpp)
 ENDIF(QMC_USE_KOKKOS)
 ADD_LIBRARY(mini_functions ${MINI_FUNCTIONS_SRC})
+TARGET_LINK_LIBRARIES(mini_functions)
 
 FOREACH(p ${DRIVERS})
   ADD_EXECUTABLE( ${p} MiniqmcOptions.cpp MiniqmcDriver.cpp ${p}.cpp)
