@@ -82,7 +82,7 @@ class Movers
 
   public:
     buildWaveFunctionsFunc(ParticleSet& ions, bool useRef = false, bool enableJ3 = false)
-        : ions_(ions), useRef_(useRef), enableJ3_(enableJ3)
+      : useRef_(useRef), enableJ3_(enableJ3), ions_(ions)
     {}
     void operator()(const boost::tuple<WaveFunction&, ParticleSet&, const RandomGenerator<QMCT::RealType>&>& t) const
     {
@@ -115,7 +115,7 @@ public:
   /// electrons
   std::vector<std::unique_ptr<ParticleSet>> elss;
   /// single particle orbitals
-  std::vector<SPOSet*> spos;
+  std::vector<std::shared_ptr<SPOSet>> spos;
   /// wavefunction container
   std::vector<std::unique_ptr<WaveFunction>> wavefunctions;
   /// non-local pseudo-potentials
@@ -173,6 +173,15 @@ public:
   {
     return dereference_iterator(deltas.end());
   }
+  DereferenceIterator<std::vector<std::shared_ptr<SPOSet>>::iterator> spos_begin()
+  {
+    return dereference_iterator(spos.begin());
+  }
+  DereferenceIterator<std::vector<std::shared_ptr<SPOSet>>::iterator> spos_end()
+  {
+    return dereference_iterator(spos.end());
+  }
+
   
   ParticleSet& elss_back() { return *(elss.back()); }
 
@@ -183,15 +192,17 @@ public:
 
   /// destructor
   ~Movers();
-  void buildViews(bool useRef, const SPOSet* spo_main, int team_size, int member_id);
+  void buildViews(bool useRef, std::shared_ptr<SPOSet> spo_main, int team_size, int member_id);
 
   void buildWaveFunctions(bool useRef, bool enableJ3);
 
   void evaluateLog();
   void evaluateGrad(int iel);
   void evaluateRatioGrad(int iel);
+  void evaluateHessian(int iel);
   void fillRandoms();
   void constructTrialMoves(int iels);
+  void updatePosFromCurrentEls(int iels);
 private:
   int pack_size_;
   static constexpr QMCT::RealType tau = 2.0;

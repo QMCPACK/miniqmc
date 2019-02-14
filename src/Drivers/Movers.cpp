@@ -43,18 +43,24 @@ Movers<DT>::Movers(const int ip, const PrimeNumberSet<uint32_t>& myPrimes, const
 template<Devices DT>
 Movers<DT>::~Movers()
 {
-  std::for_each(spos.begin(), spos.end(), [](SPOSet* s) {
-    if (s != nullptr)
-    {
-      delete s;
-    }
-  });
+
 }
 
 template<Devices DT>
-void Movers<DT>::buildViews(bool useRef, const SPOSet* spo_main, int team_size, int member_id)
+void Movers<DT>::updatePosFromCurrentEls(int iel)
 {
-  std::for_each(spos.begin(), spos.end(), [&](SPOSet* s) {
+  std::for_each(boost::make_zip_iterator(boost::make_tuple(elss_begin(), pos_list.begin())),
+                boost::make_zip_iterator(boost::make_tuple(elss_end(), pos_list.end())),
+                [iel](const boost::tuple<ParticleSet&, QMCT::PosType&>& t)
+		{
+		  t.get<1>() = t.get<0>().R[iel];
+		});
+}
+
+template<Devices DT>
+void Movers<DT>::buildViews(bool useRef, std::shared_ptr<SPOSet> spo_main, int team_size, int member_id)
+{
+  std::for_each(spos.begin(), spos.end(), [&](std::shared_ptr<SPOSet> s) {
     s = SPOSetBuilder<DT>::buildView(useRef, spo_main, team_size, member_id);
   });
 }
@@ -86,8 +92,26 @@ void Movers<DT>::evaluateGrad(int iel)
 template<Devices DT>
 void Movers<DT>::evaluateRatioGrad(int iel)
 {
+    std::for_each(boost::make_zip_iterator(boost::make_tuple(wfs_begin(), elss_begin(),
+							   ratios.begin(),grad_new.begin())),
+                  boost::make_zip_iterator(boost::make_tuple(wfs_end(), elss_end(),
+							   ratios.end(),grad_new.end())),
+                [&](const boost::tuple<WaveFunction&, ParticleSet&,
+		   QMCT::ValueType&, QMCT::GradType&>& t)
+		  { t.get<2>() = t.get<0>().ratioGrad(t.get<1>(), iel, t.get<3>()); });
+
 }
-  
+
+template<Devices DT>
+void Movers<DT>::evaluateHessian(int iel)
+{
+  std::for_each(boost::make_zip_iterator(boost::make_tuple(spos_begin(), pos_list.begin())),
+		boost::make_zip_iterator(boost::make_tuple(spos_end(), pos_list.end())),
+                [&](const boost::tuple<SPOSet&, QMCT::PosType&>& t)
+		{ t.get<0>().evaluate_vgh(t.get<1>()); });
+
+}
+
 template<Devices DT>
 void Movers<DT>::fillRandoms()
 {
