@@ -15,6 +15,7 @@
 #include <Utilities/qmcpack_version.h>
 #include <Input/Input.hpp>
 #include "Devices.h"
+#include "Batching.h"
 #include <QMCWaveFunctions/SPOSet.h>
 #include <QMCWaveFunctions/SPOSet_builder.h>
 #include <QMCWaveFunctions/WaveFunction.h>
@@ -34,6 +35,12 @@ constexpr auto device_tuple = hana::make_tuple(hana::type_c<MiniqmcDriverFunctio
                                                hana::type_c<MiniqmcDriverFunctions<Devices::OMPOL>>,
 #endif
                                                hana::type_c<MiniqmcDriverFunctions<Devices::CPU>>);
+// The final type is so the tuple and device enum have the same length, forget why this matters.
+
+/** Owns the comm and SPOSet provides the basic structure
+ *  contains the boiler plate to handle the dispatching to 
+ *  appropriate functions from MiniqmcDriverFunctions class templates
+ */
 
 class MiniqmcDriver
 {
@@ -46,48 +53,40 @@ public:
     {};
 
     void build_cases(SPOSet*& spo_set,
-		     MiniqmcOptions& mq_opt,
-		     const int norb,
-		     const int nTiles,
-		     const Tensor<OHMMS_PRECISION, 3>& lattice_b,
-		     int i,
-		     IntList<>) { /* "default case" */ }
+                     MiniqmcOptions& mq_opt,
+                     const int norb,
+                     const int nTiles,
+                     const Tensor<OHMMS_PRECISION, 3>& lattice_b,
+                     int i,
+                     IntList<>)
+    { /* "default case" */
+    }
 
-    template<typename ...N>
+    template<typename... N>
     void build_cases(SPOSet*& spo_set,
-		     MiniqmcOptions& mq_opt,
-		     const int norb,
-		     const int nTiles,
-		     const Tensor<OHMMS_PRECISION, 3>& lattice_b,
-		     int i)
+                     MiniqmcOptions& mq_opt,
+                     const int norb,
+                     const int nTiles,
+                     const Tensor<OHMMS_PRECISION, 3>& lattice_b,
+                     int i)
     {
       build_cases(spo_set, mq_opt, norb, nTiles, lattice_b, i, IntList<N...>());
     }
 
-    template<typename I, typename ...N>
+    template<typename I, typename... N>
     void build_cases(SPOSet*& spo_set,
-		     MiniqmcOptions& mq_opt,
-		     const int norb,
-		     const int nTiles,
-		     const Tensor<OHMMS_PRECISION, 3>& lattice_b,
-		     int i,
-		     IntList<I, N...>)
+                     MiniqmcOptions& mq_opt,
+                     const int norb,
+                     const int nTiles,
+                     const Tensor<OHMMS_PRECISION, 3>& lattice_b,
+                     int i,
+                     IntList<I, N...>)
     {
       if (I::value != i)
       {
-	return build_cases(spo_set,
-			   mq_opt,
-			   norb,
-			   nTiles,
-			   lattice_b,
-			   i,
-			   IntList<N...>());
+        return build_cases(spo_set, mq_opt, norb, nTiles, lattice_b, i, IntList<N...>());
       }
-      decltype(+device_tuple[hana::size_c<I::value>])::type::buildSPOSet(spo_set,
-									 mq_opt,
-									 norb,
-									 nTiles,
-									 lattice_b);
+      decltype(+device_tuple[hana::size_c<I::value>])::type::buildSPOSet(spo_set, mq_opt, norb, nTiles, lattice_b);
     }
 
     void run_cases(MiniqmcDriver& my_, int, IntList<>)
@@ -107,10 +106,16 @@ public:
       {
         return run_cases(my_, i, IntList<N...>());
       }
-      decltype(+device_tuple[hana::size_c<I::value>])::type::runThreads(my_.mq_opt_,
-                                                                        my_.myPrimes,
-                                                                        my_.ions,
-                                                                        my_.spo_main);
+      if(my_.mq_opt_.enableMovers)
+      {
+	decltype(
+          +device_tuple[hana::size_c<I::value>])::type::movers_runThreads(my_.mq_opt_, my_.myPrimes, my_.ions, my_.spo_main);
+      }
+      else
+      {
+		decltype(
+          +device_tuple[hana::size_c<I::value>])::type::runThreads(my_.mq_opt_, my_.myPrimes, my_.ions, my_.spo_main);
+      }
     }
 
     void initialize_cases(int argc, char** argv, int, IntList<>)
@@ -137,11 +142,11 @@ public:
     MiniqmcDriver& my_;
     CaseHandler(MiniqmcDriver& my) : my_(my) {}
     void build(SPOSet*& spo_set,
-	       MiniqmcOptions& mq_opt,
-	       const int norb,
-	       const int nTiles,
-	       const Tensor<OHMMS_PRECISION, 3>& lattice_b,
-	       int i)
+               MiniqmcOptions& mq_opt,
+               const int norb,
+               const int nTiles,
+               const Tensor<OHMMS_PRECISION, 3>& lattice_b,
+               int i)
     {
       build_cases<DN...>(spo_set, mq_opt, norb, nTiles, lattice_b, i);
     }
@@ -190,8 +195,7 @@ private:
       resources->InsertEndChild(particle_info);
       XMLNode* electron_info = doc.NewElement("particle");
       electron_info->InsertEndChild(MakeTextElement(doc, "name", "e"));
-      electron_info->InsertEndChild(
-          MakeTextElement(doc, "size", std::to_string(count_electrons(ions, 1))));
+      electron_info->InsertEndChild(MakeTextElement(doc, "size", std::to_string(count_electrons(ions, 1))));
       particle_info->InsertEndChild(electron_info);
 
 
@@ -203,8 +207,8 @@ private:
       run_info->InsertEndChild(driver_info);
       resources->InsertEndChild(run_info);
 
-      std::string info_name = "info_" + std::to_string(mq_opt_.na) + "_" +
-          std::to_string(mq_opt_.nb) + "_" + std::to_string(mq_opt_.nc) + ".xml";
+      std::string info_name = "info_" + std::to_string(mq_opt_.na) + "_" + std::to_string(mq_opt_.nb) + "_" +
+          std::to_string(mq_opt_.nc) + ".xml";
       doc.SaveFile(info_name.c_str());
     }
   }

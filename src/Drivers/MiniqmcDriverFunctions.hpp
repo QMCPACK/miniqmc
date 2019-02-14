@@ -17,8 +17,10 @@
 #include <functional>
 #include <boost/hana/map.hpp>
 #include "Devices.h"
+#include "Batching.h"
 #include "Drivers/MiniqmcOptions.hpp"
 #include "Drivers/Mover.hpp"
+#include "Drivers/Movers.hpp"
 #include "Particle/ParticleSet.h"
 #include "Input/nio.hpp"
 #include "QMCWaveFunctions/Determinant.h"
@@ -32,10 +34,9 @@ namespace qmcplusplus
 {
 
 /** A purely functional class implementing miniqmcdriver functions
- *  This is a cleaner alternative to defining functions on the spot
- *  and using ifdef's to isolate different device/model specific code.
+ *  functions can be specialized for a particular device
+ *  drive steps are clearly broken up.
  */
-
 
 template<Devices DT>
 class MiniqmcDriverFunctions
@@ -52,9 +53,19 @@ public:
                          const PrimeNumberSet<uint32_t>& myPrimes,
                          ParticleSet& ions,
 			 const SPOSet* spo_main);
+  static void movers_runThreads(MiniqmcOptions& mq_opt,
+                         const PrimeNumberSet<uint32_t>& myPrimes,
+                         ParticleSet& ions,
+			 const SPOSet* spo_main);
   static void finalize();
 private:
   static void mover_info();
+  static void movers_thread_main(const int ip,
+			  const int team_size,
+			  MiniqmcOptions& mq_opt,
+                          const PrimeNumberSet<uint32_t>& myPrimes,
+                          ParticleSet ions,
+			  const SPOSet* spo_main);
   static void thread_main(const int ip,
 			  const int team_size,
 			  MiniqmcOptions& mq_opt,
@@ -75,40 +86,6 @@ void MiniqmcDriverFunctions<DT>::buildSPOSet(SPOSet*& spo_set,
       SPOSetBuilder<DT>::build(mq_opt.useRef, mq_opt.nx, mq_opt.ny, mq_opt.nz, norb, nTiles, lattice_b);
 }
 
-// template<Devices DT>
-// void MiniqmcDriverFunctions<DT>::mover_info()
-// {}
-
-// template<>
-// void MiniqmcDriverFunctions<Devices::KOKKOS>::mover_info()
-// {
-//   printf(" partition_id = %d\n", partition_id);
-// }
-
-
-// std::function<void(int, char**)> initializeCPU = std::bind(&MiniqmcDriverFunctions<Devices::CPU>::initialize, &cpu_functions, 1_, 2_);
-// std::function<void(int, char**)> initializeKOKKOS = std::bind(&MiniqmcDriverFunctions<Devices::CPU>::initialize, &kokkos_functions, 1_, 2_);
-
-// auto mdfi_map = hana::make_map(hana::make_pair(hana::int_c<static_cast<int>(Devices::CPU)>,
-// 					       hana::type_c<initializeCPU>),
-// 			      hana::make_pair(hana::int_c<static_cast<int>(Devices::KOKKOS)>,
-// 					      hana::type_c<initializeKOKKOS>));
-
-
-// static constexpr auto device_map =
-//     hana::apply(hana::make_map,
-// 		hana::make_pair(hana::int_c<static_cast<int>(Devices::CPU)>,
-// 				hana::type_c<MiniqmcDriverFunctions<Devices::CPU>>),
-// #ifdef QMC_USE_KOKKOS
-// 		hana::make_pair(hana::int_c<static_cast<int>(Devices::KOKKOS)>,
-//                                 hana::type_c<MiniqmcDriverFunctions<Devices::KOKKOS>>),
-// #endif
-// #ifdef QMC_USE_OMPOL
-//                 hana::make_pair(hana::int_c<static_cast<int>(Devices::OMPOL)>,
-//                                 hana::type_c<MiniqmcDriverFunctions<Devices::OMPOL>>),
-// #endif
-//                 hana::make_pair(hana::int_c<static_cast<int>(Devices::LAST)>,
-//                                 hana::type_c<MiniqmcDriverFunctions<Devices::CPU>>));
 
 
 } // namespace qmcplusplus

@@ -159,6 +159,7 @@ ENDIF()
 
   ADD_LIBRARY(qmcdevice QMCWaveFunctions/DeterminantDeviceImpCPU.cpp
     QMCWaveFunctions/EinsplineSPODeviceImpCPU.cpp ${KOKKOS_SRC})
+  set(QMCDEVICE_LINK_LIBRARIES qmcutil ${QMCDEVICE_LINK_LIBRARIES})
   target_link_libraries(qmcdevice ${QMCDEVICE_LINK_LIBRARIES})
   
   # For unit tests, enable use for the fake RNG

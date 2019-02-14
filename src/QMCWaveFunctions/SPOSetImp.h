@@ -66,10 +66,4 @@ public:
 
 }
 
-// #include "QMCWaveFunctions/SPOSetImpCPU.h"
-// #ifdef QMC_USE_KOKKOS
-// #include "QMCWaveFunctions/SPOSetImpKOKKOS.h"
-// #endif
-
-
 #endif

@@ -61,7 +61,7 @@ void MiniqmcDriver::initialize(int argc, char** argv)
   mq_opt_.Timers[Timer_Init]->start();
 
   // initialize ions and splines which are shared by all threads later
-  {
+  
     Tensor<OHMMS_PRECISION, 3> lattice_b;
     build_ions(ions, tmat, lattice_b);
     const int nels   = count_electrons(ions, 1);
@@ -90,7 +90,7 @@ void MiniqmcDriver::initialize(int argc, char** argv)
                   << SPO_coeff_size_MB << " MB)" << '\n';
 
     handler.build(spo_main, mq_opt_, norb, nTiles, lattice_b, mq_opt_.device_number);
-  }
+  
 
   if (!mq_opt_.useRef)
     app_summary() << "Using SoA distance table, Jastrow + einspline, " << '\n'
@@ -101,6 +101,9 @@ void MiniqmcDriver::initialize(int argc, char** argv)
                   << "determinant update, and distance table + einspline of the " << '\n'
                   << "reference implementation " << '\n';
 
+  if (mq_opt_.enableMovers)
+    app_summary() << "batched walkers activated \n"
+                  << "pack size: " << mq_opt_.pack_size << '\n';
   mq_opt_.Timers[Timer_Init]->stop();
 
   //Now lets figure out what threading sizes are needed:
@@ -110,50 +113,13 @@ void MiniqmcDriver::initialize(int argc, char** argv)
 
 void MiniqmcDriver::run()
 {
-    //    decltype(std::declval<device_map[mq_opt_.device_number]>)::runThreads(mq_opt_, myPrimes, ions, spo_main);
-
-//   constexpr auto device_map =
-//   hana::make_map(
-// 		hana::make_pair(hana::int_c<static_cast<int>(Devices::CPU)>,
-// 				hana::type_c<MiniqmcDriverFunctions<Devices::CPU>>),
-// #ifdef QMC_USE_KOKKOS
-// 		hana::make_pair(hana::int_c<static_cast<int>(Devices::KOKKOS)>,
-// 				hana::type_c<MiniqmcDriverFunctions<Devices::KOKKOS>>),
-// #endif
-// #ifdef QMC_USE_OMPOL
-// 		hana::make_pair(hana::int_c<static_cast<int>(Devices::OMPOL)>,
-// 				hana::type_c<MiniqmcDriverFunctions<Devices::OMPOL>>),
-// #endif
-// 		hana::make_pair(hana::int_c<static_cast<int>(Devices::LAST)>,
-// 				hana::type_c<MiniqmcDriverFunctions<Devices::CPU>>)
-// 				   );
-
-  //BOOST_HANA_CHECK(hana::size_c<hana::int_c<3>> == hana::length(device_tuple));
-  //BOOST_HANA_CHECK(hana::size_c<hana::int_c<2>> == hana::size_c<static_cast<size_t>(Devices::LAST)>);
-  //BOOST_HANA_CHECK((hana::size_c<static_cast<size_t>(Devices::LAST)> == hana::length(device_tuple));
-  
-  //static_assert(device_map[hana::int_c<0>] == hana::type_c<MiniqmcDriverFunctions<Devices::CPU>>,"");
-  //auto type_wrapped_devices_range = hana::transform(devices_range, hana::make_type);
   using MyHandler = decltype(hana::unpack(devices_range, hana::template_<CaseHandler>))::type;
-  
+
   MyHandler handler(*this);
 
   handler.run(mq_opt_.device_number);
-  
-  // switch (mq_opt_.device_number)
-  // {
-  // case 0:
-  //   using df = decltype(+device_tuple[hana::size_c<0>])::type;
-  //   decltype(+device_tuple[hana::size_c<0>])::type::runThreads(mq_opt_, myPrimes, ions, spo_main);
-  //   //MiniqmcDriverFunctions<Devices::CPU>::runThreads(mq_opt_, myPrimes, ions, spo_main);
-  //   break;
-  // case 1:
-  //   MiniqmcDriverFunctions<Devices::KOKKOS>::runThreads(mq_opt_, myPrimes, ions, spo_main);
-  //   break;
-  // default:
-  //   break;
-  // }
-    results();
+
+  results();
 }
 
 } // namespace qmcplusplus

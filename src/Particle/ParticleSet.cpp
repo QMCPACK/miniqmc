@@ -29,6 +29,7 @@
 
 #include <numeric>
 #include <iomanip>
+#include <stdexcept>
 #include "Particle/ParticleSet.h"
 #include "Particle/DistanceTableData.h"
 #include "Particle/DistanceTable.h"
@@ -279,6 +280,7 @@ void ParticleSet::update(bool skipSK)
   activePtcl = -1;
 }
 
+//Does this have any purpose in miniqmc? Just seems like horrible design
 void ParticleSet::setActive(int iat)
 {
   ScopedTimer local_timer(timers[Timer_setActive]);
@@ -303,28 +305,18 @@ bool ParticleSet::makeMoveAndCheck(Index_t iat, const SingleParticlePos_t& displ
   activePos  = R[iat] + displ;
   if (UseBoundBox)
   {
-    if (Lattice.outOfBound(Lattice.toUnit(displ)))
-    {
-      activePtcl = -1;
-      return false;
-    }
-    newRedPos = Lattice.toUnit(activePos);
-    if (Lattice.isValid(newRedPos))
-    {
-      for (int i = 0; i < DistTables.size(); ++i)
-        DistTables[i]->move(*this, activePos);
-      return true;
-    }
-    // out of bound
-    activePtcl = -1;
-    return false;
+    activePos = Lattice.toUnit_floor(activePos);
+    if (!Lattice.isValid(activePos))
+      throw std::logic_error("This should never occur");
+    for (int i = 0; i < DistTables.size(); ++i)
+      DistTables[i]->move(*this, activePos);
   }
   else
   {
     for (int i = 0; i < DistTables.size(); ++i)
       DistTables[i]->move(*this, activePos);
-    return true;
   }
+  return true;
 }
 
 /** move the iat-th particle by displ

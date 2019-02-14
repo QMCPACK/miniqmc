@@ -19,11 +19,11 @@ namespace qmcplusplus
 {
 template<Devices DT>
 void WaveFunctionBuilder<DT>::build(bool useRef,
-                                           WaveFunction& WF,
-                                           ParticleSet& ions,
-                                           ParticleSet& els,
-                                           const RandomGenerator<QMCTraits::RealType>& RNG,
-                                           bool enableJ3)
+                                    WaveFunction& WF,
+                                    ParticleSet& ions,
+                                    ParticleSet& els,
+                                    const RandomGenerator<QMCTraits::RealType>& RNG,
+                                    bool enableJ3)
 {
   using valT = WaveFunction::valT;
   using posT = WaveFunction::posT;
@@ -111,7 +111,6 @@ void WaveFunctionBuilder<DT>::build(bool useRef,
   }
 
   WF.setupTimers();
-
   WF.Is_built = true;
 }
 

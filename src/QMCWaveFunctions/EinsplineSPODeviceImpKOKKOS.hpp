@@ -157,7 +157,7 @@ public:
     }
   }
 
-  void set(int nx, int ny, int nz, int num_splines, int nblocks, bool init_random = true)
+  void set_i(int nx, int ny, int nz, int num_splines, int nblocks, bool init_random = true)
   {
     esp.nSplines         = num_splines;
     esp.nBlocks          = nblocks;
@@ -197,7 +197,7 @@ public:
     resize();
   }
 
-  inline void evaluate_v(const QMCT::PosType& p)
+  inline void evaluate_v_i(const QMCT::PosType& p)
   {
     ScopedTimer local_timer(timer);
     tmp_pos = p;
@@ -226,7 +226,7 @@ public:
 //       compute_engine.evaluate_v(&einsplines(i), u[0], u[1], u[2], psi(i).data(), esp.nSplinesPerBlock);
 //   }
 
-  void evaluate_vgl(const QMCT::PosType& p)
+  void evaluate_vgl_i(const QMCT::PosType& p)
   {
     //This didn't appear to be actually implemented for Kokkos
     // auto u = esp.lattice.toUnit_floor(p);
@@ -242,9 +242,9 @@ public:
   }
 
   /** evaluate psi, grad and hess */
-  inline void evaluate_vgh(const QMCT::PosType& p)
+  inline void evaluate_vgh_i(const QMCT::PosType& p)
   {
-    ScopedTimer local_timer(timer);
+
     tmp_pos = p;
 
     esp.is_copy = true;
@@ -262,32 +262,32 @@ public:
     //                              nSplinesPerBlock);
   }
 
-  void setLattice(const Tensor<T ,3>& lattice_b)
+  void setLattice_i(const Tensor<T ,3>& lattice_b)
   {
     esp.lattice.set(lattice_b);
   }
 
-  const EinsplineSPOParams<T>& getParams() const
+  const EinsplineSPOParams<T>& getParams_i() const
   {
     return esp;
   }
 
-  T getPsi(int ib, int n)
+  T getPsi_i(int ib, int n)
   {
     return psi[ib][n];
   }
 
-  T getGrad(int ib, int n, int m)
+  T getGrad_i(int ib, int n, int m)
   {
     return grad[ib](n,m);
   }
 
-  T getHess(int ib, int n, int m)
+  T getHess_i(int ib, int n, int m)
   {
     return hess[ib](n,m);
   }
 
-  void* getEinspline(int i) const
+  void* getEinspline_i(int i) const
   {
     return &einsplines(i);
   }

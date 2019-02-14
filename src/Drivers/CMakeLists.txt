@@ -11,18 +11,18 @@ ENDFOREACH(p ${ESTEST})
 
 # SET(THIS_TEST check_determinant)
 # IF(QMC_USE_KOKKOS)
-#   SET(ETEST_KOKKOS_SRC "test/CheckDeterminantHelpersKOKKOS.cpp")
+#   SET(ETEST_KOKKOS_SRC "test/CheckDeterminantStepsKOKKOS.cpp")
 # ENDIF(QMC_USE_KOKKOS)
 # ADD_EXECUTABLE( ${THIS_TEST}  ${THIS_TEST}.cpp ${ETEST_KOKKOS_SRC})
 # TARGET_LINK_LIBRARIES(${THIS_TEST} qmcbase qmcutil ${QMC_UTIL_LIBS} ${MPI_LIBRARY})
 
 ADD_LIBRARY(miniwfs ../QMCWaveFunctions/WaveFunction.cpp
-  ../QMCWaveFunctions/SPOSet_builder.cpp ../QMCWaveFunctions/WaveFunctionBuilder.cpp ${KOKKOS_SRCS})
-
+  ../QMCWaveFunctions/WaveFunctionBuilder.cpp ${KOKKOS_SRCS})
+TARGET_LINK_LIBRARIES(miniwfs qmcutil)
 SET(DRIVERS miniqmc) # miniqmc_sync_move)
 
 
-SET(MINI_FUNCTIONS_SRC MiniqmcDriverFunctions.cpp)
+SET(MINI_FUNCTIONS_SRC Movers.cpp MiniqmcDriverFunctions.cpp)
 IF(QMC_USE_KOKKOS)
   SET(MINI_FUNCTIONS_SRC ${MINI_FUNCTIONS_SRC} MiniqmcDriverFunctionsKokkos.cpp)
 ENDIF(QMC_USE_KOKKOS)
@@ -30,7 +30,7 @@ ADD_LIBRARY(mini_functions ${MINI_FUNCTIONS_SRC})
 
 FOREACH(p ${DRIVERS})
   ADD_EXECUTABLE( ${p} MiniqmcOptions.cpp MiniqmcDriver.cpp ${p}.cpp)
-  TARGET_LINK_LIBRARIES(${p} mini_functions miniwfs qmcbase qmcutil qmcdevice ${QMC_UTIL_LIBS} ${MPI_LIBRARY})
+  TARGET_LINK_LIBRARIES(${p} qmcutil mini_functions miniwfs qmcbase qmcdevice qmcutil ${QMC_UTIL_LIBS} ${MPI_LIBRARY})
 ENDFOREACH(p ${ESTEST})
 
 endif()

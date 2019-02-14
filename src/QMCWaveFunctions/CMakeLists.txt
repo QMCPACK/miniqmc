@@ -4,7 +4,8 @@
 #//
 #// Copyright (c) 2016 Jeongnim Kim and QMCPACK developers.
 #//
-#// File developed by: Bryan Clark, bclark@Princeton.edu, Princeton University
+#// File developed by: Peter Doak, doakpw@ornl.gov, Oak Ridge National Laboratory
+#//                    Bryan Clark, bclark@Princeton.edu, Princeton University
 #//                    Ken Esler, kpesler@gmail.com, University of Illinois at Urbana-Champaign
 #//                    Miguel Morales, moralessilva2@llnl.gov, Lawrence Livermore National Laboratory
 #//                    Jeremy McMinnis, jmcminis@gmail.com, University of Illinois at Urbana-Champaign

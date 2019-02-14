@@ -20,15 +20,13 @@
 #define QMCPLUSPLUS_DETERMINANT_H
 
 #include "clean_inlining.h"
-//#include <impl/Kokkos_Timer.hpp>
 #include <cstdio>
 #include <cstdlib>
 #include <type_traits>
 
 #include "QMCWaveFunctions/WaveFunctionComponent.h"
 #include "QMCWaveFunctions/DeterminantDevice.h"
-//#include "Utilities/RandomGenerator.h"
-
+ 
 namespace qmcplusplus
 {
 

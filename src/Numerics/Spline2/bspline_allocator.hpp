@@ -250,7 +250,11 @@ void Allocator<D>::copy(UBT* single, MBT* multi, int i, const int* offset, const
 
 extern template class Allocator<Devices::CPU>;
 extern template void Allocator<Devices::CPU>::destroy(multi_UBspline_3d_s<Devices::CPU>*);
-  extern template void Allocator<Devices::CPU>::destroy(multi_UBspline_3d_d<Devices::CPU>*);
+extern template void Allocator<Devices::CPU>::destroy(multi_UBspline_3d_d<Devices::CPU>*);
+
+#ifdef QMC_USE_KOKKOS
+extern template class Allocator<Devices::KOKKOS>;
+#endif
 
 } // namespace einspline
 } // namespace qmcplusplus
