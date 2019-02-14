@@ -48,6 +48,14 @@ Movers<DT>::Movers(const int ip, const PrimeNumberSet<uint32_t>& myPrimes, const
 }
 
 template<Devices DT>
+template<Devices ODT>
+Movers<DT>::Movers(const Movers<ODT>& m)
+{
+  ions_     = m.ions_;
+  rngs_     = m.rngs_; //Takes possessiong of ptrs?
+}
+
+template<Devices DT>
 Movers<DT>::~Movers()
 {}
 

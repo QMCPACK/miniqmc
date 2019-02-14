@@ -202,8 +202,19 @@ public:
   /// constructor
   Movers(const int ip, const PrimeNumberSet<uint32_t>& myPrimes, const ParticleSet& ions, const int pack_size);
 
+  /** conversion from one dev
+    *   to another
+    */
+  template<Devices ODT>
+  Movers(const Movers<ODT>& m);
+  
   /// destructor
   ~Movers();
+
+  /** takes over the 'movers' of passed in mover
+   *  that object becomes invalid
+   */
+  void merge(Movers& m_in) {} 
   void buildViews(bool useRef, const SPOSet* const spo_main, int team_size, int member_id);
 
   void buildWaveFunctions(bool useRef, bool enableJ3);
