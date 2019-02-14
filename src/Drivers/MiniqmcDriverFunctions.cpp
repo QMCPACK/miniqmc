@@ -88,8 +88,8 @@ void MiniqmcDriverFunctions<Devices::CPU>::movers_thread_main(const int ip,
 	//        for (int iw = 0; iw < valid_mover_list.size(); iw++)
         //  pos_list[iw] = valid_mover_list[iw]->els.R[iel];
         //anon_mover.spo->multi_evaluate_vgh(valid_spo_list, pos_list);
-	movers.updatePosFromCurrentEls(iel);
-        movers.evaluateHessian(iel);
+	//aka multi_evaluate_vgh
+	movers.evaluateHessian(iel);
 
         mq_opt.Timers[Timer_ratioGrad]->stop();
 

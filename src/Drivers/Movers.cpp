@@ -156,12 +156,10 @@ int Movers<DT>::acceptRestoreMoves(int iel, QMCT::RealType accept)
   std::for_each(boost::make_zip_iterator(boost::make_tuple(urs_begin(), wfs_begin(), elss_begin())),
                 boost::make_zip_iterator(boost::make_tuple(urs_end(), wfs_end(), elss_end())),
                 [iel, accept, &accepted](const boost::tuple<aligned_vector<QMCT::RealType>&, WaveFunction&, ParticleSet&>& t) {
-                  auto els = t.get<2>();
+                  auto& els = t.get<2>();
                   if (t.get<0>()[iel] < accept)
                   {
-		    els.setActive(iel);
 		    ++accepted;
-
                     t.get<1>().acceptMove(els, iel);
                     els.acceptMove(iel);
                   }

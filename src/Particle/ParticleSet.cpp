@@ -284,7 +284,7 @@ void ParticleSet::update(bool skipSK)
 void ParticleSet::setActive(int iat)
 {
   ScopedTimer local_timer(timers[Timer_setActive]);
-  activePtcl = iat;
+
   for (size_t i = 0, n = DistTables.size(); i < n; i++)
     DistTables[i]->evaluate(*this, iat);
 }
@@ -303,7 +303,6 @@ bool ParticleSet::makeMoveAndCheck(Index_t iat, const SingleParticlePos_t& displ
 
   activePtcl = iat;
   activePos  = R[iat] + displ;
-  //This is wrong in at least one way.
   if (UseBoundBox)
   {
     activePos = Lattice.toUnit_floor(activePos);
@@ -311,14 +310,13 @@ bool ParticleSet::makeMoveAndCheck(Index_t iat, const SingleParticlePos_t& displ
       throw std::logic_error("This should never occur");
     for (int i = 0; i < DistTables.size(); ++i)
       DistTables[i]->move(*this, activePos);
-    return true;
   }
   else
   {
     for (int i = 0; i < DistTables.size(); ++i)
       DistTables[i]->move(*this, activePos);
-    return true;
   }
+  return true;
 }
 
 /** move the iat-th particle by displ
