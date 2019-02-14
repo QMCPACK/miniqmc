@@ -115,7 +115,7 @@ public:
   /// electrons
   std::vector<std::unique_ptr<ParticleSet>> elss;
   /// single particle orbitals
-  std::vector<std::shared_ptr<SPOSet>> spos;
+  std::vector<SPOSet*> spos;
   /// wavefunction container
   std::vector<std::unique_ptr<WaveFunction>> wavefunctions;
   /// non-local pseudo-potentials
@@ -173,14 +173,23 @@ public:
   {
     return dereference_iterator(deltas.end());
   }
-  DereferenceIterator<std::vector<std::shared_ptr<SPOSet>>::iterator> spos_begin()
+  DereferenceIterator<std::vector<std::unique_ptr<NonLocalPP<QMCT::RealType>>>::iterator> nlpps_begin()
   {
-    return dereference_iterator(spos.begin());
+    return dereference_iterator(nlpps.begin());
   }
-  DereferenceIterator<std::vector<std::shared_ptr<SPOSet>>::iterator> spos_end()
+  DereferenceIterator<std::vector<std::unique_ptr<NonLocalPP<QMCT::RealType>>>::iterator> nlpps_end()
   {
-    return dereference_iterator(spos.end());
+    return dereference_iterator(nlpps.end());
   }
+
+  // DereferenceIterator<std::vector<std::shared_ptr<SPOSet>>::iterator> spos_begin()
+  // {
+  //   return dereference_iterator(spos.begin());
+  // }
+  // DereferenceIterator<std::vector<std::shared_ptr<SPOSet>>::iterator> spos_end()
+  // {
+  //   return dereference_iterator(spos.end());
+  // }
 
   
   ParticleSet& elss_back() { return *(elss.back()); }
@@ -192,17 +201,21 @@ public:
 
   /// destructor
   ~Movers();
-  void buildViews(bool useRef, std::shared_ptr<SPOSet> spo_main, int team_size, int member_id);
+  void buildViews(bool useRef, const SPOSet* const spo_main, int team_size, int member_id);
 
   void buildWaveFunctions(bool useRef, bool enableJ3);
 
   void evaluateLog();
   void evaluateGrad(int iel);
+  void evaluateGL();
+  void calcNLPP(int nions, QMCT::RealType Rmax);
   void evaluateRatioGrad(int iel);
   void evaluateHessian(int iel);
   void fillRandoms();
+  void donePbyP();
   void constructTrialMoves(int iels);
   void updatePosFromCurrentEls(int iels);
+  void acceptRestoreMoves(int iels, QMCT::RealType accept);
 private:
   int pack_size_;
   static constexpr QMCT::RealType tau = 2.0;

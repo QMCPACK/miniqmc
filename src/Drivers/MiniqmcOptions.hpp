@@ -102,9 +102,9 @@ public:
   int tileSize  = -1;
   int team_size = 1;
   int nsubsteps = 1;
-
   int ncrews    = 1;
   // Set cutoff for NLPP use.
+  QMCT::RealType accept        = 0.5;
   QMCT::RealType Rmax          = 1.7;
   bool useRef                  = false;
   bool enableJ3                = false;
@@ -113,7 +113,7 @@ public:
   std::string timer_level_name = "fine";
   TimerList_t Timers;
 
-  int pack_size = 1;
+  int pack_size;
   
   MiniqmcOptions() = default;
   MiniqmcOptions(const MiniqmcOptions&) = default; // { std::cout << "MiniqmcOptions copy made" << '\n'; }

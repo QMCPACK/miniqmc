@@ -61,7 +61,7 @@ void MiniqmcDriver::initialize(int argc, char** argv)
   mq_opt_.Timers[Timer_Init]->start();
 
   // initialize ions and splines which are shared by all threads later
-  {
+  
     Tensor<OHMMS_PRECISION, 3> lattice_b;
     build_ions(ions, tmat, lattice_b);
     const int nels   = count_electrons(ions, 1);
@@ -90,7 +90,7 @@ void MiniqmcDriver::initialize(int argc, char** argv)
                   << SPO_coeff_size_MB << " MB)" << '\n';
 
     handler.build(spo_main, mq_opt_, norb, nTiles, lattice_b, mq_opt_.device_number);
-  }
+  
 
   if (!mq_opt_.useRef)
     app_summary() << "Using SoA distance table, Jastrow + einspline, " << '\n'
@@ -101,6 +101,9 @@ void MiniqmcDriver::initialize(int argc, char** argv)
                   << "determinant update, and distance table + einspline of the " << '\n'
                   << "reference implementation " << '\n';
 
+  if (mq_opt_.enableMovers)
+    app_summary() << "batched walkers activated \n"
+                  << "pack size: " << mq_opt_.pack_size << '\n';
   mq_opt_.Timers[Timer_Init]->stop();
 
   //Now lets figure out what threading sizes are needed:

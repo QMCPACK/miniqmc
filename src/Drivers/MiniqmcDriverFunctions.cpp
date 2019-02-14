@@ -24,6 +24,8 @@ void MiniqmcDriverFunctions<Devices::CPU>::movers_thread_main(const int ip,
 {
   const int member_id = ip % team_size;
   // create and initialize movers
+  app_summary() << "pack size:" << mq_opt.pack_size << '\n';
+  app_summary() << "thread:" << ip << " starting up \n";
   Movers<Devices::CPU> movers(ip, myPrimes, ions, mq_opt.pack_size);
 
   // For VMC, tau is large and should result in an acceptance ratio of roughly
@@ -42,6 +44,7 @@ void MiniqmcDriverFunctions<Devices::CPU>::movers_thread_main(const int ip,
   // initial update
   std::for_each(movers.elss_begin(), movers.elss_end(), [](ParticleSet& els) { els.update(); });
 
+  app_summary() << "initial update complete \n";
 
   // for(auto& els_it = movers.elss_begin(); els_it != movers.elss_end(); els_it++)
   //   {
@@ -84,9 +87,29 @@ void MiniqmcDriverFunctions<Devices::CPU>::movers_thread_main(const int ip,
 	//        for (int iw = 0; iw < valid_mover_list.size(); iw++)
         //  pos_list[iw] = valid_mover_list[iw]->els.R[iel];
         //anon_mover.spo->multi_evaluate_vgh(valid_spo_list, pos_list);
+	movers.updatePosFromCurrentEls(iel);
+        movers.evaluateHessian(iel);
+
         mq_opt.Timers[Timer_ratioGrad]->stop();
 
+	// Accept/reject the trial move
+        mq_opt.Timers[Timer_Update]->start();
 
+	movers.acceptRestoreMoves(iel, mq_opt.accept);
+
+        mq_opt.Timers[Timer_Update]->stop();
+      }//iel
+    }//substeps
+    movers.donePbyP();
+	movers.evaluateGL();
+
+        mq_opt.Timers[Timer_ECP]->start();
+
+	mq_opt.Timers[Timer_Value]->start();
+	movers.calcNLPP(nions, mq_opt.Rmax);
+        mq_opt.Timers[Timer_Value]->stop();
+	mq_opt.Timers[Timer_ECP]->stop();
+	
         // if (!isValid)
         //   continue;
 
@@ -115,8 +138,6 @@ void MiniqmcDriverFunctions<Devices::CPU>::movers_thread_main(const int ip,
         //   els.rejectMove(iel);
         //   wavefunction.restore(iel);
         // }
-      } // iel
-    }   // substeps
 
     // els.donePbyP();
 
@@ -151,7 +172,8 @@ void MiniqmcDriverFunctions<Devices::CPU>::movers_thread_main(const int ip,
     //         els.rejectMove(jel);
     //       }
     // }
-    // mq_opt.Timers[Timer_ECP]->stop();
+     // mq_opt.Timers[Timer_ECP]->stop();
+    mq_opt.Timers[Timer_Diffusion]->stop();
 
   } // nsteps
 }
@@ -199,7 +221,6 @@ void MiniqmcDriverFunctions<Devices::CPU>::thread_main(const int ip,
   const QMCT::RealType tau = 2.0;
 
   QMCT::RealType sqrttau = std::sqrt(tau);
-  QMCT::RealType accept  = 0.5;
 
   auto& els          = thiswalker->els;
   auto& spo          = *thiswalker->spo;
@@ -247,7 +268,7 @@ void MiniqmcDriverFunctions<Devices::CPU>::thread_main(const int ip,
         mq_opt.Timers[Timer_ratioGrad]->stop();
 
         // Accept/reject the trial move
-        if (ur[iel] < accept) // MC
+        if (ur[iel] < mq_opt.accept) // MC
         {
           // Update position, and update temporary storage
           mq_opt.Timers[Timer_Update]->start();
@@ -321,7 +342,7 @@ void MiniqmcDriverFunctions<DT>::movers_runThreads(MiniqmcOptions& mq_opt,
                                             ParticleSet& ions,
                                             const SPOSet* spo_main)
 {
-#pragma omp parallel for
+
   for (int iw = 0; iw < mq_opt.nmovers; iw++)
   {
     MiniqmcDriverFunctions<DT>::movers_thread_main(iw, 1, mq_opt, myPrimes, ions, spo_main);

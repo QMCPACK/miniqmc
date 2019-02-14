@@ -8,7 +8,7 @@ MiniqmcOptions readOptions(int argc, char** argv)
   int opt;
   while (optind < argc)
   {
-    if ((opt = getopt(argc, argv, "bhjvVa:c:d:g:m:n:N:r:s:t:w:x:z:")) != -1)
+    if ((opt = getopt(argc, argv, "bhjvVMa:c:d:g:m:n:p:N:r:s:t:w:x:z:")) != -1)
     {
       switch (opt)
       {
@@ -17,6 +17,10 @@ MiniqmcOptions readOptions(int argc, char** argv)
         break;
       case 'b':
         mq_opt.useRef = true;
+        break;
+      case 'p': // pack_size
+        mq_opt.pack_size = atoi(optarg);
+	app_error() << "Read pack_size = " << optarg << '\n';
         break;
       case 'c': // number of members per team
         mq_opt.team_size = atoi(optarg);
@@ -43,17 +47,17 @@ MiniqmcOptions readOptions(int argc, char** argv)
         mq_opt.nz *= meshfactor;
       }
       break;
+      case 'M':
+	mq_opt.enableMovers = true;
+	break;
       case 'n':
         mq_opt.nsteps = atoi(optarg);
         break;
       case 'N':
         mq_opt.nsubsteps = atoi(optarg);
         break;
-      case 'p': // pack_size
-        mq_opt.pack_size = atoi(optarg);
-        break;
-      case 'r': // rmax
-        mq_opt.Rmax = atof(optarg);
+      case 'r': // accept
+        mq_opt.accept = atof(optarg);
         break;
       case 's':
         mq_opt.iseed = atoi(optarg);
@@ -84,7 +88,7 @@ MiniqmcOptions readOptions(int argc, char** argv)
     }
     else // disallow non-option arguments
     {
-      app_error() << "Non-option arguments not allowed" << std::endl;
+      app_error() << "Non-option arguments not allowed = " <<   std::endl;
       mq_opt.print_help();
       return mq_opt;
       //should throw

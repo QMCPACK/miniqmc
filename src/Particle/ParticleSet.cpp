@@ -279,10 +279,11 @@ void ParticleSet::update(bool skipSK)
   activePtcl = -1;
 }
 
+//Does this have any purpose in miniqmc? Just seems like horrible design
 void ParticleSet::setActive(int iat)
 {
   ScopedTimer local_timer(timers[Timer_setActive]);
-
+  activePtcl = iat;
   for (size_t i = 0, n = DistTables.size(); i < n; i++)
     DistTables[i]->evaluate(*this, iat);
 }
