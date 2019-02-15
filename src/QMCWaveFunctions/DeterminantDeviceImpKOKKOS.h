@@ -413,30 +413,10 @@ void getrf_gpu_impl(int m,
                     int* devInfo,
                     cusolverDnHandle_t& handle);
 
-int getrf_gpu_buffer_size(int m, int n, float* a, int lda, cusolverDnHandle_t& handle)
-{
-  int lwork;
-  auto st = cusolverDnSgetrf_bufferSize(handle, m, n, a, lda, &lwork);
-  return lwork;
-}
-int getrf_gpu_buffer_size(int m, int n, double* a, int lda, cusolverDnHandle_t& handle)
-{
-  int lwork;
-  auto st = cusolverDnDgetrf_bufferSize(handle, m, n, a, lda, &lwork);
-  return lwork;
-}
-int getrf_gpu_buffer_size(int m, int n, cuFloatComplex* a, int lda, cusolverDnHandle_t& handle)
-{
-  int lwork;
-  auto st = cusolverDnCgetrf_bufferSize(handle, m, n, a, lda, &lwork);
-  return lwork;
-}
-int getrf_gpu_buffer_size(int m, int n, cuDoubleComplex* a, int lda, cusolverDnHandle_t& handle)
-{
-  int lwork;
-  auto st = cusolverDnZgetrf_bufferSize(handle, m, n, a, lda, &lwork);
-  return lwork;
-}
+int getrf_gpu_buffer_size(int m, int n, float* a, int lda, cusolverDnHandle_t& handle);
+int getrf_gpu_buffer_size(int m, int n, double* a, int lda, cusolverDnHandle_t& handle);
+int getrf_gpu_buffer_size(int m, int n, cuFloatComplex* a, int lda, cusolverDnHandle_t& handle);
+int getrf_gpu_buffer_size(int m, int n, cuDoubleComplex* a, int lda, cusolverDnHandle_t& handle);
 
 // note on input b should be an n by n identity matrix
 // also, all strides should be 1

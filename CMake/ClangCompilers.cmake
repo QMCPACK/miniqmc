@@ -5,7 +5,7 @@ IF ( CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.3 )
 ENDIF()
 
 # Enable OpenMP
-#IF(NOT QMC_USE_KOKKOS)
+# #IF(NOT QMC_USE_KOKKOS)
 IF(QMC_OMP)
   SET(ENABLE_OPENMP 1)
   IF(ENABLE_OFFLOAD)
@@ -15,6 +15,10 @@ IF(QMC_OMP)
   ENDIF()
 ENDIF(QMC_OMP)
 #ENDIF()
+
+# IF(QMC_USE_KOKKOS)
+#   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --expt-relaxed-constexpr")
+# ENDIF(QMC_USE_KOKKOS)
 
 # Set clang specfic flags (which we always want)
 ADD_DEFINITIONS( -Drestrict=__restrict__ )
