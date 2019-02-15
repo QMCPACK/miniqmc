@@ -1,6 +1,12 @@
 #ifndef MULTIBSPLINE_KOKKOS_HPP
 #define MULTIBSPLINE_KOKKOS_HPP
 
+#include "Numerics/Spline2/MultiBsplineData.hpp"
+#ifdef __CUDA_ARCH__
+#undef ASSUME_ALIGNED
+#define ASSUME_ALIGNED(x)
+#endif
+
 namespace qmcplusplus
 {
 template<typename T>
@@ -128,15 +134,15 @@ KOKKOS_INLINE_FUNCTION void MultiBspline<Devices::KOKKOS, T>::evaluate_v(
   get(z * spline_m->z_grid.delta_inv, tz, iz, spline_m->z_grid.num - 1);
   T a[4], b[4], c[4];
 
-  MultiBsplineData<T>::compute_prefactors(a, tx);
-  MultiBsplineData<T>::compute_prefactors(b, ty);
-  MultiBsplineData<T>::compute_prefactors(c, tz);
+  compute_prefactors(a, tx);
+  compute_prefactors(b, ty);
+  compute_prefactors(c, tz);
 
   const intptr_t xs = spline_m->x_stride;
   const intptr_t ys = spline_m->y_stride;
   const intptr_t zs = spline_m->z_stride;
 
-  constexpr T zero(0);
+  //constexpr T zero(0);
   ASSUME_ALIGNED(vals);
   //std::fill() not OK with CUDA
   //

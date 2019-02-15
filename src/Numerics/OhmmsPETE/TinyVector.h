@@ -100,6 +100,7 @@ struct TinyVector
     X[1] = x01;
     X[2] = x02;
   }
+
   KOKKOS_INLINE_FUNCTION TinyVector(const T& x00, const T& x01, const T& x02, const T& x03)
   {
     X[0] = x00;

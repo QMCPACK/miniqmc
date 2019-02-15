@@ -6,7 +6,7 @@ cmake_policy(SET CMP0003 NEW)
 #Actually set CXX11 flag for Clang on Apple, even llvm non apple clang
 #This is contrary to what the --help-policy says
 cmake_policy(SET CMP0025 NEW)
-
+cmake_policy(SET CMP0074 NEW)
 ######################################################################
 PROJECT(qmcpack CXX)
 ######################################################################
@@ -257,15 +257,6 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
     set(CMAKE_CXX_FLAGS "-DQMC_USE_OMPOL ${CMAKE_CXX_FLAGS}")
   ENDIF()
 
-  IF(QMC_USE_KOKKOS)
-    SET(KOKKOS_PREFIX "" CACHE PATH "Path to Kokkos install")
-    MESSAGE("searching in ${KOKKOS_PREFIX}/")
-    ADD_SUBDIRECTORY(${KOKKOS_PREFIX} ${qmcpack_BINARY_DIR}/kokkos)
-    INCLUDE_DIRECTORIES(${Kokkos_INCLUDE_DIRS_RET})
-    SET(CMAKE_CXX_FLAGS "-DQMC_USE_KOKKOS ${CMAKE_CXX_FLAGS}")
-    #LINK_LIBRARIES(kokkos)
-  ENDIF()
-
   #------------------------------------
   # Include compiler-specific cmake file
   #------------------------------------
@@ -295,9 +286,18 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
   ENDIF()
 
   # requires C++11 standard
-  SET(CMAKE_CXX_STANDARD 17)
+  SET(CMAKE_CXX_STANDARD 14)
   SET(CMAKE_CXX_STANDARD_REQUIRED ON)
   SET(CMAKE_CXX_EXTENSIONS OFF)
+
+  IF(QMC_USE_KOKKOS)
+    SET(KOKKOS_PREFIX "" CACHE PATH "Path to Kokkos install")
+    MESSAGE("searching in ${KOKKOS_PREFIX}/")
+    ADD_SUBDIRECTORY(${KOKKOS_PREFIX} ${qmcpack_BINARY_DIR}/kokkos)
+    INCLUDE_DIRECTORIES(${Kokkos_INCLUDE_DIRS_RET})
+    SET(CMAKE_CXX_FLAGS "-DQMC_USE_KOKKOS ${CMAKE_CXX_FLAGS}")
+    #LINK_LIBRARIES(kokkos)
+  ENDIF()
 
   #-------------------------------------------------------------------
   #  check MPI installation
@@ -523,10 +523,7 @@ endif()
 ###################################################
 # FUTURE WAVEFUNCTION settings
 ###################################################
-if(QMC_FUTURE_WAVEFUNCTIONS)
-  INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/external_codes/hana/include)
-  set(CMAKE_CXX_FLAGS "-DFUTURE_WAVEFUNCTIONS ${CMAKE_CXX_FLAGS}")
-endif(QMC_FUTURE_WAVEFUNCTIONS)
+INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/external_codes/hana/include)
 
 ###################################################
 # Add user extra flags
