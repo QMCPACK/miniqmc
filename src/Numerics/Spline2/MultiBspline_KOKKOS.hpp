@@ -23,7 +23,7 @@ struct MultiBspline<Devices::KOKKOS, T>
   T dA44[16];
   T d2A44[16];
 
-  void copy_A44()
+  KOKKOS_INLINE_FUNCTION void copy_A44()
   {
     for (int i = 0; i < 16; i++)
     {

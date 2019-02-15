@@ -30,7 +30,10 @@
 
 namespace qmcplusplus
 {
-/**@{Determinant utilities */
+
+struct determinant_cpu_la
+{
+  /**@{Determinant utilities */
 /** Inversion of a double matrix after LU factorization*/
 inline void
     getri(int n, double* restrict a, int lda, int* restrict piv, double* restrict work, int& lwork)
@@ -188,14 +191,16 @@ void checkDiffCPU(const MT1& a, const MT2& b, const std::string& tag)
   std::cout << tag << " difference between matrices (average per element) = " << error / nrows / nrows
             << std::endl;
 }
+};
 
 template<>
 class DeterminantDeviceImp<Devices::CPU>
-  : public DeterminantDevice<DeterminantDeviceImp<Devices::CPU>>
+  : public DeterminantDevice<DeterminantDeviceImp<Devices::CPU>>,
+										 public determinant_cpu_la							 
 {
 public:
   using QMCT = QMCTraits;
-
+  
   DeterminantDeviceImp(int nels, const RandomGenerator<QMCT::RealType>& RNG, int First = 0)
     : DeterminantDevice( nels, RNG, First),
       FirstIndex(First),

@@ -6,6 +6,7 @@ cmake_policy(SET CMP0003 NEW)
 #Actually set CXX11 flag for Clang on Apple, even llvm non apple clang
 #This is contrary to what the --help-policy says
 cmake_policy(SET CMP0025 NEW)
+
 cmake_policy(SET CMP0074 NEW)
 ######################################################################
 PROJECT(qmcpack CXX)
@@ -297,7 +298,7 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
     ADD_SUBDIRECTORY(${KOKKOS_PREFIX} ${qmcpack_BINARY_DIR}/kokkos)
     INCLUDE_DIRECTORIES(${Kokkos_INCLUDE_DIRS_RET})
     SET(CMAKE_CXX_FLAGS "-DQMC_USE_KOKKOS ${CMAKE_CXX_FLAGS}")
-    #LINK_LIBRARIES(kokkos)
+    LINK_LIBRARIES(kokkos)
   ENDIF()
 
   #-------------------------------------------------------------------
@@ -394,6 +395,7 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
   #We're going to see if we're running CUDA.  If so, include/link CUBLAS.
   IF ( KOKKOS_ENABLE_CUDA )
     MESSAGE(STATUS "Searching for CUDA libraries")
+    #Requires passing CUDA_TOOLKIT_ROOT_DIR not CUDA_ROOT
     FIND_PACKAGE(CUDA)
     MESSAGE(STATUS " --Link to cuBLAS")
     LINK_LIBRARIES("-lcusolver -lcublas -lcurand")

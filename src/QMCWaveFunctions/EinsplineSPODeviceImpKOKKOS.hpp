@@ -243,7 +243,7 @@ public:
   }
 
   /** evaluate psi, grad and hess */
-  KOKKOS_INLINE_FUNCTION void evaluate_vgh_i(const QMCT::PosType& p)
+  void evaluate_vgh_i(const QMCT::PosType& p)
   {
 
     tmp_pos = p;
@@ -263,7 +263,7 @@ public:
     //                              nSplinesPerBlock);
   }
 
-  KOKKOS_INLINE_FUNCTION void setLattice_i(const Tensor<T ,3>& lattice_b)
+  inline void setLattice_i(const Tensor<T ,3>& lattice_b)
   {
     esp.lattice.set(lattice_b);
   }
@@ -295,50 +295,28 @@ public:
   
   KOKKOS_INLINE_FUNCTION
   void operator()(const EvaluateVTag&, const team_v_serial_t& team) const
-  {
-      int block               = team.league_rank();
-    auto u                  = esp.lattice.toUnit_floor(tmp_pos);
-    einsplines(block).coefs = einsplines(block).coefs_view.data();
-    compute_engine.evaluate_v(team,
-                              &einsplines(block),
-                              u[0],
-                              u[1],
-                              u[2],
-                              psi(block).data(),
-                              psi(block).extent(0));
-}
+  {}
   KOKKOS_INLINE_FUNCTION
   void operator()(const EvaluateVTag&, const team_v_parallel_t& team) const
-  {     int block               = team.league_rank();
-    auto u                  = esp.lattice.toUnit_floor(tmp_pos);
-    einsplines(block).coefs = einsplines(block).coefs_view.data();
-    compute_engine.evaluate_v(team,
-                              &einsplines(block),
-                              u[0],
-                              u[1],
-                              u[2],
-                              psi(block).data(),
-                              psi(block).extent(0));
-}
+  {}
   KOKKOS_INLINE_FUNCTION
   void operator()(const EvaluateVGHTag&, const team_vgh_parallel_t& team) const
   {
-      int block               = team.league_rank();
-  auto u                  = esp.lattice.toUnit_floor(tmp_pos);
-  einsplines(block).coefs = einsplines(block).coefs_view.data();
-  compute_engine
+    int block               = team.league_rank();
+    auto u                  = esp.lattice.toUnit_floor(tmp_pos);
+    einsplines(block).coefs = einsplines(block).coefs_view.data();
+    compute_engine
       .evaluate_v(team, &einsplines(block), u[0], u[1], u[2], psi(block).data(), psi(block).extent(0));
   }
 
   KOKKOS_INLINE_FUNCTION
   void operator()(const EvaluateVGHTag&, const team_vgh_serial_t& team) const
   {
-      int block               = team.league_rank();
-  auto u                  = esp.lattice.toUnit_floor(tmp_pos);
-  einsplines(block).coefs = einsplines(block).coefs_view.data();
-  compute_engine
+    int block               = team.league_rank();
+    auto u                  = esp.lattice.toUnit_floor(tmp_pos);
+    einsplines(block).coefs = einsplines(block).coefs_view.data();
+    compute_engine
       .evaluate_v(team, &einsplines(block), u[0], u[1], u[2], psi(block).data(), psi(block).extent(0));
-
   }
 };
 

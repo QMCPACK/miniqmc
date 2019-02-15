@@ -124,6 +124,13 @@ ELSE()
   )
 ENDIF()
 
+IF(QMC_USE_KOKKOS AND KOKKOS_ENABLE_CUDA)
+# add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:--cuda-gpu-arch=sm_50 >")
+# add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:SHELL:-x cuda>")
+  #SET(CMAKE_CXX_FLAGS "-x cuda --cuda-gpu-arch=sm_35 -nocudalib ${CMAKE_CXX_FLAGS}")
+ENDIF(QMC_USE_KOKKOS AND KOKKOS_ENABLE_CUDA)
+  
+
 
   
   ####################################
