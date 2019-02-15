@@ -16,6 +16,10 @@ IF(QMC_OMP)
 ENDIF(QMC_OMP)
 #ENDIF()
 
+# IF(QMC_USE_KOKKOS)
+#   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --expt-relaxed-constexpr")
+# ENDIF(QMC_USE_KOKKOS)
+
 # Set clang specfic flags (which we always want)
 ADD_DEFINITIONS( -Drestrict=__restrict__ )
 

@@ -257,6 +257,7 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
     set(CMAKE_CXX_FLAGS "-DQMC_USE_OMPOL ${CMAKE_CXX_FLAGS}")
   ENDIF()
 
+
   #------------------------------------
   # Include compiler-specific cmake file
   #------------------------------------
@@ -285,7 +286,7 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
     MESSAGE(WARNING "No default file for compiler (${COMPILER})")
   ENDIF()
 
-  # requires C++11 standard
+  # requires C++14 standard
   SET(CMAKE_CXX_STANDARD 14)
   SET(CMAKE_CXX_STANDARD_REQUIRED ON)
   SET(CMAKE_CXX_EXTENSIONS OFF)
