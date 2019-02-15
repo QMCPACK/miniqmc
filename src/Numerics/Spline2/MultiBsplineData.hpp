@@ -40,8 +40,8 @@ struct SplineBound
   }
 };
 
-template<typename T>
-struct MultiBsplineData;
+// template<typename T>
+// struct MultiBsplineData;
   
 
 template<typename T>
@@ -64,7 +64,7 @@ struct MultiBsplineData
 //     0.0, 0.0, -1.0, 1.0, 0.0, 0.0, 3.0, -2.0,
 //     0.0, 0.0, -3.0, 1.0, 0.0, 0.0, 1.0, 0.0};
 
-  inline static void compute_prefactors(T a[4], T tx)
+  static void compute_prefactors(T a[4], T tx)
   {
     a[0] = ((A44[0] * tx + A44[1]) * tx + A44[2]) * tx + A44[3];
     a[1] = ((A44[4] * tx + A44[5]) * tx + A44[6]) * tx + A44[7];

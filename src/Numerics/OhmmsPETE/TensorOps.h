@@ -165,7 +165,7 @@ KOKKOS_INLINE_FUNCTION Tensor<T, 2> inverse(const Tensor<T, 2>& a)
 // specialized for D=3
 //////////////////////////////////////////////////////
 template<class T>
-KOKKOS_INLINE_FUNCTION Tensor<T, 3> inverse(const Tensor<T, 3>& a)
+Tensor<T, 3> inverse(const Tensor<T, 3>& a)
 {
   T vinv = 1 / det(a);
   return Tensor<T, 3>(vinv * (a(1, 1) * a(2, 2) - a(1, 2) * a(2, 1)),

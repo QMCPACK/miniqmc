@@ -122,7 +122,7 @@ public:
   }
 
   /** evaluate psi, grad and hess */
-  inline void evaluate_vgh(const PosType& p)
+  void evaluate_vgh(const PosType& p)
   {
     ScopedTimer local_timer(timer);
     einspline_spo_device.evaluate_vgh(p);

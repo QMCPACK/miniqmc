@@ -96,7 +96,7 @@ struct MultiBspline<Devices::CPU, T>
 
 #define MYMAX(a, b) (a < b ? b : a)
 #define MYMIN(a, b) (a > b ? b : a)
-  KOKKOS_INLINE_FUNCTION void get(T x, T& dx, int& ind, int ng) const
+  void get(T x, T& dx, int& ind, int ng) const
   {
     T ipart;
     dx  = std::modf(x, &ipart);
@@ -115,7 +115,7 @@ struct MultiBspline<Devices::CPU, T>
    * The base address for vals, grads and lapl are set by the callers, e.g.,
    * evaluate_vgh(r,psi,grad,hess,ip).
    */
-  KOKKOS_INLINE_FUNCTION void
+  void
   evaluate_v(const spliner_type* restrict spline_m,
              T x,
              T y,
@@ -123,8 +123,8 @@ struct MultiBspline<Devices::CPU, T>
              T* restrict vals,
              size_t num_splines) const;
 
-  KOKKOS_INLINE_FUNCTION
-  void evaluate_vgl(const spliner_type* restrict spline_m,
+  void
+  evaluate_vgl(const spliner_type* restrict spline_m,
                     T x,
                     T y,
                     T z,
@@ -134,7 +134,7 @@ struct MultiBspline<Devices::CPU, T>
                     size_t num_splines) const;
 
 
-  KOKKOS_INLINE_FUNCTION void
+  void
   evaluate_vgh(const spliner_type* restrict spline_m,
                T x,
                T y,
@@ -146,7 +146,7 @@ struct MultiBspline<Devices::CPU, T>
 };
 
 template<typename T>
-KOKKOS_INLINE_FUNCTION void MultiBspline<Devices::CPU, T>::evaluate_v(
+inline void MultiBspline<Devices::CPU, T>::evaluate_v(
 								      const MultiBspline<Devices::CPU, T>::spliner_type* restrict spline_m,
     T x,
     T y,
@@ -191,7 +191,7 @@ KOKKOS_INLINE_FUNCTION void MultiBspline<Devices::CPU, T>::evaluate_v(
 }
 
 template<typename T>
-KOKKOS_INLINE_FUNCTION void MultiBspline<Devices::CPU, T>::evaluate_vgl(
+inline void MultiBspline<Devices::CPU, T>::evaluate_vgl(
     const MultiBspline<Devices::CPU, T>::spliner_type* restrict spline_m,
     T x,
     T y,
