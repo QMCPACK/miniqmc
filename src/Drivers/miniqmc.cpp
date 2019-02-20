@@ -115,15 +115,17 @@ int main(int argc, char** argv)
   //std::cout << my_int;
   try
   {
-    MiniqmcOptions mq_opt= readOptions(argc, argv);
-    MiniqmcDriver driver(mq_opt);
-    driver.initialize(argc, argv);
-    driver.run();
+    MiniqmcOptions mq_opt = readOptions(argc, argv);
+    if (mq_opt.valid)
+    {
+      MiniqmcDriver driver(mq_opt);
+      driver.initialize(argc, argv);
+      driver.run();
+    }
   }
-  catch(int e)
+  catch (int e)
   {
     return e;
   }
   return 0;
 }
-

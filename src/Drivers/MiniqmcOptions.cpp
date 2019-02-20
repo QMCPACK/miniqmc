@@ -34,6 +34,7 @@ MiniqmcOptions readOptions(int argc, char** argv)
       case 'h':
         mq_opt.print_help();
         //should throw
+	mq_opt.valid = false;
         return mq_opt;
         break;
       case 'j':
@@ -89,6 +90,7 @@ MiniqmcOptions readOptions(int argc, char** argv)
     else // disallow non-option arguments
     {
       app_error() << "Non-option arguments not allowed = " <<   std::endl;
+      mq_opt.valid = false;
       mq_opt.print_help();
       return mq_opt;
       //should throw
