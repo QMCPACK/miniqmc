@@ -90,6 +90,7 @@ public:
 
   using QMCT        = QMCTraits;
   Devices device    = Devices::CPU;
+  bool valid        = true;
   int device_number = 0;
   int na            = 1;
   int nb            = 1;
