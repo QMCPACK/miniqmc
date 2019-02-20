@@ -160,7 +160,7 @@ ENDIF(QMC_USE_KOKKOS AND KOKKOS_ENABLE_CUDA)
   if(QMC_USE_KOKKOS)
     target_link_libraries(qmcutil kokkos)
     set(KOKKOS_SRC QMCWaveFunctions/DeterminantDeviceImpKOKKOS.cpp
-      QMCWaveFunctions/EinsplineSPODeviceImpKOKKOS.cpp QMCWaveFunctions/SPOSetBuilderKokkos.cpp)
+       QMCWaveFunctions/SPOSetBuilderKokkos.cpp)  #QMCWaveFunctions/EinsplineSPODeviceImpKOKKOS.cpp
     set(QMCDEVICE_LINK_LIBRARIES kokkos)
   endif(QMC_USE_KOKKOS)
 

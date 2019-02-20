@@ -320,8 +320,8 @@ public:
   }
 };
 
-  extern template class EinsplineSPODeviceImp<Devices::KOKKOS, float>;
-  extern template class EinsplineSPODeviceImp<Devices::KOKKOS, double>;
+  //  extern template class EinsplineSPODeviceImp<Devices::KOKKOS, float>;
+  //extern template class EinsplineSPODeviceImp<Devices::KOKKOS, double>;
   
 // template<Devices DT, typename T>
 // KOKKOS_INLINE_FUNCTION void EinsplineSPODeviceImp<Devices::KOKKOS, T>::

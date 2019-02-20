@@ -52,16 +52,17 @@ inline double cpu_clock()
 }
 
 #else
-#if defined(ENABLE_OPENMP)
-inline double cpu_clock() { return omp_get_wtime(); }
-#else
+  // ENABLE_OPENMP is getting enable in KOKKOS builds where it shouldn't be, temp workaround
+// #if defined(ENABLE_OPENMP)
+// inline double cpu_clock() { return omp_get_wtime(); }
+// #else
 inline double cpu_clock()
 {
   struct timeval tv;
   gettimeofday(&tv, NULL);
   return (double)tv.tv_sec + (1.e-6) * tv.tv_usec;
 }
-#endif //
+// #endif //
 #endif
 #endif
 } // namespace qmcplusplus
