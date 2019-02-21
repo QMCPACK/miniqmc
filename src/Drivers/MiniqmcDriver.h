@@ -21,12 +21,13 @@
 #include <QMCWaveFunctions/WaveFunction.h>
 #include <Drivers/Mover.hpp>
 #include "Drivers/MiniqmcOptions.hpp"
-#include "Drivers/MiniqmcDriverFunctions.hpp"
+#include "Drivers/getMiniQMCDriverFunctions.h"
 
 namespace qmcplusplus
 {
 namespace hana = boost::hana;
 
+// This would be nice to generate with metaprogramming when there is time   
 constexpr auto device_tuple = hana::make_tuple(hana::type_c<MiniqmcDriverFunctions<Devices::CPU>>,
 #ifdef QMC_USE_KOKKOS
                                                hana::type_c<MiniqmcDriverFunctions<Devices::KOKKOS>>,
@@ -34,6 +35,10 @@ constexpr auto device_tuple = hana::make_tuple(hana::type_c<MiniqmcDriverFunctio
 #ifdef QMC_USE_OMPOL
                                                hana::type_c<MiniqmcDriverFunctions<Devices::OMPOL>>,
 #endif
+#ifdef QMC_USE_CUDA
+                                               hana::type_c<MiniqmcDriverFunctions<Devices::CUDA>>,
+#endif
+
                                                hana::type_c<MiniqmcDriverFunctions<Devices::CPU>>);
 // The final type is so the tuple and device enum have the same length, forget why this matters.
 

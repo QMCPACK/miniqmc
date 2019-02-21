@@ -44,8 +44,8 @@ namespace qmcplusplus
 template<Devices D, class FT>
 struct TwoBodyJastrow;
 
-template<class FT>
-struct TwoBodyJastrow<Devices::CPU, FT> : public WaveFunctionComponent
+template<Devices D, class FT>
+struct TwoBodyJastrow : public WaveFunctionComponent
 {
   /// alias FuncType
   using FuncType = FT;
@@ -156,8 +156,8 @@ struct TwoBodyJastrow<Devices::CPU, FT> : public WaveFunctionComponent
   /**@} */
 };
 
-template<typename FT>
-TwoBodyJastrow<Devices::CPU, FT>::TwoBodyJastrow(ParticleSet& p)
+  template<Devices D, typename FT>
+TwoBodyJastrow<D, FT>::TwoBodyJastrow(ParticleSet& p)
 {
   init(p);
   FirstTime                 = true;
@@ -165,8 +165,8 @@ TwoBodyJastrow<Devices::CPU, FT>::TwoBodyJastrow(ParticleSet& p)
   WaveFunctionComponentName = "TwoBodyJastrow";
 }
 
-template<typename FT>
-TwoBodyJastrow<Devices::CPU, FT>::~TwoBodyJastrow()
+  template<Devices D, typename FT>
+TwoBodyJastrow<D, FT>::~TwoBodyJastrow()
 {
   auto it = J2Unique.begin();
   while (it != J2Unique.end())
@@ -176,8 +176,8 @@ TwoBodyJastrow<Devices::CPU, FT>::~TwoBodyJastrow()
   }
 } // need to clean up J2Unique
 
-template<typename FT>
-void TwoBodyJastrow<Devices::CPU, FT>::init(ParticleSet& p)
+  template<Devices D,typename FT>
+void TwoBodyJastrow<D, FT>::init(ParticleSet& p)
 {
   N         = p.getTotalNum();
   N_padded  = getAlignedSize<valT>(N);
@@ -197,8 +197,8 @@ void TwoBodyJastrow<Devices::CPU, FT>::init(ParticleSet& p)
   DistIndice.resize(N);
 }
 
-template<typename FT>
-void TwoBodyJastrow<Devices::CPU, FT>::addFunc(int ia, int ib, FT* j)
+  template<Devices D, typename FT>
+void TwoBodyJastrow<D, FT>::addFunc(int ia, int ib, FT* j)
 {
   if (ia == ib)
   {
@@ -244,8 +244,8 @@ void TwoBodyJastrow<Devices::CPU, FT>::addFunc(int ia, int ib, FT* j)
  * @param du starting first deriv
  * @param d2u starting second deriv
  */
-template<typename FT>
-inline void TwoBodyJastrow<Devices::CPU, FT>::computeU3(const ParticleSet& P,
+  template<Devices D, typename FT>
+inline void TwoBodyJastrow<D, FT>::computeU3(const ParticleSet& P,
                                           int iat,
                                           const RealType* restrict dist,
                                           RealType* restrict u,
@@ -272,8 +272,8 @@ inline void TwoBodyJastrow<Devices::CPU, FT>::computeU3(const ParticleSet& P,
   // d2u[iat]=czero;
 }
 
-template<typename FT>
-typename TwoBodyJastrow<Devices::CPU, FT>::ValueType TwoBodyJastrow<Devices::CPU, FT>::ratio(ParticleSet& P, int iat)
+template<Devices D, typename FT>
+typename TwoBodyJastrow<D, FT>::ValueType TwoBodyJastrow<D, FT>::ratio(ParticleSet& P, int iat)
 {
   // only ratio, ready to compute it again
   UpdateMode = ORB_PBYP_RATIO;
@@ -281,15 +281,15 @@ typename TwoBodyJastrow<Devices::CPU, FT>::ValueType TwoBodyJastrow<Devices::CPU
   return std::exp(Uat[iat] - cur_Uat);
 }
 
-template<typename FT>
-typename TwoBodyJastrow<Devices::CPU, FT>::GradType TwoBodyJastrow<Devices::CPU, FT>::evalGrad(ParticleSet& P, int iat)
+template<Devices D,typename FT>
+typename TwoBodyJastrow<D, FT>::GradType TwoBodyJastrow<D, FT>::evalGrad(ParticleSet& P, int iat)
 {
   return GradType(dUat[iat]);
 }
 
-template<typename FT>
-typename TwoBodyJastrow<Devices::CPU, FT>::ValueType
-TwoBodyJastrow<Devices::CPU, FT>::ratioGrad(ParticleSet& P, int iat, GradType& grad_iat)
+template<Devices D, typename FT>
+typename TwoBodyJastrow<D, FT>::ValueType
+TwoBodyJastrow<D, FT>::ratioGrad(ParticleSet& P, int iat, GradType& grad_iat)
 {
   UpdateMode = ORB_PBYP_PARTIAL;
 
@@ -300,8 +300,8 @@ TwoBodyJastrow<Devices::CPU, FT>::ratioGrad(ParticleSet& P, int iat, GradType& g
   return std::exp(DiffVal);
 }
 
-template<typename FT>
-void TwoBodyJastrow<Devices::CPU, FT>::acceptMove(ParticleSet& P, int iat)
+template<Devices D, typename FT>
+void TwoBodyJastrow<D, FT>::acceptMove(ParticleSet& P, int iat)
 {
   // get the old u, du, d2u
   const DistanceTableData* d_table = P.DistTables[0];
@@ -349,8 +349,8 @@ void TwoBodyJastrow<Devices::CPU, FT>::acceptMove(ParticleSet& P, int iat)
   d2Uat[iat] = cur_d2Uat;
 }
 
-template<typename FT>
-void TwoBodyJastrow<Devices::CPU, FT>::recompute(ParticleSet& P)
+template<Devices D, typename FT>
+void TwoBodyJastrow<D, FT>::recompute(ParticleSet& P)
 {
   const DistanceTableData* d_table = P.DistTables[0];
   for (int ig = 0; ig < NumGroups; ++ig)
@@ -396,9 +396,9 @@ void TwoBodyJastrow<Devices::CPU, FT>::recompute(ParticleSet& P)
   }
 }
 
-template<typename FT>
-typename TwoBodyJastrow<Devices::CPU, FT>::RealType
-    TwoBodyJastrow<Devices::CPU, FT>::evaluateLog(ParticleSet& P,
+template<Devices D, typename FT>
+typename TwoBodyJastrow<D, FT>::RealType
+    TwoBodyJastrow<D, FT>::evaluateLog(ParticleSet& P,
                                     ParticleSet::ParticleGradient_t& G,
                                     ParticleSet::ParticleLaplacian_t& L)
 {
@@ -406,8 +406,8 @@ typename TwoBodyJastrow<Devices::CPU, FT>::RealType
   return LogValue;
 }
 
-template<typename FT>
-void TwoBodyJastrow<Devices::CPU, FT>::evaluateGL(ParticleSet& P,
+template<Devices D, typename FT>
+void TwoBodyJastrow<D, FT>::evaluateGL(ParticleSet& P,
                                     ParticleSet::ParticleGradient_t& G,
                                     ParticleSet::ParticleLaplacian_t& L,
                                     bool fromscratch)

@@ -37,5 +37,8 @@ class DeterminantDeviceImp
 #ifdef QMC_USE_KOKKOS
 #include "QMCWaveFunctions/DeterminantDeviceImpKOKKOS.h"
 #endif
+#ifdef QMC_USE_CUDA
+#include "QMCWaveFunctions/DeterminantDeviceImpCUDA.h"
+#endif
 
 #endif

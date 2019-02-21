@@ -37,7 +37,8 @@ private:
   std::string className;
 
 public:
-    /// operates on multiple walkers
+  //  Still necessary for reference but this is not how we handle blocking now 
+  //  operates on multiple walkers
   virtual void
   multi_evaluate_v(const std::vector<SPOSet*>& spo_list, const std::vector<PosType>& pos_list)
   {

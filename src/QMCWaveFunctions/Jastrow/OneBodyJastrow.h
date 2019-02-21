@@ -27,11 +27,11 @@ namespace qmcplusplus
 /** @ingroup WaveFunctionComponent
  *  @brief Specialization for one-body Jastrow function using multiple functors
  */
-template<Devices DT, class FT>
-struct OneBodyJastrow;
+// template<Devices DT, class FT>
+// struct OneBodyJastrow;
 
-template<class FT>
-struct OneBodyJastrow<Devices::CPU, FT> : public WaveFunctionComponent
+template<Devices DT, class FT>
+struct OneBodyJastrow : public WaveFunctionComponent
 {
   /// alias FuncType
   using FuncType = FT;

@@ -42,7 +42,9 @@ std::ostream& operator<< (std::ostream& os, EinsplineSPODeviceImp<DT, T>& espodi
 #ifdef QMC_USE_KOKKOS
 #include "QMCWaveFunctions/EinsplineSPODeviceImpKOKKOS.hpp"
 #endif
-
+#ifdef QMC_USE_CUDA
+#include "QMCWaveFunctions/EinsplineSPODeviceImpCUDA.hpp"
+#endif
 namespace qmcplusplus
 {
 #ifdef QMC_USE_KOKKOS

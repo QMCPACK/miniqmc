@@ -114,6 +114,9 @@ template void Allocator<Devices::CPU>::destroy(multi_UBspline_3d_d<Devices::CPU>
 #ifdef QMC_USE_KOKKOS
 template class Allocator<Devices::KOKKOS>;
 #endif
+#ifdef QMC_USE_KOKKOS
+template class Allocator<Devices::CUDA>;
+#endif
 
 } // namespace einspline
 } // namespace qmcplusplus

@@ -1,33 +1,7 @@
-////////////////////////////////////////////////////////////////////////////////
-// This file is distributed under the University of Illinois/NCSA Open Source
-// License.  See LICENSE file in top directory for details.
-//
-// Copyright (c) 2016 Jeongnim Kim and QMCPACK developers.
-//
-// File developed by:
-// Jeongnim Kim, jeongnim.kim@intel.com, Intel Corp.
-// Amrita Mathuriya, amrita.mathuriya@intel.com, Intel Corp.
-// Ye Luo, yeluo@anl.gov, Argonne National Laboratory
-//
-// File created by:
-// Jeongnim Kim, jeongnim.kim@intel.com, Intel Corp.
-////////////////////////////////////////////////////////////////////////////////
-// -*- C++ -*-
-/**@file MultiBspline.hpp
- *
- * Master header file to define MultiBspline
- *
- * Contains 3D spline evaluation routines.
- */
-#ifndef QMCPLUSPLUS_MULTIEINSPLINE_COMMON_HPP
-#define QMCPLUSPLUS_MULTIEINSPLINE_COMMON_HPP
+#ifndef MULTIBSPLINE_CUDA_HPP
+#define MULTIBSPLINE_CUDA_HPP
 
-#include "clean_inlining.h"
-#include <iostream>
-#include "Devices.h"
-#include <Numerics/Spline2/MultiBsplineData.hpp>
-#include <stdlib.h>
-
+#include "Numerics/Spline2/MultiBsplineData.hpp"
 #ifdef __CUDA_ARCH__
 #undef ASSUME_ALIGNED
 #define ASSUME_ALIGNED(x)
@@ -35,20 +9,10 @@
 
 namespace qmcplusplus
 {
-// This is to temporarily deal with Kokkos implementations's
-// need to explicitly pass TeamType in MultiBspline
-struct DummyTeamType
-{
-  int defined;
-};
-
-template<Devices D, typename T>
-struct MultiBspline;
-
 template<typename T>
-struct MultiBspline<Devices::CPU, T>
+struct MultiBspline<Devices::CUDA, T>
 {
-  static constexpr Devices D = Devices::CPU;
+  static constexpr Devices D = Devices::CUDA;
   /// define the einspline object type
   using spliner_type = typename bspline_traits<D, T, 3>::SplineType;
 
@@ -115,16 +79,10 @@ struct MultiBspline<Devices::CPU, T>
    * The base address for vals, grads and lapl are set by the callers, e.g.,
    * evaluate_vgh(r,psi,grad,hess,ip).
    */
-  void
-  evaluate_v(const spliner_type* restrict spline_m,
-             T x,
-             T y,
-             T z,
-             T* restrict vals,
-             size_t num_splines) const;
+  void evaluate_v(
+      const spliner_type* restrict spline_m, T x, T y, T z, T* restrict vals, size_t num_splines) const;
 
-  void
-  evaluate_vgl(const spliner_type* restrict spline_m,
+  void evaluate_vgl(const spliner_type* restrict spline_m,
                     T x,
                     T y,
                     T z,
@@ -134,20 +92,19 @@ struct MultiBspline<Devices::CPU, T>
                     size_t num_splines) const;
 
 
-  void
-  evaluate_vgh(const spliner_type* restrict spline_m,
-               T x,
-               T y,
-               T z,
-               T* restrict vals,
-               T* restrict grads,
-               T* restrict hess,
-               size_t num_splines) const;
+  void evaluate_vgh(const spliner_type* restrict spline_m,
+                    T x,
+                    T y,
+                    T z,
+                    T* restrict vals,
+                    T* restrict grads,
+                    T* restrict hess,
+                    size_t num_splines) const;
 };
 
 template<typename T>
-inline void MultiBspline<Devices::CPU, T>::evaluate_v(
-								      const MultiBspline<Devices::CPU, T>::spliner_type* restrict spline_m,
+inline void MultiBspline<Devices::CUDA, T>::evaluate_v(
+    const MultiBspline<Devices::CUDA, T>::spliner_type* restrict spline_m,
     T x,
     T y,
     T z,
@@ -191,8 +148,8 @@ inline void MultiBspline<Devices::CPU, T>::evaluate_v(
 }
 
 template<typename T>
-inline void MultiBspline<Devices::CPU, T>::evaluate_vgl(
-    const MultiBspline<Devices::CPU, T>::spliner_type* restrict spline_m,
+inline void MultiBspline<Devices::CUDA, T>::evaluate_vgl(
+    const MultiBspline<Devices::CUDA, T>::spliner_type* restrict spline_m,
     T x,
     T y,
     T z,
@@ -317,10 +274,8 @@ inline void MultiBspline<Devices::CPU, T>::evaluate_vgl(
 }
 
 template<typename T>
-inline void MultiBspline<Devices::CPU, T>::evaluate_vgh(const MultiBspline<Devices::CPU, T>::spliner_type* restrict spline_m,
-							T x,
-							T y,
-							T z,
+inline void MultiBspline<Devices::CUDA, T>::evaluate_vgh(
+    const MultiBspline<Devices::CUDA, T>::spliner_type* restrict spline_m, T x, T y, T z,
     T* restrict vals, T* restrict grads, T* restrict hess, size_t num_splines) const
 {
   int ix, iy, iz;
@@ -446,19 +401,5 @@ inline void MultiBspline<Devices::CPU, T>::evaluate_vgh(const MultiBspline<Devic
   }
 }
 
-
-extern template class MultiBsplineData<float>;
-extern template class MultiBsplineData<double>;
-
-
 } // namespace qmcplusplus
-
-#ifdef QMC_USE_KOKKOS
-#include "Numerics/Spline2/MultiBspline_KOKKOS.hpp"
-#endif
-#ifdef QMC_USE_CUDA
-#include "Numerics/Spline2/MultiBsplineCUDA.hpp"
-#endif
-
-
 #endif

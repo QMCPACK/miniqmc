@@ -2,7 +2,7 @@
 // This file is distributed under the University of Illinois/NCSA Open Source
 // License.  See LICENSE file in top directory for details.
 //
-// Copyright (c) 2018 QMCPACK developers.
+// Copyright (c) 2019 QMCPACK developers.
 //
 // File developed by:
 // Peter Doak, doakpw@ornl.gov, Oak Ridge National Lab
@@ -17,24 +17,25 @@
  * @brief CPU implementation of Determinant
  */
 
-#ifndef QMCPLUSPLUS_DETERMINANT_DEVICE_IMP_CPU_H
-#define QMCPLUSPLUS_DETERMINANT_DEVICE_IMP_CPU_H
+#ifndef QMCPLUSPLUS_DETERMINANT_DEVICE_IMP_CUDA_H
+#define QMCPLUSPLUS_DETERMINANT_DEVICE_IMP_CUDA_H
+
 #include "Devices.h"
 #include "Numerics/OhmmsPETE/OhmmsMatrix.h"
 #include "Numerics/DeterminantOperators.h"
 #include "DeterminantDevice.h"
 #include "DeterminantDeviceImp.h"
-#include "Numerics/LinAlgCPU.h"
 #include "QMCWaveFunctions/WaveFunctionComponent.h"
-
+#include "Numerics/LinAlgCPU.h"
 #include "Utilities/Configuration.h"
 
 namespace qmcplusplus
 {
 
+
 template<>
-class DeterminantDeviceImp<Devices::CPU>
-  : public DeterminantDevice<DeterminantDeviceImp<Devices::CPU>>,
+class DeterminantDeviceImp<Devices::CUDA>
+  : public DeterminantDevice<DeterminantDeviceImp<Devices::CUDA>>,
     public LinAlgCPU
 {
 public:
@@ -157,7 +158,7 @@ private:
   Matrix<QMCT::RealType> psiMsave;
 };
 
-extern template class DeterminantDeviceImp<Devices::CPU>;
+extern template class DeterminantDeviceImp<Devices::CUDA>;
 
 } // namespace qmcplusplus
 

@@ -41,6 +41,8 @@ struct EinsplineSPOParams
 
   /// if true, responsible for cleaning up einsplines
   bool Owner;
+  /// if true, responsible for cleaning up host side einsplines
+  bool host_owner;
   /// if true, is copy.  For reference counting & clean up in Kokkos.
   bool is_copy;
 

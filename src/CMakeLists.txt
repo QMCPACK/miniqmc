@@ -164,8 +164,15 @@ ENDIF(QMC_USE_KOKKOS AND KOKKOS_ENABLE_CUDA)
     set(QMCDEVICE_LINK_LIBRARIES kokkos)
   endif(QMC_USE_KOKKOS)
 
+  if(QMC_USE_CUDA)
+    target_link_libraries(qmcutil cublas)
+    set(CUDA_SRC QMCWaveFunctions/EinsplineSPODeviceImpCUDA.cpp)
+       #QMCWaveFunctions/SPOSetBuilderKokkos.cpp)  #QMCWaveFunctions/EinsplineSPODeviceImpKOKKOS.cpp QMCWaveFunctions/DeterminantDeviceImpKOKKOS.cpp
+    set(QMCDEVICE_LINK_LIBRARIES cublas)
+  endif(QMC_USE_CUDA)
+
   ADD_LIBRARY(qmcdevice QMCWaveFunctions/DeterminantDeviceImpCPU.cpp
-    QMCWaveFunctions/EinsplineSPODeviceImpCPU.cpp ${KOKKOS_SRC})
+    QMCWaveFunctions/EinsplineSPODeviceImpCPU.cpp ${KOKKOS_SRC} ${CUDA_SRC})
   set(QMCDEVICE_LINK_LIBRARIES qmcutil ${QMCDEVICE_LINK_LIBRARIES})
   target_link_libraries(qmcdevice ${QMCDEVICE_LINK_LIBRARIES})
   

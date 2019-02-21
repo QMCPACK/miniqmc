@@ -132,7 +132,7 @@ public:
 
   void setLattice(const Tensor<T, 3>& lattice) { einspline_spo_device.setLattice(lattice); }
 
-  const EinsplineSPOParams<T>& getParams() { return einspline_spo_device.getParams(); }
+  const EinsplineSPOParams<T>& getParams() const { return einspline_spo_device.getParams(); }
 
   ///Access to elements in psi
   T getPsi(int ib, int n) { return einspline_spo_device.getPsi(ib, n); }

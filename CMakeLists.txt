@@ -90,6 +90,7 @@ MESSAGE("   Base precision = ${OHMMS_PRECISION}")
 MESSAGE("   Full precision = ${OHMMS_PRECISION_FULL}")
 SET(QMC_USE_KOKKOS 0 CACHE BOOL "Whether to use Kokkos")
 SET(QMC_USE_OMPOL 0 CACHE BOOL "Whether to use openMP offload")
+SET(QMC_USE_CUDA 0 CACHE BOOL "Whether to use direct CUDA")
 
 # Code coverage
 SET(GCOV_SUPPORTED FALSE)
@@ -300,6 +301,11 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
     SET(CMAKE_CXX_FLAGS "-DQMC_USE_KOKKOS ${CMAKE_CXX_FLAGS}")
     LINK_LIBRARIES(kokkos)
   ENDIF()
+
+  IF(QMC_USE_CUDA)
+    SET(CMAKE_CXX_FLAGS "-DQMC_USE_CUDA ${CMAKE_CXX_FLAGS}")
+  ENDIF()
+
 
   #-------------------------------------------------------------------
   #  check MPI installation
@@ -524,9 +530,10 @@ if(CMAKE_CXX_LINKER)
 endif()
 
 ###################################################
-# FUTURE WAVEFUNCTION settings
+# external codes includes
 ###################################################
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/external_codes/hana/include)
+INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/external_codes/catch)
 
 ###################################################
 # Add user extra flags

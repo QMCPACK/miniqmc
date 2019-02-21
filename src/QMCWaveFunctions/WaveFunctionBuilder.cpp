@@ -118,4 +118,8 @@ template class WaveFunctionBuilder<Devices::CPU>;
 #ifdef QMC_USE_KOKKOS
 template class WaveFunctionBuilder<Devices::KOKKOS>;
 #endif
+#ifdef QMC_USE_KOKKOS
+template class WaveFunctionBuilder<Devices::CUDA>;
+#endif
+
 } // namespace qmcplusplus

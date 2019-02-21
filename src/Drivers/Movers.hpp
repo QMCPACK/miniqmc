@@ -240,6 +240,9 @@ private:
 extern template class Movers<Devices::CPU>;
 #ifdef QMC_USE_KOKKOS
 extern template class Movers<Devices::KOKKOS>;
+#endif
+#ifdef QMC_USE_CUDA
+extern template class Movers<Devices::CUDA>;
 #endif 
 } // namespace qmcplusplus
 #endif //QMCPLUSPLUS_MOVERS_HPP

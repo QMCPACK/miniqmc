@@ -10,8 +10,8 @@ template<Devices DT>
 void MiniqmcDriverFunctions<DT>::updateFromDevice(DiracDeterminant<DeterminantDeviceImp<DT>>& determinant_device)
 {}
 
-template<>
-void MiniqmcDriverFunctions<Devices::CPU>::thread_main(const int ip,
+template<Devices DT>
+void MiniqmcDriverFunctions<DT>::thread_main(const int ip,
                                                        const int team_size,
                                                        MiniqmcOptions& mq_opt,
                                                        const PrimeNumberSet<uint32_t>& myPrimes,
@@ -184,5 +184,7 @@ void MiniqmcDriverFunctions<DT>::movers_runThreads(MiniqmcOptions& mq_opt,
 }
 
 template class MiniqmcDriverFunctions<Devices::CPU>;
-
+#ifdef QMC_USE_CUDA
+template class MiniqmcDriverFunctions<Devices::CUDA>;
+#endif
 } // namespace qmcplusplus

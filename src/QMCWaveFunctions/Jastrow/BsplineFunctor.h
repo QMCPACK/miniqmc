@@ -44,11 +44,11 @@
 namespace qmcplusplus
 {
 
-template<Devices D, class T>
-struct BsplineFunctor;
+// template<Devices D, class T>
+// struct BsplineFunctor;
 
-template<class T>
-struct BsplineFunctor<Devices::CPU, T> : public OptimizableFunctorBase
+template<Devices D,class T>
+struct BsplineFunctor : public OptimizableFunctorBase
 {
   typedef real_type value_type;
   int NumParams;
@@ -226,8 +226,8 @@ struct BsplineFunctor<Devices::CPU, T> : public OptimizableFunctorBase
   }
 };
 
-template<typename T>
-inline T BsplineFunctor<Devices::CPU, T>::evaluateV(const int iat,
+template<Devices DT, typename T>
+inline T BsplineFunctor<DT, T>::evaluateV(const int iat,
                                       const int iStart,
                                       const int iEnd,
                                       const T* restrict _distArray,
@@ -269,8 +269,8 @@ inline T BsplineFunctor<Devices::CPU, T>::evaluateV(const int iat,
   return d;
 }
 
-template<typename T>
-inline void BsplineFunctor<Devices::CPU, T>::evaluateVGL(const int iat,
+template<Devices DT, typename T>
+inline void BsplineFunctor<DT, T>::evaluateVGL(const int iat,
                                            const int iStart,
                                            const int iEnd,
                                            const T* _distArray,

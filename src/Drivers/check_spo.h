@@ -145,5 +145,8 @@ private:
 #ifdef QMC_USE_KOKKOS
 #include "Drivers/test/CheckSPOStepsKOKKOS.hpp"
 #endif
+#ifdef QMC_USE_CUDA
+#include "Drivers/test/CheckSPOStepsCUDA.hpp"
+#endif
 
 #endif

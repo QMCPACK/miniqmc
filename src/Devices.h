@@ -37,6 +37,9 @@ enum class Devices
 #ifdef QMC_USE_OMPOL
   OMPOL,
 #endif
+#ifdef QMC_USE_CUDA
+  CUDA,
+#endif
   LAST // this is the end
 };
 
@@ -48,12 +51,14 @@ constexpr auto device_names = hana::make_tuple("CPU",
 #ifdef QMC_USE_OMPOL
 					       "OMPOL",
 #endif
-					       "LAST");
+#ifdef QMC_USE_CUDA
+                                               "CUDA",
+#endif
+                			       "LAST");
 
 //Compile time integral range of the Devices enum
 constexpr auto devices_range = hana::make_range(hana::int_c<static_cast<int>(Devices::CPU)>,
 					    hana::int_c<static_cast<int>(Devices::LAST)>);
 } // namespace qmcplusplus
-
 
 #endif
