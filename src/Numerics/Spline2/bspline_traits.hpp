@@ -40,7 +40,7 @@ struct bspline_traits<D, float, 3>
 template<Devices D>
 struct bspline_traits<D, double, 3>
 {
-  typedef multi_UBspline_3d_d<D> SplineType;
+  using SplineType = multi_UBspline_3d_d<D>;
   typedef UBspline_3d_d<D> SingleSplineType;
   typedef BCtype_d BCType;
   typedef double real_type;

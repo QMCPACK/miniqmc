@@ -17,11 +17,12 @@
  */
 #include "Devices.h"
 #include "Numerics/Spline2/bspline_allocator.hpp"
+#include "Numerics/Spline2/BsplineAllocatorCPU.hpp"
 #include "Numerics/Spline2/einspline_allocator.h"
 
 
 template<Devices D>
-void einspline_create_multi_UBspline_3d_s(multi_UBspline_3d_s<D>*& spline,
+void einspline_create_multi_UBspline_3d_s(multi_UBspline_3d_s<D>* spline,
 					  Ugrid x_grid,
                                                           Ugrid y_grid,
                                                           Ugrid z_grid,
@@ -32,11 +33,11 @@ void einspline_create_multi_UBspline_3d_s(multi_UBspline_3d_s<D>*& spline,
 
 template<Devices D>
 void einspline_create_UBspline_3d_s(
-				    UBspline_3d_s<D>*& spline,
+				    UBspline_3d_s<D>* spline,
 				    Ugrid x_grid, Ugrid y_grid, Ugrid z_grid, BCtype_s xBC, BCtype_s yBC, BCtype_s zBC);
 
 template<Devices D>
-void einspline_create_multi_UBspline_3d_d(multi_UBspline_3d_d<D>*& spline,
+void einspline_create_multi_UBspline_3d_d(multi_UBspline_3d_d<D>* spline,
 					  Ugrid x_grid,
                                                           Ugrid y_grid,
                                                           Ugrid z_grid,
@@ -46,7 +47,7 @@ void einspline_create_multi_UBspline_3d_d(multi_UBspline_3d_d<D>*& spline,
                                                           int num_splines);
 
 template<Devices D>
-void einspline_create_UBspline_3d_d(UBspline_3d_d<D>*& spline,
+void einspline_create_UBspline_3d_d(UBspline_3d_d<D>* spline,
     Ugrid x_grid, Ugrid y_grid, Ugrid z_grid, BCtype_d xBC, BCtype_d yBC, BCtype_d zBC);
 
 namespace qmcplusplus
@@ -80,42 +81,9 @@ void Allocator<Devices::CPU>::destroy(SplineType* spline)
   free(spline);
 }
 
-template<Devices D>
-void Allocator<D>::allocateMultiBspline(multi_UBspline_3d_s<D>*& spline,
-    Ugrid x_grid, Ugrid y_grid, Ugrid z_grid, BCtype_s xBC, BCtype_s yBC, BCtype_s zBC, int num_splines)
-{
-  einspline_create_multi_UBspline_3d_s(spline, x_grid, y_grid, z_grid, xBC, yBC, zBC, num_splines);
-}
-
-template<Devices D>
-void Allocator<D>::allocateMultiBspline(multi_UBspline_3d_d<D>*& spline,
-    Ugrid x_grid, Ugrid y_grid, Ugrid z_grid, BCtype_d xBC, BCtype_d yBC, BCtype_d zBC, int num_splines)
-{
-  einspline_create_multi_UBspline_3d_d(spline, x_grid, y_grid, z_grid, xBC, yBC, zBC, num_splines);
-}
-
-template<Devices D>
-void Allocator<D>::allocateUBspline(UBspline_3d_d<D>*& spline,
-    Ugrid x_grid, Ugrid y_grid, Ugrid z_grid, BCtype_d xBC, BCtype_d yBC, BCtype_d zBC)
-{
-  einspline_create_UBspline_3d_d(spline, x_grid, y_grid, z_grid, xBC, yBC, zBC);
-}
-
-template<Devices D>
-void  Allocator<D>::allocateUBspline(UBspline_3d_s<D>*& spline,
-    Ugrid x_grid, Ugrid y_grid, Ugrid z_grid, BCtype_s xBC, BCtype_s yBC, BCtype_s zBC)
-{
-  return einspline_create_UBspline_3d_s(spline, x_grid, y_grid, z_grid, xBC, yBC, zBC);
-}
-
 template class Allocator<Devices::CPU>;
-template void Allocator<Devices::CPU>::destroy(multi_UBspline_3d_s<Devices::CPU>*);
-template void Allocator<Devices::CPU>::destroy(multi_UBspline_3d_d<Devices::CPU>*);
 #ifdef QMC_USE_KOKKOS
 template class Allocator<Devices::KOKKOS>;
-#endif
-#ifdef QMC_USE_KOKKOS
-template class Allocator<Devices::CUDA>;
 #endif
 
 } // namespace einspline

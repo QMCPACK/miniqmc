@@ -20,9 +20,7 @@
 #include <Numerics/Spline2/bspline_traits.hpp>
 #include "Numerics/Spline2/einspline_allocator.h"
 #include <Numerics/OhmmsPETE/OhmmsArray.h>
-#ifdef QMC_USE_KOKKOS
-#include "Numerics/Spline2/bspline_allocator_KOKKOS.hpp"
-#endif
+
 namespace qmcplusplus
 {
 namespace einspline
@@ -46,8 +44,8 @@ public:
   /// destructor
   ~Allocator();
 
-  template<typename SplineType>
-  void destroy(SplineType* spline);
+  template<typename ST>
+  void destroy(ST* spline);
 
   /// allocate a single multi-bspline
   void allocateMultiBspline(multi_UBspline_3d_s<D>*& spline,
@@ -61,7 +59,7 @@ public:
 
   /// allocate a double multi-bspline
   void allocateMultiBspline(multi_UBspline_3d_d<D>*& spline,
-			    Ugrid x_grid,
+			                    Ugrid x_grid,
                                             Ugrid y_grid,
                                             Ugrid z_grid,
                                             BCtype_d xBC,
@@ -71,11 +69,11 @@ public:
 
   /// allocate a single bspline
   void
-  allocateUBspline(UBspline_3d_s<D>*& spline, Ugrid x_grid, Ugrid y_grid, Ugrid z_grid, BCtype_s xBC, BCtype_s yBC, BCtype_s zBC);
+  __host__ allocateUBspline(UBspline_3d_s<D>*& spline, Ugrid x_grid, Ugrid y_grid, Ugrid z_grid, BCtype_s xBC, BCtype_s yBC, BCtype_s zBC);
 
   /// allocate a UBspline_3d_d
   void
-  allocateUBspline(UBspline_3d_d<D>*& spline, Ugrid x_grid, Ugrid y_grid, Ugrid z_grid, BCtype_d xBC, BCtype_d yBC, BCtype_d zBC);
+  __host__ allocateUBspline(UBspline_3d_d<D>*& spline, Ugrid x_grid, Ugrid y_grid, Ugrid z_grid, BCtype_d xBC, BCtype_d yBC, BCtype_d zBC);
 
   /** allocate a multi_UBspline_3d_(s,d)
    * @tparam T datatype
@@ -83,7 +81,7 @@ public:
    * @tparam IntT 3D container for ng
    */
   template<typename T, typename ValT, typename IntT>
-  void createMultiBspline(typename bspline_traits<D, T, 3>::SplineType*& spline,
+  void createMultiBspline(typename bspline_traits<D, T, 3>::SplineType* spline,
 		     T dummy, ValT& start, ValT& end, IntT& ng, bc_code bc, int num_splines);
 
   /** allocate a UBspline_3d_(s,d)
@@ -92,7 +90,7 @@ public:
    * @tparam IntT 3D container for ng
    */
   template<typename ValT, typename IntT, typename T>
-  void createUBspline(typename bspline_traits<D, T, 3>::SingleSplineType*& spline,
+  void createUBspline(typename bspline_traits<D, T, 3>::SingleSplineType* spline,
 		      ValT& start, ValT& end, IntT& ng, bc_code bc);
 
    /** Set coefficients for a single orbital (band)
@@ -129,6 +127,8 @@ public:
   void copy(UBT* single, MBT* multi, int i, const int* offset, const int* N);
 };
 
+
+  
 template<Devices D>
 template<typename T>
 void Allocator<D>::setCoefficientsForOneOrbital(int i,
@@ -177,7 +177,7 @@ void Allocator<D>::setCoefficientsForOneOrbital(int i,
 
 template<Devices D>
 template<typename T, typename ValT, typename IntT>
-void Allocator<D>::createMultiBspline(typename bspline_traits<D, T, 3>::SplineType*& spline,
+void Allocator<D>::createMultiBspline(typename bspline_traits<D, T, 3>::SplineType* spline,
 				 T dummy, ValT& start, ValT& end, IntT& ng, bc_code bc, int num_splines)
 {
   Ugrid x_grid, y_grid, z_grid;
@@ -199,7 +199,7 @@ void Allocator<D>::createMultiBspline(typename bspline_traits<D, T, 3>::SplineTy
 
 template<Devices D>
 template<typename ValT, typename IntT, typename T>
-void Allocator<D>::createUBspline(typename bspline_traits<D, T, 3>::SingleSplineType*& spline,
+void Allocator<D>::createUBspline(typename bspline_traits<D, T, 3>::SingleSplineType* spline,
 			       ValT& start, ValT& end, IntT& ng, bc_code bc)
 {
   Ugrid x_grid, y_grid, z_grid;
@@ -248,15 +248,9 @@ void Allocator<D>::copy(UBT* single, MBT* multi, int i, const int* offset, const
     }
 }
 
-extern template class Allocator<Devices::CPU>;
-extern template void Allocator<Devices::CPU>::destroy(multi_UBspline_3d_s<Devices::CPU>*);
-extern template void Allocator<Devices::CPU>::destroy(multi_UBspline_3d_d<Devices::CPU>*);
 
 #ifdef QMC_USE_KOKKOS
 extern template class Allocator<Devices::KOKKOS>;
-#endif
-#ifdef QMC_USE_CUDA
-extern template class Allocator<Devices::CUDA>;
 #endif
 
 } // namespace einspline

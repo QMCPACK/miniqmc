@@ -20,6 +20,10 @@ ENDIF(QMC_OMP)
 #   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --expt-relaxed-constexpr")
 # ENDIF(QMC_USE_KOKKOS)
 
+#IF(QMC_USE_CUDA)
+#  add_definitions( -D__CUDACC__)
+#ENDIF(QMC_USE_CUDA)
+
 # Set clang specfic flags (which we always want)
 ADD_DEFINITIONS( -Drestrict=__restrict__ )
 
@@ -27,7 +31,7 @@ SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__forceinline=inline")
 SET( HAVE_POSIX_MEMALIGN 0 )    # Clang doesn't support -malign-double
 
 # Suppress compile warnings
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated -Wno-unused-value")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated -Wno-unused-value -Wno-ignored-attributes")
 IF ( CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 3.8.0 )
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ") #-Wno-undefined-var-template
 ENDIF()

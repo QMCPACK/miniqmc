@@ -346,23 +346,23 @@ template void einspline_create_UBspline_3d_d(UBspline_3d_d<Devices::KOKKOS>*& sp
                                              BCtype_d zBC);
 
 #endif
-#ifdef QMC_USE_CUDA
-template void
-einspline_create_multi_UBspline_3d_s(multi_UBspline_3d_s<Devices::CUDA>*& restrict spline,
-                                     Ugrid x_grid, Ugrid y_grid, Ugrid z_grid, BCtype_s xBC,
-                                     BCtype_s yBC, BCtype_s zBC, int num_splines);
+// #ifdef QMC_USE_CUDA
+// template void
+// einspline_create_multi_UBspline_3d_s(multi_UBspline_3d_s<Devices::CUDA>*& restrict spline,
+//                                      Ugrid x_grid, Ugrid y_grid, Ugrid z_grid, BCtype_s xBC,
+//                                      BCtype_s yBC, BCtype_s zBC, int num_splines);
 
-template void einspline_create_multi_UBspline_3d_d(multi_UBspline_3d_d<Devices::CUDA>*& spline,
-                                                   Ugrid x_grid, Ugrid y_grid, Ugrid z_grid,
-                                                   BCtype_d xBC, BCtype_d yBC, BCtype_d zBC,
-                                                   int num_splines);
-template void einspline_create_UBspline_3d_s(UBspline_3d_s<Devices::CUDA>*& spline, Ugrid x_grid,
-                                             Ugrid y_grid, Ugrid z_grid, BCtype_s xBC, BCtype_s yBC,
-                                             BCtype_s zBC);
+// template void einspline_create_multi_UBspline_3d_d(multi_UBspline_3d_d<Devices::CUDA>*& spline,
+//                                                    Ugrid x_grid, Ugrid y_grid, Ugrid z_grid,
+//                                                    BCtype_d xBC, BCtype_d yBC, BCtype_d zBC,
+//                                                    int num_splines);
+// template void einspline_create_UBspline_3d_s(UBspline_3d_s<Devices::CUDA>*& spline, Ugrid x_grid,
+//                                              Ugrid y_grid, Ugrid z_grid, BCtype_s xBC, BCtype_s yBC,
+//                                              BCtype_s zBC);
 
 
-template void einspline_create_UBspline_3d_d(UBspline_3d_d<Devices::CUDA>*& spline, Ugrid x_grid,
-                                             Ugrid y_grid, Ugrid z_grid, BCtype_d xBC, BCtype_d yBC,
-                                             BCtype_d zBC);
+// template void einspline_create_UBspline_3d_d(UBspline_3d_d<Devices::CUDA>*& spline, Ugrid x_grid,
+//                                              Ugrid y_grid, Ugrid z_grid, BCtype_d xBC, BCtype_d yBC,
+//                                              BCtype_d zBC);
 
-#endif
+// #endif

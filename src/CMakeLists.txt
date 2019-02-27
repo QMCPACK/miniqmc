@@ -124,11 +124,11 @@ ELSE()
   )
 ENDIF()
 
-IF(QMC_USE_KOKKOS AND KOKKOS_ENABLE_CUDA)
+IF(QMC_USE_CUDA)
 # add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:--cuda-gpu-arch=sm_50 >")
 # add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:SHELL:-x cuda>")
-  #SET(CMAKE_CXX_FLAGS "-x cuda --cuda-gpu-arch=sm_35 -nocudalib ${CMAKE_CXX_FLAGS}")
-ENDIF(QMC_USE_KOKKOS AND KOKKOS_ENABLE_CUDA)
+SET(CMAKE_CUDACXX_FLAGS "-x cuda --cuda-gpu-arch=sm_35 -nocudalib ${CMAKE_CUDACXX_FLAGS}")
+ENDIF(QMC_USE_CUDA)
   
 
 
@@ -145,18 +145,26 @@ ENDIF(QMC_USE_KOKKOS AND KOKKOS_ENABLE_CUDA)
     Utilities/XMLWriter.cpp
     Utilities/tinyxml/tinyxml2.cpp
     Utilities/qmcpack_version.cpp
-    Numerics/Spline2/einspline_allocator.cpp
-    Numerics/Spline2/bspline_allocator.cpp
-    Numerics/Spline2/MultiBsplineData.cpp
     ${GITREV_TMP}
     )
 
   # IF(QMC_USE_KOKKOS)
   #   SET(UTILITIES Numerics/Spline2/einspline_allocator_kokkos.cpp ${UTILITIES})
   # ENDIF(QMC_USE_KOKKOS)
-  
-  ADD_LIBRARY(qmcutil ${UTILITIES})
 
+  add_subdirectory(Numerics)
+  
+  IF(QMC_USE_CUDA)
+    CUDA_ADD_LIBRARY(qmc_cuda_params CUDA/GPUParams.cpp)
+    CUDA_ADD_LIBRARY(qmcutil ${UTILITIES})
+    target_link_libraries(qmcutil cublas qmc_cuda_params)
+    CUDA_ADD_EXECUTABLE(testCUDA test/catch-main.cpp CUDA/test/test_GPUArray.cpp)
+  ELSE(QMC_USE_CUDA)
+    ADD_LIBRARY(qmcutil ${UTILITIES})
+  ENDIF(QMC_USE_CUDA)
+
+  target_link_libraries(qmcutil qmc_numerics)
+  
   if(QMC_USE_KOKKOS)
     target_link_libraries(qmcutil kokkos)
     set(KOKKOS_SRC QMCWaveFunctions/DeterminantDeviceImpKOKKOS.cpp
@@ -165,13 +173,12 @@ ENDIF(QMC_USE_KOKKOS AND KOKKOS_ENABLE_CUDA)
   endif(QMC_USE_KOKKOS)
 
   if(QMC_USE_CUDA)
-    target_link_libraries(qmcutil cublas)
     set(CUDA_SRC QMCWaveFunctions/EinsplineSPODeviceImpCUDA.cpp)
        #QMCWaveFunctions/SPOSetBuilderKokkos.cpp)  #QMCWaveFunctions/EinsplineSPODeviceImpKOKKOS.cpp QMCWaveFunctions/DeterminantDeviceImpKOKKOS.cpp
     set(QMCDEVICE_LINK_LIBRARIES cublas)
   endif(QMC_USE_CUDA)
 
-  ADD_LIBRARY(qmcdevice QMCWaveFunctions/DeterminantDeviceImpCPU.cpp
+  CUDA_ADD_LIBRARY(qmcdevice QMCWaveFunctions/DeterminantDeviceImpCPU.cpp
     QMCWaveFunctions/EinsplineSPODeviceImpCPU.cpp ${KOKKOS_SRC} ${CUDA_SRC})
   set(QMCDEVICE_LINK_LIBRARIES qmcutil ${QMCDEVICE_LINK_LIBRARIES})
   target_link_libraries(qmcdevice ${QMCDEVICE_LINK_LIBRARIES})

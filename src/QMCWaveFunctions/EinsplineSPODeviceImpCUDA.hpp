@@ -2,7 +2,7 @@
 // This file is distributed under the University of Illinois/NCSA Open Source
 // License.  See LICENSE file in top directory for details.
 //
-// Copyright (c) 2018 QMCPACK developers.
+// Copyright (c) 2019 QMCPACK developers.
 //
 // File developed by:
 // Peter Doak, doakpw@ornl.gov, Oak Ridge National Lab
@@ -14,7 +14,7 @@
 
 /**
  * @file
- * @brief CPU implementation of EinsplineSPO
+ * @brief CUDA implementation of EinsplineSPO
  */
 
 #ifndef QMCPLUSPLUS_EINSPLINE_SPO_DEVICE_IMP_CUDA_H
@@ -30,6 +30,8 @@
 #include "Utilities/Configuration.h"
 #include "Utilities/NewTimer.h"
 #include "Utilities/RandomGenerator.h"
+#include "CUDA/GPUArray.h"
+#include "Numerics/Spline2/BsplineAllocatorCUDA.hpp"
 #include "QMCWaveFunctions/EinsplineSPO.hpp"
 #include "QMCWaveFunctions/EinsplineSPODevice.hpp"
 #include "QMCWaveFunctions/EinsplineSPODeviceImp.hpp"
@@ -37,10 +39,13 @@
 #include "Numerics/Spline2/bspline_traits.hpp"
 #include "Numerics/Spline2/bspline_allocator.hpp"
 #include "Numerics/Spline2/MultiBspline.hpp"
+#include "Numerics/Spline2/MultiBsplineCUDA.hpp"
 
 namespace qmcplusplus
 {
-
+/** Follows implementation in QMCPack in that EinsplineSPODeviceImp is fat CPUImp
+ *  Except this one is of SoA CPU and I'm looking to trim or at least share generic code
+ */
 template<typename T>
 class EinsplineSPODeviceImp<Devices::CUDA, T> : public EinsplineSPODevice<EinsplineSPODeviceImp<Devices::CUDA, T>, T>
 {
@@ -67,6 +72,14 @@ class EinsplineSPODeviceImp<Devices::CUDA, T> : public EinsplineSPODevice<Einspl
   aligned_vector<vContainer_type> psi;
   aligned_vector<gContainer_type> grad;
   aligned_vector<hContainer_type> hess;
+
+  //device pointers
+  GPUArray<T,1> dev_psi;
+  GPUArray<T,3> dev_grad;
+  GPUArray<T,6> dev_hess;
+  GPUArray<T,1> dev_linv;
+  //device memory pitches
+  
   EinsplineSPOParams<T> esp;
 
 public:
@@ -203,9 +216,19 @@ public:
         this->grad[i].resize(esp.nSplinesPerBlock);
         this->hess[i].resize(esp.nSplinesPerBlock);
       }
+      resizeCUDA();
     }
   }
 
+  
+  void resizeCUDA()
+  {
+    dev_psi.resize(esp.nBlocks, esp.nSplinesPerBlock);
+    dev_grad.resize(esp.nBlocks, esp.nSplinesPerBlock);
+    dev_hess.resize(esp.nBlocks, esp.nSplinesPerBlock);
+    dev_linv.resize(esp.nBlocks, esp.nSplinesPerBlock);
+  }
+  
   /** TBI This is a duplication of the set_i CPU version
    */
   void set_i(int nx, int ny, int nz, int num_splines, int nblocks, bool init_random = true)
@@ -226,8 +249,7 @@ public:
       Array<T, 3> coef_data(nx + 3, ny + 3, nz + 3);
       for (int i = 0; i < esp.nBlocks; ++i)
       {
-        this->my_host_allocator.createMultiBspline(host_einsplines[i], T(0), start, end, ng, PERIODIC, esp.nSplinesPerBlock);
-        if (init_random)
+        this->my_host_allocator.createMultiBspline(host_einsplines[i], T(0), start, end, ng, PERIODIC, esp.nSplinesPerBlock);        if (init_random)
         {
           for (int j = 0; j < esp.nSplinesPerBlock; ++j)
           {
@@ -236,6 +258,8 @@ public:
             my_host_allocator.setCoefficientsForOneOrbital(j, coef_data, host_einsplines[i]);
           }
         }
+	T dummyT, dummyDT;
+	myAllocator.createMultiBspline_3d(host_einsplines[i],einsplines[i],dummyT, dummyDT);
       }
     }
     resize();
@@ -252,7 +276,7 @@ public:
   {
     auto u = esp.lattice.toUnit_floor(p);
     for (int i = 0; i < esp.nBlocks; ++i)
-      compute_engine.evaluate_v(einsplines[i], u[0], u[1], u[2], psi[i].data(), esp.nSplinesPerBlock);
+      compute_engine.evaluate_v(einsplines[i], u[0], u[1], u[2], dev_psi[i], (size_t)esp.nSplinesPerBlock);
   }
 
   inline void evaluate_vgh_i(const QMCT::PosType& p)
@@ -264,9 +288,9 @@ public:
                                   u[0],
                                   u[1],
                                   u[2],
-                                  psi[i].data(),
-                                  grad[i].data(),
-                                  hess[i].data(),
+                                  dev_psi[i],
+                                  dev_grad[i],
+                                  dev_hess[i],
                                   esp.nSplinesPerBlock);
     }
   }
@@ -279,9 +303,10 @@ public:
                                   u[0],
                                   u[1],
                                   u[2],
-                                  psi[i].data(),
-                                  grad[i].data(),
-                                  hess[i].data(),
+				  dev_linv[i],
+                                  dev_psi[i],
+                                  dev_grad[i],
+                                  dev_hess[i],
                                   esp.nSplinesPerBlock);
   }
 

@@ -399,13 +399,26 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
   ENDIF()
 
   #We're going to see if we're running CUDA.  If so, include/link CUBLAS.
-  IF ( KOKKOS_ENABLE_CUDA )
+  IF ( KOKKOS_ENABLE_CUDA OR QMC_USE_CUDA)
     MESSAGE(STATUS "Searching for CUDA libraries")
     #Requires passing CUDA_TOOLKIT_ROOT_DIR not CUDA_ROOT
     FIND_PACKAGE(CUDA)
     MESSAGE(STATUS " --Link to cuBLAS")
     LINK_LIBRARIES("-lcusolver -lcublas -lcurand")
+    INCLUDE_DIRECTORIES(${CUDA_INCLUDE_DIRS})
   ENDIF()
+
+  
+  # IF (QMC_USE_CUDA)
+  #   MESSAGE(STATUS "Searching for CUDA libraries")
+  #   #Requires passing CUDA_TOOLKIT_ROOT_DIR not CUDA_ROOT
+  #   FIND_PACKAGE(CUDA)
+  #   MESSAGE(STATUS " --Link to cuBLAS")
+  #   LINK_LIBRARIES("-lcusolver -lcublas -lcurand")
+  #  INCLUDE_DIRECTORIES(${CUDA_INCLUDE_DIRS})
+
+  # ENDIF()
+  
 
   INCLUDE(CMake/FindVectorMath.cmake)
 
