@@ -63,7 +63,7 @@ Allocator<D>::~Allocator() {}
 #ifdef QMC_USE_KOKKOS
 template<>
 template<typename SplineType>
-void Allocator<Devices::KOKKOS>::destroy(SplineType* spline)
+void Allocator<Devices::KOKKOS>::destroy(SplineType*& spline)
 {
     //Assign coefs_view to empty view because of Kokkos reference counting
     // and garbage collection.
@@ -75,13 +75,16 @@ void Allocator<Devices::KOKKOS>::destroy(SplineType* spline)
 
 template<>
 template<typename SplineType>
-void Allocator<Devices::CPU>::destroy(SplineType* spline)
+void Allocator<Devices::CPU>::destroy(SplineType*& spline)
 {
   einspline_free(spline->coefs);
   free(spline);
 }
 
 template class Allocator<Devices::CPU>;
+template void Allocator<Devices::CPU>::destroy(multi_UBspline_3d_d<Devices::CPU>*&);
+template void Allocator<Devices::CPU>::destroy(multi_UBspline_3d_s<Devices::CPU>*&);
+
 #ifdef QMC_USE_KOKKOS
 template class Allocator<Devices::KOKKOS>;
 #endif

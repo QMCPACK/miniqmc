@@ -45,7 +45,7 @@ public:
   ~Allocator();
 
   template<typename ST>
-  void destroy(ST* spline);
+  void destroy(ST*& spline);
 
   /// allocate a single multi-bspline
   void allocateMultiBspline(multi_UBspline_3d_s<D>*& spline,
