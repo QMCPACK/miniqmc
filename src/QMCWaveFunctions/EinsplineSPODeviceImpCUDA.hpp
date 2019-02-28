@@ -101,7 +101,7 @@ public:
 
   /** CPU to CUDA Constructor
    */
-  EinsplineSPODeviceImp(const EinsplineSPODevice<EinsplineSPODeviceImp<Devices::CPU, T>, T>& in)
+  EinsplineSPODeviceImp(const EinsplineSPODevice<EinsplineSPODeviceImp<Devices::CPU, T>, T>& in) : dev_psi(), dev_grad(), dev_linv(), dev_hess()
   {
     const EinsplineSPOParams<T>& inesp = in.getParams();
     esp.nSplinesSerialThreshold_V      = inesp.nSplinesSerialThreshold_V;
@@ -120,7 +120,9 @@ public:
     resize();
   }
 
-  EinsplineSPODeviceImp(const EinsplineSPODevice<EinsplineSPODeviceImp<Devices::CUDA, T>, T>& in)
+  /** CUDA to CUDA Constructor
+   */
+  EinsplineSPODeviceImp(const EinsplineSPODevice<EinsplineSPODeviceImp<Devices::CUDA, T>, T>& in) : dev_psi(), dev_grad(), dev_hess(), dev_linv()
   {
     const EinsplineSPOParams<T>& inesp = in.getParams();
     esp.nSplinesSerialThreshold_V      = inesp.nSplinesSerialThreshold_V;
@@ -144,7 +146,7 @@ public:
    */
   EinsplineSPODeviceImp(const EinsplineSPODevice<EinsplineSPODeviceImp<Devices::CPU, T>,T>& in,
                         int team_size,
-                        int member_id)
+                        int member_id) : dev_psi(), dev_grad(), dev_linv(), dev_hess()
   {
     std::cout << "EinsplineSPODeviceImpCPU Fat Copy constructor called" << '\n';
     const EinsplineSPOParams<T>& inesp = in.getParams();
@@ -169,7 +171,7 @@ public:
    */
   EinsplineSPODeviceImp(const EinsplineSPODevice<EinsplineSPODeviceImp<Devices::CUDA, T>, T>& in,
                         int team_size,
-                        int member_id)
+                        int member_id) : dev_psi(), dev_grad(), dev_linv(), dev_hess()
   {
     std::cout << "EinsplineSPODeviceImpCPU Fat Copy constructor called" << '\n';
     const EinsplineSPOParams<T>& inesp = in.getParams();
@@ -305,7 +307,6 @@ public:
                                   u[2],
 				  dev_linv[i],
                                   dev_psi[i],
-                                  dev_grad[i],
                                   dev_hess[i],
                                   esp.nSplinesPerBlock);
   }

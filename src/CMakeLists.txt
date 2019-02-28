@@ -152,10 +152,13 @@ ENDIF(QMC_USE_CUDA)
   #   SET(UTILITIES Numerics/Spline2/einspline_allocator_kokkos.cpp ${UTILITIES})
   # ENDIF(QMC_USE_KOKKOS)
 
+  IF(QMC_USE_CUDA)
+    CUDA_ADD_LIBRARY(qmc_cuda_params CUDA/GPUParams.cpp)
+  ENDIF(QMC_USE_CUDA)
+  
   add_subdirectory(Numerics)
   
   IF(QMC_USE_CUDA)
-    CUDA_ADD_LIBRARY(qmc_cuda_params CUDA/GPUParams.cpp)
     CUDA_ADD_LIBRARY(qmcutil ${UTILITIES})
     target_link_libraries(qmcutil cublas qmc_cuda_params)
     CUDA_ADD_EXECUTABLE(testCUDA test/catch-main.cpp CUDA/test/test_GPUArray.cpp)
@@ -176,13 +179,15 @@ ENDIF(QMC_USE_CUDA)
     set(CUDA_SRC QMCWaveFunctions/EinsplineSPODeviceImpCUDA.cpp)
        #QMCWaveFunctions/SPOSetBuilderKokkos.cpp)  #QMCWaveFunctions/EinsplineSPODeviceImpKOKKOS.cpp QMCWaveFunctions/DeterminantDeviceImpKOKKOS.cpp
     set(QMCDEVICE_LINK_LIBRARIES cublas)
-  endif(QMC_USE_CUDA)
-
-  CUDA_ADD_LIBRARY(qmcdevice QMCWaveFunctions/DeterminantDeviceImpCPU.cpp
+    CUDA_ADD_LIBRARY(qmcdevice QMCWaveFunctions/DeterminantDeviceImpCPU.cpp
     QMCWaveFunctions/EinsplineSPODeviceImpCPU.cpp ${KOKKOS_SRC} ${CUDA_SRC})
+else(QMC_USE_CUDA)
+  #unbreak KOKKOS BUILD
+  ADD_LIBRARY(qmcdeivce ${KOKKOS_SRC})
+endif(QMC_USE_CUDA)
   set(QMCDEVICE_LINK_LIBRARIES qmcutil ${QMCDEVICE_LINK_LIBRARIES})
-  target_link_libraries(qmcdevice ${QMCDEVICE_LINK_LIBRARIES})
-  
+  target_link_libraries(qmcdevice qmc_numerics ${QMCDEVICE_LINK_LIBRARIES})
+
   # For unit tests, enable use for the fake RNG
   FUNCTION( USE_FAKE_RNG TARGET )
     TARGET_COMPILE_DEFINITIONS(${TARGET} PRIVATE "USE_FAKE_RNG")

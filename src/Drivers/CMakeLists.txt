@@ -7,6 +7,9 @@ SET(ESTEST check_wfc check_spo check_determinant)
 FOREACH(p ${ESTEST})
   ADD_EXECUTABLE( ${p} ${p}.cpp ${ETEST_KOKKOS_SRC} )
   TARGET_LINK_LIBRARIES(${p} qmcbase qmcutil qmcdevice ${QMC_UTIL_LIBS} ${MPI_LIBRARY})
+  IF(QMC_USE_CUDA)
+    TARGET_LINK_LIBRARIES(${p} qmc_cuda_params)
+  ENDIF(QMC_USE_CUDA)
 ENDFOREACH(p ${ESTEST})
 
 # SET(THIS_TEST check_determinant)
@@ -31,7 +34,12 @@ TARGET_LINK_LIBRARIES(mini_functions)
 
 FOREACH(p ${DRIVERS})
   ADD_EXECUTABLE( ${p} MiniqmcOptions.cpp MiniqmcDriver.cpp ${p}.cpp)
+  IF(QMC_USE_CUDA)
+    TARGET_LINK_LIBRARIES(${p} qmc_cuda_params qmc_numerics)
+  ENDIF(QMC_USE_CUDA)
+  
   TARGET_LINK_LIBRARIES(${p} qmcutil mini_functions miniwfs qmcbase qmcdevice qmcutil ${QMC_UTIL_LIBS} ${MPI_LIBRARY})
+  
 ENDFOREACH(p ${ESTEST})
 
 endif()

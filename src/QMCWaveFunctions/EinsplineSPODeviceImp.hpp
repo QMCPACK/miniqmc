@@ -26,9 +26,8 @@ namespace qmcplusplus
 {
   
 template<Devices DT, typename T>
-class EinsplineSPODeviceImp
-{
-};
+class EinsplineSPODeviceImp;
+
 template<Devices DT, typename T>
 std::ostream& operator<< (std::ostream& os, EinsplineSPODeviceImp<DT, T>& espodi)
 {
