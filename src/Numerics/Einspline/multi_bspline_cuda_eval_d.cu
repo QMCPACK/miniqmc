@@ -4,6 +4,7 @@
 __device__ double Bcuda[48];
 __constant__ float  Acuda[48];
 
+extern "C"
 __global__ static void
 eval_multi_multi_UBspline_3d_d_kernel
 (double *pos, double3 drInv, const double *coefs, double *vals[],
@@ -230,7 +231,7 @@ eval_multi_multi_UBspline_3d_d_vgh_kernel
 
 extern "C" void
 eval_multi_multi_UBspline_3d_d_cuda (const multi_UBspline_3d_d<Devices::CUDA> *spline,
-                                     double *pos_d, double *vals_d[], int num)
+                                     double *pos_d, double **vals_d, int num)
 {
   dim3 dimBlock(SPLINE_BLOCK_SIZE);
   dim3 dimGrid(spline->num_splines/SPLINE_BLOCK_SIZE, num);

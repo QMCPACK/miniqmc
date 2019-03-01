@@ -13,16 +13,30 @@
 
 #include "catch.hpp"
 #include "CUDA/GPUArray.h"
-#include "Numerics/Spline2/MultiBsplineCUDA.hpp"
+#include "Numerics/Spline2/MultiBsplineFuncsCUDA.hpp"
+#include "Numerics/Spline2/MultiBsplineFuncs.hpp"
+#include "Numerics/Spline2/test/TestMultiBspline.hpp"
 namespace qmcplusplus
 {
 
 TEST_CASE("MultiBspline<CUDA> instantiation", "[CUDA][Spline2]")
 {
-  MultiBspline<Devices::CUDA, double> mbcd;
-  MultiBspline<Devices::CUDA, float> mbcf;
-  
+  //can I infer type like this?
+  MultiBsplineFuncs<Devices::CUDA,double> mbO;
+  //Devices::CUDA, double> mbcd;
+  //MultiBspline<Devices::CUDA, float> mbcf;  
 }
 
+TEST_CASE("MultiBspline<CUDA> evaluate_v", "[CUDA][Spline2]")
+{
+  TestMultiBspline<double, double> tmb(128);
+  tmb.create();
+  MultiBsplineFuncs<Devices::CUDA,double> mbO;
+  GPUArray<double,1> d_vals;
+  d_vals.resize(2,1);
+  d_vals.zero();
+  std::vector<std::array<double,3>> pos = {{0,0,0},{0,1,0}};
+  mbO.evaluate_v(tmb.cuda_spline, pos, d_vals[0], 2);
+}  
 
 }

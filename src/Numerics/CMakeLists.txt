@@ -6,6 +6,7 @@ SET(NUMERICS_SRC
 
   SET(NUMERICS_CUDA
     Spline2/BsplineAllocatorCUDA.cpp Spline2/MultiBsplineCUDA.cpp
+        Spline2/BsplineAllocatorCUDA.cpp Spline2/MultiBsplineFuncsCUDA.cpp
     )
 
 ADD_LIBRARY(qmc_numerics ${NUMERICS_SRC} ${NUMERICS_CUDA})
@@ -16,5 +17,5 @@ IF(QMC_USE_CUDA)
 ENDIF(QMC_USE_CUDA)
 
 
-
+add_subdirectory(Einspline)
 add_subdirectory(Spline2)

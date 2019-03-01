@@ -5,7 +5,7 @@
 #include <vector_types.h>
 #include "multi_bspline_structs.h"
 
-#define SPLINE_BLOCK_SIZE 64
+#define SPLINE_BLOCK_SIZE 16
 
 /** @file
  *  The cuda splines are not self contained i.e. information is missing

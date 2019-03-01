@@ -1,6 +1,6 @@
 #include "Devices.h"
-#include "Numerics/Spline2/MultiBspline.hpp"
-#include "Numerics/Spline2/MultiBsplineCUDA.hpp"
+#include "Numerics/Spline2/MultiBsplineFuncs.hpp"
+#include "Numerics/Spline2/MultiBsplineFuncsCUDA.hpp"
 #include "Numerics/Spline2/BsplineAllocatorCUDA.hpp"
 #include "Numerics/Einspline/MultiBsplineCreateCUDA.h"
 
