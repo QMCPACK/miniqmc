@@ -1,5 +1,0 @@
-if(QMC_USE_CUDA)
-  CUDA_ADD_LIBRARY(test_einlib test/TestKernel.cu)
-  ADD_EXECUTABLE(testEinspline ../../test/catch-main.cpp test/test_Eval.cpp)
-  target_link_libraries(testEinspline test_einlib)
-endif(QMC_USE_CUDA)
