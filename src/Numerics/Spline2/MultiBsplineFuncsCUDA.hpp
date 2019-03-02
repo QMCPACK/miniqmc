@@ -79,7 +79,7 @@ struct MultiBsplineFuncs<Devices::CUDA, T>
   
   void evaluate_v(const spliner_type* spline_m,
 			 const std::vector<std::array<T,3>>&,
-			 T* vals, size_t num_splines) const;
+			 T*& vals, size_t num_splines);
 
   void evaluate_vgl(const spliner_type* restrict spline_m,
                     const std::vector<std::array<T,3>>&,
@@ -97,17 +97,17 @@ struct MultiBsplineFuncs<Devices::CUDA, T>
 };
 
 template<>
-inline void MultiBsplineFuncs<Devices::CUDA, double>::evaluate_v(const multi_UBspline_3d_d<Devices::CUDA>* spline_m, const std::vector<std::array<double,3>>& pos, double* vals, size_t num_splines) const
+inline void MultiBsplineFuncs<Devices::CUDA, double>::evaluate_v(const multi_UBspline_3d_d<Devices::CUDA>* spline_m, const std::vector<std::array<double,3>>& pos, double*& vals, size_t num_splines)
 {
   PosBuffer pos_d;
-  eval_multi_multi_UBspline_3d_d_cuda(spline_m, pos_d.make(pos), &vals, num_splines); 
+  eval_multi_multi_UBspline_3d_d_cuda(spline_m, pos_d.make(pos), vals, num_splines); 
 }
 
 template<>
-inline void MultiBsplineFuncs<Devices::CUDA,float>::evaluate_v(const typename bspline_traits<Devices::CUDA, float, 3>::SplineType* restrict spline_m, const std::vector<std::array<float,3>>& pos, float* vals, size_t num_splines) const
+inline void MultiBsplineFuncs<Devices::CUDA,float>::evaluate_v(const typename bspline_traits<Devices::CUDA, float, 3>::SplineType* restrict spline_m, const std::vector<std::array<float,3>>& pos, float*& vals, size_t num_splines)
 {
   PosBuffer pos_f;
-  eval_multi_multi_UBspline_3d_s_cuda(spline_m,pos_f.make(pos), &vals, num_splines); 
+  eval_multi_multi_UBspline_3d_s_cuda(spline_m,pos_f.make(pos), vals, num_splines); 
 }
 
 template<>
@@ -120,7 +120,7 @@ inline void MultiBsplineFuncs<Devices::CUDA, double>::evaluate_vgl(const  MultiB
 {
   PosBuffer pos_d;
   int row_stride = 2;
-  eval_multi_multi_UBspline_3d_d_vgl_cuda(spline_m, pos_d.make(pos), linv, &vals, &lapl, num_splines, row_stride);
+  eval_multi_multi_UBspline_3d_d_vgl_cuda(spline_m, pos_d.make(pos), linv, vals, lapl, num_splines, row_stride);
 }
 
 template<>

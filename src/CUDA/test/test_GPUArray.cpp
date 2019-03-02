@@ -17,11 +17,15 @@
 
 namespace qmcpluplus
 {
-TEST_CASE("GPUArray Instantiate", "[CUDA]") { qmcplusplus::GPUArray<double, 1> gD; }
+TEST_CASE("GPUArray Instantiate", "[CUDA]")
+{
+  qmcplusplus::GPUArray<double, 1, 1> gD1;
+  qmcplusplus::GPUArray<double, 1, 2> gD2;
+}
 
 TEST_CASE("GPUArray Resize", "[CUDA]")
 {
-  qmcplusplus::GPUArray<double, 1> gD;
+  qmcplusplus::GPUArray<double, 1,2> gD;
   gD.resize(16, 10);
   // Width and Height are in bytes
   REQUIRE(gD.getWidth() == 16 * sizeof(double));
@@ -36,7 +40,7 @@ TEST_CASE("GPUArray Resize", "[CUDA]")
 
 TEST_CASE("GPUArray Access", "[CUDA]")
 {
-  qmcplusplus::GPUArray<double, 1> gD;
+  qmcplusplus::GPUArray<double, 1,2> gD;
   gD.resize(16, 10);
   // Width and Height are in bytes
   REQUIRE(gD.getWidth() == 16 * sizeof(double));
@@ -47,11 +51,12 @@ TEST_CASE("GPUArray Access", "[CUDA]")
   REQUIRE(gD.getWidth() == 15 * sizeof(double));
   REQUIRE(gD.getHeight() == 10 * sizeof(double));
   REQUIRE(gD.getPitch() >= 16 * sizeof(double));
+  // The test of access would go here, but remember we need to copy back from the GPU
 }
 
 TEST_CASE("GPUArray Zero", "[CUDA]")
 {
-  qmcplusplus::GPUArray<double, 1> gD;
+  qmcplusplus::GPUArray<double, 1,2> gD;
   gD.resize(16, 10);
   gD.zero();
 }

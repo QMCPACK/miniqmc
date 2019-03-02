@@ -13,6 +13,7 @@
 
 #include "catch.hpp"
 #include "CUDA/GPUArray.h"
+#include "CUDA/GPUParams.h"
 #include "Numerics/Spline2/MultiBsplineFuncsCUDA.hpp"
 #include "Numerics/Spline2/MultiBsplineFuncs.hpp"
 #include "Numerics/Spline2/test/TestMultiBspline.hpp"
@@ -29,14 +30,18 @@ TEST_CASE("MultiBspline<CUDA> instantiation", "[CUDA][Spline2]")
 
 TEST_CASE("MultiBspline<CUDA> evaluate_v", "[CUDA][Spline2]")
 {
+  Gpu& gpu = Gpu::get();
+  gpu.initCUDAStreams();
   TestMultiBspline<double, double> tmb(128);
   tmb.create();
   MultiBsplineFuncs<Devices::CUDA,double> mbO;
-  GPUArray<double,1> d_vals;
-  d_vals.resize(2,1);
+  GPUArray<double,1,1> d_vals;
+  d_vals.resize(sizeof(double)* 16,sizeof(double) * 16);
   d_vals.zero();
   std::vector<std::array<double,3>> pos = {{0,0,0},{0,1,0}};
-  mbO.evaluate_v(tmb.cuda_spline, pos, d_vals[0], 2);
+  double* vals = d_vals[0];
+  mbO.evaluate_v(tmb.cuda_spline, pos, vals, 1);
+  gpu.finalizeCUDAStreams();
 }  
 
 }

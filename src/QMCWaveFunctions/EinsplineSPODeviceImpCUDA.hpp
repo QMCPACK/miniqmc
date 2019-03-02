@@ -56,6 +56,7 @@ class EinsplineSPODeviceImp<Devices::CUDA, T> : public EinsplineSPODevice<Einspl
   using spline_type      = typename bspline_traits<Devices::CUDA, T, 3>::SplineType;
   using vContainer_type  = aligned_vector<T>;
   using gContainer_type  = VectorSoAContainer<T, 3>;
+  using lContainer_type  = VectorSoAContainer<T, 4>;
   using hContainer_type  = VectorSoAContainer<T, 6>;
   using lattice_type     = CrystalLattice<T, 3>;
 
@@ -72,10 +73,12 @@ class EinsplineSPODeviceImp<Devices::CUDA, T> : public EinsplineSPODevice<Einspl
   aligned_vector<vContainer_type> psi;
   aligned_vector<gContainer_type> grad;
   aligned_vector<hContainer_type> hess;
+  aligned_vector<lContainer_type> lapl;
 
   //device pointers
   GPUArray<T,1> dev_psi;
   GPUArray<T,3> dev_grad;
+  PGUArray<T,4> dev_lapl;
   GPUArray<T,6> dev_hess;
   GPUArray<T,1> dev_linv;
   //device memory pitches
@@ -212,10 +215,12 @@ public:
       this->psi.resize(this->esp.nBlocks);
       this->grad.resize(esp.nBlocks);
       this->hess.resize(esp.nBlocks);
+      this->lapl.resize(esp.nBlocks);
       for (int i = 0; i < esp.nBlocks; ++i)
       {
         this->psi[i].resize(esp.nSplinesPerBlock);
         this->grad[i].resize(esp.nSplinesPerBlock);
+	this->lapl[i].resize(esp.nSplinesPerBlock);
         this->hess[i].resize(esp.nSplinesPerBlock);
       }
       resizeCUDA();
@@ -227,6 +232,7 @@ public:
   {
     dev_psi.resize(esp.nBlocks, esp.nSplinesPerBlock);
     dev_grad.resize(esp.nBlocks, esp.nSplinesPerBlock);
+    dev_lapl.resize(esp.nBlocks, esp.nSplinesPerBlock);
     dev_hess.resize(esp.nBlocks, esp.nSplinesPerBlock);
     dev_linv.resize(esp.nBlocks, esp.nSplinesPerBlock);
   }

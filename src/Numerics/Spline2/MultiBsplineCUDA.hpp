@@ -63,7 +63,7 @@ struct MultiBspline<Devices::CUDA, T>
 template<>
 inline void MultiBspline<Devices::CUDA, double>::evaluate_v(
     const multi_UBspline_3d_d<Devices::CUDA>* restrict spline_m,
-    const std::vector<std::array<T, 3>>& pos, double* vals, size_t num) const
+    const std::vector<std::array<T, 3>>& pos, double*& vals, size_t num) const
 {
   double pos_d[] = {x, y, z};
   eval_multi_multi_UBspline_3d_d_cuda(spline_m, pos_d, &vals, num_splines);
@@ -72,10 +72,10 @@ inline void MultiBspline<Devices::CUDA, double>::evaluate_v(
 template<>
 inline void MultiBspline<Devices::CUDA, float>::evaluate_v(
     const typename bspline_traits<Devices::CUDA, float, 3>::SplineType* restrict spline_m,
-    const std::vector<std::array<T, 3>>& pos, float* vals, size_t num_splines) const
+    const std::vector<std::array<T, 3>>& pos, float** vals, size_t num_splines) const
 {
   float pos_d[] = {(float)x, (float)y, (float)z};
-  eval_multi_multi_UBspline_3d_s_cuda(spline_m, pos_d, &vals, num_splines);
+  eval_multi_multi_UBspline_3d_s_cuda(spline_m, pos_d, vals, num_splines);
 }
 
 template<>

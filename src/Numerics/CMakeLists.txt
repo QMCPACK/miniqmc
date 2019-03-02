@@ -16,6 +16,4 @@ IF(QMC_USE_CUDA)
   target_link_libraries(qmc_numerics cuda_numerics qmc_cuda_params)
 ENDIF(QMC_USE_CUDA)
 
-
-add_subdirectory(Einspline)
 add_subdirectory(Spline2)
