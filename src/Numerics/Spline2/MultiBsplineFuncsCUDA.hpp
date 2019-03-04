@@ -145,6 +145,8 @@ inline void MultiBsplineFuncs<Devices::CUDA, double>::evaluate_vgh(
     double*&& hess,
     size_t num_splines) const
 {
+  PosBuffer pos_d;
+  eval_multi_multi_UBspline_3d_d_vgh_cuda(spline_m, pos_d.make(pos), vals, grads, hess, num_splines);
 }
 
 template<>
@@ -156,18 +158,9 @@ inline void MultiBsplineFuncs<Devices::CUDA, float>::evaluate_vgh(
     float*&& hess,
     size_t num_splines) const
 {
+  PosBuffer pos_f;
+  eval_multi_multi_UBspline_3d_s_vgh_cuda(spline_m, pos_f.make(pos), vals, grads, hess, num_splines);
 }
-
-  // template<typename T>
-// inline void MultiBsplineFuncs<Devices::CUDA, T>::evaluate_v(
-//     const MultiBsplineFuncs<Devices::CUDA, T>::spliner_type* restrict spline_m,
-//     double x,
-//     double y,
-//     double z,
-//     QMCT::ValueType* restrict vals,
-//     size_t num_splines) const
-// {
-// }
 
 // explicit instantiations
 extern template class MultiBsplineFuncs<Devices::CUDA, float>;

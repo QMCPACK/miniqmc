@@ -56,7 +56,7 @@ public:
   void destroy(SplineType*& spline);
 
   template<typename T, typename DT>
-  void createMultiBspline_3d(typename bspline_traits<Devices::CPU, T, 3>::SplineType*& spline,
+  void createMultiBspline(typename bspline_traits<Devices::CPU, T, 3>::SplineType*& spline,
 			     typename bspline_traits<Devices::CUDA, DT, 3>::SplineType*& target_spline,
 			     T dummyT,
 			     DT dummyDT);

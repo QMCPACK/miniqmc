@@ -57,7 +57,6 @@ eval_multi_multi_UBspline_3d_s_vgl_sign_cudasplit
  float *vals_d[], float *grad_lapl_d[], int num, int row_stride,
  float *coefs, int device_nr, cudaStream_t s);
 
-
 // Double-precision real
 extern "C" void
 eval_multi_multi_UBspline_3d_d_cuda

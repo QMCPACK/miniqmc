@@ -131,6 +131,13 @@ public:
                           T& evalVGH_g_err,
                           T& evalVGH_h_err);
 private:
+  static SPODevImp buildSPOMain(const int nx,
+			 const int ny,
+			 const int nz,
+			 const int norb,
+			 const int nTiles,
+			 const Tensor<OHMMS_PRECISION, 3>& lattice_b);
+
   template<typename T>
   static CheckSPOData<T> runThreads(const int team_size,
                                     ParticleSet& ions,

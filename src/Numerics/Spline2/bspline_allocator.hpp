@@ -81,7 +81,7 @@ public:
    * @tparam IntT 3D container for ng
    */
   template<typename T, typename ValT, typename IntT>
-  void createMultiBspline(typename bspline_traits<D, T, 3>::SplineType* spline,
+  void createMultiBspline(typename bspline_traits<D, T, 3>::SplineType*& spline,
 		     T dummy, ValT& start, ValT& end, IntT& ng, bc_code bc, int num_splines);
 
   /** allocate a UBspline_3d_(s,d)
@@ -90,7 +90,7 @@ public:
    * @tparam IntT 3D container for ng
    */
   template<typename ValT, typename IntT, typename T>
-  void createUBspline(typename bspline_traits<D, T, 3>::SingleSplineType* spline,
+  void createUBspline(typename bspline_traits<D, T, 3>::SingleSplineType*& spline,
 		      ValT& start, ValT& end, IntT& ng, bc_code bc);
 
    /** Set coefficients for a single orbital (band)
@@ -101,7 +101,7 @@ public:
   template<typename T>
   void setCoefficientsForOneOrbital(int i,
                                     Array<T, 3>& coeff,
-                                    typename bspline_traits<D, T, 3>::SplineType* spline);
+                                    typename bspline_traits<D, T, 3>::SplineType*& spline);
 
 #ifdef QMC_USE_KOKKOS
   /** Set coefficients for a single orbital (band)
@@ -133,7 +133,7 @@ template<Devices D>
 template<typename T>
 void Allocator<D>::setCoefficientsForOneOrbital(int i,
                                              Array<T, 3>& coeff,
-						typename bspline_traits<D, T, 3>::SplineType* spline)
+						typename bspline_traits<D, T, 3>::SplineType*& spline)
 {
   //#pragma omp parallel for collapse(3)
   for (int ix = 0; ix < spline->x_grid.num + 3; ix++)
@@ -156,7 +156,7 @@ template<Devices D>
 template<typename T>
 void Allocator<D>::setCoefficientsForOneOrbital(int i,
                                              Kokkos::View<T***>& coeff,
-						typename bspline_traits<D, T, 3>::SplineType* spline)
+						typename bspline_traits<D, T, 3>::SplineType*& spline)
 {
   //  #pragma omp parallel for collapse(3)
   for (int ix = 0; ix < spline->x_grid.num + 3; ix++)
@@ -177,7 +177,7 @@ void Allocator<D>::setCoefficientsForOneOrbital(int i,
 
 template<Devices D>
 template<typename T, typename ValT, typename IntT>
-void Allocator<D>::createMultiBspline(typename bspline_traits<D, T, 3>::SplineType* spline,
+void Allocator<D>::createMultiBspline(typename bspline_traits<D, T, 3>::SplineType*& spline,
 				 T dummy, ValT& start, ValT& end, IntT& ng, bc_code bc, int num_splines)
 {
   Ugrid x_grid, y_grid, z_grid;
@@ -199,7 +199,7 @@ void Allocator<D>::createMultiBspline(typename bspline_traits<D, T, 3>::SplineTy
 
 template<Devices D>
 template<typename ValT, typename IntT, typename T>
-void Allocator<D>::createUBspline(typename bspline_traits<D, T, 3>::SingleSplineType* spline,
+void Allocator<D>::createUBspline(typename bspline_traits<D, T, 3>::SingleSplineType*& spline,
 			       ValT& start, ValT& end, IntT& ng, bc_code bc)
 {
   Ugrid x_grid, y_grid, z_grid;

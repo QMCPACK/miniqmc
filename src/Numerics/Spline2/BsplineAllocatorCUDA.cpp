@@ -16,21 +16,21 @@ namespace einspline
 
 
 template<>
-void Allocator<Devices::CUDA>::createMultiBspline_3d(typename bspline_traits<Devices::CPU, float, 3>::SplineType*& spline,
+void Allocator<Devices::CUDA>::createMultiBspline(typename bspline_traits<Devices::CPU, float, 3>::SplineType*& spline,
 						     typename bspline_traits<Devices::CUDA, float, 3>::SplineType*& target_spline, float dummyT, float dummDT)
 {
   target_spline = create_multi_UBspline_3d_s_cuda(spline);
 }
 
 template<>
-void Allocator<Devices::CUDA>::createMultiBspline_3d(typename bspline_traits<Devices::CPU, double, 3>::SplineType*& spline,
+void Allocator<Devices::CUDA>::createMultiBspline(typename bspline_traits<Devices::CPU, double, 3>::SplineType*& spline,
 						     typename bspline_traits<Devices::CUDA, double, 3>::SplineType*& target_spline, double dummyT, double dummDT)
 {
   target_spline = create_multi_UBspline_3d_d_cuda(spline);
 }
 
 template<>
-void Allocator<Devices::CUDA>::createMultiBspline_3d(typename bspline_traits<Devices::CPU, double, 3>::SplineType*& spline,
+void Allocator<Devices::CUDA>::createMultiBspline(typename bspline_traits<Devices::CPU, double, 3>::SplineType*& spline,
 						     typename bspline_traits<Devices::CUDA, float, 3>::SplineType*& target_spline, double dummyT, float dummyDT)
 {
   target_spline = create_multi_UBspline_3d_s_cuda_conv(spline);

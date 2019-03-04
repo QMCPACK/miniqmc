@@ -29,7 +29,7 @@ create_multi_UBspline_3d_s_cuda_conv (multi_UBspline_3d_d<Devices::CPU>* spline)
 /* create_multi_UBspline_3d_c_cuda_conv (multi_UBspline_3d_z<Devices::CPU>* spline); */
 
 
-extern "C" multi_UBspline_3d_d<Devices::CUDA>*
+multi_UBspline_3d_d<Devices::CUDA>*
 create_multi_UBspline_3d_d_cuda (multi_UBspline_3d_d<Devices::CPU>* spline);
 
 /* extern "C" multi_UBspline_3d_z<Devices::CUDA>* */

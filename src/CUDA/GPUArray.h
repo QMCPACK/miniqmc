@@ -29,8 +29,8 @@ template<typename T, int ELEMWIDTH>
 class GPUArray<T, ELEMWIDTH, 1>
 {
 public:
-  GPUArray() : data(nullptr), pitch(0), data_owned(true) {}
-  GPUArray(const GPUArray&& in) : data_owned(true)
+  GPUArray() : data(nullptr), pitch(0) {}
+  GPUArray(const GPUArray&& in)
   {
     data   = in[0];
     pitch  = in.getPitch();
@@ -41,7 +41,7 @@ public:
   GPUArray& operator=(const GPUArray& in) = delete;
   ~GPUArray()
   {
-    if (data != nullptr && data_owned)
+    if (data != nullptr)
       cudaFree(data);
   }
   /** returns pointer to element(1D), row(2D), plane(3D)
@@ -55,10 +55,9 @@ public:
   size_t getHeight() const { return height; }
   /// Actual width in bytes of allocated row
   size_t getPitch() const { return pitch; }
-  void zero() { cudaMemset2D(data, pitch, 0, width, height); }
+  void zero() { cudaMemset(data, 0, width); }
 
 private:
-  bool data_owned;
   T* data;
   size_t pitch;
   size_t width;
@@ -69,8 +68,8 @@ template<typename T, int ELEMWIDTH>
 class GPUArray<T, ELEMWIDTH, 2>
 {
 public:
-  GPUArray() : data(nullptr), pitch(0), data_owned(true) {}
-  GPUArray(const GPUArray& in) : data_owned(false)
+  GPUArray() : data(nullptr), pitch(0) {}
+  GPUArray(const GPUArray& in)
   {
     data   = in[0];
     pitch  = in.getPitch();
@@ -78,10 +77,10 @@ public:
     height = in.getHeight();
   }
 
-  GPUArray& operator=(const GPUArray& in) = delete;
+  GPUArray& operator=(const GPUArray&& in) = delete;
   ~GPUArray()
   {
-    if (data != nullptr && data_owned)
+    if (data != nullptr)
       cudaFree(data);
   }
   /** returns pointer to element(1D), row(2D), plane(3D)
@@ -132,19 +131,23 @@ T*&& GPUArray<T, ELEMWIDTH, 2>::operator()(int i)
 template<typename T, int ELEMWIDTH>
 void GPUArray<T, ELEMWIDTH, 1>::resize(int nBlocks, int nSplinesPerBlock)
 {
-  if (data_owned && data != nullptr)
-    cudaFree(data);
+  int current_width = width;
   width              = sizeof(T) * nBlocks * ELEMWIDTH * nSplinesPerBlock;
   height             = 1;
-  cudaError_t cu_err = cudaMalloc((void**)&data, width);
-  if (cu_err != cudaError::cudaSuccess)
-    throw std::runtime_error("Failed GPU allocation");
+  if(current_width < width)
+  {
+    if (data != nullptr)
+      cudaFree(data);
+    cudaError_t cu_err = cudaMalloc((void**)&data, width);
+    if (cu_err != cudaError::cudaSuccess)
+	throw std::runtime_error("Failed GPU allocation");
+  }
 }
 
 template<typename T, int ELEMWIDTH>
 void GPUArray<T, ELEMWIDTH, 2>::resize(int nBlocks, int nSplinesPerBlock)
 {
-  if (data_owned && data != nullptr)
+  if (data != nullptr)
     cudaFree(data);
   width              = sizeof(T) * nBlocks * ELEMWIDTH;
   height             = sizeof(T) * nSplinesPerBlock;

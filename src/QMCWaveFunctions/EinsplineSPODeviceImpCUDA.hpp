@@ -209,12 +209,14 @@ public:
         my_host_allocator.destroy(host_einsplines[i]);
   }
 
-  /// resize the containers
+  /** resize both CPU and GPU containers
+   *  resizing the GPU containers is destructive.
+   */
   void resize()
   {
     if (esp.nBlocks > 0)
     {
-      this->psi.resize(this->esp.nBlocks);
+      this->psi.resize(esp.nBlocks);
       this->grad.resize(esp.nBlocks);
       this->hess.resize(esp.nBlocks);
       this->lapl.resize(esp.nBlocks);
@@ -239,7 +241,8 @@ public:
     dev_linv.resize(esp.nBlocks, esp.nSplinesPerBlock);
   }
   
-  /** TBI This is a duplication of the set_i CPU version
+  /** Allocates splines and sets the initial coefficients. 
+   *  Does _not_ reset coefficients if it resizes the splines.
    */
   void set_i(int nx, int ny, int nz, int num_splines, int nblocks, bool init_random = true)
   {
@@ -255,6 +258,7 @@ public:
       QMCT::PosType start(0);
       QMCT::PosType end(1);
       host_einsplines.resize(esp.nBlocks);
+      einsplines.resize(esp.nBlocks);
       RandomGenerator<T> myrandom(11);
       Array<T, 3> coef_data(nx + 3, ny + 3, nz + 3);
       for (int i = 0; i < esp.nBlocks; ++i)
@@ -269,10 +273,11 @@ public:
           }
         }
 	T dummyT, dummyDT;
-	myAllocator.createMultiBspline_3d(host_einsplines[i],einsplines[i],dummyT, dummyDT);
+	myAllocator.createMultiBspline(host_einsplines[i],einsplines[i],dummyT, dummyDT);
       }
     }
-    resize();
+    else
+      resize();
   }
 
   const EinsplineSPOParams<T>& getParams_i() const { return this->esp; }

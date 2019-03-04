@@ -47,6 +47,20 @@ void CheckSPOSteps<DT>::initialize(int argc, char** argv)
 
 
 template<Devices DT>
+typename CheckSPOSteps<DT>::SPODevImp CheckSPOSteps<DT>::buildSPOMain(const int nx,
+							     const int ny,
+							     const int nz,
+							     const int norb,
+							     const int nTiles,
+							     const Tensor<OHMMS_PRECISION, 3>& lattice_b)
+{
+  SPODevImp spo_main;
+  spo_main.set(nx, ny, nz, norb, nTiles);
+  spo_main.setLattice(lattice_b);
+  return spo_main;
+}
+
+template<Devices DT>
 void CheckSPOSteps<DT>::test(int& error,
                              const int team_size,
                              const Tensor<int, 3>& tmat,
@@ -59,9 +73,6 @@ void CheckSPOSteps<DT>::test(int& error,
 {
   std::string enum_name = device_names[hana::int_c<static_cast<int>(DT)>];
   std::cout << "Testing Determinant Device Implementation: " << enum_name << '\n';
-
-  SPODevImp spo_main;
-  SPORef spo_ref_main;
 
   ParticleSet ions;
   Tensor<OHMMS_PRECISION, 3> lattice_b;
@@ -81,9 +92,9 @@ void CheckSPOSteps<DT>::test(int& error,
   app_summary() << "OpenMP threads = " << omp_get_max_threads() << endl;
 
   app_summary() << "\nSPO coefficients size = " << SPO_coeff_size << " bytes (" << SPO_coeff_size_MB << " MB)" << endl;
-
-  spo_main.set(nx, ny, nz, norb, nTiles);
-  spo_main.setLattice(lattice_b);
+  
+  SPODevImp spo_main = buildSPOMain(nx, ny, nz, norb, nTiles, lattice_b);
+  SPORef spo_ref_main;
   spo_ref_main.set(nx, ny, nz, norb, nTiles);
   spo_ref_main.Lattice.set(lattice_b);
 

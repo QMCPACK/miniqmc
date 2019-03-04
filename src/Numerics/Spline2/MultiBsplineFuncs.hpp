@@ -77,13 +77,13 @@ struct MultiBsplineFuncs<Devices::CPU, T>
    */
   void
   evaluate_v(const spliner_type* restrict spline_m,
-             const std::vector<std::array<T,3>>&,
+             const std::vector<std::array<T,3>>& pos,
              T* restrict vals,
              size_t num_splines) const;
 
   void
   evaluate_vgl(const spliner_type* restrict spline_m,
-                    const std::vector<std::array<T,3>>&,
+                    const std::vector<std::array<T,3>>& pos,
                     T* restrict vals,
                     T* restrict grads,
                     T* restrict lapl,
@@ -92,7 +92,7 @@ struct MultiBsplineFuncs<Devices::CPU, T>
 
   void
   evaluate_vgh(const spliner_type* restrict spline_m,
-               const std::vector<std::array<T,3>>&,
+               const std::vector<std::array<T,3>>& pos,
                T* restrict vals,
                T* restrict grads,
                T* restrict hess,
