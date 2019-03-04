@@ -23,6 +23,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <type_traits>
+#include <vector>
+#include <array>
 #include "Devices.h"
 #include "clean_inlining.h"
 #include "Numerics/Containers.h"
@@ -35,7 +37,7 @@
 #include "QMCWaveFunctions/EinsplineSPOParams.h"
 #include "Numerics/Spline2/bspline_traits.hpp"
 #include "Numerics/Spline2/bspline_allocator.hpp"
-#include "Numerics/Spline2/MultiBspline.hpp"
+#include "Numerics/Spline2/MultiBsplineFuncs.hpp"
 
 namespace qmcplusplus
 {
@@ -54,7 +56,7 @@ class EinsplineSPODeviceImp<Devices::CPU, T>
   /// use allocator
   einspline::Allocator<Devices::CPU> myAllocator;
   /// compute engine
-  MultiBspline<Devices::CPU, T> compute_engine;
+  MultiBsplineFuncs<Devices::CPU, T> compute_engine;
 
   //using einspline_type = spline_type*;
   aligned_vector<spline_type*> einsplines;
@@ -81,7 +83,7 @@ public:
 
   /** CPU to CPU Constructor
    */
-  EinsplineSPODeviceImp(const EinsplineSPODevice<EinsplineSPODeviceImp<Devices::CPU, T>, T>& in)
+  EinsplineSPODeviceImp(const EinsplineSPODeviceImp<Devices::CPU, T>& in)
   {
     //std::cout << "EinsplineSPODeviceImpCPU Fat Copy constructor called" << '\n';
     const EinsplineSPOParams<T>& inesp = in.getParams();
@@ -103,7 +105,7 @@ public:
 
   /** "Fat" Copy Constructor only supports CPU to CPU
    */
-  EinsplineSPODeviceImp(const EinsplineSPODevice<EinsplineSPODeviceImp<Devices::CPU, T>, T>& in,
+  EinsplineSPODeviceImp(const EinsplineSPODeviceImp<Devices::CPU, T>& in,
                         int team_size,
                         int member_id)
   {
@@ -194,19 +196,19 @@ public:
   inline void evaluate_v_i(const QMCT::PosType& p)
   {
     auto u = esp.lattice.toUnit_floor(p);
+    std::vector<std::array<T,3>> pos = {{u[0],u[1],u[2]}}; 
     for (int i = 0; i < esp.nBlocks; ++i)
-      compute_engine.evaluate_v(einsplines[i], u[0], u[1], u[2], psi[i].data(), esp.nSplinesPerBlock);
+      compute_engine.evaluate_v(einsplines[i], pos, psi[i].data(), esp.nSplinesPerBlock);
   }
 
   inline void evaluate_vgh_i(const QMCT::PosType& p)
   {
     auto u = esp.lattice.toUnit_floor(p);
+    std::vector<std::array<T,3>> pos = {{u[0],u[1],u[2]}}; 
     for (int i = 0; i < esp.nBlocks; ++i)
     {
       compute_engine.evaluate_vgh(einsplines[i],
-                                  u[0],
-                                  u[1],
-                                  u[2],
+                                  pos,
                                   psi[i].data(),
                                   grad[i].data(),
                                   hess[i].data(),
@@ -217,11 +219,10 @@ public:
   void evaluate_vgl_i(const QMCT::PosType& p)
   {
     auto u = esp.lattice.toUnit_floor(p);
+    std::vector<std::array<T,3>> pos = {{u[0],u[1],u[2]}}; 
     for (int i = 0; i < esp.nBlocks; ++i)
       compute_engine.evaluate_vgl(einsplines[i],
-                                  u[0],
-                                  u[1],
-                                  u[2],
+                                  pos,
                                   psi[i].data(),
                                   grad[i].data(),
                                   hess[i].data(),

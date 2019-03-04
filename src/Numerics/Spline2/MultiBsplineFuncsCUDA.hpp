@@ -40,7 +40,7 @@ struct MultiBsplineFuncs<Devices::CUDA, T>
 
   MultiBsplineFuncs() {}
   /// Don't want to deal with this now
-  MultiBsplineFuncs(const MultiBsplineFuncs<D,T>& in) = delete;
+  MultiBsplineFuncs(const MultiBsplineFuncs<D,T>& in) = default;
   MultiBsplineFuncs& operator=(const MultiBsplineFuncs<D,T>& in) = delete;
 
   struct PosBuffer
@@ -79,32 +79,32 @@ struct MultiBsplineFuncs<Devices::CUDA, T>
   
   void evaluate_v(const spliner_type* spline_m,
 			 const std::vector<std::array<T,3>>&,
-			 T*& vals, size_t num_splines);
+			 T*&& vals, size_t num_splines);
 
   void evaluate_vgl(const spliner_type* restrict spline_m,
                     const std::vector<std::array<T,3>>&,
-		    T* linv,
-                    T* vals,
-                    T* lapl,
+		    T*&& linv,
+                    T*&& vals,
+                    T*&& lapl,
                     size_t num_splines) const;
 
   void evaluate_vgh(const typename bspline_traits<D, T, 3>::SplineType* restrict spline_m,
                     const std::vector<std::array<T,3>>&,
-                    T* vals,
-                    T* grads,
-                    T* hess,
+                    T*&& vals,
+                    T*&& grads,
+                    T*&& hess,
                     size_t num_splines) const;
 };
 
 template<>
-inline void MultiBsplineFuncs<Devices::CUDA, double>::evaluate_v(const multi_UBspline_3d_d<Devices::CUDA>* spline_m, const std::vector<std::array<double,3>>& pos, double*& vals, size_t num_splines)
+inline void MultiBsplineFuncs<Devices::CUDA, double>::evaluate_v(const multi_UBspline_3d_d<Devices::CUDA>* spline_m, const std::vector<std::array<double,3>>& pos, double*&& vals, size_t num_splines)
 {
   PosBuffer pos_d;
   eval_multi_multi_UBspline_3d_d_cuda(spline_m, pos_d.make(pos), vals, num_splines); 
 }
 
 template<>
-inline void MultiBsplineFuncs<Devices::CUDA,float>::evaluate_v(const typename bspline_traits<Devices::CUDA, float, 3>::SplineType* restrict spline_m, const std::vector<std::array<float,3>>& pos, float*& vals, size_t num_splines)
+inline void MultiBsplineFuncs<Devices::CUDA,float>::evaluate_v(const typename bspline_traits<Devices::CUDA, float, 3>::SplineType* restrict spline_m, const std::vector<std::array<float,3>>& pos, float*&& vals, size_t num_splines)
 {
   PosBuffer pos_f;
   eval_multi_multi_UBspline_3d_s_cuda(spline_m,pos_f.make(pos), vals, num_splines); 
@@ -113,9 +113,9 @@ inline void MultiBsplineFuncs<Devices::CUDA,float>::evaluate_v(const typename bs
 template<>
 inline void MultiBsplineFuncs<Devices::CUDA, double>::evaluate_vgl(const  MultiBsplineFuncs<Devices::CUDA, double>::spliner_type* restrict spline_m,
                     const std::vector<std::array<double,3>>& pos,
-		    double* linv,
-                    double* vals,
-                    double* lapl,
+		    double*&& linv,
+                    double*&& vals,
+                    double*&& lapl,
                     size_t num_splines) const
 {
   PosBuffer pos_d;
@@ -126,9 +126,9 @@ inline void MultiBsplineFuncs<Devices::CUDA, double>::evaluate_vgl(const  MultiB
 template<>
 inline void MultiBsplineFuncs<Devices::CUDA, float>::evaluate_vgl(const  MultiBsplineFuncs<Devices::CUDA, float>::spliner_type* restrict spline_m,
                     const std::vector<std::array<float,3>>& pos,
-		    float* linv,
-                    float* vals,
-                    float* lapl,
+		    float*&& linv,
+                    float*&& vals,
+                    float*&& lapl,
                     size_t num_splines) const
 {
   PosBuffer pos_f;
@@ -140,9 +140,9 @@ template<>
 inline void MultiBsplineFuncs<Devices::CUDA, double>::evaluate_vgh(
     const MultiBsplineFuncs<Devices::CUDA, double>::spliner_type* restrict spline_m,
     const std::vector<std::array<double,3>>& pos,
-    double* vals,
-    double* grads,
-    double* hess,
+    double*&& vals,
+    double*&& grads,
+    double*&& hess,
     size_t num_splines) const
 {
 }
@@ -151,9 +151,9 @@ template<>
 inline void MultiBsplineFuncs<Devices::CUDA, float>::evaluate_vgh(
     const MultiBsplineFuncs<Devices::CUDA, float>::spliner_type* restrict spline_m,
     const std::vector<std::array<float,3>>& pos,
-    float* vals,
-    float* grads,
-    float* hess,
+    float*&& vals,
+    float*&& grads,
+    float*&& hess,
     size_t num_splines) const
 {
 }

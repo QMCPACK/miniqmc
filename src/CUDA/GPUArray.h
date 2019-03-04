@@ -30,7 +30,7 @@ class GPUArray<T, ELEMWIDTH, 1>
 {
 public:
   GPUArray() : data(nullptr), pitch(0), data_owned(true) {}
-  GPUArray(const GPUArray& in) : data_owned(false)
+  GPUArray(const GPUArray&& in) : data_owned(true)
   {
     data   = in[0];
     pitch  = in.getPitch();
@@ -47,6 +47,7 @@ public:
   /** returns pointer to element(1D), row(2D), plane(3D)
    */
   T* operator[](int i);
+  T*&& operator()(int i);
   void resize(int nBlocks, int nSplinesPerBlock);
   /// In Bytes
   size_t getWidth() const { return width; }
@@ -86,6 +87,7 @@ public:
   /** returns pointer to element(1D), row(2D), plane(3D)
    */
   T* operator[](int i);
+  T*&& operator()(int i);
   void resize(int nBlocks, int nSplinesPerBlock);
   /// In Bytes
   size_t getWidth() const { return width; }
@@ -111,6 +113,18 @@ T* GPUArray<T, ELEMWIDTH, 1>::operator[](int i)
 
 template<typename T, int ELEMWIDTH>
 T* GPUArray<T, ELEMWIDTH, 2>::operator[](int i)
+{
+  return data != nullptr ? (T*)((char*)data + (i * pitch)) : nullptr;
+}
+
+template<typename T, int ELEMWIDTH>
+T*&& GPUArray<T, ELEMWIDTH, 1>::operator()(int i)
+{
+  return data != nullptr ? (T*)((char*)data + (i * sizeof(T))) : nullptr;
+}
+
+template<typename T, int ELEMWIDTH>
+T*&& GPUArray<T, ELEMWIDTH, 2>::operator()(int i)
 {
   return data != nullptr ? (T*)((char*)data + (i * pitch)) : nullptr;
 }

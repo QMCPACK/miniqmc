@@ -23,6 +23,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <type_traits>
+#include <vector>
+#include <array>
 #include "Devices.h"
 #include "clean_inlining.h"
 #include "Numerics/Containers.h"
@@ -38,8 +40,8 @@
 #include "QMCWaveFunctions/EinsplineSPOParams.h"
 #include "Numerics/Spline2/bspline_traits.hpp"
 #include "Numerics/Spline2/bspline_allocator.hpp"
-#include "Numerics/Spline2/MultiBspline.hpp"
-#include "Numerics/Spline2/MultiBsplineCUDA.hpp"
+#include "Numerics/Spline2/MultiBsplineFuncs.hpp"
+#include "Numerics/Spline2/MultiBsplineFuncsCUDA.hpp"
 
 namespace qmcplusplus
 {
@@ -64,7 +66,7 @@ class EinsplineSPODeviceImp<Devices::CUDA, T> : public EinsplineSPODevice<Einspl
   einspline::Allocator<Devices::CUDA> myAllocator;
   einspline::Allocator<Devices::CPU> my_host_allocator;
   /// compute engine
-  MultiBspline<Devices::CUDA, T> compute_engine;
+  MultiBsplineFuncs<Devices::CUDA, T> compute_engine;
 
   //using einspline_type = spline_type*;
   aligned_vector<host_spline_type*> host_einsplines;
@@ -76,11 +78,11 @@ class EinsplineSPODeviceImp<Devices::CUDA, T> : public EinsplineSPODevice<Einspl
   aligned_vector<lContainer_type> lapl;
 
   //device pointers
-  GPUArray<T,1> dev_psi;
-  GPUArray<T,3> dev_grad;
-  PGUArray<T,4> dev_lapl;
-  GPUArray<T,6> dev_hess;
-  GPUArray<T,1> dev_linv;
+  GPUArray<T,1,1> dev_psi;
+  GPUArray<T,3,1> dev_grad;
+  GPUArray<T,4,1> dev_lapl;
+  GPUArray<T,6,1> dev_hess;
+  GPUArray<T,1,1> dev_linv;
   //device memory pitches
   
   EinsplineSPOParams<T> esp;
@@ -104,7 +106,7 @@ public:
 
   /** CPU to CUDA Constructor
    */
-  EinsplineSPODeviceImp(const EinsplineSPODevice<EinsplineSPODeviceImp<Devices::CPU, T>, T>& in) : dev_psi(), dev_grad(), dev_linv(), dev_hess()
+  EinsplineSPODeviceImp(const EinsplineSPODeviceImp<Devices::CPU, T>& in)
   {
     const EinsplineSPOParams<T>& inesp = in.getParams();
     esp.nSplinesSerialThreshold_V      = inesp.nSplinesSerialThreshold_V;
@@ -125,7 +127,7 @@ public:
 
   /** CUDA to CUDA Constructor
    */
-  EinsplineSPODeviceImp(const EinsplineSPODevice<EinsplineSPODeviceImp<Devices::CUDA, T>, T>& in) : dev_psi(), dev_grad(), dev_hess(), dev_linv()
+  EinsplineSPODeviceImp(const EinsplineSPODeviceImp<Devices::CUDA, T>& in) 
   {
     const EinsplineSPOParams<T>& inesp = in.getParams();
     esp.nSplinesSerialThreshold_V      = inesp.nSplinesSerialThreshold_V;
@@ -147,9 +149,9 @@ public:
 
   /** "Fat" Copy Constructor CPU to CUDA
    */
-  EinsplineSPODeviceImp(const EinsplineSPODevice<EinsplineSPODeviceImp<Devices::CPU, T>,T>& in,
+  EinsplineSPODeviceImp(const EinsplineSPODeviceImp<Devices::CPU, T>& in,
                         int team_size,
-                        int member_id) : dev_psi(), dev_grad(), dev_linv(), dev_hess()
+                        int member_id) 
   {
     std::cout << "EinsplineSPODeviceImpCPU Fat Copy constructor called" << '\n';
     const EinsplineSPOParams<T>& inesp = in.getParams();
@@ -172,7 +174,7 @@ public:
 
   /** "Fat" Copy Constructor CUDA to CUDA
    */
-  EinsplineSPODeviceImp(const EinsplineSPODevice<EinsplineSPODeviceImp<Devices::CUDA, T>, T>& in,
+  EinsplineSPODeviceImp(const EinsplineSPODeviceImp<Devices::CUDA, T>& in,
                         int team_size,
                         int member_id) : dev_psi(), dev_grad(), dev_linv(), dev_hess()
   {
@@ -283,19 +285,19 @@ public:
   inline void evaluate_v_i(const QMCT::PosType& p)
   {
     auto u = esp.lattice.toUnit_floor(p);
+    std::vector<std::array<T,3>> pos = {{u[0],u[1],u[2]}}; 
     for (int i = 0; i < esp.nBlocks; ++i)
-      compute_engine.evaluate_v(einsplines[i], u[0], u[1], u[2], dev_psi[i], (size_t)esp.nSplinesPerBlock);
+      compute_engine.evaluate_v(einsplines[i], pos, dev_psi[i], (size_t)esp.nSplinesPerBlock);
   }
 
   inline void evaluate_vgh_i(const QMCT::PosType& p)
   {
     auto u = esp.lattice.toUnit_floor(p);
+    std::vector<std::array<T,3>> pos = {{u[0],u[1],u[2]}}; 
     for (int i = 0; i < esp.nBlocks; ++i)
     {
       compute_engine.evaluate_vgh(einsplines[i],
-                                  u[0],
-                                  u[1],
-                                  u[2],
+				  pos,
                                   dev_psi[i],
                                   dev_grad[i],
                                   dev_hess[i],
@@ -306,11 +308,10 @@ public:
   void evaluate_vgl_i(const QMCT::PosType& p)
   {
     auto u = esp.lattice.toUnit_floor(p);
+    std::vector<std::array<T,3>> pos = {{u[0],u[1],u[2]}}; 
     for (int i = 0; i < esp.nBlocks; ++i)
       compute_engine.evaluate_vgl(einsplines[i],
-                                  u[0],
-                                  u[1],
-                                  u[2],
+				  pos,
 				  dev_linv[i],
                                   dev_psi[i],
                                   dev_hess[i],
