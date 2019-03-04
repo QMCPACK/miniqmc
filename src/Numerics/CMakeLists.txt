@@ -12,7 +12,7 @@ SET(NUMERICS_SRC
 ADD_LIBRARY(qmc_numerics ${NUMERICS_SRC} ${NUMERICS_CUDA})
 
 IF(QMC_USE_CUDA)
-  CUDA_ADD_LIBRARY(cuda_numerics Einspline/multi_bspline_cuda_eval_d.cu Einspline/multi_bspline_cuda_eval_s.cu Einspline/multi_bspline_create_cuda.cu)
+  CUDA_ADD_LIBRARY(cuda_numerics Einspline/multi_bspline_cuda_eval_d.cu Einspline/multi_bspline_cuda_eval_s.cu Einspline/MultiBsplineCreateCUDA.cu)
   target_link_libraries(qmc_numerics cuda_numerics qmc_cuda_params)
 ENDIF(QMC_USE_CUDA)
 

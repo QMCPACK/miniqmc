@@ -19,7 +19,7 @@
 __device__ double Bcuda[48];
 __constant__ float  Acuda[48];
 
-#define UnifiedVirtualAddressing
+//#define UnifiedVirtualAddressing
 
 // extern "C" multi_UBspline_3d_c<Devices::CUDA>*
 // create_multi_UBspline_3d_c_cuda (multi_UBspline_3d_c<Devices::CPU>* spline)
@@ -144,7 +144,7 @@ __constant__ float  Acuda[48];
 // #define SPLIT_SPLINE_DEBUG
 
 
-multi_UBspline_3d_s<Devices::CUDA>**
+multi_UBspline_3d_s<Devices::CUDA>*
 create_multi_UBspline_3d_s_cuda (multi_UBspline_3d_s<Devices::CPU>* spline)
 {
   float A_h[48] = { -1.0/6.0,  3.0/6.0, -3.0/6.0, 1.0/6.0,
@@ -252,12 +252,12 @@ create_multi_UBspline_3d_s_cuda (multi_UBspline_3d_s<Devices::CPU>* spline)
 
   free(spline_buff);
 
-  return &cuda_spline;
+  return cuda_spline;
 }
 
 
 
-multi_UBspline_3d_s<Devices::CUDA>**
+multi_UBspline_3d_s<Devices::CUDA>*
 create_multi_UBspline_3d_s_cuda_conv (multi_UBspline_3d_d<Devices::CPU>* spline)
 {
   // fprintf (stderr, "In create_multi_UBspline_3d_s_cuda_conv.\n");
@@ -376,13 +376,13 @@ create_multi_UBspline_3d_s_cuda_conv (multi_UBspline_3d_d<Devices::CPU>* spline)
   }
   free(spline_buff);
 
-  return &cuda_spline;
+  return cuda_spline;
 }
 
 
 
 
-multi_UBspline_3d_d<Devices::CUDA>**
+multi_UBspline_3d_d<Devices::CUDA>*
 create_multi_UBspline_3d_d_cuda (multi_UBspline_3d_d<Devices::CPU>* spline)
 {
   double B_h[48] = { -1.0/6.0,  3.0/6.0, -3.0/6.0, 1.0/6.0,
@@ -409,8 +409,7 @@ create_multi_UBspline_3d_d_cuda (multi_UBspline_3d_d<Devices::CPU>* spline)
   } else
     cudaMemcpyToSymbol(Bcuda, B_h, 48*sizeof(double), 0, cudaMemcpyHostToDevice);
 
-  multi_UBspline_3d_d<Devices::CUDA> *cuda_spline =
-    (multi_UBspline_3d_d<Devices::CUDA>*) malloc (sizeof (multi_UBspline_3d_d<Devices::CUDA>));
+  multi_UBspline_3d_d<Devices::CUDA> *cuda_spline = new multi_UBspline_3d_d<Devices::CUDA>;
 
   cuda_spline->num_splines = spline->num_splines;
   cuda_spline->num_split_splines = spline->num_splines;
@@ -489,7 +488,7 @@ create_multi_UBspline_3d_d_cuda (multi_UBspline_3d_d<Devices::CPU>* spline)
 
   free(spline_buff);
 
-  return &cuda_spline;
+  return cuda_spline;
 }
 
 

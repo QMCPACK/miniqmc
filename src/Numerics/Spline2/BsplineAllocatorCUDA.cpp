@@ -40,7 +40,7 @@ template<>
 void Allocator<Devices::CUDA>::destroy(multi_UBspline_3d_s<Devices::CUDA>*& spline)
 {
   cudaFree(spline->coefs);
-  free(spline);
+  delete spline;
   spline = nullptr;
 }
 
@@ -48,7 +48,7 @@ template<>
 void Allocator<Devices::CUDA>::destroy(multi_UBspline_3d_d<Devices::CUDA>*& spline)
 {
   cudaFree(spline->coefs);
-  free(spline);
+  delete spline;
   spline = nullptr;
 }
 

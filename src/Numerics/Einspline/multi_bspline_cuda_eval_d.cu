@@ -96,7 +96,7 @@ eval_multi_multi_UBspline_3d_d_vgh_kernel
   int block = blockIdx.x;
   int thr   = threadIdx.x;
   int ir    = blockIdx.y;
-  int off   = block*SPLINE_BLOCK_SIZE+threadIdx.x;
+  int off   = block*SPLINE_BLOCK_SIZE+thr;
   __shared__ double *myval, *mygrad, *myhess;
   __shared__ double3 r;
   if (thr == 0)

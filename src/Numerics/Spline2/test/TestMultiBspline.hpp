@@ -65,7 +65,7 @@ struct TestMultiBspline
     REQUIRE( cpu_spline != nullptr );
     T dummyT;
     DT dummyDT;
-    cuda_allocator.createMultiBspline_3d(cpu_spline, cuda_spline, dummyT, dummyDT);
+    cuda_allocator.createMultiBspline(cpu_spline, cuda_spline, dummyT, dummyDT);
     REQUIRE( cpu_spline != nullptr );
     REQUIRE( cuda_spline != nullptr );
   }

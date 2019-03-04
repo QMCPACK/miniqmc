@@ -78,13 +78,13 @@ class EinsplineSPODeviceImp<Devices::CUDA, T> : public EinsplineSPODevice<Einspl
   aligned_vector<lContainer_type> lapl;
 
   //device pointers
-  GPUArray<T,1,1> dev_psi;
-  GPUArray<T,3,1> dev_grad;
-  GPUArray<T,4,1> dev_lapl;
-  GPUArray<T,6,1> dev_hess;
-  GPUArray<T,1,1> dev_linv;
+  GPUArray<T, 1, 1> dev_psi;
+  GPUArray<T, 3, 1> dev_grad;
+  GPUArray<T, 4, 1> dev_lapl;
+  GPUArray<T, 6, 1> dev_hess;
+  GPUArray<T, 1, 1> dev_linv;
   //device memory pitches
-  
+
   EinsplineSPOParams<T> esp;
 
 public:
@@ -121,13 +121,18 @@ public:
     esp.host_owner                     = false;
     host_einsplines.resize(esp.nBlocks);
     for (int i = 0, t = esp.firstBlock; i < esp.nBlocks; ++i, ++t)
-      host_einsplines[i] = static_cast<host_spline_type*>(in.getEinspline(t));
+    {
+      const ThisType& in_cast = static_cast<const ThisType&>(in);
+      host_einsplines[i]      = static_cast<host_spline_type*>(in_cast.getHostEinspline(t));
+      T dummyT, dummyDT;
+      myAllocator.createMultiBspline(host_einsplines[i], einsplines[i], dummyT, dummyDT);
+    }
     resize();
   }
 
   /** CUDA to CUDA Constructor
    */
-  EinsplineSPODeviceImp(const EinsplineSPODeviceImp<Devices::CUDA, T>& in) 
+  EinsplineSPODeviceImp(const EinsplineSPODeviceImp<Devices::CUDA, T>& in)
   {
     const EinsplineSPOParams<T>& inesp = in.getParams();
     esp.nSplinesSerialThreshold_V      = inesp.nSplinesSerialThreshold_V;
@@ -141,17 +146,23 @@ public:
     esp.is_copy                        = true;
     esp.host_owner                     = false;
     host_einsplines.resize(esp.nBlocks);
+    einsplines.resize(esp.nBlocks);
     for (int i = 0, t = esp.firstBlock; i < esp.nBlocks; ++i, ++t)
-      host_einsplines[i] = static_cast<host_spline_type*>(in.getEinspline(t));
+    {
+      const ThisType& in_cast = static_cast<const ThisType&>(in);
+      host_einsplines[i]      = static_cast<host_spline_type*>(in_cast.getHostEinspline(t));
+      T dummyT, dummyDT;
+      myAllocator.createMultiBspline(host_einsplines[i], einsplines[i], dummyT, dummyDT);
+    }
+    //Each stream needs their own copy of spo_main
+
     resize();
   }
 
 
   /** "Fat" Copy Constructor CPU to CUDA
    */
-  EinsplineSPODeviceImp(const EinsplineSPODeviceImp<Devices::CPU, T>& in,
-                        int team_size,
-                        int member_id) 
+  EinsplineSPODeviceImp(const EinsplineSPODeviceImp<Devices::CPU, T>& in, int team_size, int member_id)
   {
     std::cout << "EinsplineSPODeviceImpCPU Fat Copy constructor called" << '\n';
     const EinsplineSPOParams<T>& inesp = in.getParams();
@@ -167,16 +178,21 @@ public:
     esp.is_copy                        = true;
     esp.host_owner                     = false;
     host_einsplines.resize(esp.nBlocks);
+    einsplines.resize(esp.nBlocks);
     for (int i = 0, t = esp.firstBlock; i < esp.nBlocks; ++i, ++t)
-      host_einsplines[i] = static_cast<host_spline_type*>(in.getEinspline(t));
+    {
+      const ThisType& in_cast = static_cast<const ThisType&>(in);
+      host_einsplines[i]      = static_cast<host_spline_type*>(in_cast.getHostEinspline(t));
+      T dummyT, dummyDT;
+      myAllocator.createMultiBspline(host_einsplines[i], einsplines[i], dummyT, dummyDT);
+    }
     resize();
   }
 
   /** "Fat" Copy Constructor CUDA to CUDA
    */
-  EinsplineSPODeviceImp(const EinsplineSPODeviceImp<Devices::CUDA, T>& in,
-                        int team_size,
-                        int member_id) : dev_psi(), dev_grad(), dev_linv(), dev_hess()
+  EinsplineSPODeviceImp(const EinsplineSPODeviceImp<Devices::CUDA, T>& in, int team_size, int member_id)
+      : dev_psi(), dev_grad(), dev_linv(), dev_hess()
   {
     std::cout << "EinsplineSPODeviceImpCPU Fat Copy constructor called" << '\n';
     const EinsplineSPOParams<T>& inesp = in.getParams();
@@ -192,10 +208,13 @@ public:
     esp.is_copy                        = true;
     esp.host_owner                     = false;
     host_einsplines.resize(esp.nBlocks);
+    einsplines.resize(esp.nBlocks);
     for (int i = 0, t = esp.firstBlock; i < esp.nBlocks; ++i, ++t)
     {
       const ThisType& in_cast = static_cast<const ThisType&>(in);
       host_einsplines[i]      = static_cast<host_spline_type*>(in_cast.getHostEinspline(t));
+      T dummyT, dummyDT;
+      myAllocator.createMultiBspline(host_einsplines[i], einsplines[i], dummyT, dummyDT);
     }
     resize();
   }
@@ -224,14 +243,14 @@ public:
       {
         this->psi[i].resize(esp.nSplinesPerBlock);
         this->grad[i].resize(esp.nSplinesPerBlock);
-	this->lapl[i].resize(esp.nSplinesPerBlock);
+        this->lapl[i].resize(esp.nSplinesPerBlock);
         this->hess[i].resize(esp.nSplinesPerBlock);
       }
       resizeCUDA();
     }
   }
 
-  
+
   void resizeCUDA()
   {
     dev_psi.resize(esp.nBlocks, esp.nSplinesPerBlock);
@@ -240,9 +259,10 @@ public:
     dev_hess.resize(esp.nBlocks, esp.nSplinesPerBlock);
     dev_linv.resize(esp.nBlocks, esp.nSplinesPerBlock);
   }
-  
+
   /** Allocates splines and sets the initial coefficients. 
-   *  Does _not_ reset coefficients if it resizes the splines.
+   *  calling this after anything but the default constructor is suspect
+   *  And should probably throw
    */
   void set_i(int nx, int ny, int nz, int num_splines, int nblocks, bool init_random = true)
   {
@@ -263,7 +283,9 @@ public:
       Array<T, 3> coef_data(nx + 3, ny + 3, nz + 3);
       for (int i = 0; i < esp.nBlocks; ++i)
       {
-        this->my_host_allocator.createMultiBspline(host_einsplines[i], T(0), start, end, ng, PERIODIC, esp.nSplinesPerBlock);        if (init_random)
+        this->my_host_allocator
+            .createMultiBspline(host_einsplines[i], T(0), start, end, ng, PERIODIC, esp.nSplinesPerBlock);
+        if (init_random)
         {
           for (int j = 0; j < esp.nSplinesPerBlock; ++j)
           {
@@ -272,12 +294,17 @@ public:
             my_host_allocator.setCoefficientsForOneOrbital(j, coef_data, host_einsplines[i]);
           }
         }
-	T dummyT, dummyDT;
-	myAllocator.createMultiBspline(host_einsplines[i],einsplines[i],dummyT, dummyDT);
       }
     }
-    else
-      resize();
+    if (einsplines.empty())
+    {
+      for (int i = 0; i < esp.nBlocks; ++i)
+      {
+        T dummyT, dummyDT;
+        myAllocator.createMultiBspline(host_einsplines[i], einsplines[i], dummyT, dummyDT);
+      }
+    }
+    resize();
   }
 
   const EinsplineSPOParams<T>& getParams_i() const { return this->esp; }
@@ -289,38 +316,28 @@ public:
 
   inline void evaluate_v_i(const QMCT::PosType& p)
   {
-    auto u = esp.lattice.toUnit_floor(p);
-    std::vector<std::array<T,3>> pos = {{u[0],u[1],u[2]}}; 
+    auto u                            = esp.lattice.toUnit_floor(p);
+    std::vector<std::array<T, 3>> pos = {{u[0], u[1], u[2]}};
     for (int i = 0; i < esp.nBlocks; ++i)
       compute_engine.evaluate_v(einsplines[i], pos, dev_psi[i], (size_t)esp.nSplinesPerBlock);
   }
 
   inline void evaluate_vgh_i(const QMCT::PosType& p)
   {
-    auto u = esp.lattice.toUnit_floor(p);
-    std::vector<std::array<T,3>> pos = {{u[0],u[1],u[2]}}; 
+    auto u                            = esp.lattice.toUnit_floor(p);
+    std::vector<std::array<T, 3>> pos = {{u[0], u[1], u[2]}};
     for (int i = 0; i < esp.nBlocks; ++i)
     {
-      compute_engine.evaluate_vgh(einsplines[i],
-				  pos,
-                                  dev_psi[i],
-                                  dev_grad[i],
-                                  dev_hess[i],
-                                  esp.nSplinesPerBlock);
+      compute_engine.evaluate_vgh(einsplines[i], pos, dev_psi[i], dev_grad[i], dev_hess[i], esp.nSplinesPerBlock);
     }
   }
 
   void evaluate_vgl_i(const QMCT::PosType& p)
   {
-    auto u = esp.lattice.toUnit_floor(p);
-    std::vector<std::array<T,3>> pos = {{u[0],u[1],u[2]}}; 
+    auto u                            = esp.lattice.toUnit_floor(p);
+    std::vector<std::array<T, 3>> pos = {{u[0], u[1], u[2]}};
     for (int i = 0; i < esp.nBlocks; ++i)
-      compute_engine.evaluate_vgl(einsplines[i],
-				  pos,
-				  dev_linv[i],
-                                  dev_psi[i],
-                                  dev_hess[i],
-                                  esp.nSplinesPerBlock);
+      compute_engine.evaluate_vgl(einsplines[i], pos, dev_linv[i], dev_psi[i], dev_hess[i], esp.nSplinesPerBlock);
   }
 
   T getPsi_i(int ib, int n) { return psi[ib][n]; }

@@ -15,10 +15,10 @@
 
 #include "multi_bspline_structs_cuda.h"
 
-extern "C" multi_UBspline_3d_s<Devices::CUDA>*
+multi_UBspline_3d_s<Devices::CUDA>*
 create_multi_UBspline_3d_s_cuda (multi_UBspline_3d_s<Devices::CPU>* spline);
 
-extern "C" multi_UBspline_3d_s<Devices::CUDA>*
+multi_UBspline_3d_s<Devices::CUDA>*
 create_multi_UBspline_3d_s_cuda_conv (multi_UBspline_3d_d<Devices::CPU>* spline);
 
 

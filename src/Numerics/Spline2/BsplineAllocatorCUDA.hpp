@@ -75,7 +75,6 @@ public:
 
 
 extern template class Allocator<qmcplusplus::Devices::CUDA>;
-
 } // namespace einspline
 } // namespace qmcplusplus
 

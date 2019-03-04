@@ -29,7 +29,7 @@ template<typename T, int ELEMWIDTH>
 class GPUArray<T, ELEMWIDTH, 1>
 {
 public:
-  GPUArray() : data(nullptr), pitch(0) {}
+  GPUArray() : data(nullptr), pitch(0), width(0), height(0) {}
   GPUArray(const GPUArray&& in)
   {
     data   = in[0];
