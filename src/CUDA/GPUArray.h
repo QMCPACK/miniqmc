@@ -18,8 +18,31 @@
 #include <cuda.h>
 #include <cuda_runtime_api.h>
 
+#include "Numerics/Containers.h"
+
+
 namespace qmcplusplus
 {
+
+struct CopyHome
+{
+  char* buffer;
+  int width_;
+  CopyHome(int width)
+  {
+    width_ = width;
+    buffer = new char[width_];
+  }
+  void* operator()(void* data)
+  {
+    cudaError_t cu_err = cudaMemcpy(buffer, data, width_, cudaMemcpyDeviceToHost);
+    if (cu_err != cudaError::cudaSuccess)
+      throw std::runtime_error("Failed GPU to Host copy");
+    return buffer;
+  }
+  ~CopyHome() { delete[] buffer; }
+};
+
 /** The intention is that this be as simple as possible
  */
 template<typename T, int ELEMWIDTH, int DIMENSION>
@@ -57,12 +80,38 @@ public:
   size_t getPitch() const { return pitch; }
   void zero() { cudaMemset(data, 0, width); }
 
+  void pull(aligned_vector<T>& aVec)
+  {
+    CopyHome copy_home(width);
+    T* buffer = static_cast<T*>(copy_home(data));
+    int elements = width / sizeof(T);
+    aVec.resize(elements);
+    for (int i = 0; i < elements; ++i)
+    {
+      aVec[i] = buffer[i*sizeof(T)];
+    }
+  }
+
+  void pull(VectorSoAContainer<T, ELEMWIDTH>& vSoA)
+  {
+    CopyHome copy_home(width);
+    void* buffer = copy_home(data);
+    int elements = width / (ELEMWIDTH * sizeof(T));
+    vSoA.resize(elements);
+    for (int i = 0; i < elements; ++i)
+    {
+      TinyVector<T, ELEMWIDTH> tempTV(static_cast<const T* restrict>(buffer), i * ELEMWIDTH);
+      vSoA(i) = tempTV;
+    } //
+  }
+
 private:
   T* data;
   size_t pitch;
   size_t width;
   size_t height;
 };
+
 
 template<typename T, int ELEMWIDTH>
 class GPUArray<T, ELEMWIDTH, 2>
@@ -84,7 +133,7 @@ public:
       cudaFree(data);
   }
   /** returns pointer to element(1D), row(2D), plane(3D)
-   */
+     */
   T* operator[](int i);
   T*&& operator()(int i);
   void resize(int nBlocks, int nSplinesPerBlock);
@@ -97,7 +146,6 @@ public:
   void zero() { cudaMemset2D(data, pitch, 0, width, height); }
 
 private:
-  bool data_owned;
   T* data;
   size_t pitch;
   size_t width;
@@ -132,15 +180,15 @@ template<typename T, int ELEMWIDTH>
 void GPUArray<T, ELEMWIDTH, 1>::resize(int nBlocks, int nSplinesPerBlock)
 {
   int current_width = width;
-  width              = sizeof(T) * nBlocks * ELEMWIDTH * nSplinesPerBlock;
-  height             = 1;
-  if(current_width < width)
+  width             = sizeof(T) * nBlocks * ELEMWIDTH * nSplinesPerBlock;
+  height            = 1;
+  if (current_width < width)
   {
     if (data != nullptr)
       cudaFree(data);
     cudaError_t cu_err = cudaMalloc((void**)&data, width);
     if (cu_err != cudaError::cudaSuccess)
-	throw std::runtime_error("Failed GPU allocation");
+      throw std::runtime_error("Failed GPU allocation");
   }
 }
 

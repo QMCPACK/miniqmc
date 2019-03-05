@@ -86,6 +86,7 @@ class EinsplineSPODeviceImp<Devices::CUDA, T> : public EinsplineSPODevice<Einspl
   //device memory pitches
 
   EinsplineSPOParams<T> esp;
+  bool dirty;
 
 public:
   EinsplineSPODeviceImp()
@@ -98,6 +99,7 @@ public:
     esp.host_owner  = false;
     esp.Owner       = false;
     esp.is_copy     = false;
+    dirty           = false;
     host_einsplines = {};
     psi             = {};
     grad            = {};
@@ -119,7 +121,9 @@ public:
     esp.lattice                        = inesp.lattice;
     esp.is_copy                        = true;
     esp.host_owner                     = false;
+    dirty                              = false;
     host_einsplines.resize(esp.nBlocks);
+    einsplines.resize(esp.nBlocks);
     for (int i = 0, t = esp.firstBlock; i < esp.nBlocks; ++i, ++t)
     {
       const ThisType& in_cast = static_cast<const ThisType&>(in);
@@ -145,6 +149,7 @@ public:
     esp.lattice                        = inesp.lattice;
     esp.is_copy                        = true;
     esp.host_owner                     = false;
+    dirty                              = false;
     host_einsplines.resize(esp.nBlocks);
     einsplines.resize(esp.nBlocks);
     for (int i = 0, t = esp.firstBlock; i < esp.nBlocks; ++i, ++t)
@@ -177,6 +182,7 @@ public:
     esp.lattice                        = inesp.lattice;
     esp.is_copy                        = true;
     esp.host_owner                     = false;
+    dirty                              = false;
     host_einsplines.resize(esp.nBlocks);
     einsplines.resize(esp.nBlocks);
     for (int i = 0, t = esp.firstBlock; i < esp.nBlocks; ++i, ++t)
@@ -207,6 +213,7 @@ public:
     esp.lattice                        = inesp.lattice;
     esp.is_copy                        = true;
     esp.host_owner                     = false;
+    dirty                              = false;
     host_einsplines.resize(esp.nBlocks);
     einsplines.resize(esp.nBlocks);
     for (int i = 0, t = esp.firstBlock; i < esp.nBlocks; ++i, ++t)
@@ -249,7 +256,6 @@ public:
       resizeCUDA();
     }
   }
-
 
   void resizeCUDA()
   {
@@ -316,6 +322,7 @@ public:
 
   inline void evaluate_v_i(const QMCT::PosType& p)
   {
+    dirty                             = true;
     auto u                            = esp.lattice.toUnit_floor(p);
     std::vector<std::array<T, 3>> pos = {{u[0], u[1], u[2]}};
     for (int i = 0; i < esp.nBlocks; ++i)
@@ -324,6 +331,7 @@ public:
 
   inline void evaluate_vgh_i(const QMCT::PosType& p)
   {
+    dirty                             = true;
     auto u                            = esp.lattice.toUnit_floor(p);
     std::vector<std::array<T, 3>> pos = {{u[0], u[1], u[2]}};
     for (int i = 0; i < esp.nBlocks; ++i)
@@ -334,17 +342,42 @@ public:
 
   void evaluate_vgl_i(const QMCT::PosType& p)
   {
+    dirty                             = true;
     auto u                            = esp.lattice.toUnit_floor(p);
     std::vector<std::array<T, 3>> pos = {{u[0], u[1], u[2]}};
     for (int i = 0; i < esp.nBlocks; ++i)
       compute_engine.evaluate_vgl(einsplines[i], pos, dev_linv[i], dev_psi[i], dev_hess[i], esp.nSplinesPerBlock);
   }
 
-  T getPsi_i(int ib, int n) { return psi[ib][n]; }
+  T getPsi_i(int ib, int n)
+  {
+    if (dirty)
+    {
+      dev_psi.pull(psi[ib]);
+      dirty = false;
+    }
+    return psi[ib][n];
+  }
 
-  T getGrad_i(int ib, int n, int m) { return grad[ib].data(m)[n]; }
+  T getGrad_i(int ib, int n, int m)
+  {
+    if (dirty)
+    {
+      dev_grad.pull(grad[ib]);
+      dirty = false;
+    }
+    return grad[ib].data(m)[n];
+  }
 
-  T getHess_i(int ib, int n, int m) { return hess[ib].data(m)[n]; }
+  T getHess_i(int ib, int n, int m)
+  {
+    if (dirty)
+    {
+      dev_psi.pull(hess[ib]);
+      dirty = false;
+    }
+    return hess[ib].data(m)[n];
+  }
 };
 
 extern template class EinsplineSPODeviceImp<Devices::CUDA, float>;

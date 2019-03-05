@@ -13,9 +13,10 @@
 
 #include "catch.hpp"
 #include "CUDA/GPUArray.h"
+#include "Numerics/Containers.h"
+#include "Utilities/SIMD/allocator.hpp"
 
-
-namespace qmcpluplus
+namespace qmcplusplus
 {
 TEST_CASE("GPUArray Instantiate", "[CUDA]")
 {
@@ -59,6 +60,22 @@ TEST_CASE("GPUArray Zero", "[CUDA]")
   qmcplusplus::GPUArray<double, 1,2> gD;
   gD.resize(16, 10);
   gD.zero();
+  
 }
 
+TEST_CASE("GPUArray pull", "[CUDA]")
+{
+  qmcplusplus::GPUArray<double, 1,1> gD;
+  gD.resize(16, 10);
+  gD.zero();
+  qmcplusplus::aligned_vector<double> avec;
+  gD.pull(avec);
+
+  GPUArray<double, 3,1> gDgrad;
+  gDgrad.resize(14,11);
+  gDgrad.zero();
+  VectorSoAContainer<double,3> vSoA;
+  gDgrad.pull(vSoA);
+}
+  
 } // namespace qmcpluplus

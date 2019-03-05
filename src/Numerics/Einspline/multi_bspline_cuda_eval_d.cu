@@ -209,7 +209,11 @@ eval_multi_multi_UBspline_3d_d_vgh_kernel
   __syncthreads();
   for (int i=0; i<3; i++)
   {
-    int myoff = (3*block+i)*SPLINE_BLOCK_SIZE + thr;
+    // int myoff = (3*block+i)*SPLINE_BLOCK_SIZE + thr;
+    // if (myoff < 3*N)
+    //   mygrad[myoff] = abc[i*SPLINE_BLOCK_SIZE+thr];
+    // Change in value layout
+    int myoff = block*SPLINE_BLOCK_SIZE + 3 * thr + i;
     if (myoff < 3*N)
       mygrad[myoff] = abc[i*SPLINE_BLOCK_SIZE+thr];
   }
@@ -224,7 +228,7 @@ eval_multi_multi_UBspline_3d_d_vgh_kernel
   __syncthreads();
   for (int i=0; i<6; i++)
   {
-    int myoff = (6*block+i)*SPLINE_BLOCK_SIZE + thr;
+    int myoff = block*SPLINE_BLOCK_SIZE + 6 * thr +i;
     if (myoff < 6*N)
       myhess[myoff] = abc[i*SPLINE_BLOCK_SIZE+thr];
   }
