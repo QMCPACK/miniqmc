@@ -5,7 +5,6 @@ SET(NUMERICS_SRC
     )
 
   SET(NUMERICS_CUDA
-    Spline2/BsplineAllocatorCUDA.cpp Spline2/MultiBsplineCUDA.cpp
         Spline2/BsplineAllocatorCUDA.cpp Spline2/MultiBsplineFuncsCUDA.cpp
     )
 

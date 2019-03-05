@@ -353,7 +353,7 @@ public:
   {
     if (dirty)
     {
-      dev_psi.pull(psi[ib]);
+      dev_psi.pull(psi);
       dirty = false;
     }
     return psi[ib][n];
@@ -363,7 +363,7 @@ public:
   {
     if (dirty)
     {
-      dev_grad.pull(grad[ib]);
+      dev_grad.pull(grad);
       dirty = false;
     }
     return grad[ib].data(m)[n];
@@ -373,7 +373,7 @@ public:
   {
     if (dirty)
     {
-      dev_psi.pull(hess[ib]);
+      dev_hess.pull(hess);
       dirty = false;
     }
     return hess[ib].data(m)[n];

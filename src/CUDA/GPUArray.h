@@ -23,7 +23,6 @@
 
 namespace qmcplusplus
 {
-
 struct CopyHome
 {
   char* buffer;
@@ -76,6 +75,9 @@ public:
   size_t getWidth() const { return width; }
   /// In "Bytes"
   size_t getHeight() const { return height; }
+  /// We need these because we need to be able to copy back into CPU structures
+  int getBlocks() const { return nBlocks_; }
+  int getSplinesPerBlock() const { return nSplinesPerBlock_; }
   /// Actual width in bytes of allocated row
   size_t getPitch() const { return pitch; }
   void zero() { cudaMemset(data, 0, width); }
@@ -83,12 +85,26 @@ public:
   void pull(aligned_vector<T>& aVec)
   {
     CopyHome copy_home(width);
-    T* buffer = static_cast<T*>(copy_home(data));
+    T* buffer    = static_cast<T*>(copy_home(data));
     int elements = width / sizeof(T);
     aVec.resize(elements);
     for (int i = 0; i < elements; ++i)
     {
-      aVec[i] = buffer[i*sizeof(T)];
+      aVec[i] = buffer[i * sizeof(T)];
+    }
+  }
+
+  void pull(aligned_vector<aligned_vector<T>>& aVec)
+  {
+    CopyHome copy_home(width);
+    T* buffer    = static_cast<T*>(copy_home(data));
+    int elements = width / sizeof(T);
+    for (int i = 0; i < nBlocks_; ++i)
+    {
+      for (int j = 0; j < nSplinesPerBlock_; ++j)
+      {
+        aVec[i][j] = buffer[i * nSplinesPerBlock_ + j];
+      }
     }
   }
 
@@ -100,13 +116,32 @@ public:
     vSoA.resize(elements);
     for (int i = 0; i < elements; ++i)
     {
-      TinyVector<T, ELEMWIDTH> tempTV(static_cast<const T* restrict>(buffer), i * ELEMWIDTH);
+      TinyVector<T, ELEMWIDTH> tempTV(static_cast<const T * restrict>(buffer), i * ELEMWIDTH);
       vSoA(i) = tempTV;
     } //
   }
 
+  void pull(aligned_vector<VectorSoAContainer<T, ELEMWIDTH>>& av_vSoA)
+  {
+    CopyHome copy_home(width);
+    void* buffer = copy_home(data);
+    int elements = width / (ELEMWIDTH * sizeof(T));
+    av_vSoA.resize(elements);
+    for (int i = 0; i < nBlocks_; ++i)
+    {
+      for (int j = 0; j < nSplinesPerBlock_; j++)
+	{
+	  TinyVector<T, ELEMWIDTH> tempTV(static_cast<const T * restrict>(buffer), i * ELEMWIDTH);
+	  av_vSoA[i](j) = tempTV;
+	}
+    } //
+  }
+
+
 private:
   T* data;
+  int nBlocks_;
+  int nSplinesPerBlock_;
   size_t pitch;
   size_t width;
   size_t height;
@@ -179,6 +214,9 @@ T*&& GPUArray<T, ELEMWIDTH, 2>::operator()(int i)
 template<typename T, int ELEMWIDTH>
 void GPUArray<T, ELEMWIDTH, 1>::resize(int nBlocks, int nSplinesPerBlock)
 {
+  nBlocks_         = nBlocks;
+  nSplinesPerBlock_ = nSplinesPerBlock;
+
   int current_width = width;
   width             = sizeof(T) * nBlocks * ELEMWIDTH * nSplinesPerBlock;
   height            = 1;
