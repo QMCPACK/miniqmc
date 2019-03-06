@@ -33,6 +33,10 @@
 #include <Utilities/qmcpack_version.h>
 #include <getopt.h>
 #include "Drivers/check_spo.h"
+#ifdef QMC_USE_CUDA
+#include "Drivers/test/CheckSPOStepsCUDA.hpp"
+#endif
+
 using namespace std;
 
 namespace qmcplusplus
@@ -321,6 +325,8 @@ void CheckSPOTest::printHelp()
   app_summary() << "  check_spo [-hvV] [-g \"n0 n1 n2\"] [-m meshfactor]" << '\n';
   app_summary() << "            [-n steps] [-r rmax] [-s seed]" << '\n';
   app_summary() << "options:" << '\n';
+  app_summary() << "  -a  number of tiles                default: number of orbs\n";
+  app_summary() << "  -d  device number                  default: 0 (CPU)\n";
   app_summary() << "  -g  set the 3D tiling.             default: 1 1 1" << '\n';
   app_summary() << "  -h  print help and exit" << '\n';
   app_summary() << "  -m  meshfactor                     default: 1.0" << '\n';
@@ -339,7 +345,7 @@ void CheckSPOTest::setup(int argc, char** argv)
       int opt;
     while (optind < argc)
     {
-      if ((opt = getopt(argc, argv, "hvVa:c:f:g:m:n:r:s:")) != -1)
+      if ((opt = getopt(argc, argv, "hvVa:c:d:f:g:m:n:r:s:")) != -1)
       {
         switch (opt)
         {
@@ -349,11 +355,15 @@ void CheckSPOTest::setup(int argc, char** argv)
         case 'c': // number of members per team
           team_size = atoi(optarg);
           break;
+	case 'd':
+	  device = atoi(optarg);
+	  break;
         case 'g': // tiling1 tiling2 tiling3
           sscanf(optarg, "%d %d %d", &na, &nb, &nc);
           break;
         case 'h':
           printHelp();
+	  abort();
           break;
         case 'm':
         {
@@ -405,8 +415,24 @@ void CheckSPOTest::setup(int argc, char** argv)
 int CheckSPOTest::runTests()
 {
   error = 0;
-  // devices_range has the enum range of implementations at compile time.
-  hana::for_each(devices_range,
+  if(device >= 0)
+    {
+      std::cout << "call handler\n";
+      using Handler = decltype(hana::unpack(devices_range, hana::template_<CaseHandler>))::type;
+      Handler handler(*this);
+      handler.test(error,
+									       team_size,
+			     tmat,
+			     tileSize,
+			     nx,
+			     ny,
+			     nz,
+			     nsteps,
+
+		   Rmax, device);
+    }
+  else
+    hana::for_each(devices_range,
 		 [&](auto x) {
 		 CheckSPOSteps<static_cast<Devices>(decltype(x)::value)>::test(error,
 									       team_size,
@@ -428,6 +454,10 @@ int CheckSPOTest::runTests()
 
 #ifdef QMC_USE_KOKKOS
 template class CheckSPOSteps<Devices::KOKKOS>;
+#endif
+
+#ifdef QMC_USE_CUDA
+template class CheckSPOSteps<Devices::CUDA>;
 #endif
 
 }

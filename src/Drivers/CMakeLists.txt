@@ -12,6 +12,10 @@ FOREACH(p ${ESTEST})
   ENDIF(QMC_USE_CUDA)
 ENDFOREACH(p ${ESTEST})
 
+IF(QMC_USE_CUDA)
+    TARGET_SOURCES(check_spo PUBLIC test/CheckSPOStepsCUDA.cpp)
+ENDIF(QMC_USE_CUDA)
+  
 # SET(THIS_TEST check_determinant)
 # IF(QMC_USE_KOKKOS)
 #   SET(ETEST_KOKKOS_SRC "test/CheckDeterminantStepsKOKKOS.cpp")

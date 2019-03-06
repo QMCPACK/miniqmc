@@ -38,7 +38,7 @@ struct MultiBsplineFuncs<Devices::CUDA, T>
   /// define the einspline object type
   using spliner_type = typename bspline_traits<D, T, 3>::SplineType;
 
-  MultiBsplineFuncs() {}
+  MultiBsplineFuncs() : spline_block_size_(32) {}
   /// Don't want to deal with this now
   MultiBsplineFuncs(const MultiBsplineFuncs<D,T>& in) = default;
   MultiBsplineFuncs& operator=(const MultiBsplineFuncs<D,T>& in) = delete;
@@ -99,13 +99,16 @@ struct MultiBsplineFuncs<Devices::CUDA, T>
                     T*&& grads,
                     T*&& hess,
                     size_t num_splines) const;
+
+private:
+  int spline_block_size_;
 };
 
 template<>
 inline void MultiBsplineFuncs<Devices::CUDA, double>::evaluate_v(const multi_UBspline_3d_d<Devices::CUDA>* spline_m, const std::vector<std::array<double,3>>& pos, double*&& vals, size_t num_splines)
 {
   PosBuffer pos_d;
-  eval_multi_multi_UBspline_3d_d_cuda(spline_m, pos_d.make(pos), vals, num_splines); 
+  eval_multi_multi_UBspline_3d_d_cuda(spline_m, pos_d.make(pos), vals, spline_block_size_, num_splines); 
 }
 
 // template<>

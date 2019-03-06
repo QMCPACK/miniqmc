@@ -23,14 +23,132 @@
 #include "QMCWaveFunctions/EinsplineSPODevice.hpp"
 #include "QMCWaveFunctions/EinsplineSPODeviceImp.hpp"
 #include <QMCWaveFunctions/einspline_spo_ref.hpp>
+#include "Drivers/CheckSPOSteps.hpp"
+#include "Drivers/CheckSPOData.hpp"
 #include <Utilities/qmcpack_version.h>
 #include <getopt.h>
 
 
 namespace qmcplusplus
 {
+  namespace hana = boost::hana;
+
+  // This would be nice to generate with metaprogramming when there is time   
+constexpr auto device_spo_tuple = hana::make_tuple(hana::type_c<CheckSPOSteps<Devices::CPU>>,
+#ifdef QMC_USE_KOKKOS
+                                               hana::type_c<CheckSPOSteps<Devices::KOKKOS>>,
+#endif
+#ifdef QMC_USE_OMPOL
+                                               hana::type_c<CheckSPOSteps<Devices::OMPOL>>,
+#endif
+#ifdef QMC_USE_CUDA
+                                               hana::type_c<CheckSPOSteps<Devices::CUDA>>,
+#endif
+
+                                               hana::type_c<CheckSPOSteps<Devices::CPU>>);
+// The final type is so the tuple and device enum have the same length, forget why this matters.
+
 class CheckSPOTest
 {
+public:
+  template<typename... DN>
+  struct CaseHandler
+  {
+    template<typename...>
+    struct IntList
+    {};
+
+    void test_cases(int& error,
+                             const int team_size,
+                             const Tensor<int, 3>& tmat,
+                             int tileSize,
+                             const int nx,
+                             const int ny,
+                             const int nz,
+                             const int nsteps,
+		    const double Rmax,
+		    int i,
+		    IntList<>)
+    {
+    }
+
+    template<typename... N>
+    void test_cases(int& error,
+                             const int team_size,
+                             const Tensor<int, 3>& tmat,
+                             int tileSize,
+                             const int nx,
+                             const int ny,
+                             const int nz,
+                             const int nsteps,
+		    const double Rmax,
+		    int i)
+    {
+      test_cases(error,
+                             team_size,
+                             tmat,
+                              tileSize,
+                             nx,
+                              ny,
+                              nz,
+                              nsteps,
+		  Rmax,
+		 i, IntList<N...>());
+    }
+
+    template<typename I, typename... N>
+    void test_cases(int& error,
+                             const int team_size,
+                             const Tensor<int, 3>& tmat,
+                             int tileSize,
+                             const int nx,
+                             const int ny,
+                             const int nz,
+                             const int nsteps,
+		    const double Rmax,
+		    int i, IntList<I, N...>)
+    {
+      if (I::value != i)
+	{
+	  return test_cases(error,
+                             team_size,
+                             tmat,
+                              tileSize,
+                             nx,
+                              ny,
+                              nz,
+                              nsteps,
+		  Rmax,
+		 i, IntList<N...>());
+	}
+      decltype(+device_spo_tuple[hana::size_c<I::value>])::type::test(error, team_size, tmat, tileSize, nx, ny, nz, nsteps, Rmax);
+    }
+    CheckSPOTest& my_;
+    CaseHandler(CheckSPOTest& my) : my_(my) {}
+    
+    void test(int& error,
+                             const int team_size,
+                             const Tensor<int, 3>& tmat,
+                             int tileSize,
+                             const int nx,
+                             const int ny,
+                             const int nz,
+                             const int nsteps,
+	      const double Rmax, int i)
+    {
+      test_cases<DN...>(error,
+                             team_size,
+                             tmat,
+                              tileSize,
+                             nx,
+                              ny,
+                              nz,
+                              nsteps,
+		  Rmax,
+			i);
+    }
+  };
+  
 public:
   using QMCT = QMCTraits;
   // clang-format off
@@ -45,6 +163,7 @@ public:
   int nb              = 1;
   int nc              = 1;
   int nsteps          = 5;
+  int device          = 0;
   int iseed           = 11;
   QMCT::RealType Rmax = 1.7;
   int nx = 37, ny = 37, nz = 37;
@@ -68,86 +187,8 @@ public:
   int runTests();
 };
 
-template<typename T>
-struct CheckSPOData
-{
-  T ratio;
-  T nspheremoves;
-  T dNumVGHCalls;
-  T evalV_v_err;
-  T evalVGH_v_err;
-  T evalVGH_g_err;
-  T evalVGH_h_err;
-
-  volatile CheckSPOData& operator+=(const volatile CheckSPOData& data) volatile
-  {
-    ratio += data.ratio;
-    nspheremoves += data.nspheremoves;
-    dNumVGHCalls += data.dNumVGHCalls;
-    evalV_v_err += data.evalV_v_err;
-    evalVGH_v_err += data.evalVGH_v_err;
-    evalVGH_g_err += data.evalVGH_g_err;
-    evalVGH_h_err += data.evalVGH_h_err;
-    return *this;
-  }
-};
 
 
-template<Devices DT>
-class CheckSPOSteps
-{
-public:
-  using SPODevImp = EinsplineSPO<DT, OHMMS_PRECISION>;
-  using SPORef    = miniqmcreference::EinsplineSPO_ref<OHMMS_PRECISION>;
-
-public:
-  using QMCT = QMCTraits;
-  static void initialize(int arc, char** argv);
-  static void test(int& error,
-                   int team_size,
-                   const Tensor<int, 3>& tmat,
-                   int tileSize,
-                   const int nx,
-                   const int ny,
-                   const int nz,
-                   const int nsteps,
-                   const QMCT::RealType Rmax);
-  static void finalize();
-
-  template<typename T>
-  static void thread_main(const int num_threads,
-                          const int thread_id,
-                          const int team_size,
-                          const ParticleSet ions,
-                          const SPODevImp spo_main,
-                          const SPORef spo_ref_main,
-                          const int nsteps,
-                          const QMCT::RealType Rmax,
-                          T& ratio,
-                          T& nspheremoves,
-                          T& dNumVGHCalls,
-                          T& evalV_v_err,
-                          T& evalVGH_v_err,
-                          T& evalVGH_g_err,
-                          T& evalVGH_h_err);
-private:
-  static SPODevImp buildSPOMain(const int nx,
-			 const int ny,
-			 const int nz,
-			 const int norb,
-			 const int nTiles,
-			 const Tensor<OHMMS_PRECISION, 3>& lattice_b);
-
-  template<typename T>
-  static CheckSPOData<T> runThreads(const int team_size,
-                                    ParticleSet& ions,
-                                    const SPODevImp& spo_main,
-                                    const SPORef& spo_ref_main,
-                                    const int nsteps,
-                                    const T Rmax);
-
-
-};
 } // namespace qmcplusplus
 #ifdef QMC_USE_KOKKOS
 #include "Drivers/test/CheckSPOStepsKOKKOS.hpp"

@@ -13,6 +13,8 @@
 #ifndef QMCPLUSPLUS_CHECK_SPO_STEPS_CUDA_HPP
 #define QMCPLUSPLUS_CHECK_SPO_STEPS_CUDA_HPP
 
+#include <vector>
+
 #include "Drivers/check_spo.h"
 #include "Utilities/Configuration.h"
 
@@ -22,20 +24,20 @@ namespace qmcplusplus
 template<>
 template<typename T>
 void CheckSPOSteps<Devices::CUDA>::thread_main(const int np,
-                                    const int ip,
-                                    const int team_size,
-                                    const ParticleSet ions,
-                                    const SPODevImp spo_main,
-                                    const SPORef spo_ref_main,
-                                    const int nsteps,
-                                    const QMCT::RealType Rmax,
-                                    T& ratio,
-                                    T& nspheremoves,
-                                    T& dNumVGHCalls,
-                                    T& evalV_v_err,
-                                    T& evalVGH_v_err,
-                                    T& evalVGH_g_err,
-                                    T& evalVGH_h_err)
+                                               const int ip,
+                                               const int team_size,
+                                               const ParticleSet ions,
+                                               const SPODevImp spo_main,
+                                               const SPORef spo_ref_main,
+                                               const int nsteps,
+                                               const QMCT::RealType Rmax,
+                                               T& ratio,
+                                               T& nspheremoves,
+                                               T& dNumVGHCalls,
+                                               T& evalV_v_err,
+                                               T& evalVGH_v_err,
+                                               T& evalVGH_g_err,
+                                               T& evalVGH_h_err)
 {
   const int team_id   = ip / team_size;
   const int member_id = ip % team_size;
@@ -53,8 +55,8 @@ void CheckSPOSteps<Devices::CUDA>::thread_main(const int np,
 
   // create pseudopp
   NonLocalPP<OHMMS_PRECISION> ecp(random_th);
-  xo// create spo per thread
-  SPODevImp spo(spo_main, team_size,member_id);
+  // create spo per thread
+  SPODevImp spo(spo_main, team_size, member_id);
   //SPODevImp& spo = *dynamic_cast<SPODevImp*>(SPOSetBuilder<DT>::buildView(false, spo_main, team_size, member_id));
   SPORef spo_ref(spo_ref_main, team_size, member_id);
 
@@ -70,7 +72,7 @@ void CheckSPOSteps<Devices::CUDA>::thread_main(const int np,
   QMCT::RealType sqrttau = 2.0;
   QMCT::RealType accept  = 0.5;
 
-  vector<QMCT::RealType> ur(nels);
+  std::vector<QMCT::RealType> ur(nels);
   random_th.generate_uniform(ur.data(), nels);
   const double zval = 1.0 * static_cast<double>(nels) / static_cast<double>(nions);
 
@@ -87,6 +89,16 @@ void CheckSPOSteps<Devices::CUDA>::thread_main(const int np,
       for (int iel = 0; iel < nels; ++iel)
       {
         QMCT::PosType pos = els.R[iel] + sqrttau * delta[iel];
+
+        spo.evaluate_v(pos);
+        spo_ref.evaluate_v(pos);
+        for (int ib = 0; ib < esp.nBlocks; ib++)
+          for (int n = 0; n < esp.nSplinesPerBlock; n++)
+          {
+            // value
+            evalV_v_err += std::fabs(spo.getPsi(ib, n) - spo_ref.psi[ib][n]);
+          }
+        std::cout << "evalV_v_err: " << evalVGH_v_err << '\n';
 
         spo.evaluate_vgh(pos);
         spo_ref.evaluate_vgh(pos);
@@ -141,12 +153,13 @@ void CheckSPOSteps<Devices::CUDA>::thread_main(const int np,
 
   } // steps.
 
-  ratio += QMCT::RealType(my_accepted) / QMCT::RealType(nels * nsteps);
+  ratio        += QMCT::RealType(my_accepted) / QMCT::RealType(nels * nsteps);
   nspheremoves += QMCT::RealType(my_vals) / QMCT::RealType(nsteps);
   dNumVGHCalls += nels;
 }
 
 extern template class CheckSPOSteps<Devices::CUDA>;
+extern template void CheckSPOSteps<Devices::CUDA>::initialize(int, char**);
 } // namespace qmcplusplus
 
 #endif

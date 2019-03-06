@@ -9,12 +9,12 @@ extern "C"
 __global__ static void
 eval_multi_multi_UBspline_3d_d_kernel
 (double *pos, double3 drInv, const double *coefs, double *vals,
- uint3 dim, uint3 strides, int N, int spline_offset)
+ uint3 dim, uint3 strides, int spline_block_size, int N, int spline_offset)
 {
   int block = blockIdx.x;
-  int thr   = threadIdx.x;
+  int thr   = threadIdx.x; //if your grid size was not 64 or larger you are in trouble.
   int ir    = blockIdx.y;
-  int off   = block*SPLINE_BLOCK_SIZE+thr;
+  int off   = block*spline_block_size+thr;
   __shared__ double *myval;
   __shared__ double abc[64];
   __shared__ double3 r;
@@ -56,6 +56,7 @@ eval_multi_multi_UBspline_3d_d_kernel
   tp[2].z=t.z;
   tp[2].w=1.0;
   __shared__ double a[4], b[4], c[4];
+  // there must be at least 4 threads
   if (thr < 4)
   {
     a[thr] = Bcuda[4*thr+0]*tp[0].x + Bcuda[4*thr+1]*tp[0].y + Bcuda[4*thr+2]*tp[0].z + Bcuda[4*thr+3]*tp[0].w;
@@ -63,12 +64,15 @@ eval_multi_multi_UBspline_3d_d_kernel
     c[thr] = Bcuda[4*thr+0]*tp[2].x + Bcuda[4*thr+1]*tp[2].y + Bcuda[4*thr+2]*tp[2].z + Bcuda[4*thr+3]*tp[2].w;
   }
   __syncthreads();
-  int i = (thr>>4)&3;
-  int j = (thr>>2)&3;
-  int k = (thr & 3);
+  // k is the fast index follow by j and then i over 4 dimensions.
+  int i = (thr>>4)&3; // thr = {
+  int j = (thr>>2)&3; // thr = {0,1,2,3,4,5,6...} j = {0,0,0,0,1,1,1,1,...}
+  int k = (thr & 3); // thr = {0,1,2,3,4,5,6...} k = {0,1,2,3,0,1,2,3,...}
+  // every thread below 64 gets an abc with the above indexing if you have fewer enjoy your error
   if (thr < 64)
     abc[thr] = a[i]*b[j]*c[k];
   __syncthreads();
+  // For small cases off is practically always larger, enjoy getting no value.
   if (off < N)
   {
     double val = 0.0;
@@ -237,14 +241,14 @@ eval_multi_multi_UBspline_3d_d_vgh_kernel
 
 extern "C" void
 eval_multi_multi_UBspline_3d_d_cuda (const multi_UBspline_3d_d<Devices::CUDA> *spline,
-                                     double *pos_d, double *vals_d, int num)
+                                     double *pos_d, double *vals_d, int spline_block_size, int num)
 {
-  dim3 dimBlock(SPLINE_BLOCK_SIZE);
-  dim3 dimGrid(spline->num_splines/SPLINE_BLOCK_SIZE, num);
-  if (spline->num_splines % SPLINE_BLOCK_SIZE)
+  dim3 dimBlock(spline_block_size);
+  dim3 dimGrid(spline->num_splines/spline_block_size, num);
+  if (spline->num_splines % spline_block_size)
     dimGrid.x++;
   eval_multi_multi_UBspline_3d_d_kernel<<<dimGrid,dimBlock>>>
-  (pos_d, spline->gridInv, spline->coefs, vals_d, spline->dim, spline->stride, spline->num_splines, 0);
+    (pos_d, spline->gridInv, spline->coefs, vals_d, spline->dim, spline->stride, spline_block_size, spline->num_splines, 0);
   cudaDeviceSynchronize();
   cudaError_t err = cudaGetLastError();
   if (err != cudaSuccess)
@@ -268,7 +272,7 @@ eval_multi_multi_UBspline_3d_d_cudasplit
   if (num_splines % SPLINE_BLOCK_SIZE)
     dimGrid.x++;
   eval_multi_multi_UBspline_3d_d_kernel<<<dimGrid,dimBlock,0,s>>>
-  (pos_d, spline->gridInv, coefs, vals_d, spline->dim, spline->stride, num_splines, device_nr*num_splines*num);
+    (pos_d, spline->gridInv, coefs, vals_d, spline->dim, spline->stride, num_splines, SPLINE_BLOCK_SIZE, device_nr*num_splines*num);
 }
 
 __global__ static void

@@ -420,29 +420,29 @@ create_multi_UBspline_3d_d_cuda (multi_UBspline_3d_d<Devices::CPU>* spline)
 
   int N = spline->num_splines;
   int spline_start = 0;
-  if (gpu.device_group_size>1)
-  {
-    if(N<gpu.device_group_size)
-    {
-      if(gpu.rank==0)
-        fprintf(stdout, "Error: Not enough splines (%i) to split across %i devices.\n",N,gpu.device_group_size);
-      abort();
-    }
-    N += gpu.device_group_size-1;
-    N /= gpu.device_group_size;
-    spline_start = N * (gpu.relative_rank%gpu.device_group_size);
-#ifdef SPLIT_SPLINE_DEBUG
-    fprintf (stderr, "splines %i - %i of %i\n",spline_start,spline_start+N,spline->num_splines);
-#endif
-  }
-#ifdef SPLIT_SPLINE_DEBUG
-  else
-    fprintf (stderr, "splines N = %i\n",N);
-#endif
+  // if (gpu.device_group_size>1)
+//   {
+//     if(N<gpu.device_group_size)
+//     {
+//       if(gpu.rank==0)
+//         fprintf(stdout, "Error: Not enough splines (%i) to split across %i devices.\n",N,gpu.device_group_size);
+//       abort();
+//     }
+//     N += gpu.device_group_size-1;
+//     N /= gpu.device_group_size;
+//     spline_start = N * (gpu.relative_rank%gpu.device_group_size);
+// #ifdef SPLIT_SPLINE_DEBUG
+//     fprintf (stderr, "splines %i - %i of %i\n",spline_start,spline_start+N,spline->num_splines);
+// #endif
+//   }
+// #ifdef SPLIT_SPLINE_DEBUG
+//   else
+//     fprintf (stderr, "splines N = %i\n",N);
+// #endif
   cuda_spline->num_split_splines = N;
   int num_splines = N;
-  if ((N%COALLESCED_SIZE) != 0)
-    N += COALLESCED_SIZE - (N%COALLESCED_SIZE);
+  // if ((N%COALLESCED_SIZE) != 0)
+  //   N += COALLESCED_SIZE - (N%COALLESCED_SIZE);
 
   cuda_spline->stride.x = Ny*Nz*N;
   cuda_spline->stride.y = Nz*N;
