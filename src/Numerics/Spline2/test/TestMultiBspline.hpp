@@ -14,6 +14,7 @@
 #ifndef QMCPLUSPLUS_TEST_MULTI_BSPLINE_H
 #define QMCPLUSPLUS_TEST_MULTI_BSPLINE_H
 
+#include "Utilities/RandomGenerator.h"
 #include "Numerics/Spline2/BsplineAllocatorCUDA.hpp"
 
 namespace qmcplusplus
@@ -63,6 +64,14 @@ struct TestMultiBspline
 
     cpu_allocator.allocateMultiBspline(cpu_spline, xGrid, yGrid, xGrid, xBC, yBC, zBC, num_splines_);
     REQUIRE( cpu_spline != nullptr );
+    RandomGenerator<T> myrandom(11);
+    Array<T, 3> coef_data(cpu_spline->x_grid.num + 3, cpu_spline->y_grid.num + 3, cpu_spline->z_grid.num + 3);
+    for( int i = 0; i < num_splines_; ++i)
+    {
+      myrandom.generate_uniform(coef_data.data(), coef_data.size());
+      cpu_allocator.setCoefficientsForOneOrbital(i,coef_data, cpu_spline);
+    }
+
     T dummyT;
     DT dummyDT;
     cuda_allocator.createMultiBspline(cpu_spline, cuda_spline, dummyT, dummyDT);

@@ -34,14 +34,22 @@ TEST_CASE("MultiBspline<CUDA> evaluate_v", "[CUDA][Spline2]")
   gpu.initCUDAStreams();
   TestMultiBspline<double, double> tmb(128);
   tmb.create();
-  MultiBsplineFuncs<Devices::CUDA,double> mbO;
+  MultiBsplineFuncs<Devices::CUDA,double> mbf_CUDA;
   GPUArray<double,1,1> d_vals;
-  d_vals.resize(sizeof(double)* 16,sizeof(double) * 16);
+  d_vals.resize(1,128);
   d_vals.zero();
-  std::vector<std::array<double,3>> pos = {{0,0,0},{0,1,0}};
-  mbO.evaluate_v(tmb.cuda_spline, pos, d_vals.get_devptr(), 1);  
+  std::vector<std::array<double,3>> pos = {{1,1,1}};
+  mbf_CUDA.evaluate_v(tmb.cuda_spline, pos, d_vals.get_devptr(), 1, 128);
+  MultiBsplineFuncs<Devices::CPU,double> mbf_CPU;
+  std::vector<double> vals(128);
+  mbf_CPU.evaluate_v(tmb.cpu_spline, pos, vals.data(), 128);
+  aligned_vector<double> gpu_vals(128);
+  d_vals.pull(gpu_vals);
+  
   gpu.finalizeCUDAStreams();
 }  
+
+
 
   // TEST_CAST("MultiBspline<CUDA> evaluate_v_value","[CUDA]")
   // {

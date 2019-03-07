@@ -3,7 +3,6 @@
 __device__ double Bcuda[48];
 __constant__ float  Acuda[48];
 
-extern "C"
 __global__ static void
 test_kernel
 (int N)
@@ -18,7 +17,6 @@ test_kernel
   __syncthreads();
 }
 
-extern "C"
 __global__ static void
 test_kernel_with_spline
 (const double *coefs, int N)
