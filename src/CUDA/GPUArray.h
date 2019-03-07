@@ -14,6 +14,7 @@
 #ifndef QMCPLUSPLUS_GPU_ARRAY_H
 #define QMCPLUSPLUS_GPU_ARRAY_H
 
+#include <utility>
 #include <stdexcept>
 #include <cuda.h>
 #include <cuda_runtime_api.h>
@@ -43,6 +44,8 @@ struct CopyHome
 };
 
 /** The intention is that this be as simple as possible
+ *  However in the course of pursuing the solution to the * and ** problems for CUDA
+ *  Things have gotten a bit disgusting. Needs to be fixed
  */
 template<typename T, int ELEMWIDTH, int DIMENSION>
 class GPUArray;
@@ -81,7 +84,7 @@ public:
   /// Actual width in bytes of allocated row
   size_t getPitch() const { return pitch; }
   void zero() { cudaMemset(data, 0, width); }
-
+  T* get_devptr() { return data; }
   void pull(aligned_vector<T>& aVec)
   {
     CopyHome copy_home(width);
@@ -116,7 +119,7 @@ public:
     vSoA.resize(elements);
     for (int i = 0; i < elements; ++i)
     {
-      TinyVector<T, ELEMWIDTH> tempTV(static_cast<const T * restrict>(buffer), i * ELEMWIDTH);
+      TinyVector<T, ELEMWIDTH> tempTV(static_cast<const T* restrict>(buffer), i * ELEMWIDTH);
       vSoA(i) = tempTV;
     } //
   }
@@ -131,10 +134,10 @@ public:
     {
       for (int j = 0; j < nSplinesPerBlock_; j++)
 	{
-	  TinyVector<T, ELEMWIDTH> tempTV(static_cast<const T * restrict>(buffer), i * ELEMWIDTH);
+	  TinyVector<T, ELEMWIDTH> tempTV(static_cast<const T* restrict>(buffer), i * ELEMWIDTH);
 	  av_vSoA[i](j) = tempTV;
 	}
-    } //
+    }
   }
 
 

@@ -30,11 +30,11 @@ eval_multi_multi_UBspline_3d_s_sign_cuda
 (const multi_UBspline_3d_s<Devices::CUDA> *spline, float *pos_d, float *sign_d,
  float *vals_d, int num);
 
-extern "C" void
-eval_multi_multi_UBspline_3d_s_sign_cudasplit
-(const multi_UBspline_3d_s<Devices::CUDA> *spline, float *pos_d, float *sign_d,
- float *vals_d, int num,
- float *coefs, int device_nr, cudaStream_t s);
+/* extern "C" void */
+/* eval_multi_multi_UBspline_3d_s_sign_cudasplit */
+/* (const multi_UBspline_3d_s<Devices::CUDA> *spline, float *pos_d, float *sign_d, */
+/*  float *vals_d, int num, */
+/*  float *coefs, int device_nr, cudaStream_t s); */
 
 extern "C" void
 eval_multi_multi_UBspline_3d_s_vgh_cuda
@@ -44,18 +44,18 @@ eval_multi_multi_UBspline_3d_s_vgh_cuda
 extern "C" void
 eval_multi_multi_UBspline_3d_s_vgl_cuda
 (const multi_UBspline_3d_s<Devices::CUDA> *spline, float *pos_d, float *Linv_d,
- float *vals_d[], float *grad_lapl_d[], int num, int row_stride);
+ float *vals_d, float *grad_lapl_d, int num, int row_stride);
 
 extern "C" void
 eval_multi_multi_UBspline_3d_s_vgl_sign_cuda
 (const multi_UBspline_3d_s<Devices::CUDA> *spline, float *pos_d, float *sign_d, float *Linv_d,
- float *vals_d[], float *grad_lapl_d[], int num, int row_stride);
+ float *vals_d, float *grad_lapl_d, int num, int row_stride);
 
-extern "C" void
-eval_multi_multi_UBspline_3d_s_vgl_sign_cudasplit
-(const multi_UBspline_3d_s<Devices::CUDA> *spline, float *pos_d, float *sign_d, float *Linv_d,
- float *vals_d[], float *grad_lapl_d[], int num, int row_stride,
- float *coefs, int device_nr, cudaStream_t s);
+// extern "C" void
+// eval_multi_multi_UBspline_3d_s_vgl_sign_cudasplit
+// (const multi_UBspline_3d_s<Devices::CUDA> *spline, float *pos_d, float *sign_d, float *Linv_d,
+//  float *vals_d[], float *grad_lapl_d[], int num, int row_stride,
+//  float *coefs, int device_nr, cudaStream_t s);
 
 // Double-precision real
 extern "C" void

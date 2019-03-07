@@ -25,6 +25,7 @@ struct multi_UBspline_3d_s<Devices::CUDA>
 template<>
 struct multi_UBspline_3d_d<Devices::CUDA>
 {
+  double* Bcuda;
   double* coefs;
   uint3 stride;
   double3 gridInv;

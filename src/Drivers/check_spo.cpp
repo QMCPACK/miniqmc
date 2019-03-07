@@ -285,6 +285,7 @@ void CheckSPOSteps<DT>::thread_main(const int np,
           els.R[iel] = pos;
           my_accepted++;
         }
+	abort();
       }
 
     random_th.generate_uniform(ur.data(), nels);

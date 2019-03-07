@@ -1,14 +1,12 @@
 #include "multi_bspline_eval_cuda.h"
 #include "MultiBsplineCreateCUDA.h"
 
-__device__ double Bcuda[48];
-__constant__ float  Acuda[48];
 __constant__ int GRAD_ELEMS = 3;
 
 extern "C"
 __global__ static void
 eval_multi_multi_UBspline_3d_d_kernel
-(double *pos, double3 drInv, const double *coefs, double *vals,
+(double *pos, double3 drInv, const double *coefs, const double* Bcuda, double *vals,
  uint3 dim, uint3 strides, int spline_block_size, int N, int spline_offset)
 {
   int block = blockIdx.x;
@@ -24,7 +22,7 @@ eval_multi_multi_UBspline_3d_d_kernel
     r.x = pos[3*ir+0];
     r.y = pos[3*ir+1];
     r.z = pos[3*ir+2];
-    myval = &(vals[ir]);
+    myval = &(vals[ir*block*spline_block_size]);
   }
   __syncthreads();
   int3 index;
@@ -72,7 +70,7 @@ eval_multi_multi_UBspline_3d_d_kernel
   if (thr < 64)
     abc[thr] = a[i]*b[j]*c[k];
   __syncthreads();
-  // For small cases off is practically always larger, enjoy getting no value.
+  
   if (off < N)
   {
     double val = 0.0;
@@ -93,7 +91,7 @@ eval_multi_multi_UBspline_3d_d_kernel
 
 __global__ static void
 eval_multi_multi_UBspline_3d_d_vgh_kernel
-(double *pos, double3 drInv,  const double *coefs,
+(double *pos, double3 drInv, const double *coefs, const double* Bcuda, 
  double *vals, double *grads, double *hess,
  uint3 dim, uint3 strides, int N)
 {
@@ -101,6 +99,7 @@ eval_multi_multi_UBspline_3d_d_vgh_kernel
   int thr   = threadIdx.x;
   int ir    = blockIdx.y;
   int off   = block*SPLINE_BLOCK_SIZE+thr;
+
   __shared__ double *myval, *mygrad, *myhess;
   __shared__ double3 r;
   if (thr == 0)
@@ -108,9 +107,9 @@ eval_multi_multi_UBspline_3d_d_vgh_kernel
     r.x = pos[3*ir+0];
     r.y = pos[3*ir+1];
     r.z = pos[3*ir+2];
-    myval  = &(vals[ir]);
-    mygrad = &(grads[ir]);
-    myhess = &(hess[ir]);
+    myval  = &(vals[ir*block*SPLINE_BLOCK_SIZE]);
+    mygrad = &(grads[ir*block*SPLINE_BLOCK_SIZE*3]);
+    myhess = &(hess[ir*block*SPLINE_BLOCK_SIZE*6]);
   }
   __syncthreads();
   int3 index;
@@ -245,10 +244,12 @@ eval_multi_multi_UBspline_3d_d_cuda (const multi_UBspline_3d_d<Devices::CUDA> *s
 {
   dim3 dimBlock(spline_block_size);
   dim3 dimGrid(spline->num_splines/spline_block_size, num);
+  // fprintf (stdout, "Spline num, blocksize %i, %i\n", spline->num_splines, spline_block_size);
+  // fprintf (stdout, "kernel grid size: %i %i\n", spline->num_splines/spline_block_size, num);
   if (spline->num_splines % spline_block_size)
     dimGrid.x++;
   eval_multi_multi_UBspline_3d_d_kernel<<<dimGrid,dimBlock>>>
-    (pos_d, spline->gridInv, spline->coefs, vals_d, spline->dim, spline->stride, spline_block_size, spline->num_splines, 0);
+    (pos_d, spline->gridInv, spline->coefs, spline->Bcuda, vals_d, spline->dim, spline->stride, spline_block_size, spline->num_splines, 0);
   cudaDeviceSynchronize();
   cudaError_t err = cudaGetLastError();
   if (err != cudaSuccess)
@@ -260,24 +261,24 @@ eval_multi_multi_UBspline_3d_d_cuda (const multi_UBspline_3d_d<Devices::CUDA> *s
   }
 }
 
-extern "C" void
-eval_multi_multi_UBspline_3d_d_cudasplit
-(const multi_UBspline_3d_d<Devices::CUDA> *spline,
- double *pos_d, double *vals_d, int num,
- double *coefs, int device_nr, cudaStream_t s)
-{
-  int num_splines=spline->num_split_splines;
-  dim3 dimBlock(SPLINE_BLOCK_SIZE);
-  dim3 dimGrid(num_splines/SPLINE_BLOCK_SIZE, num);
-  if (num_splines % SPLINE_BLOCK_SIZE)
-    dimGrid.x++;
-  eval_multi_multi_UBspline_3d_d_kernel<<<dimGrid,dimBlock,0,s>>>
-    (pos_d, spline->gridInv, coefs, vals_d, spline->dim, spline->stride, num_splines, SPLINE_BLOCK_SIZE, device_nr*num_splines*num);
-}
+// extern "C" void
+// eval_multi_multi_UBspline_3d_d_cudasplit
+// (const multi_UBspline_3d_d<Devices::CUDA> *spline,
+//  double *pos_d, double *vals_d, int num,
+//  double *coefs, int device_nr, cudaStream_t s)
+// {
+//   int num_splines=spline->num_split_splines;
+//   dim3 dimBlock(SPLINE_BLOCK_SIZE);
+//   dim3 dimGrid(num_splines/SPLINE_BLOCK_SIZE, num);
+//   if (num_splines % SPLINE_BLOCK_SIZE)
+//     dimGrid.x++;
+//   eval_multi_multi_UBspline_3d_d_kernel<<<dimGrid,dimBlock,0,s>>>
+//     (pos_d, spline->gridInv, coefs, vals_d, spline->dim, spline->stride, num_splines, SPLINE_BLOCK_SIZE, device_nr*num_splines*num);
+// }
 
 __global__ static void
 eval_multi_multi_UBspline_3d_d_sign_kernel
-(double *pos, double *sign, double3 drInv, const double *coefs, double *vals,
+(double *pos, double *sign, double3 drInv, const double *coefs, const double * Bcuda, double *vals,
  uint3 dim, uint3 strides, int N, int spline_offset)
 {
   int block = blockIdx.x;
@@ -359,7 +360,7 @@ eval_multi_multi_UBspline_3d_d_sign_cuda (const multi_UBspline_3d_d<Devices::CUD
   if (spline->num_splines % SPLINE_BLOCK_SIZE)
     dimGrid.x++;
   eval_multi_multi_UBspline_3d_d_sign_kernel<<<dimGrid,dimBlock>>>
-  (pos_d, sign_d, spline->gridInv, spline->coefs,
+    (pos_d, sign_d, spline->gridInv, spline->coefs, spline->Bcuda,
    vals_d, spline->dim, spline->stride, spline->num_splines, 0);
   cudaDeviceSynchronize();
   cudaError_t err = cudaGetLastError();
@@ -372,25 +373,25 @@ eval_multi_multi_UBspline_3d_d_sign_cuda (const multi_UBspline_3d_d<Devices::CUD
   }
 }
 
-extern "C" void
-eval_multi_multi_UBspline_3d_d_sign_cudasplit
-(const multi_UBspline_3d_d<Devices::CUDA> *spline,
- double *pos_d, double *sign_d,
- double *vals_d, int num,
- double *coefs, int device_nr, cudaStream_t s)
-{
-  int num_splines=spline->num_split_splines;
-  dim3 dimBlock(SPLINE_BLOCK_SIZE);
-  dim3 dimGrid(num_splines/SPLINE_BLOCK_SIZE, num);
-  if (num_splines % SPLINE_BLOCK_SIZE)
-    dimGrid.x++;
-  eval_multi_multi_UBspline_3d_d_sign_kernel<<<dimGrid,dimBlock,0,s>>>
-  (pos_d, sign_d, spline->gridInv, coefs,
-   vals_d, spline->dim, spline->stride, num_splines, device_nr*num_splines*num);
-}
+// extern "C" void
+// eval_multi_multi_UBspline_3d_d_sign_cudasplit
+// (const multi_UBspline_3d_d<Devices::CUDA> *spline,
+//  double *pos_d, double *sign_d,
+//  double *vals_d, int num,
+//  double *coefs, int device_nr, cudaStream_t s)
+// {
+//   int num_splines=spline->num_split_splines;
+//   dim3 dimBlock(SPLINE_BLOCK_SIZE);
+//   dim3 dimGrid(num_splines/SPLINE_BLOCK_SIZE, num);
+//   if (num_splines % SPLINE_BLOCK_SIZE)
+//     dimGrid.x++;
+//   eval_multi_multi_UBspline_3d_d_sign_kernel<<<dimGrid,dimBlock,0,s>>>
+//   (pos_d, sign_d, spline->gridInv, coefs, 
+//    vals_d, spline->dim, spline->stride, num_splines, device_nr*num_splines*num);
+// }
 
 
-extern "C" void
+void
 eval_multi_multi_UBspline_3d_d_vgh_cuda (const multi_UBspline_3d_d<Devices::CUDA> *spline,
     double *pos_d, double *vals_d, double *grads_d,
     double *hess_d, int num)
@@ -399,10 +400,14 @@ eval_multi_multi_UBspline_3d_d_vgh_cuda (const multi_UBspline_3d_d<Devices::CUDA
   dim3 dimGrid(spline->num_splines/SPLINE_BLOCK_SIZE, num);
   if (spline->num_splines % SPLINE_BLOCK_SIZE)
     dimGrid.x++;
+  cudaPointerAttributes val_ptr_attr;
+  cudaPointerGetAttributes(&val_ptr_attr, vals_d);
+  
   eval_multi_multi_UBspline_3d_d_vgh_kernel<<<dimGrid,dimBlock>>>
-  (pos_d, spline->gridInv, spline->coefs, vals_d, grads_d, hess_d,
+    (pos_d, spline->gridInv, spline->coefs, spline->Bcuda, vals_d, grads_d, hess_d,
    spline->dim, spline->stride, spline->num_splines);
   cudaDeviceSynchronize();
+  
   cudaError_t err = cudaGetLastError();
   if (err != cudaSuccess)
   {
@@ -416,7 +421,7 @@ eval_multi_multi_UBspline_3d_d_vgh_cuda (const multi_UBspline_3d_d<Devices::CUDA
 
 __global__ static void
 eval_multi_multi_UBspline_3d_d_vgl_kernel
-(double *pos, double3 drInv,  double *coefs,  double *Linv,
+(double *pos, double3 drInv,  double *coefs,  double* Bcuda, double *Linv,
  double *vals, double *grad_lapl, uint3 dim, uint3 strides,
  int N, int row_stride, int spline_offset)
 {
@@ -563,7 +568,7 @@ eval_multi_multi_UBspline_3d_d_vgl_kernel
 }
 
 
-extern "C" void
+void
 eval_multi_multi_UBspline_3d_d_vgl_cuda
 (const multi_UBspline_3d_d<Devices::CUDA> *spline, double *pos_d, double *Linv_d,
  double *vals_d, double *grad_lapl_d, int num, int row_stride)
@@ -573,7 +578,7 @@ eval_multi_multi_UBspline_3d_d_vgl_cuda
   if (spline->num_splines % SPLINE_BLOCK_SIZE)
     dimGrid.x++;
   eval_multi_multi_UBspline_3d_d_vgl_kernel<<<dimGrid,dimBlock>>>
-  (pos_d, spline->gridInv, spline->coefs, Linv_d, vals_d,
+    (pos_d, spline->gridInv, spline->coefs, spline->Bcuda, Linv_d, vals_d,
    grad_lapl_d, spline->dim, spline->stride, spline->num_splines, row_stride, 0);
   cudaDeviceSynchronize();
   cudaError_t err = cudaGetLastError();
@@ -586,26 +591,26 @@ eval_multi_multi_UBspline_3d_d_vgl_cuda
   }
 }
 
-extern "C" void
-eval_multi_multi_UBspline_3d_d_vgl_cudasplit
-(const multi_UBspline_3d_d<Devices::CUDA> *spline, double *pos_d, double *Linv_d,
- double *vals_d, double *grad_lapl_d, int num, int row_stride,
- double *coefs, int device_nr, cudaStream_t s)
-{
-  int num_splines=spline->num_split_splines;
-  dim3 dimBlock(SPLINE_BLOCK_SIZE);
-  dim3 dimGrid(num_splines/SPLINE_BLOCK_SIZE, num);
-  if (num_splines % SPLINE_BLOCK_SIZE)
-    dimGrid.x++;
-  eval_multi_multi_UBspline_3d_d_vgl_kernel<<<dimGrid,dimBlock,0,s>>>
-  (pos_d, spline->gridInv, coefs, Linv_d, vals_d,
-   grad_lapl_d, spline->dim, spline->stride, num_splines, row_stride, device_nr*num_splines*num);
-}
+// extern "C" void
+// eval_multi_multi_UBspline_3d_d_vgl_cudasplit
+// (const multi_UBspline_3d_d<Devices::CUDA> *spline, double *pos_d, double *Linv_d,
+//  double *vals_d, double *grad_lapl_d, int num, int row_stride,
+//  double *coefs, int device_nr, cudaStream_t s)
+// {
+//   int num_splines=spline->num_split_splines;
+//   dim3 dimBlock(SPLINE_BLOCK_SIZE);
+//   dim3 dimGrid(num_splines/SPLINE_BLOCK_SIZE, num);
+//   if (num_splines % SPLINE_BLOCK_SIZE)
+//     dimGrid.x++;
+//   eval_multi_multi_UBspline_3d_d_vgl_kernel<<<dimGrid,dimBlock,0,s>>>
+//   (pos_d, spline->gridInv, coefs, Linv_d, vals_d,
+//    grad_lapl_d, spline->dim, spline->stride, num_splines, row_stride, device_nr*num_splines*num);
+// }
 
 
 __global__ static void
 eval_multi_multi_UBspline_3d_d_vgl_sign_kernel
-(double *pos, double *sign, double3 drInv,  const double *coefs, double *Linv,
+(double *pos, double *sign, double3 drInv,  const double *coefs, const double* Bcuda, double *Linv,
  double *vals, double *grad_lapl, uint3 dim, uint3 strides,
  int N, int row_stride, int spline_offset)
 {
@@ -741,7 +746,7 @@ eval_multi_multi_UBspline_3d_d_vgl_sign_kernel
 }
 
 
-extern "C" void
+void
 eval_multi_multi_UBspline_3d_d_vgl_sign_cuda
 (const multi_UBspline_3d_d<Devices::CUDA> *spline, double *pos_d, double *sign_d, double *Linv_d,
  double *vals_d, double *grad_lapl_d, int num, int row_stride)
@@ -751,7 +756,7 @@ eval_multi_multi_UBspline_3d_d_vgl_sign_cuda
   if (spline->num_splines % SPLINE_BLOCK_SIZE)
     dimGrid.x++;
   eval_multi_multi_UBspline_3d_d_vgl_sign_kernel<<<dimGrid,dimBlock>>>
-  (pos_d, sign_d, spline->gridInv, spline->coefs, Linv_d, vals_d,
+    (pos_d, sign_d, spline->gridInv, spline->coefs, spline->Bcuda, Linv_d, vals_d,
    grad_lapl_d, spline->dim, spline->stride, spline->num_splines, row_stride,0);
   cudaDeviceSynchronize();
   cudaError_t err = cudaGetLastError();
@@ -764,19 +769,19 @@ eval_multi_multi_UBspline_3d_d_vgl_sign_cuda
   }
 }
 
-extern "C" void
-eval_multi_multi_UBspline_3d_d_vgl_sign_cudasplit
-(const multi_UBspline_3d_d<Devices::CUDA> *spline, double *pos_d, double *sign_d, double *Linv_d,
- double *vals_d, double *grad_lapl_d, int num, int row_stride,
- double *coefs, int device_nr, cudaStream_t s)
-{
-  int num_splines=spline->num_split_splines;
-  dim3 dimBlock(SPLINE_BLOCK_SIZE);
-  dim3 dimGrid(num_splines/SPLINE_BLOCK_SIZE, num);
-  if (num_splines % SPLINE_BLOCK_SIZE)
-    dimGrid.x++;
-  eval_multi_multi_UBspline_3d_d_vgl_sign_kernel<<<dimGrid,dimBlock,0,s>>>
-  (pos_d, sign_d, spline->gridInv, coefs, Linv_d, vals_d,
-   grad_lapl_d, spline->dim, spline->stride, num_splines, row_stride, device_nr*num_splines*num);
-}
+// extern "C" void
+// eval_multi_multi_UBspline_3d_d_vgl_sign_cudasplit
+// (const multi_UBspline_3d_d<Devices::CUDA> *spline, double *pos_d, double *sign_d, double *Linv_d,
+//  double *vals_d, double *grad_lapl_d, int num, int row_stride,
+//  double *coefs, int device_nr, cudaStream_t s)
+// {
+//   int num_splines=spline->num_split_splines;
+//   dim3 dimBlock(SPLINE_BLOCK_SIZE);
+//   dim3 dimGrid(num_splines/SPLINE_BLOCK_SIZE, num);
+//   if (num_splines % SPLINE_BLOCK_SIZE)
+//     dimGrid.x++;
+//   eval_multi_multi_UBspline_3d_d_vgl_sign_kernel<<<dimGrid,dimBlock,0,s>>>
+//   (pos_d, sign_d, spline->gridInv, coefs, Linv_d, vals_d,
+//    grad_lapl_d, spline->dim, spline->stride, num_splines, row_stride, device_nr*num_splines*num);
+// }
 

@@ -65,10 +65,10 @@ TEST_CASE("GPUArray Zero", "[CUDA]")
 
 TEST_CASE("GPUArray pull", "[CUDA]")
 {
-  qmcplusplus::GPUArray<double, 1,1> gD;
+  GPUArray<double, 1,1> gD;
   gD.resize(16, 10);
   gD.zero();
-  qmcplusplus::aligned_vector<double> avec;
+  aligned_vector<double> avec;
   gD.pull(avec);
 
   GPUArray<double, 3,1> gDgrad;

@@ -325,8 +325,7 @@ public:
     dirty                             = true;
     auto u                            = esp.lattice.toUnit_floor(p);
     std::vector<std::array<T, 3>> pos = {{u[0], u[1], u[2]}};
-    for (int i = 0; i < esp.nBlocks; ++i)
-      compute_engine.evaluate_v(einsplines[i], pos, dev_psi[i], (size_t)esp.nSplinesPerBlock);
+    compute_engine.evaluate_v(einsplines[0], pos, dev_psi.get_devptr(), (size_t)esp.nSplinesPerBlock);
   }
 
   inline void evaluate_vgh_i(const QMCT::PosType& p)
@@ -334,10 +333,7 @@ public:
     dirty                             = true;
     auto u                            = esp.lattice.toUnit_floor(p);
     std::vector<std::array<T, 3>> pos = {{u[0], u[1], u[2]}};
-    for (int i = 0; i < esp.nBlocks; ++i)
-    {
-      compute_engine.evaluate_vgh(einsplines[i], pos, dev_psi[i], dev_grad[i], dev_hess[i], esp.nSplinesPerBlock);
-    }
+    compute_engine.evaluate_vgh(einsplines[0], pos, dev_psi.get_devptr(), dev_grad.get_devptr(), dev_hess.get_devptr(), esp.nSplinesPerBlock);
   }
 
   void evaluate_vgl_i(const QMCT::PosType& p)
@@ -345,8 +341,8 @@ public:
     dirty                             = true;
     auto u                            = esp.lattice.toUnit_floor(p);
     std::vector<std::array<T, 3>> pos = {{u[0], u[1], u[2]}};
-    for (int i = 0; i < esp.nBlocks; ++i)
-      compute_engine.evaluate_vgl(einsplines[i], pos, dev_linv[i], dev_psi[i], dev_hess[i], esp.nSplinesPerBlock);
+    
+    compute_engine.evaluate_vgl(einsplines[0], pos, dev_linv.get_devptr(), dev_psi.get_devptr(), dev_lapl.get_devptr(), esp.nSplinesPerBlock);
   }
 
   T getPsi_i(int ib, int n)

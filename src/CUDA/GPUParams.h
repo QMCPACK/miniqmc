@@ -27,6 +27,7 @@
 
 #define COALLESCED_SIZE 16
 
+//#define 
 
 struct Gpu
 {
