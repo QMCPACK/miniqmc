@@ -169,7 +169,7 @@ public:
    */
   EinsplineSPODeviceImp(const EinsplineSPODeviceImp<Devices::CPU, T>& in, int team_size, int member_id)
   {
-    std::cout << "EinsplineSPODeviceImpCPU Fat Copy constructor called" << '\n';
+    std::cout << "EinsplineSPODeviceImpCUDA Fat Copy constructor called" << '\n';
     const EinsplineSPOParams<T>& inesp = in.getParams();
     esp.nSplinesSerialThreshold_V      = inesp.nSplinesSerialThreshold_V;
     esp.nSplinesSerialThreshold_VGH    = inesp.nSplinesSerialThreshold_VGH;
@@ -200,7 +200,7 @@ public:
   EinsplineSPODeviceImp(const EinsplineSPODeviceImp<Devices::CUDA, T>& in, int team_size, int member_id)
       : dev_psi(), dev_grad(), dev_linv(), dev_hess()
   {
-    std::cout << "EinsplineSPODeviceImpCPU Fat Copy constructor called" << '\n';
+    std::cout << "EinsplineSPODeviceImpCUDA Fat Copy constructor called" << '\n';
     const EinsplineSPOParams<T>& inesp = in.getParams();
     esp.nSplinesSerialThreshold_V      = inesp.nSplinesSerialThreshold_V;
     esp.nSplinesSerialThreshold_VGH    = inesp.nSplinesSerialThreshold_VGH;
