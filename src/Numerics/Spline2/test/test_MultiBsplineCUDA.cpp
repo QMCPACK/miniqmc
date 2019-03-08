@@ -31,7 +31,7 @@ TEST_CASE("MultiBspline<CUDA> instantiation", "[CUDA][Spline2]")
   //MultiBspline<Devices::CUDA, float> mbcf;  
 }
 
-TEST_CASE("MultiBspline<CUDA> evaluate_v", "[CUDA][Spline2]")
+TEST_CASE("MultiBspline<CUDA> single block evaluate_v", "[CUDA][Spline2]")
 {
   Gpu& gpu = Gpu::get();
   gpu.initCUDAStreams();
@@ -45,7 +45,7 @@ TEST_CASE("MultiBspline<CUDA> evaluate_v", "[CUDA][Spline2]")
   mbf_CUDA.evaluate_v(tmb.cuda_spline, pos, d_vals.get_devptr(), 1, 64);
   MultiBsplineFuncs<Devices::CPU,double> mbf_CPU;
   aligned_vector<double> vals(64);
-  mbf_CPU.evaluate_v(tmb.cpu_spline, pos, vals.data(), 64);
+  mbf_CPU.evaluate_v(tmb.cpu_splines[0], pos, vals.data(), 64);
   aligned_vector<double> gpu_vals(64);
   d_vals.pull(gpu_vals);
   bool matching_spline_vals = std::all_of(boost::make_zip_iterator(boost::make_tuple(vals.begin(), vals.end())),
@@ -66,6 +66,40 @@ TEST_CASE("MultiBspline<CUDA> evaluate_v", "[CUDA][Spline2]")
   gpu.finalizeCUDAStreams();
 }  
 
+TEST_CASE("MultiBspline<CUDA> multi block evaluate_v", "[CUDA][Spline2]")
+{
+  Gpu& gpu = Gpu::get();
+  gpu.initCUDAStreams();
+  TestMultiBspline<double, double> tmb(64);
+  tmb.create();
+  MultiBsplineFuncs<Devices::CUDA,double> mbf_CUDA;
+  GPUArray<double,1,1> d_vals;
+  d_vals.resize(1,64);
+  d_vals.zero();
+  std::vector<std::array<double,3>> pos = {{1,1,1}};
+  mbf_CUDA.evaluate_v(tmb.cuda_spline, pos, d_vals.get_devptr(), 1, 64);
+  MultiBsplineFuncs<Devices::CPU,double> mbf_CPU;
+  aligned_vector<double> vals(64);
+  mbf_CPU.evaluate_v(tmb.cpu_splines[0], pos, vals.data(), 64);
+  aligned_vector<double> gpu_vals(64);
+  d_vals.pull(gpu_vals);
+  bool matching_spline_vals = std::all_of(boost::make_zip_iterator(boost::make_tuple(vals.begin(), vals.end())),
+  					   boost::make_zip_iterator(boost::make_tuple(gpu_vals.begin(), gpu_vals.end())),
+  					    [](const boost::tuple<double&, double&>& t)
+  					   {
+					       double val = t.get<0>();
+					       double gpu_val = t.get<0>();
+					       bool comp = ( val == Approx( gpu_val ).epsilon(0.005) );
+  					       if ( ! comp )
+  						   std::cout << "comparison failed: " <<  t.get<0>() << " != "
+  							     << t.get<1>() << '\n';
+  					       return comp;
+  					   });
+  
+  REQUIRE ( matching_spline_vals );
+  
+  gpu.finalizeCUDAStreams();
+}  
 
 
   // TEST_CAST("MultiBspline<CUDA> evaluate_v_value","[CUDA]")

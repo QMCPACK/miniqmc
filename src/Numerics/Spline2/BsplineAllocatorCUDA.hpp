@@ -23,6 +23,7 @@
 #include "Numerics/Einspline/multi_bspline_structs.h"
 #include "Numerics/Einspline/multi_bspline_structs_cuda.h"
 #include <Numerics/OhmmsPETE/OhmmsArray.h>
+
 namespace qmcplusplus
 {
 namespace einspline
@@ -61,6 +62,10 @@ public:
 			     T dummyT,
 			     DT dummyDT);
 
+  template<typename T, typename DT>
+  void createMultiBspline(aligned_vector<typename bspline_traits<Devices::CPU, T, 3>::SplineType*>& cpu_splines,
+						     typename bspline_traits<Devices::CUDA, DT, 3>::SplineType*& target_spline, T dummyT, DT dummyDT);
+
   // /// create a single CUDA multi-bspline
   // void createMultiBspline_3d(multi_UBspline_3d_s<qmcplusplus::Devices::CPU>* source_spline,
   // 			     multi_UBspline_3d_s<Devices::CUDA>* target_spline);
@@ -75,6 +80,15 @@ public:
 
 
 extern template class Allocator<qmcplusplus::Devices::CUDA>;
+    extern template void Allocator<qmcplusplus::Devices::CUDA>::createMultiBspline(  aligned_vector<typename bspline_traits<Devices::CPU, double, 3>::SplineType*>& cpu_splines,
+										      typename bspline_traits<Devices::CUDA, double, 3>::SplineType*& target_spline, double dummyT, double dummyDT);
+
+       extern template void Allocator<qmcplusplus::Devices::CUDA>::createMultiBspline(  aligned_vector<typename bspline_traits<Devices::CPU, double, 3>::SplineType*>& cpu_splines,
+										      typename bspline_traits<Devices::CUDA, float, 3>::SplineType*& target_spline, double dummyT, float dummyDT);
+
+        extern template void Allocator<qmcplusplus::Devices::CUDA>::createMultiBspline(  aligned_vector<typename bspline_traits<Devices::CPU, float, 3>::SplineType*>& cpu_splines,
+										      typename bspline_traits<Devices::CUDA, float, 3>::SplineType*& target_spline, float dummyT, float dummyDT);
+
 } // namespace einspline
 } // namespace qmcplusplus
 

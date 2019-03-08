@@ -29,60 +29,67 @@ struct TestMultiBspline
 
   Allocator<Devices::CPU> cpu_allocator;
   Allocator<Devices::CUDA> cuda_allocator;
-  typename CpuST::SplineType* cpu_spline;
   typename CudaST::SplineType* cuda_spline;
   int num_splines_;
+  int num_blocks_;
 
-  TestMultiBspline(int num_splines = 100) : cpu_spline(nullptr), cuda_spline(nullptr), num_splines_(num_splines) {};
+  aligned_vector<typename CpuST::SplineType*> cpu_splines;
+
+  TestMultiBspline(int num_splines = 100, int num_blocks=1) : cuda_spline(nullptr), num_splines_(num_splines), num_blocks_(num_blocks)
+	{
+	    cpu_splines.resize(num_blocks_);
+	    for (int i = 0; i < num_blocks_; ++i)
+		cpu_splines[i] = nullptr;
+	};
 
   void create()
   {
-    typename CpuST::BCType xBC;
-    typename CpuST::BCType yBC;
-    typename CpuST::BCType zBC;
-    // You can't take references to the old school structs at least with gcc
-    std::vector<typename CpuST::BCType*> bc_array = {&xBC,&yBC,&zBC};
+    typename CpuST::BCType bc;
     bc_code bCode = bc_code::PERIODIC;
-    std::for_each(bc_array.begin(), bc_array.end(), [bCode](typename CpuST::BCType* bc)
-        {
-	  bc->lCode = bCode;
-	  bc->rCode = bCode;
-	  bc->lVal = 0.0;
-	  bc->rVal = 10.0;
-	});
-    Ugrid xGrid;
-    Ugrid yGrid;
-    Ugrid zGrid;
-    // You can't take references to the old school structs at least with gcc
-    std::vector<Ugrid*> gr_array = {&xGrid, &yGrid, &zGrid};
-    std::for_each(gr_array.begin(), gr_array.end(), [](Ugrid* ug)
-        {
-	  ug->start = 0.0;
-	  ug->end = 10.0;
-	  ug->num = 100;
-	});
+    bc.lCode = bCode;
+    bc.rCode = bCode;
+    bc.lVal = 0.0;
+    bc.rVal = 10.0;
+    Ugrid grid;
+    grid.start = 0.0;
+    grid.end = 10.0;
+    grid.num = 100;
 
-    cpu_allocator.allocateMultiBspline(cpu_spline, xGrid, yGrid, xGrid, xBC, yBC, zBC, num_splines_);
-    REQUIRE( cpu_spline != nullptr );
-    RandomGenerator<T> myrandom(11);
-    Array<T, 3> coef_data(cpu_spline->x_grid.num + 3, cpu_spline->y_grid.num + 3, cpu_spline->z_grid.num + 3);
-    for( int i = 0; i < num_splines_; ++i)
+    for( int b = 0; b < num_blocks_; ++b)
     {
-      myrandom.generate_uniform(coef_data.data(), coef_data.size());
-      cpu_allocator.setCoefficientsForOneOrbital(i,coef_data, cpu_spline);
+	typename CpuST::SplineType*& cpu_spline = cpu_splines[b];
+	cpu_allocator.allocateMultiBspline(cpu_spline, grid, grid, grid, bc, bc, bc, num_splines_);
+	REQUIRE( cpu_spline != nullptr );
+	RandomGenerator<T> myrandom(11);
+	Array<T, 3> coef_data(cpu_spline->x_grid.num + 3, cpu_spline->y_grid.num + 3, cpu_spline->z_grid.num + 3);
+	for( int i = 0; i < num_splines_; ++i)
+	{
+	    myrandom.generate_uniform(coef_data.data(), coef_data.size());
+	    cpu_allocator.setCoefficientsForOneOrbital(i,coef_data, cpu_spline);
+	}
     }
-
+    
     T dummyT;
     DT dummyDT;
-    cuda_allocator.createMultiBspline(cpu_spline, cuda_spline, dummyT, dummyDT);
-    REQUIRE( cpu_spline != nullptr );
+    cuda_allocator.createMultiBspline(cpu_splines, cuda_spline, dummyT, dummyDT);
+
+    bool valid_cpu_splines = std::all_of(cpu_splines.begin(), cpu_splines.end(),
+					 [](typename CpuST::SplineType*& cpu_spline )
+  					   {
+					       bool valid_cpu_spline = (cpu_spline != nullptr);
+					       return valid_cpu_spline;
+  					   });
+  
+    REQUIRE ( valid_cpu_splines );
     REQUIRE( cuda_spline != nullptr );
   }
 
   void destroy()
   {
     cuda_allocator.destroy(cuda_spline);
-    cpu_allocator.destroy(cpu_spline);
+    std::for_each(cpu_splines.begin(), cpu_splines.end(),[&](typename CpuST::SplineType*& cpu_spline){
+	    cpu_allocator.destroy(cpu_spline);
+	});
   }
 
 };
