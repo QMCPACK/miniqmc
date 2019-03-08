@@ -17,7 +17,7 @@
 #include "QMCWaveFunctions/DeterminantDevice.h"
 #include "QMCWaveFunctions/DeterminantDeviceImp.h"
 #include "Utilities/PrimeNumberSet.h"
-
+#include "Devices_HANA.hpp"
 
 namespace qmcplusplus
 {

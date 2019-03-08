@@ -15,13 +15,14 @@
 #include <Utilities/qmcpack_version.h>
 #include <Input/Input.hpp>
 #include "Devices.h"
-#include "Batching.h"
+#include "Devices_HANA.hpp"
 #include <QMCWaveFunctions/SPOSet.h>
 #include <QMCWaveFunctions/SPOSet_builder.h>
 #include <QMCWaveFunctions/WaveFunction.h>
 #include <Drivers/Mover.hpp>
 #include "Drivers/MiniqmcOptions.hpp"
-#include "Drivers/getMiniQMCDriverFunctions.h"
+#include "Drivers/MiniqmcDriverFunctions.hpp"
+//#include "Drivers/getMiniQMCDriverFunctions.h"
 
 namespace qmcplusplus
 {

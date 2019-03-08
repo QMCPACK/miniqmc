@@ -17,7 +17,6 @@
 #include <functional>
 #include <boost/hana/map.hpp>
 #include "Devices.h"
-#include "Batching.h"
 #include "Drivers/MiniqmcOptions.hpp"
 #include "Drivers/Mover.hpp"
 #include "Drivers/Movers.hpp"
@@ -192,6 +191,14 @@ void MiniqmcDriverFunctions<DT>::movers_thread_main(const int ip,
 
   } // nsteps
 }
+
+extern template class qmcplusplus::MiniqmcDriverFunctions<Devices::CPU>;
+#ifdef QMC_USE_KOKKOS
+extern template class qmcplusplus::MiniqmcDriverFunctions<Devices::KOKKOS>;
+#endif
+#ifdef QMC_USE_CUDA
+extern template class qmcplusplus::MiniqmcDriverFunctions<Devices::CUDA>;
+#endif
 
 } // namespace qmcplusplus
 

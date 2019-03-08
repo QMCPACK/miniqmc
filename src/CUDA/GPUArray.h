@@ -93,7 +93,7 @@ public:
     aVec.resize(elements);
     for (int i = 0; i < elements; ++i)
     {
-      aVec[i] = buffer[i * sizeof(T)];
+      aVec[i] = buffer[i];
     }
   }
 

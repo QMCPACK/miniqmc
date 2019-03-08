@@ -13,7 +13,6 @@
 #ifndef QMCPLUSPLUS_SINGLEPARTICLEORBITALSET_BUILDER_H
 #define QMCPLUSPLUS_SINGLEPARTICLEORBITALSET_BUILDER_H
 
-#include "Batching.h"
 #include "QMCWaveFunctions/SPOSetImp.h"
 #include "QMCWaveFunctions/EinsplineSPO.hpp"
 #include "QMCWaveFunctions/einspline_spo_ref.hpp"

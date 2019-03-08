@@ -27,6 +27,8 @@
 #include "Drivers/CheckSPOData.hpp"
 #include <Utilities/qmcpack_version.h>
 #include <getopt.h>
+#include "Devices.h"
+#include "Devices_HANA.hpp"
 
 
 namespace qmcplusplus

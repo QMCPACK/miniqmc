@@ -10,7 +10,7 @@ eval_multi_multi_UBspline_3d_d_kernel
  uint3 dim, uint3 strides, int spline_block_size, int N, int spline_offset)
 {
   int block = blockIdx.x;
-  int thr   = threadIdx.x; //if your grid size was not 64 or larger you are in trouble.
+  int thr   = threadIdx.x; //if your block size is not 64 or larger you are in trouble.
   int ir    = blockIdx.y;
   int off   = block*spline_block_size+thr;
   __shared__ double *myval;

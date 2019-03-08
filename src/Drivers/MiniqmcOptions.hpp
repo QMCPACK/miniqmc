@@ -19,6 +19,7 @@
 #include <cstdio>
 #include <boost/hana/for_each.hpp>
 #include "Devices.h"
+#include "Devices_HANA.hpp"
 #include "Input/Input.hpp"
 #include "Utilities/qmcpack_version.h"
 #include "Utilities/NewTimer.h"
