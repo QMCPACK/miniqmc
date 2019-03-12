@@ -66,6 +66,10 @@ public:
   void createMultiBspline(aligned_vector<typename bspline_traits<Devices::CPU, T, 3>::SplineType*>& cpu_splines,
 						     typename bspline_traits<Devices::CUDA, DT, 3>::SplineType*& target_spline, T dummyT, DT dummyDT);
 
+private:
+  template<typename T>
+  std::vector<int>  extractCPUSplineCounts(const aligned_vector<typename bspline_traits<Devices::CPU, T, 3>::SplineType*>& cpu_splines) const;
+  
   // /// create a single CUDA multi-bspline
   // void createMultiBspline_3d(multi_UBspline_3d_s<qmcplusplus::Devices::CPU>* source_spline,
   // 			     multi_UBspline_3d_s<Devices::CUDA>* target_spline);
