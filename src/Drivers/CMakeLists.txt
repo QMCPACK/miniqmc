@@ -1,8 +1,4 @@
-if(QMC_BUILD_LEVEL GREATER 4)
-# add apps XYZ.cpp, e.g., qmc_particles.cpp
-#SET(ESTEST einspline_smp EinsplineSPO qmc_particles moveonsphere twobody ptclset)
-
-SET(ESTEST check_wfc check_spo check_determinant)
+SET(ESTEST check_wfc check_determinant)
 
 FOREACH(p ${ESTEST})
   ADD_EXECUTABLE( ${p} ${p}.cpp ${ETEST_KOKKOS_SRC} )
@@ -12,16 +8,12 @@ FOREACH(p ${ESTEST})
   ENDIF(QMC_USE_CUDA)
 ENDFOREACH(p ${ESTEST})
 
+ADD_EXECUTABLE( check_spo check_spo.cpp CheckSPOSteps.cpp ${ETEST_KOKKOS_SRC} )
+TARGET_LINK_LIBRARIES( check_spo qmcbase qmcutil qmcdevice ${QMC_UTIL_LIBS} ${MPI_LIBRARY})
 IF(QMC_USE_CUDA)
-    TARGET_SOURCES(check_spo PUBLIC test/CheckSPOStepsCUDA.cpp)
+  TARGET_LINK_LIBRARIES( check_spo qmc_cuda_params)
+  TARGET_SOURCES(check_spo PUBLIC test/CheckSPOStepsCUDA.cpp)
 ENDIF(QMC_USE_CUDA)
-  
-# SET(THIS_TEST check_determinant)
-# IF(QMC_USE_KOKKOS)
-#   SET(ETEST_KOKKOS_SRC "test/CheckDeterminantStepsKOKKOS.cpp")
-# ENDIF(QMC_USE_KOKKOS)
-# ADD_EXECUTABLE( ${THIS_TEST}  ${THIS_TEST}.cpp ${ETEST_KOKKOS_SRC})
-# TARGET_LINK_LIBRARIES(${THIS_TEST} qmcbase qmcutil ${QMC_UTIL_LIBS} ${MPI_LIBRARY})
 
 ADD_LIBRARY(miniwfs ../QMCWaveFunctions/WaveFunction.cpp
   ../QMCWaveFunctions/WaveFunctionBuilder.cpp ${KOKKOS_SRCS})
@@ -46,7 +38,7 @@ FOREACH(p ${DRIVERS})
   
 ENDFOREACH(p ${ESTEST})
 
-endif()
+
 
 #SET(boost_test exchange_walker)
 #FOREACH(p ${boost_test})

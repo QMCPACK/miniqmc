@@ -35,6 +35,9 @@ namespace qmcplusplus
 {
   namespace hana = boost::hana;
 
+  // forward declaration of CheckSPOSteps
+  template<Devices DT>
+  class CheckSPOSteps;
   // This would be nice to generate with metaprogramming when there is time   
 constexpr auto device_spo_tuple = hana::make_tuple(hana::type_c<CheckSPOSteps<Devices::CPU>>,
 #ifdef QMC_USE_KOKKOS
@@ -192,11 +195,4 @@ public:
 
 
 } // namespace qmcplusplus
-#ifdef QMC_USE_KOKKOS
-#include "Drivers/test/CheckSPOStepsKOKKOS.hpp"
-#endif
-// #ifdef QMC_USE_CUDA
-// #include "Drivers/test/CheckSPOStepsCUDA.hpp"
-// #endif
-
 #endif

@@ -89,7 +89,7 @@ TEST_CASE("MultiBspline<CUDA> multi block coefficients", "[CUDA][Spline2]")
 TEST_CASE("MultiBspline<CUDA> multi block evaluate_v", "[CUDA][Spline2]")
 {
   Gpu& gpu = Gpu::get();
-  TestMultiBspline<double, double> tmb(64, 2, 10);
+  TestMultiBspline<double, double> tmb(64, 4);
   tmb.create();
   MultiBsplineFuncs<Devices::CUDA, double> mbf_CUDA;
   GPUArray<double, 1, 1> d_vals;
@@ -116,21 +116,52 @@ TEST_CASE("MultiBspline<CUDA> multi block evaluate_v", "[CUDA][Spline2]")
       break;
     }
   }
-  
-  // bool matching_spline_vals =
-  //     std::all_of(boost::make_zip_iterator(boost::make_tuple(vals.begin(), vals.end())),
-  //                 boost::make_zip_iterator(boost::make_tuple(gpu_vals.begin(), gpu_vals.end())),
-  //                 [](const boost::tuple<double&, double&>& t) {
-  //                   double val     = boost::get<0>(t);
-  //                   double gpu_val = boost::get<1>(t);
-  //                   bool comp      = (val == Approx(gpu_val).epsilon(0.005));
-  //                   if (!comp)
-  //                     std::cout << "comparison failed: " << t.get<0>() << " != " << t.get<1>()
-  //                               << '\n';
-  //                   return comp;
-  //                 });
 
   REQUIRE(matching_spline_vals);
+}
+
+TEST_CASE("MultiBspline<CUDA> multi pos evaluate_v", "[CUDA][Spline2]")
+{
+  Gpu& gpu = Gpu::get();
+  TestMultiBspline<double, double> tmb(64, 4);
+  tmb.create();
+  MultiBsplineFuncs<Devices::CUDA, double> mbf_CUDA;
+  GPUArray<double, 1, 1> d_vals;
+  std::vector<std::array<double, 3>> pos = {{1, 1, 1},{0.24,0.24,0.24},{1, 1, 1},{0.24,0.24,0.24}};
+  d_vals.resize(1, 256 * pos.size());
+  d_vals.zero();
+
+  mbf_CUDA.evaluate_v(tmb.cuda_spline, pos, d_vals.get_devptr(), 1, 256);
+  aligned_vector<double> gpu_vals(256 * pos.size());
+  d_vals.pull(gpu_vals);
+
+
+  bool matching_spline_vals = true;
+  // for (int i = 0; i < gpu_vals.size(); ++i)
+  // {
+  //   //std::cout << vals[i] << " : " << gpu_vals[i] << '\n';
+  //   if ( vals[i] != Approx(gpu_vals[i]).epsilon(0.005) )
+  //   {
+  //     bool matching_spline_vals = false;
+  //     std::cout << "evaluation values do not match (cpu : gpu)  " << vals[i] << " : " << gpu_vals[i] << '\n';
+  //     break;
+  //   }
+  // }
+
+  // // bool matching_spline_vals =
+  // //     std::all_of(boost::make_zip_iterator(boost::make_tuple(vals.begin(), vals.end())),
+  // //                 boost::make_zip_iterator(boost::make_tuple(gpu_vals.begin(), gpu_vals.end())),
+  // //                 [](const boost::tuple<double&, double&>& t) {
+  // //                   double val     = boost::get<0>(t);
+  // //                   double gpu_val = boost::get<1>(t);
+  // //                   bool comp      = (val == Approx(gpu_val).epsilon(0.005));
+  // //                   if (!comp)
+  // //                     std::cout << "comparison failed: " << t.get<0>() << " != " << t.get<1>()
+  // //                               << '\n';
+  // //                   return comp;
+  // //                 });
+
+  // REQUIRE(matching_spline_vals);
 }
 
 

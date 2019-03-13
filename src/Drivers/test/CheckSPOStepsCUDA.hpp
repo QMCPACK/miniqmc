@@ -16,6 +16,7 @@
 #include <vector>
 
 #include "Drivers/check_spo.h"
+#include "Drivers/CheckSPOSteps.hpp"
 #include "Utilities/Configuration.h"
 
 namespace qmcplusplus

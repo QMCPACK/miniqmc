@@ -25,6 +25,7 @@
 #include <Numerics/Spline2/bspline_allocator.hpp>
 #include <Numerics/Spline2/MultiBsplineRef.hpp>
 #include <Utilities/SIMD/allocator.hpp>
+#include "Utilities/RandomGenerator.h"
 #include "Numerics/OhmmsPETE/OhmmsArray.h"
 #include "QMCWaveFunctions/SPOSetImp.h"
 

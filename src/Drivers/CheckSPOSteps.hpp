@@ -14,7 +14,9 @@
 #ifndef QMCPLUSPLUS_CHECK_SPO_STEPS_HPP
 #define QMCPLUSPLUS_CHECK_SPO_STEPS_HPP
 #include "Devices.h"
+#include "check_spo.h"
 #include "Utilities/Configuration.h"
+#include "QMCWaveFunctions/einspline_spo_ref.hpp"
 #include "QMCWaveFunctions/EinsplineSPO.hpp"
 #include "QMCWaveFunctions/EinsplineSPODevice.hpp"
 #include "QMCWaveFunctions/EinsplineSPODeviceImp.hpp"
@@ -31,7 +33,7 @@ public:
 
 public:
   using QMCT = QMCTraits;
-  static void initialize(int arc, char** argv);
+  static void initialize(int arc, char** argv) {};
   static void test(int& error,
                    int team_size,
                    const Tensor<int, 3>& tmat,
@@ -41,7 +43,7 @@ public:
                    const int nz,
                    const int nsteps,
                    const QMCT::RealType Rmax);
-  static void finalize();
+  static void finalize() {};
 
   template<typename T>
   static void thread_main(const int num_threads,
@@ -77,5 +79,33 @@ private:
                                     const T Rmax);
 };
 
+extern template class CheckSPOSteps<Devices::CPU>;
+
 } // namespace qmcplusplus
+
+
+///////////////////////////////////////////////////
+/** from here we have explicit instantiation declarations whose purpose is to speed compilation.
+ */
+#ifdef QMC_USE_KOKKOS
+#include "Drivers/test/CheckSPOStepsKOKKOS.hpp"
+#endif
+
+#ifdef QMC_USE_CUDA
+#include "Drivers/test/CheckSPOStepsCUDA.hpp"
+namespace qmcplusplus
+{
+extern template void CheckSPOSteps<Devices::CUDA>::test(int&, int, qmcplusplus::Tensor<int, 3u> const&, int, int, int, int, int, double);
+extern template typename CheckSPOSteps<Devices::CUDA>::SPODevImp
+CheckSPOSteps<Devices::CUDA>::buildSPOMain(const int nx,
+				const int ny,
+				const int nz,
+				const int norb,
+				const int nTiles,
+				const Tensor<OHMMS_PRECISION, 3>& lattice_b);
+
+}
+#endif
+
+
 #endif
