@@ -21,6 +21,8 @@
 #include "Numerics/Spline2/MultiBsplineFuncsCUDA.hpp"
 #include "Numerics/Spline2/MultiBsplineFuncs.hpp"
 #include "Numerics/Spline2/test/TestMultiBspline.hpp"
+#include "Numerics/Spline2/test/CheckMultiBsplineEvalOutput.hpp"
+
 namespace qmcplusplus
 {
 TEST_CASE("MultiBspline<CUDA> instantiation", "[CUDA][Spline2]")
@@ -92,57 +94,52 @@ TEST_CASE("MultiBspline<CUDA> single block evaluate_vgh", "[CUDA][Spline2]")
   VectorSoAContainer<T, 3> grads(64);
   VectorSoAContainer<T, 6>  hess(64);
   mbf_CPU.evaluate_vgh(tmb.cpu_splines[0], pos, vals.data(), grads.data(), hess.data(), 64);
-  
-  bool matching_vals = true;
-  for (int i = 0; i < gpu_vals.size() ; ++i)
-  {
-    //std::cout << vals[i] << " : " << gpu_vals[i] << '\n';
-    if ( vals[i] != Approx(gpu_vals[i]).epsilon(0.005) )
-    {
-      bool matching_spline_vals = false;
-      std::cout << "evaluation values do not match (cpu : gpu)  " << vals[i] << " : " << gpu_vals[i] << '\n';
-      break;
-    }
-  }
 
-  bool matching_grads = true;
-  for (int i = 0; i < gpu_grads.size() ; ++i)
-  {
-    if (matching_grads)
-      for(int j = 0; j < 3; ++j)
-      {
-	if (matching_grads)
-	  if ( grads[i][j] != Approx(gpu_grads[i][j]).epsilon(0.005) )
-	  {
-	    matching_grads = false;
-	    std::cout << "eval_vgh grad ( "<< i << "," << j << " ) does not match cpu : gpu "
-		      << grads[i][j] << " : " << gpu_grads[i][j] << '\n';
-	    break;
-	  }
-      }
-  }
-  REQUIRE(matching_grads);
-
-  bool matching_hessian = true;
-  for (int i = 0; i < gpu_hess.size() ; ++i)
-  {
-    if (matching_hessian)
-      for(int j = 0; j < 6; ++j)
-      {
-	if (matching_hessian)
-	  if ( hess[i][j] != Approx(gpu_hess[i][j]).epsilon(0.01) )
-	  {
-	    matching_hessian = false;
-	    std::cout << "eval_vgh hessian ( "<< i << "," << j << " ) does not match cpu : gpu "
-		      << std::setprecision(14) << hess[i][j] << " : " << gpu_hess[i][j] << '\n';
-	    break;
-	  }
-      }
-  }
-  REQUIRE(matching_hessian);
+  CheckMultiBsplineEvalOutput<T> check_eval;
+  bool eval_checks = check_eval(vals,gpu_vals,grads,gpu_grads,hess,gpu_hess);
+  REQUIRE( eval_checks );
 
 }
 
+TEST_CASE("MultiBspline<CUDA> multi block evaluate_vgh", "[CUDA][Spline2]")
+{
+  using T = double;
+  Gpu& gpu = Gpu::get();
+  TestMultiBspline<T, T> tmb(128,2,10);
+  tmb.create();
+  MultiBsplineFuncs<Devices::CUDA, double> mbf_CUDA;
+  GPUArray<double, 1, 1> d_vals;
+  GPUArray<double, 3, 1> d_grads;
+  GPUArray<double, 6, 1> d_hess;
+  d_vals.resize(1, 128);
+  d_vals.zero();
+  d_grads.resize(1, 128);
+  d_grads.zero();
+  d_hess.resize(1, 128);
+  d_hess.zero();
+  std::vector<std::array<double, 3>> pos = {{1, 1, 1}};
+  mbf_CUDA.evaluate_vgh(tmb.cuda_spline, pos, d_vals.get_devptr(), d_grads.get_devptr(), d_hess.get_devptr(), 2, 64);
+  aligned_vector<T> gpu_vals(128);
+  VectorSoAContainer<T, 3> gpu_grads(128);
+  VectorSoAContainer<T, 6> gpu_hess(128);
+  d_vals.pull(gpu_vals);
+  d_grads.pull(gpu_grads);
+  d_hess.pull(gpu_hess);
+  MultiBsplineFuncs<Devices::CPU, T> mbf_CPU;
+  aligned_vector<T> vals(128);
+  VectorSoAContainer<T, 3> grads(128);
+  VectorSoAContainer<T, 6>  hess(128);
+  mbf_CPU.evaluate_vgh(tmb.cpu_splines[0], pos, vals.data(), grads.data(), hess.data(), 64);
+  mbf_CPU.evaluate_vgh(tmb.cpu_splines[1], pos, &(vals.data()[64]), &(grads.data()[64]), &(hess.data()[64]), 64);
+  
+  
+  CheckMultiBsplineEvalOutput<T> check_eval;
+  bool eval_checks = check_eval(vals,gpu_vals,grads,gpu_grads,hess,gpu_hess);
+  REQUIRE( eval_checks );
+
+}
+
+  
 /** This belongs in test of BsplineAllocatorCUDA but its convenient here.
  */
 TEST_CASE("MultiBspline<CUDA> multi block coefficients", "[CUDA][Spline2]")
@@ -202,23 +199,23 @@ TEST_CASE("MultiBspline<CUDA> multi block evaluate_v", "[CUDA][Spline2]")
 
 /** needs to actually check values but it is also nice to see it not crash
  */
-TEST_CASE("MultiBspline<CUDA> multi pos evaluate_v", "[CUDA][Spline2]")
-{
-  Gpu& gpu = Gpu::get();
-  TestMultiBspline<double, double> tmb(64, 4);
-  tmb.create();
-  MultiBsplineFuncs<Devices::CUDA, double> mbf_CUDA;
-  GPUArray<double, 1, 1> d_vals;
-  std::vector<std::array<double, 3>> pos = {{1, 1, 1},{0.24,0.24,0.24},{1, 1, 1},{0.24,0.24,0.24}};
-  d_vals.resize(1, 256 * pos.size());
-  d_vals.zero();
+// TEST_CASE("MultiBspline<CUDA> multi pos evaluate_v", "[CUDA][Spline2]")
+// {
+//   Gpu& gpu = Gpu::get();
+//   TestMultiBspline<double, double> tmb(64, 4);
+//   tmb.create();
+//   MultiBsplineFuncs<Devices::CUDA, double> mbf_CUDA;
+//   GPUArray<double, 1, 1> d_vals;
+//   std::vector<std::array<double, 3>> pos = {{1, 1, 1},{0.24,0.24,0.24},{1, 1, 1},{0.24,0.24,0.24}};
+//   d_vals.resize(1, 256 * pos.size());
+//   d_vals.zero();
 
-  mbf_CUDA.evaluate_v(tmb.cuda_spline, pos, d_vals.get_devptr(), 1, 256);
-  aligned_vector<double> gpu_vals(256 * pos.size());
-  d_vals.pull(gpu_vals);
+//   mbf_CUDA.evaluate_v(tmb.cuda_spline, pos, d_vals.get_devptr(), 1, 256);
+//   aligned_vector<double> gpu_vals(256 * pos.size());
+//   d_vals.pull(gpu_vals);
 
-  bool matching_spline_vals = true;
-}
+//   bool matching_spline_vals = true;
+// }
 
 
 // TEST_CAST("MultiBspline<CUDA> evaluate_v_value","[CUDA]")

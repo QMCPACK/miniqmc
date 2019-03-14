@@ -17,6 +17,9 @@
 #// File created by: Jeongnim Kim, jeongnim.kim@gmail.com, University of Illinois at Urbana-Champaign
 #//////////////////////////////////////////////////////////////////////////////////////
 
+INCLUDE(${PROJECT_SOURCE_DIR}/CMake/unit_test.cmake)
+
+
 CONFIGURE_FILE(${qmcpack_SOURCE_DIR}/src/config.h.cmake.in
   ${qmcpack_BINARY_DIR}/src/config.h)
 
@@ -201,7 +204,6 @@ endif(QMC_USE_CUDA)
   #ELSE(QMC_BUILD_STATIC)
   #  ADD_LIBRARY(qmcutil SHARED ${UTILITIES})
   #ENDIF(QMC_BUILD_STATIC)
-
 
   ####################################
   # create libqmcbase 

@@ -86,7 +86,9 @@ class EinsplineSPODeviceImp<Devices::CUDA, T> : public EinsplineSPODevice<Einspl
   //device memory pitches
 
   EinsplineSPOParams<T> esp;
-  bool dirty;
+  bool dirty_v;
+  bool dirty_g;
+  bool dirty_h;
 
 public:
   EinsplineSPODeviceImp()
@@ -99,7 +101,9 @@ public:
     esp.host_owner  = false;
     esp.Owner       = false;
     esp.is_copy     = false;
-    dirty           = false;
+    dirty_v         = false;
+    dirty_g         = false;
+    dirty_h         = false;
     host_einsplines = {};
     psi             = {};
     grad            = {};
@@ -121,7 +125,9 @@ public:
     esp.lattice                        = inesp.lattice;
     esp.is_copy                        = true;
     esp.host_owner                     = false;
-    dirty                              = false;
+    dirty_v                            = false;
+    dirty_g                            = false;
+    dirty_h                            = false;
     host_einsplines.resize(esp.nBlocks);
     einsplines.resize(esp.nBlocks);
     for (int i = 0, t = esp.firstBlock; i < esp.nBlocks; ++i, ++t)
@@ -149,7 +155,10 @@ public:
     esp.lattice                        = inesp.lattice;
     esp.is_copy                        = true;
     esp.host_owner                     = false;
-    dirty                              = false;
+    dirty_v                            = false;
+    dirty_g                            = false;
+    dirty_h                            = false;
+
     host_einsplines.resize(esp.nBlocks);
     einsplines.resize(esp.nBlocks);
     for (int i = 0, t = esp.firstBlock; i < esp.nBlocks; ++i, ++t)
@@ -182,7 +191,9 @@ public:
     esp.lattice                        = inesp.lattice;
     esp.is_copy                        = true;
     esp.host_owner                     = false;
-    dirty                              = false;
+    dirty_v                            = false;
+    dirty_g                            = false;
+    dirty_h                            = false;
     host_einsplines.resize(esp.nBlocks);
     einsplines.resize(esp.nBlocks);
     for (int i = 0, t = esp.firstBlock; i < esp.nBlocks; ++i, ++t)
@@ -213,7 +224,9 @@ public:
     esp.lattice                        = inesp.lattice;
     esp.is_copy                        = true;
     esp.host_owner                     = false;
-    dirty                              = false;
+    dirty_v                            = false;
+    dirty_g                            = false;
+    dirty_h                            = false;
     host_einsplines.resize(esp.nBlocks);
     einsplines.resize(esp.nBlocks);
     for (int i = 0, t = esp.firstBlock; i < esp.nBlocks; ++i, ++t)
@@ -322,7 +335,7 @@ public:
 
   inline void evaluate_v_i(const QMCT::PosType& p)
   {
-    dirty                             = true;
+    dirty_v                           = true;
     auto u                            = esp.lattice.toUnit_floor(p);
     std::vector<std::array<T, 3>> pos = {{u[0], u[1], u[2]}};
     compute_engine.evaluate_v(einsplines[0], pos, dev_psi.get_devptr(), (size_t)esp.nSplinesPerBlock);
@@ -330,47 +343,60 @@ public:
 
   inline void evaluate_vgh_i(const QMCT::PosType& p)
   {
-    dirty                             = true;
+    dirty_v                           = true;
+    dirty_g                           = true;
+    dirty_h                           = true;
     auto u                            = esp.lattice.toUnit_floor(p);
     std::vector<std::array<T, 3>> pos = {{u[0], u[1], u[2]}};
-    compute_engine.evaluate_vgh(einsplines[0], pos, dev_psi.get_devptr(), dev_grad.get_devptr(), dev_hess.get_devptr(), esp.nSplinesPerBlock);
+    compute_engine.evaluate_vgh(einsplines[0],
+                                pos,
+                                dev_psi.get_devptr(),
+                                dev_grad.get_devptr(),
+                                dev_hess.get_devptr(),
+                                esp.nSplinesPerBlock);
   }
 
   void evaluate_vgl_i(const QMCT::PosType& p)
   {
-    dirty                             = true;
+    dirty_v                           = true;
+    dirty_g                           = true;
     auto u                            = esp.lattice.toUnit_floor(p);
     std::vector<std::array<T, 3>> pos = {{u[0], u[1], u[2]}};
-    
-    compute_engine.evaluate_vgl(einsplines[0], pos, dev_linv.get_devptr(), dev_psi.get_devptr(), dev_lapl.get_devptr(), esp.nSplinesPerBlock);
+
+    compute_engine.evaluate_vgl(einsplines[0],
+                                pos,
+                                dev_linv.get_devptr(),
+                                dev_psi.get_devptr(),
+                                dev_lapl.get_devptr(),
+                                esp.nSplinesPerBlock);
   }
 
   T getPsi_i(int ib, int n)
   {
-    if (dirty)
+    if (dirty_v)
     {
       dev_psi.pull(psi);
-      dirty = false;
+      dirty_v = false;
     }
     return psi[ib][n];
   }
 
   T getGrad_i(int ib, int n, int m)
   {
-    if (dirty)
+    if (dirty_g)
     {
       dev_grad.pull(grad);
-      dirty = false;
+      dirty_g = false;
     }
     return grad[ib].data(m)[n];
   }
 
   T getHess_i(int ib, int n, int m)
   {
-    if (dirty)
+    if (dirty_h)
     {
       dev_hess.pull(hess);
-      dirty = false;
+      dirty_h = false;
     }
     return hess[ib].data(m)[n];
   }

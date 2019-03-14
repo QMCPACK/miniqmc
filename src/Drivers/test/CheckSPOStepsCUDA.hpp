@@ -83,33 +83,31 @@ void CheckSPOSteps<Devices::CUDA>::thread_main(const int np,
   {
     random_th.generate_normal(&delta[0][0], nels3);
     random_th.generate_uniform(ur.data(), nels);
-    for (int ib = 0; ib < esp.nBlocks; ib++)
+    // VMC
+    for (int iel = 0; iel < nels; ++iel)
+      {
+	QMCT::PosType pos = els.R[iel] + sqrttau * delta[iel];
 
-      // VMC
-      for (int iel = 0; iel < nels; ++iel)
-        {
-          QMCT::PosType pos = els.R[iel] + sqrttau * delta[iel];
+	// spo.evaluate_v(pos);
+	// spo_ref.evaluate_v(pos);
+	// for (int ib = 0; ib < esp.nBlocks; ib++)
+	//   for (int n = 0; n < esp.nSplinesPerBlock; n++)
+	//   {
+	//     // value
+	//     std::cout << ib << ":"<< n << "  " << spo.getPsi(ib, n) << "  " << spo_ref.psi[ib][n] << '\n';
+	//     evalV_v_err += std::fabs(spo.getPsi(ib, n) - spo_ref.psi[ib][n]);
 
-          // spo.evaluate_v(pos);
-          // spo_ref.evaluate_v(pos);
-          // for (int ib = 0; ib < esp.nBlocks; ib++)
-          //   for (int n = 0; n < esp.nSplinesPerBlock; n++)
-          //   {
-          //     // value
-          //     std::cout << ib << ":"<< n << "  " << spo.getPsi(ib, n) << "  " << spo_ref.psi[ib][n] << '\n';
-          //     evalV_v_err += std::fabs(spo.getPsi(ib, n) - spo_ref.psi[ib][n]);
+	//   }
+	// std::cout << "evalV_v_err: " << evalV_v_err << '\n';
 
-          //   }
-          // std::cout << "evalV_v_err: " << evalV_v_err << '\n';
+	spo.evaluate_vgh(pos);
+	spo_ref.evaluate_vgh(pos);
 
-          spo.evaluate_vgh(pos);
-          spo_ref.evaluate_vgh(pos);
-	  
-          // accumulate error
-          for (int ib = 0; ib < esp.nBlocks; ib++)
-            for (int n = 0; n < esp.nSplinesPerBlock; n++)
+	// accumulate error
+	for (int ib = 0; ib < esp.nBlocks; ib++)
+	  for (int n = 0; n < esp.nSplinesPerBlock; n++)
             {
-	  
+
               // value
               evalVGH_v_err += std::fabs(spo.getPsi(ib, n) - spo_ref.psi[ib][n]);
               // grad
@@ -124,12 +122,12 @@ void CheckSPOSteps<Devices::CUDA>::thread_main(const int np,
               evalVGH_h_err += std::fabs(spo.getHess(ib, n, 4) - spo_ref.hess[ib].data(4)[n]);
               evalVGH_h_err += std::fabs(spo.getHess(ib, n, 5) - spo_ref.hess[ib].data(5)[n]);
             }
-          if (ur[iel] < accept)
+	if (ur[iel] < accept)
           {
             els.R[iel] = pos;
             my_accepted++;
           }
-        }
+      }
 
 
     random_th.generate_uniform(ur.data(), nels);

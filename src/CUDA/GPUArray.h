@@ -92,23 +92,21 @@ public:
     T* buffer    = static_cast<T*>(copy_home(data));
     int elements = width / sizeof(T);
     aVec.resize(elements);
-    for (int i = 0; i < elements; ++i)
-    {
-      aVec[i] = buffer[i];
-    }
+    std::memcpy(aVec.data(), buffer, elements * sizeof(T));
   }
 
-  void pull(aligned_vector<aligned_vector<T>>& aVec)
+  void pull(aligned_vector<aligned_vector<T>>& av_aVec)
   {
     CopyHome copy_home(width);
     T* buffer    = static_cast<T*>(copy_home(data));
-    int elements = width / sizeof(T);
+    int total_elements = width / sizeof(T);
+    av_aVec.resize(nBlocks_);
     for (int i = 0; i < nBlocks_; ++i)
     {
-      for (int j = 0; j < nSplinesPerBlock_; ++j)
-      {
-        aVec[i][j] = buffer[i * nSplinesPerBlock_ + j];
-      }
+      int elements = std::min(nSplinesPerBlock_, total_elements - i * nSplinesPerBlock_);
+      aligned_vector<T>& aVec = av_aVec[i];
+      aVec.resize(elements);
+      std::memcpy(aVec.data(), (void*)(buffer + i * nSplinesPerBlock_), elements * sizeof(T));
     }
   }
 
@@ -118,30 +116,23 @@ public:
     T* buffer = static_cast<T*>(copy_home(data));
     int elements = width / (ELEMWIDTH * sizeof(T));
     vSoA.resize(elements);
-    // The data should now be in VSoAOrder
     std::memcpy(vSoA.data(), buffer, width);
-    // for (int i = 0; i < elements; ++i)
-    // {
-    //   vSoA.data()
-    //   // The Accessor thing in VSoA seems broken
-    //   // TinyVector<T, ELEMWIDTH> tempTV(static_cast<const T* restrict>(buffer+i*ELEMWIDTH), 1);
-    //   // vSoA(i) = tempTV;
-    // } //
   }
 
   void pull(aligned_vector<VectorSoAContainer<T, ELEMWIDTH>>& av_vSoA)
   {
     CopyHome copy_home(width);
-    void* buffer = copy_home(data);
-    int elements = width / (ELEMWIDTH * sizeof(T));
-    av_vSoA.resize(elements);
+    T* buffer = static_cast<T*>(copy_home(data));
+    int total_elements = width / (ELEMWIDTH * sizeof(T));
+    av_vSoA.resize(nBlocks_);
+    // The number of elements and nSplinesPerBock * nBlocks may not be equal
+    // Within each block the CUDA data is also in SoA order
     for (int i = 0; i < nBlocks_; ++i)
     {
-      for (int j = 0; j < nSplinesPerBlock_; j++)
-	{
-	  TinyVector<T, ELEMWIDTH> tempTV(static_cast<const T* restrict>(buffer), i * ELEMWIDTH);
-	  av_vSoA[i](j) = tempTV;
-	}
+      int elements = std::min(nSplinesPerBlock_, total_elements - i * nSplinesPerBlock_);
+      VectorSoAContainer<T, ELEMWIDTH>& vSoA = av_vSoA[i];
+      vSoA.resize(elements);
+      std::memcpy(vSoA.data(), buffer + i * nSplinesPerBlock_ , elements * ELEMWIDTH * sizeof(T));
     }
   }
 

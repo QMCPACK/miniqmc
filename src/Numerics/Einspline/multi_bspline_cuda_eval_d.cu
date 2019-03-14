@@ -130,9 +130,8 @@ void eval_multi_multi_UBspline_3d_d_vgh_cuda(const multi_UBspline_3d_d<Devices::
   dim3 dimBlock(spline_block_size);
   dim3 dimGrid(spline->num_splines / spline_block_size, num);
   if (spline->num_splines % spline_block_size) dimGrid.x++;
-  cudaPointerAttributes val_ptr_attr;
-  cudaPointerGetAttributes(&val_ptr_attr, vals_d);
-
+  // cudaPointerAttributes val_ptr_attr;
+  // cudaPointerGetAttributes(&val_ptr_attr, vals_d);
   eval_multi_multi_UBspline_3d_d_vgh_kernel<<<dimGrid, dimBlock>>>(pos_d, spline->gridInv,
                                                                    spline->coefs, spline->Bcuda,
                                                                    vals_d, grads_d, hess_d,
@@ -279,11 +278,11 @@ eval_multi_multi_UBspline_3d_d_vgh_kernel(double* pos, double3 drInv, const doub
     mygrad[off + spline_block_size * 2] = g2;
   // Write Hessians
     myhess[off] = h00;
-    myhess[off + spline_block_size * 2] = h01;
-    myhess[off + spline_block_size * 3] = h02;
-    myhess[off + spline_block_size * 4] = h11;
-    myhess[off + spline_block_size * 5] = h12;
-    myhess[off + spline_block_size * 6] = h22;
+    myhess[off + spline_block_size * 1] = h01;
+    myhess[off + spline_block_size * 2] = h02;
+    myhess[off + spline_block_size * 3] = h11;
+    myhess[off + spline_block_size * 4] = h12;
+    myhess[off + spline_block_size * 5] = h22;
   }
   // Sync threads insn't necessary because of that cudaDeviceSynchronize abov
 }

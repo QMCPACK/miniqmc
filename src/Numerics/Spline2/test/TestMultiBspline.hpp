@@ -36,6 +36,7 @@ struct TestMultiBspline
   typename CudaST::SplineType* cuda_spline;
   int num_splines_;
   int num_blocks_;
+  int splines_per_block_;
   int grid_num_;
   aligned_vector<typename CpuST::SplineType*> cpu_splines;
 
@@ -45,6 +46,7 @@ struct TestMultiBspline
     cpu_splines.resize(num_blocks_);
     for (int i = 0; i < num_blocks_; ++i)
       cpu_splines[i] = nullptr;
+    splines_per_block_ = num_splines_ / num_blocks_;
   };
 
   void create()
@@ -62,13 +64,14 @@ struct TestMultiBspline
 
     for (int b = 0; b < num_blocks_; ++b)
     {
+      int splines_this_block = std::min(splines_per_block_, num_splines_ - b * splines_per_block_);
       typename CpuST::SplineType*& cpu_spline = cpu_splines[b];
       cpu_allocator.allocateMultiBspline(cpu_spline, grid, grid, grid, bc, bc, bc, num_splines_);
       REQUIRE(cpu_spline != nullptr);
       RandomGenerator<T> myrandom(11+b);
       Array<T, 3> coef_data(cpu_spline->x_grid.num + 3, cpu_spline->y_grid.num + 3,
                             cpu_spline->z_grid.num + 3);
-      for (int i = 0; i < num_splines_; ++i)
+      for (int i = 0; i < splines_this_block; ++i)
       {
         myrandom.generate_uniform(coef_data.data(), coef_data.size());
         cpu_allocator.setCoefficientsForOneOrbital(i, coef_data, cpu_spline);

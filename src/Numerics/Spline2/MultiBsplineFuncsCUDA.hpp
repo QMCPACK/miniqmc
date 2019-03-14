@@ -140,6 +140,7 @@ inline void MultiBsplineFuncs<Devices::CUDA, double>::evaluate_vgh(
     size_t spline_block_size) const
 {
   PosBuffer pos_d;
+  if (spline_block_size == 0) spline_block_size = spline_block_size_;
   eval_multi_multi_UBspline_3d_d_vgh_cuda(spline_m, pos_d.make(pos), vals, grads, hess,
                                           spline_block_size, num_splines);
 }
@@ -155,6 +156,7 @@ inline void MultiBsplineFuncs<Devices::CUDA, float>::evaluate_vgh(
     size_t spline_block_size) const
 {
   PosBuffer pos_f;
+  if (spline_block_size == 0) spline_block_size = spline_block_size_;
   eval_multi_multi_UBspline_3d_s_vgh_cuda(spline_m, pos_f.make(pos), vals, grads, hess, num_splines);
 }
 
