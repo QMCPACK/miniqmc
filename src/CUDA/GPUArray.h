@@ -16,6 +16,7 @@
 
 #include <utility>
 #include <stdexcept>
+#include <cstring>
 #include <cuda.h>
 #include <cuda_runtime_api.h>
 
@@ -114,14 +115,18 @@ public:
   void pull(VectorSoAContainer<T, ELEMWIDTH>& vSoA)
   {
     CopyHome copy_home(width);
-    void* buffer = copy_home(data);
+    T* buffer = static_cast<T*>(copy_home(data));
     int elements = width / (ELEMWIDTH * sizeof(T));
     vSoA.resize(elements);
-    for (int i = 0; i < elements; ++i)
-    {
-      TinyVector<T, ELEMWIDTH> tempTV(static_cast<const T* restrict>(buffer), i * ELEMWIDTH);
-      vSoA(i) = tempTV;
-    } //
+    // The data should now be in VSoAOrder
+    std::memcpy(vSoA.data(), buffer, width);
+    // for (int i = 0; i < elements; ++i)
+    // {
+    //   vSoA.data()
+    //   // The Accessor thing in VSoA seems broken
+    //   // TinyVector<T, ELEMWIDTH> tempTV(static_cast<const T* restrict>(buffer+i*ELEMWIDTH), 1);
+    //   // vSoA(i) = tempTV;
+    // } //
   }
 
   void pull(aligned_vector<VectorSoAContainer<T, ELEMWIDTH>>& av_vSoA)
