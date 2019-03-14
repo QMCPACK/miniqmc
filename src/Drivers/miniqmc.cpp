@@ -131,6 +131,7 @@ enum MiniQMCTimers
   Timer_evalGrad,
   Timer_ratioGrad,
   Timer_Update,
+  Timer_Setup,
 };
 
 TimerNameList_t<MiniQMCTimers> MiniQMCTimerNames = {
@@ -142,6 +143,7 @@ TimerNameList_t<MiniQMCTimers> MiniQMCTimerNames = {
     {Timer_evalGrad, "Current Gradient"},
     {Timer_ratioGrad, "New Gradient"},
     {Timer_Update, "Update"},
+    {Timer_Setup, "Setup"},
 };
 
 void print_help()
@@ -324,8 +326,16 @@ int main(int argc, char** argv)
     int nTiles = 1;
 
     ParticleSet ions;
+    // For VMC, tau is large and should result in an acceptance ratio of roughly
+    // 50%
+    // For DMC, tau is small and should result in an acceptance ratio of 99%
+    const RealType tau = 2.0;
+    RealType sqrttau = std::sqrt(tau);
+    RealType accept  = 0.5;
+
     // initialize ions and splines which are shared by all threads later
     {
+      Timers[Timer_Setup]->start();
       Tensor<OHMMS_PRECISION, 3> lattice_b;
       build_ions(ions, tmat, lattice_b);
       const int nels = count_electrons(ions, 1);
@@ -343,7 +353,8 @@ int main(int argc, char** argv)
                     << "Tile size = " << tileSize << endl
                     << "Number of tiles = " << nTiles << endl
                     << "Number of electrons = " << nels << endl
-                    << "Rmax = " << Rmax << endl;
+                    << "Rmax = " << Rmax << endl
+                    << "AcceptanceRatio = " << accept << endl;
       app_summary() << "Iterations = " << nsteps << endl;
       app_summary() << "OpenMP threads = " << omp_get_max_threads() << endl;
 #ifdef HAVE_MPI
@@ -379,13 +390,6 @@ int main(int argc, char** argv)
     // read this hard coded number.
     const int nknots = 12; 
 
-    // For VMC, tau is large and should result in an acceptance ratio of roughly
-    // 50%
-    // For DMC, tau is small and should result in an acceptance ratio of 99%
-    const RealType tau = 2.0;
-
-    RealType sqrttau = std::sqrt(tau);
-    RealType accept  = 0.5;
    
     //Now lets figure out what threading sizes are needed:
     //  For walker level parallelism:
