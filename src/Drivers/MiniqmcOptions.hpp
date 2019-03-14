@@ -69,7 +69,7 @@ public:
     app_summary() << "  -h  print help and exit" << '\n';
     app_summary() << "  -j  enable three body Jastrow      default: off" << '\n';
     app_summary() << "  -m  meshfactor                     default: 1.0" << '\n';
-    app_summary() << "  -M  Movers implementation          default: off" << '\n';
+    app_summary() << "  -M  Crowd implementation          default: off" << '\n';
     app_summary() << "  -n  number of MC steps             default: 5" << '\n';
     app_summary() << "  -N  number of MC substeps          default: 1" << '\n';
     app_summary() << "  -p  pack size for batching         default: 1\n";
@@ -110,7 +110,7 @@ public:
   QMCT::RealType Rmax          = 1.7;
   bool useRef                  = false;
   bool enableJ3                = false;
-  bool enableMovers            = false;
+  bool enableCrowd            = false;
   bool verbose                 = false;
   std::string timer_level_name = "fine";
   TimerList_t Timers;

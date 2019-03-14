@@ -1,5 +1,5 @@
 #include "Drivers/MiniqmcDriverFunctions.hpp"
-#include "Drivers/Movers.hpp"
+#include "Drivers/Crowd.hpp"
 namespace qmcplusplus
 {
 template<Devices DT>
@@ -26,10 +26,10 @@ void MiniqmcDriverFunctions<DT>::thread_main(const int ip,
   //mover_list[iw]    = thiswalker;
 
   // create a spo view in each Mover
-  thiswalker->spo = SPOSetBuilder<Devices::CPU>::buildView(mq_opt.useRef, spo_main, team_size, member_id);
+  thiswalker->spo = SPOSetBuilder<DT>::buildView(mq_opt.useRef, spo_main, team_size, member_id);
 
   // create wavefunction per mover
-  WaveFunctionBuilder<Devices::CPU>::build(mq_opt.useRef,
+  WaveFunctionBuilder<DT>::build(mq_opt.useRef,
                                            thiswalker->wavefunction,
                                            ions,
                                            thiswalker->els,

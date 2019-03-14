@@ -145,6 +145,13 @@ inline void MultiBsplineFuncs<Devices::CUDA, double>::evaluate_vgh(
                                           spline_block_size, num_splines);
 }
 
+// template<>
+// inline void MultiBsplineFuncs<Devices::CUDA, float>::evaluate_vgh(std::vector<SPOSet*> spos,
+// 								  std::vector<std::array<float, 3>>& pos)
+// {
+  
+// }
+
 template<>
 inline void MultiBsplineFuncs<Devices::CUDA, float>::evaluate_vgh(
     const MultiBsplineFuncs<Devices::CUDA, float>::spliner_type* restrict spline_m,

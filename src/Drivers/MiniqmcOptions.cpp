@@ -49,7 +49,7 @@ MiniqmcOptions readOptions(int argc, char** argv)
       }
       break;
       case 'M':
-	mq_opt.enableMovers = true;
+	mq_opt.enableCrowd = true;
 	break;
       case 'n':
         mq_opt.nsteps = atoi(optarg);

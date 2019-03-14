@@ -101,7 +101,7 @@ void MiniqmcDriver::initialize(int argc, char** argv)
                   << "determinant update, and distance table + einspline of the " << '\n'
                   << "reference implementation " << '\n';
 
-  if (mq_opt_.enableMovers)
+  if (mq_opt_.enableCrowd)
     app_summary() << "batched walkers activated \n"
                   << "pack size: " << mq_opt_.pack_size << '\n';
   mq_opt_.Timers[Timer_Init]->stop();

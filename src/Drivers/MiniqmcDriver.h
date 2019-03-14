@@ -112,7 +112,7 @@ public:
       {
         return run_cases(my_, i, IntList<N...>());
       }
-      if(my_.mq_opt_.enableMovers)
+      if(my_.mq_opt_.enableCrowd)
       {
 	decltype(
           +device_tuple[hana::size_c<I::value>])::type::movers_runThreads(my_.mq_opt_, my_.myPrimes, my_.ions, my_.spo_main);

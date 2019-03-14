@@ -66,7 +66,7 @@ DereferenceIterator<Iterator> dereference_iterator(Iterator t)
  */
 
 template<Devices DT>
-class Movers
+class Crowd
 {
   using QMCT = QMCTraits;
 
@@ -200,21 +200,21 @@ public:
   RandomGenerator<QMCT::RealType>& rngs_back() { return *rngs_.back(); }
 
   /// constructor
-  Movers(const int ip, const PrimeNumberSet<uint32_t>& myPrimes, const ParticleSet& ions, const int pack_size);
+  Crowd(const int ip, const PrimeNumberSet<uint32_t>& myPrimes, const ParticleSet& ions, const int pack_size);
 
   /** conversion from one dev
     *   to another
     */
   template<Devices ODT>
-  Movers(const Movers<ODT>& m);
+  Crowd(const Crowd<ODT>& m);
   
   /// destructor
-  ~Movers();
+  ~Crowd();
 
   /** takes over the 'movers' of passed in mover
    *  that object becomes invalid
    */
-  void merge(Movers& m_in) {} 
+  void merge(Crowd& m_in) {} 
   void buildViews(bool useRef, const SPOSet* const spo_main, int team_size, int member_id);
 
   void buildWaveFunctions(bool useRef, bool enableJ3);
@@ -237,12 +237,12 @@ private:
   int nels_;
 };
 
-extern template class Movers<Devices::CPU>;
+extern template class Crowd<Devices::CPU>;
 #ifdef QMC_USE_KOKKOS
-extern template class Movers<Devices::KOKKOS>;
+extern template class Crowd<Devices::KOKKOS>;
 #endif
 #ifdef QMC_USE_CUDA
-extern template class Movers<Devices::CUDA>;
+extern template class Crowd<Devices::CUDA>;
 #endif 
 } // namespace qmcplusplus
 #endif //QMCPLUSPLUS_MOVERS_HPP

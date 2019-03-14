@@ -85,8 +85,8 @@ void MiniqmcDriverFunctions<DT>::buildSPOSet(SPOSet*& spo_set,
       SPOSetBuilder<DT>::build(mq_opt.useRef, mq_opt.nx, mq_opt.ny, mq_opt.nz, norb, nTiles, lattice_b);
 }
 
-/** thread main using Movers
- *  SINGLE should really be a case of Movers of size 1
+/** thread main using Crowd
+ *  SINGLE should really be a case of Crowd of size 1
  *  but lets work through this first
  */
 
@@ -103,7 +103,7 @@ void MiniqmcDriverFunctions<DT>::movers_thread_main(const int ip,
   app_summary() << "pack size:" << mq_opt.pack_size << '\n';
   app_summary() << "thread:" << ip << " starting up \n";
   int my_accepts = 0;
-  Movers<DT> movers(ip, myPrimes, ions, mq_opt.pack_size);
+  Crowd<DT> movers(ip, myPrimes, ions, mq_opt.pack_size);
 
   // For VMC, tau is large and should result in an acceptance ratio of roughly
   // 50%

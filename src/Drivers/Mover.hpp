@@ -36,8 +36,8 @@ namespace qmcplusplus
 /**
    * @brief Container class includes all the classes required to operate walker moves
    *
-   * Movers are distinct from walkers. Walkers are lightweight in memory, while
-   * Movers carry additional data needed to evolve the walkers efficiently.
+   * Crowd are distinct from walkers. Walkers are lightweight in memory, while
+   * Crowd carry additional data needed to evolve the walkers efficiently.
    * In a memory capacity limited scenario, a limited number of movers can be used to
    * handle a large amount of walkers.
    *

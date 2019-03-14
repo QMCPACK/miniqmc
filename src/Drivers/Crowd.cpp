@@ -14,7 +14,7 @@
 #include <algorithm>
 #include <vector>
 #include "Utilities/Configuration.h"
-#include "Drivers/Movers.hpp"
+#include "Drivers/Crowd.hpp"
 #include "QMCWaveFunctions/WaveFunction.h"
 #include "QMCWaveFunctions/SPOSet_builder.h"
 #include "Particle/ParticleSet_builder.hpp"
@@ -23,7 +23,7 @@
 namespace qmcplusplus
 {
 template<Devices DT>
-Movers<DT>::Movers(const int ip, const PrimeNumberSet<uint32_t>& myPrimes, const ParticleSet& ions, const int pack_size)
+Crowd<DT>::Crowd(const int ip, const PrimeNumberSet<uint32_t>& myPrimes, const ParticleSet& ions, const int pack_size)
     : ions_(ions),
       pack_size_(pack_size),
       pos_list(pack_size),
@@ -49,20 +49,20 @@ Movers<DT>::Movers(const int ip, const PrimeNumberSet<uint32_t>& myPrimes, const
 
 template<Devices DT>
 template<Devices ODT>
-Movers<DT>::Movers(const Movers<ODT>& m)
+Crowd<DT>::Crowd(const Crowd<ODT>& m)
 {
   ions_     = m.ions_;
   rngs_     = m.rngs_; //Takes possessiong of ptrs?
 }
 
 template<Devices DT>
-Movers<DT>::~Movers()
+Crowd<DT>::~Crowd()
 {}
 
   //This std::for_each idiom will make trying hpx threads very easy.
   
 template<Devices DT>
-void Movers<DT>::updatePosFromCurrentEls(int iel)
+void Crowd<DT>::updatePosFromCurrentEls(int iel)
 {
   std::for_each(boost::make_zip_iterator(boost::make_tuple(elss_begin(), pos_list.begin())),
                 boost::make_zip_iterator(boost::make_tuple(elss_end(), pos_list.end())),
@@ -70,7 +70,7 @@ void Movers<DT>::updatePosFromCurrentEls(int iel)
 }
 
 template<Devices DT>
-void Movers<DT>::buildViews(bool useRef, const SPOSet* const spo_main, int team_size, int member_id)
+void Crowd<DT>::buildViews(bool useRef, const SPOSet* const spo_main, int team_size, int member_id)
 {
   std::for_each(spos.begin(), spos.end(), [&](SPOSet*& s) {
     s = SPOSetBuilder<DT>::buildView(useRef, spo_main, team_size, member_id);
@@ -78,7 +78,7 @@ void Movers<DT>::buildViews(bool useRef, const SPOSet* const spo_main, int team_
 }
 
 template<Devices DT>
-void Movers<DT>::buildWaveFunctions(bool useRef, bool enableJ3)
+void Crowd<DT>::buildWaveFunctions(bool useRef, bool enableJ3)
 {
   std::for_each(boost::make_zip_iterator(boost::make_tuple(wfs_begin(), elss_begin(), rngs_begin())),
                 boost::make_zip_iterator(boost::make_tuple(wfs_end(), elss_end(), rngs_end())),
@@ -86,7 +86,7 @@ void Movers<DT>::buildWaveFunctions(bool useRef, bool enableJ3)
 }
 
 template<Devices DT>
-void Movers<DT>::evaluateLog()
+void Crowd<DT>::evaluateLog()
 {
   std::for_each(boost::make_zip_iterator(boost::make_tuple(wfs_begin(), elss_begin())),
                 boost::make_zip_iterator(boost::make_tuple(wfs_end(), elss_end())),
@@ -94,11 +94,11 @@ void Movers<DT>::evaluateLog()
 }
 
 template<Devices DT>
-void Movers<DT>::evaluateGrad(int iel)
+void Crowd<DT>::evaluateGrad(int iel)
 {}
 
 template<Devices DT>
-void Movers<DT>::evaluateRatioGrad(int iel)
+void Crowd<DT>::evaluateRatioGrad(int iel)
 {
   std::for_each(boost::make_zip_iterator(
                     boost::make_tuple(wfs_begin(), elss_begin(), ratios.begin(), grad_new.begin())),
@@ -109,7 +109,7 @@ void Movers<DT>::evaluateRatioGrad(int iel)
 }
 
 template<Devices DT>
-void Movers<DT>::evaluateGL()
+void Crowd<DT>::evaluateGL()
 {
   std::for_each(boost::make_zip_iterator(boost::make_tuple(wfs_begin(), elss_begin())),
                 boost::make_zip_iterator(boost::make_tuple(wfs_end(), elss_end())),
@@ -117,7 +117,7 @@ void Movers<DT>::evaluateGL()
 }
 
 template<Devices DT>
-void Movers<DT>::calcNLPP(int nions, QMCT::RealType Rmax)
+void Crowd<DT>::calcNLPP(int nions, QMCT::RealType Rmax)
 {
   std::for_each(boost::make_zip_iterator(boost::make_tuple(wfs_begin(), spos.begin(), elss_begin(), nlpps_begin())),
                 boost::make_zip_iterator(boost::make_tuple(wfs_end(), spos.end(), elss_end(), nlpps_end())),
@@ -150,7 +150,7 @@ void Movers<DT>::calcNLPP(int nions, QMCT::RealType Rmax)
 }
 
 template<Devices DT>
-void Movers<DT>::evaluateHessian(int iel)
+void Crowd<DT>::evaluateHessian(int iel)
 {
   std::for_each(boost::make_zip_iterator(boost::make_tuple(spos.begin(), pos_list.begin())),
                 boost::make_zip_iterator(boost::make_tuple(spos.end(), pos_list.end())),
@@ -158,7 +158,7 @@ void Movers<DT>::evaluateHessian(int iel)
 }
 
 template<Devices DT>
-int Movers<DT>::acceptRestoreMoves(int iel, QMCT::RealType accept)
+int Crowd<DT>::acceptRestoreMoves(int iel, QMCT::RealType accept)
 {
   int accepted = 0;
   std::for_each(boost::make_zip_iterator(boost::make_tuple(urs_begin(), wfs_begin(), elss_begin())),
@@ -176,13 +176,13 @@ int Movers<DT>::acceptRestoreMoves(int iel, QMCT::RealType accept)
 }
 
   template<Devices DT>
-  void Movers<DT>::donePbyP()
+  void Crowd<DT>::donePbyP()
   {
     std::for_each(elss_begin(), elss_end(), [](ParticleSet& els) { els.donePbyP(); });
   }
   
 template<Devices DT>
-void Movers<DT>::fillRandoms()
+void Crowd<DT>::fillRandoms()
 {
   //We're going to generate many more random values than in the miniqmc_sync_move case
   std::for_each(boost::make_zip_iterator(boost::make_tuple(urs_begin(), rngs_begin())),
@@ -200,18 +200,18 @@ void Movers<DT>::fillRandoms()
 }
 
 template<Devices DT>
-void Movers<DT>::constructTrialMoves(int iel)
+void Crowd<DT>::constructTrialMoves(int iel)
 {
   std::for_each(boost::make_zip_iterator(boost::make_tuple(deltas_begin(), elss_begin(), valids.begin())),
                 boost::make_zip_iterator(boost::make_tuple(deltas_end(), elss_end(), valids.end())),
                 constructTrialMove(sqrttau, iel));
 }
 
-template class Movers<Devices::CPU>;
+template class Crowd<Devices::CPU>;
 #ifdef QMC_USE_KOKKOS
-template class Movers<Devices::KOKKOS>;
+template class Crowd<Devices::KOKKOS>;
 #endif
 #ifdef QMC_USE_CUDA
-template class Movers<Devices::CUDA>;
+template class Crowd<Devices::CUDA>;
 #endif
 } // namespace qmcplusplus

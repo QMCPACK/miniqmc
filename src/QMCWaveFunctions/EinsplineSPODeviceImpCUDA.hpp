@@ -47,6 +47,7 @@ namespace qmcplusplus
 {
 /** Follows implementation in QMCPack in that EinsplineSPODeviceImp is fat CPUImp
  *  Except this one is of SoA CPU and I'm looking to trim or at least share generic code
+ *  BDIM is batching dimension.
  */
 template<typename T>
 class EinsplineSPODeviceImp<Devices::CUDA, T> : public EinsplineSPODevice<EinsplineSPODeviceImp<Devices::CUDA, T>, T>
@@ -89,7 +90,7 @@ class EinsplineSPODeviceImp<Devices::CUDA, T> : public EinsplineSPODevice<Einspl
   bool dirty_v;
   bool dirty_g;
   bool dirty_h;
-
+  //PackContext pack_context;
 public:
   EinsplineSPODeviceImp()
   {
