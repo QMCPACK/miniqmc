@@ -410,7 +410,7 @@ extern template class MultiBsplineData<double>;
 } // namespace qmcplusplus
 
 #ifdef QMC_USE_KOKKOS
-#include "Numerics/Spline2/MultiBsplineFuncs_KOKKOS.hpp"
+#include "Numerics/Spline2/MultiBsplineFuncsKOKKOS.hpp"
 #endif
 #ifdef QMC_USE_CUDA
 #include "Numerics/Spline2/MultiBsplineFuncsCUDA.hpp"

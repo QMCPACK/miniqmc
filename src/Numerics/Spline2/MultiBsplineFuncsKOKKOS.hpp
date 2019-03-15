@@ -10,14 +10,14 @@
 namespace qmcplusplus
 {
 template<typename T>
-struct MultiBspline<Devices::KOKKOS, T>
+struct MultiBsplineFuncs<Devices::KOKKOS, T>
 {
   /// define the einspline object type
   //using spliner_type = typename bspline_traits<D, T, 3>::SplineType;
 
-  MultiBspline() {}
-  MultiBspline(const MultiBspline& in) = default;
-  MultiBspline& operator=(const MultiBspline& in) = delete;
+  MultiBsplineFuncs() {}
+  MultiBsplineFuncs(const MultiBsplineFuncs& in) = default;
+  MultiBsplineFuncs& operator=(const MultiBsplineFuncs& in) = delete;
 
   T A44[16];
   T dA44[16];
@@ -115,7 +115,7 @@ struct MultiBspline<Devices::KOKKOS, T>
 
 template<typename T>
 template<class TeamType>
-KOKKOS_INLINE_FUNCTION void MultiBspline<Devices::KOKKOS, T>::evaluate_v(
+KOKKOS_INLINE_FUNCTION void MultiBsplineFuncs<Devices::KOKKOS, T>::evaluate_v(
     const TeamType& team,
     const typename bspline_traits<Devices::KOKKOS, T, 3>::SplineType* restrict spline_m,
     T x,
@@ -170,7 +170,7 @@ KOKKOS_INLINE_FUNCTION void MultiBspline<Devices::KOKKOS, T>::evaluate_v(
 
 template<typename T>
 template<class TeamType>
-KOKKOS_INLINE_FUNCTION void MultiBspline<Devices::KOKKOS, T>::evaluate_vgh(
+KOKKOS_INLINE_FUNCTION void MultiBsplineFuncs<Devices::KOKKOS, T>::evaluate_vgh(
     const TeamType& team,
     const typename bspline_traits<Devices::KOKKOS, T, 3>::SplineType* restrict spline_m,
     T x,
