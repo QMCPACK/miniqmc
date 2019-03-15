@@ -17,7 +17,10 @@
  * @brief CPU implementation of EinsplineSPO
  */
 
+#include <memory>
 #include "Devices.h"
+#include "Numerics/Spline2/SplineBundle.hpp"
+#include "Utilities/SIMD/allocator.hpp"
 #include "QMCWaveFunctions/EinsplineSPODeviceImpCPU.hpp"
 
 namespace qmcplusplus

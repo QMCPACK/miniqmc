@@ -29,5 +29,7 @@
 ////////////////////////////////////////////////////////////
 #include "bspline_structs.h"
 #include "multi_bspline_structs.h"
+#ifdef QMC_USE_CUDA
 #include "multi_bspline_structs_cuda.h"
+#endif
 #endif

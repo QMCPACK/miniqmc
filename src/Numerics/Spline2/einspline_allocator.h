@@ -60,7 +60,7 @@ void einspline_create_UBspline_3d_d(UBspline_3d_d<D>*& spline, Ugrid x_grid, Ugr
 //cpp files
 template<Devices D>
 void einspline_create_multi_UBspline_3d_s_coefs(
-    multi_UBspline_3d_s<D>* restrict spline, int Nx, int Ny, int Nz, int N)
+    multi_UBspline_3d_s<D>*& restrict spline, int Nx, int Ny, int Nz, int N)
 {
   spline->coefs = (float*)einspline_alloc(sizeof(float) * spline->coefs_size, QMC_CLINE);
 }
@@ -69,7 +69,7 @@ void einspline_create_multi_UBspline_3d_s_coefs(
 //cpp files
 template<Devices D>
 void einspline_create_multi_UBspline_3d_d_coefs(
-    multi_UBspline_3d_d<D>* restrict spline, int Nx, int Ny, int Nz, int N)
+    multi_UBspline_3d_d<D>*& restrict spline, int Nx, int Ny, int Nz, int N)
 {
   spline->coefs = (double*)einspline_alloc(sizeof(double) * spline->coefs_size, QMC_CLINE);
 }

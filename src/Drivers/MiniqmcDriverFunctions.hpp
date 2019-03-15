@@ -19,7 +19,7 @@
 #include "Devices.h"
 #include "Drivers/MiniqmcOptions.hpp"
 #include "Drivers/Mover.hpp"
-#include "Drivers/Movers.hpp"
+#include "Drivers/Crowd.hpp"
 #include "Particle/ParticleSet.h"
 #include "Input/nio.hpp"
 #include "QMCWaveFunctions/Determinant.h"

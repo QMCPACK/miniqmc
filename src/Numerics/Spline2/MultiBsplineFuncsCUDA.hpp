@@ -149,6 +149,7 @@ inline void MultiBsplineFuncs<Devices::CUDA, double>::evaluate_vgh(
 // inline void MultiBsplineFuncs<Devices::CUDA, float>::evaluate_vgh(std::vector<SPOSet*> spos,
 // 								  std::vector<std::array<float, 3>>& pos)
 // {
+//   //for now there is no support for group eval of walkers with different einspline basis.
   
 // }
 

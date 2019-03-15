@@ -127,12 +127,12 @@ ELSE()
   )
 ENDIF()
 
-IF(QMC_USE_CUDA)
+IF(QMC_USE_CLANG_CUDA)
 # add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:--cuda-gpu-arch=sm_50 >")
 # add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:SHELL:-x cuda>")
 SET(CMAKE_CUDACXX_FLAGS "-x cuda --cuda-gpu-arch=sm_35 -nocudalib ${CMAKE_CUDACXX_FLAGS}")
-ENDIF(QMC_USE_CUDA)
-  
+ENDIF(QMC_USE_CLANG_CUDA)
+
 
 
   
@@ -157,6 +157,8 @@ ENDIF(QMC_USE_CUDA)
 
   IF(QMC_USE_CUDA)
     CUDA_ADD_LIBRARY(qmc_cuda_params CUDA/GPUParams.cpp)
+  ELSEIF(QMC_USE_CLANG_CUDA)
+    ADD_LIBRARY(qmc_cuda_params CUDA/GPUParams.cpp)
   ENDIF(QMC_USE_CUDA)
   
   add_subdirectory(Numerics)
@@ -165,6 +167,11 @@ ENDIF(QMC_USE_CUDA)
     CUDA_ADD_LIBRARY(qmcutil ${UTILITIES})
     target_link_libraries(qmcutil cublas qmc_cuda_params)
     CUDA_ADD_EXECUTABLE(testCUDA test/catch-main.cpp CUDA/test/test_GPUArray.cpp)
+  ELSEIF(QMC_USE_CLANG_CUDA)
+    ADD_LIBRARY(qmcutil ${UTILITIES})
+    target_link_libraries(qmcutil cublas cudart qmc_cuda_params)
+    ADD_EXECUTABLE(testCUDA test/catch-main.cpp CUDA/test/test_GPUArray.cpp)
+    target_link_libraries(testCUDA cudart)
   ELSE(QMC_USE_CUDA)
     ADD_LIBRARY(qmcutil ${UTILITIES})
   ENDIF(QMC_USE_CUDA)
@@ -178,15 +185,18 @@ ENDIF(QMC_USE_CUDA)
     set(QMCDEVICE_LINK_LIBRARIES kokkos)
   endif(QMC_USE_KOKKOS)
 
-  if(QMC_USE_CUDA)
+  set(DEVICE_SRC QMCWaveFunctions/DeterminantDeviceImpCPU.cpp QMCWaveFunctions/EinsplineSPODeviceImpCPU.cpp)
+  set(CUDA_SRC "")
+  if(QMC_USE_CUDA OR QMC_USE_CLANG_CUDA)
     set(CUDA_SRC QMCWaveFunctions/EinsplineSPODeviceImpCUDA.cpp)
        #QMCWaveFunctions/SPOSetBuilderKokkos.cpp)  #QMCWaveFunctions/EinsplineSPODeviceImpKOKKOS.cpp QMCWaveFunctions/DeterminantDeviceImpKOKKOS.cpp
     set(QMCDEVICE_LINK_LIBRARIES cublas)
-    CUDA_ADD_LIBRARY(qmcdevice QMCWaveFunctions/DeterminantDeviceImpCPU.cpp
-    QMCWaveFunctions/EinsplineSPODeviceImpCPU.cpp ${KOKKOS_SRC} ${CUDA_SRC})
-else(QMC_USE_CUDA)
+  ENDIF(QMC_USE_CUDA OR QMC_USE_CLANG_CUDA)
+  if(QMC_USE_CUDA)  
+    CUDA_ADD_LIBRARY(qmcdevice ${DEVICE_SRC} ${KOKKOS_SRC} ${CUDA_SRC})
+  else(QMC_USE_CUDA)
   #unbreak KOKKOS BUILD
-  ADD_LIBRARY(qmcdeivce ${KOKKOS_SRC})
+  ADD_LIBRARY(qmcdevice ${DEVICE_SRC} ${KOKKOS_SRC} ${CUDA_SRC})
 endif(QMC_USE_CUDA)
   set(QMCDEVICE_LINK_LIBRARIES qmcutil ${QMCDEVICE_LINK_LIBRARIES})
   target_link_libraries(qmcdevice qmc_numerics ${QMCDEVICE_LINK_LIBRARIES})

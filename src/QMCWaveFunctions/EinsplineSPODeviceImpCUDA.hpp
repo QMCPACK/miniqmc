@@ -28,6 +28,7 @@
 #include "Devices.h"
 #include "clean_inlining.h"
 #include "Numerics/Containers.h"
+#include "Numerics/Spline2/SplineBundle.hpp"
 #include "Utilities/SIMD/allocator.hpp"
 #include "Utilities/Configuration.h"
 #include "Utilities/NewTimer.h"
@@ -70,8 +71,8 @@ class EinsplineSPODeviceImp<Devices::CUDA, T> : public EinsplineSPODevice<Einspl
   MultiBsplineFuncs<Devices::CUDA, T> compute_engine;
 
   //using einspline_type = spline_type*;
-  aligned_vector<host_spline_type*> host_einsplines;
-  aligned_vector<spline_type*> einsplines;
+  // It would be simpler if these were wrapped
+  std::shared_ptr<SplineBundle<Devices::CUDA, T>> our_einsplines;
   //  aligned_vector<vContainer_type> psi;
   aligned_vector<vContainer_type> psi;
   aligned_vector<gContainer_type> grad;
@@ -95,20 +96,19 @@ public:
   EinsplineSPODeviceImp()
   {
     //std::cout << "EinsplineSPODeviceImpCPU() called" << '\n';
-    esp.nBlocks     = 0;
-    esp.nSplines    = 0;
-    esp.firstBlock  = 0;
-    esp.lastBlock   = 0;
-    esp.host_owner  = false;
-    esp.Owner       = false;
-    esp.is_copy     = false;
-    dirty_v         = false;
-    dirty_g         = false;
-    dirty_h         = false;
-    host_einsplines = {};
-    psi             = {};
-    grad            = {};
-    hess            = {};
+    esp.nBlocks    = 0;
+    esp.nSplines   = 0;
+    esp.firstBlock = 0;
+    esp.lastBlock  = 0;
+    esp.host_owner = false;
+    esp.Owner      = false;
+    esp.is_copy    = false;
+    dirty_v        = false;
+    dirty_g        = false;
+    dirty_h        = false;
+    psi            = {};
+    grad           = {};
+    hess           = {};
   }
 
   /** CPU to CUDA Constructor
@@ -124,24 +124,29 @@ public:
     esp.firstBlock                     = 0;
     esp.lastBlock                      = inesp.nBlocks;
     esp.lattice                        = inesp.lattice;
-    esp.is_copy                        = true;
-    esp.host_owner                     = false;
     dirty_v                            = false;
     dirty_g                            = false;
     dirty_h                            = false;
+    our_einsplines                     = std::make_shared<SplineBundle<Devices::CUDA, T>>();
+    aligned_vector<typename SplineBundle<Devices::CUDA, T>::host_spline_type*>& host_einsplines =
+        our_einsplines->host_einsplines;
+    aligned_vector<typename SplineBundle<Devices::CUDA, T>::device_spline_type*>& device_einsplines =
+        our_einsplines->device_einsplines;
     host_einsplines.resize(esp.nBlocks);
-    einsplines.resize(esp.nBlocks);
+    device_einsplines.resize(esp.nBlocks);
+
     for (int i = 0, t = esp.firstBlock; i < esp.nBlocks; ++i, ++t)
     {
       const ThisType& in_cast = static_cast<const ThisType&>(in);
       host_einsplines[i]      = static_cast<host_spline_type*>(in_cast.getHostEinspline(t));
       T dummyT, dummyDT;
-      myAllocator.createMultiBspline(host_einsplines[i], einsplines[i], dummyT, dummyDT);
+      myAllocator.createMultiBspline(host_einsplines[i], device_einsplines[i], dummyT, dummyDT);
     }
     resize();
   }
 
   /** CUDA to CUDA Constructor
+   *  is it safe to assume if this copy constructor is called the splines are shared?
    */
   EinsplineSPODeviceImp(const EinsplineSPODeviceImp<Devices::CUDA, T>& in)
   {
@@ -154,23 +159,10 @@ public:
     esp.firstBlock                     = 0;
     esp.lastBlock                      = inesp.nBlocks;
     esp.lattice                        = inesp.lattice;
-    esp.is_copy                        = true;
-    esp.host_owner                     = false;
     dirty_v                            = false;
     dirty_g                            = false;
     dirty_h                            = false;
-
-    host_einsplines.resize(esp.nBlocks);
-    einsplines.resize(esp.nBlocks);
-    for (int i = 0, t = esp.firstBlock; i < esp.nBlocks; ++i, ++t)
-    {
-      const ThisType& in_cast = static_cast<const ThisType&>(in);
-      host_einsplines[i]      = static_cast<host_spline_type*>(in_cast.getHostEinspline(t));
-      T dummyT, dummyDT;
-      myAllocator.createMultiBspline(host_einsplines[i], einsplines[i], dummyT, dummyDT);
-    }
-    //Each stream needs their own copy of spo_main
-
+    our_einsplines                     = in.our_einsplines;
     resize();
   }
 
@@ -190,19 +182,24 @@ public:
     esp.lastBlock                      = std::min(inesp.nBlocks, esp.nBlocks * (member_id + 1));
     esp.nBlocks                        = esp.lastBlock - esp.firstBlock;
     esp.lattice                        = inesp.lattice;
-    esp.is_copy                        = true;
-    esp.host_owner                     = false;
     dirty_v                            = false;
     dirty_g                            = false;
     dirty_h                            = false;
+
+    our_einsplines = std::make_shared<SplineBundle<Devices::CUDA, T>>();
+        aligned_vector<typename SplineBundle<Devices::CUDA, T>::host_spline_type*>& host_einsplines =
+        our_einsplines->host_einsplines;
+    aligned_vector<typename SplineBundle<Devices::CUDA, T>::device_spline_type*>& device_einsplines =
+        our_einsplines->device_einsplines;
     host_einsplines.resize(esp.nBlocks);
-    einsplines.resize(esp.nBlocks);
+    device_einsplines.resize(esp.nBlocks);
+
     for (int i = 0, t = esp.firstBlock; i < esp.nBlocks; ++i, ++t)
     {
       const ThisType& in_cast = static_cast<const ThisType&>(in);
       host_einsplines[i]      = static_cast<host_spline_type*>(in_cast.getHostEinspline(t));
       T dummyT, dummyDT;
-      myAllocator.createMultiBspline(host_einsplines[i], einsplines[i], dummyT, dummyDT);
+      myAllocator.createMultiBspline(host_einsplines[i], device_einsplines[i], dummyT, dummyDT);
     }
     resize();
   }
@@ -228,26 +225,13 @@ public:
     dirty_v                            = false;
     dirty_g                            = false;
     dirty_h                            = false;
-    host_einsplines.resize(esp.nBlocks);
-    einsplines.resize(esp.nBlocks);
-    for (int i = 0, t = esp.firstBlock; i < esp.nBlocks; ++i, ++t)
-    {
-      const ThisType& in_cast = static_cast<const ThisType&>(in);
-      host_einsplines[i]      = static_cast<host_spline_type*>(in_cast.getHostEinspline(t));
-      T dummyT, dummyDT;
-      myAllocator.createMultiBspline(host_einsplines[i], einsplines[i], dummyT, dummyDT);
-    }
+    our_einsplines                     = in.our_einsplines;
     resize();
   }
 
 
   /// destructors
-  ~EinsplineSPODeviceImp()
-  {
-    if (esp.host_owner)
-      for (int i = 0; i < esp.nBlocks; ++i)
-        my_host_allocator.destroy(host_einsplines[i]);
-  }
+  ~EinsplineSPODeviceImp() {}
 
   /** resize both CPU and GPU containers
    *  resizing the GPU containers is destructive.
@@ -281,8 +265,8 @@ public:
   }
 
   /** Allocates splines and sets the initial coefficients. 
-   *  calling this after anything but the default constructor is suspect
-   *  And should probably throw
+   *  calling this after anything but the default constructor
+   *  Will drop this EinsplineSPOImp's connection to its SplineBundle, not reuse it
    */
   void set_i(int nx, int ny, int nz, int num_splines, int nblocks, bool init_random = true)
   {
@@ -291,57 +275,66 @@ public:
     this->esp.nSplinesPerBlock = num_splines / nblocks;
     this->esp.firstBlock       = 0;
     this->esp.lastBlock        = esp.nBlocks;
-    if (host_einsplines.empty())
+
+    our_einsplines = std::make_shared<SplineBundle<Devices::CUDA, T>>();
+
+    aligned_vector<typename SplineBundle<Devices::CUDA, T>::host_spline_type*>& host_einsplines =
+        our_einsplines->host_einsplines;
+    aligned_vector<typename SplineBundle<Devices::CUDA, T>::device_spline_type*>& device_einsplines =
+        our_einsplines->device_einsplines;
+
+    TinyVector<int, 3> ng(nx, ny, nz);
+    QMCT::PosType start(0);
+    QMCT::PosType end(1);
+    host_einsplines.resize(esp.nBlocks);
+    device_einsplines.resize(esp.nBlocks);
+    RandomGenerator<T> myrandom(11);
+    Array<T, 3> coef_data(nx + 3, ny + 3, nz + 3);
+    for (int i = 0; i < esp.nBlocks; ++i)
     {
-      this->esp.Owner = true;
-      TinyVector<int, 3> ng(nx, ny, nz);
-      QMCT::PosType start(0);
-      QMCT::PosType end(1);
-      host_einsplines.resize(esp.nBlocks);
-      einsplines.resize(esp.nBlocks);
-      RandomGenerator<T> myrandom(11);
-      Array<T, 3> coef_data(nx + 3, ny + 3, nz + 3);
-      for (int i = 0; i < esp.nBlocks; ++i)
+      this->my_host_allocator
+          .createMultiBspline(host_einsplines[i], T(0), start, end, ng, PERIODIC, esp.nSplinesPerBlock);
+      if (init_random)
       {
-        this->my_host_allocator
-            .createMultiBspline(host_einsplines[i], T(0), start, end, ng, PERIODIC, esp.nSplinesPerBlock);
-        if (init_random)
+        for (int j = 0; j < esp.nSplinesPerBlock; ++j)
         {
-          for (int j = 0; j < esp.nSplinesPerBlock; ++j)
-          {
-            // Generate different coefficients for each orbital
-            myrandom.generate_uniform(coef_data.data(), coef_data.size());
-            my_host_allocator.setCoefficientsForOneOrbital(j, coef_data, host_einsplines[i]);
-          }
+          // Generate different coefficients for each orbital
+          myrandom.generate_uniform(coef_data.data(), coef_data.size());
+          my_host_allocator.setCoefficientsForOneOrbital(j, coef_data, host_einsplines[i]);
         }
       }
     }
-    if (einsplines.empty())
+
+    for (int i = 0; i < esp.nBlocks; ++i)
     {
-      for (int i = 0; i < esp.nBlocks; ++i)
-      {
-        T dummyT, dummyDT;
-        myAllocator.createMultiBspline(host_einsplines[i], einsplines[i], dummyT, dummyDT);
-      }
+      T dummyT, dummyDT;
+      myAllocator.createMultiBspline(host_einsplines[i], device_einsplines[i], dummyT, dummyDT);
     }
     resize();
   }
 
   const EinsplineSPOParams<T>& getParams_i() const { return this->esp; }
 
-  void* getEinspline_i(int i) const { return einsplines[i]; }
-  void* getHostEinspline(int i) const { return host_einsplines[i]; }
+  void* getEinspline_i(int i) const { return our_einsplines->device_einsplines[i]; }
+  void* getHostEinspline(int i) const { return our_einsplines->host_einsplines[i]; }
 
   void setLattice_i(const Tensor<T, 3>& lattice) { esp.lattice.set(lattice); }
 
+  /** Legacy single POS call
+   */
   inline void evaluate_v_i(const QMCT::PosType& p)
   {
     dirty_v                           = true;
     auto u                            = esp.lattice.toUnit_floor(p);
     std::vector<std::array<T, 3>> pos = {{u[0], u[1], u[2]}};
-    compute_engine.evaluate_v(einsplines[0], pos, dev_psi.get_devptr(), (size_t)esp.nSplinesPerBlock);
+    compute_engine.evaluate_v(our_einsplines->device_einsplines[0],
+                              pos,
+                              dev_psi.get_devptr(),
+                              (size_t)esp.nSplinesPerBlock);
   }
 
+  /** Legacy single POS call
+   */
   inline void evaluate_vgh_i(const QMCT::PosType& p)
   {
     dirty_v                           = true;
@@ -349,14 +342,17 @@ public:
     dirty_h                           = true;
     auto u                            = esp.lattice.toUnit_floor(p);
     std::vector<std::array<T, 3>> pos = {{u[0], u[1], u[2]}};
-    compute_engine.evaluate_vgh(einsplines[0],
+    compute_engine.evaluate_vgh(our_einsplines.get()->device_einsplines[0],
                                 pos,
                                 dev_psi.get_devptr(),
                                 dev_grad.get_devptr(),
                                 dev_hess.get_devptr(),
+				esp.nSplines,
                                 esp.nSplinesPerBlock);
   }
 
+  /** Legacy single POS call
+   */
   void evaluate_vgl_i(const QMCT::PosType& p)
   {
     dirty_v                           = true;
@@ -364,7 +360,7 @@ public:
     auto u                            = esp.lattice.toUnit_floor(p);
     std::vector<std::array<T, 3>> pos = {{u[0], u[1], u[2]}};
 
-    compute_engine.evaluate_vgl(einsplines[0],
+    compute_engine.evaluate_vgl(our_einsplines->device_einsplines[0],
                                 pos,
                                 dev_linv.get_devptr(),
                                 dev_psi.get_devptr(),

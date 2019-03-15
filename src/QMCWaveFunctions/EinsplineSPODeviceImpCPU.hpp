@@ -25,6 +25,7 @@
 #include <type_traits>
 #include <vector>
 #include <array>
+#include <memory>
 #include "Devices.h"
 #include "clean_inlining.h"
 #include "Numerics/Containers.h"
@@ -35,6 +36,7 @@
 #include "QMCWaveFunctions/EinsplineSPODevice.hpp"
 #include "QMCWaveFunctions/EinsplineSPODeviceImp.hpp"
 #include "QMCWaveFunctions/EinsplineSPOParams.h"
+#include "Numerics/Spline2/SplineBundle.hpp"
 #include "Numerics/Spline2/bspline_traits.hpp"
 #include "Numerics/Spline2/bspline_allocator.hpp"
 #include "Numerics/Spline2/MultiBsplineFuncs.hpp"
@@ -59,7 +61,8 @@ class EinsplineSPODeviceImp<Devices::CPU, T>
   MultiBsplineFuncs<Devices::CPU, T> compute_engine;
 
   //using einspline_type = spline_type*;
-  aligned_vector<spline_type*> einsplines;
+  std::shared_ptr<SplineBundle<Devices::CPU, T>> our_einsplines;
+  
   //  aligned_vector<vContainer_type> psi;
   aligned_vector<vContainer_type> psi;
   aligned_vector<gContainer_type> grad;
@@ -73,9 +76,7 @@ public:
     esp.nSplines   = 0;
     esp.firstBlock = 0;
     esp.lastBlock  = 0;
-    esp.Owner      = false;
-    esp.is_copy    = false;
-    einsplines     = {};
+    our_einsplines = nullptr;
     psi            = {};
     grad           = {};
     hess           = {};
@@ -95,11 +96,7 @@ public:
     esp.firstBlock                     = 0;
     esp.lastBlock                      = inesp.nBlocks;
     esp.lattice                        = inesp.lattice;
-    esp.is_copy                        = true;
-    esp.Owner                          = false;
-    einsplines.resize(esp.nBlocks);
-    for (int i = 0, t = esp.firstBlock; i < esp.nBlocks; ++i, ++t)
-      einsplines[i] = static_cast<spline_type*>(in.getEinspline(t));
+    our_einsplines = in.our_einsplines;
     resize();
   }
 
@@ -120,20 +117,13 @@ public:
     esp.lastBlock                      = std::min(inesp.nBlocks, esp.nBlocks * (member_id + 1));
     esp.nBlocks                        = esp.lastBlock - esp.firstBlock;
     esp.lattice                        = inesp.lattice;
-    esp.is_copy                        = true;
-    esp.Owner                          = false;
-    einsplines.resize(esp.nBlocks);
-    for (int i = 0, t = esp.firstBlock; i < esp.nBlocks; ++i, ++t)
-      einsplines[i] = static_cast<spline_type*>(in.getEinspline(t));
+    our_einsplines = in.our_einsplines;
     resize();
   }
 
   /// destructors
   ~EinsplineSPODeviceImp()
   {
-    if (esp.Owner)
-      for (int i = 0; i < esp.nBlocks; ++i)
-        myAllocator.destroy(einsplines[i]);
   }
 
   /// resize the containers
@@ -160,12 +150,13 @@ public:
     this->esp.nSplinesPerBlock = num_splines / nblocks;
     this->esp.firstBlock       = 0;
     this->esp.lastBlock        = esp.nBlocks;
-    if (einsplines.empty())
+    if (our_einsplines == nullptr)
     {
-      this->esp.Owner = true;
       TinyVector<int, 3> ng(nx, ny, nz);
       QMCT::PosType start(0);
       QMCT::PosType end(1);
+      our_einsplines = std::make_shared<SplineBundle<Devices::CPU,T>>();
+      aligned_vector<spline_type*>& einsplines = our_einsplines->einsplines;
       einsplines.resize(esp.nBlocks);
       RandomGenerator<T> myrandom(11);
       Array<T, 3> coef_data(nx + 3, ny + 3, nz + 3);
@@ -189,7 +180,7 @@ public:
 
   const EinsplineSPOParams<T>& getParams_i() const { return this->esp; }
 
-  void* getEinspline_i(int i) const { return einsplines[i]; }
+  void* getEinspline_i(int i) const { return our_einsplines->einsplines[i]; }
 
   void setLattice_i(const Tensor<T, 3>& lattice) { esp.lattice.set(lattice); }
 
@@ -198,7 +189,7 @@ public:
     auto u = esp.lattice.toUnit_floor(p);
     std::vector<std::array<T,3>> pos = {{u[0],u[1],u[2]}}; 
     for (int i = 0; i < esp.nBlocks; ++i)
-      compute_engine.evaluate_v(einsplines[i], pos, psi[i].data(), esp.nSplinesPerBlock);
+      compute_engine.evaluate_v(our_einsplines->einsplines[i], pos, psi[i].data(), esp.nSplinesPerBlock);
   }
 
   inline void evaluate_vgh_i(const QMCT::PosType& p)
@@ -207,7 +198,7 @@ public:
     std::vector<std::array<T,3>> pos = {{u[0],u[1],u[2]}}; 
     for (int i = 0; i < esp.nBlocks; ++i)
     {
-      compute_engine.evaluate_vgh(einsplines[i],
+      compute_engine.evaluate_vgh(our_einsplines->einsplines[i],
                                   pos,
                                   psi[i].data(),
                                   grad[i].data(),
@@ -221,7 +212,7 @@ public:
     auto u = esp.lattice.toUnit_floor(p);
     std::vector<std::array<T,3>> pos = {{u[0],u[1],u[2]}}; 
     for (int i = 0; i < esp.nBlocks; ++i)
-      compute_engine.evaluate_vgl(einsplines[i],
+      compute_engine.evaluate_vgl(our_einsplines->einsplines[i],
                                   pos,
                                   psi[i].data(),
                                   grad[i].data(),

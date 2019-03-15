@@ -20,9 +20,12 @@ ENDIF(QMC_OMP)
 #   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --expt-relaxed-constexpr")
 # ENDIF(QMC_USE_KOKKOS)
 
-#IF(QMC_USE_CUDA)
+
+SET(QMC_USE_CLANG_CUDA FALSE CACHE BOOL "Use clang to build CUDA code")
+# IF(QMC_USE_CUDA AND QMC_CLANG_CUDA)
+  
 #  add_definitions( -D__CUDACC__)
-#ENDIF(QMC_USE_CUDA)
+# ENDIF(QMC_USE_CUDA)
 
 # Set clang specfic flags (which we always want)
 ADD_DEFINITIONS( -Drestrict=__restrict__ )

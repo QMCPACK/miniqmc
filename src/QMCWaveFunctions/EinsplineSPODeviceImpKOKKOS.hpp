@@ -32,7 +32,7 @@
 #include "QMCWaveFunctions/EinsplineSPODeviceImp.hpp"
 #include "Numerics/Spline2/bspline_traits.hpp"
 #include "Numerics/Spline2/bspline_allocator.hpp"
-#include "Numerics/Spline2/MultiBspline.hpp"
+#include "Numerics/Spline2/MultiBsplineFuncs.hpp"
 #ifdef KOKKOS_ENABLE_CUDA
 #include "cublas_v2.h"
 #include "cusolverDn.h"
@@ -79,7 +79,7 @@ public:
   /// use allocator
   einspline::Allocator<DT> myAllocator;
   /// Compute engine
-  MultiBspline<DT, T> compute_engine;
+  MultiBsplineFuncs<DT, T> compute_engine;
   //Temporary position for communicating within Kokkos parallel sections.
   QMCT::PosType tmp_pos;
   NewTimer* timer;
