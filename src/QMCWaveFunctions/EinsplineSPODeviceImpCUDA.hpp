@@ -138,6 +138,7 @@ public:
     for (int i = 0, t = esp.firstBlock; i < esp.nBlocks; ++i, ++t)
     {
       const ThisType& in_cast = static_cast<const ThisType&>(in);
+      
       host_einsplines[i]      = static_cast<host_spline_type*>(in_cast.getHostEinspline(t));
       T dummyT, dummyDT;
       myAllocator.createMultiBspline(host_einsplines[i], device_einsplines[i], dummyT, dummyDT);
@@ -171,7 +172,7 @@ public:
    */
   EinsplineSPODeviceImp(const EinsplineSPODeviceImp<Devices::CPU, T>& in, int team_size, int member_id)
   {
-    std::cout << "EinsplineSPODeviceImpCUDA Fat Copy constructor called" << '\n';
+    std::cout << "EinsplineSPODeviceImpCUDA(EinsplineSPODeviceImp<Devices::CPU, T>&) Fat Copy constructor called" << '\n';
     const EinsplineSPOParams<T>& inesp = in.getParams();
     esp.nSplinesSerialThreshold_V      = inesp.nSplinesSerialThreshold_V;
     esp.nSplinesSerialThreshold_VGH    = inesp.nSplinesSerialThreshold_VGH;
@@ -209,7 +210,7 @@ public:
   EinsplineSPODeviceImp(const EinsplineSPODeviceImp<Devices::CUDA, T>& in, int team_size, int member_id)
       : dev_psi(), dev_grad(), dev_linv(), dev_hess()
   {
-    std::cout << "EinsplineSPODeviceImpCUDA Fat Copy constructor called" << '\n';
+    std::cout << "EinsplineSPODeviceImpCUDA(EinsplineSPODeviceImp<Devices::CUDA, T>&,...) Fat Copy constructor called" << '\n';
     const EinsplineSPOParams<T>& inesp = in.getParams();
     esp.nSplinesSerialThreshold_V      = inesp.nSplinesSerialThreshold_V;
     esp.nSplinesSerialThreshold_VGH    = inesp.nSplinesSerialThreshold_VGH;
@@ -220,8 +221,6 @@ public:
     esp.lastBlock                      = std::min(inesp.nBlocks, esp.nBlocks * (member_id + 1));
     esp.nBlocks                        = esp.lastBlock - esp.firstBlock;
     esp.lattice                        = inesp.lattice;
-    esp.is_copy                        = true;
-    esp.host_owner                     = false;
     dirty_v                            = false;
     dirty_g                            = false;
     dirty_h                            = false;
@@ -270,11 +269,15 @@ public:
    */
   void set_i(int nx, int ny, int nz, int num_splines, int nblocks, bool init_random = true)
   {
+
     this->esp.nSplines         = num_splines;
     this->esp.nBlocks          = nblocks;
     this->esp.nSplinesPerBlock = num_splines / nblocks;
     this->esp.firstBlock       = 0;
     this->esp.lastBlock        = esp.nBlocks;
+
+     std::cout << "Initializing CUDA Spline Coefficients with nBlocks: " << nblocks
+		<< " and nSplinesPerblock : " << esp.nSplinesPerBlock << '\n';
 
     our_einsplines = std::make_shared<SplineBundle<Devices::CUDA, T>>();
 
@@ -378,7 +381,7 @@ public:
     return psi[ib][n];
   }
 
-  T getGrad_i(int ib, int n, int m)
+  T getGrad_i(int ib, int m, int n)
   {
     if (dirty_g)
     {
@@ -388,7 +391,7 @@ public:
     return grad[ib].data(m)[n];
   }
 
-  T getHess_i(int ib, int n, int m)
+  T getHess_i(int ib, int m, int n)
   {
     if (dirty_h)
     {

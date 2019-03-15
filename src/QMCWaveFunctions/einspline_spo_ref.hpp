@@ -161,6 +161,8 @@ struct EinsplineSPO_ref : public qmcplusplus::SPOSetImp<Devices::CPU>
       einsplines.resize(nBlocks);
       RandomGenerator<T> myrandom(11);
       Array<T, 3> coef_data(nx + 3, ny + 3, nz + 3);
+      std::cout << "Initializing Reference Spline Coefficients with nBlocks: " << nBlocks
+		<< " and nSplinesPerblock : " << nSplinesPerBlock << '\n';
       for (int i = 0; i < nBlocks; ++i)
       {
 	myAllocator.createMultiBspline(einsplines[i], T(0), start, end, ng, PERIODIC, nSplinesPerBlock);

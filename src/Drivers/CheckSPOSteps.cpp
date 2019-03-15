@@ -180,6 +180,7 @@ void CheckSPOSteps<DT>::thread_main(const int np,
   const int member_id = ip % team_size;
 
   // create generator within the thread
+  std::cout << "Calling RandomGenerator constructor with MakeSeed(team_id, np) " << team_id << ", " << np << '\n';
   RandomGenerator<QMCT::RealType> random_th(MakeSeed(team_id, np));
 
   ParticleSet els;
