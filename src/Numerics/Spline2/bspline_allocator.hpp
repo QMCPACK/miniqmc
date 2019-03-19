@@ -26,6 +26,7 @@ namespace qmcplusplus
 namespace einspline
 {
 using qmcplusplus::Devices;
+
 template<Devices D>
 class Allocator
 {

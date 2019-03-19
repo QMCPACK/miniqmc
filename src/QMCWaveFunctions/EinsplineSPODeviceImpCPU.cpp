@@ -19,7 +19,7 @@
 
 #include <memory>
 #include "Devices.h"
-#include "Numerics/Spline2/SplineBundle.hpp"
+#include "Numerics/Spline2/BsplineSet.hpp"
 #include "Utilities/SIMD/allocator.hpp"
 #include "QMCWaveFunctions/EinsplineSPODeviceImpCPU.hpp"
 

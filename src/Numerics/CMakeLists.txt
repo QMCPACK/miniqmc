@@ -1,6 +1,7 @@
 SET(NUMERICS_SRC
     Spline2/einspline_allocator.cpp
     Spline2/bspline_allocator.cpp
+    Spline2/BsplineSet.cpp
     Spline2/MultiBsplineData.cpp
     )
 
@@ -10,7 +11,7 @@ SET(NUMERICS_SRC
 IF(QMC_USE_CUDA OR QMC_USE_CLANG_CUDA)
   MESSAGE("ADDING CUDA NUMERICS SOURCE FILES")
   SET(NUMERICS_CUDA_OUTSIDE
-        Spline2/BsplineAllocatorCUDA.cpp Spline2/MultiBsplineFuncsCUDA.cpp
+        Spline2/BsplineAllocatorCUDA.cpp Spline2/BsplineSetCUDA.cpp Spline2/MultiBsplineFuncsCUDA.cpp
 	)
   SET(NUMERICS_CUDA_INSIDE Einspline/multi_bspline_cuda_eval_d.cu Einspline/multi_bspline_cuda_eval_s.cu Einspline/MultiBsplineCreateCUDA.cu)
 ENDIF(QMC_USE_CUDA OR QMC_USE_CLANG_CUDA)

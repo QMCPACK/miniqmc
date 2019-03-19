@@ -38,6 +38,8 @@
 #include "QMCWaveFunctions/EinsplineSPOParams.h"
 #include "Numerics/Spline2/bspline_traits.hpp"
 #include "Numerics/Spline2/bspline_allocator.hpp"
+#include "Numerics/Spline2/BsplineSet.hpp"
+#include "Numerics/Spline2/MultiBsplineFuncs.hpp"
 #include "Numerics/Spline2/MultiBsplineFuncs.hpp"
 
 namespace qmcplusplus
@@ -55,12 +57,12 @@ class EinsplineSPODeviceImp<Devices::CPU, T>
   using lattice_type    = CrystalLattice<T, 3>;
 
   /// use allocator
-  einspline::Allocator<Devices::CPU> myAllocator;
+  //einspline::Allocator<Devices::CPU>& myAllocator;
   /// compute engine
   MultiBsplineFuncs<Devices::CPU, T> compute_engine;
 
   //using einspline_type = spline_type*;
-  std::shared_ptr<aligned_vector<spline_type*>> einsplines;
+  std::shared_ptr<BsplineSet<Devices::CPU, T>> einsplines;
   
   //  aligned_vector<vContainer_type> psi;
   aligned_vector<vContainer_type> psi;
@@ -151,24 +153,21 @@ public:
     this->esp.lastBlock        = esp.nBlocks;
     if (einsplines == nullptr)
     {
-      TinyVector<int, 3> ng(nx, ny, nz);
-      QMCT::PosType start(0);
-      QMCT::PosType end(1);
-      einsplines = std::make_shared<aligned_vector<spline_type*>>();
-      (*einsplines).resize(esp.nBlocks);
+      QMCT::PosType start(0); // special constructor for 3d type
+      QMCT::PosType end(1);   // special constructor for 3d type
+      einsplines = std::make_shared<BsplineSet<Devices::CPU,T>>(esp.nBlocks);
       RandomGenerator<T> myrandom(11);
       Array<T, 3> coef_data(nx + 3, ny + 3, nz + 3);
       for (int i = 0; i < esp.nBlocks; ++i)
       {
-        this->myAllocator
-	  .createMultiBspline((*einsplines)[i], T(0), start, end, ng, PERIODIC, esp.nSplinesPerBlock);
+        einsplines->creator()(i, start, end, nx, ny, nz, esp.nSplinesPerBlock);
         if (init_random)
         {
           for (int j = 0; j < esp.nSplinesPerBlock; ++j)
           {
             // Generate different coefficients for each orbital
             myrandom.generate_uniform(coef_data.data(), coef_data.size());
-            myAllocator.setCoefficientsForOneOrbital(j, coef_data, (*einsplines)[i]);
+            einsplines->setCoefficientsForOneOrbital(j, coef_data, i);
           }
         }
       }
@@ -178,9 +177,13 @@ public:
 
   const EinsplineSPOParams<T>& getParams_i() const { return this->esp; }
 
+  /** This is the proper way to hand back a shared pointer.  RVO insures this is efficient
+   */
+  std::shared_ptr<BsplineSet<Devices::CPU, T>> getEinsplines() const { return std::shared_ptr<BsplineSet<Devices::CPU, T>>(einsplines); }
+  
   /** Consumer must makes sure the EinsplineSPO lives while you use this.
    */
-  void* getEinspline_i(int i) const { return (*einsplines)[i]; }
+  void* getEinspline_i(int i) const { return einsplines->get()[i]; }
 
   void setLattice_i(const Tensor<T, 3>& lattice) { esp.lattice.set(lattice); }
 
@@ -189,7 +192,7 @@ public:
     auto u = esp.lattice.toUnit_floor(p);
     std::vector<std::array<T,3>> pos = {{u[0],u[1],u[2]}}; 
     for (int i = 0; i < esp.nBlocks; ++i)
-      compute_engine.evaluate_v((*einsplines)[i], pos, psi[i].data(), esp.nSplinesPerBlock);
+      compute_engine.evaluate_v(einsplines->get()[i], pos, psi[i].data(), esp.nSplinesPerBlock);
   }
 
   inline void evaluate_vgh_i(const QMCT::PosType& p)
@@ -198,7 +201,7 @@ public:
     std::vector<std::array<T,3>> pos = {{u[0],u[1],u[2]}}; 
     for (int i = 0; i < esp.nBlocks; ++i)
     {
-      compute_engine.evaluate_vgh((*einsplines)[i],
+      compute_engine.evaluate_vgh(einsplines->get()[i],
                                   pos,
                                   psi[i].data(),
                                   grad[i].data(),
@@ -212,7 +215,7 @@ public:
     auto u = esp.lattice.toUnit_floor(p);
     std::vector<std::array<T,3>> pos = {{u[0],u[1],u[2]}}; 
     for (int i = 0; i < esp.nBlocks; ++i)
-      compute_engine.evaluate_vgl((*einsplines)[i],
+      compute_engine.evaluate_vgl(einsplines->get()[i],
                                   pos,
                                   psi[i].data(),
                                   grad[i].data(),
