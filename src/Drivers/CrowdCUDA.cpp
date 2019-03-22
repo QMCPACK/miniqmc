@@ -100,7 +100,7 @@ void Crowd<Devices::CUDA>::evaluateHessian(int iel)
   
   using T = double;
   //xo for now this does use a singple EinsplineSPO to call through
-  std::vector<EinsplineSPODeviceImp<Devices::CUDA, T>::HessianParticipants> hessian_participants; //(pack_size_);
+  std::vector<HessianParticipants<Devices::CUDA,T>> hessian_participants; //(pack_size_);
   std::vector<std::array<T, 3>> pos(pack_size_);
   // Better be the same for all
   EinsplineSPO<Devices::CUDA, T>& spo = static_cast<EinsplineSPO<Devices::CUDA, T>&>(*(spos[0]));

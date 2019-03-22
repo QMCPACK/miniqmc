@@ -69,7 +69,7 @@ public:
   using hContainer_type    = VectorSoAContainer<T, 6>;
   using lattice_type       = CrystalLattice<T, 3>;
 
-  using HessianParticipants = HessianParticipants<Devices::CUDA, T>;
+    //using HessianParticipants = HessianParticipants<Devices::CUDA, T>;
   
   /// compute engine
   MultiBsplineFuncs<Devices::CUDA, T> compute_engine;
@@ -338,9 +338,9 @@ public:
                                 1);
   }
 
-  inline HessianParticipants visit_for_vgh_i()
+    inline HessianParticipants<Devices::CUDA, T> visit_for_vgh_i()
   {
-    return HessianParticipants(*device_einsplines_, psi, grad, hess, dirty_v, dirty_g, dirty_h);
+      return HessianParticipants<Devices::CUDA, T>(*device_einsplines_, psi, grad, hess, dirty_v, dirty_g, dirty_h);
   }
   
   /** Legacy single POS call
