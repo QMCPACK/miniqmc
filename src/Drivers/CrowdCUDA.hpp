@@ -11,20 +11,29 @@
 // Peter Doak, doakpw@ornl.gov, Oak Ridge National Lab
 ////////////////////////////////////////////////////////////////////////////////
 
-#include <algorithm>
-#include <vector>
-#include "Utilities/Configuration.h"
-#include "Drivers/Crowd.hpp"
-#include "QMCWaveFunctions/WaveFunction.h"
-#include "QMCWaveFunctions/SPOSet_builder.h"
-#include "Particle/ParticleSet_builder.hpp"
-#include "Particle/ParticleSet.h"
+#ifndef QMCPLUSPLUS_CROWD_CUDA_HPP
+#define QMCPLUSPLUS_CROWD_CUDA_HPP
 
-namespace qmcplusplus
+#include <memory>
+#include <functional>
+#include <type_traits>
+#include <stdexcept>
+#include <boost/tuple/tuple.hpp>
+#include <boost/iterator/zip_iterator.hpp>
+
+#include "Devices.h"
+#include "QMCWaveFunctions/WaveFunction.h"
+#include "QMCWaveFunctions/SPOSet.h"
+#include "Input/pseudo.hpp"
+#include "Utilities/RandomGenerator.h"
+#include "Utilities/PrimeNumberSet.h"
+namespace  qmcplusplus
 {
 
-template class Crowd<Devices::CPU>;
-#ifdef QMC_USE_KOKKOS
-template class Crowd<Devices::KOKKOS>;
-#endif
+  //extern template void Crowd<Devices::CUDA>::evaluateHessian(int iel);
+extern template class Crowd<Devices::CUDA>;
+
+
 } // namespace qmcplusplus
+
+#endif

@@ -128,8 +128,10 @@ void MiniqmcDriverFunctions<DT>::movers_thread_main(const int ip,
   //     els.epdate();
   //   }
 
+  app_summary() << "Evaluating Log\n";
   movers.evaluateLog();
-
+  app_summary() << "Finished Evaluating Log\n";
+  
   const int nions = ions.getTotalNum();
   const int nels  = movers.elss[0]->getTotalNum();
   const int nels3 = 3 * nels;
@@ -143,7 +145,9 @@ void MiniqmcDriverFunctions<DT>::movers_thread_main(const int ip,
 
     for (int l = 0; l < mq_opt.nsubsteps; ++l) // drift-and-diffusion
     {
+      app_summary() << "Entering substep: " << l << '\n';
       movers.fillRandoms();
+      
       for (int iel = 0; iel < nels; ++iel)
       {
         // Operate on electron with index iel
@@ -165,6 +169,8 @@ void MiniqmcDriverFunctions<DT>::movers_thread_main(const int ip,
         //  pos_list[iw] = valid_mover_list[iw]->els.R[iel];
         //anon_mover.spo->multi_evaluate_vgh(valid_spo_list, pos_list);
 	//aka multi_evaluate_vgh
+	//app_summary() << "evaluateHessian called for electron:"<< iel << '\n';
+	
 	movers.evaluateHessian(iel);
 
         mq_opt.Timers[Timer_ratioGrad]->stop();
@@ -172,21 +178,22 @@ void MiniqmcDriverFunctions<DT>::movers_thread_main(const int ip,
 	// Accept/reject the trial move
         mq_opt.Timers[Timer_Update]->start();
 
-	my_accepts += movers.acceptRestoreMoves(iel, mq_opt.accept);
-
+	int these_accepts = movers.acceptRestoreMoves(iel, mq_opt.accept);
+	//app_summary() << "Moves accepted: " << these_accepts << "\n";
+	my_accepts += these_accepts;
         mq_opt.Timers[Timer_Update]->stop();
       }//iel
     }//substeps
     movers.donePbyP();
-	movers.evaluateGL();
+    movers.evaluateGL();
 
-        mq_opt.Timers[Timer_ECP]->start();
+    mq_opt.Timers[Timer_ECP]->start();
 
-	mq_opt.Timers[Timer_Value]->start();
-	movers.calcNLPP(nions, mq_opt.Rmax);
-        mq_opt.Timers[Timer_Value]->stop();
-	mq_opt.Timers[Timer_ECP]->stop();
-	
+    mq_opt.Timers[Timer_Value]->start();
+    movers.calcNLPP(nions, mq_opt.Rmax);
+    mq_opt.Timers[Timer_Value]->stop();
+    mq_opt.Timers[Timer_ECP]->stop();
+
     mq_opt.Timers[Timer_Diffusion]->stop();
 
   } // nsteps

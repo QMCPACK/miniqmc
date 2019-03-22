@@ -95,13 +95,20 @@ public:
     std::memcpy(aVec.data(), buffer, elements * sizeof(T));
   }
 
-  void pull(aligned_vector<aligned_vector<T>>& av_aVec)
+  /** get single value data back from the GPU
+   */
+  void pull(aligned_vector<aligned_vector<T>>& av_aVec, int block_offset = 0, int blocks = 0)
   {
-    CopyHome copy_home(width);
-    T* buffer    = static_cast<T*>(copy_home(data));
-    int total_elements = width / sizeof(T);
-    av_aVec.resize(nBlocks_);
-    for (int i = 0; i < nBlocks_; ++i)
+    // This should in the default case be the entire width
+    size_t this_width = std::min(blocks * nSplinesPerBlock_ * sizeof(T),
+				 width - block_offset * nSplinesPerBlock_ * sizeof(T))  ;
+    CopyHome copy_home(this_width);
+    void* offset_data = data + block_offset * nSplinesPerBlock_ * sizeof(T);
+    T* buffer    = static_cast<T*>(copy_home(offset_data));
+    int total_elements = this_width / sizeof(T);
+    int this_blocks = std::min(nBlocks_, blocks);
+    av_aVec.resize(this_blocks);
+    for (int i = 0; i < this_blocks; ++i)
     {
       int elements = std::min(nSplinesPerBlock_, total_elements - i * nSplinesPerBlock_);
       aligned_vector<T>& aVec = av_aVec[i];
@@ -119,15 +126,20 @@ public:
     std::memcpy(vSoA.data(), buffer, width);
   }
 
-  void pull(aligned_vector<VectorSoAContainer<T, ELEMWIDTH>>& av_vSoA)
+  void pull(aligned_vector<VectorSoAContainer<T, ELEMWIDTH>>& av_vSoA, int block_offset = 0, int blocks = 0)
   {
-    CopyHome copy_home(width);
-    T* buffer = static_cast<T*>(copy_home(data));
-    int total_elements = width / (ELEMWIDTH * sizeof(T));
-    av_vSoA.resize(nBlocks_);
+    size_t this_width = std::min(blocks * nSplinesPerBlock_ * ELEMWIDTH * sizeof(T),
+				 width - block_offset * nSplinesPerBlock_ * ELEMWIDTH *sizeof(T))  ;
+    
+    CopyHome copy_home(this_width);
+    void* offset_data = data + block_offset * nSplinesPerBlock_ * sizeof(T) * ELEMWIDTH;
+    T* buffer = static_cast<T*>(copy_home(offset_data));
+    int total_elements = this_width / (ELEMWIDTH * sizeof(T));
+    int this_blocks = std::min(nBlocks_, blocks);
+    av_vSoA.resize(this_blocks);
     // The number of elements and nSplinesPerBock * nBlocks may not be equal
     // Within each block the CUDA data is also in SoA order
-    for (int i = 0; i < nBlocks_; ++i)
+    for (int i = 0; i < this_blocks; ++i)
     {
       int elements = std::min(nSplinesPerBlock_, total_elements - i * nSplinesPerBlock_);
       VectorSoAContainer<T, ELEMWIDTH>& vSoA = av_vSoA[i];

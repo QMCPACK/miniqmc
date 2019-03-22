@@ -92,7 +92,7 @@ struct MultiBsplineFuncs<Devices::CPU, T>
 
   void
   evaluate_vgh(const spliner_type* restrict spline_m,
-               const std::vector<std::array<T,3>>& pos,
+               const std::vector<std::array<T,3>>& pos, //size is number of participants
                T* restrict vals,
                T* restrict grads,
                T* restrict hess,

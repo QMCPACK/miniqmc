@@ -1,5 +1,9 @@
 #include "Drivers/MiniqmcDriverFunctions.hpp"
 #include "Drivers/Crowd.hpp"
+#ifdef QMC_USE_CUDA
+#include "Drivers/CrowdCUDA.hpp"
+#endif
+
 namespace qmcplusplus
 {
 template<Devices DT>

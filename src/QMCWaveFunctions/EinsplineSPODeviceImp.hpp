@@ -23,8 +23,7 @@
  */
 
 namespace qmcplusplus
-{
-  
+{  
 template<Devices DT, typename T>
 class EinsplineSPODeviceImp;
 

@@ -16,10 +16,10 @@
 #include "multi_bspline_structs_cuda.h"
 
 multi_UBspline_3d_s<Devices::CUDA>*
-create_multi_UBspline_3d_s_cuda (multi_UBspline_3d_s<Devices::CPU>* spline);
+create_multi_UBspline_3d_s_cuda (multi_UBspline_3d_s<Devices::CPU>* spline, int blocked_size);
 
 multi_UBspline_3d_s<Devices::CUDA>*
-create_multi_UBspline_3d_s_cuda_conv (multi_UBspline_3d_d<Devices::CPU>* spline);
+create_multi_UBspline_3d_s_cuda_conv (multi_UBspline_3d_d<Devices::CPU>* spline, int blocked_size);
 
 
 /* extern "C" multi_UBspline_3d_c<Devices::CUDA>* */
@@ -30,7 +30,7 @@ create_multi_UBspline_3d_s_cuda_conv (multi_UBspline_3d_d<Devices::CPU>* spline)
 
 
 multi_UBspline_3d_d<Devices::CUDA>*
-create_multi_UBspline_3d_d_cuda (multi_UBspline_3d_d<Devices::CPU>* spline);
+create_multi_UBspline_3d_d_cuda (multi_UBspline_3d_d<Devices::CPU>* spline, int blocked_size);
 
 /* extern "C" multi_UBspline_3d_z<Devices::CUDA>* */
 /* create_multi_UBspline_3d_z_cuda (multi_UBspline_3d_z<Devices::CPU>* spline); */

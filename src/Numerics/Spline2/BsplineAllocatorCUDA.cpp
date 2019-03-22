@@ -5,7 +5,6 @@
 #include "Numerics/Spline2/MultiBsplineFuncs.hpp"
 #include "Numerics/Spline2/MultiBsplineFuncsCUDA.hpp"
 #include "Numerics/Spline2/BsplineAllocatorCUDA.hpp"
-#include "Numerics/Einspline/MultiBsplineCreateCUDA.h"
 
 
 namespace qmcplusplus
@@ -16,38 +15,6 @@ namespace einspline
 // void Allocator<Devices::CUDA>::destroy(ST* spline)
 // {}
 
-template<typename T, typename DT>
-struct MBspline_create_cuda;
-
-template<>
-struct MBspline_create_cuda<float, float>
-{
-  typename bspline_traits<Devices::CUDA, float, 3>::SplineType*
-  operator()(typename bspline_traits<Devices::CPU, float, 3>::SplineType*& spline)
-  {
-    return create_multi_UBspline_3d_s_cuda(spline);
-  }
-};
-
-template<>
-struct MBspline_create_cuda<double, float>
-{
-  typename bspline_traits<Devices::CUDA, float, 3>::SplineType*
-  operator()(typename bspline_traits<Devices::CPU, double, 3>::SplineType*& spline)
-  {
-    return create_multi_UBspline_3d_s_cuda_conv(spline);
-  }
-};
-
-template<>
-struct MBspline_create_cuda<double, double>
-{
-  typename bspline_traits<Devices::CUDA, double, 3>::SplineType*
-  operator()(typename bspline_traits<Devices::CPU, double, 3>::SplineType*& spline)
-  {
-    return create_multi_UBspline_3d_d_cuda(spline);
-  }
-};
 
 template<typename T>
 struct einspline_cpu_coefs_create;
@@ -77,32 +44,42 @@ struct einspline_cpu_coefs_create<double>
 };
 
 
-template<>
-void Allocator<Devices::CUDA>::createMultiBspline(
-    typename bspline_traits<Devices::CPU, float, 3>::SplineType*& spline,
-    typename bspline_traits<Devices::CUDA, float, 3>::SplineType*& target_spline, float dummyT,
-    float dummDT)
-{
-  target_spline = create_multi_UBspline_3d_s_cuda(spline);
-}
+  
+// template<>
+// void Allocator<Devices::CUDA>::createMultiBspline(
+//     typename bspline_traits<Devices::CPU, float, 3>::SplineType*& spline,
+//     typename bspline_traits<Devices::CUDA, float, 3>::SplineType*& target_spline, float dummyT,
+//     float dummDT)
+// {
+//   using CPU_T = typename bspline_type<decltype(*spline)>::value_type;
+//   using DEV_T = typename bspline_type<decltype(*target_spline)>::value_type;
+//   target_spline = MBspline_create_cuda<CPU_T, DEV_T>()(spline);
+//   //create_multi_UBspline_3d_s_cuda(spline);
+// }
 
-template<>
-void Allocator<Devices::CUDA>::createMultiBspline(
-    typename bspline_traits<Devices::CPU, double, 3>::SplineType*& spline,
-    typename bspline_traits<Devices::CUDA, double, 3>::SplineType*& target_spline, double dummyT,
-    double dummDT)
-{
-  target_spline = create_multi_UBspline_3d_d_cuda(spline);
-}
+// template<>
+// void Allocator<Devices::CUDA>::createMultiBspline(
+//     typename bspline_traits<Devices::CPU, double, 3>::SplineType*& spline,
+//     typename bspline_traits<Devices::CUDA, double, 3>::SplineType*& target_spline, double dummyT,
+//     double dummDT)
+// {
+//   using CPU_T = typename bspline_type<decltype(*spline)>::value_type;
+//   using DEV_T = typename bspline_type<decltype(*target_spline)>::value_type;
+//   target_spline = MBspline_create_cuda<CPU_T, DEV_T>()(spline);
+  
+//   //target_spline = create_multi_UBspline_3d_d_cuda(spline);
+// }
 
-template<>
-void Allocator<Devices::CUDA>::createMultiBspline(
-    typename bspline_traits<Devices::CPU, double, 3>::SplineType*& spline,
-    typename bspline_traits<Devices::CUDA, float, 3>::SplineType*& target_spline, double dummyT,
-    float dummyDT)
-{
-  target_spline = create_multi_UBspline_3d_s_cuda_conv(spline);
-}
+// template<>
+// void Allocator<Devices::CUDA>::createMultiBspline(
+//     typename bspline_traits<Devices::CPU, double, 3>::SplineType*& spline,
+//     typename bspline_traits<Devices::CUDA, float, 3>::SplineType*& target_spline, double dummyT,
+//     float dummyDT)
+// {
+//   using CPU_T = typename bspline_type<decltype(*spline)>::value_type;
+//   using DEV_T = typename bspline_type<decltype(*target_spline)>::value_type;
+//   target_spline = MBspline_create_cuda<CPU_T, DEV_T>()(spline);
+// }
 
 /** loads the vector with spline count of each cpu_spline we are merging for the CUDA device
  *  Hopefully getting an RVO.
@@ -198,17 +175,17 @@ void Allocator<Devices::CUDA>::destroy(multi_UBspline_3d_d<Devices::CUDA>*& spli
 
 
 template class Allocator<qmcplusplus::Devices::CUDA>;
-template void Allocator<qmcplusplus::Devices::CUDA>::createMultiBspline(
+template void Allocator<qmcplusplus::Devices::CUDA>::createMultiBspline<double,double>(
     aligned_vector<typename bspline_traits<Devices::CPU, double, 3>::SplineType*>& cpu_splines,
     typename bspline_traits<Devices::CUDA, double, 3>::SplineType*& target_spline, double dummyT,
     double dummyDT);
 
-template void Allocator<qmcplusplus::Devices::CUDA>::createMultiBspline(
+template void Allocator<qmcplusplus::Devices::CUDA>::createMultiBspline<double,float>(
     aligned_vector<typename bspline_traits<Devices::CPU, double, 3>::SplineType*>& cpu_splines,
     typename bspline_traits<Devices::CUDA, float, 3>::SplineType*& target_spline, double dummyT,
     float dummyDT);
 
-template void Allocator<qmcplusplus::Devices::CUDA>::createMultiBspline(
+template void Allocator<qmcplusplus::Devices::CUDA>::createMultiBspline<float,float>(
     aligned_vector<typename bspline_traits<Devices::CPU, float, 3>::SplineType*>& cpu_splines,
     typename bspline_traits<Devices::CUDA, float, 3>::SplineType*& target_spline, float dummyT,
     float dummyDT);

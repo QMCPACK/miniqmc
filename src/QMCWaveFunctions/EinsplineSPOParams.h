@@ -31,6 +31,11 @@ struct EinsplineSPOParams
   int firstBlock;
   /// last logical block index
   int lastBlock;
+
+
+
+
+
   /// number of splines
   int nSplines;
   /// number of splines per block

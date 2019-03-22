@@ -76,5 +76,30 @@ struct bspline_type<UBspline_3d_d<D>>
 {
   typedef double value_type;
 };
+
+template<Devices D>
+struct bspline_type<multi_UBspline_3d_s<D>&>
+{
+  typedef float value_type;
+};
+
+template<Devices D>
+struct bspline_type<multi_UBspline_3d_d<D>&>
+{
+  typedef double value_type;
+};
+
+template<Devices D>
+struct bspline_type<UBspline_3d_s<D>&>
+{
+  typedef float value_type;
+};
+
+template<Devices D>
+struct bspline_type<UBspline_3d_d<D>&>
+{
+  typedef double value_type;
+};
+
 } // namespace qmcplusplus
 #endif

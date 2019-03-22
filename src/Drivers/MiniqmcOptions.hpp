@@ -34,6 +34,7 @@ namespace qmcplusplus
     Timer_ECP,
     Timer_Value,
     Timer_evalGrad,
+    Timer_evalV,
     Timer_ratioGrad,
     Timer_Update,
   };
@@ -51,6 +52,7 @@ public:
       {Timer_ECP, "Pseudopotential"},
       {Timer_Value, "Value"},
       {Timer_evalGrad, "Current Gradient"},
+      {Timer_evalV, "Spline value evaluation"},
       {Timer_ratioGrad, "New Gradient"},
       {Timer_Update, "Update"},
   };

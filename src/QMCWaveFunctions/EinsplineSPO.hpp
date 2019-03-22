@@ -48,18 +48,21 @@ public:
 
   /// Timer
   NewTimer* timer;
-
+  NewTimer* evalV_timer;
+  
   /// default constructor
   EinsplineSPO()
   {
     std::cout << "EinsplineSPO() called\n";
     timer = TimerManagerClass::get().createTimer("Single-Particle Orbitals", timer_level_fine);
+    evalV_timer = TimerManagerClass::get().createTimer("Eval V", timer_level_fine);
   }
 
   EinsplineSPO(const EinsplineSPO& in)
     : einspline_spo_device(in.einspline_spo_device)
   {
     timer = TimerManagerClass::get().createTimer("Single-Particle Orbitals", timer_level_fine);
+    evalV_timer = TimerManagerClass::get().createTimer("Eval V", timer_level_fine);
   }
 
   // EinsplineSPO(const EinsplineSPO& in)
@@ -81,6 +84,7 @@ public:
       : einspline_spo_device(in.einspline_spo_device, team_size, member_id)
   {
     timer = TimerManagerClass::get().createTimer("Single-Particle Orbitals", timer_level_fine);
+    evalV_timer = TimerManagerClass::get().createTimer("Eval V", timer_level_fine);
   }
 
   /// destructors
@@ -108,6 +112,7 @@ public:
   inline void evaluate_v(const PosType& p)
   {
     ScopedTimer local_timer(timer);
+    ScopedTimer another_local_timer(evalV_timer);
     einspline_spo_device.evaluate_v(p);
   }
 

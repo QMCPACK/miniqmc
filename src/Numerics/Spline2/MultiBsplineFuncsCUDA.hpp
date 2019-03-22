@@ -79,7 +79,7 @@ struct MultiBsplineFuncs<Devices::CUDA, T>
   // 		         GPUArray<T,1>& vals, size_t num_splines);
 
   void evaluate_v(const spliner_type* spline_m, const std::vector<std::array<T, 3>>&, T* vals,
-                  size_t num_splines, size_t spline_block_size = 0);
+                  int num_blocks, size_t num_splines, size_t spline_block_size = 0);
 
   void evaluate_vgl(const spliner_type* restrict spline_m,
                     const std::vector<std::array<T, 3>>&,
@@ -93,7 +93,8 @@ struct MultiBsplineFuncs<Devices::CUDA, T>
                     T* vals,
                     T* grads,
                     T* hess,
-                    size_t num_splines,
+		    int num_blocks,
+		    size_t num_splines,
                     size_t spline_block_size = 0) const;
 
 private:
@@ -106,20 +107,18 @@ template<>
 inline void
 MultiBsplineFuncs<Devices::CUDA, double>::evaluate_v(const multi_UBspline_3d_d<Devices::CUDA>* spline_m,
                                                      const std::vector<std::array<double, 3>>& pos,
-                                                     double* vals, size_t num_splines,
+                                                     double* vals, int num_blocks, size_t num_splines,
                                                      size_t spline_block_size)
 {
   PosBuffer pos_d;
   if (spline_block_size == 0) spline_block_size = spline_block_size_;
-  eval_multi_multi_UBspline_3d_d_cuda(spline_m, pos_d.make(pos), vals, spline_block_size, num_splines);
+  eval_multi_multi_UBspline_3d_d_cuda(spline_m, pos_d.make(pos), vals, num_blocks, spline_block_size, pos.size());
 }
 
-/** STILL OLD IMPLEMENTATION
- */
 template<>
 inline void MultiBsplineFuncs<Devices::CUDA, float>::evaluate_v(
     const typename bspline_traits<Devices::CUDA, float, 3>::SplineType* restrict spline_m,
-    const std::vector<std::array<float, 3>>& pos, float* vals, size_t num_splines,
+    const std::vector<std::array<float, 3>>& pos, float* vals, int num_blocks, size_t num_splines,
     size_t spline_block_size)
 {
   PosBuffer pos_f;
@@ -128,6 +127,7 @@ inline void MultiBsplineFuncs<Devices::CUDA, float>::evaluate_v(
 }
 
 /** New implementation with non const spline block size
+ *  with nblocks and splineblock size this whole thing is over specified
  */
 template<>
 inline void MultiBsplineFuncs<Devices::CUDA, double>::evaluate_vgh(
@@ -136,13 +136,15 @@ inline void MultiBsplineFuncs<Devices::CUDA, double>::evaluate_vgh(
     double* vals,
     double* grads,
     double* hess,
+    int num_blocks, //blocks per participant
     size_t num_splines,
     size_t spline_block_size) const
 {
   PosBuffer pos_d;
-  if (spline_block_size == 0) spline_block_size = spline_block_size_;
-  eval_multi_multi_UBspline_3d_d_vgh_cuda(spline_m, pos_d.make(pos), vals, grads, hess,
-                                          spline_block_size, num_splines);
+  // This is a bit of legacy, the implementation should be aware of this and pass it
+  if (spline_block_size == 0) spline_block_size = spline_m->num_splines;
+  eval_multi_multi_UBspline_3d_d_vgh_cuda(spline_m, pos_d.make(pos), vals, grads, hess, num_blocks,
+                                          spline_block_size, pos.size());
 }
 
 // template<>
@@ -160,11 +162,12 @@ inline void MultiBsplineFuncs<Devices::CUDA, float>::evaluate_vgh(
     float* vals,
     float* grads,
     float* hess,
+    int num_blocks,
     size_t num_splines,
     size_t spline_block_size) const
 {
   PosBuffer pos_f;
-  if (spline_block_size == 0) spline_block_size = spline_block_size_;
+  if (spline_block_size == 0) spline_block_size = spline_m->num_splines;
   eval_multi_multi_UBspline_3d_s_vgh_cuda(spline_m, pos_f.make(pos), vals, grads, hess, num_splines);
 }
 

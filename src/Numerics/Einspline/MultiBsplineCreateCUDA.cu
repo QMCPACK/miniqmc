@@ -18,7 +18,7 @@
 #include "multi_bspline_structs_cuda.h"
 
 multi_UBspline_3d_s<Devices::CUDA>*
-create_multi_UBspline_3d_s_cuda(multi_UBspline_3d_s<Devices::CPU>* spline)
+create_multi_UBspline_3d_s_cuda(multi_UBspline_3d_s<Devices::CPU>* spline, int blocked_size)
 {
   // clang-format off
   float A_h[48] = {-1.0 / 6.0, 3.0 / 6.0,  -3.0 / 6.0, 1.0 / 6.0,
@@ -133,7 +133,7 @@ create_multi_UBspline_3d_s_cuda(multi_UBspline_3d_s<Devices::CPU>* spline)
 
 
 multi_UBspline_3d_s<Devices::CUDA>*
-create_multi_UBspline_3d_s_cuda_conv(multi_UBspline_3d_d<Devices::CPU>* spline)
+create_multi_UBspline_3d_s_cuda_conv(multi_UBspline_3d_d<Devices::CPU>* spline, int blocked_size)
 {
   // fprintf (stderr, "In create_multi_UBspline_3d_s_cuda_conv.\n");
   float A_h[48] = {-1.0 / 6.0, 3.0 / 6.0,  -3.0 / 6.0, 1.0 / 6.0, 3.0 / 6.0, -6.0 / 6.0, 0.0 / 6.0,
@@ -252,7 +252,7 @@ create_multi_UBspline_3d_s_cuda_conv(multi_UBspline_3d_d<Devices::CPU>* spline)
 
 
 multi_UBspline_3d_d<Devices::CUDA>*
-create_multi_UBspline_3d_d_cuda(multi_UBspline_3d_d<Devices::CPU>* spline)
+create_multi_UBspline_3d_d_cuda(multi_UBspline_3d_d<Devices::CPU>* spline, int blocked_size)
 {
   double B_h[48] = {-1.0 / 6.0, 3.0 / 6.0,  -3.0 / 6.0, 1.0 / 6.0, 3.0 / 6.0, -6.0 / 6.0, 0.0 / 6.0,
                     4.0 / 6.0,  -3.0 / 6.0, 3.0 / 6.0,  3.0 / 6.0, 1.0 / 6.0, 1.0 / 6.0,  0.0 / 6.0,
@@ -327,7 +327,8 @@ create_multi_UBspline_3d_d_cuda(multi_UBspline_3d_d<Devices::CPU>* spline)
   cuda_spline->dim.y = spline->y_grid.num;
   cuda_spline->dim.z = spline->z_grid.num;
 
-  size_t size = Nx * Ny * Nz * N * sizeof(double);
+  // was N now blocked_size
+  size_t size = Nx * Ny * Nz * blocked_size * sizeof(double);
 
   cudaMalloc((void**)&(cuda_spline->coefs), size);
   double* spline_buff = (double*)malloc(size);

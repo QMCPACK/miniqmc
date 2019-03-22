@@ -26,6 +26,7 @@
 #include <vector>
 #include <array>
 #include "Devices.h"
+#include "QMCFutureTypes.hpp"
 #include "clean_inlining.h"
 #include "Numerics/Containers.h"
 #include "Numerics/Spline2/BsplineSet.hpp"
@@ -46,6 +47,9 @@
 
 namespace qmcplusplus
 {
+
+  
+
 /** Follows implementation in QMCPack in that EinsplineSPODeviceImp is fat CPUImp
  *  Except this one is of SoA CPU and I'm looking to trim or at least share generic code
  *  BDIM is batching dimension.
@@ -53,6 +57,7 @@ namespace qmcplusplus
 template<typename T>
 class EinsplineSPODeviceImp<Devices::CUDA, T> : public EinsplineSPODevice<EinsplineSPODeviceImp<Devices::CUDA, T>, T>
 {
+public:
   using QMCT     = QMCTraits;
   using ThisType = EinsplineSPODeviceImp<Devices::CUDA, T>;
   /// define the einspline data object type
@@ -64,6 +69,8 @@ class EinsplineSPODeviceImp<Devices::CUDA, T> : public EinsplineSPODevice<Einspl
   using hContainer_type    = VectorSoAContainer<T, 6>;
   using lattice_type       = CrystalLattice<T, 3>;
 
+  using HessianParticipants = HessianParticipants<Devices::CUDA, T>;
+  
   /// compute engine
   MultiBsplineFuncs<Devices::CUDA, T> compute_engine;
 
@@ -309,7 +316,7 @@ public:
     dirty_v                           = true;
     auto u                            = esp.lattice.toUnit_floor(p);
     std::vector<std::array<T, 3>> pos = {{u[0], u[1], u[2]}};
-    compute_engine.evaluate_v(device_einsplines_->operator[](0), pos, dev_psi.get_devptr(), (size_t)esp.nSplinesPerBlock);
+    compute_engine.evaluate_v(device_einsplines_->operator[](0), pos, dev_psi.get_devptr(), esp.nBlocks, (size_t)esp.nSplinesPerBlock);
   }
 
   /** Legacy single POS call
@@ -326,10 +333,16 @@ public:
                                 dev_psi.get_devptr(),
                                 dev_grad.get_devptr(),
                                 dev_hess.get_devptr(),
+				esp.nBlocks,
                                 esp.nSplines,
-                                esp.nSplinesPerBlock);
+                                1);
   }
 
+  inline HessianParticipants visit_for_vgh_i()
+  {
+    return HessianParticipants(*device_einsplines_, psi, grad, hess, dirty_v, dirty_g, dirty_h);
+  }
+  
   /** Legacy single POS call
    */
   void evaluate_vgl_i(const QMCT::PosType& p)
