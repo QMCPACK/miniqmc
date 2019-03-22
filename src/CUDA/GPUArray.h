@@ -103,7 +103,8 @@ public:
     size_t this_width = std::min(blocks * nSplinesPerBlock_ * sizeof(T),
 				 width - block_offset * nSplinesPerBlock_ * sizeof(T))  ;
     CopyHome copy_home(this_width);
-    void* offset_data = data + block_offset * nSplinesPerBlock_ * sizeof(T);
+    //The rside is operations on a double* so no sizeof multiplier
+    void* offset_data = data + block_offset * nSplinesPerBlock_;
     T* buffer    = static_cast<T*>(copy_home(offset_data));
     int total_elements = this_width / sizeof(T);
     int this_blocks = std::min(nBlocks_, blocks);
@@ -113,6 +114,7 @@ public:
       int elements = std::min(nSplinesPerBlock_, total_elements - i * nSplinesPerBlock_);
       aligned_vector<T>& aVec = av_aVec[i];
       aVec.resize(elements);
+      assert((i * nSplinesPerBlock_ + elements)*sizeof(T) <= width);
       std::memcpy(aVec.data(), (void*)(buffer + i * nSplinesPerBlock_), elements * sizeof(T));
     }
   }
@@ -132,7 +134,7 @@ public:
 				 width - block_offset * nSplinesPerBlock_ * ELEMWIDTH *sizeof(T))  ;
     
     CopyHome copy_home(this_width);
-    void* offset_data = data + block_offset * nSplinesPerBlock_ * sizeof(T) * ELEMWIDTH;
+    void* offset_data = data + block_offset * nSplinesPerBlock_ * ELEMWIDTH;
     T* buffer = static_cast<T*>(copy_home(offset_data));
     int total_elements = this_width / (ELEMWIDTH * sizeof(T));
     int this_blocks = std::min(nBlocks_, blocks);
@@ -144,7 +146,8 @@ public:
       int elements = std::min(nSplinesPerBlock_, total_elements - i * nSplinesPerBlock_);
       VectorSoAContainer<T, ELEMWIDTH>& vSoA = av_vSoA[i];
       vSoA.resize(elements);
-      std::memcpy(vSoA.data(), buffer + i * nSplinesPerBlock_ , elements * ELEMWIDTH * sizeof(T));
+      assert((i * nSplinesPerBlock_ + elements)*ELEMWIDTH*sizeof(T) <= width);
+      std::memcpy(vSoA.data(), (void*)(buffer + i * nSplinesPerBlock_) , elements * ELEMWIDTH * sizeof(T));
     }
   }
 
