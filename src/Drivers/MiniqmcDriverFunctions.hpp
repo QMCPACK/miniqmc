@@ -164,16 +164,12 @@ void MiniqmcDriverFunctions<DT>::movers_thread_main(const int ip,
 	// Compute gradient at the trial position 
         mq_opt.Timers[Timer_ratioGrad]->start();
 	movers.evaluateRatioGrad(iel);
-
-	//        for (int iw = 0; iw < valid_mover_list.size(); iw++)
-        //  pos_list[iw] = valid_mover_list[iw]->els.R[iel];
-        //anon_mover.spo->multi_evaluate_vgh(valid_spo_list, pos_list);
-	//aka multi_evaluate_vgh
-	//app_summary() << "evaluateHessian called for electron:"<< iel << '\n';
-	
-	movers.evaluateHessian(iel);
-
         mq_opt.Timers[Timer_ratioGrad]->stop();
+
+
+	mq_opt.Timers[Timer_evalVGH]->start();
+	movers.evaluateHessian(iel);
+	mq_opt.Timers[Timer_evalVGH]->stop();
 
 	// Accept/reject the trial move
         mq_opt.Timers[Timer_Update]->start();
