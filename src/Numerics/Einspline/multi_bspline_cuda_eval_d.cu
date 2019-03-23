@@ -1,5 +1,9 @@
 #include "multi_bspline_eval_cuda.h"
 #include "MultiBsplineCreateCUDA.h"
+#include <iostream>
+#include <cooperative_groups.h>
+
+using namespace cooperative_groups;
 
 __constant__ int GRAD_ELEMS = 3;
 
@@ -31,7 +35,7 @@ eval_multi_multi_UBspline_3d_d_cuda(const multi_UBspline_3d_d<Devices::CUDA>* sp
                                                                spline->Bcuda, vals_d, spline->dim,
                                                                spline->stride, spline_block_size);
 
-  cudaDeviceSynchronize();
+  cudaStreamSynchronize(cudaStreamPerThread);
   cudaError_t err = cudaGetLastError();
   if (err != cudaSuccess)
   {
@@ -52,7 +56,7 @@ eval_multi_multi_UBspline_3d_d_kernel(double* pos, double3 drInv, const double* 
   int block = blockIdx.x;
   int thr   = threadIdx.x; //if your block size is not 64 or larger you are in trouble.
   int ir    = blockIdx.y;
-  int off   = block * spline_block_size + thr;
+  int off   = block * spline_block_size  + thr;
   __shared__ double* myval;
   __shared__ double abc[64];
   __shared__ double3 r;
@@ -148,12 +152,23 @@ void eval_multi_multi_UBspline_3d_d_vgh_cuda(const multi_UBspline_3d_d<Devices::
   //Now the callers responsibility
   //if (spline->num_splines % spline_block_size) dimGrid.x++;
 
+    //find out how many blocks can fit 
+  int fit_blocks;
+  cudaOccupancyMaxActiveBlocksPerMultiprocessor(
+      &fit_blocks,
+      eval_multi_multi_UBspline_3d_d_vgh_kernel,
+      spline_block_size,
+      0);
+
+  //std::cout << "eval_multi_multi_UBspline_3d_d_vgh_kernel can fit " << fit_blocks << " on a multi processor \n";
+
+
   eval_multi_multi_UBspline_3d_d_vgh_kernel<<<dimGrid, dimBlock>>>(pos_d, spline->gridInv,
                                                                    spline->coefs, spline->Bcuda,
                                                                    vals_d, grads_d, hess_d,
                                                                    spline->dim, spline->stride, spline_block_size);
 
-  cudaDeviceSynchronize();
+  cudaStreamSynchronize(cudaStreamPerThread);
 
   cudaError_t err = cudaGetLastError();
   if (err != cudaSuccess)
@@ -175,21 +190,21 @@ eval_multi_multi_UBspline_3d_d_vgh_kernel(double* pos, double3 drInv, const doub
   int thr   = threadIdx.x;
   int ir    = blockIdx.y;
   int off   = block * spline_block_size + thr;
-
+  thread_block whole_block = this_thread_block();
   // Its unclear there is any value in having these in shared memory
   // Threads will diverge less and a sync can be skipped by having every thread calc this.
-  __shared__ double *myval, *mygrad, *myhess;
-  __shared__ double3 r;
-  if (thr == 0)
-  {
+  double *myval, *mygrad, *myhess;
+  double3 r;
+  //if (thr == 0)
+  //{
     r.x    = pos[3 * ir + 0];
     r.y    = pos[3 * ir + 1];
     r.z    = pos[3 * ir + 2];
     myval  = &(vals[ir * block * spline_block_size]);
     mygrad = &(grads[ir * block * spline_block_size * 3]);
     myhess = &(hess[ir * block * spline_block_size * 6]);
-  }
-  __syncthreads();
+    //}
+    //__syncthreads();
   int3 index;
   double3 t;
   double s, sf;
@@ -230,11 +245,12 @@ eval_multi_multi_UBspline_3d_d_vgh_kernel(double* pos, double3 drInv, const doub
     c[thr] = Bcuda[4 * thr + 0] * tp[2].x + Bcuda[4 * thr + 1] * tp[2].y +
         Bcuda[4 * thr + 2] * tp[2].z + Bcuda[4 * thr + 3] * tp[2].w;
   }
-  __syncthreads();
+  whole_block.sync();
   __shared__ double abc[640];
   int i                           = (thr >> 4) & 3;
   int j                           = (thr >> 2) & 3;
   int k                           = (thr & 3);
+  //This should be pretty good as its just two warps.
   if (thr < 64)
   {
     abc[(16 * i + 4 * j + k) + 0]   = a[i + 0] * b[j + 0] * c[k + 0]; // val
@@ -248,7 +264,7 @@ eval_multi_multi_UBspline_3d_d_vgh_kernel(double* pos, double3 drInv, const doub
     abc[(16 * i + 4 * j + k) + 512] = a[i + 0] * b[j + 4] * c[k + 4]; // a * db * dc = d2/dydz
     abc[(16 * i + 4 * j + k) + 576] = a[i + 0] * b[j + 0] * c[k + 8]; // a * b * d2c = d2/dz2
   }
-  __syncthreads();
+  whole_block.sync();
   double v = 0.0, g0 = 0.0, g1 = 0.0, g2 = 0.0, h00 = 0.0, h01 = 0.0, h02 = 0.0, h11 = 0.0,
          h12 = 0.0, h22 = 0.0;
   int n            = 0;
@@ -256,8 +272,8 @@ eval_multi_multi_UBspline_3d_d_vgh_kernel(double* pos, double3 drInv, const doub
   const double* b0 = coefs + index.x * strides.x + index.y * strides.y + index.z * strides.z + off;
   // If the block isn't full don't calculate values from ghost splines we just don't care about this.
   // It can save a smallish amount of memory but otherwise causes divergence.
-  if (true) //off < N)
-  {
+  //if (true) //off < N)
+  //{
     for (int i = 0; i < 4; i++)
     {
       for (int j = 0; j < 4; j++)
@@ -302,8 +318,8 @@ eval_multi_multi_UBspline_3d_d_vgh_kernel(double* pos, double3 drInv, const doub
     myhess[off + spline_block_size * 3] = h11;
     myhess[off + spline_block_size * 4] = h12;
     myhess[off + spline_block_size * 5] = h22;
-  }
-  // Sync threads insn't necessary because of that cudaDeviceSynchronize abov
+    //}
+  // Sync threads insn't necessary because of the cudaStreamSynchronize above
 }
 
 __global__ static void

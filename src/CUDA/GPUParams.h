@@ -38,7 +38,18 @@ public:
     return instance;
   }
 private:
-  Gpu() {}
+Gpu()
+{
+  int device;
+  cudaDeviceProp prop;
+  int activeWarps;
+  int maxWarps;
+
+  cudaGetDevice(&device);
+  cudaGetDeviceProperties(&prop, device);
+}
+
+
   Gpu(const Gpu&) = delete;
   Gpu& operator=(const Gpu&) = delete;
   
@@ -57,6 +68,8 @@ public:
   cudaEvent_t ratioSyncTwoBodyEvent;
 
   cublasHandle_t cublasHandle;
+  int device;
+  cudaDeviceProp prop;
 
   size_t MaxGPUSpineSizeMB;
   int rank;

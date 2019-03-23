@@ -122,8 +122,10 @@ void Crowd<Devices::CUDA>::evaluateHessian(int iel)
   dev_psi.resize(esp.nBlocks * pack_size_, esp.nSplinesPerBlock);
   dev_hess.resize(esp.nBlocks * pack_size_, esp.nSplinesPerBlock);
   dev_grad.resize(esp.nBlocks * pack_size_, esp.nSplinesPerBlock);
+  
   MultiBsplineFuncs<Devices::CUDA, T> compute_engine;
   const auto& spline = static_cast<EinsplineSPO<Devices::CUDA, T>*>(spos[0])->einspline_spo_device.getDeviceEinsplines();
+
   compute_engine.evaluate_vgh((*spline)[0],
                               pos,
                               dev_psi.get_devptr(),
