@@ -28,6 +28,8 @@
 #include "Input/pseudo.hpp"
 #include "Utilities/RandomGenerator.h"
 #include "Utilities/PrimeNumberSet.h"
+#include "Drivers/CrowdBuffers.hpp"
+
 namespace qmcplusplus
 {
 
@@ -232,6 +234,7 @@ public:
   void updatePosFromCurrentEls(int iels);
   int acceptRestoreMoves(int iels, QMCT::RealType accept);
 private:
+  CrowdBuffers<DT> buffers_;
   int pack_size_;
   static constexpr QMCT::RealType tau = 2.0;
   QMCT::RealType sqrttau = std::sqrt(tau);
@@ -338,7 +341,7 @@ void Crowd<DT>::evaluateGL()
 template<Devices DT>
 void Crowd<DT>::calcNLPP(int nions, QMCT::RealType Rmax)
 {
-  std::cout << "Crowd calcNLPP Called \n"; 
+  //std::cout << "Crowd calcNLPP Called \n"; 
 
   //So basically we need to unwrap this.
 
