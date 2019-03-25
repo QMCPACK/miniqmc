@@ -74,6 +74,8 @@ void MiniqmcDriver::initialize(int argc, char** argv)
     const size_t SPO_coeff_size = static_cast<size_t>(norb) * (mq_opt_.nx + 3) * (mq_opt_.ny + 3) *
         (mq_opt_.nz + 3) * sizeof(QMCT::RealType);
     const double SPO_coeff_size_MB = SPO_coeff_size * 1.0 / 1024 / 1024;
+  const size_t determinant_buffer_size = (static_cast<size_t>(norb) * norb + norb * 3) * sizeof(QMCT::RealType) * 2;
+  const double determinant_buffer_size_MB =  determinant_buffer_size * 1.0 / 1024 / 1024;
 
     app_summary() << "Number of orbitals/splines = " << norb << '\n'
                   << "Tile size = " << mq_opt_.tileSize << '\n'
@@ -88,6 +90,7 @@ void MiniqmcDriver::initialize(int argc, char** argv)
 
     app_summary() << "\nSPO coefficients size = " << SPO_coeff_size << " bytes ("
                   << SPO_coeff_size_MB << " MB)" << '\n';
+    app_summary() << "\nDeterminant Buffer size (per walker) = " << determinant_buffer_size << " bytes (" << determinant_buffer_size_MB << " MB)" << '\n';
 
     handler.build(spo_main, mq_opt_, norb, nTiles, lattice_b, mq_opt_.device_number);
   

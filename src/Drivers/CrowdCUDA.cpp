@@ -130,6 +130,7 @@ template<>
   MultiBsplineFuncs<Devices::CUDA, T> compute_engine;
   const auto& spline =
       static_cast<EinsplineSPO<Devices::CUDA, T>*>(spos[0])->einspline_spo_device.getDeviceEinsplines();
+
   compute_engine.evaluate_vgh((*spline)[0],
                               pos,
                               buffers_.dev_psi.get_devptr(),

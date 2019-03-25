@@ -19,6 +19,8 @@
 
 #ifndef QMCPLUSPLUS_DETERMINANT_DEVICE_IMP_CUDA_H
 #define QMCPLUSPLUS_DETERMINANT_DEVICE_IMP_CUDA_H
+#include <cuda.h>
+#include <cuda_runtime_api.h>
 
 #include "Devices.h"
 #include "Numerics/OhmmsPETE/OhmmsMatrix.h"
@@ -26,9 +28,9 @@
 #include "DeterminantDevice.h"
 #include "DeterminantDeviceImp.h"
 #include "QMCWaveFunctions/WaveFunctionComponent.h"
-#include "Numerics/LinAlgCPU.h"
+#include "Numerics/LinAlgCUDA.hpp"
 #include "Utilities/Configuration.h"
-
+#include "CUDA/GPUArray.h"
 namespace qmcplusplus
 {
 
@@ -36,7 +38,7 @@ namespace qmcplusplus
 template<>
 class DeterminantDeviceImp<Devices::CUDA>
   : public DeterminantDevice<DeterminantDeviceImp<Devices::CUDA>>,
-    public LinAlgCPU
+    public LinAlgCUDA
 {
 public:
   using QMCT = QMCTraits;
@@ -59,6 +61,8 @@ public:
     // get lwork and resize workspace
     LWork = getGetriWorkspace(psiM.data(), nels, nels, pivot.data());
     work.resize(LWork);
+
+    cuda_buffer.resize(1, psiMinv.size() + psiV.size() *3);
 
     constexpr double shift(0.5);
     myRandom.generate_uniform(psiMsave.data(), nels * nels);
@@ -126,7 +130,10 @@ public:
   inline void acceptMoveImp(ParticleSet& P, int iel)
   {
     const int nels = psiV.size();
-    updateRow(psiMinv.data(), psiV.data(), nels, nels, iel - FirstIndex, curRatio);
+    assert(cuda_buffer.getWidth() == (psiMinv.size() + psiV.size() * 3)*sizeof(double));
+    updateRow(psiMinv, psiV,
+	      nels, nels, iel - FirstIndex, curRatio, cuda_buffer.getWidth(), cuda_buffer.get_devptr());
+    
     std::copy_n(psiV.data(), nels, psiMsave[iel - FirstIndex]);
   }
 
@@ -135,6 +142,7 @@ public:
   inline int sizeImp() const { return psiMinv.size(); }
 
 private:
+  GPUArray<double, 1, 1> cuda_buffer;
   /// log|det|
   double LogValue;
   /// current ratio
