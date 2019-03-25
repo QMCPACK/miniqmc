@@ -92,7 +92,7 @@ public:
     T* buffer    = static_cast<T*>(copy_home(data));
     int elements = width / sizeof(T);
     aVec.resize(elements);
-    std::memcpy(aVec.data(), buffer, elements * sizeof(T));
+    std::memcpy(aVec.data(), buffer, width);
   }
 
   /** get single value data back from the GPU
@@ -100,6 +100,8 @@ public:
   void pull(aligned_vector<aligned_vector<T>>& av_aVec, int block_offset = 0, int blocks = 0)
   {
     // This should in the default case be the entire width
+    if(blocks == 0)
+      blocks = nBlocks_;
     size_t this_width = std::min(blocks * nSplinesPerBlock_ * sizeof(T),
 				 width - block_offset * nSplinesPerBlock_ * sizeof(T))  ;
     CopyHome copy_home(this_width);
@@ -130,6 +132,8 @@ public:
 
   void pull(aligned_vector<VectorSoAContainer<T, ELEMWIDTH>>& av_vSoA, int block_offset = 0, int blocks = 0)
   {
+    if (blocks == 0)
+      blocks = nBlocks_;
     size_t this_width = std::min(blocks * nSplinesPerBlock_ * ELEMWIDTH * sizeof(T),
 				 width - block_offset * nSplinesPerBlock_ * ELEMWIDTH *sizeof(T))  ;
     

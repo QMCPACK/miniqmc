@@ -153,12 +153,12 @@ void eval_multi_multi_UBspline_3d_d_vgh_cuda(const multi_UBspline_3d_d<Devices::
   //if (spline->num_splines % spline_block_size) dimGrid.x++;
 
     //find out how many blocks can fit 
-  int fit_blocks;
-  cudaOccupancyMaxActiveBlocksPerMultiprocessor(
-      &fit_blocks,
-      eval_multi_multi_UBspline_3d_d_vgh_kernel,
-      spline_block_size,
-      0);
+  // int fit_blocks;
+  // cudaOccupancyMaxActiveBlocksPerMultiprocessor(
+  //     &fit_blocks,
+  //     eval_multi_multi_UBspline_3d_d_vgh_kernel,
+  //     spline_block_size,
+  //     0);
 
   //std::cout << "eval_multi_multi_UBspline_3d_d_vgh_kernel can fit " << fit_blocks << " on a multi processor \n";
 

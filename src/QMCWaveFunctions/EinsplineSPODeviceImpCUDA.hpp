@@ -136,13 +136,14 @@ public:
     host_einsplines_ = in.getEinsplines();
     for (int i = 0; i < esp.nBlocks; ++i)
     {
+      std::cout << "EinsplineSPODeviceImp<Devices::CUDA> constructor, copy host_spline coefficients to device_spline coefficients\n";
+
       device_einsplines_->creator()(host_einsplines_->operator[](i),i);
     }
     resize();
   }
 
   /** CUDA to CUDA Constructor
-   *  is it safe to assume if this copy constructor is called the splines are shared?
    */
   EinsplineSPODeviceImp(const EinsplineSPODeviceImp<Devices::CUDA, T>& in)
   {
@@ -165,7 +166,7 @@ public:
 
 
   /** "Fat" Copy Constructor CPU to CUDA
-   *  I have not considered the impact of memberid variation
+   *  No support for team_size and member id.
    */
   EinsplineSPODeviceImp(const EinsplineSPODeviceImp<Devices::CPU, T>& in, int team_size, int member_id)
   {
@@ -176,10 +177,9 @@ public:
     esp.nSplinesSerialThreshold_VGH    = inesp.nSplinesSerialThreshold_VGH;
     esp.nSplines                       = inesp.nSplines;
     esp.nSplinesPerBlock               = inesp.nSplinesPerBlock;
-    esp.nBlocks                        = (inesp.nBlocks + team_size - 1) / team_size;
-    esp.firstBlock                     = esp.nBlocks * member_id;
-    esp.lastBlock                      = std::min(inesp.nBlocks, esp.nBlocks * (member_id + 1));
-    esp.nBlocks                        = esp.lastBlock - esp.firstBlock;
+    esp.nBlocks                        = inesp.nBlocks;  // (inesp.nBlocks + team_size - 1) / team_size;
+    esp.firstBlock                     = 0; //esp.nBlocks * member_id;
+    esp.lastBlock                      = inesp.nBlocks; //std::min(inesp.nBlocks, esp.nBlocks * (member_id + 1));
     esp.lattice                        = inesp.lattice;
     dirty_v                            = false;
     dirty_g                            = false;
@@ -192,6 +192,7 @@ public:
     {
       // const ThisType& in_cast = static_cast<const ThisType&>(in);
       // host_einsplines_[i]      = static_cast<host_spline_type*>(in_cast.getHostEinspline(t));
+      std::cout << "EinsplineSPODeviceImp<Devices::CUDA> fat constructor, copy host_spline coefficients to device_spline coefficients\n";
       device_einsplines_->creator()(host_einsplines_->operator[](i),i);
     }
     resize();
@@ -217,8 +218,8 @@ public:
     dirty_v                            = false;
     dirty_g                            = false;
     dirty_h                            = false;
-    host_einsplines_                    = in.getHostEinsplines();
-    device_einsplines_                  = in.getDeviceEinsplines();
+    host_einsplines_                    = in.host_einsplines_;
+    device_einsplines_                  = in.device_einsplines_;
     resize();
   }
 
@@ -266,6 +267,8 @@ public:
     this->esp.nSplines         = num_splines;
     this->esp.nBlocks          = nblocks;
     this->esp.nSplinesPerBlock = num_splines / nblocks;
+    if (num_splines % esp.nSplinesPerBlock)
+      ++(this->esp.nBlocks);
     this->esp.firstBlock       = 0;
     this->esp.lastBlock        = esp.nBlocks;
 
@@ -296,8 +299,7 @@ public:
 
     for (int i = 0; i < esp.nBlocks; ++i)
     {
-      T dummyT, dummyDT;
-      device_einsplines_->creator()(host_einsplines_->operator[](i),i);
+      device_einsplines_->creator()((*host_einsplines_)[i],i);
     }
     resize();
   }
@@ -316,7 +318,7 @@ public:
     dirty_v                           = true;
     auto u                            = esp.lattice.toUnit_floor(p);
     std::vector<std::array<T, 3>> pos = {{u[0], u[1], u[2]}};
-    compute_engine.evaluate_v(device_einsplines_->operator[](0), pos, dev_psi.get_devptr(), esp.nBlocks, (size_t)esp.nSplinesPerBlock);
+    compute_engine.evaluate_v(device_einsplines_->operator[](0), pos, dev_psi.get_devptr(), esp.nBlocks, (size_t)esp.nSplinesPerBlock, (size_t)esp.nSplinesPerBlock);
   }
 
   /** Legacy single POS call
@@ -335,10 +337,10 @@ public:
                                 dev_hess.get_devptr(),
 				esp.nBlocks,
                                 esp.nSplines,
-                                1);
+                                esp.nSplinesPerBlock);
   }
 
-    inline HessianParticipants<Devices::CUDA, T> visit_for_vgh_i()
+  inline HessianParticipants<Devices::CUDA, T> visit_for_vgh_i()
   {
       return HessianParticipants<Devices::CUDA, T>(*device_einsplines_, psi, grad, hess, dirty_v, dirty_g, dirty_h);
   }

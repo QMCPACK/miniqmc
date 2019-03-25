@@ -111,16 +111,16 @@ void CheckSPOSteps<Devices::CUDA>::thread_main(const int np,
               // value
               evalVGH_v_err += std::fabs(spo.getPsi(ib, n) - spo_ref.psi[ib][n]);
               // grad
-              evalVGH_g_err += std::fabs(spo.getGrad(ib, n, 0) - spo_ref.grad[ib].data(0)[n]);
-              evalVGH_g_err += std::fabs(spo.getGrad(ib, n, 1) - spo_ref.grad[ib].data(1)[n]);
-              evalVGH_g_err += std::fabs(spo.getGrad(ib, n, 2) - spo_ref.grad[ib].data(2)[n]);
+              evalVGH_g_err += std::fabs(spo.getGrad(ib, 0, n) - spo_ref.grad[ib].data(0)[n]);
+              evalVGH_g_err += std::fabs(spo.getGrad(ib, 1, n) - spo_ref.grad[ib].data(1)[n]);
+              evalVGH_g_err += std::fabs(spo.getGrad(ib, 2, n) - spo_ref.grad[ib].data(2)[n]);
               // hess
-              evalVGH_h_err += std::fabs(spo.getHess(ib, n, 0) - spo_ref.hess[ib].data(0)[n]);
-              evalVGH_h_err += std::fabs(spo.getHess(ib, n, 1) - spo_ref.hess[ib].data(1)[n]);
-              evalVGH_h_err += std::fabs(spo.getHess(ib, n, 2) - spo_ref.hess[ib].data(2)[n]);
-              evalVGH_h_err += std::fabs(spo.getHess(ib, n, 3) - spo_ref.hess[ib].data(3)[n]);
-              evalVGH_h_err += std::fabs(spo.getHess(ib, n, 4) - spo_ref.hess[ib].data(4)[n]);
-              evalVGH_h_err += std::fabs(spo.getHess(ib, n, 5) - spo_ref.hess[ib].data(5)[n]);
+              evalVGH_h_err += std::fabs(spo.getHess(ib, 0, n) - spo_ref.hess[ib].data(0)[n]);
+              evalVGH_h_err += std::fabs(spo.getHess(ib, 1, n) - spo_ref.hess[ib].data(1)[n]);
+              evalVGH_h_err += std::fabs(spo.getHess(ib, 2, n) - spo_ref.hess[ib].data(2)[n]);
+              evalVGH_h_err += std::fabs(spo.getHess(ib, 3, n) - spo_ref.hess[ib].data(3)[n]);
+              evalVGH_h_err += std::fabs(spo.getHess(ib, 4, n) - spo_ref.hess[ib].data(4)[n]);
+              evalVGH_h_err += std::fabs(spo.getHess(ib, 5, n) - spo_ref.hess[ib].data(5)[n]);
             }
 	if (ur[iel] < accept)
           {
