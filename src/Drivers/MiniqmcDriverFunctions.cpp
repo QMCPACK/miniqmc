@@ -4,6 +4,8 @@
 #include "Drivers/CrowdCUDA.hpp"
 #endif
 
+#include <thread>
+
 namespace qmcplusplus
 {
 template<Devices DT>
@@ -180,11 +182,18 @@ void MiniqmcDriverFunctions<DT>::movers_runThreads(MiniqmcOptions& mq_opt,
                                             ParticleSet& ions,
                                             const SPOSet* spo_main)
 {
-#pragma omp parallel for
-  for (int iw = 0; iw < mq_opt.nmovers; iw++)
-  {
-    MiniqmcDriverFunctions<DT>::movers_thread_main(iw, 1, mq_opt, myPrimes, ions, spo_main);
-  }
+    std::vector<std::thread> threads(mq_opt.nmovers);
+    
+    for (int iw = 0; iw < mq_opt.nmovers; ++iw)
+    {
+	threads[iw] = std::thread(MiniqmcDriverFunctions<DT>::movers_thread_main, iw, 1, std::ref(mq_opt), std::ref(myPrimes), ions, std::ref(spo_main));
+    }
+
+    for (int iw = 0; iw < mq_opt.nmovers; ++iw)
+    {
+	threads[iw].join();
+    }
+
 }
 
 template class MiniqmcDriverFunctions<Devices::CPU>;

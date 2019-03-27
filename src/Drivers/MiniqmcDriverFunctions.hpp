@@ -105,6 +105,7 @@ void MiniqmcDriverFunctions<DT>::movers_thread_main(const int ip,
   int my_accepts = 0;
   Crowd<DT> movers(ip, myPrimes, ions, mq_opt.pack_size);
 
+  movers.init();
   // For VMC, tau is large and should result in an acceptance ratio of roughly
   // 50%
   // For DMC, tau is small and should result in an acceptance ratio of 99%
@@ -168,6 +169,7 @@ void MiniqmcDriverFunctions<DT>::movers_thread_main(const int ip,
 	movers.evaluateHessian(iel);
 	mq_opt.Timers[Timer_evalVGH]->stop();
 
+  
 	// Accept/reject the trial move
         mq_opt.Timers[Timer_Update]->start();
 	int these_accepts = movers.acceptRestoreMoves(iel, mq_opt.accept);

@@ -1,11 +1,5 @@
 #include "CUDA/GPUParams.h"
 
-void
-Gpu::initCUDAStreams()
-{
-    //cudaStreamCreate(&kernelStream);
-    //cudaStreamCreate(&memoryStream);
-}
 
 void
 Gpu::initCUDAEvents()

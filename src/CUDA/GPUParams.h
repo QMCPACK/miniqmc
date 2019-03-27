@@ -22,6 +22,7 @@
 
 #include <cuda_runtime_api.h>
 #include <vector>
+#include <thread>
 
 #include <cublas_v2.h>
 
@@ -34,7 +35,7 @@ struct Gpu
 public:
   static Gpu& get()
   {
-    static Gpu instance;
+    static thread_local Gpu instance;
     return instance;
   }
 private:
@@ -42,20 +43,32 @@ Gpu()
 {
   int device;
   cudaDeviceProp prop;
-  int activeWarps;
-  int maxWarps;
 
   cudaGetDevice(&device);
   cudaGetDeviceProperties(&prop, device);
+  initCUDAStreams();
 }
 
+void
+initCUDAStreams()
+{
+    kernelStreams.resize(2);
+    memoryStreams.resize(2);
+    for(int i = 0; i < 2; ++i)
+    {
+	cudaError_t err = cudaStreamCreate(&(kernelStreams[i]));
+	err = cudaStreamCreate(&(memoryStreams[i]));
+    }
+    //cudaStreamCreate(&kernelStream);
+    //cudaStreamCreate(&memoryStream);
+}
 
   Gpu(const Gpu&) = delete;
   Gpu& operator=(const Gpu&) = delete;
   
 public:
-  cudaStream_t kernelStream;
-  cudaStream_t memoryStream;
+  std::vector<cudaStream_t> kernelStreams;
+  std::vector<cudaStream_t> memoryStreams;
 
   cudaEvent_t syncEvent;
 
@@ -79,7 +92,7 @@ public:
   std::vector<int> device_group_numbers; // on node list of GPU device numbers with respect to relative rank number
   std::vector<int> device_rank_numbers; // on node list of MPI rank numbers (absolute) with respect to relative rank number
 
-  void initCUDAStreams();
+
   void initCUDAEvents();
   void initCublas();
   

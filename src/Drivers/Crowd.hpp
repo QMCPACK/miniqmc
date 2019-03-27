@@ -214,6 +214,7 @@ public:
   /// destructor
   ~Crowd();
 
+  void init();
   /** takes over the 'movers' of passed in mover
    *  that object becomes invalid
    */
@@ -280,6 +281,12 @@ Crowd<DT>::Crowd(const Crowd<ODT>& m)
 template<Devices DT>
 Crowd<DT>::~Crowd()
 {}
+
+template<Devices DT>
+void Crowd<DT>::init()
+{
+}
+
 
   //This std::for_each idiom will make trying hpx threads very easy.
   

@@ -330,6 +330,7 @@ public:
     dirty_h                           = true;
     auto u                            = esp.lattice.toUnit_floor(p);
     std::vector<std::array<T, 3>> pos = {{u[0], u[1], u[2]}};
+    cudaStream_t stream = cudaStreamPerThread;
     compute_engine.evaluate_vgh(device_einsplines_->operator[](0),
                                 pos,
                                 dev_psi.get_devptr(),
@@ -337,7 +338,8 @@ public:
                                 dev_hess.get_devptr(),
 				esp.nBlocks,
                                 esp.nSplines,
-                                esp.nSplinesPerBlock);
+                                esp.nSplinesPerBlock,
+	stream);
   }
 
   inline HessianParticipants<Devices::CUDA, T> visit_for_vgh_i()

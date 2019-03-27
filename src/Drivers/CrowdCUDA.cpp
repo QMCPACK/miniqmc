@@ -27,6 +27,13 @@ namespace qmcplusplus
 {
 
 template<>
+void Crowd<Devices::CUDA>::init()
+{
+  // This initializes the threads gpu
+  Gpu& gpu = Gpu::get();
+}
+    
+template<>
 void Crowd<Devices::CUDA>::calcNLPP(int nions, QMCT::RealType Rmax)
 {
   std::cout << "Crowd CUDA calcNLPP Called \n";
@@ -115,7 +122,6 @@ template<>
       cudaMallocHost((void**)&buffers_.grad, esp.nBlocks * pack_size_ * esp.nSplinesPerBlock * 3 *sizeof(T));
       cudaMallocHost((void**)&buffers_.hess, esp.nBlocks * pack_size_ * esp.nSplinesPerBlock * 6 * sizeof(T));
     }
-
   
   //for now this does use a single EinsplineSPO to call through
   std::vector<HessianParticipants<Devices::CUDA, T>> hessian_participants; //(pack_size_);
@@ -133,31 +139,45 @@ template<>
   MultiBsplineFuncs<Devices::CUDA, T> compute_engine;
   const auto& spline =
       static_cast<EinsplineSPO<Devices::CUDA, T>*>(spos[0])->einspline_spo_device.getDeviceEinsplines();
-
-  compute_engine.evaluate_vgh((*spline)[0],
-                              pos,
-                              buffers_.dev_psi.get_devptr(),
-                              buffers_.dev_grad.get_devptr(),
-                              buffers_.dev_hess.get_devptr(),
+  Gpu& gpu = Gpu::get();
+  int i_stream = 0;
+  for (int ip = 0; ip < pack_size_; ++ip)
+  {
+    cudaStream_t stream = gpu.kernelStreams[i_stream];
+    std::vector<std::array<T,3>> one_pos = {pos[ip]};
+    size_t basic_offset = esp.nBlocks * ip * esp.nSplinesPerBlock;
+    
+    compute_engine.evaluate_vgh((*spline)[0],
+				  one_pos,
+                              buffers_.dev_psi.get_devptr() + basic_offset,
+                              buffers_.dev_grad.get_devptr() + basic_offset * 3,
+                              buffers_.dev_hess.get_devptr() + basic_offset * 6,
                               esp.nBlocks,
                               esp.nSplines,
-                              esp.nSplinesPerBlock);
+				esp.nSplinesPerBlock,
+	stream);
+    cudaMemcpyAsync(buffers_.psi + basic_offset, buffers_.dev_psi.get_devptr() + basic_offset, esp.nBlocks * esp.nSplinesPerBlock * sizeof(T), cudaMemcpyDefault, stream);
+    cudaMemcpyAsync(buffers_.grad + basic_offset * 3, buffers_.dev_grad.get_devptr() + basic_offset * 3, esp.nBlocks * esp.nSplinesPerBlock * sizeof(T) * 3, cudaMemcpyDefault, stream);
+    cudaMemcpyAsync(buffers_.hess + basic_offset * 6, buffers_.dev_hess.get_devptr() + basic_offset * 6, esp.nBlocks * esp.nSplinesPerBlock * sizeof(T) * 6, cudaMemcpyDefault, stream);
 
+    i_stream = i_stream ^ 1;
+  }
+  cudaStreamSynchronize(gpu.kernelStreams[0]);
+  cudaStreamSynchronize(gpu.kernelStreams[1]);
   //Now we have to copy the data back to the participants
-  cudaMemcpyAsync(buffers_.psi, buffers_.dev_psi.get_devptr(), esp.nBlocks * pack_size_ * esp.nSplinesPerBlock * sizeof(T), cudaMemcpyDefault, cudaStreamPerThread);
-  cudaMemcpyAsync(buffers_.grad, buffers_.dev_grad.get_devptr(), esp.nBlocks * pack_size_ * esp.nSplinesPerBlock * sizeof(T) * 3, cudaMemcpyDefault, cudaStreamPerThread);
-  cudaMemcpyAsync(buffers_.hess, buffers_.dev_hess.get_devptr(), esp.nBlocks * pack_size_ * esp.nSplinesPerBlock * sizeof(T) * 6, cudaMemcpyDefault, cudaStreamPerThread);
 
-  cudaStreamSynchronize(cudaStreamPerThread);
   for (int i = 0; i < pack_size_; ++i)
   {
-      GPUArray<T,1,1> temp_psi(buffers_.psi + i * esp.nBlocks * esp.nSplinesPerBlock, esp.nBlocks * esp.nSplinesPerBlock * sizeof(T), esp.nBlocks, esp.nSplinesPerBlock);
+      GPUArray<T,1,1> temp_psi(buffers_.psi + i * esp.nBlocks * esp.nSplinesPerBlock,
+			       esp.nBlocks * esp.nSplinesPerBlock * sizeof(T), esp.nBlocks, esp.nSplinesPerBlock);
       GPUArray<T,3,1> temp_grad(buffers_.grad + i * esp.nBlocks * esp.nSplinesPerBlock * 3, esp.nBlocks * esp.nSplinesPerBlock * 3 * sizeof(T), esp.nBlocks, esp.nSplinesPerBlock);
       GPUArray<T,6,1> temp_hess(buffers_.hess + i * esp.nBlocks * esp.nSplinesPerBlock * 6, esp.nBlocks * esp.nSplinesPerBlock * 6 * sizeof(T), esp.nBlocks, esp.nSplinesPerBlock);
-     temp_psi.pull(hessian_participants[i].psi, i * esp.nBlocks, esp.nBlocks);
-     temp_grad.pull(hessian_participants[i].grad, i * esp.nBlocks, esp.nBlocks);
-     temp_hess.pull(hessian_participants[i].hess, i * esp.nBlocks, esp.nBlocks);
+     temp_psi.pull(hessian_participants[i].psi, 0, esp.nBlocks);
+     temp_grad.pull(hessian_participants[i].grad, 0, esp.nBlocks);
+     temp_hess.pull(hessian_participants[i].hess, 0, esp.nBlocks);
   }
+
+  
 }
 
   } // namespace qmcplusplus

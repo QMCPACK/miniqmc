@@ -145,7 +145,7 @@ eval_multi_multi_UBspline_3d_d_vgh_kernel(double* pos, double3 drInv, const doub
  */
 void eval_multi_multi_UBspline_3d_d_vgh_cuda(const multi_UBspline_3d_d<Devices::CUDA>* __restrict__  spline,
                                              double* pos_d, double* vals_d, double* grads_d,
-                                             double* hess_d, int num_blocks, int spline_block_size, int num)
+                                             double* hess_d, int num_blocks, int spline_block_size, int num, const cudaStream_t& stream)
 {
   dim3 dimBlock(spline_block_size);
   dim3 dimGrid(num_blocks, 1);
@@ -163,7 +163,7 @@ void eval_multi_multi_UBspline_3d_d_vgh_cuda(const multi_UBspline_3d_d<Devices::
   //std::cout << "eval_multi_multi_UBspline_3d_d_vgh_kernel can fit " << fit_blocks << " on a multi processor \n";
 
 
-  eval_multi_multi_UBspline_3d_d_vgh_kernel<<<dimGrid, dimBlock, 0, cudaStreamPerThread>>>(pos_d, spline->gridInv,
+  eval_multi_multi_UBspline_3d_d_vgh_kernel<<<dimGrid, dimBlock, 0, stream>>>(pos_d, spline->gridInv,
                                                                    spline->coefs, spline->Bcuda,
                                                                    vals_d, grads_d, hess_d,
                                                                    spline->dim, spline->stride, spline_block_size,

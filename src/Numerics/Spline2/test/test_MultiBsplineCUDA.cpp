@@ -82,7 +82,8 @@ TEST_CASE("MultiBspline<CUDA> single block evaluate_vgh", "[CUDA][Spline2]")
   d_hess.resize(1, 64);
   d_hess.zero();
   std::vector<std::array<double, 3>> pos = {{1, 1, 1}};
-  mbf_CUDA.evaluate_vgh(tmb.cuda_spline, pos, d_vals.get_devptr(), d_grads.get_devptr(), d_hess.get_devptr(), 1, 64);
+  const cudaStream_t& stream = cudaStreamPerThread;
+  mbf_CUDA.evaluate_vgh(tmb.cuda_spline, pos, d_vals.get_devptr(), d_grads.get_devptr(), d_hess.get_devptr(), 1, 64, 1, stream);
   aligned_vector<T> gpu_vals(64);
   VectorSoAContainer<T, 3> gpu_grads(64);
   VectorSoAContainer<T, 6> gpu_hess(64);
