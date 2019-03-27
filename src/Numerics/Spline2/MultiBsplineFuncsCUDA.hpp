@@ -63,7 +63,7 @@ struct MultiBsplineFuncs<Devices::CUDA, T>
         buffer[i * 3 + 2] = pos[i][2];
       }
       cudaMalloc((void**)&dev_buffer, size * sizeof(T));
-      cudaError_t err = cudaMemcpy(dev_buffer, buffer, size * sizeof(T), cudaMemcpyHostToDevice);
+      cudaError_t err = cudaMemcpyAsync(dev_buffer, buffer, size * sizeof(T), cudaMemcpyHostToDevice,cudaStreamPerThread);
       if (err != cudaSuccess)
       {
         fprintf(stderr, "Copy of positions to GPU failed.  Error:  %s\n", cudaGetErrorString(err));
@@ -73,7 +73,7 @@ struct MultiBsplineFuncs<Devices::CUDA, T>
     }
   };
 
-
+  
   // void evaluate_v(const spliner_type* spline_m,
   // 			 const std::vector<std::array<T,3>>&,
   // 		         GPUArray<T,1>& vals, size_t num_splines);

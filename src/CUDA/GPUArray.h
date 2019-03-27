@@ -36,7 +36,7 @@ struct CopyHome
   }
   void* operator()(void* data)
   {
-    cudaError_t cu_err = cudaMemcpy(buffer, data, width_, cudaMemcpyDeviceToHost);
+    cudaError_t cu_err = cudaMemcpy(buffer, data, width_, cudaMemcpyDefault);
     if (cu_err != cudaError::cudaSuccess)
       throw std::runtime_error("Failed GPU to Host copy");
     return buffer;
@@ -55,19 +55,31 @@ template<typename T, int ELEMWIDTH>
 class GPUArray<T, ELEMWIDTH, 1>
 {
 public:
-  GPUArray() : data(nullptr), pitch(0), width(0), height(0) {}
+GPUArray() : data(nullptr), pitch(0), width(0), height(0), owner(true) {}
   GPUArray(const GPUArray&& in)
   {
+    owner = in.owner;
     data   = in[0];
     pitch  = in.getPitch();
     width  = in.getWidth();
     height = in.getHeight();
   }
 
+  /** This lets GPUArray map an arbitrary cuda memory block.
+   */
+  GPUArray(T* dev_ptr, size_t size, int blocks, int splines_per_block)
+  {
+      owner = false;
+      nBlocks_ = blocks;
+      nSplinesPerBlock_ = splines_per_block;
+      data = dev_ptr;
+      width = size;
+  }
+  
   GPUArray& operator=(const GPUArray& in) = delete;
   ~GPUArray()
   {
-    if (data != nullptr)
+      if (data != nullptr && owner == true)
       cudaFree(data);
   }
   /** returns pointer to element(1D), row(2D), plane(3D)
@@ -163,6 +175,7 @@ private:
   size_t pitch;
   size_t width;
   size_t height;
+  bool owner;
 };
 
 

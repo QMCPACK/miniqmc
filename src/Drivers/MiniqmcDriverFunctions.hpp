@@ -120,18 +120,15 @@ void MiniqmcDriverFunctions<DT>::movers_thread_main(const int ip,
 
   // initial update
   std::for_each(movers.elss_begin(), movers.elss_end(), [](ParticleSet& els) { els.update(); });
-
-  app_summary() << "initial update complete \n";
-
   // for(auto& els_it = movers.elss_begin(); els_it != movers.elss_end(); els_it++)
   //   {
   //     els.epdate();
   //   }
 
-  app_summary() << "Evaluating Log\n";
   movers.evaluateLog();
-  app_summary() << "Finished Evaluating Log\n";
-  
+
+  app_summary() << "initial update complete \n";
+
   const int nions = ions.getTotalNum();
   const int nels  = movers.elss[0]->getTotalNum();
   const int nels3 = 3 * nels;
@@ -173,7 +170,6 @@ void MiniqmcDriverFunctions<DT>::movers_thread_main(const int ip,
 
 	// Accept/reject the trial move
         mq_opt.Timers[Timer_Update]->start();
-
 	int these_accepts = movers.acceptRestoreMoves(iel, mq_opt.accept);
 	//app_summary() << "Moves accepted: " << these_accepts << "\n";
 	my_accepts += these_accepts;

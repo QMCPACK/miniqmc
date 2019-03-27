@@ -13,6 +13,8 @@
 
 #include <algorithm>
 #include <vector>
+#include <cuda.h>
+#include <cuda_runtime_api.h>
 #include "Utilities/Configuration.h"
 #include "Drivers/Crowd.hpp"
 
@@ -105,10 +107,13 @@ template<>
     {
       double size_buffer = esp.nBlocks * pack_size_ * esp.nSplinesPerBlock * sizeof(T) * (1+3+6);
       double size_buffer_MB = size_buffer / 1024 / 1024;
-	std::cout << "Allocating GPU buffers for vgh eval of: " << size_buffer_MB << '\n';
+	std::cout << "Allocating GPU buffers for vgh eval of: " << size_buffer_MB << "MB\n";
       buffers_.dev_psi.resize(esp.nBlocks * pack_size_, esp.nSplinesPerBlock);
       buffers_.dev_hess.resize(esp.nBlocks * pack_size_, esp.nSplinesPerBlock);
       buffers_.dev_grad.resize(esp.nBlocks * pack_size_, esp.nSplinesPerBlock);
+      cudaMallocHost((void**)&buffers_.psi, esp.nBlocks * pack_size_ * esp.nSplinesPerBlock * sizeof(T));
+      cudaMallocHost((void**)&buffers_.grad, esp.nBlocks * pack_size_ * esp.nSplinesPerBlock * 3 *sizeof(T));
+      cudaMallocHost((void**)&buffers_.hess, esp.nBlocks * pack_size_ * esp.nSplinesPerBlock * 6 * sizeof(T));
     }
 
   
@@ -116,9 +121,7 @@ template<>
   std::vector<HessianParticipants<Devices::CUDA, T>> hessian_participants; //(pack_size_);
   std::vector<std::array<T, 3>> pos(pack_size_);
 
-
-
-    for (int i = 0; i < pack_size_; ++i)
+  for (int i = 0; i < pack_size_; ++i)
   {
     hessian_participants.push_back(
         static_cast<EinsplineSPO<Devices::CUDA, T>*>(spos[i])->einspline_spo_device.visit_for_vgh());
@@ -141,11 +144,19 @@ template<>
                               esp.nSplinesPerBlock);
 
   //Now we have to copy the data back to the participants
+  cudaMemcpyAsync(buffers_.psi, buffers_.dev_psi.get_devptr(), esp.nBlocks * pack_size_ * esp.nSplinesPerBlock * sizeof(T), cudaMemcpyDefault, cudaStreamPerThread);
+  cudaMemcpyAsync(buffers_.grad, buffers_.dev_grad.get_devptr(), esp.nBlocks * pack_size_ * esp.nSplinesPerBlock * sizeof(T) * 3, cudaMemcpyDefault, cudaStreamPerThread);
+  cudaMemcpyAsync(buffers_.hess, buffers_.dev_hess.get_devptr(), esp.nBlocks * pack_size_ * esp.nSplinesPerBlock * sizeof(T) * 6, cudaMemcpyDefault, cudaStreamPerThread);
+
+  cudaStreamSynchronize(cudaStreamPerThread);
   for (int i = 0; i < pack_size_; ++i)
   {
-    buffers_.dev_psi.pull(hessian_participants[i].psi, i * esp.nBlocks, esp.nBlocks);
-    buffers_.dev_grad.pull(hessian_participants[i].grad, i * esp.nBlocks, esp.nBlocks);
-    buffers_.dev_hess.pull(hessian_participants[i].hess, i * esp.nBlocks, esp.nBlocks);
+      GPUArray<T,1,1> temp_psi(buffers_.psi + i * esp.nBlocks * esp.nSplinesPerBlock, esp.nBlocks * esp.nSplinesPerBlock * sizeof(T), esp.nBlocks, esp.nSplinesPerBlock);
+      GPUArray<T,3,1> temp_grad(buffers_.grad + i * esp.nBlocks * esp.nSplinesPerBlock * 3, esp.nBlocks * esp.nSplinesPerBlock * 3 * sizeof(T), esp.nBlocks, esp.nSplinesPerBlock);
+      GPUArray<T,6,1> temp_hess(buffers_.hess + i * esp.nBlocks * esp.nSplinesPerBlock * 6, esp.nBlocks * esp.nSplinesPerBlock * 6 * sizeof(T), esp.nBlocks, esp.nSplinesPerBlock);
+     temp_psi.pull(hessian_participants[i].psi, i * esp.nBlocks, esp.nBlocks);
+     temp_grad.pull(hessian_participants[i].grad, i * esp.nBlocks, esp.nBlocks);
+     temp_hess.pull(hessian_participants[i].hess, i * esp.nBlocks, esp.nBlocks);
   }
 }
 

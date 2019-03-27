@@ -59,7 +59,7 @@ template<>
 inline void Ger(int m, int n, double alpha, const double *x, int incx,
 	 const double *y, int incy, double *a, int lda)
 {
-    cublasSetStream(HandleToCublas::get(),cudaStreamPerThread);
+  cublasSetStream(HandleToCublas::get(),cudaStreamPerThread);
   cublasStatus_t err = cublasDger(HandleToCublas::get(),
 				  m,
 				  n,

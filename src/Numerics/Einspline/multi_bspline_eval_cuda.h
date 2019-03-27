@@ -80,7 +80,7 @@ eval_multi_multi_UBspline_3d_d_sign_cudasplit
 
 extern "C" void
 eval_multi_multi_UBspline_3d_d_vgh_cuda
-(const multi_UBspline_3d_d<Devices::CUDA> *spline,
+(const  multi_UBspline_3d_d<Devices::CUDA> * __restrict__ spline,
  double *pos_d, double *vals_d, double *grads_d, double *hess_d, int num_blocks, int spline_block_size, int num);
 
 extern "C" void
