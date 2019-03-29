@@ -16,6 +16,7 @@
 #include <Utilities/SIMD/allocator.hpp>
 #include <Utilities/SIMD/algorithm.hpp>
 #include <numeric>
+#include "OneBodyJastrowData.h"
 
 /*!
  * @file OneBodyJastrow.h
@@ -29,6 +30,9 @@ namespace qmcplusplus
 template<class FT>
 struct OneBodyJastrow : public WaveFunctionComponent
 {
+  OneBodyJastrowData<FT::real_type> jasData;
+  bool splCoefsNotAllocated;
+
 #ifdef QMC_PARALLEL_JASTROW
   typedef Kokkos::TeamPolicy<> policy_t;
 #else
@@ -84,6 +88,7 @@ struct OneBodyJastrow : public WaveFunctionComponent
     initalize(els);
     myTableID                 = els.addTable(ions, DT_SOA);
     WaveFunctionComponentName = "OneBodyJastrow";
+    InitializeJastrowData();
   }
 
   OneBodyJastrow(const OneBodyJastrow& rhs) = default;
@@ -124,12 +129,173 @@ struct OneBodyJastrow : public WaveFunctionComponent
     }
   }
 
+  // note the way I am doing this, I am 
+  void initializeJastrowData() {
+    jasData.LogValue       = Kokkos::View<valT*>("LogValue", 1);
+
+    jasData.Nelec          = Kokkos::View<int*>("Nelec", 1);
+    auto NelecMirror       = Kokkos::create_mirror_view(jasData.Nelec);
+    NelecMirror(0)         = Nelec;
+    Kokkos::deep_copy(jasData.Nelec, NelecMirror);
+    
+    jasData.Nions          = Kokkos::View<int*>("Nions", 1);
+    auto NionsMirror       = Kokkos::create_mirror_view(jasData.Nions);
+    NionsMirror(0)         = Nions;
+    Kokkos::deep_copy(jasData.Nions, NionsMirror);
+    
+    jasData.NumGroups      = Kokkos::View<int*>("NumGroups", 1);
+    auto NumGroupsMirror   = Kokkos::create_mirror_view(jasData.NumGroups);
+    NumGroupsMirror(0)     = NumGroups;
+    Kokkos::deep_copy(jasData.NumGroups, NumGroupsMirror);
+    
+    // these things are just zero on the CPU, so don't have to set their values
+    jasData.curGad         = Kokkos::View<valT*>("curGrad", OHMMS_DIM);
+    jasData.Grad           = Kokkos::View<valT**>("Grad", Nelec, OHMMS_DIM);
+    jasData.curLap         = Kokkos::View<valT*>("curLap", 1);
+    jasData.Lap            = Kokkos::View<valT*>("Lap", Nelec);
+    jasData.curAt          = Kokkos::View<valT*>("curAt", 1);
+    jasData.Vat            = Kokkos::View<valT*>("Vat", Nelec);
+    
+    // these things are already views, so just do operator=
+    jasData.U              = U;
+    jasData.dU             = dU;
+    jasData.d2U            = d2U;
+    jasData.DistCompressed = DistCompressed;
+    jasData.DistIndices    = DistIndice;
+    
+    // need to put in the data for A, dA and d2A    
+    TinyVector<valT, 16> A(-1.0/6.0,  3.0/6.0, -3.0/6.0, 1.0/6.0,
+			    3.0/6.0, -6.0/6.0,  0.0/6.0, 4.0/6.0,
+			   -3.0/6.0,  3.0/6.0,  3.0/6.0, 1.0/6.0,
+			    1.0/6.0,  0.0/6.0,  0.0/6.0, 0.0/6.0);
+    TinyVector<valT,16>  dA(0.0, -0.5,  1.0, -0.5,
+			    0.0,  1.5, -2.0,  0.0,
+			    0.0, -1.5,  1.0,  0.5,
+			    0.0,  0.5,  0.0,  0.0);
+    TinyVector<ValT,16>  d2A(0.0, 0.0, -1.0,  1.0,
+			     0.0, 0.0,  3.0, -2.0,
+			     0.0, 0.0, -3.0,  1.0,
+			     0.0, 0.0,  1.0,  0.0);
+
+    jasData.A              = Kokkos::View<valT*>("A", 16);
+    auto Amirror           = Kokkos::create_mirror_view(jasData.A);
+    jasData.dA             = Kokkos::View<valT*>("dA", 16);
+    auto dAmirror           = Kokkos::create_mirror_view(jasData.dA);
+    jasData.d2A            = Kokkos::View<valT*>("d2A", 16);
+    auto d2Amirror           = Kokkos::create_mirror_view(jasData.d2A);
+
+    for (int i = 0; i < 16; i++) {
+      Amirror(i) = A[i];
+      dAmirror(i) = dA[i];
+      d2Amirror(i) = d2A[i];
+    }
+    Kokkos::deep_copy(jasData.A, Amirror);
+    Kokkos::deep_copy(jasData.dA, dAmirror);
+    Kokkos::deep_copy(jasData.d2A, d2Amirror);
+
+
+    // also set up and allocate memory for cutoff_radius, DeltaRInv
+    jasData.cutoff_radius   = Kokkos::View<valT*>("Cutoff_Radii", NumGroups);
+    jasData.DeltaRInv       = Kokkos::View<valT*>("DeltaRInv", NumGroups);
+
+    // unfortunately have to defer setting up SplineCoefs because we don't yet know
+    // how many elements are in SplineCoefs on the cpu
+    splCoefsNotAllocated   = true;
+  }
+
   void addFunc(int source_type, FT* afunc, int target_type = -1)
   {
     //if (F[source_type] != nullptr)
     //  delete F[source_type];
     F[source_type] = *afunc;
+
+    // also copy in cutoff_radius, DeltaRInv
+    auto crMirror = Kokkos::create_mirror_view(jasData.cutoff_radius);
+    auto drinvMirror = Kokkos::create_mirror_view(jasData.cutoff_radius);
+    Kokkos::deep_copy(crMirror, jasData.cutoff_radius);
+    Kokkos::deep_copy(drinvMirror, jasData.DeltaRInv);
+    crMirror(source_type) = afunc->cutoff_radius;
+    drinvMirror(source_type) = afunc->DeltaRInv;
+    Kokkos::deep_copy(jasData.cutoff_radius, crMirror);
+    Kokkos::deep_copy(jasData.DeltaRInv, drinvMirror);
+
+    //if necessary set up SplineCoefs view on device and then copy data it
+    if (splCoefsNotAllocated) {
+      splCoefsNotAllocated = false;
+      jasData.SplineCoefs   = Kokkos::View<valT*>("SplineCoefficients", NumGroups, afunc->SplineCoefs.extent(0));
+    }
+    auto bigScMirror   = Kokkos::create_mirror_view(jasData.SplineCoefs);
+    auto smallScMirror = Kokkos::create_mirror_view(afunc->SplineCoefs);
+    Kokkos::deep_copy(smallScMirror, afunc->SplineCoefs);
+    Kokkos::deep_copy(bigScMirror,   jasData.SplineCoefs);
+    for (int i = 0; i < afunc->SplineCoefs.extent(0); i++) {
+      bigScMirror(source_type, i) = smallScMirror(i);
+    }
+    Kokkos::deep_copy(jasData.SplineCoefs, bigScMirror);
   }
+
+
+  // note that G_list and L_list feel redundant, they are just elements of P_list
+  virtual void multi_evaluateLog(const std::vector<WaveFunctionComponent*>& WFC_list,
+                                 const std::vector<ParticleSet*>& P_list,
+                                 const std::vector<ParticleSet::ParticleGradient_t*>& G_list,
+                                 const std::vector<ParticleSet::ParticleLaplacian_t*>& L_list,
+                                 ParticleSet::ParticleValue_t& values) {
+    
+    // make a view of all of the OneBodyJastrowData
+    Kokkos::View<OneBodyJastrowData*> allOneBodyJastrowData("aobjd", WFC_list.size()); 
+    auto aobjdMirror = Kokkos::create_mirror_view(allOneBodyJastrowData);
+    
+    for (int i = 0; i < WFC_list.size(); i++) {
+      aobjdMirror(i) = static_cast<OneBodyJastrow*>(start[i])->OneBodyJastrowData);
+    }
+    Kokkos::deep_copy(allOneBodyJastrowData, aobjdMirror);
+    
+
+    // make a view of all of the relevant ParticleSetData
+    Kokkos::View<objParticleSetData&> allOneBodyJastrowParticleSetData("aobjpsd", P_list.size());
+    auto aobjpsdMirror = Kokkos::create_mirror_view(allOneBodyJastrowParticleSetData);
+
+    for (int i = 0; i < P_list.size(); i++) {
+      aobjpsdMirror(i) = P_list[i]->getOneBodyRelevantData();
+    }
+    Kokkos::deep_copy(allOneBodyJastrowParticleSetData, aobjpsdMirror);
+
+    
+    // need to make a view to hold all of the output LogValues
+    Kokkos::View<double*> tempValues("tempValues", P_list.size());
+
+    // need to write this function
+    doOneBodyJastrowMultiEvaluateLog(allOneBodyJastrowData, allOneBodyJastrowParticleSetData, tempValues);
+
+    // copy the results out to values
+    auto tempValMirror = Kokkos::create_mirror_view(tempValues);
+    Kokkos::deep_copy(tempValMirror, tempValues);
+    
+    for (int i = 0; i < P_list.size(); i++) {
+      values[i] = tempValMirror(i);
+    }
+  }
+    
+
+// LNS -- need to write very similar functions for multi_evalGrad, multi_ratioGrad, multi_acceptrestoreMove,
+//                                                 multi_ratio and multi_evalGL
+  
+				 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   void recompute(ParticleSet& P)
   {
