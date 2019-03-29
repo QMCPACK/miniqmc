@@ -32,7 +32,7 @@
 #include <Utilities/OutputManager.h>
 #if defined(QMC_USE_KOKKOS)
 #include <Kokkos_Core.hpp>
-
+#endif
 
 #define APP_ABORT(msg)                                            \
   {                                                               \
