@@ -44,6 +44,7 @@ public:
   virtual void evaluate_vgh(const PosType& p) = 0;
 
   /// operates on multiple walkers
+  // LNS -- will need to change these so that they are 
   virtual void
       multi_evaluate_v(const std::vector<SPOSet*>& spo_list, const std::vector<PosType>& pos_list)
   {
