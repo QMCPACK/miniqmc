@@ -4,7 +4,7 @@
 
 namespace qmcplusplus
 {
-  
+
 template<typename RealType>
 class OneBodyJastrowData {
 public:
