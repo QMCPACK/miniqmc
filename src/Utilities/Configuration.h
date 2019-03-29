@@ -30,6 +30,9 @@
 #include "Particle/Lattice/CrystalLattice.h"
 #include <Particle/ParticleAttrib.h>
 #include <Utilities/OutputManager.h>
+#if defined(QMC_USE_KOKKOS)
+#include <Kokkos_Core.hpp>
+
 
 #define APP_ABORT(msg)                                            \
   {                                                               \
@@ -100,11 +103,24 @@ struct QMCTraits
   typedef OHMMS_PRECISION                RealType;
   typedef OHMMS_PRECISION_FULL           EstimatorRealType;
 #if defined(QMC_COMPLEX)
+#if defined(QMC_USE_KOKKOS)
+  typedef Kokkos::complex<OHMMS_PRECISION> ValueType;
+#else
   typedef std::complex<OHMMS_PRECISION>  ValueType;
+#endif
+
 #else
   typedef OHMMS_PRECISION                ValueType;
 #endif
+
+#if defined(QMC_USE_KOKKOS)  
+  typedef Kokkos::complex<RealType>      ComplexType;
+#else
   typedef std::complex<RealType>         ComplexType;
+#endif
+
+
+
   typedef TinyVector<RealType,DIM>       PosType;
   typedef TinyVector<ValueType,DIM>      GradType;
   typedef Tensor<RealType,DIM>           TensorType;
@@ -120,7 +136,12 @@ struct PtclOnLatticeTraits
 
   typedef int                                          Index_t;
   typedef OHMMS_PRECISION_FULL                         Scalar_t;
+#if defined(QMC_USE_KOKKOS)
+  typedef Kokkos::complex<Scalar_t>                    Complex_t; 
+#else
   typedef std::complex<Scalar_t>                       Complex_t;
+#endif
+
 
   typedef ParticleLayout_t::SingleParticleIndex_t      SingleParticleIndex_t;
   typedef ParticleLayout_t::SingleParticlePos_t        SingleParticlePos_t;
