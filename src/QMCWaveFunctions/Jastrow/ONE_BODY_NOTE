@@ -1,0 +1,299 @@
+For One Body Jastrow, need:
+ -- evaluateLog, evalGrad, ratioGrad, acceptMove, evaluateGL, ratio
+
+
+evaluateLog(ParticleSet& P,
+            ParticleSet::ParticleGradient_t& G,
+            ParticleSet::ParticleLaplacian_t& L)
+{
+    evaluateGL(P, G, L, true);
+    return LogValue;
+}
+-- Needs: LogValue
+-- calls evaluateGL
+
+void evaluateGL(ParticleSet& P,
+                ParticleSet::ParticleGradient_t& G,
+                ParticleSet::ParticleLaplacian_t& L,
+                bool fromscratch = false)
+{
+    if (fromscratch)
+      recompute(P);
+
+    for (size_t iat = 0; iat < Nelec; ++iat)
+      G[iat] += Grad[iat];
+    for (size_t iat = 0; iat < Nelec; ++iat)
+      L[iat] -= Lap[iat];
+    LogValue = -simd::accumulate_n(Vat.data(), Nelec, valT());
+}
+-- Needs: Nelec, Grad, Lap, Vat, LogValue
+-- calls recompute
+
+void recompute(ParticleSet& P)
+{
+    const DistanceTableData& d_ie(*(P.DistTables[myTableID]));
+    for (int iat = 0; iat < Nelec; ++iat)
+    {
+      computeU3(P, iat, d_ie.Distances[iat]);
+      Vat[iat] = simd::accumulate_n(U.data(), Nions, valT());
+      Lap[iat] = accumulateGL(dU.data(), d2U.data(), d_ie.Displacements[iat], Grad[iat]);
+    }
+}
+-- Needs: Nelec, Vat, U, Nions, Lap, dU, d2U, Grad (elements from P)
+-- calls computeU3, accumulateGL
+
+inline valT accumulateGL(const valT* restrict du,
+                         const valT* restrict d2u,
+                         const RowContainer& displ,
+                         posT& grad) const
+{
+    valT lap(0);
+    constexpr valT lapfac = OHMMS_DIM - RealType(1);
+    for (int jat = 0; jat < Nions; ++jat)
+      lap += d2u[jat] + lapfac * du[jat];
+    for (int idim = 0; idim < OHMMS_DIM; ++idim)
+    {
+      const valT* restrict dX = displ.data(idim);
+      valT s                  = valT();
+      for (int jat = 0; jat < Nions; ++jat)
+        s += du[jat] * dX[jat];
+      grad[idim] = s;
+    }
+    return lap;
+}
+-- Needs: Nions
+
+void computeU3(ParticleSet& P, int iat_, const valT* dist_)
+{
+    if (NumGroups > 0)
+    {
+      iat = iat_;
+      dist = dist_;
+      u = U.data();
+      du = dU.data();
+      d2u = d2U.data();
+      // ions are grouped                                                                                                
+      constexpr valT czero(0);
+      std::fill_n(U.data(), Nions, czero);
+      std::fill_n(dU.data(), Nions, czero);
+      std::fill_n(d2U.data(), Nions, czero);
+
+      for (int jg = 0; jg < NumGroups; ++jg)
+      {
+         F[jg].evaluateVGL(-1,
+                           Ions.last(jg),
+                           dist,
+                           U.data(),
+                           dU.data(),
+                           d2U.data(),
+                           DistCompressed.data(),
+                           DistIndice.data());
+      }
+    }
+    else
+    {
+      for (int c = 0; c < Nions; ++c)
+      {
+        int gid = Ions.GroupID[c];
+        if (true)
+        {
+          U[c] = F[gid].evaluate(dist[c], dU[c], d2U[c]);
+          dU[c] /= dist[c];
+        }
+      }
+    }
+}
+-- Needs: NumGroups, U, dU, d2U, Nions, Ions(a particleset), 
+          F    (note that u, du and d2u are not used here)
+-- Calls F.evaluate() and F.evaluateVGL()
+
+Note F is a bit special.  It is a Kokkos::View that contains pointers to functors, however
+it is explicitly set up to run on the host, not the device
+
+inline real_type evaluate(real_type r, real_type& dudr, real_type& d2udr2)
+{
+    if (r >= cutoff_radius)
+    {
+      dudr = d2udr2 = 0.0;
+      return 0.0;
+    }
+    r *= DeltaRInv;
+    real_type ipart, t;
+    t     = std::modf(r, &ipart);
+    int i = (int)ipart;
+    real_type tp[4];
+    tp[0] = t * t * t;
+    tp[1] = t * t;
+    tp[2] = t;
+    tp[3] = 1.0;
+    // clang-format off
+    d2udr2 = DeltaRInv * DeltaRInv *
+             (SplineCoefs[i+0]*(d2A[ 0]*tp[0] + d2A[ 1]*tp[1] + d2A[ 2]*tp[2] + d2A[ 3]*tp[3])+
+              SplineCoefs[i+1]*(d2A[ 4]*tp[0] + d2A[ 5]*tp[1] + d2A[ 6]*tp[2] + d2A[ 7]*tp[3])+
+              SplineCoefs[i+2]*(d2A[ 8]*tp[0] + d2A[ 9]*tp[1] + d2A[10]*tp[2] + d2A[11]*tp[3])+
+              SplineCoefs[i+3]*(d2A[12]*tp[0] + d2A[13]*tp[1] + d2A[14]*tp[2] + d2A[15]*tp[3]));
+    dudr = DeltaRInv *
+           (SplineCoefs[i+0]*(dA[ 0]*tp[0] + dA[ 1]*tp[1] + dA[ 2]*tp[2] + dA[ 3]*tp[3])+
+            SplineCoefs[i+1]*(dA[ 4]*tp[0] + dA[ 5]*tp[1] + dA[ 6]*tp[2] + dA[ 7]*tp[3])+
+            SplineCoefs[i+2]*(dA[ 8]*tp[0] + dA[ 9]*tp[1] + dA[10]*tp[2] + dA[11]*tp[3])+
+            SplineCoefs[i+3]*(dA[12]*tp[0] + dA[13]*tp[1] + dA[14]*tp[2] + dA[15]*tp[3]));
+    return
+      (SplineCoefs[i+0]*(A[ 0]*tp[0] + A[ 1]*tp[1] + A[ 2]*tp[2] + A[ 3]*tp[3])+
+       SplineCoefs[i+1]*(A[ 4]*tp[0] + A[ 5]*tp[1] + A[ 6]*tp[2] + A[ 7]*tp[3])+
+       SplineCoefs[i+2]*(A[ 8]*tp[0] + A[ 9]*tp[1] + A[10]*tp[2] + A[11]*tp[3])+
+       SplineCoefs[i+3]*(A[12]*tp[0] + A[13]*tp[1] + A[14]*tp[2] + A[15]*tp[3]));
+    // clang-format on
+}
+-- Needs: cutoff_radius, DeltaRInv, SplineCoefs, d2A, dA, A
+
+template<typename T>
+inline void BsplineFunctorRef<T>::evaluateVGL(const int iat,
+                                             const int iStart,
+                                             const int iEnd,
+                                             const T* _distArray,
+                                             T* restrict _valArray,
+                                             T* restrict _gradArray,
+                                             T* restrict _laplArray,
+                                             T* restrict distArrayCompressed,
+                                             int* restrict distIndices) const
+{
+  real_type dSquareDeltaRinv = DeltaRInv * DeltaRInv;
+  constexpr real_type cOne(1);
+
+  //    START_MARK_FIRST();
+
+  ASSUME_ALIGNED(distIndices);
+  ASSUME_ALIGNED(distArrayCompressed);
+  int iCount                 = 0;
+  int iLimit                 = iEnd - iStart;
+  const real_type* distArray = _distArray + iStart;
+  real_type* valArray        = _valArray + iStart;
+  real_type* gradArray       = _gradArray + iStart;
+  real_type* laplArray       = _laplArray + iStart;
+
+#pragma vector always
+  for (int jat = 0; jat < iLimit; jat++)
+  {
+    real_type r = distArray[jat];
+    if (r < cutoff_radius && iStart + jat != iat)
+    {
+      distIndices[iCount]         = jat;
+      distArrayCompressed[iCount] = r;
+      iCount++;
+    }
+  }
+
+  #pragma omp simd
+  for (int j = 0; j < iCount; j++)
+  {
+    real_type r    = distArrayCompressed[j];
+    int iScatter   = distIndices[j];
+    real_type rinv = cOne / r;
+    r *= DeltaRInv;
+    int iGather   = (int)r;
+    real_type t   = r - real_type(iGather);
+    real_type tp0 = t * t * t;
+    real_type tp1 = t * t;
+    real_type tp2 = t;
+
+    real_type sCoef0 = SplineCoefs[iGather + 0];
+    real_type sCoef1 = SplineCoefs[iGather + 1];
+    real_type sCoef2 = SplineCoefs[iGather + 2];
+    real_type sCoef3 = SplineCoefs[iGather + 3];
+
+    // clang-format off
+    laplArray[iScatter] = dSquareDeltaRinv *
+      (sCoef0*( d2A[ 2]*tp2 + d2A[ 3])+
+       sCoef1*( d2A[ 6]*tp2 + d2A[ 7])+
+       sCoef2*( d2A[10]*tp2 + d2A[11])+
+       sCoef3*( d2A[14]*tp2 + d2A[15]));
+
+    gradArray[iScatter] = DeltaRInv * rinv *
+      (sCoef0*( dA[ 1]*tp1 + dA[ 2]*tp2 + dA[ 3])+
+       sCoef1*( dA[ 5]*tp1 + dA[ 6]*tp2 + dA[ 7])+
+       sCoef2*( dA[ 9]*tp1 + dA[10]*tp2 + dA[11])+
+       sCoef3*( dA[13]*tp1 + dA[14]*tp2 + dA[15]));
+
+    valArray[iScatter] = (sCoef0*(A[ 0]*tp0 + A[ 1]*tp1 + A[ 2]*tp2 + A[ 3])+
+        sCoef1*(A[ 4]*tp0 + A[ 5]*tp1 + A[ 6]*tp2 + A[ 7])+
+        sCoef2*(A[ 8]*tp0 + A[ 9]*tp1 + A[10]*tp2 + A[11])+
+        sCoef3*(A[12]*tp0 + A[13]*tp1 + A[14]*tp2 + A[15]));
+    // clang-format on
+  }
+}
+
+-- Variables used: DeltaRInv, cutoff_radius, SplineCoefs,
+                   d2A, dA, A
+
+-------------------------------------------
+GradType evalGrad(ParticleSet& P, int iat) { return GradType(Grad[iat]); }
+-- Variables used: Grad
+
+--------------------------------------------
+ValueType ratioGrad(ParticleSet& P, int iat, GradType& grad_iat)
+{
+    UpdateMode = ORB_PBYP_PARTIAL;
+
+    computeU3(P, iat, P.DistTables[myTableID]->Temp_r.data());
+    curLap = accumulateGL(dU.data(), d2U.data(), P.DistTables[myTableID]->Temp_dr, curGrad);
+    curAt  = simd::accumulate_n(U.data(), Nions, valT());
+    grad_iat += curGrad;
+    return std::exp(Vat[iat] - curAt);
+}
+-- Variables used: Nions, U, dU, d2U, curGrad, curLap, curAt, Vat
+-- Functions called: computeU3
+
+---------------------------------------------
+void acceptMove(ParticleSet& P, int iat)
+{
+    if (UpdateMode == ORB_PBYP_RATIO)
+    {
+      computeU3(P, iat, P.DistTables[myTableID]->Temp_r.data());
+      curLap = accumulateGL(dU.data(), d2U.data(), P.DistTables[myTableID]->Temp_dr, curGrad);
+    }
+
+    LogValue += Vat[iat] - curAt;
+    Vat[iat]  = curAt;
+    Grad[iat] = curGrad;
+    Lap[iat]  = curLap;
+}
+-- Variables used: UpdateMode, dU, d2U, curGrad, LogValue, Vat, curAt, curGrad, curLap, Grad, Lap
+-- Functions called: computeU3, accumulateGL
+
+----------------------------------------
+evaluateGL is already discussed in the call tree above
+
+----------------------------------------
+ValueType ratio(ParticleSet& P, int iat)
+{
+    UpdateMode = ORB_PBYP_RATIO;
+    curAt      = computeU(P.DistTables[myTableID]->Temp_r.data());
+    return std::exp(Vat[iat] - curAt);
+}
+-- Variables used: UpdateMode, curAt, Vat
+-- Functions called: computeU
+
+inline valT computeU(const valT* dist)
+{
+    valT curVat(0);
+    if (NumGroups > 0)
+    {
+      for (int jg = 0; jg < NumGroups; ++jg)
+      {
+      //  if (F[jg] != nullptr)                                                                                          
+          curVat += F[jg].evaluateV(-1, Ions.first(jg), Ions.last(jg), dist, DistCompressed.data());
+      }
+    }
+    else
+    {
+      for (int c = 0; c < Nions; ++c)
+      {
+        int gid = Ions.GroupID[c];
+     //   if (F[gid] != nullptr)                                                                                         
+          curVat += F[gid].evaluate(dist[c]);
+      }
+    }
+    return curVat;
+}
+-- Variables used: NumGroups, Ions.first, Ions.last, DistCopmpressed, Ions.GroupID
+-- Functions Called: F.evaluate

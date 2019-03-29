@@ -1,0 +1,332 @@
+For Two Body Jastrow, need:
+ -- evaluateLog, evalGrad, ratioGrad, acceptMove, evaluateGL, ratio
+
+--------------------------------------------------------------------
+evaluateLog:
+
+template<typename FT>
+typename TwoBodyJastrow<FT>::RealType
+    TwoBodyJastrow<FT>::evaluateLog(ParticleSet& P,
+                                    ParticleSet::ParticleGradient_t& G,
+                                    ParticleSet::ParticleLaplacian_t& L)
+{
+  evaluateGL(P, G, L, true);
+  return LogValue;
+}
+
+-- Needs: LogValue
+-- calls evaluateGL
+
+template<typename FT>
+void TwoBodyJastrow<FT>::evaluateGL(ParticleSet& P,
+                                    ParticleSet::ParticleGradient_t& G,
+                                    ParticleSet::ParticleLaplacian_t& L,
+                                    bool fromscratch)
+{
+  if (fromscratch)
+    recompute(P);
+  LogValue = valT(0);
+  for (int iat = 0; iat < N; ++iat)
+  {
+    LogValue += Uat[iat];
+    G[iat] += dUat[iat];
+    L[iat] += d2Uat[iat];
+  }
+
+  constexpr valT mhalf(-0.5);
+  LogValue = mhalf * LogValue;
+}
+
+-- Needs: N, LogValue, Uat, dUat d2Uat
+-- calls recompute
+
+template<typename FT>
+void TwoBodyJastrow<FT>::recompute(ParticleSet& P)
+{
+  const DistanceTableData* d_table = P.DistTables[0];
+  for (int ig = 0; ig < NumGroups; ++ig)
+  {
+    const int igt = ig * NumGroups;
+    for (int iat = P.first(ig), last = P.last(ig); iat < last; ++iat)
+    {
+      computeU3(P, iat, d_table->Distances[iat], cur_u.data(), cur_du.data(), cur_d2u.data(), true);
+      Uat[iat] = simd::accumulate_n(cur_u.data(), iat, valT());
+      posT grad;
+      valT lap(0);
+      const valT* restrict u    = cur_u.data();
+      const valT* restrict du   = cur_du.data();
+      const valT* restrict d2u  = cur_d2u.data();
+      const RowContainer& displ = d_table->Displacements[iat];
+      constexpr valT lapfac     = OHMMS_DIM - RealType(1);
+      for (int jat = 0; jat < iat; ++jat)
+        lap += d2u[jat] + lapfac * du[jat];
+      for (int idim = 0; idim < OHMMS_DIM; ++idim)
+      {
+        const valT* restrict dX = displ.data(idim);
+        valT s                  = valT();
+        for (int jat = 0; jat < iat; ++jat)
+          s += du[jat] * dX[jat];
+        grad[idim] = s;
+      }
+      dUat(iat)  = grad;
+      d2Uat[iat] = -lap;
+      // add the contribution from the upper triangle
+      for (int jat = 0; jat < iat; jat++)
+      {
+        Uat[jat] += u[jat];
+        d2Uat[jat] -= d2u[jat] + lapfac * du[jat];
+      }
+      for (int idim = 0; idim < OHMMS_DIM; ++idim)
+      {
+        valT* restrict save_g   = dUat.data(idim);
+        const valT* restrict dX = displ.data(idim);
+        for (int jat = 0; jat < iat; jat++)
+          save_g[jat] -= du[jat] * dX[jat];
+      }
+    }
+  }
+}
+
+
+-- WARNING: I am afraid that this will modify some things in ParticleSet!!!
+-- Needs: NumGroups, cur_u cur_du cur_d2u, Uat, dUat, d2Uat
+-- calls computeU3
+
+template<typename FT>
+inline void TwoBodyJastrow<FT>::computeU3(const ParticleSet& P,
+                                          int iat_,
+                                          const RealType* restrict dist_,
+                                          RealType* restrict u_,
+                                          RealType* restrict du_,
+                                          RealType* restrict d2u_,
+                                          bool triangle)
+{
+  iat = iat_;
+  dist = dist_;
+  u = u_;
+  du = du_;
+  d2u = d2u_;
+
+  const int jelmax = triangle ? iat : N;
+  constexpr valT czero(0);
+  std::fill_n(u, jelmax, czero);
+  std::fill_n(du, jelmax, czero);
+  std::fill_n(d2u, jelmax, czero);
+
+  igt = P.GroupID[iat] * NumGroups;
+  for (int jg = 0; jg < NumGroups; ++jg)
+  {
+    const FuncType& f2(F[igt + jg]);
+    int iStart = P.first(jg);
+    int iEnd = P.last(jg);
+    f2.evaluateVGL(iat, iStart, iEnd, dist, u, du, d2u, DistCompressed.data(), DistIndice.data());
+  }
+  // u[iat]=czero;
+  // du[iat]=czero;
+  // d2u[iat]=czero;
+}
+
+--Needs: N, NumGroups
+--Calls: BsplineFunctorRef<T>::evaluateVGL
+
+
+template<typename T>
+inline void BsplineFunctorRef<T>::evaluateVGL(const int iat,
+                                             const int iStart,
+                                             const int iEnd,
+                                             const T* _distArray,
+                                             T* restrict _valArray,
+                                             T* restrict _gradArray,
+                                             T* restrict _laplArray,
+                                             T* restrict distArrayCompressed,
+                                             int* restrict distIndices) const
+{
+  real_type dSquareDeltaRinv = DeltaRInv * DeltaRInv;
+  constexpr real_type cOne(1);
+
+  //    START_MARK_FIRST();
+
+  ASSUME_ALIGNED(distIndices);
+  ASSUME_ALIGNED(distArrayCompressed);
+  int iCount                 = 0;
+  int iLimit                 = iEnd - iStart;
+  const real_type* distArray = _distArray + iStart;
+  real_type* valArray        = _valArray + iStart;
+  real_type* gradArray       = _gradArray + iStart;
+  real_type* laplArray       = _laplArray + iStart;
+
+#pragma vector always
+  for (int jat = 0; jat < iLimit; jat++)
+  {
+    real_type r = distArray[jat];
+    if (r < cutoff_radius && iStart + jat != iat)
+    {
+      distIndices[iCount]         = jat;
+      distArrayCompressed[iCount] = r;
+      iCount++;
+    }
+  }
+
+  #pragma omp simd
+  for (int j = 0; j < iCount; j++)
+  {
+    real_type r    = distArrayCompressed[j];
+    int iScatter   = distIndices[j];
+    real_type rinv = cOne / r;
+    r *= DeltaRInv;
+    int iGather   = (int)r;
+    real_type t   = r - real_type(iGather);
+    real_type tp0 = t * t * t;
+    real_type tp1 = t * t;
+    real_type tp2 = t;
+
+    real_type sCoef0 = SplineCoefs[iGather + 0];
+    real_type sCoef1 = SplineCoefs[iGather + 1];
+    real_type sCoef2 = SplineCoefs[iGather + 2];
+    real_type sCoef3 = SplineCoefs[iGather + 3];
+
+    // clang-format off
+    laplArray[iScatter] = dSquareDeltaRinv *
+      (sCoef0*( d2A[ 2]*tp2 + d2A[ 3])+
+       sCoef1*( d2A[ 6]*tp2 + d2A[ 7])+
+       sCoef2*( d2A[10]*tp2 + d2A[11])+
+       sCoef3*( d2A[14]*tp2 + d2A[15]));
+
+    gradArray[iScatter] = DeltaRInv * rinv *
+      (sCoef0*( dA[ 1]*tp1 + dA[ 2]*tp2 + dA[ 3])+
+       sCoef1*( dA[ 5]*tp1 + dA[ 6]*tp2 + dA[ 7])+
+       sCoef2*( dA[ 9]*tp1 + dA[10]*tp2 + dA[11])+
+       sCoef3*( dA[13]*tp1 + dA[14]*tp2 + dA[15]));
+
+    valArray[iScatter] = (sCoef0*(A[ 0]*tp0 + A[ 1]*tp1 + A[ 2]*tp2 + A[ 3])+
+        sCoef1*(A[ 4]*tp0 + A[ 5]*tp1 + A[ 6]*tp2 + A[ 7])+
+        sCoef2*(A[ 8]*tp0 + A[ 9]*tp1 + A[10]*tp2 + A[11])+
+        sCoef3*(A[12]*tp0 + A[13]*tp1 + A[14]*tp2 + A[15]));
+    // clang-format on
+  }
+}
+
+-- Variables used: DeltaRInv, cutoff_radius, iCount, SplineCoefs,
+                   d2A, dA, A
+
+
+----------------------------------------------------------------------------------
+evalGrad:
+
+template<typename FT>
+typename TwoBodyJastrow<FT>::GradType TwoBodyJastrow<FT>::evalGrad(ParticleSet& P, int iat)
+{
+  return GradType(dUat[iat]);
+}
+
+-- Variables used: dUat
+
+----------------------------------------------------------------------------------
+ratioGrad:
+
+template<typename FT>
+typename TwoBodyJastrow<FT>::ValueType
+    TwoBodyJastrow<FT>::ratioGrad(ParticleSet& P, int iat, GradType& grad_iat)
+{
+  UpdateMode = ORB_PBYP_PARTIAL;
+
+  computeU3(P, iat, P.DistTables[0]->Temp_r.data(), cur_u.data(), cur_du.data(), cur_d2u.data());
+  cur_Uat = simd::accumulate_n(cur_u.data(), N, valT());
+  DiffVal = Uat[iat] - cur_Uat;
+  grad_iat += accumulateG(cur_du.data(), P.DistTables[0]->Temp_dr);
+  return std::exp(DiffVal);
+}
+
+-- Variables used: cur_u, cur_du, cur_d2u, cur_Uat, DiffVal, Uat
+-- Functions called: computeU3, accumulateG
+
+
+inline posT accumulateG(const valT* restrict du, const RowContainer& displ) const
+{
+    posT grad;
+    for (int idim = 0; idim < OHMMS_DIM; ++idim)
+    {
+      const valT* restrict dX = displ.data(idim);
+      valT s                  = valT();
+
+      for (int jat = 0; jat < N; ++jat)
+        s += du[jat] * dX[jat];
+      grad[idim] = s;
+    }
+    return grad;
+}
+
+-- Variables used: N, OHMMS_DIM
+
+--------------------------------------------------------------------------------------
+acceptMove:
+
+template<typename FT>
+void TwoBodyJastrow<FT>::acceptMove(ParticleSet& P, int iat)
+{
+  // get the old u, du, d2u
+  const DistanceTableData* d_table = P.DistTables[0];
+  computeU3(P, iat, d_table->Distances[iat], old_u.data(), old_du.data(), old_d2u.data());
+  if (UpdateMode == ORB_PBYP_RATIO)
+  { // ratio-only during the move; need to compute derivatives
+    const auto dist = d_table->Temp_r.data();
+    computeU3(P, iat, dist, cur_u.data(), cur_du.data(), cur_d2u.data());
+  }
+
+  valT cur_d2Uat(0);
+  const auto& new_dr    = d_table->Temp_dr;
+  const auto& old_dr    = d_table->Displacements[iat];
+  constexpr valT lapfac = OHMMS_DIM - RealType(1);
+  for (int jat = 0; jat < N; jat++)
+  {
+    const valT du   = cur_u[jat] - old_u[jat];
+    const valT newl = cur_d2u[jat] + lapfac * cur_du[jat];
+    const valT dl   = old_d2u[jat] + lapfac * old_du[jat] - newl;
+    Uat[jat] += du;
+    d2Uat[jat] += dl;
+    cur_d2Uat -= newl;
+  }
+  posT cur_dUat;
+  for (int idim = 0; idim < OHMMS_DIM; ++idim)
+  {
+    const valT* restrict new_dX    = new_dr.data(idim);
+    const valT* restrict old_dX    = old_dr.data(idim);
+    const valT* restrict cur_du_pt = cur_du.data();
+    const valT* restrict old_du_pt = old_du.data();
+    valT* restrict save_g          = dUat.data(idim);
+    valT cur_g                     = cur_dUat[idim];
+    for (int jat = 0; jat < N; jat++)
+    {
+      const valT newg = cur_du_pt[jat] * new_dX[jat];
+      const valT dg   = newg - old_du_pt[jat] * old_dX[jat];
+      save_g[jat] -= dg;
+      cur_g += newg;
+    }
+    cur_dUat[idim] = cur_g;
+  }
+  LogValue += Uat[iat] - cur_Uat;
+  Uat[iat]   = cur_Uat;
+  dUat(iat)  = cur_dUat;
+  d2Uat[iat] = cur_d2Uat;
+}
+
+-- Variables used: old_u, old_du, old_d2u, OHMMS_DIM, N, cur_u, cur_du, cur_d2u, 
+                   Uat, dUat, d2Uat
+-- Calls computeU3
+
+-------------------------------------------------------------------------------
+evaluateGL:  this is already discussed in the call tree above
+
+-------------------------------------------------------------------------------
+ratio:
+
+template<typename FT>
+typename TwoBodyJastrow<FT>::ValueType TwoBodyJastrow<FT>::ratio(ParticleSet& P, int iat)
+{
+  // only ratio, ready to compute it again
+  UpdateMode = ORB_PBYP_RATIO;
+  cur_Uat    = computeU(P, iat, P.DistTables[0]->Temp_r.data());
+  return std::exp(Uat[iat] - cur_Uat);
+}
+
+-- Variables used: UpdateMode, cur_Uat, Uat, cur_Uat
