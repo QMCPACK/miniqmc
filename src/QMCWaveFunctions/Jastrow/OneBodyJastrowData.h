@@ -8,6 +8,8 @@ namespace qmcplusplus
 template<typename RealType>
 class OneBodyJastrowData {
 public:
+  using RealType == RealType;
+  
   Kokkos::View<RealType*> LogValue; // one element
   Kokkos::View<int*> Nelec; // one element
   Kokkos::View<int*> Nions; // one element
@@ -67,10 +69,6 @@ public:
   OneBodyJastrowData(const OneBodyJastrowData&) = default;
 };
 
-}  
-    
-
-
-
+}
 
 #endif

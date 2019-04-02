@@ -81,7 +81,8 @@ void computeU3(ParticleSet& P, int iat_, const valT* dist_)
       for (int jg = 0; jg < NumGroups; ++jg)
       {
          F[jg].evaluateVGL(-1,
-                           Ions.last(jg),
+		           Ions.first(jg),
+			   Ions.last(jg),
                            dist,
                            U.data(),
                            dU.data(),

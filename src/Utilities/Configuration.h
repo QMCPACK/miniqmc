@@ -108,7 +108,6 @@ struct QMCTraits
 #else
   typedef std::complex<OHMMS_PRECISION>  ValueType;
 #endif
-
 #else
   typedef OHMMS_PRECISION                ValueType;
 #endif
