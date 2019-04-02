@@ -37,6 +37,7 @@
 #include <Utilities/PooledData.h>
 #include <Utilities/NewTimer.h>
 #include <Numerics/Containers.h>
+#include <Particle/ParticleSetKokkos.h>
 
 namespace qmcplusplus
 {
@@ -79,6 +80,12 @@ struct MCDataType
 class ParticleSet : public QMCTraits, public PtclOnLatticeTraits
 {
 public:
+  using pskType = ParticleSetKokkos<RealType, ValueType>;
+  /// Adding in my Kokkos ParticleSet View
+  pskType psk;
+  /// Function which will push data in this class to psk
+  void pushDataToParticleSetKokkos();
+  
   /// walker type
   typedef Walker<QMCTraits, PtclOnLatticeTraits> Walker_t;
   /// buffer type for a serialized buffer

@@ -1,0 +1,107 @@
+Following through the usage of particleset from miniqmc_sync_move.cpp
+---------------------------------------------------------------------
+1. see the include Input/Input.hpp
+2. use several typedefs  (ParticlePos_t, PosType, GradType, ValueType)
+3. Follow ions
+   A. build_ions   (ParticleSet_builder)
+      
+int build_ions(ParticleSet& ions, const Tensor<int, 3>& tmat, Tensor<QMCTraits::RealType, 3>& lattice)
+{
+  ions.setName("ion");
+  ions.Lattice.BoxBConds = 1;
+  lattice                = tile_cell(ions, tmat, static_cast<OHMMS_PRECISION>(1.0));
+  ions.RSoA              = ions.R; // fill the SoA
+
+  return ions.getTotalNum();
+}
+
+-- Data Used: myName,Lattice.BoxBConds,RSoA,R 
+-- Functions Called: tile_cell   (defined in nio.hpp)
+   
+   B. tile_cell (Input/nio.hpp)
+
+template<typename T>
+Tensor<T, 3> tile_cell(ParticleSet& ions, const Tensor<int, 3>& tmat, T scale)
+{
+  Tensor<T, 3> nio_cell = {7.8811, 7.8811, 0.0, -7.8811, 7.8811, 0.0, 0.0, 0.0, 15.7622};
+  // set PBC in x,y,z directions
+  ions.Lattice.BoxBConds = 1;
+  // set the lattice
+  ions.Lattice.set(nio_cell); // CrystalLattice.h:321
+  // create Ni and O by group
+  std::vector<int> nio_group(2);
+  nio_group[0] = nio_group[1] = 16;
+  ions.create(32); // ParticleSet.h:176 "number of particles per group"
+  // using lattice coordinates
+  ions.R.InUnit = 1;
+
+  ions.R[0]  = {0.5, 0.0, 0.25}; // O
+    .
+    .
+    .
+  ions.R[31] = {0.75, 0.75, 0.75};
+
+  SpeciesSet& species(ions.getSpeciesSet());
+  species.addSpecies("O");
+  species.addSpecies("Ni");
+
+  expandSuperCell(ions, tmat);
+
+  ions.resetGroups();
+
+  return nio_cell;
+}
+   
+-- Data Used: Lattice.BoxBConds, R.InUnit, R[...], mySpecies
+-- Functions Called: Lattice.set(nio_cell), ions.create(), SpeciesSet.addSpecies, ions.resetGroups()
+
+    C. Lattice.set(nio_cell)  (see CrystalLattice.cpp)  (sets R and then immediately calls reset())
+
+  R = lat;
+void CrystalLattice<T, D, ORTHO>::reset()
+{
+  G      = inverse(R); // G = transpose(Inverse(R));
+  Gt     = transpose(G);
+  Volume = std::abs(det(R));
+  // M = dot(transpose(R),R);
+  M   = dot(R, transpose(R));
+  T t = TWOPI * TWOPI;
+  Mg  = t * dot(transpose(G), G);
+  for (int i = 0; i < D; ++i)
+    for (int j = 0; j < D; ++j)
+      Rv[i][j] = R(i, j);
+  for (int i = 0; i < D; ++i)
+    for (int j = 0; j < D; ++j)
+      Gv[i][j] = G(j, i);
+  for (int i = 0; i < D; ++i)
+  {
+    Length[i]        = std::sqrt(dot(Rv[i], Rv[i]));
+    OneOverLength[i] = 1.0 / Length[i];
+  }
+  Center = 0.0;
+  for (int i = 0; i < D; ++i)
+    Center += Rv[i];
+  Center *= .5;
+  // analysis of a lattice using LatticeAnalyzer
+  LatticeAnalyzer<T, D> ldesc;
+  SuperCellEnum        = ldesc(BoxBConds);
+  DiagonalOnly         = ldesc.isDiagonalOnly(R);
+  ABC                  = ldesc.calcSolidAngles(Rv, OneOverLength);
+  WignerSeitzRadius    = ldesc.calcWignerSeitzRadius(Rv);
+  SimulationCellRadius = ldesc.calcSimulationCellRadius(Rv);
+  // set equal WignerSeitzRadius and SimulationCellRadius when they are very
+  // close.
+  if (WignerSeitzRadius > SimulationCellRadius &&
+      WignerSeitzRadius - SimulationCellRadius <=
+          WignerSeitzRadius * std::numeric_limits<float>::epsilon() * 2)
+    WignerSeitzRadius = SimulationCellRadius;
+  CellRadiusSq = SimulationCellRadius * SimulationCellRadius;
+}
+
+-- Data Used:
+
+
+
+
+
+Note:  the Ion particleSet is only used so far in making a distance table (that gets stored with the electrons, in the J1 and in J3, otherwise just need to know things like Nions
