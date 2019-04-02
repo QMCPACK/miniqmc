@@ -395,7 +395,13 @@ int main(int argc, char** argv)
       build_WaveFunction(useRef, thiswalker->wavefunction, ions, thiswalker->els, thiswalker->rng, enableJ3);
       
       // initial computing
-      thiswalker->els.update();
+      thiswalker->els.update(); // basically goes through the distance tables and calls evaluate from the current particleset
+
+      // LNS new -- push necessary contents of els particleset up to the device
+      if (useRef == false)
+      {
+	thiswalker->els.PushDataToParticleSetKokkos();
+      }
     }
     
     { // initial computing
@@ -447,7 +453,7 @@ int main(int argc, char** argv)
 	    // LNS -- need to kill omp here (probably not enough work to care anyway, but check this)
 #pragma omp parallel for
 	    for (int iw = 0; iw < nmovers; iw++)
-	      mover_list[iw]->els.setActive(iel);
+	      mover_list[iw]->els.setActive(iel); // watch out for this, does a bunch of evaluates on distanceTables
 
 	    // Compute gradient at the current position
 	    Timers[Timer_evalGrad]->start();
@@ -481,9 +487,9 @@ int main(int argc, char** argv)
 	    anon_mover.wavefunction.multi_ratioGrad(valid_WF_list, valid_P_list, iel, ratios, grad_new);
 	    
 	    for (int iw = 0; iw < valid_mover_list.size(); iw++)
-	      pos_list[iw] = valid_mover_list[iw]->els.R[iel];
+	      pos_list[iw] = valid_mover_list[iw]->els.R[iel];   // just getting the value out, so maybe keep R accessible 
 	    // LNS -- need to get this working as well
-	    anon_mover.spo->multi_evaluate_vgh(valid_spo_list, pos_list);
+	    anon_mover.spo->multi_evaluate_vgh(valid_spo_list, pos_list); // doesn't seem to touch particleset at all
 	    Timers[Timer_ratioGrad]->stop();
 	    
 	    // Accept/reject the trial move
@@ -505,9 +511,9 @@ int main(int argc, char** argv)
 	    for (int iw = 0; iw < valid_mover_list.size(); iw++)
 	    {
 	      if (isAccepted[iw]) // MC
-		valid_mover_list[iw]->els.acceptMove(iel);
+		valid_mover_list[iw]->els.acceptMove(iel);  // lots of calls to distanceTables.update
 	      else
-		valid_mover_list[iw]->els.rejectMove(iel);
+		valid_mover_list[iw]->els.rejectMove(iel);  // just sets activePtcl to -1
 	    }
 	  } // iel
 	}   // substeps
@@ -516,11 +522,11 @@ int main(int argc, char** argv)
 	// LNS -- need to get rid of openmp
 	for (int iw = 0; iw < nmovers; iw++)
         {
-	  mover_list[iw]->els.donePbyP();
+	  mover_list[iw]->els.donePbyP();   // just sets activePtcl to -1
 	  // evaluate Kinetic Energy
 	}
 	// LNS -- need to get this working
-	anon_mover.wavefunction.multi_evaluateGL(WF_list, P_list);
+	anon_mover.wavefunction.multi_evaluateGL(WF_list, P_list);   // look at what is needed here
 	
 	Timers[Timer_Diffusion]->stop();
 	
@@ -544,22 +550,24 @@ int main(int argc, char** argv)
 	  
 	  for (int jel = 0; jel < els.getTotalNum(); ++jel)
 	  {
-	    const auto& dist  = d_ie->Distances[jel];
-	    const auto& displ = d_ie->Displacements[jel];
+	    const auto& dist  = d_ie->Distances[jel];   // get distances for this electron
+	    const auto& displ = d_ie->Displacements[jel];  // get displacements for this electron
 	    for (int iat = 0; iat < nions; ++iat)
-	      if (dist[iat] < Rmax)
+	      if (dist[iat] < Rmax)   // check whether the distance to this ion is less than a cutoff
 		for (int k = 0; k < nknots; k++)
 		{
 		  PosType deltar(dist[iat] * rOnSphere[k] - displ[iat]);
 		  
-		  els.makeMoveOnSphere(jel, deltar);
-		  
+		  els.makeMoveOnSphere(jel, deltar);  // sets activePtcl and calls DistTables->moveOnSphere
+		  // that does update some stuff, but can probably just figure out what is needed to get R for jastrow ratios and
+		  // make sure that it ends up in a kernel
 		  Timers[Timer_Value]->start();
-		  spo.evaluate_v(els.R[jel]);
-		  wavefunction.ratio(els, jel);
+		  spo.evaluate_v(els.R[jel]);  // call shouldn't depend on other calls, just positions
+		  wavefunction.ratio(els, jel);  // note that the particleset isn't even used here for the spo part
+		                                 // it does come in for the jastrows though
 		  Timers[Timer_Value]->stop();
 		  
-		  els.rejectMove(jel);
+		  els.rejectMove(jel);  // note just sets activePtcl back to -1
 		}
 	  }
 	}
@@ -569,8 +577,6 @@ int main(int argc, char** argv)
     Timers[Timer_Total]->stop();
     
     // free all movers
-    // LNS -- need to get rid of openmp here
-#pragma omp parallel for
     for (int iw = 0; iw < nmovers; iw++)
       delete mover_list[iw];
     mover_list.clear();
