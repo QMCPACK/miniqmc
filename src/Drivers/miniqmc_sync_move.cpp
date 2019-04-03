@@ -398,6 +398,7 @@ int main(int argc, char** argv)
       thiswalker->els.update(); // basically goes through the distance tables and calls evaluate from the current particleset
 
       // LNS new -- push necessary contents of els particleset up to the device
+      //            note that by now, the electron-ion distance table is present in els
       if (useRef == false)
       {
 	thiswalker->els.PushDataToParticleSetKokkos();
