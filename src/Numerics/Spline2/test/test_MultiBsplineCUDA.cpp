@@ -43,7 +43,7 @@ TEST_CASE("MultiBspline<CUDA> single block evaluate_v", "[CUDA][Spline2]")
   d_vals.resize(1, 64);
   d_vals.zero();
   std::vector<std::array<double, 3>> pos = {{1, 1, 1}};
-  mbf_CUDA.evaluate_v(tmb.cuda_spline, pos, d_vals.get_devptr(), 1, 64);
+  mbf_CUDA.evaluate_v(tmb.cuda_spline, pos, d_vals.get_devptr(), 1, 64, 64);
   MultiBsplineFuncs<Devices::CPU, double> mbf_CPU;
   aligned_vector<double> vals(64);
   mbf_CPU.evaluate_v(tmb.cpu_splines[0], pos, vals.data(), 64);
@@ -82,7 +82,7 @@ TEST_CASE("MultiBspline<CUDA> single block evaluate_vgh", "[CUDA][Spline2]")
   d_hess.resize(1, 64);
   d_hess.zero();
   std::vector<std::array<double, 3>> pos = {{1, 1, 1}};
-  const cudaStream_t& stream = cudaStreamPerThread;
+  cudaStream_t stream = cudaStreamPerThread;
   mbf_CUDA.evaluate_vgh(tmb.cuda_spline, pos, d_vals.get_devptr(), d_grads.get_devptr(), d_hess.get_devptr(), 1, 64, 1, stream);
   aligned_vector<T> gpu_vals(64);
   VectorSoAContainer<T, 3> gpu_grads(64);
@@ -119,7 +119,8 @@ TEST_CASE("MultiBspline<CUDA> multi block evaluate_vgh", "[CUDA][Spline2]")
   d_hess.resize(1, 128);
   d_hess.zero();
   std::vector<std::array<double, 3>> pos = {{1, 1, 1}};
-  mbf_CUDA.evaluate_vgh(tmb.cuda_spline, pos, d_vals.get_devptr(), d_grads.get_devptr(), d_hess.get_devptr(), 2, 64);
+  cudaStream_t stream = cudaStreamPerThread;
+  mbf_CUDA.evaluate_vgh(tmb.cuda_spline, pos, d_vals.get_devptr(), d_grads.get_devptr(), d_hess.get_devptr(), 2, 64, 64, stream);
   aligned_vector<T> gpu_vals(128);
   VectorSoAContainer<T, 3> gpu_grads(128);
   VectorSoAContainer<T, 6> gpu_hess(128);
@@ -174,7 +175,7 @@ TEST_CASE("MultiBspline<CUDA> multi block evaluate_v", "[CUDA][Spline2]")
   d_vals.resize(1, 128);
   d_vals.zero();
   std::vector<std::array<double, 3>> pos = {{1, 1, 1}};
-  mbf_CUDA.evaluate_v(tmb.cuda_spline, pos, d_vals.get_devptr(), 1, 128);
+  mbf_CUDA.evaluate_v(tmb.cuda_spline, pos, d_vals.get_devptr(), 1, 128, 128);
   aligned_vector<double> gpu_vals(128);
   d_vals.pull(gpu_vals);
 

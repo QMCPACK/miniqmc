@@ -118,9 +118,6 @@ template<>
       buffers_.dev_psi.resize(esp.nBlocks * pack_size_, esp.nSplinesPerBlock);
       buffers_.dev_hess.resize(esp.nBlocks * pack_size_, esp.nSplinesPerBlock);
       buffers_.dev_grad.resize(esp.nBlocks * pack_size_, esp.nSplinesPerBlock);
-      cudaMallocHost((void**)&buffers_.psi, esp.nBlocks * pack_size_ * esp.nSplinesPerBlock * sizeof(T));
-      cudaMallocHost((void**)&buffers_.grad, esp.nBlocks * pack_size_ * esp.nSplinesPerBlock * 3 *sizeof(T));
-      cudaMallocHost((void**)&buffers_.hess, esp.nBlocks * pack_size_ * esp.nSplinesPerBlock * 6 * sizeof(T));
     }
   
   //for now this does use a single EinsplineSPO to call through
@@ -136,46 +133,48 @@ template<>
     pos[i] = {u[0], u[1], u[2]};
   }
 
+  // its possible that launch multiple kernels per pack is better.
+  int n_pos = pos.size();
+  
   MultiBsplineFuncs<Devices::CUDA, T> compute_engine;
   const auto& spline =
       static_cast<EinsplineSPO<Devices::CUDA, T>*>(spos[0])->einspline_spo_device.getDeviceEinsplines();
   Gpu& gpu = Gpu::get();
-  int i_stream = 0;
-  for (int ip = 0; ip < pack_size_; ++ip)
-  {
-    cudaStream_t stream = gpu.kernelStreams[i_stream];
-    std::vector<std::array<T,3>> one_pos = {pos[ip]};
-    size_t basic_offset = esp.nBlocks * ip * esp.nSplinesPerBlock;
+  cudaStream_t stream = cudaStreamPerThread;
     
     compute_engine.evaluate_vgh((*spline)[0],
-				  one_pos,
-                              buffers_.dev_psi.get_devptr() + basic_offset,
-                              buffers_.dev_grad.get_devptr() + basic_offset * 3,
-                              buffers_.dev_hess.get_devptr() + basic_offset * 6,
+				  pos,
+				buffers_.dev_psi.get_devptr(),
+				buffers_.dev_grad.get_devptr(),
+				buffers_.dev_hess.get_devptr(),
                               esp.nBlocks,
                               esp.nSplines,
 				esp.nSplinesPerBlock,
 	stream);
-    cudaMemcpyAsync(buffers_.psi + basic_offset, buffers_.dev_psi.get_devptr() + basic_offset, esp.nBlocks * esp.nSplinesPerBlock * sizeof(T), cudaMemcpyDefault, stream);
-    cudaMemcpyAsync(buffers_.grad + basic_offset * 3, buffers_.dev_grad.get_devptr() + basic_offset * 3, esp.nBlocks * esp.nSplinesPerBlock * sizeof(T) * 3, cudaMemcpyDefault, stream);
-    cudaMemcpyAsync(buffers_.hess + basic_offset * 6, buffers_.dev_hess.get_devptr() + basic_offset * 6, esp.nBlocks * esp.nSplinesPerBlock * sizeof(T) * 6, cudaMemcpyDefault, stream);
-
-    i_stream = i_stream ^ 1;
-  }
-  cudaStreamSynchronize(gpu.kernelStreams[0]);
-  cudaStreamSynchronize(gpu.kernelStreams[1]);
+    buffers_.psi(stream);
+    buffers_.psi.resize(esp.nBlocks * esp.nSplinesPerBlock * sizeof(T) * n_pos);
+    buffers_.psi.copyFromDevice(buffers_.dev_psi.get_devptr());
+    buffers_.grad(stream);
+    buffers_.grad.resize(esp.nBlocks * esp.nSplinesPerBlock * sizeof(T) * n_pos * 3);
+    buffers_.grad.copyFromDevice(buffers_.dev_psi.get_devptr());
+    buffers_.hess(stream);
+    buffers_.hess.resize(esp.nBlocks * esp.nSplinesPerBlock * sizeof(T) * n_pos * 6);
+    buffers_.hess.copyFromDevice(buffers_.dev_psi.get_devptr());
+    
   //Now we have to copy the data back to the participants
 
   for (int i = 0; i < pack_size_; ++i)
   {
-      GPUArray<T,1,1> temp_psi(buffers_.psi + i * esp.nBlocks * esp.nSplinesPerBlock,
-			       esp.nBlocks * esp.nSplinesPerBlock * sizeof(T), esp.nBlocks, esp.nSplinesPerBlock);
-      GPUArray<T,3,1> temp_grad(buffers_.grad + i * esp.nBlocks * esp.nSplinesPerBlock * 3, esp.nBlocks * esp.nSplinesPerBlock * 3 * sizeof(T), esp.nBlocks, esp.nSplinesPerBlock);
-      GPUArray<T,6,1> temp_hess(buffers_.hess + i * esp.nBlocks * esp.nSplinesPerBlock * 6, esp.nBlocks * esp.nSplinesPerBlock * 6 * sizeof(T), esp.nBlocks, esp.nSplinesPerBlock);
-     temp_psi.pull(hessian_participants[i].psi, 0, esp.nBlocks);
-     temp_grad.pull(hessian_participants[i].grad, 0, esp.nBlocks);
-     temp_hess.pull(hessian_participants[i].hess, 0, esp.nBlocks);
+      for(int j = 0; j < esp.nBlocks; ++j)
+      {
+	  buffers_.psi.toNormalMemcpy(hessian_participants[i].psi[j].data(), i * esp.nBlocks * esp.nSplinesPerBlock + j * esp.nSplinesPerBlock, esp.nSplinesPerBlock);
+
+	  buffers_.grad.toNormalMemcpy(hessian_participants[i].grad[j].data(), i * esp.nBlocks * esp.nSplinesPerBlock + j * esp.nSplinesPerBlock * 3, esp.nSplinesPerBlock * 3);
+
+	  buffers_.hess.toNormalMemcpy(hessian_participants[i].hess[j].data(), i * esp.nBlocks * esp.nSplinesPerBlock + j * esp.nSplinesPerBlock * 6, esp.nSplinesPerBlock * 6);
+      }
   }
+  cudaStreamSynchronize(cudaStreamPerThread);
 
   
 }

@@ -150,7 +150,7 @@ void eval_multi_multi_UBspline_3d_d_vgh_cuda(const multi_UBspline_3d_d<Devices::
   dim3 dimBlock(spline_block_size);
   dim3 dimGrid(num_blocks, 1);
   //Now the callers responsibility
-  if (spline->num_splines % spline_block_size) dimGrid.x++;
+  //if (spline->num_splines % spline_block_size) dimGrid.x++;
 
     //find out how many blocks can fit 
   // int fit_blocks;
@@ -201,14 +201,14 @@ eval_multi_multi_UBspline_3d_d_vgh_kernel(double* pos, double3 drInv, const doub
       
   if (thr == 0)
   {
-    size_t ir_r_off = ir * pos_block_size * 3;
+    size_t ir_r_off = ir * gridDim.x * 3;
     r.x    = pos[ir_r_off + 3 * ip + 0];
     r.y    = pos[ir_r_off + 3 * ip + 1];
     r.z    = pos[ir_r_off + 3 * ip + 2];
     size_t ir_buff_off = ir * pos_block_size * gridDim.x * spline_block_size;
-    myval  = vals + ir_buff_off + ip * gridDim.x * spline_block_size;
-    mygrad = grads + ir_buff_off * 3 + ip * gridDim.x * spline_block_size * 3;
-    myhess = hess + ir_buff_off * 6 + ip * gridDim.x * spline_block_size * 6;
+    myval  = vals + ir_buff_off + ip * gridDim.x * spline_block_size + spline_block_size * block;
+    mygrad = grads + (ir_buff_off + ip * gridDim.x * spline_block_size + spline_block_size * block) * 3;
+    myhess = hess +  (ir_buff_off + ip * gridDim.x * spline_block_size + spline_block_size * block) * 6;
   }
   whole_block.sync();
   int3 index;

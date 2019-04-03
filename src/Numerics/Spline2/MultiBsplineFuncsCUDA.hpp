@@ -14,6 +14,8 @@
 #ifndef MULTIBSPLINE_CUDA_HPP
 #define MULTIBSPLINE_CUDA_HPP
 
+#include <cuda.h>
+#include <cuda_runtime_api.h>
 #include "Utilities/Configuration.h"
 #include "Numerics/Spline2/MultiBsplineData.hpp"
 #include "Numerics/Spline2/MultiBsplineFuncs.hpp"
@@ -37,34 +39,55 @@ struct MultiBsplineFuncs<Devices::CUDA, T>
   /// define the einspline object type
   using spliner_type = typename bspline_traits<D, T, 3>::SplineType;
 
-  MultiBsplineFuncs() : spline_block_size_(16) {}
+  MultiBsplineFuncs(int pos_block_size = 1) : pos_block_size_(pos_block_size)
+  {
+    pos_buf_.resize(pos_block_size);
+  }
   /// Don't want to deal with this now
   MultiBsplineFuncs(const MultiBsplineFuncs<D, T>& in) = default;
   MultiBsplineFuncs& operator=(const MultiBsplineFuncs<D, T>& in) = delete;
 
+    /** This could be a general small cuda parameter buffer except for the 3
+     */
+  template<typename T_>
   struct PosBuffer
   {
-      PosBuffer(const cudaStream_t& stream = cudaStreamPerThread) : stream_(stream), buffer(nullptr), dev_buffer(nullptr) {}
+     PosBuffer() : stream_(cudaStreamPerThread), buffer(nullptr), dev_buffer(nullptr), size_(0) {}
+      PosBuffer(cudaStream_t& stream) : stream_(stream), buffer(nullptr), dev_buffer(nullptr), size_(0) {}
+     
     ~PosBuffer()
     {
-      if (buffer != nullptr) delete[] buffer;
+      if (buffer != nullptr) cudaFreeHost(buffer);
       if (dev_buffer != nullptr) cudaFree(dev_buffer);
     }
-    T* buffer;
-    T* dev_buffer;
-    const cudaStream_t& stream_;
-    T* make(const std::vector<std::array<T, 3>>& pos)
+
+    void operator() (cudaStream_t& stream) { stream_ = stream; }
+    void resize(int size)
     {
-      size_t size = 3 * pos.size();
-      buffer      = new T[size];
-      for (int i = 0; i < pos.size(); i++)
+      if (size != size_)
+      {
+	  if (buffer != nullptr) cudaFreeHost(buffer);
+	  if (dev_buffer != nullptr) cudaFree(dev_buffer);
+	  cudaMallocHost((void**)&buffer, size );
+	  cudaMalloc((void**)&dev_buffer, size);
+	  size_ = size;
+      }
+    }
+	      
+    T_* make(const std::vector<std::array<T_, 3>>& pos)
+    {
+      int n_pos = pos.size();
+      size_t byte_size = 3 * n_pos * sizeof(T_);
+      resize(byte_size);
+      
+      for (int i = 0; i < n_pos; i++)
       {
         buffer[i * 3 + 0] = pos[i][0];
         buffer[i * 3 + 1] = pos[i][1];
         buffer[i * 3 + 2] = pos[i][2];
       }
-      cudaMalloc((void**)&dev_buffer, size * sizeof(T));
-      cudaError_t err = cudaMemcpy(dev_buffer, buffer, size * sizeof(T), cudaMemcpyDefault);
+      
+      cudaError_t err = cudaMemcpyAsync(dev_buffer, buffer, byte_size, cudaMemcpyDefault, stream_);
       if (err != cudaSuccess)
       {
         fprintf(stderr, "Copy of positions to GPU failed.  Error:  %s\n", cudaGetErrorString(err));
@@ -72,6 +95,12 @@ struct MultiBsplineFuncs<Devices::CUDA, T>
       }
       return dev_buffer;
     }
+  private:
+    T_* buffer;
+    T_* dev_buffer;
+    size_t size_;  //in bytes
+    cudaStream_t stream_;
+
   };
 
   
@@ -80,14 +109,14 @@ struct MultiBsplineFuncs<Devices::CUDA, T>
   // 		         GPUArray<T,1>& vals, size_t num_splines);
 
   void evaluate_v(const spliner_type* spline_m, const std::vector<std::array<T, 3>>&, T* vals,
-                  int num_blocks, size_t num_splines, size_t spline_block_size = 0);
+                  int num_blocks, size_t num_splines, size_t spline_block_size);
 
   void evaluate_vgl(const spliner_type* restrict spline_m,
                     const std::vector<std::array<T, 3>>&,
                     T* linv,
                     T* vals,
                     T* lapl,
-                    size_t num_splines) const;
+                    size_t num_splines);
 
   void evaluate_vgh(const typename bspline_traits<D, T, 3>::SplineType* restrict spline_m,
                     const std::vector<std::array<T, 3>>&,
@@ -96,11 +125,12 @@ struct MultiBsplineFuncs<Devices::CUDA, T>
                     T* hess,
 		    int num_blocks,
 		    size_t num_splines,
-                    size_t spline_block_size = 0,
-      const cudaStream_t& stream = cudaStreamPerThread) const;
+                    size_t spline_block_size,
+                    cudaStream_t& stream = cudaStreamPerThread);
 
 private:
-  int spline_block_size_;
+  PosBuffer<T> pos_buf_;
+  int pos_block_size_;
 };
 
 /** New implementation with non const spline block sizeo
@@ -112,9 +142,7 @@ MultiBsplineFuncs<Devices::CUDA, double>::evaluate_v(const multi_UBspline_3d_d<D
                                                      double* vals, int num_blocks, size_t num_splines,
                                                      size_t spline_block_size)
 {
-  PosBuffer pos_d;
-  if (spline_block_size == 0) spline_block_size = spline_block_size_;
-  eval_multi_multi_UBspline_3d_d_cuda(spline_m, pos_d.make(pos), vals, num_blocks, spline_block_size, pos.size());
+  eval_multi_multi_UBspline_3d_d_cuda(spline_m, pos_buf_.make(pos), vals, num_blocks, spline_block_size, pos.size());
 }
 
 template<>
@@ -123,9 +151,7 @@ inline void MultiBsplineFuncs<Devices::CUDA, float>::evaluate_v(
     const std::vector<std::array<float, 3>>& pos, float* vals, int num_blocks, size_t num_splines,
     size_t spline_block_size)
 {
-  PosBuffer pos_f;
-  if (spline_block_size == 0) spline_block_size = spline_block_size_;
-  eval_multi_multi_UBspline_3d_s_cuda(spline_m, pos_f.make(pos), vals, num_splines);
+  eval_multi_multi_UBspline_3d_s_cuda(spline_m, pos_buf_.make(pos), vals, num_splines);
 }
 
 /** New implementation with non const spline block size
@@ -141,13 +167,13 @@ inline void MultiBsplineFuncs<Devices::CUDA, double>::evaluate_vgh(
     int num_blocks, //blocks per participant
     size_t num_splines,
     size_t spline_block_size,
-    const cudaStream_t& stream) const
+    cudaStream_t& stream)
 {
-  PosBuffer pos_d(stream);
+  pos_buf_(stream);
   // This is a bit of legacy, the implementation should be aware of this and pass it
   if (spline_block_size == 0) spline_block_size = spline_m->num_splines;
 
-  eval_multi_multi_UBspline_3d_d_vgh_cuda(spline_m, pos_d.make(pos), vals, grads, hess, num_blocks,
+  eval_multi_multi_UBspline_3d_d_vgh_cuda(spline_m, pos_buf_.make(pos), vals, grads, hess, num_blocks,
                                           spline_block_size, pos.size(), stream);
 }
 
@@ -169,12 +195,12 @@ inline void MultiBsplineFuncs<Devices::CUDA, float>::evaluate_vgh(
     int num_blocks,
     size_t num_splines,
     size_t spline_block_size,
-    const cudaStream_t& stream) const
+    cudaStream_t& stream)
 {
-  PosBuffer pos_f(stream);
+  pos_buf_(stream);
 
   if (spline_block_size == 0) spline_block_size = spline_m->num_splines;
-  eval_multi_multi_UBspline_3d_s_vgh_cuda(spline_m, pos_f.make(pos), vals, grads, hess, num_splines);
+  eval_multi_multi_UBspline_3d_s_vgh_cuda(spline_m, pos_buf_.make(pos), vals, grads, hess, num_splines);
 }
 
 template<>
@@ -184,11 +210,10 @@ inline void MultiBsplineFuncs<Devices::CUDA, double>::evaluate_vgl(
     double* linv,
     double* vals,
     double* lapl,
-    size_t num_splines) const
+    size_t num_splines)
 {
-  PosBuffer pos_d;
   int row_stride = 2;
-  eval_multi_multi_UBspline_3d_d_vgl_cuda(spline_m, pos_d.make(pos), linv, vals, lapl, num_splines,
+  eval_multi_multi_UBspline_3d_d_vgl_cuda(spline_m, pos_buf_.make(pos), linv, vals, lapl, num_splines,
                                           row_stride);
 }
 
@@ -199,11 +224,10 @@ inline void MultiBsplineFuncs<Devices::CUDA, float>::evaluate_vgl(
     float* linv,
     float* vals,
     float* lapl,
-    size_t num_splines) const
+    size_t num_splines)
 {
-  PosBuffer pos_f;
   int row_stride = 2;
-  eval_multi_multi_UBspline_3d_s_vgl_cuda(spline_m, pos_f.make(pos), linv, vals, lapl, num_splines,
+  eval_multi_multi_UBspline_3d_s_vgl_cuda(spline_m, pos_buf_.make(pos), linv, vals, lapl, num_splines,
                                           row_stride);
 }
 
