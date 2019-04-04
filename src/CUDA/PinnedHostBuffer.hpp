@@ -3,6 +3,8 @@
 
 #include <array>
 #include <vector>
+#include <string>
+#include <stdexcept>
 #include <cuda_runtime_api.h>
 
 struct PinnedHostBuffer
@@ -27,14 +29,25 @@ struct PinnedHostBuffer
       }
     }
 
+  void cudaCheck(cudaError_t cu_err)
+	  {
+	      if (cu_err != cudaError::cudaSuccess)
+	      {
+		  std::string error_string(cudaGetErrorName(cu_err));
+		  error_string += ": ";
+		  error_string += cudaGetErrorString(cu_err);
+		  throw std::runtime_error(error_string);
+	      }
+	  }
+	      
   void copyFromDevice(void* dev_ptr)
   {
-    cudaMemcpyAsync(buffer_, dev_ptr, byte_size_, cudaMemcpyDefault, stream_);
+    cudaCheck(cudaMemcpyAsync(buffer_, dev_ptr, byte_size_, cudaMemcpyDefault, stream_));    
   }
 
   void copyToNormalMem(void* buffer)
   {
-    cudaMemcpyAsync(buffer, buffer_, byte_size_, cudaMemcpyDefault, stream_);
+      cudaCheck(cudaMemcpyAsync(buffer, buffer_, byte_size_, cudaMemcpyDefault, stream_));
   }
 
   

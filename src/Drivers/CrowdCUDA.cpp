@@ -156,10 +156,10 @@ template<>
     buffers_.psi.copyFromDevice(buffers_.dev_psi.get_devptr());
     buffers_.grad(stream);
     buffers_.grad.resize(esp.nBlocks * esp.nSplinesPerBlock * sizeof(T) * n_pos * 3);
-    buffers_.grad.copyFromDevice(buffers_.dev_psi.get_devptr());
+    buffers_.grad.copyFromDevice(buffers_.dev_grad.get_devptr());
     buffers_.hess(stream);
     buffers_.hess.resize(esp.nBlocks * esp.nSplinesPerBlock * sizeof(T) * n_pos * 6);
-    buffers_.hess.copyFromDevice(buffers_.dev_psi.get_devptr());
+    buffers_.hess.copyFromDevice(buffers_.dev_hess.get_devptr());
     
   //Now we have to copy the data back to the participants
 
