@@ -30,6 +30,7 @@ public:
   Kokkos::View<int*>        ID; // nparticles long, unique int for each particle
   Kokkos::View<int*>        IndirectID; // nparticles long (if IsGrouped=true, ID = IndirectID)   
   Kokkos::View<int*>        GroupID; // nparticles long, label to say which species
+  Kokkos::View<int*>        SubPtcl; // number of groups+1 long.  Each element is the start of a group.  Last element is one beyond the end
   Kokkos::View<RealType**>  R; // nparticles by dims to hold positions
   Kokkos::View<RealType**>  RSoA; // dims by nparticles (may need to explicitly specify layout)
   Kokkos::View<ValueType**> G; // nparticles by dims to hold (possibly complex) gradients
@@ -46,6 +47,31 @@ public:
   //   moveOnSphere also calls DTD_BConds::computeDistances, uses internal Temp_R and Temp_dr
   //   move uses moveOnSphere to do its work  (BA version uses Origin a lot)
 
+  // for the moment, consider the possibility of only allowing two distance tables here
+  // one would be like-like (AA) and the other would be like unlike (AB).  The problem I'm having
+  // is that I don't know the dimension of the
+  Kokkos::View<RealType**> DT_G; // [dim][dim]
+  Kokkos::View<RealType**> DT_R; // [dim][dim]
+  Kokkos::View<RealType**> corners; // [dim][dim*dim]
+  
+  Kokkos::View<RealType**> LikeDTDistances; // [nparticles][nparticles]
+  Kokkos::View<RealType***> LikeDTDisplacements; // [nparticles][nparticles][dim]
+  Kokkos::View<RealType*> LikeDTTemp_r; // [nparticles]
+  Kokkos::View<RealType**> LikeDTTemp_dr; // [nparticles][dim]
+
+  Kokkos::View<RealType**> UnlikeDTDistances; // [nparticles][ntargets]
+  Kokkos::View<RealType***> UnlikeDTDisplacements; // [nparticles][ntargets][dim]
+  Kokkos::View<RealType*> UnlikeDTTemp_r; // [ntargets]
+  Kokkos::View<RealType**> UnlikeDTTemp_dr; // [ntargets][dim]
+  Kokkos::View<RealType**> originR; // [ntargets][dim]
+
+  
+  
+  Kokkos::
+
+
+
+  
   // default constructor
   KOKKOS_INLINE_FUNCTION
   ParticleSetKokkos() { ; }
@@ -55,6 +81,7 @@ public:
     IS = rhs.ID;
     IndirectID = rhs.IndirectID;
     GroupID = rhs.GroupID;
+    SubPtcl = rhs.SubPtcl;
     R = rhs.R;
     RSoA = rhs.RSoA;
     G = rhs.G;
