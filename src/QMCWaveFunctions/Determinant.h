@@ -500,6 +500,10 @@ public:
     return piv_mirror;
   }
 
+  typename Kokkos::View<int*, memorySpace> getPivot() {
+    return piv;
+  }
+
   void getrf(viewType view) {
     int ext = view.extent(0);
     if(piv.extent(0) != ext) {
@@ -695,6 +699,10 @@ public:
     return piv_mirror;
   }
 
+  Kokkos::View<int*> getPivot() {
+    return piv;
+  }
+
   void getrf(viewType view) {
     int m = view.extent(0);
     int n = view.extent(1);
@@ -873,13 +881,20 @@ template<class ViewType, class LinAlgHelperType, typename value_type>
 value_type InvertWithLog(ViewType view, LinAlgHelperType& lah, value_type& phase) {
   value_type logdet(0.0);
   lah.getrf(view);
+  auto locPiv = lah.getPivot();
+
   auto piv = lah.extractPivot();
   int sign_det = 1;
-  for (int i = 0; i < view.extent(0); i++) {
-    sign_det *= (piv(i) == i+1) ? 1 : -1;
-    sign_det *= (view(i,i) > 0) ? 1 : -1;
-    logdet += std::log(std::abs(view(i,i)));
-  }
+  
+  Kokkos::parallel_reduce(view.extent(0), KOKKOS_LAMBDA ( int ii, int& cur_sign) {
+      cur_sign = (locPiv(i) == i+1) ? 1 : -1;
+      cur_sign *= (view(i,i) > 0) ? 1 : -1;
+    }, Kokkos::Prod<int>(sign_det));
+
+  Kokkos::parallel_reduce(view.extent(0), KOKKOS_LAMBDA (int ii, value_type& v) {
+      v += std::log(std::abs(view(i,i)));
+    }, logdet);
+
   lah.getri(view);
   phase = (sign_det > 0) ? 0.0 : M_PI;
   return logdet;
