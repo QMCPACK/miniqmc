@@ -25,10 +25,12 @@
 #include "Devices.h"
 #include "QMCWaveFunctions/WaveFunction.h"
 #include "QMCWaveFunctions/SPOSet.h"
+#include "QMCWaveFunctions/WaveFunctionBuilder.h"
 #include "Input/pseudo.hpp"
 #include "Utilities/RandomGenerator.h"
 #include "Utilities/PrimeNumberSet.h"
 #include "Drivers/CrowdBuffers.hpp"
+#include "Memory/DeviceBuffers.hpp"
 
 namespace qmcplusplus
 {
@@ -82,21 +84,21 @@ class Crowd
   //Functors for more complex things we want to do to each "mover"
   struct buildWaveFunctionsFunc
       : public std::unary_function<
-            const boost::tuple<WaveFunction&, ParticleSet&, ParticleSet&, const RandomGenerator<QMCT::RealType>&>&,
-            void>
+            const boost::tuple<WaveFunction&, ParticleSet&, ParticleSet&, const RandomGenerator<QMCT::RealType>&>&, void>
   {
   private:
     bool useRef_;
     bool enableJ3_;
     ParticleSet& ions_;
+      DeviceBuffers<DT>& device_buffers_;
 
   public:
-    buildWaveFunctionsFunc(ParticleSet& ions, bool useRef = false, bool enableJ3 = false)
-      : useRef_(useRef), enableJ3_(enableJ3), ions_(ions)
-    {}
-    void operator()(const boost::tuple<WaveFunction&, ParticleSet&, const RandomGenerator<QMCT::RealType>&>& t) const
+      buildWaveFunctionsFunc(ParticleSet& ions, DeviceBuffers<DT>& device_buffers, bool useRef = false, bool enableJ3 = false)
+	  : useRef_(useRef), enableJ3_(enableJ3), ions_(ions), device_buffers_(device_buffers)
+          {}
+      void operator()(const boost::tuple<WaveFunction&, ParticleSet&, const RandomGenerator<QMCT::RealType>&>& t) const
     {
-      WaveFunctionBuilder<DT>::build(useRef_, t.get<0>(), ions_, t.get<1>(), t.get<2>(), enableJ3_);
+	WaveFunctionBuilder<DT>::build(useRef_, t.get<0>(), ions_, t.get<1>(), t.get<2>(), device_buffers_, enableJ3_);
     }
   };
 
@@ -252,6 +254,7 @@ public:
     TimerList_t timers;
 private:
   CrowdBuffers<DT> buffers_;
+  DeviceBuffers<DT> device_buffers_;
   int pack_size_;
   static constexpr QMCT::RealType tau = 2.0;
   QMCT::RealType sqrttau = std::sqrt(tau);
@@ -327,7 +330,7 @@ void Crowd<DT>::buildWaveFunctions(bool useRef, bool enableJ3)
 {
   std::for_each(boost::make_zip_iterator(boost::make_tuple(wfs_begin(), elss_begin(), rngs_begin())),
                 boost::make_zip_iterator(boost::make_tuple(wfs_end(), elss_end(), rngs_end())),
-                buildWaveFunctionsFunc(ions_, useRef, enableJ3));
+                buildWaveFunctionsFunc(ions_, device_buffers_, useRef , enableJ3));
 }
 
 template<Devices DT>

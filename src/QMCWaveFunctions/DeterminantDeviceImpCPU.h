@@ -39,8 +39,9 @@ class DeterminantDeviceImp<Devices::CPU>
 {
 public:
   using QMCT = QMCTraits;
+    static constexpr Devices ENUMT = Devices::CPU;
   
-  DeterminantDeviceImp(int nels, const RandomGenerator<QMCT::RealType>& RNG, int First = 0)
+    DeterminantDeviceImp(int nels, const RandomGenerator<QMCT::RealType>& RNG, DeviceBuffers<ENUMT> dev_bufs, int First = 0)
     : DeterminantDevice( nels, RNG, First),
       FirstIndex(First),
       myRandom(RNG)

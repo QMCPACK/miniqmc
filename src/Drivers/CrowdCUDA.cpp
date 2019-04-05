@@ -171,11 +171,11 @@ template<>
   {
       for(int j = 0; j < esp.nBlocks; ++j)
       {
-	  buffers_.psi.toNormalTcpy(hessian_participants[i].psi[j].data(), i * esp.nBlocks * esp.nSplinesPerBlock + j * esp.nSplinesPerBlock, esp.nSplinesPerBlock);
+  	  buffers_.psi.toNormalTcpy(hessian_participants[i].psi[j].data(), i * esp.nBlocks * esp.nSplinesPerBlock + j * esp.nSplinesPerBlock, esp.nSplinesPerBlock);
 
-	  buffers_.grad.toNormalTcpy(hessian_participants[i].grad[j].data(), i * esp.nBlocks * esp.nSplinesPerBlock + j * esp.nSplinesPerBlock * 3, esp.nSplinesPerBlock * 3);
+  	  buffers_.grad.toNormalTcpy(hessian_participants[i].grad[j].data(), i * esp.nBlocks * esp.nSplinesPerBlock + j * esp.nSplinesPerBlock * 3, esp.nSplinesPerBlock * 3);
 
-	  buffers_.hess.toNormalTcpy(hessian_participants[i].hess[j].data(), i * esp.nBlocks * esp.nSplinesPerBlock + j * esp.nSplinesPerBlock * 6, esp.nSplinesPerBlock * 6);
+  	  buffers_.hess.toNormalTcpy(hessian_participants[i].hess[j].data(), i * esp.nBlocks * esp.nSplinesPerBlock + j * esp.nSplinesPerBlock * 6, esp.nSplinesPerBlock * 6);
       }
   }
 
@@ -244,18 +244,18 @@ template<>
     buffers_.hess.copyFromDevice(buffers_.dev_hess.get_devptr());
     
   //Now we have to copy the data back to the participants
+    cudaStreamSynchronize(cudaStreamPerThread);
+  for (int i = 0; i < pack_size_; ++i)
+  {
+      for(int j = 0; j < esp.nBlocks; ++j)
+      {
+  	  buffers_.psi.toNormalTcpy(hessian_participants[i].psi[j].data(), i * esp.nBlocks * esp.nSplinesPerBlock + j * esp.nSplinesPerBlock, esp.nSplinesPerBlock);
 
-  // for (int i = 0; i < pack_size_; ++i)
-  // {
-  //     for(int j = 0; j < esp.nBlocks; ++j)
-  //     {
-  // 	  buffers_.psi.toNormalTcpy(hessian_participants[i].psi[j].data(), i * esp.nBlocks * esp.nSplinesPerBlock + j * esp.nSplinesPerBlock, esp.nSplinesPerBlock);
+  	  buffers_.grad.toNormalTcpy(hessian_participants[i].grad[j].data(), i * esp.nBlocks * esp.nSplinesPerBlock + j * esp.nSplinesPerBlock * 3, esp.nSplinesPerBlock * 3);
 
-  // 	  buffers_.grad.toNormalTcpy(hessian_participants[i].grad[j].data(), i * esp.nBlocks * esp.nSplinesPerBlock + j * esp.nSplinesPerBlock * 3, esp.nSplinesPerBlock * 3);
-
-  // 	  buffers_.hess.toNormalTcpy(hessian_participants[i].hess[j].data(), i * esp.nBlocks * esp.nSplinesPerBlock + j * esp.nSplinesPerBlock * 6, esp.nSplinesPerBlock * 6);
-  //     }
-  // }
+  	  buffers_.hess.toNormalTcpy(hessian_participants[i].hess[j].data(), i * esp.nBlocks * esp.nSplinesPerBlock + j * esp.nSplinesPerBlock * 6, esp.nSplinesPerBlock * 6);
+      }
+  }
 
 }
 

@@ -30,14 +30,20 @@
 namespace qmcplusplus
 {
 
-template<class DEVICE>
+    template<class DEVICE>
 struct DiracDeterminant : public WaveFunctionComponent
 {
-  DiracDeterminant(int nels, const RandomGenerator<RealType>& RNG, int First = 0)
+    DiracDeterminant(int nels, const RandomGenerator<RealType>& RNG, int First = 0)
   {
-    determinant_device = new DEVICE(nels, RNG, First);
+      determinant_device = new DEVICE(nels, RNG, legacy_single_buff, First);
   }
 
+  DiracDeterminant(int nels, const RandomGenerator<RealType>& RNG, DeviceBuffers<DEVICE::ENUMT>& dev_bufs, int First = 0)
+  {
+      determinant_device = new DEVICE(nels, RNG, dev_bufs, First);
+  }
+
+    
   ~DiracDeterminant()
   {
     delete determinant_device;
@@ -95,6 +101,7 @@ struct DiracDeterminant : public WaveFunctionComponent
 
 private:
   DeterminantDevice<DEVICE>* determinant_device;
+  DeviceBuffers<DEVICE::ENUMT> legacy_single_buff;
 };
 
 } // namespace qmcplusplus

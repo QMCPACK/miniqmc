@@ -34,12 +34,15 @@ void MiniqmcDriverFunctions<DT>::thread_main(const int ip,
   // create a spo view in each Mover
   thiswalker->spo = SPOSetBuilder<DT>::buildView(mq_opt.useRef, spo_main, team_size, member_id);
 
+  DeviceBuffers<DT> device_buffers;
+  
   // create wavefunction per mover
   WaveFunctionBuilder<DT>::build(mq_opt.useRef,
                                            thiswalker->wavefunction,
                                            ions,
                                            thiswalker->els,
                                            thiswalker->rng,
+				 device_buffers,
                                            mq_opt.enableJ3);
 
   // initial computing

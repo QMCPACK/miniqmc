@@ -20,26 +20,29 @@
  * Corresponds to QMCWaveFunction/TrialWaveFunction.h in the QMCPACK source.
  */
 
-#ifndef QMCPLUSPLUS_WAVEFUNCTIONS_H
-#define QMCPLUSPLUS_WAVEFUNCTIONS_H
+#ifndef QMCPLUSPLUS_WAVEFUNCTION_H
+#define QMCPLUSPLUS_WAVEFUNCTION_H
 #include <Utilities/Configuration.h>
+#include "Devices.h"
+
 #include <Utilities/RandomGenerator.h>
 #include <Utilities/NewTimer.h>
 #include <Particle/ParticleSet.h>
 #include <QMCWaveFunctions/WaveFunctionComponent.h>
-#include "QMCWaveFunctions/WaveFunctionBuilder.h"
 
 namespace qmcplusplus
 {
-/** A minimal TrialWavefunction
- */
 
 enum WaveFunctionTimers
   {
     Timer_Det,
     Timer_GL,
   };
- 
+
+template<Devices>
+class WaveFunctionBuilder;
+/** A minimal TrialWavefunction
+ */
 class WaveFunction
 {
   TimerNameLevelList_t<WaveFunctionTimers> WaveFunctionTimerNames;

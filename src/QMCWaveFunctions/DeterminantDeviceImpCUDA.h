@@ -31,6 +31,8 @@
 #include "Numerics/LinAlgCUDA.hpp"
 #include "Utilities/Configuration.h"
 #include "CUDA/GPUArray.h"
+#include "Memory/DeviceBuffers.hpp"
+
 namespace qmcplusplus
 {
 
@@ -43,12 +45,15 @@ class DeterminantDeviceImp<Devices::CUDA>
 public:
   using QMCT = QMCTraits;
     using T = double;
+    static constexpr Devices ENUMT = Devices::CUDA;
     
-  DeterminantDeviceImp(int nels, const RandomGenerator<QMCT::RealType>& RNG, int First = 0)
+    DeterminantDeviceImp(int nels, const RandomGenerator<QMCT::RealType>& RNG, DeviceBuffers<ENUMT>& host_buffer,
+			 int First = 0)
     : DeterminantDevice( nels, RNG, First),
       FirstIndex(First),
       myRandom(RNG),
-      matrix_shipped(false)
+      matrix_shipped(false),
+      host_buffer_(host_buffer.determinant_host_buffer)
   {
     psiMinv.resize(nels, nels);
     psiV.resize(nels);
@@ -65,7 +70,7 @@ public:
     work.resize(LWork);
 
     cuda_buffer.resize(1, psiMinv.size() + psiV.size() *3);
-    host_buffer.resize( (psiMinv.size() + psiV.size() *3) * sizeof(T));
+    host_buffer_.resize( (psiMinv.size() + psiV.size() *3) * sizeof(T));
     
     constexpr double shift(0.5);
     myRandom.generate_uniform(psiMsave.data(), nels * nels);
@@ -137,12 +142,12 @@ public:
 
     if(!matrix_shipped)
     {
-	host_buffer(cudaStreamPerThread);
-	host_buffer.fromNormalTcpy(psiMinv.data(), 0, psiMinv.size());
-	host_buffer.partialToDevice(cuda_buffer.get_devptr(), 0, psiMinv.size());
+	host_buffer_(cudaStreamPerThread);
+	host_buffer_.fromNormalTcpy(psiMinv.data(), 0, psiMinv.size());
+	host_buffer_.partialToDevice(cuda_buffer.get_devptr(), 0, psiMinv.size());
     }    
     updateRow(psiMinv, psiV,
-	      nels, nels, iel - FirstIndex, curRatio, cuda_buffer.getWidth(), cuda_buffer.get_devptr(), host_buffer, cudaStreamPerThread);
+	      nels, nels, iel - FirstIndex, curRatio, cuda_buffer.getWidth(), cuda_buffer.get_devptr(), host_buffer_, cudaStreamPerThread);
     
     std::copy_n(psiV.data(), nels, psiMsave[iel - FirstIndex]);
   }
@@ -153,7 +158,8 @@ public:
 
 private:
   GPUArray<double, 1, 1> cuda_buffer;
-  PinnedHostBuffer host_buffer;
+  PinnedHostBuffer& host_buffer_;
+
   /// log|det|
   double LogValue;
   /// current ratio

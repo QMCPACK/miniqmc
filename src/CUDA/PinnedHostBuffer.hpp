@@ -64,13 +64,15 @@ class PinnedHostBuffer
   template<typename T>
   void toNormalTcpy(T* buffer, int offset_T, size_t count)
   {
-      cudaMemcpyAsync(buffer, buffer_ + offset_T * sizeof(T), count * sizeof(T), cudaMemcpyDefault, stream_);
+      //cudaMemcpyAsync(buffer, buffer_ + offset_T * sizeof(T), count * sizeof(T), cudaMemcpyDefault, stream_);
+      std::memcpy(buffer, buffer_ + offset_T * sizeof(T), count * sizeof(T));
   }
 
   template<typename T>
   void fromNormalTcpy(T* buffer, int offset_T, size_t count)
   {
-      cudaMemcpyAsync(buffer_ + offset_T * sizeof(T), buffer , count * sizeof(T), cudaMemcpyDefault, stream_);
+      //cudaMemcpyAsync(buffer_ + offset_T * sizeof(T), buffer , count * sizeof(T), cudaMemcpyDefault, stream_);
+      std::memcpy(buffer_ + offset_T * sizeof(T), buffer , count * sizeof(T));
   }
 
   template<typename T>

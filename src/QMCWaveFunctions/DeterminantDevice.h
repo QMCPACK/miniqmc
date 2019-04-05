@@ -32,6 +32,7 @@
 #include "Utilities/Configuration.h"
 #include "QMCWaveFunctions/WaveFunctionComponent.h"
 #include "Utilities/RandomGenerator.h"
+#include "Memory/DeviceBuffers.hpp"
 namespace qmcplusplus
 {
 template<class DEVICEIMP>
@@ -40,7 +41,7 @@ class DeterminantDevice
 public:
   using QMCT = QMCTraits;
 
-  DeterminantDevice(int nels, const RandomGenerator<QMCT::RealType>& RNG,
+    DeterminantDevice(int nels, const RandomGenerator<QMCT::RealType>& RNG,
 		    int First = 0) {}
   
   void checkMatrix()
