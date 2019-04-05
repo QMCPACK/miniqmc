@@ -80,25 +80,24 @@ template<Devices DT>
 class Crowd
 {
   using QMCT = QMCTraits;
-
+    //   static constrexp Devices TDT = DT;
   //Functors for more complex things we want to do to each "mover"
   struct buildWaveFunctionsFunc
       : public std::unary_function<
-            const boost::tuple<WaveFunction&, ParticleSet&, ParticleSet&, const RandomGenerator<QMCT::RealType>&>&, void>
+      const boost::tuple<WaveFunction&, ParticleSet&, ParticleSet&, const RandomGenerator<QMCT::RealType>&, DeviceBuffers<DT>* >&, void>
   {
   private:
     bool useRef_;
     bool enableJ3_;
     ParticleSet& ions_;
-      DeviceBuffers<DT>& device_buffers_;
 
   public:
-      buildWaveFunctionsFunc(ParticleSet& ions, DeviceBuffers<DT>& device_buffers, bool useRef = false, bool enableJ3 = false)
-	  : useRef_(useRef), enableJ3_(enableJ3), ions_(ions), device_buffers_(device_buffers)
+      buildWaveFunctionsFunc(ParticleSet& ions, bool useRef = false, bool enableJ3 = false)
+	  : useRef_(useRef), enableJ3_(enableJ3), ions_(ions)
           {}
-      void operator()(const boost::tuple<WaveFunction&, ParticleSet&, const RandomGenerator<QMCT::RealType>&>& t) const
+      void operator()(const boost::tuple<WaveFunction&, ParticleSet&, const RandomGenerator<QMCT::RealType>&, DeviceBuffers<DT>*>& t) const
     {
-	WaveFunctionBuilder<DT>::build(useRef_, t.get<0>(), ions_, t.get<1>(), t.get<2>(), device_buffers_, enableJ3_);
+	WaveFunctionBuilder<DT>::build(useRef_, t.get<0>(), ions_, t.get<1>(), t.get<2>(), t.get<3>(),  enableJ3_);
     }
   };
 
@@ -254,7 +253,7 @@ public:
     TimerList_t timers;
 private:
   CrowdBuffers<DT> buffers_;
-  DeviceBuffers<DT> device_buffers_;
+  std::vector<DeviceBuffers<DT>> device_buffers_;
   int pack_size_;
   static constexpr QMCT::RealType tau = 2.0;
   QMCT::RealType sqrttau = std::sqrt(tau);
@@ -287,6 +286,7 @@ Crowd<DT>::Crowd(const int ip, const PrimeNumberSet<uint32_t>& myPrimes, const P
     urs.push_back(std::make_unique<aligned_vector<QMCT::RealType>>(nels_));
     deltas.push_back(std::make_unique<std::vector<QMCT::PosType>>(3 * nels_));
   }
+  device_buffers_.resize(pack_size);
 }
 
 template<Devices DT>
@@ -328,9 +328,15 @@ void Crowd<DT>::buildViews(bool useRef, const SPOSet* const spo_main, int team_s
 template<Devices DT>
 void Crowd<DT>::buildWaveFunctions(bool useRef, bool enableJ3)
 {
-  std::for_each(boost::make_zip_iterator(boost::make_tuple(wfs_begin(), elss_begin(), rngs_begin())),
-                boost::make_zip_iterator(boost::make_tuple(wfs_end(), elss_end(), rngs_end())),
-                buildWaveFunctionsFunc(ions_, device_buffers_, useRef , enableJ3));
+    std::vector<DeviceBuffers<DT>*> ref_vec;
+    for(int i = 0; i < device_buffers_.size(); ++i)
+    {
+	ref_vec.push_back(&device_buffers_[i]);
+    }
+    
+    std::for_each(boost::make_zip_iterator(boost::make_tuple(wfs_begin(), elss_begin(), rngs_begin(), ref_vec.begin())),
+		  boost::make_zip_iterator(boost::make_tuple(wfs_end(), elss_end(), rngs_end(), ref_vec.end())),
+		  buildWaveFunctionsFunc(ions_, useRef , enableJ3));
 }
 
 template<Devices DT>

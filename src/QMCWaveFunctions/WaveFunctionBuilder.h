@@ -19,7 +19,7 @@ static void build(bool useRef,
                         ParticleSet& ions,
                         ParticleSet& els,
                         const RandomGenerator<QMCTraits::RealType>& RNG,
-                        DeviceBuffers<DT>& dev_bufs,
+                        DeviceBuffers<DT>* dev_bufs,
                         bool enableJ3);
 private:
 static void devDetBuild(WaveFunction& WF,

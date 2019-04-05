@@ -55,6 +55,7 @@ public:
       matrix_shipped(false),
       host_buffer_(host_buffer.determinant_host_buffer)
   {
+    cudaStreamCreate(&stream_);
     psiMinv.resize(nels, nels);
     psiV.resize(nels);
     psiM.resize(nels, nels);
@@ -80,8 +81,13 @@ public:
     transpose(psiMsave.data(), psiM.data(), nels, nels);
     LogValue = InvertWithLog(psiM.data(), nels, nels, work.data(), LWork, pivot.data(), phase);
     std::copy_n(psiM.data(), nels * nels, psiMinv.data());
+
   }
 
+    ~DeterminantDeviceImp()
+	{
+	    cudaStreamDestroy(stream_);
+	}
   void checkMatrixImp()
   {
     if (omp_get_num_threads() == 1)
@@ -142,13 +148,13 @@ public:
 
     if(!matrix_shipped)
     {
-	host_buffer_(cudaStreamPerThread);
+	host_buffer_(stream_);
 	host_buffer_.fromNormalTcpy(psiMinv.data(), 0, psiMinv.size());
 	host_buffer_.partialToDevice(cuda_buffer.get_devptr(), 0, psiMinv.size());
-    }    
+    }
     updateRow(psiMinv, psiV,
-	      nels, nels, iel - FirstIndex, curRatio, cuda_buffer.getWidth(), cuda_buffer.get_devptr(), host_buffer_, cudaStreamPerThread);
-    
+	      nels, nels, iel - FirstIndex, curRatio, cuda_buffer.getWidth(), cuda_buffer.get_devptr(), host_buffer_, stream_);
+    cudaStreamSynchronize(stream_);    
     std::copy_n(psiV.data(), nels, psiMsave[iel - FirstIndex]);
   }
 
@@ -159,7 +165,8 @@ public:
 private:
   GPUArray<double, 1, 1> cuda_buffer;
   PinnedHostBuffer& host_buffer_;
-
+  cudaStream_t stream_;
+  int buffer_offset_;
   /// log|det|
   double LogValue;
   /// current ratio
