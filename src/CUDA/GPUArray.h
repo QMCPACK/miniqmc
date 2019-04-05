@@ -55,7 +55,7 @@ template<typename T, int ELEMWIDTH>
 class GPUArray<T, ELEMWIDTH, 1>
 {
 public:
-GPUArray() : data(nullptr), pitch(0), width(0), height(0), owner(true) {}
+  GPUArray() : data(nullptr), pitch(0), max_width_(0), width(0), height(0), owner(true) {}
   GPUArray(const GPUArray&& in)
   {
     owner = in.owner;
@@ -175,6 +175,7 @@ private:
   size_t pitch;
   size_t width;
   size_t height;
+  size_t max_width_;
   bool owner;
 };
 
@@ -248,16 +249,16 @@ void GPUArray<T, ELEMWIDTH, 1>::resize(int nBlocks, int nSplinesPerBlock)
   nBlocks_         = nBlocks;
   nSplinesPerBlock_ = nSplinesPerBlock;
 
-  int current_width = width;
   width             = sizeof(T) * nBlocks * ELEMWIDTH * nSplinesPerBlock;
   height            = 1;
-  if (current_width < width)
+  if (max_width_ < width)
   {
     if (data != nullptr)
       cudaFree(data);
     cudaError_t cu_err = cudaMalloc((void**)&data, width);
     if (cu_err != cudaError::cudaSuccess)
       throw std::runtime_error("Failed GPU allocation");
+    max_width_ = width;
   }
 }
 

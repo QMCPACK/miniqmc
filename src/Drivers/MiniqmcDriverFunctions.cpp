@@ -182,6 +182,20 @@ void MiniqmcDriverFunctions<DT>::movers_runThreads(MiniqmcOptions& mq_opt,
                                             ParticleSet& ions,
                                             const SPOSet* spo_main)
 {
+    #pragma omp parallel for
+    for (int iw = 0; iw < mq_opt.nmovers; iw++)
+    {
+      MiniqmcDriverFunctions<DT>::movers_thread_main(iw, 1, mq_opt, myPrimes, ions, spo_main);
+    }
+}
+
+  
+template<Devices DT>
+void MiniqmcDriverFunctions<DT>::movers_runStdThreads(MiniqmcOptions& mq_opt,
+                                            const PrimeNumberSet<uint32_t>& myPrimes,
+                                            ParticleSet& ions,
+                                            const SPOSet* spo_main)
+{
     std::vector<std::thread> threads(mq_opt.nmovers);
     
     for (int iw = 0; iw < mq_opt.nmovers; ++iw)

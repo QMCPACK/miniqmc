@@ -64,7 +64,7 @@ struct MultiBsplineFuncs<Devices::CUDA, T>
     void operator() (cudaStream_t& stream) { stream_ = stream; }
     void resize(int size)
     {
-      if (size != size_)
+      if (size > size_)
       {
 	  if (buffer != nullptr) cudaFreeHost(buffer);
 	  if (dev_buffer != nullptr) cudaFree(dev_buffer);

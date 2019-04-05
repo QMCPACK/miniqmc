@@ -77,9 +77,9 @@ protected:
   };
 
 public:
-  void set(int nx, int ny, int nz, int num_splines, int nblocks, bool init_random = true)
+    void set(int nx, int ny, int nz, int num_splines, int nblocks, int splines_per_block, bool init_random = true)
   {
-    impl().set_i(nx, ny, nz, num_splines, nblocks, init_random);
+      impl().set_i(nx, ny, nz, num_splines, nblocks, splines_per_block, init_random);
   }
 
   inline void evaluate_v(const QMCT::PosType& p) { impl().evaluate_v_i(p); }

@@ -37,7 +37,6 @@ namespace qmcplusplus
  *  works for std::algorithms
  *  But not with standard iterator loop syntax
  */
-
 template<class BaseIterator>
 class DereferenceIterator : public BaseIterator
 {
@@ -60,6 +59,13 @@ DereferenceIterator<Iterator> dereference_iterator(Iterator t)
   return DereferenceIterator<Iterator>(t);
 }
 
+enum CrowdTimers
+  {
+    Timer_VGH,
+    Timer_WF,
+  };
+
+    
 /** Mover collection does not use mover as atom
  *  This is because extract list functions of mover demonstrate this isn't useful.
  *  It always does packsize batching, even on invalid moves,
@@ -229,11 +235,21 @@ public:
   void calcNLPP(int nions, QMCT::RealType Rmax);
   void evaluateRatioGrad(int iel);
   void evaluateHessian(int iel);
+  void evaluateLaplacian(int iel);
   void fillRandoms();
   void donePbyP();
   void constructTrialMoves(int iels);
   void updatePosFromCurrentEls(int iels);
   int acceptRestoreMoves(int iels, QMCT::RealType accept);
+
+    void setupTimers() {
+	  TimerNameLevelList_t<CrowdTimers> CrowdTimerNames =
+    {{Timer_VGH, "Actual VGH eval", timer_level_fine}, {Timer_WF, "WF after VGH", timer_level_fine}};
+
+  setup_timers(timers, CrowdTimerNames);
+    }
+
+    TimerList_t timers;
 private:
   CrowdBuffers<DT> buffers_;
   int pack_size_;

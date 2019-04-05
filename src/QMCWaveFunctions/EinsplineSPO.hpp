@@ -103,9 +103,9 @@ public:
 
 
   // fix for general num_splines
-  void set(int nx, int ny, int nz, int num_splines, int nblocks, bool init_random = true)
+    void set(int nx, int ny, int nz, int num_splines, int num_blocks, int splines_per_block, bool init_random = true)
   {
-    einspline_spo_device.set(nx, ny, nz, num_splines, nblocks, init_random);
+      einspline_spo_device.set(nx, ny, nz, num_splines, num_blocks, splines_per_block, init_random);
   }
 
   /** evaluate psi */

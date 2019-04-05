@@ -42,11 +42,13 @@ class DeterminantDeviceImp<Devices::CUDA>
 {
 public:
   using QMCT = QMCTraits;
-  
+    using T = double;
+    
   DeterminantDeviceImp(int nels, const RandomGenerator<QMCT::RealType>& RNG, int First = 0)
     : DeterminantDevice( nels, RNG, First),
       FirstIndex(First),
-      myRandom(RNG)
+      myRandom(RNG),
+      matrix_shipped(false)
   {
     psiMinv.resize(nels, nels);
     psiV.resize(nels);
@@ -63,7 +65,8 @@ public:
     work.resize(LWork);
 
     cuda_buffer.resize(1, psiMinv.size() + psiV.size() *3);
-
+    host_buffer.resize( (psiMinv.size() + psiV.size() *3) * sizeof(T));
+    
     constexpr double shift(0.5);
     myRandom.generate_uniform(psiMsave.data(), nels * nels);
     psiMsave -= shift;
@@ -131,8 +134,15 @@ public:
   {
     const int nels = psiV.size();
     assert(cuda_buffer.getWidth() == (psiMinv.size() + psiV.size() * 3)*sizeof(double));
+
+    if(!matrix_shipped)
+    {
+	host_buffer(cudaStreamPerThread);
+	host_buffer.fromNormalTcpy(psiMinv.data(), 0, psiMinv.size());
+	host_buffer.partialToDevice(cuda_buffer.get_devptr(), 0, psiMinv.size());
+    }    
     updateRow(psiMinv, psiV,
-	      nels, nels, iel - FirstIndex, curRatio, cuda_buffer.getWidth(), cuda_buffer.get_devptr());
+	      nels, nels, iel - FirstIndex, curRatio, cuda_buffer.getWidth(), cuda_buffer.get_devptr(), host_buffer, cudaStreamPerThread);
     
     std::copy_n(psiV.data(), nels, psiMsave[iel - FirstIndex]);
   }
@@ -143,6 +153,7 @@ public:
 
 private:
   GPUArray<double, 1, 1> cuda_buffer;
+  PinnedHostBuffer host_buffer;
   /// log|det|
   double LogValue;
   /// current ratio
@@ -159,7 +170,7 @@ private:
   Matrix<double> psiM; // matrix to be inverted
   /// random number generator for testing
   RandomGenerator<QMCT::RealType> myRandom;
-
+  bool matrix_shipped;
   // temporary workspace for inversion
   aligned_vector<int> pivot;
   aligned_vector<double> work;

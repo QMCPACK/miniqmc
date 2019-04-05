@@ -9,7 +9,7 @@ __constant__ int GRAD_ELEMS = 3;
 
 __global__ static void
 eval_multi_multi_UBspline_3d_d_kernel(double* pos, double3 drInv, const double* coefs,
-                                      const double* Bcuda, double* vals, uint3 dim, uint3 strides,
+                                      const double* Bcuda, double* vals, uint3 dim, uint3 strides, int num_splines,
                                       int spline_block_size);
 
 /** eval blocks of splines
@@ -33,9 +33,8 @@ eval_multi_multi_UBspline_3d_d_cuda(const multi_UBspline_3d_d<Devices::CUDA>* sp
   //if (spline->num_splines % spline_block_size) dimGrid.x++;
   eval_multi_multi_UBspline_3d_d_kernel<<<dimGrid, dimBlock>>>(pos_d, spline->gridInv, spline->coefs,
                                                                spline->Bcuda, vals_d, spline->dim,
-                                                               spline->stride, spline_block_size);
+                                                               spline->stride, spline->num_splines, spline_block_size);
 
-  cudaStreamSynchronize(cudaStreamPerThread);
   cudaError_t err = cudaGetLastError();
   if (err != cudaSuccess)
   {
@@ -50,13 +49,13 @@ eval_multi_multi_UBspline_3d_d_cuda(const multi_UBspline_3d_d<Devices::CUDA>* sp
  */
 __global__ static void
 eval_multi_multi_UBspline_3d_d_kernel(double* pos, double3 drInv, const double* coefs,
-                                      const double* Bcuda, double* vals, uint3 dim, uint3 strides,
+                                      const double* Bcuda, double* vals, uint3 dim, uint3 strides, int num_splines,
                                       int spline_block_size)
 {
   int block = blockIdx.x;
   int thr   = threadIdx.x; //if your block size is not 64 or larger you are in trouble.
   int ir    = blockIdx.y;
-  int off   = block * spline_block_size  + thr;
+  int off   = block * spline_block_size + thr;
   __shared__ double* myval;
   __shared__ double abc[64];
   __shared__ double3 r;
@@ -66,7 +65,7 @@ eval_multi_multi_UBspline_3d_d_kernel(double* pos, double3 drInv, const double* 
     r.x   = pos[3 * ir + 0];
     r.y   = pos[3 * ir + 1];
     r.z   = pos[3 * ir + 2];
-    myval = &(vals[ir * block * spline_block_size]);
+    myval = &(vals[ir * gridDim.x * spline_block_size]);
   }
   __syncthreads();
   int3 index;
@@ -117,7 +116,7 @@ eval_multi_multi_UBspline_3d_d_kernel(double* pos, double3 drInv, const double* 
   if (thr < 64) abc[thr] = a[i] * b[j] * c[k];
   __syncthreads();
 
-  if (true)
+  if (off < num_splines)
   {
     double val = 0.0;
     for (int i = 0; i < 4; i++)
@@ -132,12 +131,13 @@ eval_multi_multi_UBspline_3d_d_kernel(double* pos, double3 drInv, const double* 
     }
     myval[off] = val;
   }
+  __syncthreads();
 }
 
 __global__ static void
 eval_multi_multi_UBspline_3d_d_vgh_kernel(double* pos, double3 drInv, const double* coefs,
                                           const double* Bcuda, double* vals, double* grads,
-                                          double* hess, uint3 dim, uint3 strides, int spline_block_size, int pos_block_size);
+                                          double* hess, uint3 dim, uint3 strides, int spline_block_size);
 
 
 /** blah
@@ -148,7 +148,7 @@ void eval_multi_multi_UBspline_3d_d_vgh_cuda(const multi_UBspline_3d_d<Devices::
                                              double* hess_d, int num_blocks, int spline_block_size, int num, const cudaStream_t& stream)
 {
   dim3 dimBlock(spline_block_size);
-  dim3 dimGrid(num_blocks, 1);
+  dim3 dimGrid(num_blocks, num);
   //Now the callers responsibility
   //if (spline->num_splines % spline_block_size) dimGrid.x++;
 
@@ -166,8 +166,8 @@ void eval_multi_multi_UBspline_3d_d_vgh_cuda(const multi_UBspline_3d_d<Devices::
   eval_multi_multi_UBspline_3d_d_vgh_kernel<<<dimGrid, dimBlock, 0, stream>>>(pos_d, spline->gridInv,
                                                                    spline->coefs, spline->Bcuda,
                                                                    vals_d, grads_d, hess_d,
-                                                                   spline->dim, spline->stride, spline_block_size,
-								   num);
+                                                                   spline->dim, spline->stride, spline_block_size
+								   );
 
 
   cudaError_t err = cudaGetLastError();
@@ -184,33 +184,29 @@ void eval_multi_multi_UBspline_3d_d_vgh_cuda(const multi_UBspline_3d_d<Devices::
 __global__ static void
 eval_multi_multi_UBspline_3d_d_vgh_kernel(double* pos, double3 drInv, const double* coefs,
                                           const double* Bcuda, double* vals, double* grads,
-                                          double* hess, uint3 dim, uint3 strides, int spline_block_size,
-    int pos_block_size)
+                                          double* hess, uint3 dim, uint3 strides, int spline_block_size)
 {
   int block = blockIdx.x;
   int thr   = threadIdx.x;
   int ir    = blockIdx.y;
-  int off   = block * spline_block_size + thr;
-  thread_block whole_block = this_thread_block();
+  int off   = spline_block_size * block + thr;
   // Its unclear there is any value in having these in shared memory
   // Threads will diverge less and a sync can be skipped by having every thread calc this.
-  __shared__ double *myval, *mygrad, *myhess;
-  __shared__ double3 r;
-  for( int ip = 0 ; ip < pos_block_size ; ++ip)
-  {
+  double *myval, *mygrad, *myhess;
+  double3 r;
       
-  if (thr == 0)
-  {
-    size_t ir_r_off = ir * gridDim.x * 3;
-    r.x    = pos[ir_r_off + 3 * ip + 0];
-    r.y    = pos[ir_r_off + 3 * ip + 1];
-    r.z    = pos[ir_r_off + 3 * ip + 2];
-    size_t ir_buff_off = ir * pos_block_size * gridDim.x * spline_block_size;
-    myval  = vals + ir_buff_off + ip * gridDim.x * spline_block_size + spline_block_size * block;
-    mygrad = grads + (ir_buff_off + ip * gridDim.x * spline_block_size + spline_block_size * block) * 3;
-    myhess = hess +  (ir_buff_off + ip * gridDim.x * spline_block_size + spline_block_size * block) * 6;
-  }
-  whole_block.sync();
+      //if (thr == 0)
+      //{
+    size_t ir_r_off = ir * 3;
+    r.x    = pos[ir_r_off + 0];
+    r.y    = pos[ir_r_off + 1];
+    r.z    = pos[ir_r_off + 2];
+    size_t ir_buff_off = ir * gridDim.x * spline_block_size;
+    myval  = vals + ir_buff_off;
+    mygrad = grads + ir_buff_off * 3;
+    myhess = hess +  ir_buff_off * 6;
+//  }
+    //whole_block.sync();
   int3 index;
   double3 t;
   double s, sf;
@@ -251,7 +247,7 @@ eval_multi_multi_UBspline_3d_d_vgh_kernel(double* pos, double3 drInv, const doub
     c[thr] = Bcuda[4 * thr + 0] * tp[2].x + Bcuda[4 * thr + 1] * tp[2].y +
         Bcuda[4 * thr + 2] * tp[2].z + Bcuda[4 * thr + 3] * tp[2].w;
   }
-  whole_block.sync();
+  __syncthreads();
   __shared__ double abc[640];
   int i                           = (thr >> 4) & 3;
   int j                           = (thr >> 2) & 3;
@@ -271,7 +267,7 @@ eval_multi_multi_UBspline_3d_d_vgh_kernel(double* pos, double3 drInv, const doub
     abc[(16 * i + 4 * j + k) + 512] = a[i + 0] * b[j + 4] * c[k + 4]; // a * db * dc = d2/dydz
     abc[(16 * i + 4 * j + k) + 576] = a[i + 0] * b[j + 0] * c[k + 8]; // a * b * d2c = d2/dz2
   }
-  whole_block.sync();
+  __syncthreads();
   double v = 0.0, g0 = 0.0, g1 = 0.0, g2 = 0.0, h00 = 0.0, h01 = 0.0, h02 = 0.0, h11 = 0.0,
          h12 = 0.0, h22 = 0.0;
   int n            = 0;
@@ -279,7 +275,7 @@ eval_multi_multi_UBspline_3d_d_vgh_kernel(double* pos, double3 drInv, const doub
   const double* b0 = coefs + index.x * strides.x + index.y * strides.y + index.z * strides.z + off;
   // If the block isn't full don't calculate values from ghost splines we just don't care about this.
   // It can save a smallish amount of memory but otherwise causes divergence.
-  //if (true) //off < N)
+  //if (off < N)
   //{
     for (int i = 0; i < 4; i++)
     {
@@ -325,9 +321,10 @@ eval_multi_multi_UBspline_3d_d_vgh_kernel(double* pos, double3 drInv, const doub
     myhess[off + spline_block_size * 3] = h11;
     myhess[off + spline_block_size * 4] = h12;
     myhess[off + spline_block_size * 5] = h22;
-  }
-    //}
+
+
   // Sync threads insn't necessary because of the cudaStreamSynchronize above
+    __syncthreads();
 }
 
 __global__ static void

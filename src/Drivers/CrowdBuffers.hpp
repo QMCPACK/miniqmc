@@ -22,9 +22,11 @@ public:
   PinnedHostBuffer psi;
   PinnedHostBuffer grad;
   PinnedHostBuffer hess;
+  GPUArray<T, 1, 1> dev_v_nlpp;
   GPUArray<T, 1, 1> dev_psi;
   GPUArray<T, 3, 1> dev_grad;
   GPUArray<T, 6, 1> dev_hess;
+  MultiBsplineFuncs<Devices::CUDA, T> compute_engine;
 };
 #endif
 }

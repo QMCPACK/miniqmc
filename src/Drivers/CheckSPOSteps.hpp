@@ -68,6 +68,7 @@ private:
                                 const int nz,
                                 const int norb,
                                 const int nTiles,
+				const int tile_size,
                                 const Tensor<OHMMS_PRECISION, 3>& lattice_b);
 
   template<typename T>
@@ -102,6 +103,7 @@ CheckSPOSteps<Devices::CUDA>::buildSPOMain(const int nx,
 				const int nz,
 				const int norb,
 				const int nTiles,
+					   const int tile_size,
 				const Tensor<OHMMS_PRECISION, 3>& lattice_b);
 
 }

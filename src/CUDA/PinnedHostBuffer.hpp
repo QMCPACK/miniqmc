@@ -7,24 +7,29 @@
 #include <stdexcept>
 #include <cuda_runtime_api.h>
 
-struct PinnedHostBuffer
+/** Wrapper class for pinned cuda host memory
+ * all operations are async so you must synchronize if you are going to do something with the data outside of a stream
+ */
+
+class PinnedHostBuffer
   {
+  public:
      PinnedHostBuffer() : stream_(cudaStreamPerThread), buffer_(nullptr), byte_size_(0) {}
-     PinnedHostBuffer(cudaStream_t& stream) : stream_(stream), buffer_(nullptr), byte_size_(0) {}
+     PinnedHostBuffer(cudaStream_t stream) : stream_(stream), buffer_(nullptr), byte_size_(0) {}
      
     ~PinnedHostBuffer()
     {
       if (buffer_ != nullptr) cudaFreeHost(buffer_);
     }
 
-    void operator() (cudaStream_t& stream) { stream_ = stream; }
+    void operator() (cudaStream_t stream) { stream_ = stream; }
 
     void resize(size_t size)
     {
       if (size != byte_size_)
       {
 	  if (buffer_ != nullptr) cudaFreeHost(buffer_);
-	  cudaMallocHost((void**)&buffer_, size );
+	  cudaCheck(cudaMallocHost((void**)&buffer_, size ));
 	  byte_size_ = size;
       }
     }
@@ -45,6 +50,11 @@ struct PinnedHostBuffer
     cudaCheck(cudaMemcpyAsync(buffer_, dev_ptr, byte_size_, cudaMemcpyDefault, stream_));    
   }
 
+  void copyToDevice(void* dev_ptr)
+  {
+    cudaCheck(cudaMemcpyAsync(dev_ptr, buffer_, byte_size_, cudaMemcpyDefault, stream_));    
+  }
+
   void copyToNormalMem(void* buffer)
   {
       cudaCheck(cudaMemcpyAsync(buffer, buffer_, byte_size_, cudaMemcpyDefault, stream_));
@@ -52,13 +62,33 @@ struct PinnedHostBuffer
 
   
   template<typename T>
-  void toNormalMemcpy(T* buffer, int offset_T, size_t count)
+  void toNormalTcpy(T* buffer, int offset_T, size_t count)
   {
       cudaMemcpyAsync(buffer, buffer_ + offset_T * sizeof(T), count * sizeof(T), cudaMemcpyDefault, stream_);
   }
 
+  template<typename T>
+  void fromNormalTcpy(T* buffer, int offset_T, size_t count)
+  {
+      cudaMemcpyAsync(buffer_ + offset_T * sizeof(T), buffer , count * sizeof(T), cudaMemcpyDefault, stream_);
+  }
+
+  template<typename T>
+  void partialToDevice(T* dev_ptr, int offset_T, size_t count)
+  {
+      cudaMemcpyAsync(dev_ptr, buffer_ + offset_T * sizeof(T) , count * sizeof(T), cudaMemcpyDefault, stream_);
+  }
+
+  template<typename T>
+  void partialFromDevice(T* dev_ptr, int offset_T, size_t count)
+  {
+      cudaMemcpyAsync(buffer_ + offset_T * sizeof(T), dev_ptr , count * sizeof(T), cudaMemcpyDefault, stream_);
+  }
+
+  
+      
   private:
-    void* buffer_;
+    char* buffer_;
     size_t byte_size_;
     cudaStream_t stream_;
   };

@@ -144,11 +144,14 @@ public:
     }
   }
 
-  void set_i(int nx, int ny, int nz, int num_splines, int nblocks, bool init_random = true)
+    void set_i(int nx, int ny, int nz, int num_splines, int num_blocks, int splines_per_block, bool init_random = true)
   {
     this->esp.nSplines         = num_splines;
-    this->esp.nBlocks          = nblocks;
-    this->esp.nSplinesPerBlock = num_splines / nblocks;
+    this->esp.nBlocks          = num_blocks;
+    this->esp.nSplinesPerBlock = splines_per_block;
+    if ( num_splines > splines_per_block * num_blocks )
+        throw std::runtime_error("splines_per_block * nblocks < num_splines");
+
     this->esp.firstBlock       = 0;
     this->esp.lastBlock        = esp.nBlocks;
     if (einsplines == nullptr)

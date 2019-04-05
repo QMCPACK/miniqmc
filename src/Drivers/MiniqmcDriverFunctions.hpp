@@ -47,6 +47,7 @@ public:
 			  MiniqmcOptions& mq_opt,
 			  const int norb,
 			  const int nTiles,
+			  const int tile_size,
 			  const Tensor<OHMMS_PRECISION, 3>& lattice_b);
   static void runThreads(MiniqmcOptions& mq_opt,
                          const PrimeNumberSet<uint32_t>& myPrimes,
@@ -56,6 +57,11 @@ public:
                          const PrimeNumberSet<uint32_t>& myPrimes,
                          ParticleSet& ions,
 			 const SPOSet* spo_main);
+  static void movers_runStdThreads(MiniqmcOptions& mq_opt,
+                         const PrimeNumberSet<uint32_t>& myPrimes,
+                         ParticleSet& ions,
+			 const SPOSet* spo_main);
+
   static void finalize();
 private:
   static void mover_info();
@@ -79,10 +85,11 @@ void MiniqmcDriverFunctions<DT>::buildSPOSet(SPOSet*& spo_set,
                                              MiniqmcOptions& mq_opt,
                                              const int norb,
                                              const int nTiles,
+					     const int tile_size,
                                              const Tensor<OHMMS_PRECISION, 3>& lattice_b)
 {
   spo_set =
-      SPOSetBuilder<DT>::build(mq_opt.useRef, mq_opt.nx, mq_opt.ny, mq_opt.nz, norb, nTiles, lattice_b);
+      SPOSetBuilder<DT>::build(mq_opt.useRef, mq_opt.nx, mq_opt.ny, mq_opt.nz, norb, nTiles, tile_size, lattice_b);
 }
 
 /** thread main using Crowd
@@ -109,6 +116,7 @@ void MiniqmcDriverFunctions<DT>::movers_thread_main(const int ip,
   // For VMC, tau is large and should result in an acceptance ratio of roughly
   // 50%
   // For DMC, tau is small and should result in an acceptance ratio of 99%
+  
   const QMCT::RealType tau = 2.0;
 
   QMCT::RealType sqrttau = std::sqrt(tau);
@@ -143,7 +151,6 @@ void MiniqmcDriverFunctions<DT>::movers_thread_main(const int ip,
 
     for (int l = 0; l < mq_opt.nsubsteps; ++l) // drift-and-diffusion
     {
-      app_summary() << "Entering substep: " << l << '\n';
       movers.fillRandoms();
       
       for (int iel = 0; iel < nels; ++iel)

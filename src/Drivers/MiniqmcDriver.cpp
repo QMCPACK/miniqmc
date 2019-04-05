@@ -66,8 +66,11 @@ void MiniqmcDriver::initialize(int argc, char** argv)
     build_ions(ions, tmat, lattice_b);
     const int nels   = count_electrons(ions, 1);
     const int norb   = nels / 2;
-    mq_opt_.tileSize = (mq_opt_.tileSize > 0) ? mq_opt_.tileSize : norb;
-    nTiles           = norb / mq_opt_.tileSize;
+    mq_opt_.splines_per_block = (mq_opt_.splines_per_block > 0) ? mq_opt_.splines_per_block : norb;
+    nTiles           = norb / mq_opt_.splines_per_block;
+
+    if ( norb > mq_opt_.splines_per_block || norb % mq_opt_.splines_per_block )
+      ++nTiles;
 
     number_of_electrons = nels;
 
@@ -78,7 +81,7 @@ void MiniqmcDriver::initialize(int argc, char** argv)
   const double determinant_buffer_size_MB =  determinant_buffer_size * 1.0 / 1024 / 1024;
 
     app_summary() << "Number of orbitals/splines = " << norb << '\n'
-                  << "Tile size = " << mq_opt_.tileSize << '\n'
+                  << "splines per block = " << mq_opt_.splines_per_block << '\n'
                   << "Number of tiles = " << nTiles << '\n'
                   << "Number of electrons = " << nels << '\n'
                   << "Rmax = " << mq_opt_.Rmax << '\n';
@@ -92,7 +95,7 @@ void MiniqmcDriver::initialize(int argc, char** argv)
                   << SPO_coeff_size_MB << " MB)" << '\n';
     app_summary() << "\nDeterminant Buffer size (per walker) = " << determinant_buffer_size << " bytes (" << determinant_buffer_size_MB << " MB)" << '\n';
 
-    handler.build(spo_main, mq_opt_, norb, nTiles, lattice_b, mq_opt_.device_number);
+    handler.build(spo_main, mq_opt_, norb, nTiles, mq_opt_.splines_per_block, lattice_b, mq_opt_.device_number);
   
 
   if (!mq_opt_.useRef)

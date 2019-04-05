@@ -262,17 +262,19 @@ public:
    *  calling this after anything but the default constructor
    *  Will drop this EinsplineSPOImp's connection to its SplineBundle, not reuse it
    */
-  void set_i(int nx, int ny, int nz, int num_splines, int nblocks, bool init_random = true)
+    void set_i(int nx, int ny, int nz, int num_splines, int num_blocks, int splines_per_block, bool init_random = true)
   {
     this->esp.nSplines         = num_splines;
-    this->esp.nBlocks          = nblocks;
-    this->esp.nSplinesPerBlock = num_splines / nblocks;
-    if (num_splines % esp.nSplinesPerBlock)
-      ++(this->esp.nBlocks);
+    this->esp.nBlocks          = num_blocks;
+    this->esp.nSplinesPerBlock = splines_per_block;
+    if ( num_splines > splines_per_block * num_blocks )
+	throw std::runtime_error("splines_per_block * nblocks < num_splines");
+    // This would let you hold only some blocks
+    // We never do this and I wouldn't do it this way.
     this->esp.firstBlock       = 0;
     this->esp.lastBlock        = esp.nBlocks;
 
-    std::cout << "Initializing CUDA Spline Coefficients with nBlocks: " << nblocks
+    std::cout << "Initializing CUDA Spline Coefficients with nBlocks: " << num_blocks
               << " and nSplinesPerblock : " << esp.nSplinesPerBlock << '\n';
 
     device_einsplines_ = std::make_shared<BsplineSet<Devices::CUDA, T>>(esp.nBlocks);

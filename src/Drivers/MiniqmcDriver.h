@@ -62,6 +62,7 @@ public:
                      MiniqmcOptions& mq_opt,
                      const int norb,
                      const int nTiles,
+		     const int splines_per_block,
                      const Tensor<OHMMS_PRECISION, 3>& lattice_b,
                      int i,
                      IntList<>)
@@ -73,10 +74,11 @@ public:
                      MiniqmcOptions& mq_opt,
                      const int norb,
                      const int nTiles,
+		     const int splines_per_block,
                      const Tensor<OHMMS_PRECISION, 3>& lattice_b,
                      int i)
     {
-      build_cases(spo_set, mq_opt, norb, nTiles, lattice_b, i, IntList<N...>());
+	build_cases(spo_set, mq_opt, norb, nTiles, splines_per_block, lattice_b, i, IntList<N...>());
     }
 
     template<typename I, typename... N>
@@ -84,15 +86,16 @@ public:
                      MiniqmcOptions& mq_opt,
                      const int norb,
                      const int nTiles,
+		     const int splines_per_block,
                      const Tensor<OHMMS_PRECISION, 3>& lattice_b,
                      int i,
                      IntList<I, N...>)
     {
       if (I::value != i)
       {
-        return build_cases(spo_set, mq_opt, norb, nTiles, lattice_b, i, IntList<N...>());
+	  return build_cases(spo_set, mq_opt, norb, nTiles, splines_per_block, lattice_b, i, IntList<N...>());
       }
-      decltype(+device_tuple[hana::size_c<I::value>])::type::buildSPOSet(spo_set, mq_opt, norb, nTiles, lattice_b);
+      decltype(+device_tuple[hana::size_c<I::value>])::type::buildSPOSet(spo_set, mq_opt, norb, nTiles, splines_per_block, lattice_b);
     }
 
     void run_cases(MiniqmcDriver& my_, int, IntList<>)
@@ -151,10 +154,11 @@ public:
                MiniqmcOptions& mq_opt,
                const int norb,
                const int nTiles,
+	       const int splines_per_block,
                const Tensor<OHMMS_PRECISION, 3>& lattice_b,
                int i)
     {
-      build_cases<DN...>(spo_set, mq_opt, norb, nTiles, lattice_b, i);
+	build_cases<DN...>(spo_set, mq_opt, norb, nTiles, splines_per_block, lattice_b, i);
     }
 
     void run(int i) { run_cases<DN...>(my_, i); }

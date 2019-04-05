@@ -13,7 +13,7 @@ MiniqmcOptions readOptions(int argc, char** argv)
       switch (opt)
       {
       case 'a':
-        mq_opt.tileSize = atoi(optarg);
+        mq_opt.splines_per_block = atoi(optarg);
         break;
       case 'b':
         mq_opt.useRef = true;

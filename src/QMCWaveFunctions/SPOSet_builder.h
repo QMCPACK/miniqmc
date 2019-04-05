@@ -30,6 +30,7 @@ public:
 		       int nz,
 		       int num_splines,
 		       int nblocks,
+		       int tile_size,
 		       const Tensor<OHMMS_PRECISION, 3>& lattice_b,
 		       bool init_random = true)
     {
@@ -43,7 +44,7 @@ public:
   else
   {
     EinsplineSPO<DT, OHMMS_PRECISION>* spo_main = new EinsplineSPO<DT, OHMMS_PRECISION>;
-    spo_main->set(nx, ny, nz, num_splines, nblocks);
+    spo_main->set(nx, ny, nz, num_splines, nblocks, tile_size);
     spo_main->setLattice(lattice_b);
     return dynamic_cast<SPOSet*>(spo_main);
   }

@@ -23,10 +23,11 @@ typename CheckSPOSteps<DT>::SPODevImp CheckSPOSteps<DT>::buildSPOMain(const int 
                                                                       const int nz,
                                                                       const int norb,
                                                                       const int nTiles,
+								      const int splines_per_block,
                                                                       const Tensor<OHMMS_PRECISION, 3>& lattice_b)
 {
   SPODevImp spo_main;
-  spo_main.set(nx, ny, nz, norb, nTiles);
+  spo_main.set(nx, ny, nz, norb, nTiles, splines_per_block);
   spo_main.setLattice(lattice_b);
   return spo_main;
 }
@@ -51,6 +52,8 @@ void CheckSPOSteps<DT>::test(int& error,
   const int norb = count_electrons(ions, 1) / 2;
   tileSize       = (tileSize > 0) ? tileSize : norb;
   int nTiles     = norb / tileSize;
+  if ( norb > tileSize && norb % tileSize )
+      ++nTiles;
 
   const size_t SPO_coeff_size    = static_cast<size_t>(norb) * (nx + 3) * (ny + 3) * (nz + 3) * sizeof(QMCT::RealType);
   const double SPO_coeff_size_MB = SPO_coeff_size * 1.0 / 1024 / 1024;
@@ -64,7 +67,7 @@ void CheckSPOSteps<DT>::test(int& error,
 
   app_summary() << "\nSPO coefficients size = " << SPO_coeff_size << " bytes (" << SPO_coeff_size_MB << " MB)" << '\n';
 
-  SPODevImp spo_main = buildSPOMain(nx, ny, nz, norb, nTiles, lattice_b);
+  SPODevImp spo_main = buildSPOMain(nx, ny, nz, norb, nTiles, tileSize, lattice_b);
   SPORef spo_ref_main;
   spo_ref_main.set(nx, ny, nz, norb, nTiles);
   spo_ref_main.Lattice.set(lattice_b);
@@ -299,6 +302,7 @@ CheckSPOSteps<Devices::CUDA>::buildSPOMain(const int nx,
 				const int nz,
 				const int norb,
 				const int nTiles,
+					   const int tile_size,
 				const Tensor<OHMMS_PRECISION, 3>& lattice_b);
 
 //template void CheckSPOSteps<Devices::CUDA>::test(int&, int, qmcplusplus::Tensor<int, 3u> const&, int, int, int, int, int, double);

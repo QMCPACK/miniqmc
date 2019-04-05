@@ -65,7 +65,7 @@ public:
     app_summary() << "            [-r AcceptanceRatio] [-s seed] [-w walkers]" << '\n';
     app_summary() << "            [-a tile_size] [-t timer_level]" << '\n';
     app_summary() << "options:" << '\n';
-    app_summary() << "  -a  size of each spline tile       default: num of orbs" << '\n';
+    app_summary() << "  -a  splines per spline block       default: num of orbs" << '\n';
     app_summary() << "  -b  use reference implementations  default: off" << '\n';
     app_summary() << "  -g  set the 3D tiling.             default: 1 1 1" << '\n';
     app_summary() << "  -h  print help and exit" << '\n';
@@ -103,7 +103,7 @@ public:
   int nx = 37, ny = 37, nz = 37;
   int nmovers = 1;
   // thread blocking
-  int tileSize  = -1;
+  int splines_per_block  = -1;
   int team_size = 1;
   int nsubsteps = 1;
   int ncrews    = 1;
