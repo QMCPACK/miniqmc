@@ -106,28 +106,54 @@ void ParticleSet::PushDataToParticleSetKokkos() {
   psk.IndirectID   = Kokkos::View<int*>("IndirectID", numPtcl);
   psk.GroupID      = Kokkos::View<int*>("GroupID", numPtcl);
   psk.SubPtcl      = Kokkos::View<int*>("SubPtcl", SubPtcl.size());
-  psk.R            = Kokkos::View<RealType**>("R", numPtcl, DIM);
-  psk.RSoA         = Kokkos::View<RealType**>("RSoA", DIM, numPtcl);
-  psk.G            = Kokkos::View<ValueType**>("G", numPtcl, DIM);
-  psk.L            = Kokkos::View<ValueType**>("L", numPtcl, DIM);
-  psk.UseBoundBox  = Kokkos::View<Bool*>("UseBoundBox", 1);
-  psk.IsGrouped    = Kokkos::View<Bool*>("IsGrouped", 1);
-  psk.activePtcl   = Kokkos::View<int*>("activePtcl", 1);
-  psk.activePos    = Kokkos::View<RealType*>("activePos", DIM);
+  psk.R            = Kokkos::View<RealType*[DIM],Kokkos::LayoutRight>("R", numPtcl);
+  psk.RSoA         = Kokkos::View<RealType*[DIM],Kokkos::LayoutLeft>("RSoA", numPtcl);
+  psk.G            = Kokkos::View<ValueType*[DIM]>("G", numPtcl);
+  psk.L            = Kokkos::View<ValueType*>("L", numPtcl);
+  psk.UseBoundBox  = Kokkos::View<Bool[1]>("UseBoundBox");
+  psk.IsGrouped    = Kokkos::View<Bool[1]>("IsGrouped");
+  psk.activePtcl   = Kokkos::View<int[1]>("activePtcl");
+  psk.activePos    = Kokkos::View<RealType[DIM]>("activePos");
 
-  auto IDMirror             = Kokkos::create_mirror_view(psk.ID);
-  auto IDIndirectIDMirror   = Kokkos::create_mirror_view(psk.IndirectID); 
-  auto GroupIDMirror        = Kokkos::create_mirror_view(psk.GroupID);
-  auto SubPtclMirror        = Kokkos::create_mirror_view(psk.SubPtcl)
-  auto RMirror              = Kokkos::create_mirror_view(psk.R);
-  auto RSoAMirror           = Kokkos::create_mirror_view(psk.RSoAMirror);
-  auto GMirror              = Kokkos::create_mirror_view(psk.G);
-  auto LMirror              = Kokkos::create_mirror_view(psk.L);
-  auto UseBoundBoxMirror    = Kokkos::create_mirror_view(psk.UseBoundBox);
-  auto IsGroupedMirror      = Kokkos::create_mirror_view(psk.IsGrouped);
-  auto activePtclMirror     = Kokkos::create_mirror_view(psk.activePtcl);
-  auto activePosMirror      = Kokkos::create_mirror_view(psk.activePos);
-
+  // distance table related stuff
+  psk.DT_G                  = Kokkos::View<RealType[DIM][DIM]>("DT_G");
+  psk.DT_R                  = Kokkos::View<RealType[DIM][DIM]>("DT_R");
+  psk.corners               = Kokkos::View<RealType[8][DIM],Kokkos::LayoutLeft>("corners");
+  psk.LikeDTDistances       = Kokkos::View<RealType**>("LikeDTDistances", NumPtcl, NumPtcl);
+  psk.LikeDTDisplacements   = Kokkos::View<RealType**[DIM]("LikeDTDisplacements", NumPtcl, NumPtcl);
+  psk.LikeDTTemp_r          = Kokkos::View<RealType*>("LikeDTTemp_r", NumPtcl);
+  psk.LikeDTTemp_dr         = Kokkos::View<RealType*[DIM],Kokkos::LayoutLeft>("LikeDTTemp_dr", NumPtcl);
+  psk.UnlikeDTDistances     = Kokkos::View<RealType**>("UnlikeDTDistances", NumPtcl, DistTables[1]->Ntargets);
+  psk.UnlikeDTDisplacements = Kokkos::View<RealType**[DIM]("UnlikeDTDisplacements", NumPtcl, DistTables[1]->Ntargets);
+  psk.UnlikeDTTemp_r        = Kokkos::View<RealType*>("UnlikeDTTemp_r", NumPtcl);
+  psk.UnlikeDTTemp_dr       = Kokkos::View<RealType*[DIM],Kokkos::LayoutLeft>("UnlikeDTTemp_dr", NumPtcl);
+  psk.originR               = Kokkos::View<RealType*[DIM],Kokkos::LayoutLeft>("OriginR", DistTables[1]->Ntargets);
+  
+  auto IDMirror                    = Kokkos::create_mirror_view(psk.ID);
+  auto IDIndirectIDMirror          = Kokkos::create_mirror_view(psk.IndirectID); 
+  auto GroupIDMirror               = Kokkos::create_mirror_view(psk.GroupID);
+  auto SubPtclMirror               = Kokkos::create_mirror_view(psk.SubPtcl)
+  auto RMirror                     = Kokkos::create_mirror_view(psk.R);
+  auto RSoAMirror                  = Kokkos::create_mirror_view(psk.RSoAMirror);
+  auto GMirror                     = Kokkos::create_mirror_view(psk.G);
+  auto LMirror                     = Kokkos::create_mirror_view(psk.L);
+  auto UseBoundBoxMirror           = Kokkos::create_mirror_view(psk.UseBoundBox);
+  auto IsGroupedMirror             = Kokkos::create_mirror_view(psk.IsGrouped);
+  auto activePtclMirror            = Kokkos::create_mirror_view(psk.activePtcl);
+  auto activePosMirror             = Kokkos::create_mirror_view(psk.activePos);
+  auto DT_GMirror                  = Kokkos::create_mirror_view(psk.DT_G);
+  auto DT_RMirror                  = Kokkos::create_mirror_view(psk.DT_R);
+  auto cornersMirror               = Kokkos::create_mirror_view(psk.corners);
+  auto LikeDTDistancesMirror       = Kokkos::create_mirror_view(psk.LikeDTDistances);
+  auto LikeDTDisplacementsMirror   = Kokkos::create_mirror_view(psk.LikeDTDisplacements);
+  auto LikeDTTemp_rMirror          = Kokkos::create_mirror_view(psk.LikeDTTemp_r);
+  auto LikeDTTemp_drMirror         = Kokkos::create_mirror_view(psk.LikeDTTemp_dr);
+  auto UnlikeDTDistancesMirror     = Kokkos::create_mirror_view(psk.UnlikeDTDistances);
+  auto UnlikeDTDisplacementsMirror = Kokkos::create_mirror_view(psk.UnlikeDTDisplacements);
+  auto UnlikeDTTemp_rMirror        = Kokkos::create_mirror_view(psk.UnlikeDTTemp_r);
+  auto UnlikeDTTemp_drMirror       = Kokkos::create_mirror_view(psk.UnlikeDTTemp_dr);
+  auto originRMirror               = Kokkos::create_mirror_view(psk.originR);
+  
   UseBoundBoxMirror(0) = UseBoundBox;
   IsGroupedMirror(0)   = IsGrouped;
   activePtclMirror(0)  = activePtcl;
@@ -147,11 +173,59 @@ void ParticleSet::PushDataToParticleSetKokkos() {
 
     for (int j = 0; j < DIM; j++) {
       RMirror(i,j) = R[i][j];
-      RSoaMirror(j,i) = R[i][j];
+      RSoaMirror(i,j) = R[i][j];
       GMirror(i,j) = G[i][j];
     }   
   }
 
+  DT_GMirror(0,0) = DistTables[0]->g00;    DT_RMirror(0,0) = DistTables[0]->r00;
+  DT_GMirror(0,1) = DistTables[0]->g10;	   DT_RMirror(0,1) = DistTables[0]->r10;
+  DT_GMirror(0,2) = DistTables[0]->g20;	   DT_RMirror(0,2) = DistTables[0]->r20;
+  DT_GMirror(1,0) = DistTables[0]->g10;	   DT_RMirror(1,0) = DistTables[0]->r10;
+  DT_GMirror(1,1) = DistTables[0]->g11;	   DT_RMirror(1,1) = DistTables[0]->r11;
+  DT_GMirror(1,2) = DistTables[0]->g12;	   DT_RMirror(1,2) = DistTables[0]->r12;
+  DT_GMirror(2,0) = DistTables[0]->g20;	   DT_RMirror(2,0) = DistTables[0]->r20;
+  DT_GMirror(2,1) = DistTables[0]->g21;	   DT_RMirror(2,1) = DistTables[0]->r21;
+  DT_GMirror(2,2) = DistTables[0]->g22;	   DT_RMirror(2,2) = DistTables[0]->r22;
+  
+  for (int i = 0; i < 8; i++) {
+    for (int d = 0; d < DIM; d++) {
+      cornersMirror(i,d) = DistTables[0]->corners[i][d];
+    }
+  }
+
+  for (int i = 0; i < numPtcl; i++) {
+    for (int j = 0; j < numPtcl; j++) {
+      LikeDTDistancesMirror(i,j) = DistTables[0]->Distances[i][j];
+      for (int d = 0; d < DIM; d++) { 
+	LikeDTDisplacementsMirror(i,j,d) = DistTables[0]->Displacements[i][j][d];
+      }
+    }
+    LikeDTTemp_rMirror(i) = DistTables[0]->Temp_r[i];
+    for (int d = 0; d < DIM; d++) {
+      LikeDTTtemp_drMirror(i,d) = DistTables[0]->Temp_dr[j][d];
+    }
+  }
+
+  for (int i = 0; i < numPtcl; i++) {
+    for (int j = 0; j < DistTables[1]->Ntargets; j++) {
+      UnlikeDTDistancesMirror(i,j) = DistTables[1]->Distances[i][j];
+      for (int d = 0; d < DIM; d++) { 
+	UnlikeDTDisplacementsMirror(i,j,d) = DistTables[1]->Displacements[i][j][d];
+      }
+    }
+    UnlikeDTTemp_rMirror(i) = DistTables[1]->Temp_r[i];
+    for (int d = 0; d < DIM; d++) {
+      UnlikeDTTtemp_drMirror(i,d) = DistTables[1]->Temp_dr[j][d];
+    }
+  }
+
+  for (int i = 0; i < DistTables[1]->Ntargets; i++) {
+    for (int d = 0; d < DIM; d++) {
+      originRMirror(i,d) = DistTables[1]->Origin.RSoA[i][d];
+    }
+  }
+  
   Kokkos::deep_copy(psk.ID, IDMirror);
   Kokkos::deep_copy(psk.IDIndirect, IDIndirectIDMirror);
   Kokkos::deep_copy(psk.GroupID, GroupIDMirror);
@@ -164,6 +238,18 @@ void ParticleSet::PushDataToParticleSetKokkos() {
   Kokkos::deep_copy(psk.IsGrouped, IsGroupedMirror);
   Kokkos::deep_copy(psk.activePtcl, activePtclMirror);
   Kokkos::deep_copy(psk.activePos, activePosMirror);
+  Kokkos::deep_copy(psk.DT_G, DT_GMirror);
+  Kokkos::deep_copy(psk.DT_R, DT_RMirror);
+  Kokkos::deep_copy(psk.corners, cornersMirror);
+  Kokkos::deep_copy(psk.LikeDTDistances, LikeDTDistancesMirror);
+  Kokkos::deep_copy(psk.LikeDTDisplacements, LikeDTDisplacementsMirror);
+  Kokkos::deep_copy(psk.LikeDTTemp_r, LikeDTTemp_rMirror);
+  Kokkos::deep_copy(psk.LikeDTTemp_dr, LikeDTTemp_drMirror);
+  Kokkos::deep_copy(psk.UnlikeDTDistances, UnlikeDTDistancesMirror);
+  Kokkos::deep_copy(psk.UnlikeDTDisplacements, UnlikeDTDisplacementsMirror);
+  Kokkos::deep_copy(psk.UnlikeDTTemp_r, UnlikeDTTemp_rMirror);
+  Kokkos::deep_copy(psk.UnlikeDTTemp_dr, UnlikeDTTemp_drMirror);
+  Kokkos::deep_copy(psk.originR, originRMirror);
 }
 
   
