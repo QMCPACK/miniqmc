@@ -56,6 +56,10 @@ public:
 
   Kokkos::View<RealType*[dim],Kokkos::LayoutLeft>       originR; // [ntargets][dim]  // locations of all the particles in the source set
   // will probably need to include a groups array for the ions as well
+  Kokkos::View<int[1]>                                  numIonGroups;
+  Kokkos::View<int*>                                    ionGroupID;
+  Kokkos::View<int*>                                    ionSubPtcl;
+
   
   // default constructor
   KOKKOS_INLINE_FUNCTION
@@ -83,6 +87,9 @@ public:
     LikeDTTemp_r = rhs.LikeDTTemp_r;
     LikeDTTemp_dr = rhs.LikeDTTemp_dr;
     originR = rhs.originR;
+    numIonGroups = rhs.numIonGroups;
+    ionGroupID = rhs.ionGroupID;
+    ionSubPtcl = rhs.ionSubPtcl;
   }
 
   ParticleSetKokkos(const ParticleSetKokkos&) = default;
@@ -92,6 +99,13 @@ public:
 
   KOKKOS_INLINE_FUNCTION
   int last(int group) const { return SubPtcl(group+1); }
+
+  KOKKOS_INLINE_FUNCTION
+  int ionFirst(int group) const { return ionSubPtcl(group); }
+
+  KOKKOS_INLINE_FUNCTION
+  int ionLast(int group) const { return ionSubPtcl(group+1); }
+
 
 // called only on the device!
 // may turn out we don't really need activePos, just get values from R directly
@@ -180,8 +194,8 @@ public:
     constexpr RealType BigR = std::numeric_limits<T>::max();
     for (int iat = 0; iat < LikeDTDistances.extent(1); ++iat)
     {
-      auto distancesSubview = Kokkos::subview(LikeDTDistances(Kokkos::ALL(),iat));
-      auto displacementsSubview = Kokkos::subview(LikeDTDisplacements(Kokkos::ALL(),iat,Kokkos::All()));
+      auto distancesSubview = Kokkos::subview(LikeDTDistances,Kokkos::ALL(),iat);
+    auto displacementsSubview = Kokkos::subview(LikeDTDisplacements,Kokkos::ALL(),iat,Kokkos::All());
       DTComputeDistances(R(iat,0), R(iat,1), R(iat,2), RSoA,
 			 distancesSubview, displacementsSubview,
 			 0, LikeDTDistances.extent(1), iat);
@@ -191,8 +205,8 @@ public:
 
   KOKKOS_INLINE_FUNCTION
   void LikeEvaluate(int jat) {
-    auto distancesSubview = Kokkos::subview(LikeDTDistances(Kokkos::ALL(),jat));
-    auto displacementsSubview = Kokkos::subview(LikeDTDisplacements(Kokkos::ALL(),jat,Kokkos::All()));
+    auto distancesSubview = Kokkos::subview(LikeDTDistances,Kokkos::ALL(),jat);
+    auto displacementsSubview = Kokkos::subview(LikeDTDisplacements,Kokkos::ALL(),jat,Kokkos::All());
     DTComputeDistances(R(jat,0), R(jat,1), R(jat,2), RSoA,
 		       distancesSubview, displacementsSubview,
 		       0, LikeDTDistances.extent(1), jat);
@@ -202,8 +216,8 @@ public:
   KOKKOS_INLINE_FUNCTION
   void UnlikeEvaluate() {
     for (int iat = 0; iat < UnlikeDTDistances.extent(1); ++iat) {
-      auto distancesSubview = Kokkos::subview(UnlikeDTDistances(Kokkos::ALL(),iat));
-      auto displacementsSubview = Kokkos::subview(UnlikeDTDisplacements(Kokkos::ALL(),iat,Kokkos::All()));
+      auto distancesSubview = Kokkos::subview(UnlikeDTDistances,Kokkos::ALL(),iat);
+      auto displacementsSubview = Kokkos::subview(UnlikeDTDisplacements,Kokkos::ALL(),iat,Kokkos::All());
       DTComputeDistances(R(iat,0), R(iat,1), R(iat,2), OriginR,
 			 distancesSubview, displacementsSubview,
 			 0, UnlikeDTDistances.extent(0));
@@ -213,7 +227,7 @@ public:
   KOKKOS_INLINE_FUNCTION
   void UnlikeEvaluate(int jat) {
     auto distancesSubview = Kokkos::subview(UnlikeDTDistances(Kokkos::ALL(),jat));
-    auto displacementsSubview = Kokkos::subview(UnlikeDTDisplacements(Kokkos::ALL(),jat,Kokkos::All()));
+    auto displacementsSubview = Kokkos::subview(UnlikeDTDisplacements,Kokkos::ALL(),jat,Kokkos::All());
       DTComputeDistances(R(jat,0), R(jat,1), R(jat,2), OriginR,
 			 distancesSubview, displacementsSubview,
 			 0, UnlikeDTDistances.extent(0));

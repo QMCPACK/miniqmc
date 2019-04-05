@@ -26,100 +26,70 @@ namespace qmcplusplus
 {
 
 template<typename aobjdType, typename apsdType>
-KOKKOS_INLINE_FUNCTION
-void OBJEvaluateF(int wNum, int groupNum, int iat, aobjdType aobjd, apsdType apsd) {
-  if (r >= cutoff_radius)
-  {
-    dudr = d2udr2 = 0.0;
-    return 0.0;
-  }
-
-  r *= DeltaRInv;
-  
-  
+void doOneBodyJastrowMultiEvaluateGL(aobjdType aobjd, apsdType apsd, bool fromscratch) {
+  const int numWalkers = aobjd.extent(0);
+  using BarePolicy = Kokkos::TeamPolicy<>;
+  BarePolicy pol(numWalkers, 1, 32);
+  Kokkos::parallel_for("obj-evalGL-waker-loop", pol,
+		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
+			 int walkerNum = member.league_rank(); 
+			 aobjd(walkerNum)->evaluateGL(apsd(walkerNum), fromscratch);
+		       });
 }
 
-
-  
 template<typename aobjdType, typename apsdType>
-KOKKOS_INLINE_FUNCTION
-void OBJComputeU3(int wNum, int iel, abojdType aobjd, apsdType apsd) {
-  if (aobjd(wNum).NumGroups(0) > 0) {
-    for (int iat = 0; iat < aobjd(wNum).Nions(0); iat++) {
-      U(iat) = 0.0;
-      dU(iat) = 0.0;
-      d2U(iat) = 0.0;
-    }
-    for (int jg = 0; jg < NumGroups; jg++) {
-      OBJEvaluateFVGL(wNum, jg, aobjd, apsd);
-    }
-  } else {
-    for (int iat = 0; iat < aobjd(wNum).Nions(0); iat++) {
-      int gid = Ions.GroupID(iat); //// NEED TO FIGURE OUT ION DATA
-      OBJEvaluateF(wNum, gid, iat, abojd, apsd);
-    }
-  }
+  void doOneBodyJastrowMultiAcceptRestoreMove(aobjdType aobjd, apsdType apsd, int iat) {
+  const int numWalkers = aobjd.extent(0);
+  using BarePolicy = Kokkos::TeamPolicy<>;
+  BarePolicy pol(numWalkers, 1, 32);
+  Kokkos::parallel_for("obj-acceptRestoreMove-waker-loop", pol,
+		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
+			 int walkerNum = member.league_rank(); 
+			 aobjd(walkerNum)->acceptMove(apsd(walkerNum), iat);
+		       });
 }
-  
-template<typename RealType, typename aobjdType, typename apsdType>
-KOKKOS_INLINE_FUNCTION
-RealType OBJAccumulateGL(int wNum, int iel, aobjdType aobjd, apsdType apsd) {
-  /// LNS -- This needs to get to the Displacements form the electron-ion distance table
-    RealType lap(0);
-    constexpr valT lapfac = aobjd(wNum).curGrad.extent(0) - RealType(1);
-    for (int jat = 0; jat < aobjd(wNum).Nions(0); ++jat)
-      lap += aobjd(wNum).d2U(jat) + lapfac * abojd(wNum).dU(jat);
-    for (int idim = 0; idim < aobjd(wNum).curGrad.extent(0); ++idim)
-    {
-      const RealType* restrict dX = displ.data(idim);  /// NOTE THIS IS WHERE WE NEED THE DISPLACEMENTS
-      aobjd(wNum).Grad(iel,idim) = 0.0;
-      for (int jat = 0; jat < aobjd(wNum).Nions(0); ++jat)
-        aobjd(wNum).Grad(iel,idim) += aobjd(wNum).dU(jat) * dX[jat];
-    }
-    return lap;
-}
-  
-  
-template<typename aobjdType, typename apsdType>
-KOKKOS_INLINE_FUNCTION
-void OBJRecompute(int wNum, aobjdType aobjd, apsdType apsd) {
-  for (int iel = 0; iel < aobjd(wNum).Nelec(0); iel++) {
-    OBJComputeU3(wNum, iel, aobjd, apsd);
-    aobjd(wNum).Vat(iel) = 0.0;
-    for (int iat = 0; iat < aobjd(wNum).Nions(0); iat) {
-      aobjd(wNum).Vat(iel) += aobjd(wNum).U(iat);
-    }
-    aobjd(wNum).Lap(iel) = OBJAccumulateGL<aobjd(wNum)::RealType>(wNum, iel, aobjd, apsd);
-  }  
-}
-  
-template<typename aobjdType, typename apsdType>
-KOKKOS_INLINE_FUNCTION
-void OBJEvaluateGL(int wNum, aobjdType aobjd, apsdType apsd, bool fromscratch = false) {
-  if (fromscratch)
-    OBJRecompute(wNum, aobjd, apsd);
 
-  // later could consider changing this into a parallel_for
-  for (size_t iel = 0; iel < aobjd(wNum).Nelec(0); iel++) {
-    for (int dim = 0; dim < aobjd(wNum).Grad.extent(1); dim++) {
-      apsd(wNum).G(iel,dim) += aobjd(wNum).Grad(iel,dim);
-    }
-    apsd(wNum).L(iel) -= abojd(wNum).L(iel);
-    aobjd(wNum).LogValue(0) -= aobjd(wNum).Vat(iel);
-  }
+
+
+template<typename aobjdType, typename apsdType, typename valT>
+void doOneBodyJastrowMultiRatioGrad(aobjdType aobjd, apsdType apsd, int iat, 
+				    Kokkos::View<valT**> gradNowView,
+				    Kokkos::View<valT*> ratiosView) {
+  const int numWalkers = aobjd.extent(0);
+  using BarePolicy = Kokkos::TeamPolicy<>;
+  BarePolicy pol(numWalkers, 1, 32);
+  Kokkos::parallel_for("obj-evalRatioGrad-walker-loop", pol,
+		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
+			 int walkerNum = member.league_rank();
+			 auto gv = Kokkos::subview(gradNowView,walkerNum,Kokkos::All());
+			 ratiosView(walkerNum) = aobjd(walkerNum)->ratioGrad(apsd(walkerNum), iat, gv);
+		       });
 }
+			 
+template<typename aobjdType, typename valT>
+void doOneBodyJastrowMultiEvalGrad(aobjdType aobjd, int iat, Kokkos::View<valT**> gradNowView) {
+  const int numWalkers = aobjd.extent(0);
+  using BarePolicy = Kokkos::TeamPolicy<>;
+  BarePolicy pol(numWalkers, 1, 32);
+  Kokkos::parallel_for("obj-evalGrad-walker-loop", pol,
+		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
+			 int walkerNum = member.league_rank();
+			 for (int idim = 0; idim < gradNowView.extent(1); idim++) {
+			   gradNowView(walkerNum,idim) = aobjd(walkerNum)->Grad(iat,idim);
+			 }
+		       });
+ }
 
   
 template<typename aobjdType, typename apsdType, typename valT>
 void doOneBodyJastrowMultiEvaluateLog(aobjdType aobjd, apsdType apsd, Kokkos::View<valT*> values) {
   const int numWalkers = aobjd.extent(0);
   using BarePolicy = Kokkos::TeamPolicy<>;
-  BarePolicy pol(numWalkers, 1, 8);
+  BarePolicy pol(numWalkers, 1, 32);
   Kokkos::parallel_for("obj-evalLog-waker-loop", pol,
 		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
 			 int walkerNum = member.league_rank(); 
-			 OBJEvaluateGL<valT>(walkerNum, aobjd, apsd);
-			 values(walkerNum) = aobjd(walkerNum).LogValue(0);
+			 values(walkerNum) = aobjd(walkerNum)->evaluateLog(apsd(walkerNum));
 		       });
 }
   
@@ -129,7 +99,7 @@ void doOneBodyJastrowMultiEvaluateLog(aobjdType aobjd, apsdType apsd, Kokkos::Vi
 template<class FT>
 struct OneBodyJastrow : public WaveFunctionComponent
 {
-  using jasDataType = OneBodyJastrowData<FT::real_type>;
+  using jasDataType = OneBodyJastrowData<FT::real_type, OHMMS_DIM>;
   jasDataType jasData;
   bool splCoefsNotAllocated;
 
@@ -229,31 +199,35 @@ struct OneBodyJastrow : public WaveFunctionComponent
     }
   }
 
-  // note the way I am doing this, I am 
   void initializeJastrowData() {
-    jasData.LogValue       = Kokkos::View<valT*>("LogValue", 1);
+    jasData.LogValue       = Kokkos::View<valT*>("LogValue");
 
-    jasData.Nelec          = Kokkos::View<int*>("Nelec", 1);
+    jasData.Nelec          = Kokkos::View<int*>("Nelec");
     auto NelecMirror       = Kokkos::create_mirror_view(jasData.Nelec);
     NelecMirror(0)         = Nelec;
     Kokkos::deep_copy(jasData.Nelec, NelecMirror);
     
-    jasData.Nions          = Kokkos::View<int*>("Nions", 1);
+    jasData.Nions          = Kokkos::View<int*>("Nions");
     auto NionsMirror       = Kokkos::create_mirror_view(jasData.Nions);
     NionsMirror(0)         = Nions;
     Kokkos::deep_copy(jasData.Nions, NionsMirror);
     
-    jasData.NumGroups      = Kokkos::View<int*>("NumGroups", 1);
+    jasData.NumGroups      = Kokkos::View<int*>("NumGroups");
     auto NumGroupsMirror   = Kokkos::create_mirror_view(jasData.NumGroups);
     NumGroupsMirror(0)     = NumGroups;
     Kokkos::deep_copy(jasData.NumGroups, NumGroupsMirror);
     
+    jasData.updateMode     = Kokkos::View<int*>("updateMode");
+    auto updateModeMirror  = Kokkos::create_mirror_view(jasData.updateMode);
+    updateModeMirror(0)    = 3;
+    Kokkos::deep_copy(jasData.updateMode, updateModeMirror);
+    
     // these things are just zero on the CPU, so don't have to set their values
-    jasData.curGad         = Kokkos::View<valT*>("curGrad", OHMMS_DIM);
-    jasData.Grad           = Kokkos::View<valT**>("Grad", Nelec, OHMMS_DIM);
-    jasData.curLap         = Kokkos::View<valT*>("curLap", 1);
+    jasData.curGad         = Kokkos::View<valT*>("curGrad");
+    jasData.Grad           = Kokkos::View<valT**>("Grad", Nelec);
+    jasData.curLap         = Kokkos::View<valT*>("curLap");
     jasData.Lap            = Kokkos::View<valT*>("Lap", Nelec);
-    jasData.curAt          = Kokkos::View<valT*>("curAt", 1);
+    jasData.curAt          = Kokkos::View<valT*>("curAt");
     jasData.Vat            = Kokkos::View<valT*>("Vat", Nelec);
     
     // these things are already views, so just do operator=
@@ -277,11 +251,11 @@ struct OneBodyJastrow : public WaveFunctionComponent
 			     0.0, 0.0, -3.0,  1.0,
 			     0.0, 0.0,  1.0,  0.0);
 
-    jasData.A              = Kokkos::View<valT*>("A", 16);
+    jasData.A              = Kokkos::View<valT*>("A");
     auto Amirror           = Kokkos::create_mirror_view(jasData.A);
-    jasData.dA             = Kokkos::View<valT*>("dA", 16);
+    jasData.dA             = Kokkos::View<valT*>("dA");
     auto dAmirror           = Kokkos::create_mirror_view(jasData.dA);
-    jasData.d2A            = Kokkos::View<valT*>("d2A", 16);
+    jasData.d2A            = Kokkos::View<valT*>("d2A");
     auto d2Amirror           = Kokkos::create_mirror_view(jasData.d2A);
 
     for (int i = 0; i < 16; i++) {
@@ -367,9 +341,10 @@ struct OneBodyJastrow : public WaveFunctionComponent
     Kokkos::deep_copy(apsd, apsdMirror);
   }
   
-
   //////////////////multi_evaluate functions
   // note that G_list and L_list feel redundant, they are just elements of P_list
+  // if we wanted to be really kind though, we could copy them back out so this would
+  // be where the host could see the results of the calcualtion easily
   virtual void multi_evaluateLog(const std::vector<WaveFunctionComponent*>& WFC_list,
                                  const std::vector<ParticleSet*>& P_list,
                                  const std::vector<ParticleSet::ParticleGradient_t*>& G_list,
@@ -410,7 +385,7 @@ struct OneBodyJastrow : public WaveFunctionComponent
     Kokkos::View<double**> grad_now_view("tempValues", P_list.size(), OHMMS_DIM);
 
     // need to write this function
-    doOneBodyJastrowMultiEvalGrad(allOneBodyJastrowData, allParticleSetData, grad_now_view);
+    doOneBodyJastrowMultiEvalGrad(allOneBodyJastrowData, iat, grad_now_view);
 
     // copy the results out to values
     auto grad_now_view_mirror = Kokkos::create_mirror_view(grad_now_view);
@@ -440,7 +415,7 @@ struct OneBodyJastrow : public WaveFunctionComponent
     Kokkos::View<double*> ratios_view("ratios", P_list.size());
     
     // need to write this function
-    doOneBodyJastrowMultiRatioGrad(allOneBodyJastrowData, allParticleSetData, grad_new_view, ratios_view);
+    doOneBodyJastrowMultiRatioGrad(allOneBodyJastrowData, allParticleSetData, iat, grad_new_view, ratios_view);
 
     // copy the results out to values
     auto grad_new_view_mirror = Kokkos::create_mirror_view(grad_new_view);
@@ -451,7 +426,7 @@ struct OneBodyJastrow : public WaveFunctionComponent
     for (int i = 0; i < P_list.size(); i++) {
       ratios[i] = ratios_view_mirror(i);
       for (int j = 0; j < OHMMS_DIM; j++) {
-	grad_now[i][j] = grad_now_view_mirror(i,j);
+	grad_new[i][j] += grad_new_view_mirror(i,j);
       }
     }
   }

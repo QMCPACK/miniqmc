@@ -128,6 +128,9 @@ void ParticleSet::PushDataToParticleSetKokkos() {
   psk.UnlikeDTTemp_r        = Kokkos::View<RealType*>("UnlikeDTTemp_r", NumPtcl);
   psk.UnlikeDTTemp_dr       = Kokkos::View<RealType*[DIM],Kokkos::LayoutLeft>("UnlikeDTTemp_dr", NumPtcl);
   psk.originR               = Kokkos::View<RealType*[DIM],Kokkos::LayoutLeft>("OriginR", DistTables[1]->Ntargets);
+  psk.numIonGroups          = Kokkos::View<int[1]>("numIonGroups");
+  psk.ionGroupID            = Kokkos::View<int*>("ionGroupID", DistTables[1]->Ntargets);
+  psk.ionSubPtcl            = Kokkos::View<int*>("ionSubPtcl", DistTables[1]->Origin.SubPtcl.size());
   
   auto IDMirror                    = Kokkos::create_mirror_view(psk.ID);
   auto IDIndirectIDMirror          = Kokkos::create_mirror_view(psk.IndirectID); 
@@ -153,6 +156,12 @@ void ParticleSet::PushDataToParticleSetKokkos() {
   auto UnlikeDTTemp_rMirror        = Kokkos::create_mirror_view(psk.UnlikeDTTemp_r);
   auto UnlikeDTTemp_drMirror       = Kokkos::create_mirror_view(psk.UnlikeDTTemp_dr);
   auto originRMirror               = Kokkos::create_mirror_view(psk.originR);
+  auto numIonGroupsMirror          = Kokkos::create_mirror_view(psk.numIonGroups);
+  auto ionGroupIDMirror            = Kokkos::create_mirror_view(psk.ionGroupID);
+  auto ionSubPtclMirror            = Kokkos::create_mirror_view(psk.ionSubPtcl);
+
+
+
   
   UseBoundBoxMirror(0) = UseBoundBox;
   IsGroupedMirror(0)   = IsGrouped;
@@ -221,9 +230,15 @@ void ParticleSet::PushDataToParticleSetKokkos() {
   }
 
   for (int i = 0; i < DistTables[1]->Ntargets; i++) {
+    ionGroupIDMirror(i) = DistTables[i]->Origin.GroupID[i];
     for (int d = 0; d < DIM; d++) {
       originRMirror(i,d) = DistTables[1]->Origin.RSoA[i][d];
     }
+  }
+
+  numIonGroupsMirror(0) = DistTables[1]->Origin.SubPtcl.size()-1;
+  for (int i = 0; i < DistTables[1]->Origin.SubPtcl.size(); i++) {
+    ionSubPtclMirror(i) = DistTables[i]->Origin.SubPtcl[i];
   }
   
   Kokkos::deep_copy(psk.ID, IDMirror);
@@ -250,6 +265,9 @@ void ParticleSet::PushDataToParticleSetKokkos() {
   Kokkos::deep_copy(psk.UnlikeDTTemp_r, UnlikeDTTemp_rMirror);
   Kokkos::deep_copy(psk.UnlikeDTTemp_dr, UnlikeDTTemp_drMirror);
   Kokkos::deep_copy(psk.originR, originRMirror);
+  Kokkos::deep_copy(psk.numIonGroups, numIonGroupsMirror);
+  Kokkos::deep_copy(psk.ionGroupID, ionGroupIDMirror);
+  Kokkos::deep_copy(psk.ionSubPtcl, ionSubPtclMirror);
 }
 
   
