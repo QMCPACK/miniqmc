@@ -200,34 +200,34 @@ struct OneBodyJastrow : public WaveFunctionComponent
   }
 
   void initializeJastrowData() {
-    jasData.LogValue       = Kokkos::View<valT*>("LogValue");
+    jasData.LogValue       = Kokkos::View<valT[1]>("LogValue");
 
-    jasData.Nelec          = Kokkos::View<int*>("Nelec");
+    jasData.Nelec          = Kokkos::View<int[1]>("Nelec");
     auto NelecMirror       = Kokkos::create_mirror_view(jasData.Nelec);
     NelecMirror(0)         = Nelec;
     Kokkos::deep_copy(jasData.Nelec, NelecMirror);
     
-    jasData.Nions          = Kokkos::View<int*>("Nions");
+    jasData.Nions          = Kokkos::View<int[1]>("Nions");
     auto NionsMirror       = Kokkos::create_mirror_view(jasData.Nions);
     NionsMirror(0)         = Nions;
     Kokkos::deep_copy(jasData.Nions, NionsMirror);
     
-    jasData.NumGroups      = Kokkos::View<int*>("NumGroups");
+    jasData.NumGroups      = Kokkos::View<int[1]>("NumGroups");
     auto NumGroupsMirror   = Kokkos::create_mirror_view(jasData.NumGroups);
     NumGroupsMirror(0)     = NumGroups;
     Kokkos::deep_copy(jasData.NumGroups, NumGroupsMirror);
     
-    jasData.updateMode     = Kokkos::View<int*>("updateMode");
+    jasData.updateMode     = Kokkos::View<int[1]>("updateMode");
     auto updateModeMirror  = Kokkos::create_mirror_view(jasData.updateMode);
     updateModeMirror(0)    = 3;
     Kokkos::deep_copy(jasData.updateMode, updateModeMirror);
     
     // these things are just zero on the CPU, so don't have to set their values
-    jasData.curGad         = Kokkos::View<valT*>("curGrad");
-    jasData.Grad           = Kokkos::View<valT**>("Grad", Nelec);
-    jasData.curLap         = Kokkos::View<valT*>("curLap");
+    jasData.curGad         = Kokkos::View<valT[OHMMS_DIM]>("curGrad");
+    jasData.Grad           = Kokkos::View<valT*[OHMMS_DIM]>("Grad", Nelec);
+    jasData.curLap         = Kokkos::View<valT[1]>("curLap");
     jasData.Lap            = Kokkos::View<valT*>("Lap", Nelec);
-    jasData.curAt          = Kokkos::View<valT*>("curAt");
+    jasData.curAt          = Kokkos::View<valT[1]>("curAt");
     jasData.Vat            = Kokkos::View<valT*>("Vat", Nelec);
     
     // these things are already views, so just do operator=
@@ -251,11 +251,11 @@ struct OneBodyJastrow : public WaveFunctionComponent
 			     0.0, 0.0, -3.0,  1.0,
 			     0.0, 0.0,  1.0,  0.0);
 
-    jasData.A              = Kokkos::View<valT*>("A");
+    jasData.A              = Kokkos::View<valT[16]>("A");
     auto Amirror           = Kokkos::create_mirror_view(jasData.A);
-    jasData.dA             = Kokkos::View<valT*>("dA");
+    jasData.dA             = Kokkos::View<valT[16]>("dA");
     auto dAmirror           = Kokkos::create_mirror_view(jasData.dA);
-    jasData.d2A            = Kokkos::View<valT*>("d2A");
+    jasData.d2A            = Kokkos::View<valT[16]>("d2A");
     auto d2Amirror           = Kokkos::create_mirror_view(jasData.d2A);
 
     for (int i = 0; i < 16; i++) {
