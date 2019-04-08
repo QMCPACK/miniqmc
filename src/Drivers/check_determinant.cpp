@@ -211,6 +211,7 @@ int main(int argc, char** argv)
       }
 
       // accumulate error
+      determinant.sync_to_host();
       for (int i = 0; i < determinant_ref.size(); i++)
       {
         accumulated_error += std::fabs(determinant_ref(i) - determinant(i));

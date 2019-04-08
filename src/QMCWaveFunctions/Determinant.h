@@ -869,18 +869,25 @@ void checkDiff(viewType1 a, viewType2 b, const std::string& tag) {
 }
 
 
+// Compute the log of the determinant of view
 template<class ViewType, class LinAlgHelperType, typename value_type>
 value_type InvertWithLog(ViewType view, LinAlgHelperType& lah, value_type& phase) {
-  value_type logdet(0.0);
-  lah.getrf(view);
-  auto piv = lah.extractPivot();
-  int sign_det = 1;
-  for (int i = 0; i < view.extent(0); i++) {
-    sign_det *= (piv(i) == i+1) ? 1 : -1;
-    sign_det *= (view(i,i) > 0) ? 1 : -1;
-    logdet += std::log(std::abs(view(i,i)));
-  }
-  lah.getri(view);
+  lah.getrf(view);                // LU factorization
+  auto piv = lah.extractPivot();  // Pivot list
+  auto view_host = Kokkos::create_mirror_view(view);  // LU factorized matrix
+  Kokkos::deep_copy(view_host, view);  // populate view_host
+  
+  // Compute the sign of the determinant by keeping track of row/column swaps via piv
+  // Compute  log(|det(view)|) by a sum over diagonal elements of LU-factorized view
+  value_type logdet   = 0;
+  int        sign_det = 1;
+  for (int i = 0; i < view_host.extent(0); i++) // Runs on host
+    {
+      sign_det *= (piv(i) == i+1) ? 1 : -1;
+      sign_det *= (view_host(i,i) > 0) ? 1 : -1;
+      logdet   += std::log(std::abs(view_host(i,i)));
+    }  
+  lah.getri(view);  // Matrix inversion
   phase = (sign_det > 0) ? 0.0 : M_PI;
   return logdet;
 }
@@ -1046,16 +1053,54 @@ struct DiracDeterminant : public WaveFunctionComponent
     Kokkos::Profiling::popRegion();
   }
 
-  // accessor functions for checking
-  inline double operator()(int i) const {
+  // JPT: Added a new method to sync views across host and device.
+  //      This was added to speed up the error accumulation step
+  //      of check_determinant
+  void sync_to_host()
+  {
+    std::cout << "Syncing arrays from device to host...\n";
+    /*
+    std::cout << " psiM     size= (" << psiM.extent(0)     << ", " << psiM.extent(1)     << ")\n";
+    std::cout << " psiMinv  size= (" << psiMinv.extent(0)  << ", " << psiMinv.extent(1)  << ")\n";
+    std::cout << " psiMsave size= (" << psiMsave.extent(0) << ", " << psiMsave.extent(1) << ")\n";
+    std::cout << " psiV     size= (" << psiV.extent(0)     << ")\n";
+    */
+
+    Kokkos::deep_copy(psiM_host, psiM);
+    Kokkos::deep_copy(psiMinv_host, psiMinv);
+    Kokkos::deep_copy(psiMsave_host, psiMsave);
+    Kokkos::deep_copy(psiV_host, psiV);
+  }
+
+  // JPT: Added a new method to sync views across host and device.
+  //      This was added to speed up the error accumulation step
+  //      of check_determinant
+  void sync_to_device()
+  {
+    std::cerr << "Syncing arrays from host to device...\n";
+    /*
+    std::cerr << " psiM     size= (" << psiM.extent(0)     << ", " << psiM.extent(1)     << ")\n";
+    std::cerr << " psiMinv  size= (" << psiMinv.extent(0)  << ", " << psiMinv.extent(1)  << ")\n";
+    std::cerr << " psiMsave size= (" << psiMsave.extent(0) << ", " << psiMsave.extent(1) << ")\n";
+    std::cerr << " psiV     size= (" << psiV.extent(0)     << ")\n";
+    */
+
+    Kokkos::deep_copy(psiM, psiM_host);
     Kokkos::deep_copy(psiMinv, psiMinv_host);
+    Kokkos::deep_copy(psiMsave, psiMsave_host);
+    Kokkos::deep_copy(psiV, psiV_host);
+  }
+
+
+  // accessor functions for checking
+  // MUST sync psiMinv, psiMinv_host before calling!
+  inline double operator()(int i) const {
+    // Convert 1d index i to 2d indices x,y
     int x = i / psiMinv_host.extent(0);
     int y = i % psiMinv_host.extent(0);
-    auto dev_subview = subview(psiMinv, x, y);
-    auto dev_subview_host = Kokkos::create_mirror_view(dev_subview);
-    Kokkos::deep_copy(dev_subview_host, dev_subview);
-    return dev_subview_host(0,0);
+    return psiMinv_host(x,y);
   }
+
   inline int size() const { return psiMinv.extent(0)*psiMinv.extent(1); }
 
 private:
