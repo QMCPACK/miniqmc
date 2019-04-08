@@ -40,7 +40,7 @@ void WaveFunctionBuilder<DT>::build(bool useRef,
                                     ParticleSet& ions,
                                     ParticleSet& els,
                                     const RandomGenerator<QMCTraits::RealType>& RNG,
-				    DeviceBuffers<DT>* dev_bufs,
+				    DeviceBuffers<DT>& dev_bufs,
                                     bool enableJ3)
 {
   using valT = WaveFunction::valT;
@@ -70,7 +70,7 @@ void WaveFunctionBuilder<DT>::build(bool useRef,
 
  	WF.nelup  = nelup;
 
-WF.Det_up = new DetType(nelup, RNG, 0);
+    WF.Det_up = new DetType(nelup, RNG, 0);
     WF.Det_dn = new DetType(els.getTotalNum() - nelup, RNG, nelup);
     
     // J1 component
@@ -105,7 +105,7 @@ WF.Det_up = new DetType(nelup, RNG, 0);
 
     // determinant component
     WF.nelup  = nelup;
-    devDetBuild(WF, RNG, els,  *dev_bufs);
+    devDetBuild(WF, RNG, els, dev_bufs);
 
     // J1 component
     J1OrbType* J1 = new J1OrbType(ions, els);

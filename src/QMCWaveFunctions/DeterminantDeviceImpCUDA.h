@@ -52,8 +52,8 @@ public:
     : DeterminantDevice( nels, RNG, First),
       FirstIndex(First),
       myRandom(RNG),
-      matrix_shipped(false),
-      host_buffer_(host_buffer.determinant_host_buffer)
+      matrix_shipped(false)
+      //host_buffer_(host_buffer.determinant_host_buffer)
   {
     cudaStreamCreate(&stream_);
     psiMinv.resize(nels, nels);
@@ -154,19 +154,22 @@ public:
     }
     updateRow(psiMinv, psiV,
 	      nels, nels, iel - FirstIndex, curRatio, cuda_buffer.getWidth(), cuda_buffer.get_devptr(), host_buffer_, stream_);
-    cudaStreamSynchronize(stream_);    
-    std::copy_n(psiV.data(), nels, psiMsave[iel - FirstIndex]);
   }
 
+    inline void finishUpdate_i(int iel)
+    {
+      cudaStreamSynchronize(stream_);
+      host_buffer_.toNormalTcpy(psiMinv.data(), 0, psiMinv.size());
+    }
+    
   /** accessor functions for checking */
   inline double operatorParImp(int i) const { return psiMinv(i); }
   inline int sizeImp() const { return psiMinv.size(); }
 
 private:
   GPUArray<double, 1, 1> cuda_buffer;
-  PinnedHostBuffer& host_buffer_;
+  PinnedHostBuffer host_buffer_;
   cudaStream_t stream_;
-  int buffer_offset_;
   /// log|det|
   double LogValue;
   /// current ratio

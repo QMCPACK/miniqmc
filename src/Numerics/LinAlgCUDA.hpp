@@ -102,6 +102,7 @@ struct LinAlgCUDA : public LinAlgCPU
     //cudaMemcpyAsync((void*)buffer, dev_ptr, cuda_buffer_size, cudaMemcpyDefault, stream);
     cudaStreamSynchronize(stream);
     host_buffer.toNormalTcpy(temp, psiMinv.size() + psiV.size(), m );
+    //host_buffer.toNormalTcpy(psiV.data(), psiMinv.size(), m)
     cudaStreamSynchronize(stream);
     temp[rowchanged] = cone - c_ratio;
     std::copy_n(psiMinv.data() + m * rowchanged, m, rcopy);
@@ -110,8 +111,6 @@ struct LinAlgCUDA : public LinAlgCPU
     host_buffer.partialToDevice(temp_dev_ptr, psiMinv.size() + psiV.size(), 2 * m);
     linalg::Ger(m, m, -cone, temp_dev_ptr+m, 1, temp_dev_ptr, 1, dev_ptr, m, stream);
     host_buffer.partialFromDevice(dev_ptr, 0, psiMinv.size());
-    cudaStreamSynchronize(stream);
-    host_buffer.toNormalTcpy(psiMinv.data(), 0, psiMinv.size());
   }
 
   // most of the calls in the CPU version exist in the magma library in batched and unbatched forms. 

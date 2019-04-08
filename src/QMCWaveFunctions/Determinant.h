@@ -30,7 +30,7 @@
 namespace qmcplusplus
 {
 
-    template<class DEVICE>
+ template<class DEVICE>
 struct DiracDeterminant : public WaveFunctionComponent
 {
     DiracDeterminant(int nels, const RandomGenerator<RealType>& RNG, int First = 0)
@@ -92,6 +92,7 @@ struct DiracDeterminant : public WaveFunctionComponent
     determinant_device->acceptMove(P, iel);
   }
 
+  inline void finishUpdate(int iel) { determinant_device->finishUpdate(iel); }
   // accessor functions for checking
   inline double operator()(int i) {
     return determinant_device->operator()(i);

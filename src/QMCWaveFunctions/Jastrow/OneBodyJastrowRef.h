@@ -275,6 +275,7 @@ struct OneBodyJastrowRef : public WaveFunctionComponent
     Grad[iat] = curGrad;
     Lap[iat]  = curLap;
   }
+
 };
 
 } // namespace miniqmcreference

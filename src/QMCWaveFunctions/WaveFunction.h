@@ -106,10 +106,17 @@ public:
                         const std::vector<ParticleSet*>& P_list) const;
 
   // others
+  void finishUpdates(int iel)
+  {
+      assert(Det_up != nullptr);
+      assert(Det_up != nullptr);
+    Det_up->finishUpdate(iel);
+    Det_dn->finishUpdate(iel);
+  }
   int get_ei_TableID() const { return ei_TableID; }
   valT getLogValue() const { return LogValue; }
   void setupTimers();
-
+    
   // friends
   friend void build_WaveFunction(bool useRef,
                                  WaveFunction& WF,

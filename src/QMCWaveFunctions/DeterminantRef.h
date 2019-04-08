@@ -275,7 +275,7 @@ struct DiracDeterminantRef : public qmcplusplus::WaveFunctionComponent
   /** accessor functions for checking */
   inline double operator()(int i) const { return psiMinv(i); }
   inline int size() const { return psiMinv.size(); }
-
+    inline void finishUpdate(int iel) {}
 private:
   /// log|det|
   double LogValue;

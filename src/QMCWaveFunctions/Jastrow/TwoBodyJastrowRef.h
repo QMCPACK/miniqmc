@@ -401,6 +401,7 @@ typename TwoBodyJastrowRef<FT>::RealType
 {
   evaluateGL(P, G, L, true);
   return LogValue;
+
 }
 
 template<typename FT>

@@ -97,6 +97,11 @@ public:
     return static_cast<DEVICEIMP*>(this)->operatorParImp(i);
   }
 
+    inline void finishUpdate(int iel)
+    	{
+    	     static_cast<DEVICEIMP*>(this)->finishUpdate_i(iel);
+    	}
+  
   inline int size() const { return static_cast<DEVICEIMP*>(this)->sizeImp(); }
 };
 } // namespace qmcplusplus

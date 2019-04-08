@@ -259,6 +259,14 @@ template<>
 
 }
 
+template<>
+void Crowd<Devices::CUDA>::finishUpdate(int iels)
+{
+    std::for_each(wfs_begin(), wfs_end(),
+		  [iels](WaveFunction& wf){
+		      wf.finishUpdates(iels);
+		  }   );	 
+}
 
   } // namespace qmcplusplus
 

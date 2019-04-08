@@ -130,6 +130,7 @@ public:
     std::copy_n(psiV.data(), nels, psiMsave[iel - FirstIndex]);
   }
 
+  inline void finishUpdate_i(int iels) {}
   /** accessor functions for checking */
   inline double operatorParImp(int i) const { return psiMinv(i); }
   inline int sizeImp() const { return psiMinv.size(); }

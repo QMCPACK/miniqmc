@@ -169,6 +169,8 @@ struct WaveFunctionComponent : public QMCTraits
                           ParticleSet::ParticleLaplacian_t& L,
                           bool fromscratch = false) = 0;
 
+  virtual void finishUpdate(int iel)  {};
+  
   /// operates on multiple walkers
   virtual void multi_evaluateLog(const std::vector<WaveFunctionComponent*>& WFC_list,
                                  const std::vector<ParticleSet*>& P_list,
