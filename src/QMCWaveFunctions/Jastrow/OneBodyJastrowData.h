@@ -262,7 +262,7 @@ public:
     
     for (int jat = 0; jat < iLimit; jat++) {
       Realtype r = dist(jat+start);
-      if (r < cutoff_radius) {
+      if (r < cutoff_radius(gid)) {
 	DistArrayCompressed(iCount) = r;
 	iCount++;
       }
@@ -301,7 +301,7 @@ public:
     
     for (int jat = 0; jat < iLimit; jat++) {
       Realtype r = dist(jat+start);
-      if (r < cutoff_radius) {
+      if (r < cutoff_radius(gid)) {
 	DistIndices(iCount) = jat+start;
 	DistArrayCompressed(iCount) = r;
 	iCount++;
