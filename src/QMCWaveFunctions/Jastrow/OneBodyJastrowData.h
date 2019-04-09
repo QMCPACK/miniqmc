@@ -68,6 +68,7 @@ public:
     A = rhs.A;
     dA = rhs.dA;
     d2A = rhs.d2A;
+    return this;
   }
   OneBodyJastrowData(const OneBodyJastrowData&) = default;
   

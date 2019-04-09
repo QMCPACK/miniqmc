@@ -419,15 +419,6 @@ public:
       // we're hosed, this will NOT work
       Kokkos::resize(piv,ext);
     }
-    /* should work in principle, problem is the code below fails if we are dealing with a complex data type (cast fails)
-    // do initial call to find out how big the workspace needs to be
-    getri_cpu_impl(ext, pointerConverter(view.data()), ext, piv.data(), pointerConverter(work.data()), -1, status);
-
-    // now check that workspace is sufficient and resize if not
-    if(work.extent(0) != static_cast<int>(work(0))) {
-      Kokkos::resize(work,static_cast<int>(work(0)));
-    }
-    */
     if (work.extent(0) < ext*ext) {
       Kokkos::resize(work,ext*ext);
     }
