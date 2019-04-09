@@ -185,33 +185,37 @@ void MiniqmcDriverFunctions<DT>::movers_runThreads(MiniqmcOptions& mq_opt,
                                             ParticleSet& ions,
                                             const SPOSet* spo_main)
 {
-    #pragma omp parallel for
-    for (int iw = 0; iw < mq_opt.nmovers; iw++)
-    {
-      MiniqmcDriverFunctions<DT>::movers_thread_main(iw, 1, mq_opt, myPrimes, ions, spo_main);
-    }
+    unsigned int threads = std::min(omp_get_max_threads(), mq_opt.nmovers);
+    // This prevents movers_thread_main instances from being destroyed and causing synchronization due to
+    // freeing memory on the GPU.
+    //boost::barrier block_complete(threads);
+
+    TaskBlock<Threading::OPENMP> synchronized_crowds(mq_opt.nmovers);
+    TaskBlockBarrier<Threading::OPENMP> barrier(mq_opt.nmovers);
+    synchronized_crowds(MiniqmcDriverFunctions<DT>::movers_thread_main<Threading::OPENMP>, barrier, 1, mq_opt, myPrimes, ions, spo_main); //, block_complete);
+
 }
 
   
-template<Devices DT>
-void MiniqmcDriverFunctions<DT>::movers_runStdThreads(MiniqmcOptions& mq_opt,
-                                            const PrimeNumberSet<uint32_t>& myPrimes,
-                                            ParticleSet& ions,
-                                            const SPOSet* spo_main)
-{
-    std::vector<std::thread> threads(mq_opt.nmovers);
+// template<Devices DT>
+// void MiniqmcDriverFunctions<DT>::movers_runStdThreads(MiniqmcOptions& mq_opt,
+//                                             const PrimeNumberSet<uint32_t>& myPrimes,
+//                                             ParticleSet& ions,
+//                                             const SPOSet* spo_main)
+// {
+//     std::vector<std::thread> threads(mq_opt.nmovers);
     
-    for (int iw = 0; iw < mq_opt.nmovers; ++iw)
-    {
-	threads[iw] = std::thread(MiniqmcDriverFunctions<DT>::movers_thread_main, iw, 1, std::ref(mq_opt), std::ref(myPrimes), ions, std::ref(spo_main));
-    }
+//     for (int iw = 0; iw < mq_opt.nmovers; ++iw)
+//     {
+// 	threads[iw] = std::thread(MiniqmcDriverFunctions<DT>::movers_thread_main<Threading::STD>, iw, 1, std::ref(mq_opt), std::ref(myPrimes), ions, std::ref(spo_main));
+//     }
 
-    for (int iw = 0; iw < mq_opt.nmovers; ++iw)
-    {
-	threads[iw].join();
-    }
+//     for (int iw = 0; iw < mq_opt.nmovers; ++iw)
+//     {
+// 	threads[iw].join();
+//     }
 
-}
+// }
 
 template class MiniqmcDriverFunctions<Devices::CPU>;
 #ifdef QMC_USE_CUDA

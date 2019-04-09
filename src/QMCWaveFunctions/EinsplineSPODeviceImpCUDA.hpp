@@ -136,7 +136,7 @@ public:
     host_einsplines_ = in.getEinsplines();
     for (int i = 0; i < esp.nBlocks; ++i)
     {
-      std::cout << "EinsplineSPODeviceImp<Devices::CUDA> constructor, copy host_spline coefficients to device_spline coefficients\n";
+	//std::cout << "EinsplineSPODeviceImp<Devices::CUDA> constructor, copy host_spline coefficients to device_spline coefficients\n";
 
       device_einsplines_->creator()(host_einsplines_->operator[](i),i);
     }
@@ -170,8 +170,8 @@ public:
    */
   EinsplineSPODeviceImp(const EinsplineSPODeviceImp<Devices::CPU, T>& in, int team_size, int member_id)
   {
-    std::cout << "EinsplineSPODeviceImpCUDA(EinsplineSPODeviceImp<Devices::CPU, T>&) Fat Copy constructor called"
-              << '\n';
+      //std::cout << "EinsplineSPODeviceImpCUDA(EinsplineSPODeviceImp<Devices::CPU, T>&) Fat Copy constructor called"
+      //       << '\n';
     const EinsplineSPOParams<T>& inesp = in.getParams();
     esp.nSplinesSerialThreshold_V      = inesp.nSplinesSerialThreshold_V;
     esp.nSplinesSerialThreshold_VGH    = inesp.nSplinesSerialThreshold_VGH;
@@ -192,7 +192,7 @@ public:
     {
       // const ThisType& in_cast = static_cast<const ThisType&>(in);
       // host_einsplines_[i]      = static_cast<host_spline_type*>(in_cast.getHostEinspline(t));
-      std::cout << "EinsplineSPODeviceImp<Devices::CUDA> fat constructor, copy host_spline coefficients to device_spline coefficients\n";
+      //std::cout << "EinsplineSPODeviceImp<Devices::CUDA> fat constructor, copy host_spline coefficients to device_spline coefficients\n";
       device_einsplines_->creator()(host_einsplines_->operator[](i),i);
     }
     resize();
@@ -203,8 +203,8 @@ public:
   EinsplineSPODeviceImp(const EinsplineSPODeviceImp<Devices::CUDA, T>& in, int team_size, int member_id)
       : dev_psi(), dev_grad(), dev_linv(), dev_hess()
   {
-    std::cout << "EinsplineSPODeviceImpCUDA(EinsplineSPODeviceImp<Devices::CUDA, T>&,...) Fat Copy constructor called"
-              << '\n';
+      //std::cout << "EinsplineSPODeviceImpCUDA(EinsplineSPODeviceImp<Devices::CUDA, T>&,...) Fat Copy constructor called"
+      //            << '\n';
     const EinsplineSPOParams<T>& inesp = in.getParams();
     esp.nSplinesSerialThreshold_V      = inesp.nSplinesSerialThreshold_V;
     esp.nSplinesSerialThreshold_VGH    = inesp.nSplinesSerialThreshold_VGH;

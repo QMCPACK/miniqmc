@@ -117,9 +117,9 @@ template<>
     {
       double size_buffer = esp.nBlocks * pack_size_ * esp.nSplinesPerBlock * sizeof(T) * (1+3+6);
       double size_buffer_MB = size_buffer / 1024 / 1024;
-      std::cout << "Allocating GPU buffers for  nBlocks = " << esp.nBlocks
-		<< " pack_size = " << pack_size_ << " esp.nSplinesPerBlock = "
-		<< esp.nSplinesPerBlock << " vgh eval of: " << size_buffer_MB << "MB\n";
+      //std::cout << "Allocating GPU buffers for  nBlocks = " << esp.nBlocks
+      //	<< " pack_size = " << pack_size_ << " esp.nSplinesPerBlock = "
+      //	<< esp.nSplinesPerBlock << " vgh eval of: " << size_buffer_MB << "MB\n";
       buffers_.dev_psi.resize(esp.nBlocks * pack_size_, esp.nSplinesPerBlock);
       buffers_.dev_hess.resize(esp.nBlocks * pack_size_, esp.nSplinesPerBlock);
       buffers_.dev_grad.resize(esp.nBlocks * pack_size_, esp.nSplinesPerBlock);
@@ -194,9 +194,9 @@ template<>
     {
       double size_buffer = esp.nBlocks * pack_size_ * esp.nSplinesPerBlock * sizeof(T) * (1+3+6);
       double size_buffer_MB = size_buffer / 1024 / 1024;
-      std::cout << "Allocating GPU buffers for  nBlocks = " << esp.nBlocks
-		<< " pack_size = " << pack_size_ << " esp.nSplinesPerBlock = "
-		<< esp.nSplinesPerBlock << " vgh eval of: " << size_buffer_MB << "MB\n";
+      //std::cout << "Allocating GPU buffers for  nBlocks = " << esp.nBlocks
+      //	<< " pack_size = " << pack_size_ << " esp.nSplinesPerBlock = "
+      //	<< esp.nSplinesPerBlock << " vgh eval of: " << size_buffer_MB << "MB\n";
       buffers_.dev_psi.resize(esp.nBlocks * pack_size_, esp.nSplinesPerBlock);
       buffers_.dev_hess.resize(esp.nBlocks * pack_size_, esp.nSplinesPerBlock);
       buffers_.dev_grad.resize(esp.nBlocks * pack_size_, esp.nSplinesPerBlock);

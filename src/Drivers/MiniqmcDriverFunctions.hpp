@@ -2,7 +2,7 @@
 // This file is distributed under the University of Illinois/NCSA Open Source
 // License.  See LICENSE file in top directory for details.
 //
-// Copyright (c) 2018 QMCPACK developers.
+// Copyright (c) 2019 QMCPACK developers.
 //
 // File developed by:
 // Peter Doak, doakpw@ornl.gov, Oak Ridge National Lab
@@ -16,6 +16,7 @@
 
 #include <functional>
 #include <boost/hana/map.hpp>
+//#include <boost/thread/barrier.hpp>
 #include "Devices.h"
 #include "Drivers/MiniqmcOptions.hpp"
 #include "Drivers/Mover.hpp"
@@ -26,6 +27,7 @@
 #include "QMCWaveFunctions/DeterminantDeviceImp.h"
 #include "QMCWaveFunctions/SPOSet.h"
 #include "QMCWaveFunctions/SPOSet_builder.h"
+#include "Utilities/TaskBlock.hpp"
 #include "Utilities/qmcpack_version.h"
 #include "Utilities/PrimeNumberSet.h"
 
@@ -56,21 +58,24 @@ public:
   static void movers_runThreads(MiniqmcOptions& mq_opt,
                          const PrimeNumberSet<uint32_t>& myPrimes,
                          ParticleSet& ions,
-			 const SPOSet* spo_main);
-  static void movers_runStdThreads(MiniqmcOptions& mq_opt,
-                         const PrimeNumberSet<uint32_t>& myPrimes,
-                         ParticleSet& ions,
-			 const SPOSet* spo_main);
+				const SPOSet* spo_main);
+  // static void movers_runStdThreads(MiniqmcOptions& mq_opt,
+  //                        const PrimeNumberSet<uint32_t>& myPrimes,
+  //                        ParticleSet& ions,
+  // 			 const SPOSet* spo_main);
 
   static void finalize();
 private:
   static void mover_info();
+  template<Threading TT>
   static void movers_thread_main(const int ip,
+				 TaskBlockBarrier<TT>& barrier,
 			  const int team_size,
 			  MiniqmcOptions& mq_opt,
                           const PrimeNumberSet<uint32_t>& myPrimes,
                           ParticleSet ions,
-			  const SPOSet* spo_main);
+				 const SPOSet* spo_main);
+//      				boost::barrier& block_complete);
   static void thread_main(const int ip,
 			  const int team_size,
 			  MiniqmcOptions& mq_opt,
@@ -98,12 +103,14 @@ void MiniqmcDriverFunctions<DT>::buildSPOSet(SPOSet*& spo_set,
  */
 
 template<Devices DT>
+template<Threading TT>
 void MiniqmcDriverFunctions<DT>::movers_thread_main(const int ip,
+						    				    TaskBlockBarrier<TT>& barrier,
                                                               const int team_size,
                                                               MiniqmcOptions& mq_opt,
                                                               const PrimeNumberSet<uint32_t>& myPrimes,
                                                               ParticleSet ions,
-                                                              const SPOSet* spo_main)
+						    const SPOSet* spo_main)
 {
   const int member_id = ip % team_size;
   // create and initialize movers
@@ -136,7 +143,7 @@ void MiniqmcDriverFunctions<DT>::movers_thread_main(const int ip,
 
   movers.evaluateLog();
 
-  app_summary() << "initial update complete \n";
+  //app_summary() << "initial update complete \n";
 
   const int nions = ions.getTotalNum();
   const int nels  = movers.elss[0]->getTotalNum();
@@ -197,8 +204,8 @@ void MiniqmcDriverFunctions<DT>::movers_thread_main(const int ip,
     mq_opt.Timers[Timer_ECP]->stop();
 
     mq_opt.Timers[Timer_Diffusion]->stop();
-
   } // nsteps
+  barrier.wait();
 }
 
 extern template class qmcplusplus::MiniqmcDriverFunctions<Devices::CPU>;
