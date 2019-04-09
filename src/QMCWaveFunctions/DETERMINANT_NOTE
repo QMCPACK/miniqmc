@@ -1,0 +1,18 @@
+There seem to be two ways to go here.  
+1. Look for a performance portable route that will handle batching where 
+   the code is the same between the different devices. I can see two ways of doing 
+   this, neither of which seem particularly attractive.  
+   A. Write netlib style or slightly better kernels to handle gemv, ger, getri and getrf.
+      Then these could be used with hierarchical parallelism to get threaded, batched
+      evaluation.  The downside is it's hard to see how one could ever reach the performance
+      of the vendor's libraries.
+   B. Use Kokkos kernels to handle the linear algebra.  The trouble seems to be the 
+      spotty coverage here, with issues in build system and functionality (for instance
+      they have no ger and their LU does not have pivoting.  
+2. Abstract vendor solutions to the point where many of these could be run at once.  The
+   nice thing about this is ideal performance could be achieved on the largest problem
+   where the whole device could get the kernel.  The problem is that it seems this will
+   get very specific very fast.
+   A.  For cuda, use streams where you have as many of these as walkers.  
+   B.  On the CPU side, there is no clear choice.  Can certainly look at using MKL's 
+       mk_set_num_threads_local.  Here will have to look at 

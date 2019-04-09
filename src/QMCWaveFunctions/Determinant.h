@@ -91,6 +91,12 @@ void updateRow(ViewType pinv, ArrayViewType tv, int rowchanged, value_type c_rat
 }
 
 
+// this design is problematic because I cannot call cublas from inside of a device function
+// probalby will have to abandon this and fold it back into the earlier version, but perhaps I
+// can keep the scalar values on the device (in views).  Then I would keep the structure of the 
+// code as it is and just add functionality to the linalgHelper to work in a particular stream and
+// also to be able to set cublas to expect the scalar arguments to be in the device memory
+
 
 // need to reorganize in two ways
 // 1.  push data out into plain class that can live on the device
@@ -161,7 +167,7 @@ struct DiracDeterminantKokkos : public QMCTraits
     constexpr ValueType cone(1.0);
     constexpr ValueType czero(0.0);
     ValueType c_ratio = cone / c_ratio_in;
-    Kpkkos::Profiling::PushRegion("updateRow::gemvTrans");
+    Kokkos::Profiling::PushRegion("updateRow::gemvTrans");
     lah.gemvTrans(psiMinv, psiV, tempRowVec, c_ratio, czero);
     Kokkos::Profiling::popRegion();
 
