@@ -109,7 +109,8 @@ void MiniqmcDriver::initialize(int argc, char** argv)
 
   if (mq_opt_.enableCrowd)
     app_summary() << "batched walkers activated \n"
-                  << "pack size: " << mq_opt_.pack_size << '\n';
+		  << "crowds = " << mq_opt_.nmovers << '\n'
+                  << "pack size = " << mq_opt_.pack_size << '\n';
   mq_opt_.Timers[Timer_Init]->stop();
 
   //Now lets figure out what threading sizes are needed:
