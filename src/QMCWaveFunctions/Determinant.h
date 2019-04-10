@@ -15,6 +15,13 @@
  * @brief Determinant piece of the wave function
  */
 
+// need to implement: multi_evaluateLog, multi_evaluateGL, multi_evalGrad,
+//                    multi_ratioGrad, multi_acceptrestoreMove (under the hood calls acceptMove)
+
+// strategy is to make a View of DiracDeterminantKokkos and then to write functions
+// that contain kernels that work on them.  This will allow us to follow the pointers
+// during the parallel evaluation and potentially do more parallel work
+
 #ifndef QMCPLUSPLUS_DETERMINANT_H
 #define QMCPLUSPLUS_DETERMINANT_H
 
@@ -36,72 +43,76 @@
 namespace qmcplusplus
 {
 
-template<class ViewType, class LinAlgHelperType, typename value_type>
-value_type InvertWithLog(ViewType view, LinAlgHelperType& lah, value_type& phase) {
-  value_type logdet(0.0);
-  lah.getrf(view);
-  auto locPiv = lah.getPivot(); // note this is in device memory!
+
+template<class linAlgHelperType, typename ValueType>
+
+ValueType InvertWithLog(DiracDeterminantKokkos& ddk, LinAlgHelperType& lah, ValueType& phase) {
+  ValueType locLogDet(0.0);
+  lah.getrf(ddk.psiM);
+  auto locPiv = lah.getPivot(); // note, this is in device memory
   int sign_det = 1;
-  
+
   Kokkos::parallel_reduce(view.extent(0), KOKKOS_LAMBDA ( int ii, int& cur_sign) {
       cur_sign = (locPiv(i) == i+1) ? 1 : -1;
-      cur_sign *= (view(i,i) > 0) ? 1 : -1;
+      cur_sign *= (ddk.psiM(i,i) > 0) ? 1 : -1;
     }, Kokkos::Prod<int>(sign_det));
 
-  Kokkos::parallel_reduce(view.extent(0), KOKKOS_LAMBDA (int ii, value_type& v) {
-      v += std::log(std::abs(view(i,i)));
+  Kokkos::parallel_reduce(view.extent(0), KOKKOS_LAMBDA (int ii, ValueType& v) {
+      v += std::log(std::abs(ddk.psiM(i,i)));
     }, logdet);
-
-  lah.getri(view);
+  lah.getri(ddk.psiM);
   phase = (sign_det > 0) ? 0.0 : M_PI;
-  return logdet;
+  //auto logValMirror = Kokkos::create_mirror_view(ddk.LogValue);
+  //logValMirror(0) = locLogDet;
+  //Kokkos::deep_copy(ddk.LogValue, logValMirror);
+  return locLogDet;
 }
 
-template<class ViewType, class ArrayViewType, class LinAlgHelperType, typename value_type>
-void updateRow(ViewType pinv, ArrayViewType tv, int rowchanged, value_type c_ratio_in, LinAlgHelperType& lah) {
-  constexpr value_type cone(1.0);
-  constexpr value_type czero(0.0);
-  ArrayViewType temp("temp", tv.extent(0));
-  ArrayViewType rcopy("rcopy", tv.extent(0));
-  value_type c_ratio = cone / c_ratio_in;
-  Kokkos::Profiling::pushRegion("updateRow::gemvTrans");
-  lah.gemvTrans(pinv, tv, temp, c_ratio, czero);
+template<class linAlgHelperType, typename ValueType>
+void updateRow(DiracDeterminantKokkos& ddk, LinAlgHelperType& lah, int rowchanged, ValueType c_ratio_in) {
+  constexpr ValueType cone(1.0);
+  constexpr ValueType czero(0.0);
+  ValueType c_ratio = cone / c_ratio_in;
+  Kokkos::Profiling::PushRegion("updateRow::gemvTrans");
+  lah.gemvTrans(ddk.psiMinv, ddk.psiV, ddk.tempRowVec, c_ratio, czero);
   Kokkos::Profiling::popRegion();
 
   // hard work to modify one element of temp on the device
   Kokkos::Profiling::pushRegion("updateRow::pokeSingleValue");
-  auto devElem = subview(temp, rowchanged);
+  auto devElem = subview(ddk.tempRowVec, rowchanged);
   auto devElem_mirror = Kokkos::create_mirror_view(devElem);
   devElem_mirror(0) = cone - c_ratio;
   Kokkos::deep_copy(devElem, devElem_mirror);
   Kokkos::Profiling::popRegion();
 
-  // now extract the proper part of pinv into rcopy
-  // in previous version this looked like: std::copy_n(pinv + m * rowchanged, m, rcopy);
-  // a little concerned about getting the ordering wrong
   Kokkos::Profiling::pushRegion("updateRow::populateRcopy");
-
-  lah.copyChangedRow(rowchanged, pinv, rcopy);
+  lah.copyChangedRow(rowchanged, ddk.psiMinv, ddk.rcopy);
   Kokkos::Profiling::popRegion();
-      
+
   // now do ger
   Kokkos::Profiling::pushRegion("updateRow::ger");
-  lah.ger(pinv, rcopy, temp, -cone);
+  lah.ger(ddk.psiMinv, ddk.rcopy, ddk.tempRowVec, -cone);
   Kokkos::Profiling::popRegion();
 }
 
 
+
 // this design is problematic because I cannot call cublas from inside of a device function
-// probalby will have to abandon this and fold it back into the earlier version, but perhaps I
+// probably will have to abandon this and fold it back into the earlier version, but perhaps I
 // can keep the scalar values on the device (in views).  Then I would keep the structure of the 
 // code as it is and just add functionality to the linalgHelper to work in a particular stream and
 // also to be able to set cublas to expect the scalar arguments to be in the device memory
 
+// can actually still keep this.  The point is that I can have a method in DiracDeterminantKokkos
+// that takes a view full of DiracDeterminantKokkos and then I can operate on them directly.
+
+// also, I can use the embedded linalghelpers to do the low level work, but I will certainly need
+// to template these functions over the memory space.
+ 
 
 // need to reorganize in two ways
 // 1.  push data out into plain class that can live on the device
 //      also add needed functionality inline here for convenience
-// 2.  fix linalgHelper so that its methods can be called from within a kernel
 struct DiracDeterminantKokkos : public QMCTraits
 {
   using MatType = Kokkos::View<ValueType**, Kokkos::LayoutRight>;
@@ -140,62 +151,10 @@ struct DiracDeterminantKokkos : public QMCTraits
   }
 
   DiracDeterminantKokkos(const DiracDeterminantKokkos&) = default;
-
-  template<class linAlgHelperType>
-  KOKKOS_INLINE_FUNCTION
-  ValueType InvertWithLog(LinAlgHelperType& lah, ValueType& phase) {
-    ValueType locLogDet(0.0);
-    lah.getrf(psiM);
-    auto locPiv = lah.getPivot(); // needs to return a view whose memory is on the device
-    int sign_det = 1;
-
-    for (int i = 0; i < psiM.extent(0); i++) {
-      sign_det *= (locPiv(i) == i+1) ? 1 : -1;
-      sign_det *= (psiM(i,i) > 0) ? 1 : -1;
-      LocLogDet += std::log(std::abs(psiM(i,i)));
-    }
-    lah.getri(psiM);
-    phase = (sign_det > 0) ? 0.0 : M_PI;
-    LogValue(0) = locLogDet;
-    return locLogDet;
-  }
-
-  // called with psiMinv as first arg and psiV as the second
-  template<class linAlgHelperType>
-  KOKKOS_INLINE_FUNCTION
-  void updateRow(int rowchanged, ValueType c_ratio_in, linAlgHelperType& lah) {
-    constexpr ValueType cone(1.0);
-    constexpr ValueType czero(0.0);
-    ValueType c_ratio = cone / c_ratio_in;
-    Kokkos::Profiling::PushRegion("updateRow::gemvTrans");
-    lah.gemvTrans(psiMinv, psiV, tempRowVec, c_ratio, czero);
-    Kokkos::Profiling::popRegion();
-
-    // this was a lot harder when we weren't inside a kernel already
-    tempRowVec(rowchanged) = cone - c_ratio;
-
-    Kokkos::Profiling::pushRegion("updateRow::populateRcopy");
-    lah.copyChangedRow(rowchanged, psiMinv, rcopy);
-    Kokkos::Profiling::popRegion();
-
-    // now do ger
-    Kokkos::Profiling::pushRegion("updateRow::ger");
-    lah.ger(psiMinv, rcopy, tempRowVec, -cone);
-    Kokkos::Profiling::popRegion();
-  }
-
   // need to add in checkMatrix(), evaluateLog(psk*), evalGrad(psk*, iat),
   //                ratioGrad(psk*, iat, gradType), evaluateGL(psk*, G, L, fromscratch)
   //                recompute(), ratio(psk*, iel), acceptMove(psk*, iel)
-
-  
 };
-
-  
-
- 
-			 
-
       
 
 struct DiracDeterminant : public WaveFunctionComponent
@@ -203,16 +162,20 @@ struct DiracDeterminant : public WaveFunctionComponent
   DiracDeterminant(int nels, const RandomGenerator<RealType>& RNG, int First = 0) 
     : FirstIndex(First), myRandom(RNG)
   {
-    psiMinv = DoubleMatType("psiMinv",nels,nels);
-    psiM = DoubleMatType("psiM",nels,nels);
-    psiMsave = DoubleMatType("psiMsave",nels,nels);
-    psiV = Kokkos::View<RealType*>("psiV",nels);
+    ddk.LogValue   = Kokkos::View<ValueType[1]>("LogValue");
+    ddk.curRatio   = Kokkos::View<ValueType[1]>("curRatio");
+    ddk.FirstIndex = Kokkos::View<int[1]>("FirstIndex");
+    ddk.psiMinv    = DiracDeterminantKokkos::MatType("psiMinv",nels,nels);
+    ddk.psiM       = DiracDeterminantKokkos::DoubleMatType("psiM",nels,nels);
+    ddk.psiMsave   = DiracDeterminantKokkos::MatType("psiMsave",nels,nels);
+    ddk.psiV       = Kokkos::View<ValueType*>("psiV",nels);
+    ddk.tempRowVec = Kokkos::View<ValueType*>("tempRowVec", nels);
+    ddk.rcopy      = Kokkos::View<ValueType*>("rcopy", nels);
 
-    psiMinv_host = Kokkos::create_mirror_view(psiMinv);
-    psiMsave_host = Kokkos::create_mirror_view(psiMsave);
-    psiM_host = Kokkos::create_mirror_view(psiM);
-    psiV_host = Kokkos::create_mirror_view(psiV);
-
+    FirstIndexMirror = Kokkos::create_mirror_view(ddk.FirstIndex);
+    FirstIndexMirror(0) = FirstIndex;
+    Kokkos::deep_copy(ddk.FirstIndex, FirstIndexMirror);
+    
     // basically we are generating uniform random number for
     // each entry of psiMsave in the interval [-0.5, 0.5]
     constexpr double shift(0.5);
@@ -220,33 +183,31 @@ struct DiracDeterminant : public WaveFunctionComponent
     // change this to match data ordering of DeterminantRef
     // recall that psiMsave has as its fast index the leftmost index
     // however int the c style matrix in DeterminantRef 
+    auto psiMsaveMirror = Kokkos::create_mirror_view(psiMsave);
+    auto psiMMirror = Kokkos::create_mirror_view(psiM);
     for (int i = 0; i < nels; i++) {
       for (int j = 0; j < nels; j++) {
-	psiMsave_host(i,j) = myRandom.rand()-shift;
+	psiMsaveMirror(i,j) = myRandom.rand()-shift;
+	psiMMirror(j,i) = psiMsaveMirror(i,j);
       }
     }
-    Kokkos::deep_copy(psiMsave, psiMsave_host);
-     
-    RealType phase;
-    
-    for (int i = 0; i < nels; i++) {
-      for (int j = 0; j < nels; j++) {
-	psiM_host(i,j) = psiMsave_host(j,i);
-      }
-    }
-    Kokkos::deep_copy(psiM, psiM_host);
+    Kokkos::deep_copy(psiMsave, psiMsaveMirror);
+    Kokkos::deep_copy(psiM, psiMMirror);
 
-    LogValue = InvertWithLog(psiM, lah, phase);
+    RealType phase;
+    LogValue = InvertWithLog(ddk, lah, phase);
     elementWiseCopy(psiMinv, psiM);
   }
+
   void checkMatrix()
   {
-    MatType psiMRealType("psiM_RealType", psiM.extent(0), psiM.extent(0));
-    elementWiseCopy(psiMRealType, psiM);
-    checkIdentity(psiMsave, psiMRealType, "Psi_0 * psiM(T)", lah);
-    checkIdentity(psiMsave, psiMinv, "Psi_0 * psiMinv(T)", lah);
-    checkDiff(psiMRealType, psiMinv, "psiM - psiMinv(T)");
+    DiradDeterminantBase::MatType psiMRealType("psiM_RealType", ddk.psiM.extent(0), ddk.psiM.extent(0));
+    elementWiseCopy(psiMRealType, ddk.psiM);
+    checkIdentity(ddk.psiMsave, psiMRealType, "Psi_0 * psiM(T)", lah);
+    checkIdentity(ddk.psiMsave, ddk.psiMinv, "Psi_0 * psiMinv(T)", lah);
+    checkDiff(psiMRealType, ddk.psiMinv, "psiM - psiMinv(T)");
   }
+
   RealType evaluateLog(ParticleSet& P,
 		       ParticleSet::ParticleGradient_t& G,
 		       ParticleSet::ParticleLaplacian_t& L)
@@ -260,37 +221,41 @@ struct DiracDeterminant : public WaveFunctionComponent
   void evaluateGL(ParticleSet& P,
                   ParticleSet::ParticleGradient_t& G,
                   ParticleSet::ParticleLaplacian_t& L,
-                  bool fromscratch = false)
-  {}
+                  bool fromscratch = false) {}
+
   inline void recompute()
   {
     //elementWiseCopy(psiM, psiMsave); // needs to be transposed!
-    elementWiseCopyTrans(psiM, psiMsave); // needs to be transposed!
-    lah.invertMatrix(psiM);
-    elementWiseCopy(psiMinv, psiM);
+    elementWiseCopyTrans(ddk.psiM, ddk.psiMsave); // needs to be transposed!
+    lah.invertMatrix(ddk.psiM);
+    elementWiseCopy(ddk.psiMinv, ddk.psiM);
   }
+
+  // in real application, inside here it would actually evaluate spos at the new
+  // position and stick them in psiV
   inline ValueType ratio(ParticleSet& P, int iel)
   {
-    const int nels = psiV.extent(0);
+    const int nels = ddk.psiV.extent(0);
     constexpr double shift(0.5);
     //constexpr double czero(0);
+
+    auto psiVMirror = Kokkos::create_mirror_view(psiV);
     for (int j = 0; j < nels; ++j) {
-      psiV_host(j) = myRandom() - shift;
+      psiVMirror(j) = myRandom() - shift;
     }
-    Kokkos::deep_copy(psiV, psiV_host);
+    Kokkos::deep_copy(ddk.psiV, psiVMirror);
     // in main line previous version this looked like:
     // curRatio = inner_product_n(psiV.data(), psiMinv[iel - FirstIndex], nels, czero);
     // same issues with indexing
-    curRatio = lah.updateRatio(psiV, psiMinv, iel-FirstIndex);
-
+    curRatio = lah.updateRatio(ddk.psiV, ddk.psiMinv, iel-FirstIndex);
     return curRatio;
   }
   inline void acceptMove(ParticleSet& P, int iel) {
     Kokkos::Profiling::pushRegion("Determinant::acceptMove");
-    const int nels = psiV.extent(0);
+    const int nels = ddk.psiV.extent(0);
     
     Kokkos::Profiling::pushRegion("Determinant::acceptMove::updateRow");
-    updateRow(psiMinv, psiV, iel-FirstIndex, curRatio, lah);
+    updateRow(ddk.psiMinv, ddk.psiV, iel-FirstIndex, curRatio, lah);
     Kokkos::Profiling::popRegion();
     // in main line previous version this looked like:
     //std::copy_n(psiV.data(), nels, psiMsave[iel - FirstIndex]);
@@ -301,7 +266,7 @@ struct DiracDeterminant : public WaveFunctionComponent
     // the operation was like (psiMsave.data() + (iel-FirstIndex)*D2)
     // note that then to iterate through the data it was going sequentially
     Kokkos::Profiling::pushRegion("Determinant::acceptMove::copyBack");
-    lah.copyBack(psiMsave, psiV, iel-FirstIndex);
+    lah.copyBack(ddk.psiMsave, ddk.psiV, iel-FirstIndex);
 
     /*
     const int FirstIndex_ = FirstIndex;
@@ -324,15 +289,16 @@ struct DiracDeterminant : public WaveFunctionComponent
   inline double operator()(int i) const {
     // not sure what this was for, seems odd to 
     //Kokkos::deep_copy(psiMinv, psiMinv_host);
-    int x = i / psiMinv_host.extent(0);
-    int y = i % psiMinv_host.extent(0);
-    auto dev_subview = subview(psiMinv, x, y);
+    int x = i / ddk.psiMinv_host.extent(0);
+    int y = i % ddki.psiMinv_host.extent(0);
+    auto dev_subview = subview(ddk.psiMinv, x, y);
     auto dev_subview_host = Kokkos::create_mirror_view(dev_subview);
     Kokkos::deep_copy(dev_subview_host, dev_subview);
     return dev_subview_host(0,0);
   }
   inline int size() const { return psiMinv.extent(0)*psiMinv.extent(1); }
 
+  DiracDeterminantKokkos ddk;
 private:
   /// log|det|
   double LogValue;
@@ -340,30 +306,11 @@ private:
   double curRatio;
   /// initial particle index
   const int FirstIndex;
-  /// matrix type and mirror type
-  //using MatType = Kokkos::View<RealType**, Kokkos::LayoutLeft>;
-  using MatType = Kokkos::View<RealType**, Kokkos::LayoutRight>;
-  using MatMirrorType = MatType::HostMirror;
-  //using DoubleMatType = Kokkos::View<double**, Kokkos::LayoutLeft>;
-  using DoubleMatType = Kokkos::View<double**, Kokkos::LayoutRight>;
-  using DoubleMatMirrorType = DoubleMatType::HostMirror;
-  /// inverse matrix to be updated and host mirror (kept in double regardless of RealType)
-  MatType psiMinv;
-  MatMirrorType psiMinv_host;
-  /// storage for the row update and host mirror
-  Kokkos::View<RealType*> psiV;
-  Kokkos::View<RealType*>::HostMirror psiV_host;
-  /// internal storage to perform inversion correctly and host mirror
-  DoubleMatType psiM;
-  DoubleMatMirrorType psiM_host;
-  /// temporary workspace for inversion and host mirror
-  MatType psiMsave;
-  MatMirrorType psiMsave_host;
   /// random number generator for testing
   RandomGenerator<RealType> myRandom;
   /// Helper class to handle linear algebra
   /// Holds for instance space for pivots and workspace
-  linalgHelper<MatType::value_type, MatType::array_layout, MatType::memory_space> lah;
+  linalgHelper<ValueType, DiracDeterminantKokkos::array_layout, DiracDeterminantKokkos::memory_space> lah;
 };
 } // namespace qmcplusplus
 
