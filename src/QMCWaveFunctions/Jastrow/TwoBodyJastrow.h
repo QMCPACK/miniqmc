@@ -259,7 +259,7 @@ struct TwoBodyJastrow : public WaveFunctionComponent
 
 
   /////////// Helpers to populate collective data structures
-  template<atbjdType, apsdType, vectorType, vectorType2>
+  template<typename atbjdType, typename apsdType, typename vectorType, typename vectorType2>
   void populateCollectiveViews(atbjType atbjd, apsdType apsd, 
 			       vectorType& WFC_list, vectorType2& P_list) {
     auto atbjdMirror = Kokkos::create_mirror_view(atbjd);
@@ -273,7 +273,7 @@ struct TwoBodyJastrow : public WaveFunctionComponent
     Kokkos::deep_copy(apsd, apsdMirror);
   }
 
-  template<atbjdType, apsdType, vectorType, vectorType2>
+  template<typename atbjdType, typename apsdType, typename vectorType, typename vectorType2>
   void populateCollectiveViews(atbjType atbjd, apsdType apsd, vectorType& WFC_list, 
 			       vectorType2& P_list, std::vector<bool>& isAccepted) {
     auto atbjdMirror = Kokkos::create_mirror_view(atbjd);

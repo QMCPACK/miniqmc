@@ -552,7 +552,7 @@ class gpuLinalgHelper {
 public:
   using viewType = Kokkos::View<valueType**, layoutType>;
   using arrType = Kokkos::View<valueType*>;
-private:
+
   double* pointerConverter(double* d) {  return d; }
   float* pointerConverter(float* d) {  return d; }
   cuFloatComplex* pointerConverter(cuFloatComplex* d) { return d; }
@@ -563,15 +563,16 @@ private:
   cuDoubleComplex* pointerConverter(Kokkos::complex<double>* d) { return (cuDoubleComplex*)d; }
 
 private:
-  cublasHandle_t cublas_handle;
-  cusolverDnHandle_t cusolver_handle;
   int status;
   Kokkos::View<int*> piv;
   Kokkos::View<int*> info;
   viewType outView;
 
 public:
-  gpuLinalgHelper() : piv("piv", 1), info("info", 1) {
+  cublasHandle_t cublas_handle;
+  cusolverDnHandle_t cusolver_handle;
+
+ gpuLinalgHelper() : piv("piv", 1), info("info", 1) {
     //checkTemplateParams<valueType, Kokkos::LayoutLeft, Kokkos::CudaSpace>();
     status = -1;
 
