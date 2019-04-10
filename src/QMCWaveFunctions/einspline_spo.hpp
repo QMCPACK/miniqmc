@@ -219,7 +219,7 @@ struct einspline_spo : public SPOSet
           for (int j = 0; j < nSplinesPerBlock; ++j)
           {
             // Generate different coefficients for each orbital
-            myrandom.generate_uniform(coef_data.data(), coef_data.extent(0));
+            myrandom.generate_uniform(coef_data.data(), coef_data.extent(0)*coef_data.extent(1)*coef_data.extent(2));
             myAllocator.setCoefficientsForOneOrbital(j, coef_data, &einsplines(i));
           }
         }
