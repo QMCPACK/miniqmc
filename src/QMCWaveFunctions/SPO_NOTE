@@ -1,0 +1,65 @@
+Some of this will be re-designing spo.  Also will git rid of the build_sposet_view as I will be handling the partitioning myself.
+
+The way things work, you first call SPOset_builder::build_SPOSet.  This does:
+
+    // this does basically nothing
+    auto* spo_main = new einspline_spo<OHMMS_PRECISION>;
+    
+    // this is where the initialization happens
+    spo_main->set(nx, ny, nz, num_splines, nblocks);
+      // It makes a vector that has ng's
+      // it makes a view to hold spline_type objects (one for each block)
+      // it allocates coef_data (which can hold a single spo worth of splines)
+
+      // for each block it creates the einspline_spo using the allocator
+      einsplines(i) =  *myAllocator.createMultiBspline(T(0), start, end, ng, PERIODIC, nSplinesPerBlock);
+      // this is a bspline_allocator (from Numerics/spline2)
+      // it does createMultiBspline which sets up things:
+        return allocateMultiBspline(x_grid, y_grid, z_grid, xBC, yBC, zBC, num_splines);
+
+        // this goes through to the appropriate type's create_multi_UBspline which is housed 
+        // in einspline_allocator.cpp which does the real work
+        // all of that looks OK and Christian has stored the spline coefficients in a 4D view (coefs_view)
+        --  need to be careful here about what is happening to the coefficients which in general
+            will need to be carefully managed with regards to memory space
+        --  for instance, spline->coefs = spline->coefs_view.data() is a bit scary
+        --  The thing that is finally created is a multi_UBspline_3d_? which is defined in bspline_traits,
+            although that points to Numerics/Einspline/multi_bspline_structs
+        --  it seems that as long as we just touch the coefs_view element of this, we should be OK
+     
+     // now to initialize the coefficients, it goes through does 
+         int numcoef = coef_data.extent(0)*coef_data.extent(1)*coef_data.extent(2)
+         myrandom.generate_uniform(coef_data.data(), numcoef);
+         myAllocator.setCoefficientsForOneOrbital(j, coef_data, &einsplines(i));
+	 -- will need to fix this.  First cannot copy directly to the coef_data.data(), will need to use
+            deep_copy
+         -- secondly the second step is a problem.  It sets the values in coefs_view by directly
+            accessing the pointer via spline->coefs.  This could be fixed by executing a kernel instead
+     // finally it calls resize(), which changes the size of the psi, grad and hess views owned
+     // by the object.  Note that these end up using a weird view of view construct
+    }
+
+    // this is where it sets up the lattice so it can map positions back into the domain of the spline
+    spo_main->Lattice.set(lattice_b);
+    return dynamic_cast<SPOSet*>(spo_main);
+
+
+
+To evaluate, it does parallel evaluation over the blocks, eventually calling MultiBspline<T> to do the 
+evaluations.  (see Numerics/spline2/MultiBspline.hpp)
+-- this is interesting in that it does a lot of direct pointer math on spline_m->coefs.  This may well
+   be OK because it is happening inside of a kokkos::parallel_for, but it is interesting nontheless
+
+-- once this is done, it puts the results in psi, grad and hess which are separated by block.  Not sure
+   yet where those things are added together.  Actually, now that I look at them, I don't think that they are...
+
+
+
+In terms of doing evaluations on a lot of things at once (evaluate_v(const vector<PosType*>& pos)), the
+principal concern is that we might need multiple MultiBspline objects (they hold some local memory), 
+also, the output data is held by the sposet, which is an issue if we only have one sposet for all of the
+walkers.  
+   --- It might be possible to have each walker carry around its own MutiBspline object and 
+       also its own spoPsi, spoGrad and spoHess views to avoid this.  Then the calls look like
+       multi_evaluate_vgh(spo, valid_spoPsi_list, valid_spoGrad_list, valid_spoHess_list,
+                          valid_MultiBsplineList, pos_list)
