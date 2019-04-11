@@ -99,26 +99,34 @@ const std::vector<T*>
   return final_list;
 }
 
-const std::vector<ParticleSet*> extract_els_list(const std::vector<Mover*>& mover_list, int first, int last)
+const std::vector<Mover*> extract_sub_list(const std::vector<Mover*>& mover_list, int first, int last)
+{
+  std::vector<Mover*> sub_list;
+  for (auto it = mover_list.begin() + first; it != mover_list.begin() + last; it++)
+    sub_list.push_back(*it);
+  return sub_list;
+}
+
+const std::vector<ParticleSet*> extract_els_list(const std::vector<Mover*>& mover_list)
 {
   std::vector<ParticleSet*> els_list;
-  for (auto it = mover_list.begin() + first; it != mover_list.begin() + last; it++)
+  for (auto it = mover_list.begin(); it != mover_list.end(); it++)
     els_list.push_back(&(*it)->els);
   return els_list;
 }
 
-const std::vector<SPOSet*> extract_spo_list(const std::vector<Mover*>& mover_list, int first, int last)
+const std::vector<SPOSet*> extract_spo_list(const std::vector<Mover*>& mover_list)
 {
   std::vector<SPOSet*> spo_list;
-  for (auto it = mover_list.begin() + first; it != mover_list.begin() + last; it++)
+  for (auto it = mover_list.begin(); it != mover_list.end(); it++)
     spo_list.push_back((*it)->spo);
   return spo_list;
 }
 
-const std::vector<WaveFunction*> extract_wf_list(const std::vector<Mover*>& mover_list, int first, int last)
+const std::vector<WaveFunction*> extract_wf_list(const std::vector<Mover*>& mover_list)
 {
   std::vector<WaveFunction*> wf_list;
-  for (auto it = mover_list.begin() + first; it != mover_list.begin() + last; it++)
+  for (auto it = mover_list.begin(); it != mover_list.end(); it++)
     wf_list.push_back(&(*it)->wavefunction);
   return wf_list;
 }

@@ -293,7 +293,7 @@ void ParticleSet::update(bool skipSK)
 
 void ParticleSet::setActive(int iat)
 {
-  ScopedTimer local_timer(timers[Timer_setActive]);
+  //ScopedTimer local_timer(timers[Timer_setActive]);
 
   for (size_t i = 0, n = DistTables.size(); i < n; i++)
     DistTables[i]->evaluate(*this, iat);
@@ -309,7 +309,7 @@ void ParticleSet::setActive(int iat)
  */
 bool ParticleSet::makeMoveAndCheck(Index_t iat, const SingleParticlePos_t& displ)
 {
-  ScopedTimer local_timer(timers[Timer_makeMove]);
+  //ScopedTimer local_timer(timers[Timer_makeMove]);
 
   activePtcl = iat;
   activePos  = R[iat] + displ;
@@ -346,7 +346,7 @@ bool ParticleSet::makeMoveAndCheck(Index_t iat, const SingleParticlePos_t& displ
  */
 void ParticleSet::makeMoveOnSphere(Index_t iat, const SingleParticlePos_t& displ)
 {
-  ScopedTimer local_timer(timers[Timer_makeMove]);
+  //ScopedTimer local_timer(timers[Timer_makeMove]);
 
   activePtcl = iat;
   activePos  = R[iat] + displ;
@@ -362,7 +362,7 @@ void ParticleSet::makeMoveOnSphere(Index_t iat, const SingleParticlePos_t& displ
  */
 void ParticleSet::acceptMove(Index_t iat)
 {
-  ScopedTimer local_timer(timers[Timer_acceptMove]);
+  //ScopedTimer local_timer(timers[Timer_acceptMove]);
 
   if (iat == activePtcl)
   {
