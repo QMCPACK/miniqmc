@@ -114,7 +114,7 @@ void MiniqmcDriverFunctions<DT>::movers_thread_main(const int ip,
 {
   const int member_id = ip % team_size;
   // create and initialize movers
-  app_summary() << "pack size:" << mq_opt.pack_size << '\n';
+  //app_summary() << "pack size:" << mq_opt.pack_size << '\n';
   app_summary() << "thread:" << ip << " starting up \n";
   int my_accepts = 0;
   Crowd<DT> movers(ip, myPrimes, ions, mq_opt.pack_size);
@@ -183,11 +183,14 @@ void MiniqmcDriverFunctions<DT>::movers_thread_main(const int ip,
 	movers.evaluateHessian(iel);
 	mq_opt.Timers[Timer_evalVGH]->stop();
 
+	mq_opt.Timers[Timer_Update]->start();
+	movers.finishUpdate(iel);
+        mq_opt.Timers[Timer_Update]->stop();
+
   
 	// Accept/reject the trial move
         mq_opt.Timers[Timer_Update]->start();
 	int these_accepts = movers.acceptRestoreMoves(iel, mq_opt.accept);
-	movers.finishUpdate(iel);
 	//app_summary() << "Moves accepted: " << these_accepts << "\n";
 	my_accepts += these_accepts;
         mq_opt.Timers[Timer_Update]->stop();

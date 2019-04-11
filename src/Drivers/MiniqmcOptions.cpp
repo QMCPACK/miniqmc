@@ -20,7 +20,6 @@ MiniqmcOptions readOptions(int argc, char** argv)
         break;
       case 'p': // pack_size
         mq_opt.pack_size = atoi(optarg);
-	app_error() << "Read pack_size = " << optarg << '\n';
         break;
       case 'c': // number of members per team
         mq_opt.team_size = atoi(optarg);

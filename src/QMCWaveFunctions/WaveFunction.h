@@ -36,6 +36,7 @@ namespace qmcplusplus
 enum WaveFunctionTimers
   {
     Timer_Det,
+    Timer_Finish,
     Timer_GL,
   };
 
@@ -110,8 +111,13 @@ public:
   {
       assert(Det_up != nullptr);
       assert(Det_up != nullptr);
-    Det_up->finishUpdate(iel);
-    Det_dn->finishUpdate(iel);
+    timers[Timer_Finish]->start();
+    if (iel < nelup)
+	Det_up->finishUpdate(iel);
+    else
+      Det_dn->finishUpdate(iel);
+    timers[Timer_Finish]->stop();
+
   }
   int get_ei_TableID() const { return ei_TableID; }
   valT getLogValue() const { return LogValue; }

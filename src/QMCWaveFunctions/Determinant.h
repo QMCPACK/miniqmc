@@ -42,7 +42,6 @@ struct DiracDeterminant : public WaveFunctionComponent
   {
       determinant_device = new DEVICE(nels, RNG, dev_bufs, First);
   }
-
     
   ~DiracDeterminant()
   {

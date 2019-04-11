@@ -80,11 +80,12 @@ void MiniqmcDriver::initialize(int argc, char** argv)
   const size_t determinant_buffer_size = (static_cast<size_t>(norb) * norb + norb * 3) * sizeof(QMCT::RealType) * 2;
   const double determinant_buffer_size_MB =  determinant_buffer_size * 1.0 / 1024 / 1024;
 
-    app_summary() << "Number of orbitals/splines = " << norb << '\n'
-                  << "splines per block = " << mq_opt_.splines_per_block << '\n'
-                  << "Number of tiles = " << nTiles << '\n'
-                  << "Number of electrons = " << nels << '\n'
-                  << "Rmax = " << mq_opt_.Rmax << '\n';
+  app_summary() << "primitive cells (" << mq_opt_.na << " " << mq_opt_.nb << " " << mq_opt_.nc << ")\n"
+		<< "Number of orbitals/splines = " << norb << '\n'
+		<< "splines per block = " << mq_opt_.splines_per_block << '\n'
+		<< "Number of tiles = " << nTiles << '\n'
+		<< "Number of electrons = " << nels << '\n'
+		<< "Rmax = " << mq_opt_.Rmax << '\n';
     app_summary() << "Iterations = " << mq_opt_.nsteps << '\n';
     app_summary() << "OpenMP threads = " << omp_get_max_threads() << '\n';
 #ifdef HAVE_MPI
