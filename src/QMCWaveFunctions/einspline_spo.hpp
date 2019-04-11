@@ -56,9 +56,11 @@ struct einspline_spo : public SPOSet
 
   /// define the einsplie data object type
   using spline_type     = typename bspline_traits<T, 3>::SplineType;
+  /*
   using vContainer_type = Kokkos::View<T*>;
   using gContainer_type = Kokkos::View<T * [3], Kokkos::LayoutLeft>;
   using hContainer_type = Kokkos::View<T * [6], Kokkos::LayoutLeft>;
+  */
   using lattice_type    = CrystalLattice<T, 3>;
 
   /// number of blocks
@@ -80,12 +82,24 @@ struct einspline_spo : public SPOSet
   /// use allocator
   einspline::Allocator myAllocator;
   /// compute engine
-  MultiBspline<T> compute_engine;
 
+  // idea is that this will be passed in.  One potential issue is whether we need
+  // separate ones of these for each block, or is one per walker enough?
+
+  // MultiBspline<T> compute_engine;
+
+  
+
+  // each one of these basically just as a view to hold the coefficients, so it is OK
   Kokkos::View<spline_type*> einsplines;
-  Kokkos::View<vContainer_type*> psi;
-  Kokkos::View<gContainer_type*> grad;
-  Kokkos::View<hContainer_type*> hess;
+
+  Kokkos::View<T**, Kokkos::LayoutLeft> psi; // first index is spo index, second is block index
+  Kokkos::View<T**[3], Kokkos::LayoutLeft> grad; // first index spo index, second block, third dim
+  Kokkos::View<T**[6], Kokkos::LayoutLeft> hess; // first index spo index, second block, third dim
+
+  //Kokkos::View<vContainer_type*> psi;
+  //Kokkos::View<gContainer_type*> grad;
+  //Kokkos::View<hContainer_type*> hess;
 
   //Temporary position for communicating within Kokkos parallel sections.
   PosType tmp_pos;
