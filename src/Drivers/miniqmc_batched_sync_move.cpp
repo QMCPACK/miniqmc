@@ -194,6 +194,8 @@ int main(int argc, char** argv)
   int iseed  = 11;
   int nx = 37, ny = 37, nz = 37;
   int nmovers = omp_get_max_threads();
+  // number of walkers per batch
+  int nw_b = 1;
   // thread blocking
   int tileSize  = -1;
   int team_size = 1;
@@ -369,19 +371,20 @@ int main(int argc, char** argv)
 
   Timers[Timer_Init]->start();
   std::vector<Mover*> mover_list(nmovers, nullptr);
+  // cap nw_b
+  if(nw_b>nmovers) nw_b = nmovers;
+  // number of batches
+  const int nbatches = (nmovers+nw_b-1)/nw_b;
   // prepare movers
   #pragma omp parallel for
   for (int iw = 0; iw < nmovers; iw++)
   {
-    const int ip        = omp_get_thread_num();
-    const int member_id = ip % team_size;
-
     // create and initialize movers
-    Mover* thiswalker = new Mover(myPrimes[ip], ions);
+    Mover* thiswalker = new Mover(myPrimes[iw], ions);
     mover_list[iw]    = thiswalker;
 
     // create a spo view in each Mover
-    thiswalker->spo = build_SPOSet_view(useRef, spo_main, team_size, member_id);
+    thiswalker->spo = build_SPOSet_view(useRef, spo_main, 1, 0);
 
     // create wavefunction per mover
     build_WaveFunction(useRef, thiswalker->wavefunction, ions, thiswalker->els, thiswalker->rng, enableJ3);
@@ -390,10 +393,15 @@ int main(int argc, char** argv)
     thiswalker->els.update();
   }
 
-  { // initial computing
-    const std::vector<ParticleSet*> P_list(extract_els_list(mover_list));
-    const std::vector<WaveFunction*> WF_list(extract_wf_list(mover_list));
-    mover_list[0]->wavefunction.multi_evaluateLog(WF_list, P_list);
+  // initial computing
+  #pragma omp parallel for
+  for(int batch = 0; batch < nbatches; batch++)
+  {
+    int first, last;
+    FairDivideLow(mover_list.size(), nbatches, batch, first, last);
+    const std::vector<ParticleSet*> P_list(extract_els_list(mover_list, first, last));
+    const std::vector<WaveFunction*> WF_list(extract_wf_list(mover_list, first, last));
+    mover_list[first]->wavefunction.flex_evaluateLog(WF_list, P_list);
   }
   Timers[Timer_Init]->stop();
 
@@ -425,11 +433,17 @@ int main(int argc, char** argv)
 
     for (int mc = 0; mc < nsteps; ++mc)
     {
+      #pragma omp parallel for
+      for(int batch = 0; batch < nbatches; batch++)
+      {
+
       Timers[Timer_Diffusion]->start();
 
-      const std::vector<ParticleSet*> P_list(extract_els_list(mover_list));
-      const std::vector<WaveFunction*> WF_list(extract_wf_list(mover_list));
-      const Mover& anon_mover = *mover_list[0];
+      int first, last;
+      FairDivideLow(mover_list.size(), nbatches, batch, first, last);
+      const std::vector<ParticleSet*> P_list(extract_els_list(mover_list, first, last));
+      const std::vector<WaveFunction*> WF_list(extract_wf_list(mover_list, first, last));
+      const Mover& anon_mover = *mover_list[first];
 
       for (int l = 0; l < nsubsteps; ++l) // drift-and-diffusion
       {
@@ -442,7 +456,7 @@ int main(int argc, char** argv)
 
           // Compute gradient at the current position
           Timers[Timer_evalGrad]->start();
-          anon_mover.wavefunction.multi_evalGrad(WF_list, P_list, iel, grad_now);
+          anon_mover.wavefunction.flex_evalGrad(WF_list, P_list, iel, grad_now);
           Timers[Timer_evalGrad]->stop();
 
           // Construct trial move
@@ -459,13 +473,13 @@ int main(int argc, char** argv)
           std::vector<Mover*> valid_mover_list(filtered_list(mover_list, isValid));
           std::vector<bool> isAccepted(valid_mover_list.size());
 
-          const std::vector<ParticleSet*> valid_P_list(extract_els_list(valid_mover_list));
-          const std::vector<SPOSet*> valid_spo_list(extract_spo_list(valid_mover_list));
-          const std::vector<WaveFunction*> valid_WF_list(extract_wf_list(valid_mover_list));
+          const std::vector<ParticleSet*> valid_P_list(extract_els_list(valid_mover_list, 0, valid_mover_list.size()));
+          const std::vector<SPOSet*> valid_spo_list(extract_spo_list(valid_mover_list, 0, valid_mover_list.size()));
+          const std::vector<WaveFunction*> valid_WF_list(extract_wf_list(valid_mover_list, 0, valid_mover_list.size()));
 
           // Compute gradient at the trial position
           Timers[Timer_ratioGrad]->start();
-          anon_mover.wavefunction.multi_ratioGrad(valid_WF_list, valid_P_list, iel, ratios, grad_new);
+          anon_mover.wavefunction.flex_ratioGrad(valid_WF_list, valid_P_list, iel, ratios, grad_new);
 
           for (int iw = 0; iw < valid_mover_list.size(); iw++)
             pos_list[iw] = valid_mover_list[iw]->els.R[iel];
@@ -481,7 +495,7 @@ int main(int argc, char** argv)
 
           Timers[Timer_Update]->start();
           // update WF storage
-          anon_mover.wavefunction.multi_acceptrestoreMove(valid_WF_list, valid_P_list, isAccepted, iel);
+          anon_mover.wavefunction.flex_acceptrestoreMove(valid_WF_list, valid_P_list, isAccepted, iel);
           Timers[Timer_Update]->stop();
 
           // Update position
@@ -502,7 +516,7 @@ int main(int argc, char** argv)
         mover_list[iw]->els.donePbyP();
         // evaluate Kinetic Energy
       }
-      anon_mover.wavefunction.multi_evaluateGL(WF_list, P_list);
+      anon_mover.wavefunction.flex_evaluateGL(WF_list, P_list);
 
       Timers[Timer_Diffusion]->stop();
 
@@ -543,6 +557,7 @@ int main(int argc, char** argv)
         }
       }
       Timers[Timer_ECP]->stop();
+    } // batch
     } // nsteps
   }
   Timers[Timer_Total]->stop();

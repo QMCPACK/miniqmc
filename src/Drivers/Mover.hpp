@@ -72,6 +72,22 @@ struct Mover
   }
 };
 
+inline void FairDivideLow(int ntot, int nparts, int me, int& first, int& last)
+{
+  int bat     = ntot / nparts;
+  int residue = nparts - ntot % nparts;
+  if(me<residue)
+  {
+    first = bat * me;
+    last  = bat * (me + 1);
+  }
+  else
+  {
+    first = (bat + 1) * me - residue;
+    last  = (bat + 1) * (me + 1) - residue;
+  }
+}
+
 template<class T, typename TBOOL>
 const std::vector<T*>
     filtered_list(const std::vector<T*>& input_list, const std::vector<TBOOL>& chosen)
@@ -83,26 +99,26 @@ const std::vector<T*>
   return final_list;
 }
 
-const std::vector<ParticleSet*> extract_els_list(const std::vector<Mover*>& mover_list)
+const std::vector<ParticleSet*> extract_els_list(const std::vector<Mover*>& mover_list, int first, int last)
 {
   std::vector<ParticleSet*> els_list;
-  for (auto it = mover_list.begin(); it != mover_list.end(); it++)
+  for (auto it = mover_list.begin() + first; it != mover_list.begin() + last; it++)
     els_list.push_back(&(*it)->els);
   return els_list;
 }
 
-const std::vector<SPOSet*> extract_spo_list(const std::vector<Mover*>& mover_list)
+const std::vector<SPOSet*> extract_spo_list(const std::vector<Mover*>& mover_list, int first, int last)
 {
   std::vector<SPOSet*> spo_list;
-  for (auto it = mover_list.begin(); it != mover_list.end(); it++)
+  for (auto it = mover_list.begin() + first; it != mover_list.begin() + last; it++)
     spo_list.push_back((*it)->spo);
   return spo_list;
 }
 
-const std::vector<WaveFunction*> extract_wf_list(const std::vector<Mover*>& mover_list)
+const std::vector<WaveFunction*> extract_wf_list(const std::vector<Mover*>& mover_list, int first, int last)
 {
   std::vector<WaveFunction*> wf_list;
-  for (auto it = mover_list.begin(); it != mover_list.end(); it++)
+  for (auto it = mover_list.begin() + first; it != mover_list.begin() + last; it++)
     wf_list.push_back(&(*it)->wavefunction);
   return wf_list;
 }
