@@ -452,9 +452,7 @@ int main(int argc, char** argv)
         for (int iel = 0; iel < nels; ++iel)
         {
 	  // Operate on electron with index iel
-          #pragma omp parallel for
-          for (int iw = 0; iw < nw_this_batch; iw++)
-            Sub_list[iw]->els.setActive(iel);
+          anon_mover.els.flex_setActive(P_list, iel);
 
           // Compute gradient at the current position
           Timers[Timer_evalGrad]->start();

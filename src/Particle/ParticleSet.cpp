@@ -293,10 +293,25 @@ void ParticleSet::update(bool skipSK)
 
 void ParticleSet::setActive(int iat)
 {
-  //ScopedTimer local_timer(timers[Timer_setActive]);
+  ScopedTimer local_timer(timers[Timer_setActive]);
 
-  for (size_t i = 0, n = DistTables.size(); i < n; i++)
+  for (size_t i = 0; i < DistTables.size(); i++)
     DistTables[i]->evaluate(*this, iat);
+}
+
+void ParticleSet::flex_setActive(const std::vector<ParticleSet*>& P_list, int iat) const
+{
+  if (P_list.size() > 1)
+  {
+    ScopedTimer local_timer(timers[Timer_setActive]);
+    for (size_t i = 0; i < DistTables.size(); i++)
+    {
+      #pragma omp parallel for
+      for (int iw = 0; iw < P_list.size(); iw++)
+        P_list[iw]->DistTables[i]->evaluate(*P_list[iw], iat);
+    }
+  } else if (P_list.size()==1)
+    P_list[0]->setActive(iat);
 }
 
 /** move a particle iat

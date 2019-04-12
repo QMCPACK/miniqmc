@@ -206,6 +206,7 @@ public:
    * Introduced to work with update-only methods.
    */
   void setActive(int iat);
+  void flex_setActive(const std::vector<ParticleSet*>& P_list, int iat) const;
 
   /** return the position of the active partice
    *
