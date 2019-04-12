@@ -324,7 +324,7 @@ void ParticleSet::flex_setActive(const std::vector<ParticleSet*>& P_list, int ia
  */
 bool ParticleSet::makeMoveAndCheck(Index_t iat, const SingleParticlePos_t& displ)
 {
-  //ScopedTimer local_timer(timers[Timer_makeMove]);
+  ScopedTimer local_timer(timers[Timer_makeMove]);
 
   activePtcl = iat;
   activePos  = R[iat] + displ;
@@ -361,7 +361,7 @@ bool ParticleSet::makeMoveAndCheck(Index_t iat, const SingleParticlePos_t& displ
  */
 void ParticleSet::makeMoveOnSphere(Index_t iat, const SingleParticlePos_t& displ)
 {
-  //ScopedTimer local_timer(timers[Timer_makeMove]);
+  ScopedTimer local_timer(timers[Timer_makeMove]);
 
   activePtcl = iat;
   activePos  = R[iat] + displ;
@@ -377,7 +377,7 @@ void ParticleSet::makeMoveOnSphere(Index_t iat, const SingleParticlePos_t& displ
  */
 void ParticleSet::acceptMove(Index_t iat)
 {
-  //ScopedTimer local_timer(timers[Timer_acceptMove]);
+  ScopedTimer local_timer(timers[Timer_acceptMove]);
 
   if (iat == activePtcl)
   {
