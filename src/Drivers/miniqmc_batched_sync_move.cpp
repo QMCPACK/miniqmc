@@ -547,10 +547,10 @@ int main(int argc, char** argv)
 
                 els.makeMoveOnSphere(jel, deltar);
 
-                //Timers[Timer_Value]->start();
+                Timers[Timer_Value]->start();
                 spo.evaluate_v(els.R[jel]);
                 wavefunction.ratio(els, jel);
-                //Timers[Timer_Value]->stop();
+                Timers[Timer_Value]->stop();
 
                 els.rejectMove(jel);
               }
