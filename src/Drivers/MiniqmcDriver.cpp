@@ -13,12 +13,9 @@ namespace qmcplusplus
 
 void MiniqmcDriver::initialize(int argc, char** argv)
 {
-  using MyHandler = decltype(hana::unpack(devices_range, hana::template_<CaseHandler>))::type;
-  
+  using MyHandler = decltype(hana::unpack(devices_range, hana::template_<CaseHandler>))::type;  
   MyHandler handler(*this);
-
   handler.initialize(argc, argv, mq_opt_.device_number);
-  
   comm = new Communicate(argc, argv);
 
   if (!comm->root())

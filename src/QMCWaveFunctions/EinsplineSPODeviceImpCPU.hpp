@@ -103,8 +103,7 @@ public:
 
   /** "Fat" Copy Constructor only supports CPU to CPU
    */
-  EinsplineSPODeviceImp(const EinsplineSPODeviceImp<Devices::CPU, T>& in,
-                        int team_size,
+    EinsplineSPODeviceImp(const EinsplineSPODeviceImp<Devices::CPU, T>& in, int team_size,
                         int member_id)
   {
     std::cout << "EinsplineSPODeviceImpCPU Fat Copy constructor called" << '\n';

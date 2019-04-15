@@ -36,7 +36,6 @@ void MiniqmcDriverFunctions<Devices::KOKKOS>::thread_main(const int ip,
   QMCT::RealType sqrttau = std::sqrt(tau);
   QMCT::RealType accept  = 0.5;
 
-  //MiniqmcDriverFunctions<DT>::mover_info();
   std::cout << "Thread/Partition ID:" << ip << '\n';
   //Since we've merged initialization and execution, we get rid of the
   // mover_list vector.

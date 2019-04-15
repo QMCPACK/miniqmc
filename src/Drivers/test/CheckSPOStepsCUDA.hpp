@@ -57,7 +57,6 @@ void CheckSPOSteps<Devices::CUDA>::thread_main(const int np,
   NonLocalPP<OHMMS_PRECISION> ecp(random_th);
   // create spo per thread
   SPODevImp spo(spo_main, team_size, member_id);
-  //SPODevImp& spo = *dynamic_cast<SPODevImp*>(SPOSetBuilder<DT>::buildView(false, spo_main, team_size, member_id));
   SPORef spo_ref(spo_ref_main, team_size, member_id);
 
   // use teams

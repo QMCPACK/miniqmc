@@ -190,9 +190,6 @@ public:
     
     for (int i = 0, t = esp.firstBlock; i < esp.nBlocks; ++i, ++t)
     {
-      // const ThisType& in_cast = static_cast<const ThisType&>(in);
-      // host_einsplines_[i]      = static_cast<host_spline_type*>(in_cast.getHostEinspline(t));
-      //std::cout << "EinsplineSPODeviceImp<Devices::CUDA> fat constructor, copy host_spline coefficients to device_spline coefficients\n";
       device_einsplines_->creator()(host_einsplines_->operator[](i),i);
     }
     resize();

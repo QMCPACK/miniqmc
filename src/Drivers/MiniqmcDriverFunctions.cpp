@@ -186,13 +186,13 @@ void MiniqmcDriverFunctions<DT>::movers_runThreads(MiniqmcOptions& mq_opt,
                                             const SPOSet* spo_main)
 {
     unsigned int threads = std::min(omp_get_max_threads(), mq_opt.nmovers);
-    // This prevents movers_thread_main instances from being destroyed and causing synchronization due to
+    // This prevents crowd_thread_main instances from being destroyed and causing synchronization due to
     // freeing memory on the GPU.
     //boost::barrier block_complete(threads);
 
     TaskBlock<Threading::OPENMP> synchronized_crowds(mq_opt.nmovers);
     TaskBlockBarrier<Threading::OPENMP> barrier(mq_opt.nmovers);
-    synchronized_crowds(MiniqmcDriverFunctions<DT>::movers_thread_main<Threading::OPENMP>, barrier, 1, mq_opt, myPrimes, ions, spo_main); //, block_complete);
+    synchronized_crowds(MiniqmcDriverFunctions<DT>::crowd_thread_main<Threading::OPENMP>, barrier, 1, mq_opt, myPrimes, ions, spo_main); //, block_complete);
 
 }
 
@@ -207,7 +207,7 @@ void MiniqmcDriverFunctions<DT>::movers_runThreads(MiniqmcOptions& mq_opt,
     
 //     for (int iw = 0; iw < mq_opt.nmovers; ++iw)
 //     {
-// 	threads[iw] = std::thread(MiniqmcDriverFunctions<DT>::movers_thread_main<Threading::STD>, iw, 1, std::ref(mq_opt), std::ref(myPrimes), ions, std::ref(spo_main));
+// 	threads[iw] = std::thread(MiniqmcDriverFunctions<DT>::crowd_thread_main<Threading::STD>, iw, 1, std::ref(mq_opt), std::ref(myPrimes), ions, std::ref(spo_main));
 //     }
 
 //     for (int iw = 0; iw < mq_opt.nmovers; ++iw)

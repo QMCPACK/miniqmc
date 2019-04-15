@@ -24,11 +24,18 @@
 #include "Drivers/MiniqmcDriverFunctions.hpp"
 //#include "Drivers/getMiniQMCDriverFunctions.h"
 
+/** @file
+ *  This contains the machinery for the static dispatch of DriverFunctions for 
+ *  different devices. The metaprogramming here could probably be inproved significantly,
+ *  but should seldom need to be updated.  
+ */
+
 namespace qmcplusplus
 {
 namespace hana = boost::hana;
 
-
+/** This creates a compile time tuple of the different devices types, indexed by the device range
+ */ 
 constexpr auto device_tuple = hana::make_tuple(hana::type_c<MiniqmcDriverFunctions<Devices::CPU>>,
 #ifdef QMC_USE_KOKKOS
                                                hana::type_c<MiniqmcDriverFunctions<Devices::KOKKOS>>,
@@ -41,19 +48,20 @@ constexpr auto device_tuple = hana::make_tuple(hana::type_c<MiniqmcDriverFunctio
 #endif
 
                                                hana::type_c<MiniqmcDriverFunctions<Devices::CPU>>);
-// The final type is so the tuple and device enum have the same length, forget why this matters.
+/// The final type is so the tuple and device enum have the same length, this is important for the for each device test code.
+
 
 /** Owns the comm and Main SPOSet. Handles dispatch to correct device driver functions.
  *  
  *  contains the boiler plate to handle the dispatching to 
- *  appropriate functions from MiniqmcDriverFunctions class templates
+ *  appropriate functions from MiniqmcDriverFunctions class templates.
  */
-
 class MiniqmcDriver
 {
 public:
-  /** contains template functions that facilitate runtime static to correct device driver functions
-   *  
+  /** template functions create the equivalent to a select containing each of the devices.
+   *  Right now one set of cases is required for each function. Perhaps this can be generalized
+   *  using std::forward and the like.
    */
   template<typename... DN>
   struct CaseHandler
@@ -62,6 +70,7 @@ public:
     struct IntList
     {};
 
+    /** "default case" */
     void build_cases(SPOSet*& spo_set,
                      MiniqmcOptions& mq_opt,
                      const int norb,
@@ -70,8 +79,7 @@ public:
                      const Tensor<OHMMS_PRECISION, 3>& lattice_b,
                      int i,
                      IntList<>)
-    { /* "default case" */
-    }
+    {}
 
     template<typename... N>
     void build_cases(SPOSet*& spo_set,
@@ -103,7 +111,7 @@ public:
     }
 
     void run_cases(MiniqmcDriver& my_, int, IntList<>)
-    { /* "default case" */
+    {
     }
 
     template<typename... N>
@@ -152,6 +160,9 @@ public:
     }
 
 
+    /** build the main sposet for the correct device. 
+     *  build_cases will expand to handle all the built devices.
+     */      
     MiniqmcDriver& my_;
     CaseHandler(MiniqmcDriver& my) : my_(my) {}
     void build(SPOSet*& spo_set,
@@ -165,13 +176,14 @@ public:
 	build_cases<DN...>(spo_set, mq_opt, norb, nTiles, splines_per_block, lattice_b, i);
     }
 
+    /** run_cases will expand to handle all the built devices. */
     void run(int i) { run_cases<DN...>(my_, i); }
+
+    /** In case the device or framework needs its runtime initialized once before threading.
+     *  initialize_cases will expand to handle all build devices
+     */
     void initialize(int argc, char** argv, int i) { initialize_cases<DN...>(argc, argv, i); }
   };
-
-
-  //static constexpr auto mdfs = hana::make_map(hana::for_each(Devices, [&](auto x){
-  //								 return hana::pair(hana::type_c(x), hana::type_c(MiniqmcDriverFunctions<x>))});
 
   MiniqmcDriver(MiniqmcOptions mq_opt) : mq_opt_(mq_opt) {}
 
@@ -227,37 +239,14 @@ private:
     }
   }
 
-
+  /** Why? */
   void main_function() {}
 
   using QMCT = QMCTraits;
-  // clang-format off
   typedef ParticleSet::ParticlePos_t    ParticlePos_t;
   typedef ParticleSet::PosType          PosType;
-  // clang-format on
-  // use the global generator
 
   MiniqmcOptions mq_opt_;
-  // int device_number = 0;
-  // int na     = 1;
-  // int nb     = 1;
-  // int nc     = 1;
-  // int nsteps = 5;
-  // int iseed  = 11;
-  // int nx = 37, ny = 37, nz = 37;
-  // int nmovers = 1;
-  // // thread blocking
-  // int tileSize  = -1;
-  // int team_size = 1;
-  // int nsubsteps = 1;
-  // int ncrews = 1;
-  // // Set cutoff for NLPP use.
-  // QMCT::RealType Rmax = 1.7;
-  // bool useRef   = false;
-  // bool enableJ3 = false;
-  // bool verbose                 = false;
-  // std::string timer_level_name = "fine";
-
   PrimeNumberSet<uint32_t> myPrimes;
   ParticleSet ions;
   SPOSet* spo_main  = nullptr;

@@ -68,12 +68,9 @@ enum CrowdTimers
   };
 
     
-/** Mover collection does not use mover as atom
- *  This is because extract list functions of mover demonstrate this isn't useful.
- *  It always does packsize batching, even on invalid moves,
- *  The assumption is with batching there is no advantage to dropping evals of invalid
- *  if you are faking batching serially this obviously has cost.
- *  Except for testing just thread with pack_size 1 movers
+/** runs a packsize of walkers with device specializations that handle that packsize efficiently
+ *  Crowd owns walker indexed arrays of all the result objects does calculations on them.
+ *  Should degrade to running individual evaluates for ref implementations.
  */
 
 template<Devices DT>
@@ -81,7 +78,18 @@ class Crowd
 {
   using QMCT = QMCTraits;
 
-  //Functors for more complex things we want to do to each "mover"
+  //@{
+  /** Functors for more complex things we need to do to each walker. 
+   *  allows us to still use boost::zip iterator and a std::algorithm where
+   *  these are called. For better thread system flexibility these are probably going to change.
+   */
+
+  /** At the moment each wavefunction takes an keeps state on:
+   *  Whether it should be a reference implementation (this is clumsy)
+   *  whether it includes J3,
+   *  its related Ion particleset, a random generator, and
+   *  device_buffers_ (which could be shared).
+   */
   struct buildWaveFunctionsFunc
       : public std::unary_function<
             const boost::tuple<WaveFunction&, ParticleSet&, ParticleSet&, const RandomGenerator<QMCT::RealType>&>&, void>
@@ -90,7 +98,7 @@ class Crowd
     bool useRef_;
     bool enableJ3_;
     ParticleSet& ions_;
-      DeviceBuffers<DT>& device_buffers_;
+    DeviceBuffers<DT>& device_buffers_;
 
   public:
       buildWaveFunctionsFunc(ParticleSet& ions, DeviceBuffers<DT>& device_buffers, bool useRef = false, bool enableJ3 = false)
@@ -122,6 +130,7 @@ class Crowd
 	throw std::logic_error("moves must be valid");
     }
   };
+  //@}
 public:
   ParticleSet ions_;
   /// random number generator
@@ -143,10 +152,13 @@ public:
   std::vector<int> valids;
   std::vector<std::unique_ptr<aligned_vector<QMCT::RealType>>> urs;
 
-  //These let outsiders touch the objects in the pointer vectors
-  //There is a smell to this happening so much
-  //On the other hand object lifetime and ownership is being respected
-  //preventing double frees, invalid objects and leaking
+  //@{
+  /** Dereference iterators let outsiders touch the objects in the pointer vectors
+   *  of electrons, wavefunctions, nlpps, and random generators.
+   *  There is a smell to this happening so much.
+   *  On the other hand object lifetime and ownership is being respected
+   *  preventing double frees, invalid objects and leaking.
+   */
   DereferenceIterator<std::vector<std::unique_ptr<ParticleSet>>::iterator> elss_begin()
   {
     return dereference_iterator(elss.begin());
@@ -195,22 +207,12 @@ public:
   {
     return dereference_iterator(nlpps.end());
   }
+  //@}
 
-  // DereferenceIterator<std::vector<std::shared_ptr<SPOSet>>::iterator> spos_begin()
-  // {
-  //   return dereference_iterator(spos.begin());
-  // }
-  // DereferenceIterator<std::vector<std::shared_ptr<SPOSet>>::iterator> spos_end()
-  // {
-  //   return dereference_iterator(spos.end());
-  // }
-
-  
   ParticleSet& elss_back() { return *(elss.back()); }
 
   RandomGenerator<QMCT::RealType>& rngs_back() { return *rngs_.back(); }
 
-  /// constructor
   Crowd(const int ip, const PrimeNumberSet<uint32_t>& myPrimes, const ParticleSet& ions, const int pack_size);
 
   /** conversion from one dev
