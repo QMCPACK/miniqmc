@@ -2,7 +2,7 @@
 // This file is distributed under the University of Illinois/NCSA Open Source
 // License.  See LICENSE file in top directory for details.
 //
-// Copyright (c) 2018 QMCPACK developers.
+// Copyright (c) 2019 QMCPACK developers.
 //
 // File developed by:
 // Peter Doak, doakpw@ornl.gov, Oak Ridge National Lab
@@ -17,7 +17,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // -*- C++ -*-
 // clang-format off
-/** @file miniqmc.cpp
+/** @file
     @brief Miniapp to capture the computation in particle moves.
 
  @mainpage MiniQMC: miniapp for QMCPACK kernels
@@ -31,7 +31,7 @@
 
 
 
-  The \ref src/Drivers/miniqmc.cpp "miniqmc" driver models particle moves and evaluation of the wavefunction.
+  The \ref src/Drivers/miniqmc.cpp "miniqmc" application models a complete block of QMC steps with particle moves and evaluation of the wavefunction.
   The <a href="https://github.com/QMCPACK/miniqmc/wiki#miniqmc-computational-overview">wiki</a> gives an outline of the computation.
 
   The \ref src/Drivers/check_wfc.cpp "check_wfc", \ref src/Drivers/check_spo.cpp "check_spo",

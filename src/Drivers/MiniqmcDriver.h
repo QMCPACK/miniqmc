@@ -28,7 +28,7 @@ namespace qmcplusplus
 {
 namespace hana = boost::hana;
 
-// This would be nice to generate with metaprogramming when there is time   
+
 constexpr auto device_tuple = hana::make_tuple(hana::type_c<MiniqmcDriverFunctions<Devices::CPU>>,
 #ifdef QMC_USE_KOKKOS
                                                hana::type_c<MiniqmcDriverFunctions<Devices::KOKKOS>>,
@@ -43,7 +43,8 @@ constexpr auto device_tuple = hana::make_tuple(hana::type_c<MiniqmcDriverFunctio
                                                hana::type_c<MiniqmcDriverFunctions<Devices::CPU>>);
 // The final type is so the tuple and device enum have the same length, forget why this matters.
 
-/** Owns the comm and SPOSet provides the basic structure
+/** Owns the comm and Main SPOSet. Handles dispatch to correct device driver functions.
+ *  
  *  contains the boiler plate to handle the dispatching to 
  *  appropriate functions from MiniqmcDriverFunctions class templates
  */
@@ -51,6 +52,9 @@ constexpr auto device_tuple = hana::make_tuple(hana::type_c<MiniqmcDriverFunctio
 class MiniqmcDriver
 {
 public:
+  /** contains template functions that facilitate runtime static to correct device driver functions
+   *  
+   */
   template<typename... DN>
   struct CaseHandler
   {
