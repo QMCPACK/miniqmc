@@ -44,21 +44,21 @@ def parse_output(filename, all_run_timings, all_runs_parameters):
         all_runs_parameters.append(this_runs_parameters)
 
 
-packs = [1,2,4,8,12,16,24,48]
+packs = [1,2,4,8,12,16,24,32]
 batching = [1,2,4,8]
 block_size = [256]
-trials = 5
+trials = 3
 
 for pack_number in packs:
     for pack_size in batching:
         for bsize in block_size:
             for trial in range(trials):
-                outfile = "scan_miniqmc_gpu_splines_p{}_w{}_a{}.out_{}".format(pack_size, pack_number, bsize, trial)
+                outfile = "scan_miniqmc_2_2_1_gpu_bsp_p{}_w{}_a{}.out_{}".format(pack_size, pack_number, bsize, trial)
                 print("trying",outfile)
                 with open(outfile, 'w') as f:
                     process_complete = subprocess.run(["bin/miniqmc","-d","1","-M","-p", "{}".format(pack_size),
                                                        "-w", "{}".format(pack_number), "-a", "{}".format(bsize),
-                                                       "-g", "2 1 1"], stdout=f)
+                                                       "-g", "2 2 1"], stdout=f)
                     if process_complete.returncode != 0:
                         print ("fail", outfile)
 

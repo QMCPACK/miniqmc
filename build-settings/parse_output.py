@@ -57,10 +57,10 @@ def parse_output(filename, all_run_timings, all_runs_parameters):
         all_runs_timings.append(this_runs_timings) 
         all_runs_parameters.append(this_runs_parameters)
 
-packs = [1,2,4,8,12,16,24,48]
-batching = [1,2,4] #,8,16,24,32]
+packs = [1,2,4,8,12,16] #,24]#,32]
+batching = [1,2,4,8] #,16,24,32]
 block_size = [256]
-trials = 5
+trials = 3
 
 for pack_number in packs:
     for pack_size in batching:
@@ -134,7 +134,7 @@ for npacks in packs:
                        c95_timings['Total']]
                       for params, avg_timings, c95_timings in zip(all_merged_params, all_merged_avgs,
                                                                   all_merged_c95s)
-                      if params['crowds'] == npacks and params['splines per block'] == bsize and 'Total' in timings]
+                      if 'crowds' in params and params['crowds'] == npacks and params['splines per block'] == bsize and 'Total' in timings]
         label = "{:} threads".format(npacks, bsize)
         x = [ x[0] for x in psize_data ]
         y = [ y[1] for y in psize_data ]
@@ -162,7 +162,7 @@ for npacks in packs:
     for bsize in [256]:
         psize_data = [[params['pack size ='], avg_timings['Total'] / params['Iterations'], c95_timings['Total'] / params['Iterations'] ]
                       for params, avg_timings, c95_timings in zip(all_merged_params, all_merged_avgs, all_merged_c95s)
-                      if params['crowds'] == npacks and params['splines per block'] == bsize and 'Total' in timings]
+                      if 'crowds' in params and params['crowds'] == npacks and params['splines per block'] == bsize and 'Total' in timings]
         label = "{:} threads".format(npacks)
         x = [ x[0] for x in psize_data ]
         y = [ y[1] for y in psize_data ]
