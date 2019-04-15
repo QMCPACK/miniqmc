@@ -46,23 +46,48 @@ class MiniqmcDriverFunctions
 public:
   using QMCT = QMCTraits;
   static void initialize(int arc, char** argv);
+  /** The main SPOset
+   */
   static void buildSPOSet(SPOSet*& spo_set,
 			  MiniqmcOptions& mq_opt,
 			  const int norb,
 			  const int nTiles,
 			  const int tile_size,
 			  const Tensor<OHMMS_PRECISION, 3>& lattice_b);
+
+  //@{
+  /** These launch the threads that run a QMC block. 
+   *  They have no sychronization or communication during a block.
+   *  And no assumptions should be made that they actually execute in parallel.
+   */
+
+  /** This calls the old non batch threadmain, kept around for comparison.
+   *  As long as single evaluates and the internal data structures in einplsine, wavefunction, etc.
+   *  are retained it should work.
+   */
   static void runThreads(MiniqmcOptions& mq_opt,
                          const PrimeNumberSet<uint32_t>& myPrimes,
                          ParticleSet& ions,
 			 const SPOSet* spo_main);
+
+  /** This is the new batched thread launcher.
+   *  Each thread through Crowd<device> it should leave the actual method of batch evaluation to
+   *  the device through specializations of crowd.
+   */
   static void movers_runThreads(MiniqmcOptions& mq_opt,
                          const PrimeNumberSet<uint32_t>& myPrimes,
                          ParticleSet& ions,
 				const SPOSet* spo_main);
-
+  //@}
+  
   static void finalize();
 private:
+
+  //@{
+  /** These are the main thread bodies that run a QMC block. 
+   *  Specialized on the threading framework, consider openmp to be the standard.
+   */
+  
   template<Threading TT>
   static void crowd_thread_main(const int ip,
 				 TaskBlockBarrier<TT>& barrier,
@@ -78,11 +103,16 @@ private:
                           const PrimeNumberSet<uint32_t>& myPrimes,
                           ParticleSet ions,
 			  const SPOSet* spo_main);
+
+  //@}
+
+  /** Only KOKKOS needs this and I don't think this belongs in the API
+   *  The Crowd<KOKKOS> should handle it's synchronization
+   */
   static void updateFromDevice(DiracDeterminant<DeterminantDeviceImp<DT>>& determinant_device);
 };
 
-/** default implementation of buildSPOSet call SPOSetBuilder<DT> 
- *  currently used by all devices
+/** currently used by all devices
  */
 template<Devices DT>
 void MiniqmcDriverFunctions<DT>::buildSPOSet(SPOSet*& spo_set,
