@@ -9,7 +9,7 @@
 // File created by: Jeongnim Kim, jeongnim.kim@intel.com, Intel Corp.
 ////////////////////////////////////////////////////////////////////////////////
 // -*- C++ -*-
-/** @file bspline_allocator.hpp
+/** @file BsplineAllocator.hpp
  * @brief Allocator and management classes
  */
 #ifndef QMCPLUSPLUS_EINSPLINE_BSPLINE_ALLOCATOR_H

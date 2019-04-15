@@ -181,6 +181,7 @@ template<>
 
 }
 
+/** This should actually share most code with hessian
 template<>
 [[clang::xray_always_instrument]] void Crowd<Devices::CUDA>::evaluateLaplacian(int iel)
 {
@@ -258,6 +259,7 @@ template<>
   }
 
 }
+*/
 
 template<>
 void Crowd<Devices::CUDA>::finishUpdate(int iels)

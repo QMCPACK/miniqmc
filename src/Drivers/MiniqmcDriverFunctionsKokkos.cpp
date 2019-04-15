@@ -1,3 +1,22 @@
+////////////////////////////////////////////////////////////////////////////////
+// This file is distributed under the University of Illinois/NCSA Open Source
+// License.  See LICENSE file in top directory for details.
+//
+// Copyright (c) 2019 QMCPACK developers.
+//
+// File developed by:
+// Peter Doak, doakpw@ornl.gov, Oak Ridge National Lab
+//
+// File created by:
+// Peter Doak, doakpw@ornl.gov, Oak Ridge National Lab
+////////////////////////////////////////////////////////////////////////////////
+// -*- C++ -*-
+
+/**
+ * @file
+ * @brief implementation of Kokkos specialization of MiniqmcDriverFunctions
+ */
+
 #include "Drivers/MiniqmcDriverFunctions.hpp"
 
 namespace qmcplusplus
@@ -45,6 +64,8 @@ void MiniqmcDriverFunctions<Devices::KOKKOS>::thread_main(const int ip,
   // create a spo view in each Mover
   thiswalker.spo = SPOSetBuilder<DT>::buildView(mq_opt.useRef, spo_main, team_size, teamID);
 
+  DeviceBuffers<DT> device_buffers;
+
   // create wavefunction per mover
   // This updates ions
   // build_WaveFunction is not thread safe!
@@ -53,6 +74,7 @@ void MiniqmcDriverFunctions<Devices::KOKKOS>::thread_main(const int ip,
                      ions,
                      thiswalker.els,
                      thiswalker.rng,
+				 device_buffers,
                      mq_opt.enableJ3);
 
   // initial computing

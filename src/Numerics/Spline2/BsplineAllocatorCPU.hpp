@@ -13,7 +13,7 @@
 #ifndef QMCPLUSPLUS_BSPLINE_ALLOCATOR_CPU_H
 #define QMCPLUSPLUS_BSPLINE_ALLOCATOR_CPU_H
 
-#include "Numerics/Spline2/bspline_allocator.hpp"
+#include "Numerics/Spline2/BsplineAllocator.hpp"
 
 namespace qmcplusplus
 {

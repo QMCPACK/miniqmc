@@ -21,7 +21,7 @@
 #define QMCPLUSPLUS_MULTIEINSPLINE_REF_HPP
 #include "config.h"
 #include <iostream>
-#include <Numerics/Spline2/bspline_allocator.hpp>
+#include <Numerics/Spline2/BsplineAllocator.hpp>
 #include <Numerics/Spline2/MultiBsplineData.hpp>
 #include <stdlib.h>
 

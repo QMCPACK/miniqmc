@@ -16,7 +16,7 @@
  * the specialized allocator.
  */
 #include "Devices.h"
-#include "Numerics/Spline2/bspline_allocator.hpp"
+#include "Numerics/Spline2/BsplineAllocator.hpp"
 #include "Numerics/Spline2/BsplineAllocatorCPU.hpp"
 #include "Numerics/Spline2/einspline_allocator.h"
 

@@ -19,7 +19,7 @@
 #include <algorithm>
 #include "Devices.h"
 #include "Numerics/Spline2/bspline_traits.hpp"
-#include "Numerics/Spline2/bspline_allocator.hpp"
+#include "Numerics/Spline2/BsplineAllocator.hpp"
 #include "Numerics/Containers.h"
 
 // This is needed here so BsplineSetCreator functor is defined

@@ -9,7 +9,7 @@
 // File created by: Jeongnim Kim, jeongnim.kim@intel.com, Intel Corp.
 ////////////////////////////////////////////////////////////////////////////////
 // -*- C++ -*-
-/** @file bspline_allocator.hpp
+/** @file BsplineAllocator.hpp
  * @brief Allocator and management classes
  */
 #ifndef QMCPLUSPLUS_BSPLINE_ALLOCATOR_CUDA_HPP
@@ -17,7 +17,7 @@
 
 #include "Devices.h"
 #include "Utilities/SIMD/allocator.hpp"
-#include "Numerics/Spline2/bspline_allocator.hpp"
+#include "Numerics/Spline2/BsplineAllocator.hpp"
 #include "Numerics/Spline2/bspline_traits.hpp"
 #include "Numerics/Spline2/einspline_allocator.h"
 #include "Numerics/Einspline/multi_bspline_structs.h"

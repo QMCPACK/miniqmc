@@ -31,7 +31,7 @@
 #include "QMCWaveFunctions/EinsplineSPODevice.hpp"
 #include "QMCWaveFunctions/EinsplineSPODeviceImp.hpp"
 #include "Numerics/Spline2/bspline_traits.hpp"
-#include "Numerics/Spline2/bspline_allocator.hpp"
+#include "Numerics/Spline2/BsplineAllocator.hpp"
 #include "Numerics/Spline2/MultiBsplineFuncs.hpp"
 #ifdef KOKKOS_ENABLE_CUDA
 #include "cublas_v2.h"
@@ -158,15 +158,15 @@ public:
     }
   }
 
-    void set_i(int nx, int ny, int nz, int num_splines, int nblocks, int splines_per_block, bool init_random = true)
+    void set_i(int nx, int ny, int nz, int num_splines, int num_blocks, int splines_per_block, bool init_random = true)
   {
     esp.nSplines         = num_splines;
-    esp.nBlocks          = nblocks;
+    esp.nBlocks          = num_blocks;
     esp.nSplinesPerBlock = splines_per_block;
-    if ( num_splines > splines_per_block * nBlocks )
-	throw std::runtime_error("splines_per_block * nblocks < num_splines");
+    if ( num_splines > splines_per_block * num_blocks )
+	throw std::runtime_error("splines_per_block * num_blocks < num_splines");
     esp.firstBlock       = 0;
-    esp.lastBlock        = nblocks;
+    esp.lastBlock        = num_blocks;
     if (einsplines.extent(0) == 0)
     {
       esp.Owner = true;

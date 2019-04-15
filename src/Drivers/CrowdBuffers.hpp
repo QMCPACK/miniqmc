@@ -10,13 +10,18 @@
 // File created by:
 // Peter Doak, doakpw@ornl.gov, Oak Ridge National Lab
 ////////////////////////////////////////////////////////////////////////////////
-
+/** @file
+ *  Crowd scope buffers that may be specialized for device
+ *  They are assumed to be RAII with Crowd.
+ */
 
 #ifndef QMCPLUSPLUS_CROWD_BUFFERS_HPP
 #define QMCPLUSPLUS_CROWD_BUFFERS_HPP
-
+ 
 namespace qmcplusplus
 {
+/** By default there are no buffers shared at this level
+ */
 template<Devices DT>
 class CrowdBuffers
 {
@@ -27,6 +32,9 @@ class CrowdBuffers
 #include "CUDA/GPUArray.h"
 #include "CUDA/PinnedHostBuffer.hpp"
 
+/** To reduce data movement and synchronization many buffers are at the crowd scope
+ *  since this is small this is not in its own header.
+ */
 template<>
 class CrowdBuffers<Devices::CUDA>
 {

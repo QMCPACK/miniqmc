@@ -30,9 +30,7 @@
 namespace  qmcplusplus
 {
 
-  //extern template void Crowd<Devices::CUDA>::evaluateHessian(int iel);
 extern template class Crowd<Devices::CUDA>;
-
 
 } // namespace qmcplusplus
 

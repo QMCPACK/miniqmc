@@ -37,7 +37,7 @@
 #include "QMCWaveFunctions/EinsplineSPODeviceImp.hpp"
 #include "QMCWaveFunctions/EinsplineSPOParams.h"
 #include "Numerics/Spline2/bspline_traits.hpp"
-#include "Numerics/Spline2/bspline_allocator.hpp"
+#include "Numerics/Spline2/BsplineAllocator.hpp"
 #include "Numerics/Spline2/BsplineSet.hpp"
 #include "Numerics/Spline2/MultiBsplineFuncs.hpp"
 #include "Numerics/Spline2/MultiBsplineFuncs.hpp"

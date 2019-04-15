@@ -41,7 +41,7 @@ namespace qmcplusplus
 			bool& dirty_h_
 			) : device_einsplines(device_einsplines_), psi(psi_), grad(grad_), hess(hess_), dirty_v(dirty_v_), dirty_g(dirty_g_), dirty_h(dirty_h_) {}
     HessianParticipants(const HessianParticipants& ) = default;
-    BsplineSet<Devices::CUDA, T>& device_einsplines;
+    BsplineSet<DT, T>& device_einsplines;
 
     aligned_vector<typename QPT::vContainer_type>& psi;
     aligned_vector<typename QPT::gContainer_type>& grad;

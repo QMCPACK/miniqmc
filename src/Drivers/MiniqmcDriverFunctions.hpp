@@ -243,6 +243,7 @@ void MiniqmcDriverFunctions<DT>::crowd_thread_main(const int ip,
 
 extern template class qmcplusplus::MiniqmcDriverFunctions<Devices::CPU>;
 #ifdef QMC_USE_KOKKOS
+#include "Drivers/MiniqmcDriverFunctionsKokkos.hpp"
 extern template class qmcplusplus::MiniqmcDriverFunctions<Devices::KOKKOS>;
 #endif
 #ifdef QMC_USE_CUDA
