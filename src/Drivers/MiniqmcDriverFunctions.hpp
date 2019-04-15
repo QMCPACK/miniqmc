@@ -34,20 +34,19 @@
 namespace qmcplusplus
 {
 
-/** A purely functional class implementing miniqmcdriver functions
- *  functions can be specialized for a particular device
+/** A purely functional class implementing miniqmcdriver functions.
+ *  functions can be specialized for a particular device.
  *  These are the driver steps that any device must either use the default for
  *  or specialize.
  */
-
 template<Devices DT>
 class MiniqmcDriverFunctions
 {
 public:
   using QMCT = QMCTraits;
   static void initialize(int arc, char** argv);
-  /** The main SPOset
-   */
+
+  /** build main SPOset once */
   static void buildSPOSet(SPOSet*& spo_set,
 			  MiniqmcOptions& mq_opt,
 			  const int norb,
@@ -55,12 +54,13 @@ public:
 			  const int tile_size,
 			  const Tensor<OHMMS_PRECISION, 3>& lattice_b);
 
-  //@{
-  /** These launch the threads that run a QMC block. 
+  /** @name Thread Launchers
+   *  These launch the threads that run a QMC block. 
    *  They have no sychronization or communication during a block.
-   *  And no assumptions should be made that they actually execute in parallel.
+   *  No assumptions should be made that they actually execute in parallel.
    */
-
+  ///@{
+  
   /** This calls the old non batch threadmain, kept around for comparison.
    *  As long as single evaluates and the internal data structures in einplsine, wavefunction, etc.
    *  are retained it should work.
@@ -78,16 +78,16 @@ public:
                          const PrimeNumberSet<uint32_t>& myPrimes,
                          ParticleSet& ions,
 				const SPOSet* spo_main);
-  //@}
+  ///@}
   
   static void finalize();
 private:
 
-  //@{
-  /** These are the main thread bodies that run a QMC block. 
-   *  Specialized on the threading framework, consider openmp to be the standard.
+  /** @name Thread Bodies
+   *  Each top level thread gets one of these.
+   *  They should be are not guaranteed to run concurrently.
    */
-  
+  ///@{
   template<Threading TT>
   static void crowd_thread_main(const int ip,
 				 TaskBlockBarrier<TT>& barrier,
@@ -97,6 +97,9 @@ private:
                           ParticleSet ions,
 				 const SPOSet* spo_main);
 
+  /** Legacy unbatched thread body. 
+   *  Depends only on "object" local data and single evaluations that use it.
+   */
   static void thread_main(const int ip,
 			  const int team_size,
 			  MiniqmcOptions& mq_opt,
@@ -104,7 +107,7 @@ private:
                           ParticleSet ions,
 			  const SPOSet* spo_main);
 
-  //@}
+  ///@}
 
   /** Only KOKKOS needs this and I don't think this belongs in the API
    *  The Crowd<KOKKOS> should handle it's synchronization
