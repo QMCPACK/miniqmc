@@ -165,6 +165,8 @@ struct einspline_spo_ref : public SPOSet
       RandomGenerator<T> myrandom(11);
       //Array<T, 3> coef_data(nx+3, ny+3, nz+3);
       Kokkos::View<T***> coef_data("coef_data", nx + 3, ny + 3, nz + 3);
+      int totalNumCoefs = coef_data.extent(0)*coef_data.extent(1)*coef_data.extent(2);
+      std::vector<T> mydata(totalNumCoefs);
 
       for (int i = 0; i < nBlocks; ++i)
       {
@@ -174,8 +176,16 @@ struct einspline_spo_ref : public SPOSet
         {
           for (int j = 0; j < nSplinesPerBlock; ++j)
           {
-            // Generate different coefficients for each orbital
-            myrandom.generate_uniform(coef_data.data(), coef_data.extent(0));
+	    myrandom.generate_uniform(&mydata[0], totalNumCoefs);
+	    int idx = 0;
+	    for (int ix = 0; ix < coef_data.extent(0); ix++) {
+	      for (int iy = 0; iy < coef_data.extent(1); iy++) {
+		for (int iz = 0; iz < coef_data.extent(2); iz++) {
+		  coef_data(ix,iy,iz) = mydata[idx];
+		  idx++;
+		}
+	      }
+	    }
             myAllocator.setCoefficientsForOneOrbital(j, coef_data, &einsplines(i));
           }
         }

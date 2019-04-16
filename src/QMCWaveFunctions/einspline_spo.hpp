@@ -22,101 +22,39 @@
 #include <Utilities/Configuration.h>
 #include <Utilities/NewTimer.h>
 #include <Particle/ParticleSet.h>
-#include <Numerics/Spline2/bspline_allocator.hpp>
-#include <Numerics/Spline2/MultiBspline.hpp>
-#include <Utilities/SIMD/allocator.hpp>
-#include "Numerics/OhmmsPETE/OhmmsArray.h"
+#include <Numerics/Spline3/KokkosMultiBspline.h>
 #include "QMCWaveFunctions/SPOSet.h"
 #include <iostream>
 
 namespace qmcplusplus
 {
-template<typename T>
+template<typename T, int blockSize>
 struct einspline_spo : public SPOSet
 {
-  struct EvaluateVGHTag
-  {};
-  struct EvaluateVTag
-  {};
-  typedef Kokkos::TeamPolicy<Kokkos::Serial, EvaluateVGHTag> policy_vgh_serial_t;
-  typedef Kokkos::TeamPolicy<EvaluateVGHTag> policy_vgh_parallel_t;
-  typedef Kokkos::TeamPolicy<Kokkos::Serial, EvaluateVTag> policy_v_serial_t;
-  typedef Kokkos::TeamPolicy<EvaluateVTag> policy_v_parallel_t;
-
-  typedef typename policy_vgh_serial_t::member_type team_vgh_serial_t;
-  typedef typename policy_vgh_parallel_t::member_type team_vgh_parallel_t;
-  typedef typename policy_v_serial_t::member_type team_v_serial_t;
-  typedef typename policy_v_parallel_t::member_type team_v_parallel_t;
-
-
-  // Whether to use Serial evaluation or not
-  int nSplinesSerialThreshold_V;
-  int nSplinesSerialThreshold_VGH;
-
-
-  /// define the einsplie data object type
-  using spline_type     = typename bspline_traits<T, 3>::SplineType;
-  /*
+  // Eventually need to define a layout that includes the blocking on groups of splines
+  // which is the first dimension in this case and the v, g and h containers
+  using spline_type     = multi_UBspline<T, blockSize, 3>;
   using vContainer_type = Kokkos::View<T*>;
   using gContainer_type = Kokkos::View<T * [3], Kokkos::LayoutLeft>;
   using hContainer_type = Kokkos::View<T * [6], Kokkos::LayoutLeft>;
-  */
   using lattice_type    = CrystalLattice<T, 3>;
 
-  /// number of blocks
-  int nBlocks;
-  /// first logical block index
-  int firstBlock;
-  /// last gical block index
-  int lastBlock;
   /// number of splines
   int nSplines;
-  /// number of splines per block
-  int nSplinesPerBlock;
-  /// if true, responsible for cleaning up einsplines
-  bool Owner;
-  /// if true, is copy.  For reference counting & clean up in Kokkos.
-  bool is_copy;
-
-  lattice_type Lattice;
-  /// use allocator
-  einspline::Allocator myAllocator;
-  /// compute engine
-
-  // idea is that this will be passed in.  One potential issue is whether we need
-  // separate ones of these for each block, or is one per walker enough?
-
-  // MultiBspline<T> compute_engine;
-
   
+  lattice_type Lattice;
+  spline_type spline;
+  
+  vContainer_type psi;
+  gContainer_type grad;
+  hContainer_type hess;
 
-  // each one of these basically just as a view to hold the coefficients, so it is OK
-  Kokkos::View<spline_type*> einsplines;
-
-  Kokkos::View<T**, Kokkos::LayoutLeft> psi; // first index is spo index, second is block index
-  Kokkos::View<T**[3], Kokkos::LayoutLeft> grad; // first index spo index, second block, third dim
-  Kokkos::View<T**[6], Kokkos::LayoutLeft> hess; // first index spo index, second block, third dim
-
-  //Kokkos::View<vContainer_type*> psi;
-  //Kokkos::View<gContainer_type*> grad;
-  //Kokkos::View<hContainer_type*> hess;
-
-  //Temporary position for communicating within Kokkos parallel sections.
-  PosType tmp_pos;
   /// Timer
   NewTimer* timer;
 
   /// default constructor
   einspline_spo()
-      : nSplinesSerialThreshold_V(512),
-        nSplinesSerialThreshold_VGH(128),
-        nBlocks(0),
-        nSplines(0),
-        firstBlock(0),
-        lastBlock(0),
-        tmp_pos(0),
-        Owner(false),
-        is_copy(false)
+      : nSplines(0)
   {
     timer = TimerManager.createTimer("Single-Particle Orbitals", timer_level_fine);
   }
@@ -125,286 +63,74 @@ struct einspline_spo : public SPOSet
   /// disable copy operator
   einspline_spo& operator=(const einspline_spo& in) = delete;
 
-  /** copy constructor
-   * @param in einspline_spo
-   * @param team_size number of members in a team
-   * @param member_id id of this member in a team
-   *
-   * Create a view of the big object. A simple blocking & padding  method.
-   */
-  einspline_spo(const einspline_spo& in, int team_size, int member_id)
-      : Owner(false), Lattice(in.Lattice)
-  {
-    nSplinesSerialThreshold_V   = in.nSplinesSerialThreshold_V;
-    nSplinesSerialThreshold_VGH = in.nSplinesSerialThreshold_VGH;
-    nSplines                    = in.nSplines;
-    nSplinesPerBlock            = in.nSplinesPerBlock;
-    nBlocks                     = (in.nBlocks + team_size - 1) / team_size;
-    firstBlock                  = nBlocks * member_id;
-    lastBlock                   = std::min(in.nBlocks, nBlocks * (member_id + 1));
-    nBlocks                     = lastBlock - firstBlock;
-    // einsplines.resize(nBlocks);
-    einsplines = Kokkos::View<spline_type*>("einsplines", nBlocks);
-    for (int i = 0, t = firstBlock; i < nBlocks; ++i, ++t)
-      einsplines(i) = in.einsplines(t);
-    resize();
-    timer = TimerManager.createTimer("Single-Particle Orbitals", timer_level_fine);
-  }
-
   /// destructors
-  ~einspline_spo()
-  {
-    //Note the change in garbage collection here.  The reason for doing this is that by
-    //changing einsplines to a view, it's more natural to work by reference than by raw pointer.
-    // To maintain current interface, redoing the input types of allocate and destroy to call by references
-    //  would need to be propagated all the way down.
-    // However, since we've converted the large chunks of memory to views, garbage collection is
-    // handled automatically.  Thus, setting the spline_type objects to empty views lets Kokkos handle the Garbage collection.
-
-    if (!is_copy)
-    {
-      einsplines = Kokkos::View<spline_type*>();
-      for (int i = 0; i < psi.extent(0); i++)
-      {
-        psi(i)  = vContainer_type();
-        grad(i) = gContainer_type();
-        hess(i) = hContainer_type();
-      }
-      psi  = Kokkos::View<vContainer_type*>();
-      grad = Kokkos::View<gContainer_type*>();
-      hess = Kokkos::View<hContainer_type*>();
-    }
-    //    for (int i = 0; i < nBlocks; ++i)
-    //      myAllocator.destroy(einsplines(i));
-  }
+  ~einspline_spo() = default;
 
   /// resize the containers
   void resize()
   {
-    //    psi.resize(nBlocks);
-    //    grad.resize(nBlocks);
-    //    hess.resize(nBlocks);
-
-    psi  = Kokkos::View<vContainer_type*>("Psi", nBlocks);
-    grad = Kokkos::View<gContainer_type*>("Grad", nBlocks);
-    hess = Kokkos::View<hContainer_type*>("Hess", nBlocks);
-
-    for (int i = 0; i < nBlocks; ++i)
-    {
-      //psi[i].resize(nSplinesPerBlock);
-      //grad[i].resize(nSplinesPerBlock);
-      //hess[i].resize(nSplinesPerBlock);
-
-      //Using the "view-of-views" placement-new construct.
-      new (&psi(i)) vContainer_type("psi_i", nSplinesPerBlock);
-      new (&grad(i)) gContainer_type("grad_i", nSplinesPerBlock);
-      new (&hess(i)) hContainer_type("hess_i", nSplinesPerBlock);
+    if (nSplines != 0) {
+      psi  = vContainer_type("Psi", nSplines);
+      grad = gContainer_type("Grad", nSplines);
+      hess = hContainer_type("Hess", nSplines);
     }
   }
 
   // fix for general num_splines
-  void set(int nx, int ny, int nz, int num_splines, int nblocks, bool init_random = true)
-  {
+  void set(int nx, int ny, int nz, int num_splines, bool init_random = true)
+  { 
     nSplines         = num_splines;
-    nBlocks          = nblocks;
-    nSplinesPerBlock = num_splines / nblocks;
-    firstBlock       = 0;
-    lastBlock        = nBlocks;
-    if (einsplines.extent(0) == 0)
-    {
-      Owner = true;
-      TinyVector<int, 3> ng(nx, ny, nz);
-      PosType start(0);
-      PosType end(1);
+    resize();
+    std::vector<int> ng{nx, ny, nz};
+    std::vector<double> start(3,0);
+    std::vector<double> end(3,1);
 
-      //    einsplines.resize(nBlocks);
-      einsplines = Kokkos::View<spline_type*>("einsplines", nBlocks);
+    spline.initialize(ng, start, end, 0, nSplines);
+    RandomGenerator<T> myrandom(11);
+ 
+    const int totalNumCoefs = spline.coef.extent(0)*spline.coef.extent(1)*spline.coef.extent(2);
+    //T* mydata = new T[totalNumCoefs];
+    std::vector<T> mydata(totalNumCoefs);
 
-      RandomGenerator<T> myrandom(11);
-      //Array<T, 3> coef_data(nx+3, ny+3, nz+3);
-      Kokkos::View<T***> coef_data("coef_data", nx + 3, ny + 3, nz + 3);
-
-      for (int i = 0; i < nBlocks; ++i)
-      {
-        einsplines(i) =
-            *myAllocator.createMultiBspline(T(0), start, end, ng, PERIODIC, nSplinesPerBlock);
-        if (init_random)
-        {
-          for (int j = 0; j < nSplinesPerBlock; ++j)
-          {
-            // Generate different coefficients for each orbital
-            myrandom.generate_uniform(coef_data.data(), coef_data.extent(0)*coef_data.extent(1)*coef_data.extent(2));
-            myAllocator.setCoefficientsForOneOrbital(j, coef_data, &einsplines(i));
-          }
-        }
+    if (init_random) {
+      auto& locCoefData = spline.single_coef_mirror;
+      for(int i = 0; i < nSplines; i++) {
+	// note, this could be a different order than in the other code
+	myrandom.generate_uniform(&mydata[0], totalNumCoefs);
+	int idx = 0;
+	for (int ix = 0; ix < locCoefData.extent(0); ix++) {
+	  for (int iy = 0; iy < locCoefData.extent(1); iy++) {
+	    for (int iz = 0; iz < locCoefData.extent(2); iz++) {
+	      locCoefData(ix,iy,iz) = mydata[idx];
+	      idx++;
+	    }
+	  }
+	}
+	spline.pushCoefToDevice(i);
       }
     }
-    resize();
+    //delete[] mydata;
   }
 
   /** evaluate psi */
   inline void evaluate_v(const PosType& p)
   {
     ScopedTimer local_timer(timer);
-    tmp_pos = p;
-    compute_engine.copy_A44();
-    is_copy = true;
-    if (nSplines > nSplinesSerialThreshold_V)
-      Kokkos::parallel_for("EinsplineSPO::evalute_v_parallel",
-                           policy_v_parallel_t(nBlocks, 1, 32),
-                           *this);
-    else
-      Kokkos::parallel_for("EinsplineSPO::evalute_v_serial", policy_v_serial_t(nBlocks, 1, 32), *this);
-
-    is_copy = false;
-    //   auto u = Lattice.toUnit_floor(p);
-    //   for (int i = 0; i < nBlocks; ++i)
-    //    compute_engine.evaluate_v(&einsplines(i), u[0], u[1], u[2], psi(i).data(), nSplinesPerBlock);
-  }
-
-  KOKKOS_INLINE_FUNCTION
-  void operator()(const EvaluateVTag&, const team_v_serial_t& team) const
-  {
-    int block               = team.league_rank();
-    auto u                  = Lattice.toUnit_floor(tmp_pos);
-    einsplines(block).coefs = einsplines(block).coefs_view.data();
-    compute_engine.evaluate_v(team,
-                              &einsplines(block),
-                              u[0],
-                              u[1],
-                              u[2],
-                              psi(block).data(),
-                              psi(block).extent(0));
-  }
-
-  KOKKOS_INLINE_FUNCTION
-  void operator()(const EvaluateVTag&, const team_v_parallel_t& team) const
-  {
-    int block               = team.league_rank();
-    auto u                  = Lattice.toUnit_floor(tmp_pos);
-    einsplines(block).coefs = einsplines(block).coefs_view.data();
-    compute_engine.evaluate_v(team,
-                              &einsplines(block),
-                              u[0],
-                              u[1],
-                              u[2],
-                              psi(block).data(),
-                              psi(block).extent(0));
-  }
-
-
-  /** evaluate psi */
-  inline void evaluate_v_pfor(const PosType& p)
-  {
     auto u = Lattice.toUnit_floor(p);
-#pragma omp for nowait
-    for (int i = 0; i < nBlocks; ++i)
-      compute_engine.evaluate_v(&einsplines(i), u[0], u[1], u[2], psi(i).data(), nSplinesPerBlock);
-  }
-
-  /** evaluate psi, grad and lap */
-  inline void evaluate_vgl(const PosType& p)
-  {
-    auto u = Lattice.toUnit_floor(p);
-    for (int i = 0; i < nBlocks; ++i)
-      compute_engine.evaluate_vgl(&einsplines(i),
-                                  u[0],
-                                  u[1],
-                                  u[2],
-                                  psi(i).data(),
-                                  grad(i).data(),
-                                  hess(i).data(),
-                                  nSplinesPerBlock);
-  }
-
-  /** evaluate psi, grad and lap */
-  inline void evaluate_vgl_pfor(const PosType& p)
-  {
-    auto u = Lattice.toUnit_floor(p);
-#pragma omp for nowait
-    for (int i = 0; i < nBlocks; ++i)
-      compute_engine.evaluate_vgl(&einsplines(i),
-                                  u[0],
-                                  u[1],
-                                  u[2],
-                                  psi(i).data(),
-                                  grad(i).data(),
-                                  hess(i).data(),
-                                  nSplinesPerBlock);
+    spline.evaluate_v(u[0], u[1], u[2], psi);
   }
 
   /** evaluate psi, grad and hess */
   inline void evaluate_vgh(const PosType& p)
   {
     ScopedTimer local_timer(timer);
-    tmp_pos = p;
-
-    is_copy = true;
-    compute_engine.copy_A44();
-
-    if (nSplines > nSplinesSerialThreshold_VGH)
-      Kokkos::parallel_for("EinsplineSPO::evalute_vgh", policy_vgh_parallel_t(nBlocks, 1, 32), *this);
-    else
-      Kokkos::parallel_for("EinsplineSPO::evalute_vgh", policy_vgh_serial_t(nBlocks, 1, 32), *this);
-    is_copy = false;
-    //auto u = Lattice.toUnit_floor(p);
-    //for (int i = 0; i < nBlocks; ++i)
-    //  compute_engine.evaluate_vgh(&einsplines(i), u[0], u[1], u[2],
-    //                              psi(i).data(), grad(i).data(), hess(i).data(),
-    //                              nSplinesPerBlock);
-  }
-
-  KOKKOS_INLINE_FUNCTION
-  void operator()(const EvaluateVGHTag&, const team_vgh_parallel_t& team) const
-  {
-    int block = team.league_rank();
-    auto u    = Lattice.toUnit_floor(tmp_pos);
-    compute_engine.evaluate_vgh(team,
-                                &einsplines[block],
-                                u[0],
-                                u[1],
-                                u[2],
-                                psi(block).data(),
-                                grad(block).data(),
-                                hess(block).data(),
-                                psi(block).extent(0));
-  }
-
-  KOKKOS_INLINE_FUNCTION
-  void operator()(const EvaluateVGHTag&, const team_vgh_serial_t& team) const
-  {
-    int block = team.league_rank();
-    auto u    = Lattice.toUnit_floor(tmp_pos);
-    compute_engine.evaluate_vgh(team,
-                                &einsplines[block],
-                                u[0],
-                                u[1],
-                                u[2],
-                                psi(block).data(),
-                                grad(block).data(),
-                                hess(block).data(),
-                                psi(block).extent(0));
-  }
-  /** evaluate psi, grad and hess */
-  inline void evaluate_vgh_pfor(const PosType& p)
-  {
     auto u = Lattice.toUnit_floor(p);
-#pragma omp for nowait
-    for (int i = 0; i < nBlocks; ++i)
-      compute_engine.evaluate_vgh(&einsplines(i),
-                                  u[0],
-                                  u[1],
-                                  u[2],
-                                  psi(i).data(),
-                                  grad(i).data(),
-                                  hess(i).data(),
-                                  nSplinesPerBlock);
+    spline.evaluate_vgh(u[0], u[1], u[2], psi, grad, hess);
   }
 
   void print(std::ostream& os)
   {
-    os << "SPO nBlocks=" << nBlocks << " firstBlock=" << firstBlock << " lastBlock=" << lastBlock
-       << " nSplines=" << nSplines << " nSplinesPerBlock=" << nSplinesPerBlock << std::endl;
+    os << " nSplines=" << nSplines << " nSplinesPerBlock=" << blockSize << std::endl;
   }
 };
 } // namespace qmcplusplus
