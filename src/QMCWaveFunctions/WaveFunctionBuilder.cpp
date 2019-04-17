@@ -142,7 +142,6 @@ template class WaveFunctionBuilder<Devices::KOKKOS>;
 
 #ifdef QMC_USE_CUDA
 #include "QMCWaveFunctions/WaveFunctionBuilderCUDA.hpp"
-#endif
 namespace qmcplusplus
 {
 template void WaveFunctionBuilder<Devices::CUDA>::build(bool useRef,
@@ -153,3 +152,4 @@ template void WaveFunctionBuilder<Devices::CUDA>::build(bool useRef,
 						   DeviceBuffers<Devices::CUDA>& dev_bufs,
 						   bool enableJ3)   ;
 }
+#endif

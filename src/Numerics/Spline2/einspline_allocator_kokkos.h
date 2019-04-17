@@ -31,13 +31,13 @@
 #include "Numerics/Spline2/einspline_allocator.h"
 
 template<>
-inline void
+void
 einspline_create_multi_UBspline_3d_s(multi_UBspline_3d_s<Devices::KOKKOS>*& restrict spline,
                                      Ugrid x_grid, Ugrid y_grid, Ugrid z_grid, BCtype_s xBC,
                                      BCtype_s yBC, BCtype_s zBC, int num_splines);
 
 template<>
-inline void
+void
 einspline_create_multi_UBspline_3d_d(multi_UBspline_3d_d<Devices::KOKKOS>*& spline, Ugrid x_grid,
                                      Ugrid y_grid, Ugrid z_grid, BCtype_d xBC, BCtype_d yBC,
                                      BCtype_d zBC, int num_splines);
