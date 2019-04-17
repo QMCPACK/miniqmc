@@ -18,12 +18,24 @@ void doEval_v(p x, p y, p z, valType& vals, coefType& coefs,
 	      Kokkos::View<double[3]>& gridStarts, Kokkos::View<double[3]>& delta_invs,
 	      Kokkos::View<p[16]>& A44, int blockSize = 32);
 
+template<typename multiPosType, typename valType, typename coefType>
+void doMultiEval_v(multiPosType& pos, valType& vals, coefType& coefs,
+		   Kokkos::View<double[3]>& gridStarts, Kokkos::View<double[3]>& delta_invs,
+		   Kokkos::View<p[16]>& A44, int blockSize = 32);
+
 template<typename p, typename valType, typename gradType, typename hessType,typename coefType>
 void doEval_vgh(p x, p y, p z, valType& vals, gradType& grad,
 		hessType& hess, coefType& coefs,
 		Kokkos::View<double[3]>& gridStarts, Kokkos::View<double[3]>& delta_invs,
 		Kokkos::View<p[16]>& A44, Kokkos::View<p[16]>& dA44,
 		Kokkos::View<p[16]>& d2A44, int blockSize = 32);
+
+template<typename multiPosType, typename valType, typename gradType, typename hessType,typename coefType>
+void doMultiEval_vgh(multiPosType& pos, valType& vals, gradType& grad,
+		     hessType& hess, coefType& coefs,
+		     Kokkos::View<double[3]>& gridStarts, Kokkos::View<double[3]>& delta_invs,
+		     Kokkos::View<p[16]>& A44, Kokkos::View<p[16]>& dA44,
+		     Kokkos::View<p[16]>& d2A44, int blockSize = 32);
 
 template<typename p, int d>
 struct multi_UBspline_base {
@@ -234,12 +246,21 @@ struct multi_UBspline<p, blocksize, 3> : public multi_UBspline_base<p,3> {
     assert(vals.extent(0) == coef.extent(3));
     doEval_v(x, y, z, vals, coef, this->gridStarts, this->delta_invs, A44, blocksize);
   }
+  template<typename multiPosType, typename multiValType>
+  void multi_evaluate_v(multiPosType& pos, multiValType& vals) {
+    doMultiEval_v(pos, vals, coef, this->gridStarts, this->delta_invs, A44, blocksize);
+  }
 
   template<typename valType, typename gradType, typename hessType>
   void evaluate_vgh(p x, p y, p z, valType& vals, gradType& grad,
 		    hessType& hess) {
     assert(vals.extent(0) == coef.extent(3));
     doEval_vgh(x, y, z, vals, grad, hess, coef, this->gridStarts, this->delta_invs, A44, dA44, d2A44, blocksize);
+  }
+  template<typename multiPosType, typename multiValType, typename multiGradType, typename multiHessType>
+  void multi_evaluate_vgh(multiPosType& pos, multiValType& multiVals,
+			  multiGradType& multiGrad, multiHessType& multiHess) {
+    doMultiEval_vgh(pos, multiVals, multiGrad, multiHess, coef, this->gridStarts, this->delta_invs, A44, dA44, d2A44, blocksize);
   }
 
  private:
@@ -387,6 +408,65 @@ void doEval_v(p x, p y, p z, valType& vals, coefType& coefs,
     });      
 }
 
+template<typename multiPosType, typename valType, typename coefType>
+void doMultiEval_v(multiPosType& pos, valType& vals, coefType& coefs,
+		   Kokkos::View<double[3]>& gridStarts, Kokkos::View<double[3]>& delta_invs,
+		   Kokkos::View<p[16]>& A44, int blockSize = 32) {
+  int numWalkers = pos.extent(0);
+  int numBlocks = coefs.extent(3) / blockSize;
+  if (coefs.extent(3) % blockSize != 0) {
+    numBlocks++;
+  }
+  Kokkos::TeamPolicy<> policy(numWalkers,numBlocks,32);
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(Kokkos::TeamPolicy<>::member_type member) {
+      const int walkerNum = member.league_rank();
+      
+      // wrap this so only a single thread per league does this
+      Kokkos::single(Kokkos::PerTeam(member), [&]() {	  
+	  for(int i = 0; i < 3; i++) {
+	    pos(walkerNum,i) -= gridStarts(i);
+	  }
+	});
+
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(member, 0, numBlocks),
+			   [&](int blockNum) {
+			     const int start = blockSize * blockNum;
+			     int end = start + blockSize;
+			     if (end > coef.extent(3)) {
+			       end = coefs.extent(3);
+			     }
+			     const int num_splines = end-start;
+			   
+			     Kokkos::Array<p,3> ts;
+			     Kokkos::Array<int,3> is;
+			     for (int i = 0; i < 3; i++) {
+			       get(pos(walkerNum,i) * delta_invs(i), ts[i], is[i], coefs.extent(i)-1);
+			     }
+			     Kokkos::Array<p,4> a,b,c;
+			     compute_prefactors(a, ts[0], A44);
+			     compute_prefactors(b, ts[1], A44);
+			     compute_prefactors(c, ts[2], A44);
+			     
+			     Kokkos::parallel_for(Kokkos::ThreadVectorRange(member, num_splines),
+						  [&](const int& i) { vals(walkerNum,start+i) = p(); });
+
+			     for (int i = 0; i < 4; i++) {
+			       for (int j = 0; j < 4; j++) {
+				 const p pre00 = a[i] * b[j];
+				 Kokkos::parallel_for(Kokkos::ThreadVectorRange(member, num_splines), 
+						      [&](const int& n) {
+							const int sponum = start+n;
+							vals(walkerNum,sponum) += pre00 * 
+							  (c[0] * coefs(is[0]+i,is[1]+j,is[2],sponum) +
+							   c[1] * coefs(is[0]+i,is[1]+j,is[2]+1,sponum) +
+							   c[2] * coefs(is[0]+i,is[1]+j,is[2]+2,sponum) +
+							   c[3] * coefs(is[0]+i,is[1]+j,is[2]+3,sponum));
+						      });
+			       }
+			     }
+			   });
+    });
+}
 
 template<typename p, typename valType, typename gradType, typename hessType, typename coefType>
 void doEval_vgh(p x, p y, p z, valType& vals, gradType& grad,
@@ -500,9 +580,147 @@ void doEval_vgh(p x, p y, p z, valType& vals, gradType& grad,
 	  hess(sponum,5) *= dyz;
 	});
     });
- }
-    
+}
+ 
+
+template<typename multiPosType, typename valType, typename gradType, typename hessType,typename coefType>
+void doMultiEval_vgh(multiPosType& pos, valType& vals, gradType& grad,
+		     hessType& hess, coefType& coefs,
+		     Kokkos::View<double[3]>& gridStarts, Kokkos::View<double[3]>& delta_invs,
+		     Kokkos::View<p[16]>& A44, Kokkos::View<p[16]>& dA44,
+		     Kokkos::View<p[16]>& d2A44, int blockSize = 32) {
+  
+  int numWalkers = pos.extent(0);
+  int numBlocks = coefs.extent(3) / blockSize;
+  if (coefs.extent(3) % blockSize != 0) {
+    numBlocks++;
+  }
+  Kokkos::TeamPolicy<> policy(numWalkers,numBlocks,32);
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(Kokkos::TeamPolicy<>::member_type member) {
+      const int walkerNum = member.league_rank();
+
+      // wrap this so only a single thread per league does this
+      Kokkos::single(Kokkos::PerTeam(member), [&]() {	  
+	  for(int i = 0; i < 3; i++) {
+	    pos(walkerNum,i) -= gridStarts(i);
+	  }
+	});
+      
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(member, 0, numBlocks),
+			   [&](int blockNum) {
+			     const int start = blockSize * blockNum;
+			     int end = start + blockSize;
+			     if (end > coef.extent(3)) {
+			       end = coefs.extent(3);
+			     }
+			     const int num_splines = end-start;
+			     
+			     // could explore the use of scratch pad memory here
+			     // ts, is and all of the kokkos arrays will be the same
+			     // for every member of the team
+			     Kokkos::Array<p,3> ts;
+			     Kokkos::Array<int,3> is;
+			     for (int i = 0; i < 3; i++) {
+			       get(pos(walkerNum,i) * delta_invs(i), ts[i], is[i], coefs.extent(i)-1);
+			     }
+
+			     Kokkos::Array<p,4> a,b,c, da, db, dc, d2a, d2b, d2c;
+			     compute_prefactors(a, da, d2a, ts[0], A44, dA44, d2A44);
+			     compute_prefactors(b, db, d2b, ts[1], A44, dA44, d2A44);
+			     compute_prefactors(c, dc, d2c, ts[2], A44, dA44, d2A44);
+
+			     Kokkos::parallel_for(Kokkos::ThreadVectorRange(member, num_splines), 
+						  [&](const int& i) {
+						    const int spl = start + i;
+						    vals(walkerNum, spl) = p();
+						    grad(walkerNum, spl, 0) = p();
+						    grad(walkerNum, spl, 1) = p();
+						    grad(walkerNum, spl, 2) = p();
+						    hess(walkerNum, spl, 0) = p();
+						    hess(walkerNum, spl, 1) = p();
+						    hess(walkerNum, spl, 2) = p();
+						    hess(walkerNum, spl, 3) = p();
+						    hess(walkerNum, spl, 4) = p();
+						    hess(walkerNum, spl, 5) = p();
+						  });
+
+			     // could explore using scratch pad memory again, all of the pre?? elements
+			     // are the same for every member of the team
+
+			     // could also imagine loading all of th enecessary coefs into scratch pad memory
+			     // probably this would be worse for vectorization though
+			     for (int i = 0; i < 4; i++) {
+			       for (int j = 0; j < 4; j++) {
+				 const p pre20 = d2a[i] * b[j];
+				 const p pre10 = da[i] * b[j];
+				 const p pre00 = a[i] * b[j];
+				 const p pre11 = da[i] * db[j];
+				 const p pre01 = a[i] * db[j];
+				 const p pre02 = a[i] * d2b[j];
+
+				 Kokkos::parallel_for(Kokkos::ThreadVectorRange(member, num_splines), 
+						      [&](const int& n) {
+							const int sponum = start+n;
+							const p sum0 = c[0] * coefs(is[0]+i, is[1]+j, is[2], sponum) +
+							               c[1] * coefs(is[0]+i, is[1]+j, is[2]+1, sponum) +
+							               c[2] * coefs(is[0]+i, is[1]+j, is[2]+2, sponum) +
+							               c[3] * coefs(is[0]+i, is[1]+j, is[2]+3, sponum);
+							const p sum1 = dc[0] * coefs(is[0]+i, is[1]+j, is[2], sponum) +
+							               dc[1] * coefs(is[0]+i, is[1]+j, is[2]+1, sponum) +
+							               dc[2] * coefs(is[0]+i, is[1]+j, is[2]+2, sponum) +
+							               dc[3] * coefs(is[0]+i, is[1]+j, is[2]+3, sponum);
+							const p sum2 = d2c[0] * coefs(is[0]+i, is[1]+j, is[2], sponum) +
+							               d2c[1] * coefs(is[0]+i, is[1]+j, is[2]+1, sponum) +
+							               d2c[2] * coefs(is[0]+i, is[1]+j, is[2]+2, sponum) +
+							               d2c[3] * coefs(is[0]+i, is[1]+j, is[2]+3, sponum);
+							
+							hess(walkerNum,sponum,0) += pre20 * sum0;
+							hess(walkerNum,sponum,1) += pre11 * sum0;
+							hess(walkerNum,sponum,2) += pre10 * sum1;
+							hess(walkerNum,sponum,3) += pre02 * sum0;
+							hess(walkerNum,sponum,4) += pre01 * sum1;
+							hess(walkerNum,sponum,5) += pre00 * sum2;
+							grad(walkerNum,sponum,0) += pre10 * sum0;
+							grad(walkerNum,sponum,1) += pre01 * sum0;
+							grad(walkerNum,sponum,2) += pre00 * sum1;
+							vals(walkerNum,sponum) += pre00 * sum0;
+						      });
+			       }
+			     }
+			       
+			     // again the d's are the same for every member of the team
+			     const p dxx = delta_invs(0) * delta_invs(0);
+			     const p dyy = delta_invs(1) * delta_invs(1);
+			     const p dzz = delta_invs(2) * delta_invs(2);
+			     const p dxy = delta_invs(0) * delta_invs(1);
+			     const p dxz = delta_invs(0) * delta_invs(2);
+			     const p dyz = delta_invs(1) * delta_invs(2);
+      
+			     Kokkos::parallel_for(Kokkos::ThreadVectorRange(member, num_splines), 
+						  [&](const int& n) {
+						    const int sponum = start+n;
+						    grad(walkerNum,sponum,0) *= delta_invs(0);
+						    grad(walkerNum,sponum,1) *= delta_invs(1);
+						    grad(walkerNum,sponum,2) *= delta_invs(2);
+						    hess(walkerNum,sponum,0) *= dxx;
+						    hess(walkerNum,sponum,1) *= dyy;
+						    hess(walkerNum,sponum,2) *= dzz;
+						    hess(walkerNum,sponum,3) *= dxy;
+						    hess(walkerNum,sponum,4) *= dxz;
+						    hess(walkerNum,sponum,5) *= dyz;
+						  });
+			   });
+    });
+}
+			       
+
+      
+
+   
 };    
+
+
+
 
 #endif
   
