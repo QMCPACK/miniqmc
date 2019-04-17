@@ -40,12 +40,9 @@ class Allocator
 public:
   /// constructor
   Allocator();
-#if (__cplusplus >= 201103L)
-  /// enable default copy constructor
   Allocator(const Allocator&) = default;
   /// disable assignement
   Allocator& operator=(const Allocator&) = delete;
-#endif
   /// destructor
   ~Allocator();
 

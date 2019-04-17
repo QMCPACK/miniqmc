@@ -13,22 +13,28 @@
 // -*- C++ -*-
 /** @file 
  * @class template specialization for KOKKOS
- * only necessary due to weirdness or my lack of understanding of KOKKOS::View<***>
+ * only necessary due to KOKKOS:::View being used to set coefficients, perhaps that
+ * should become a functor
  */
 #ifndef QMCPLUSPLUS_BSPLINE_ALLOCATOR_KOKKOS_H
 #define QMCPLUSPLUS_BSPLINE_ALLOCATOR_KOKKOS_H
 
 #include "clean_inlining.h"
 #include "Devices.h"
-#include <Numerics/Spline2/bspline_traits.hpp>
+#include "Numerics/Einspline/multi_bspline_structs_kokkos.h"
+#include "Numerics/Spline2/bspline_traits.hpp"
+#include "Numerics/Spline2/BsplineAllocator.hpp"
+#include "Numerics/Containers.h"
+#include "Numerics/OhmmsPETE/OhmmsArray.h"
 
 namespace qmcplusplus
 {
 namespace einspline
 {
+
 template<Devices DT>
 class Allocator;
-    
+
 template<>
 class Allocator<Devices::KOKKOS>
 {
@@ -39,7 +45,7 @@ class Allocator<Devices::KOKKOS>
 public:
   /// constructor
   Allocator();
-  Allocator(const Allocator&) = default;
+    Allocator(const Allocator<Devices::KOKKOS>&) = default;
   /// disable assignement
   Allocator& operator=(const Allocator&) = delete;
   /// destructor
@@ -48,7 +54,7 @@ public:
   template<typename ST>
   void destroy(ST*& spline);
 
-  /// allocate a single multi-bspline
+      /// allocate a single multi-bspline
   void allocateMultiBspline(multi_UBspline_3d_s<DT>*& spline,
                             Ugrid x_grid,
                             Ugrid y_grid,
@@ -68,13 +74,13 @@ public:
                             BCtype_d zBC,
                             int num_splines);
 
-  /// allocate a single bspline
-  void allocateUBspline(UBspline_3d_s<DT>*& spline, Ugrid x_grid, Ugrid y_grid, Ugrid z_grid,
-                        BCtype_s xBC, BCtype_s yBC, BCtype_s zBC);
+  // /// allocate a single bspline
+  // void allocateUBspline(UBspline_3d_s<DT>*& spline, Ugrid x_grid, Ugrid y_grid, Ugrid z_grid,
+  //                       BCtype_s xBC, BCtype_s yBC, BCtype_s zBC);
 
-  /// allocate a UBspline_3d_d
-  void allocateUBspline(UBspline_3d_d<DT>*& spline, Ugrid x_grid, Ugrid y_grid, Ugrid z_grid,
-                        BCtype_d xBC, BCtype_d yBC, BCtype_d zBC);
+  // /// allocate a UBspline_3d_d
+  // void allocateUBspline(UBspline_3d_d<DT>*& spline, Ugrid x_grid, Ugrid y_grid, Ugrid z_grid,
+  //                       BCtype_d xBC, BCtype_d yBC, BCtype_d zBC);
 
   /** allocate a multi_UBspline_3d_(s,d)
    * @tparam T datatype
@@ -114,8 +120,16 @@ public:
   template<typename UBT, typename MBT>
   void copy(UBT* single, MBT* multi, int i, const int* offset, const int* N);
 };
+
+
 extern template class Allocator<Devices::KOKKOS>;
 
+
+    extern template void Allocator<qmcplusplus::Devices::KOKKOS>::createMultiBspline(typename bspline_traits<Devices::KOKKOS, double, 3>::SplineType*& spline, double dummy,
+										     TinyVector<double, 3u>& start, TinyVector<double, 3u>& end, TinyVector<double, 3u>& ng, bc_code bc, int num_splines);
+
+
+    
 }
 }
 #endif

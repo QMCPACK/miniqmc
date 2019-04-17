@@ -118,9 +118,9 @@ struct multi_UBspline_3d_z : public multi_UBspline_3d_z_common
 };
 
 //if needed bring in KOKKOS and other device specializations
-#ifdef QMC_USE_KOKKOS
-#include "Numerics/Einspline/multi_bspline_structs_kokkos.h"
-#endif
+//#ifdef QMC_USE_KOKKOS
+//#include "Numerics/Einspline/multi_bspline_structs_kokkos.h"
+//#endif
 
 
 #endif

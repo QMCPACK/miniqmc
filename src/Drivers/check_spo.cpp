@@ -34,7 +34,7 @@
 #include <getopt.h>
 #include "Drivers/check_spo.h"
 // #ifdef QMC_USE_CUDA
-// #include "Drivers/test/CheckSPOStepsCUDA.hpp"
+// #include "Drivers/CheckSPOStepsCUDA.hpp"
 // #endif
 
 using namespace std;

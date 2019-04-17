@@ -26,6 +26,38 @@
 #ifndef EINSPLINE_ALLOCATOR_KOKKOS_H
 #define EINSPLINE_ALLOCATOR_KOKKOS_H
 
+#include "Numerics/Einspline/multi_bspline_structs_kokkos.h"
+#include "Numerics/Einspline/bspline_structs_kokkos.h"
+#include "Numerics/Spline2/einspline_allocator.h"
+
+template<>
+inline void
+einspline_create_multi_UBspline_3d_s(multi_UBspline_3d_s<Devices::KOKKOS>*& restrict spline,
+                                     Ugrid x_grid, Ugrid y_grid, Ugrid z_grid, BCtype_s xBC,
+                                     BCtype_s yBC, BCtype_s zBC, int num_splines);
+
+template<>
+inline void
+einspline_create_multi_UBspline_3d_d(multi_UBspline_3d_d<Devices::KOKKOS>*& spline, Ugrid x_grid,
+                                     Ugrid y_grid, Ugrid z_grid, BCtype_d xBC, BCtype_d yBC,
+                                     BCtype_d zBC, int num_splines);
+
+
+//inlined only due to inclusion in multiple compilation units
+template<>
+inline void einspline_create_multi_UBspline_3d_s_coefs(multi_UBspline_3d_s<Devices::KOKKOS>*& restrict spline,
+						int Nx,
+						int Ny,
+						int Nz,
+						       int N);
+
+template<>
+inline void einspline_create_multi_UBspline_3d_d_coefs(multi_UBspline_3d_d<Devices::KOKKOS>*& restrict spline,
+						int Nx,
+						int Ny,
+						int Nz,
+						       int N);
+
 extern template void einspline_create_UBspline_3d_d(UBspline_3d_d<Devices::KOKKOS>*& spline,
                                                     Ugrid x_grid, Ugrid y_grid, Ugrid z_grid,
                                                     BCtype_d xBC, BCtype_d yBC, BCtype_d zBC);
@@ -34,71 +66,6 @@ extern template void einspline_create_UBspline_3d_s(UBspline_3d_s<Devices::KOKKO
                                                     Ugrid x_grid, Ugrid y_grid, Ugrid z_grid,
                                                     BCtype_s xBC, BCtype_s yBC, BCtype_s zBC);
 
-extern template void
-einspline_create_multi_UBspline_3d_s(multi_UBspline_3d_s<Devices::KOKKOS>*& restrict spline,
-                                     Ugrid x_grid, Ugrid y_grid, Ugrid z_grid, BCtype_s xBC,
-                                     BCtype_s yBC, BCtype_s zBC, int num_splines);
-
-extern template void
-einspline_create_multi_UBspline_3d_d(multi_UBspline_3d_d<Devices::KOKKOS>*& spline, Ugrid x_grid,
-                                     Ugrid y_grid, Ugrid z_grid, BCtype_d xBC, BCtype_d yBC,
-                                     BCtype_d zBC, int num_splines);
-
-//inlined only due to inclusion in multiple compilation units
-template<>
-inline void einspline_create_multi_UBspline_3d_s_coefs(multi_UBspline_3d_s<Devices::KOKKOS>*& restrict spline,
-						int Nx,
-						int Ny,
-						int Nz,
-						int N)
-{
-  spline->coefs_view = multi_UBspline_3d_s<Devices::KOKKOS>::coefs_view_t("Multi_UBspline_3d_s", Nx, Ny, Nz, N);
-
-
-  //Check that data layout is as expected
-  //
-  int strides[4];
-  spline->coefs_view.stride(strides);
-  if (spline->x_stride != strides[0] || spline->y_stride != strides[1] ||
-      spline->z_stride != strides[2] || 1 != strides[3])
-    fprintf(stderr,
-            "Kokkos View has non-compatible strides %ld %i | %ld %i | %ld %i\n",
-            spline->x_stride,
-            strides[0],
-            spline->y_stride,
-            strides[1],
-            spline->z_stride,
-            strides[2]);
-
-  spline->coefs = spline->coefs_view.data();
-}
-
-template<>
-inline void einspline_create_multi_UBspline_3d_d_coefs(multi_UBspline_3d_d<Devices::KOKKOS>*& restrict spline,
-						int Nx,
-						int Ny,
-						int Nz,
-						int N)
-{
-  spline->coefs_view = multi_UBspline_3d_d<Devices::KOKKOS>::coefs_view_t("Multi_UBspline_3d_d", Nx, Ny, Nz, N);
-
-  //Check that data layout is as expected
-  //
-  int strides[4];
-  spline->coefs_view.stride(strides);
-  if (spline->x_stride != strides[0] || spline->y_stride != strides[1] ||
-      spline->z_stride != strides[2] || 1 != strides[3])
-    fprintf(stderr,
-            "Kokkos View has non-compatible strides %ld %i | %ld %i | %ld %i\n",
-            spline->x_stride,
-            strides[0],
-            spline->y_stride,
-            strides[1],
-            spline->z_stride,
-            strides[2]);
-
-  spline->coefs = spline->coefs_view.data();
-}
 
 /* extern template void einspline_create_UBspline_3d_d_coefs(UBspline_3d_d<Devices::KOKKOS>*& spline, */
 /* 							  int Nx, int Ny, int Nz, int N); */

@@ -102,6 +102,11 @@ protected:
   Kokkos::View<spline_type*> minded_splines_;
 };
 
+extern template class BsplineSet<Devices::KOKKOS, double>;
+extern template class BsplineSet<Devices::KOKKOS, float>;
+extern template class BsplineSetCreator<Devices::KOKKOS, double>;
+extern template class BsplineSetCreator<Devices::KOKKOS, float>;
+
 }
 
 #endif

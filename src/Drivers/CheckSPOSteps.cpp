@@ -304,7 +304,19 @@ CheckSPOSteps<Devices::CUDA>::buildSPOMain(const int nx,
 				const int nTiles,
 					   const int tile_size,
 				const Tensor<OHMMS_PRECISION, 3>& lattice_b);
+#endif
 
-//template void CheckSPOSteps<Devices::CUDA>::test(int&, int, qmcplusplus::Tensor<int, 3u> const&, int, int, int, int, int, double);
+#ifdef QMC_USE_KOKKOS
+template void CheckSPOSteps<Devices::KOKKOS>::test(int&, int, Tensor<int, 3u> const&, int, int, int, int, int, double);
+template typename CheckSPOSteps<Devices::KOKKOS>::SPODevImp
+CheckSPOSteps<Devices::KOKKOS>::buildSPOMain(const int nx,
+				const int ny,
+				const int nz,
+				const int norb,
+				const int nTiles,
+					   const int tile_size,
+				const Tensor<OHMMS_PRECISION, 3>& lattice_b);
+
 #endif 
+
 } // namespace qmcplusplus

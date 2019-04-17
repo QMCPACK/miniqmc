@@ -7,7 +7,7 @@ SET(NUMERICS_SRC
   
   SET(NUMERICS_KOKKOS "")
   IF(QMC_USE_KOKKOS)
-    SET(NUMERICS_KOKKOS Spline2/BsplineAllocatorKOKKOS.cpp Spline2/BsplineSetKOKKOS.cpp Spline2/einspline_allocator_kokkos.cpp)
+    SET(NUMERICS_KOKKOS Spline2/BsplineAllocatorKOKKOS.cpp Spline2/BsplineSetKOKKOS.cpp Spline2/einspline_allocator_kokkos.cpp Spline2/BsplineAllocatorKOKKOS.cpp)
   ENDIF(QMC_USE_KOKKOS)
   
   #not sure this is necessary

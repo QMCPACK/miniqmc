@@ -8,11 +8,11 @@ FOREACH(p ${ESTEST})
   ENDIF(QMC_USE_CUDA)
 ENDFOREACH(p ${ESTEST})
 
-SET(KOKKOS_CHECK_SPO_LIBS "")
-if(QMC_USE_KOKKOS)
-  ADD_LIBRARY(check_spo_kokkos CheckSPOStepsKOKKOS.cpp)
-  SET(KOKKOS_CHECK_SPO_LIBS check_spo_kokkos)
-endif(QMC_USE_KOKKOS)
+#SET(KOKKOS_CHECK_SPO_LIBS "")
+# if(QMC_USE_KOKKOS)
+#   ADD_LIBRARY(check_spo_kokkos CheckSPOStepsKOKKOS.cpp)
+#   SET(KOKKOS_CHECK_SPO_LIBS check_spo_kokkos)
+# endif(QMC_USE_KOKKOS)
 
 ADD_EXECUTABLE( check_spo check_spo.cpp CheckSPOSteps.cpp ${ETEST_KOKKOS_SRC} )
 TARGET_LINK_LIBRARIES( check_spo qmcbase qmcutil qmcdevice ${QMC_UTIL_LIBS} ${MPI_LIBRARY} ${KOKKOS_CHECK_SPO_LIBS})
@@ -20,6 +20,9 @@ IF(QMC_USE_CUDA)
   TARGET_LINK_LIBRARIES( check_spo qmc_cuda_params)
   TARGET_SOURCES(check_spo PUBLIC CheckSPOStepsCUDA.cpp)
 ENDIF(QMC_USE_CUDA)
+if(QMC_USE_KOKKOS)
+  TARGET_SOURCES(check_spo PUBLIC CheckSPOStepsKOKKOS.cpp)
+endif(QMC_USE_KOKKOS)
 
 
 

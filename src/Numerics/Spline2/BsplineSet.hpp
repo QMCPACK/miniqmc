@@ -105,12 +105,6 @@ extern template class BsplineSetCreator<Devices::CUDA, double>;
 extern template class BsplineSetCreator<Devices::CUDA, float>;
 #endif
 
-#ifdef QMC_USE_KOKKOS
-extern template class BsplineSet<Devices::KOKKOS, double>;
-extern template class BsplineSet<Devices::KOKKOS, float>;
-extern template class BsplineSetCreator<Devices::KOKKOS, double>;
-extern template class BsplineSetCreator<Devices::KOKKOS, float>;
-#endif    
 
 }
 
