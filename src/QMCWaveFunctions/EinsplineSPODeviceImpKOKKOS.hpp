@@ -31,7 +31,7 @@
 #include "QMCWaveFunctions/EinsplineSPODevice.hpp"
 #include "QMCWaveFunctions/EinsplineSPODeviceImp.hpp"
 #include "Numerics/Spline2/bspline_traits.hpp"
-#include "Numerics/Spline2/BsplineAllocator.hpp"
+#include "Numerics/Spline2/BsplineAllocatorKOKKOS.hpp"
 #include "Numerics/Spline2/MultiBsplineFuncs.hpp"
 #ifdef KOKKOS_ENABLE_CUDA
 #include "cublas_v2.h"
@@ -71,13 +71,14 @@ public:
   using lattice_type    = CrystalLattice<T, 3>;
 
   //using einspline_type = spline_type*;
-  Kokkos::View<spline_type*> einsplines;
+  //Kokkos::View<spline_type*> einsplines;
   Kokkos::View<vContainer_type*> psi;
   Kokkos::View<gContainer_type*> grad;
   Kokkos::View<hContainer_type*> hess;
 
+  std::shared_ptr<BsplineSet<Devices::KOKKOS, T>> einsplines;
   /// use allocator
-  einspline::Allocator<DT> myAllocator;
+  //einspline::Allocator<DT> myAllocator;
   /// Compute engine
   MultiBsplineFuncs<DT, T> compute_engine;
   //Temporary position for communicating within Kokkos parallel sections.
@@ -94,11 +95,12 @@ public:
     timer = TimerManagerClass::get().createTimer("EinsplineSPODeviceImp<KOKKOS>", timer_level_fine);
   }
   
-  //Copy Constructor only supports KOKKOS to KOKKOS
-  EinsplineSPODeviceImp(const EinsplineSPODevice<EinsplineSPODeviceImp<Devices::KOKKOS, T>, T>& in,
+  /** Copy Constructor only supports KOKKOS to KOKKOS
+   *  Kokkos implementation does not include a "true" copy constructor
+   */  
+  EinsplineSPODeviceImp(const EinsplineSPODeviceImp<Devices::KOKKOS, T>& in,
                         int team_size,
                         int member_id)
-    : EinsplineSPODevice<EinsplineSPODeviceImp<Devices::KOKKOS, T>, T>(in, team_size, member_id)
   {
     timer = TimerManagerClass::get().createTimer("EinsplineSPODeviceImp<KOKKOS>", timer_level_fine);
     const EinsplineSPOParams<T>& inesp = in.getParams();
@@ -110,10 +112,7 @@ public:
     esp.firstBlock                  = esp.nBlocks * member_id;
     esp.lastBlock                   = std::min(inesp.nBlocks, esp.nBlocks * (member_id + 1));
     esp.nBlocks                     = esp.lastBlock - esp.firstBlock;
-    einsplines                  = Kokkos::View<spline_type*>("einsplines", esp.nBlocks);
-    for (int i = 0, t = esp.firstBlock; i < esp.nBlocks; ++i, ++t)
-      //KOKKOS people take note, is this ok?
-      einsplines(i)= *static_cast<spline_type*>(in.getEinspline(t));
+    einsplines                  = in.einsplines;
     resize();
   }
 
@@ -143,9 +142,8 @@ public:
 
   ~EinsplineSPODeviceImp()
   {
-    if (!esp.is_copy)
-    {
-      einsplines = Kokkos::View<spline_type*>();
+      // So I guess the views are sort of like a shared pointer except the reference is not decremented
+      // when they are simple destroyed?
       for (int i = 0; i < psi.extent(0); i++)
       {
         psi(i)  = vContainer_type();
@@ -155,7 +153,7 @@ public:
       psi  = Kokkos::View<vContainer_type*>();
       grad = Kokkos::View<gContainer_type*>();
       hess = Kokkos::View<hContainer_type*>();
-    }
+
   }
 
     void set_i(int nx, int ny, int nz, int num_splines, int num_blocks, int splines_per_block, bool init_random = true)
@@ -167,32 +165,25 @@ public:
 	throw std::runtime_error("splines_per_block * num_blocks < num_splines");
     esp.firstBlock       = 0;
     esp.lastBlock        = num_blocks;
-    if (einsplines.extent(0) == 0)
+    if (einsplines == nullptr)
     {
-      esp.Owner = true;
-      TinyVector<int, 3> ng(nx, ny, nz);
       QMCT::PosType start(0);
       QMCT::PosType end(1);
-
-      Kokkos::resize(einsplines, esp.nBlocks);
-      einsplines = Kokkos::View<spline_type*>("einsplines", esp.nBlocks);
-
+      einsplines = std::make_shared<BsplineSet<Devices::KOKKOS,T>>(esp.nBlocks);
       RandomGenerator<T> myrandom(11);
       //Array<T, 3> coef_data(nx+3, ny+3, nz+3);
-      Kokkos::View<T***> coef_data("coef_data", nx + 3, ny + 3, nz + 3);
-
+      Kokkos::View<T***> coef_data("coef_data", nx + 3, ny + 3, nz + 3); //diff from CPU
       for (int i = 0; i < esp.nBlocks; ++i)
       {
-	spline_type* pspline_temp;
-        myAllocator.createMultiBspline(pspline_temp, T(0), start, end, ng, PERIODIC, esp.nSplinesPerBlock);
-	einsplines(i) = *pspline_temp;
+	//spline_type* pspline_temp;
+	einsplines->creator()(i, start, end, nx, ny, nz, esp.nSplinesPerBlock);
         if (init_random)
         {
           for (int j = 0; j < esp.nSplinesPerBlock; ++j)
           {
             // Generate different coefficients for each orbital
-            myrandom.generate_uniform(coef_data.data(), coef_data.extent(0));
-            myAllocator.setCoefficientsForOneOrbital(j, coef_data, &einsplines(i));
+	    myrandom.generate_uniform(coef_data.data(), coef_data.extent(0)); //diff from CPU
+            einsplines->setCoefficientsForOneOrbital(j, coef_data, i); //&einsplines(i));
           }
         }
       }
@@ -292,7 +283,7 @@ public:
 
   KOKKOS_INLINE_FUNCTION void* getEinspline_i(int i) const
   {
-    return &einsplines(i);
+      return (*einsplines)[i];
   }
   
   KOKKOS_INLINE_FUNCTION
@@ -306,9 +297,9 @@ public:
   {
     int block               = team.league_rank();
     auto u                  = esp.lattice.toUnit_floor(tmp_pos);
-    einsplines(block).coefs = einsplines(block).coefs_view.data();
+    (*einsplines)[block]->coefs = (*einsplines)[block]->coefs_view.data();
     compute_engine
-      .evaluate_v(team, &einsplines(block), u[0], u[1], u[2], psi(block).data(), psi(block).extent(0));
+	.evaluate_v(team, ((*einsplines)[block]), u[0], u[1], u[2], psi(block).data(), psi(block).extent(0));
   }
 
   KOKKOS_INLINE_FUNCTION
@@ -316,9 +307,9 @@ public:
   {
     int block               = team.league_rank();
     auto u                  = esp.lattice.toUnit_floor(tmp_pos);
-    einsplines(block).coefs = einsplines(block).coefs_view.data();
+    (*einsplines)[block]->coefs = (*einsplines)[block]->coefs_view.data();
     compute_engine
-      .evaluate_v(team, &einsplines(block), u[0], u[1], u[2], psi(block).data(), psi(block).extent(0));
+	.evaluate_v(team, ((*einsplines)[block]), u[0], u[1], u[2], psi(block).data(), psi(block).extent(0));
   }
 };
 

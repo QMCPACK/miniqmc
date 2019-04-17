@@ -33,7 +33,8 @@ class TaskWrapper
     enum class Threading{
 	OPENMP,
 	STD,
-	BOOST
+	BOOST,
+	KOKKOS
     };
 
     template<Threading TT>
@@ -58,7 +59,13 @@ class TaskWrapper
     {
 	std::cout << "Not sure what to do here\n";
     }
-    
+
+    template<>
+    inline void TaskBlockBarrier<Threading::KOKKOS>::wait()
+    {
+	std::cout << "Not sure what to do here\n";
+    }
+
 template<Threading TT>
 class TaskBlock
 {

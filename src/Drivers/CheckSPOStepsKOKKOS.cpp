@@ -1,39 +1,8 @@
-////////////////////////////////////////////////////////////////////////////////
-// This file is distributed under the University of Illinois/NCSA Open Source
-// License.  See LICENSE file in top directory for details.
-//
-// Copyright (c) 2018 QMCPACK developers.
-//
-// File developed by:
-// Peter Doak, doakpw@ornl.gov, Oak Ridge National Lab
-//
-// File created by:
-// Peter Doak, doakpw@ornl.gov, Oak Ridge National Lab
-////////////////////////////////////////////////////////////////////////////////
-#ifndef QMCPLUSPLUS_CHECK_SPO_HELPERS_KOKKOS_HPP
-#define QMCPLUSPLUS_CHECK_SPO_HELPERS_KOKKOS_HPP
-
-#include "Drivers/check_spo.h"
-#include "Utilities/Configuration.h"
+#include "Drivers/CheckSPOData.hpp"
+#include "Drivers/CheckSPOSteps.hpp"
 
 namespace qmcplusplus
 {
-template<>
-void CheckSPOSteps<Devices::KOKKOS>::finalize()
-{
-  Kokkos::finalize();
-}
-
-template<>
-void CheckSPOSteps<Devices::KOKKOS>::initialize(int argc, char** argv)
-{
-  std::cout << "CheckSPOSteps<DDT::KOKKOS>::initialize" << '\n';
-  Kokkos::initialize(argc, argv);
-}
-
-/** Kokkos functor for custom reduction
- */
-
 
 template<typename T>
 class SPOReduction
@@ -100,8 +69,21 @@ private:
   int nsteps_;
   QMCT::RealType Rmax_;
 };
+    
+template<>
+void CheckSPOSteps<Devices::KOKKOS>::finalize()
+{
+  Kokkos::finalize();
+}
 
 template<>
+void CheckSPOSteps<Devices::KOKKOS>::initialize(int argc, char** argv)
+{
+  std::cout << "CheckSPOSteps<DDT::KOKKOS>::initialize" << '\n';
+  Kokkos::initialize(argc, argv);
+}
+
+    template<>
 template<typename T>
 CheckSPOData<T> CheckSPOSteps<Devices::KOKKOS>::runThreads(const int team_size,
 							   ParticleSet& ions,
@@ -156,7 +138,31 @@ CheckSPOData<T> CheckSPOSteps<Devices::KOKKOS>::runThreads(const int team_size,
   return my_data;
 }
 
-extern template class CheckSPOSteps<Devices::KOKKOS>;
+// extern template CheckSPOData<double> CheckSPOSteps<Devices::KOKKOS>::runThreads(const int team_size,
+// 							   ParticleSet& ions,
+// 							   const SPODevImp& spo_main,
+// 							   const SPORef& spo_ref_main,
+// 							   const int nsteps,
+// 										const double Rmax);
+
+// extern template CheckSPOData<float> CheckSPOSteps<Devices::KOKKOS>::runThreads(const int team_size,
+// 							   ParticleSet& ions,
+// 							   const SPODevImp& spo_main,
+// 							   const SPORef& spo_ref_main,
+// 							   const int nsteps,
+// 										const float Rmax);
+
+//extern template void CheckSPOSteps<Devices::KOKKOS>::finalize();
+//extern template void CheckSPOSteps<Devices::KOKKOS>::initialize(int argc, char** argv);
+
 } // namespace qmcplusplus
 
-#endif
+#include "Drivers/CheckSPOStepsKOKKOS.hpp"
+
+  namespace qmcplusplus
+  {
+        template void CheckSPOSteps<Devices::KOKKOS>::test(int&, int, qmcplusplus::Tensor<int, 3u> const&, int, int, int, int, int, double);
+
+  template class CheckSPOSteps<Devices::KOKKOS>;
+
+  }

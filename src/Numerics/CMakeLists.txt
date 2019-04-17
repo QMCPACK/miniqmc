@@ -1,10 +1,15 @@
 SET(NUMERICS_SRC
     Spline2/einspline_allocator.cpp
-    Spline2/bspline_allocator.cpp
+    Spline2/BsplineAllocator.cpp
     Spline2/BsplineSet.cpp
     Spline2/MultiBsplineData.cpp
     )
-
+  
+  SET(NUMERICS_KOKKOS "")
+  IF(QMC_USE_KOKKOS)
+    SET(NUMERICS_KOKKOS Spline2/BsplineAllocatorKOKKOS.cpp Spline2/BsplineSetKOKKOS.cpp Spline2/einspline_allocator_kokkos.cpp)
+  ENDIF(QMC_USE_KOKKOS)
+  
   #not sure this is necessary
   SET(NUMERICS_CUDA_OUTSIDE "")
   SET(NUMERICS_CUDA_INSIDE  "")
@@ -16,7 +21,7 @@ IF(QMC_USE_CUDA OR QMC_USE_CLANG_CUDA)
   SET(NUMERICS_CUDA_INSIDE Einspline/multi_bspline_cuda_eval_d.cu Einspline/multi_bspline_cuda_eval_s.cu Einspline/MultiBsplineCreateCUDA.cu)
 ENDIF(QMC_USE_CUDA OR QMC_USE_CLANG_CUDA)
 
-ADD_LIBRARY(qmc_numerics ${NUMERICS_SRC} ${NUMERICS_CUDA_OUTSIDE})
+ADD_LIBRARY(qmc_numerics ${NUMERICS_SRC} ${NUMERICS_CUDA_OUTSIDE} ${NUMERICS_KOKKOS_OUTSIDE})
 
 IF(QMC_USE_CUDA)
   CUDA_ADD_LIBRARY(cuda_numerics ${NUMERICS_CUDA_INSIDE})

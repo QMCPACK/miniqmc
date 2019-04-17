@@ -27,6 +27,8 @@ namespace qmcplusplus
 template<Devices DT, typename T>
 class BsplineSetCreator;
 
+/** We only create CUDA bsplines from CPU bsplines so this specialized functor is necessary
+ */
 template<typename T>
 struct BsplineSetCreator<Devices::CUDA, T>
 {

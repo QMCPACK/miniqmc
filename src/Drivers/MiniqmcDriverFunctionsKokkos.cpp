@@ -18,9 +18,10 @@
  */
 
 #include "Drivers/MiniqmcDriverFunctions.hpp"
-
+#include "Numerics/Spline2/BsplineAllocatorKOKKOS.hpp"
 namespace qmcplusplus
 {
+
 template<>
 void MiniqmcDriverFunctions<Devices::KOKKOS>::initialize(int argc, char** argv)
 {
@@ -223,7 +224,10 @@ void MiniqmcDriverFunctions<Devices::KOKKOS>::movers_runThreads(MiniqmcOptions& 
   auto main_function = KOKKOS_LAMBDA(int thread_id, int team_size)
   {
     printf(" thread_id = %d\n", thread_id);
-    MiniqmcDriverFunctions<Devices::KOKKOS>::movers_thread_main(thread_id, team_size,
+    TaskBlockBarrier<Threading::KOKKOS> barrier(team_size); /// maybe
+
+    MiniqmcDriverFunctions<Devices::KOKKOS>::crowd_thread_main(thread_id, 							       barrier,
+ team_size,
 								const_cast<MiniqmcOptions&>(mq_opt),
 								myPrimes,
 								ions,

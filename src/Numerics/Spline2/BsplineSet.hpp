@@ -12,8 +12,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 // -*- C++ -*-
 
-#ifndef QMCPLUSPLUS_SPLINE_BUNDLE_HPP
-#define QMCPLUSPLUS_SPLINE_BUNDLE_HPP
+#ifndef QMCPLUSPLUS_BSPLINE_SET_HPP
+#define QMCPLUSPLUS_BSPLINE_SET_HPP
 
 #include <cassert>
 #include <algorithm>
@@ -26,24 +26,12 @@
 #ifdef QMC_USE_CUDA
 #include "Numerics/Spline2/BsplineSetCUDA.hpp"
 #endif
+#ifdef QMC_USE_KOKKOS
+#include "Numerics/Spline2/BsplineSetKOKKOS.hpp"
+#endif
 
-//#include "Utilities/SIMD/allocator.hpp"
-/** template class to wrap einsplines held by SPO's
- *  allowing their life spans to be handled through a shared_ptr
- *  We'll see if there is any really performance hit for this
- */
 namespace qmcplusplus
 {
-// template<Devices DT, typename T>
-// struct SplineBundle
-// {
-//   using spline_type = typename bspline_traits<DT, T, 3>::SplineType;
-//   aligned_vector<spline_type*> einsplines;
-// public:
-//   void resize(size_t size) { einsplines.resize(size); }
-//   spline_type* operator[](size_t index) { return einsplines[index]; };
-//   ~SplineBundle() { }
-// };
 
 template<Devices DT, typename T>
 struct BsplineSetCreator
@@ -61,6 +49,11 @@ private:
   aligned_vector<spline_type*>& minded_splines_;
 };
 
+/** template class to wrap einsplines held by SPO's
+ *  allowing their life spans to be handled through a shared_ptr
+ *  and without all the is_owned, copied, etc. flags in EinsplineSPO
+ *  So far this has negligible effect on performance
+ */
 template<Devices DT, typename T>
 class BsplineSet
 {
@@ -92,7 +85,9 @@ public:
 
   void setCoefficientsForOneOrbital(int spline_index, Array<T, 3>& coeff, int block)
   {
-    allocator_.setCoefficientsForOneOrbital(spline_index, coeff, minded_splines_[block]);
+      allocator_.setCoefficientsForOneOrbital(spline_index,
+					      coeff,
+					      minded_splines_[block]);
   }
 
 protected:
@@ -102,28 +97,22 @@ protected:
 
   extern template class BsplineSet<Devices::CPU, double>;
   extern template class BsplineSet<Devices::CPU, float>;
-// #ifdef QMC_USE_CUDA
-//   /** Purposely does not contain a vector known as eisplines
-//    */
-// template<typename T>
-// struct SplineBundle<Devices::CUDA, T>
-// {
-//   using device_spline_type = typename bspline_traits<Devices::CUDA, T, 3>::SplineType;
-//   using host_spline_type = typename bspline_traits<Devices::CPU, T, 3>::SplineType;
-//   aligned_vector<device_spline_type*> device_einsplines;
-//   //These might not be needed after transfer to GPU
-//   aligned_vector<host_spline_type*> host_einsplines;
-// };
-// #endif
 
-  #ifdef QMC_USE_CUDA
-
-  extern template class BsplineSet<Devices::CUDA, double>;
-  extern template class BsplineSet<Devices::CUDA, float>;
-  extern template class BsplineSetCreator<Devices::CUDA, double>;
-  extern template class BsplineSetCreator<Devices::CUDA, float>;
-
+ #ifdef QMC_USE_CUDA
+extern template class BsplineSet<Devices::CUDA, double>;
+extern template class BsplineSet<Devices::CUDA, float>;
+extern template class BsplineSetCreator<Devices::CUDA, double>;
+extern template class BsplineSetCreator<Devices::CUDA, float>;
 #endif
-  
-} // namespace qmcplusplus
+
+#ifdef QMC_USE_KOKKOS
+extern template class BsplineSet<Devices::KOKKOS, double>;
+extern template class BsplineSet<Devices::KOKKOS, float>;
+extern template class BsplineSetCreator<Devices::KOKKOS, double>;
+extern template class BsplineSetCreator<Devices::KOKKOS, float>;
+#endif    
+
+}
+
+
 #endif

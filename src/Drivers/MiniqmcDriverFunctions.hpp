@@ -115,6 +115,11 @@ private:
   static void updateFromDevice(DiracDeterminant<DeterminantDeviceImp<DT>>& determinant_device);
 };
 
+#ifdef QMC_USE_KOKKOS
+#include "Drivers/MiniqmcDriverFunctionsKokkos.hpp"
+#endif
+
+    
 /** currently used by all devices
  */
 template<Devices DT>
@@ -242,10 +247,6 @@ void MiniqmcDriverFunctions<DT>::crowd_thread_main(const int ip,
 }
 
 extern template class qmcplusplus::MiniqmcDriverFunctions<Devices::CPU>;
-#ifdef QMC_USE_KOKKOS
-#include "Drivers/MiniqmcDriverFunctionsKokkos.hpp"
-extern template class qmcplusplus::MiniqmcDriverFunctions<Devices::KOKKOS>;
-#endif
 #ifdef QMC_USE_CUDA
 extern template class qmcplusplus::MiniqmcDriverFunctions<Devices::CUDA>;
 #endif

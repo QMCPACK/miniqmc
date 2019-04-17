@@ -1569,7 +1569,7 @@ class DeterminantDeviceImp<Devices::KOKKOS>
 {
 public:
   using QMCT = QMCTraits;
-
+  static constexpr Devices ENUMT = Devices::KOKKOS;
   DeterminantDeviceImp(int nels, const RandomGenerator<QMCT::RealType>& RNG, int First = 0)
       : DeterminantDevice(nels, RNG, First), FirstIndex(First), myRandom(RNG)
   {

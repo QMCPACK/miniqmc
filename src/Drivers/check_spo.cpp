@@ -33,8 +33,11 @@
 #include <Utilities/qmcpack_version.h>
 #include <getopt.h>
 #include "Drivers/check_spo.h"
-#ifdef QMC_USE_CUDA
-#include "Drivers/test/CheckSPOStepsCUDA.hpp"
+// #ifdef QMC_USE_CUDA
+// #include "Drivers/test/CheckSPOStepsCUDA.hpp"
+// #endif
+#ifdef QMC_USE_KOKKOS
+#include "Drivers/CheckSPOStepsKOKKOS.hpp"
 #endif
 
 using namespace std;
@@ -176,13 +179,13 @@ int CheckSPOTest::runTests()
 
 }
 
-#ifdef QMC_USE_KOKKOS
-template class CheckSPOSteps<Devices::KOKKOS>;
-#endif
+// #ifdef QMC_USE_KOKKOS
+// template class CheckSPOSteps<Devices::KOKKOS>;
+// #endif
 
-#ifdef QMC_USE_CUDA
-template class CheckSPOSteps<Devices::CUDA>;
-#endif
+// #ifdef QMC_USE_CUDA
+// template class CheckSPOSteps<Devices::CUDA>;
+// #endif
 
 }
 

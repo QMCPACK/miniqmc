@@ -22,8 +22,11 @@
 #include "QMCWaveFunctions/EinsplineSPODeviceImp.hpp"
 #include "Drivers/CheckSPOData.hpp"
 
+
 namespace qmcplusplus
 {
+
+
 template<Devices DT>
 class CheckSPOSteps
 {
@@ -33,7 +36,7 @@ public:
 
 public:
   using QMCT = QMCTraits;
-  static void initialize(int arc, char** argv) {};
+    static void initialize(int arc, char** argv);
   static void test(int& error,
                    int team_size,
                    const Tensor<int, 3>& tmat,
@@ -43,7 +46,7 @@ public:
                    const int nz,
                    const int nsteps,
                    const QMCT::RealType Rmax);
-  static void finalize() {};
+    static void finalize();
 
   template<typename T>
   static void thread_main(const int num_threads,
@@ -79,7 +82,12 @@ private:
                                     const int nsteps,
                                     const T Rmax);
 };
+    template<Devices DT>
+    void CheckSPOSteps<DT>::initialize(int arc, char** argv) {}
 
+    template<Devices DT>
+    void CheckSPOSteps<DT>::finalize() {}
+    
 extern template class CheckSPOSteps<Devices::CPU>;
 
 } // namespace qmcplusplus
@@ -88,9 +96,6 @@ extern template class CheckSPOSteps<Devices::CPU>;
 ///////////////////////////////////////////////////
 /** from here we have explicit instantiation declarations whose purpose is to speed compilation.
  */
-#ifdef QMC_USE_KOKKOS
-#include "Drivers/test/CheckSPOStepsKOKKOS.hpp"
-#endif
 
 #ifdef QMC_USE_CUDA
 #include "Drivers/test/CheckSPOStepsCUDA.hpp"
@@ -109,5 +114,22 @@ CheckSPOSteps<Devices::CUDA>::buildSPOMain(const int nx,
 }
 #endif
 
+// #ifdef QMC_USE_KOKKOS
+// #include "Drivers/CheckSPOStepsKOKKOS.hpp"
+// // namespace qmcplusplus
+// // {
+
+// // extern template void CheckSPOSteps<Devices::KOKKOS>::test(int&, int, qmcplusplus::Tensor<int, 3u> const&, int, int, int, int, int, double);
+// // extern template typename CheckSPOSteps<Devices::KOKKOS>::SPODevImp
+// // CheckSPOSteps<Devices::KOKKOS>::buildSPOMain(const int nx,
+// // 				const int ny,
+// // 				const int nz,
+// // 				const int norb,
+// // 				const int nTiles,
+// // 					   const int tile_size,
+// // 				const Tensor<OHMMS_PRECISION, 3>& lattice_b);
+
+// // }
+// #endif
 
 #endif
