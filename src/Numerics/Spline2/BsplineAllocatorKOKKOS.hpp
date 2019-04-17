@@ -128,6 +128,15 @@ extern template class Allocator<Devices::KOKKOS>;
     extern template void Allocator<qmcplusplus::Devices::KOKKOS>::createMultiBspline(typename bspline_traits<Devices::KOKKOS, double, 3>::SplineType*& spline, double dummy,
 										     TinyVector<double, 3u>& start, TinyVector<double, 3u>& end, TinyVector<double, 3u>& ng, bc_code bc, int num_splines);
 
+  extern template
+  void Allocator<qmcplusplus::Devices::KOKKOS>::setCoefficientsForOneOrbital(int i,
+                                    Kokkos::View<double***>&,
+                                    typename bspline_traits<Devices::KOKKOS, double, 3>::SplineType* spline);
+  extern template
+  void Allocator<qmcplusplus::Devices::KOKKOS>::setCoefficientsForOneOrbital(int i,
+                                    Kokkos::View<float***>&,
+                                    typename bspline_traits<Devices::KOKKOS, float, 3>::SplineType* spline);
+
 
     
 }

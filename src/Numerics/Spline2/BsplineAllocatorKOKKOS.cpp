@@ -79,10 +79,18 @@ void Allocator<Devices::KOKKOS>::destroy(SplineType*& spline)
 template class Allocator<Devices::KOKKOS>;
 template void Allocator<qmcplusplus::Devices::KOKKOS>::createMultiBspline(typename bspline_traits<Devices::KOKKOS, double, 3u>::SplineType*& spline, double dummy,
 										     TinyVector<double, 3u>& start, TinyVector<double, 3u>& end, TinyVector<int, 3u>& ng, bc_code bc, int num_splines);
-template void Allocator<Devices::KOKKOS>::setCoefficientsForOneOrbital(
-    int i,
-    Kokkos::View<double***>& coeff,
-    typename bspline_traits<Devices::KOKKOS, double, 3>::SplineType* spline);
+template void Allocator<qmcplusplus::Devices::KOKKOS>::createMultiBspline(typename bspline_traits<Devices::KOKKOS, float, 3u>::SplineType*& spline, float dummy,
+										     TinyVector<float, 3u>& start, TinyVector<float, 3u>& end, TinyVector<int, 3u>& ng, bc_code bc, int num_splines);
+
+   template
+  void Allocator<qmcplusplus::Devices::KOKKOS>::setCoefficientsForOneOrbital(int i,
+                                    Kokkos::View<double***>&,
+                                    typename bspline_traits<Devices::KOKKOS, double, 3>::SplineType* spline);
+   template
+  void Allocator<qmcplusplus::Devices::KOKKOS>::setCoefficientsForOneOrbital(int i,
+                                    Kokkos::View<float***>&,
+                                    typename bspline_traits<Devices::KOKKOS, float, 3>::SplineType* spline);
+
 
 }
 }

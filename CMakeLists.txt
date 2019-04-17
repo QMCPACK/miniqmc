@@ -264,8 +264,6 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
   # Include compiler-specific cmake file
   #------------------------------------
 
-  ADD_DEFINITIONS(-DNO_SANITIZE= )
-  
   IF (QMC_USE_KOKKOS)
     #leave the flags alone, NVCC etc. don't accept the GNU flags
     MESSAGE("leaving flags alone")

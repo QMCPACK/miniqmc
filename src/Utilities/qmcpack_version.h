@@ -14,6 +14,8 @@
 #ifndef QMCPACK_VERSION_INCLUDE
 #define QMCPACK_VERSION_INCLUDE
 
+#include "config.h"
+
 void NO_SANITIZE print_version(bool verbose);
 
 #endif

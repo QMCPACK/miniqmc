@@ -21,13 +21,13 @@ namespace qmcplusplus
 {
 
 template<>
-void CheckSPOSteps<Devices::KOKKOS>::finalize()
+inline void CheckSPOSteps<Devices::KOKKOS>::finalize()
 {
   Kokkos::finalize();
 }
 
 template<>
-void CheckSPOSteps<Devices::KOKKOS>::initialize(int argc, char** argv)
+inline void CheckSPOSteps<Devices::KOKKOS>::initialize(int argc, char** argv)
 {
   std::cout << "CheckSPOSteps<DDT::KOKKOS>::initialize" << '\n';
   Kokkos::initialize(argc, argv);

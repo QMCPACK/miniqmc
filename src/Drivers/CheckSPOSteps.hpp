@@ -120,8 +120,6 @@ CheckSPOSteps<Devices::KOKKOS>::buildSPOMain(const int nx,
 				const int nTiles,
 					   const int tile_size,
 				const Tensor<OHMMS_PRECISION, 3>& lattice_b);
-extern template class CheckSPOSteps<Devices::KOKKOS>;
-extern template void CheckSPOSteps<Devices::KOKKOS>::initialize(int, char**);
 
 }
 #endif

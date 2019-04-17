@@ -83,7 +83,7 @@ CheckSPOData<T> CheckSPOSteps<Devices::KOKKOS>::runThreads(const int team_size,
   namespace qmcplusplus
   {
   template class CheckSPOSteps<Devices::KOKKOS>;
-  template void CheckSPOSteps<Devices::KOKKOS>::test(int&, int, qmcplusplus::Tensor<int, 3u> const&, int, int, int, int, int, double);
+
 
 
 

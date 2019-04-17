@@ -92,6 +92,8 @@
 /* Kokkos optional parallelization flags */
 #cmakedefine QMC_PARALLEL_JASTROW @QMC_PARALLEL_JASTROW@
 
+#define NO_SANITIZE @NO_SANITIZE@
+
 #if (__cplusplus >= 201103L)
   #if defined(__INTEL_COMPILER)
     #if defined(__KNC__) || defined(__AVX512F__)
