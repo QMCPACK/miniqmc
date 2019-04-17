@@ -53,7 +53,7 @@ struct MultiBsplineFuncs<Devices::CUDA, T>
   struct PosBuffer
   {
      PosBuffer() : stream_(cudaStreamPerThread), buffer(nullptr), dev_buffer(nullptr), size_(0) {}
-      PosBuffer(cudaStream_t& stream) : stream_(stream), buffer(nullptr), dev_buffer(nullptr), size_(0) {}
+      PosBuffer(cudaStream_t stream) : stream_(stream), buffer(nullptr), dev_buffer(nullptr), size_(0) {}
      
     ~PosBuffer()
     {
@@ -61,7 +61,7 @@ struct MultiBsplineFuncs<Devices::CUDA, T>
       if (dev_buffer != nullptr) cudaFree(dev_buffer);
     }
 
-    void operator() (cudaStream_t& stream) { stream_ = stream; }
+    void operator() (cudaStream_t stream) { stream_ = stream; }
     void resize(int size)
     {
       if (size > size_)
@@ -126,7 +126,7 @@ struct MultiBsplineFuncs<Devices::CUDA, T>
 		    int num_blocks,
 		    size_t num_splines,
                     size_t spline_block_size,
-                    cudaStream_t& stream = cudaStreamPerThread);
+                    cudaStream_t stream = cudaStreamPerThread);
 
 private:
   PosBuffer<T> pos_buf_;
@@ -167,7 +167,7 @@ inline void MultiBsplineFuncs<Devices::CUDA, double>::evaluate_vgh(
     int num_blocks, //blocks per participant
     size_t num_splines,
     size_t spline_block_size,
-    cudaStream_t& stream)
+    cudaStream_t stream)
 {
   pos_buf_(stream);
   // This is a bit of legacy, the implementation should be aware of this and pass it
@@ -195,7 +195,7 @@ inline void MultiBsplineFuncs<Devices::CUDA, float>::evaluate_vgh(
     int num_blocks,
     size_t num_splines,
     size_t spline_block_size,
-    cudaStream_t& stream)
+    cudaStream_t stream)
 {
   pos_buf_(stream);
 
