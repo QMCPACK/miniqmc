@@ -31,9 +31,9 @@ void MiniqmcDriverFunctions<Devices::KOKKOS>::runThreads(MiniqmcOptions& mq_opt,
 
 template<>
 void MiniqmcDriverFunctions<Devices::KOKKOS>::movers_runThreads(MiniqmcOptions& mq_opt,
-                         const PrimeNumberSet<uint32_t>& myPrimes,
-                         ParticleSet& ions,
-				const SPOSet* spo_main);
+                                                                const PrimeNumberSet<uint32_t>& myPrimes,
+                                                                ParticleSet& ions,
+                                                                const SPOSet* spo_main);
 
 template<>
 void MiniqmcDriverFunctions<Devices::KOKKOS>::thread_main(const int ip,

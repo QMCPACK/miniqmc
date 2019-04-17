@@ -198,9 +198,9 @@ int main(int argc, char** argv)
   int nsubsteps = 1;
   // Set cutoff for NLPP use.
   RealType Rmax(1.7);
-  RealType accept  = 0.5;
-  bool useRef   = false;
-  bool enableJ3 = false;
+  RealType accept = 0.5;
+  bool useRef     = false;
+  bool enableJ3   = false;
 
   PrimeNumberSet<uint32_t> myPrimes;
 
@@ -297,8 +297,7 @@ int main(int argc, char** argv)
   }
   else if (timer_level_name != "fine")
   {
-    app_error() << "Timer level should be 'coarse' or 'fine', name given: " << timer_level_name
-                << endl;
+    app_error() << "Timer level should be 'coarse' or 'fine', name given: " << timer_level_name << endl;
     return 1;
   }
 
@@ -331,8 +330,7 @@ int main(int argc, char** argv)
 
     number_of_electrons = nels;
 
-    const size_t SPO_coeff_size =
-        static_cast<size_t>(norb) * (nx + 3) * (ny + 3) * (nz + 3) * sizeof(RealType);
+    const size_t SPO_coeff_size    = static_cast<size_t>(norb) * (nx + 3) * (ny + 3) * (nz + 3) * sizeof(RealType);
     const double SPO_coeff_size_MB = SPO_coeff_size * 1.0 / 1024 / 1024;
 
     app_summary() << "Number of orbitals/splines = " << norb << endl
@@ -347,15 +345,14 @@ int main(int argc, char** argv)
     app_summary() << "MPI processes = " << comm.size() << endl;
 #endif
 
-    app_summary() << "\nSPO coefficients size = " << SPO_coeff_size << " bytes ("
-                  << SPO_coeff_size_MB << " MB)" << endl;
+    app_summary() << "\nSPO coefficients size = " << SPO_coeff_size << " bytes (" << SPO_coeff_size_MB << " MB)"
+                  << endl;
 
     spo_main = build_SPOSet(useRef, nx, ny, nz, norb, nTiles, lattice_b);
   }
 
   if (!useRef)
-    app_summary() << "Using SoA distance table, Jastrow + einspline, " << endl
-                  << "and determinant update." << endl;
+    app_summary() << "Using SoA distance table, Jastrow + einspline, " << endl << "and determinant update." << endl;
   else
     app_summary() << "Using the reference implementation for Jastrow, " << endl
                   << "determinant update, and distance table + einspline of the " << endl
@@ -365,8 +362,8 @@ int main(int argc, char** argv)
 
   Timers[Timer_Init]->start();
   std::vector<Mover*> mover_list(nmovers, nullptr);
-  // prepare movers
-  #pragma omp parallel for
+// prepare movers
+#pragma omp parallel for
   for (int iw = 0; iw < nmovers; iw++)
   {
     const int ip        = omp_get_thread_num();
@@ -431,8 +428,8 @@ int main(int argc, char** argv)
       {
         for (int iel = 0; iel < nels; ++iel)
         {
-	  // Operate on electron with index iel
-          #pragma omp parallel for
+// Operate on electron with index iel
+#pragma omp parallel for
           for (int iw = 0; iw < nmovers; iw++)
             mover_list[iw]->els.setActive(iel);
 
@@ -445,7 +442,7 @@ int main(int argc, char** argv)
           mover_list[0]->rng.generate_uniform(ur.data(), nmovers);
           mover_list[0]->rng.generate_normal(&delta[0][0], nmovers3);
 
-          #pragma omp parallel for
+#pragma omp parallel for
           for (int iw = 0; iw < nmovers; iw++)
           {
             PosType dr  = sqrttau * delta[iw];
@@ -480,8 +477,8 @@ int main(int argc, char** argv)
           anon_mover.wavefunction.multi_acceptrestoreMove(valid_WF_list, valid_P_list, isAccepted, iel);
           Timers[Timer_Update]->stop();
 
-          // Update position
-          #pragma omp parallel for
+// Update position
+#pragma omp parallel for
           for (int iw = 0; iw < valid_mover_list.size(); iw++)
           {
             if (isAccepted[iw]) // MC
@@ -492,7 +489,7 @@ int main(int argc, char** argv)
         } // iel
       }   // substeps
 
-      #pragma omp parallel for
+#pragma omp parallel for
       for (int iw = 0; iw < nmovers; iw++)
       {
         mover_list[iw]->els.donePbyP();
@@ -505,7 +502,7 @@ int main(int argc, char** argv)
       // Compute NLPP energy using integral over spherical points
       // Ye: I have not found a strategy for NLPP
       Timers[Timer_ECP]->start();
-      #pragma omp parallel for
+#pragma omp parallel for
       for (int iw = 0; iw < nmovers; iw++)
       {
         auto& els          = mover_list[iw]->els;
@@ -543,8 +540,8 @@ int main(int argc, char** argv)
   }
   Timers[Timer_Total]->stop();
 
-  // free all movers
-  #pragma omp parallel for
+// free all movers
+#pragma omp parallel for
   for (int iw = 0; iw < nmovers; iw++)
     delete mover_list[iw];
   mover_list.clear();
@@ -580,8 +577,7 @@ int main(int argc, char** argv)
     run_info->InsertEndChild(driver_info);
     resources->InsertEndChild(run_info);
 
-    std::string info_name =
-        "info_" + std::to_string(na) + "_" + std::to_string(nb) + "_" + std::to_string(nc) + ".xml";
+    std::string info_name = "info_" + std::to_string(na) + "_" + std::to_string(nb) + "_" + std::to_string(nc) + ".xml";
     doc.SaveFile(info_name.c_str());
   }
 

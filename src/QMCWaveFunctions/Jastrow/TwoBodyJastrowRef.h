@@ -92,9 +92,7 @@ struct TwoBodyJastrowRef : public WaveFunctionComponent
   /** add functor for (ia,ib) pair */
   void addFunc(int ia, int ib, FT* j);
 
-  RealType evaluateLog(ParticleSet& P,
-                       ParticleSet::ParticleGradient_t& G,
-                       ParticleSet::ParticleLaplacian_t& L);
+  RealType evaluateLog(ParticleSet& P, ParticleSet::ParticleGradient_t& G, ParticleSet::ParticleLaplacian_t& L);
 
   /** recompute internal data assuming distance table is fully ready */
   void recompute(ParticleSet& P);
@@ -285,8 +283,7 @@ typename TwoBodyJastrowRef<FT>::GradType TwoBodyJastrowRef<FT>::evalGrad(Particl
 }
 
 template<typename FT>
-typename TwoBodyJastrowRef<FT>::ValueType
-    TwoBodyJastrowRef<FT>::ratioGrad(ParticleSet& P, int iat, GradType& grad_iat)
+typename TwoBodyJastrowRef<FT>::ValueType TwoBodyJastrowRef<FT>::ratioGrad(ParticleSet& P, int iat, GradType& grad_iat)
 {
   UpdateMode = ORB_PBYP_PARTIAL;
 
@@ -394,14 +391,12 @@ void TwoBodyJastrowRef<FT>::recompute(ParticleSet& P)
 }
 
 template<typename FT>
-typename TwoBodyJastrowRef<FT>::RealType
-    TwoBodyJastrowRef<FT>::evaluateLog(ParticleSet& P,
-                                       ParticleSet::ParticleGradient_t& G,
-                                       ParticleSet::ParticleLaplacian_t& L)
+typename TwoBodyJastrowRef<FT>::RealType TwoBodyJastrowRef<FT>::evaluateLog(ParticleSet& P,
+                                                                            ParticleSet::ParticleGradient_t& G,
+                                                                            ParticleSet::ParticleLaplacian_t& L)
 {
   evaluateGL(P, G, L, true);
   return LogValue;
-
 }
 
 template<typename FT>

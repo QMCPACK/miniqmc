@@ -34,16 +34,18 @@ template<typename T>
 struct BsplineSetCreator<Devices::KOKKOS, T>
 {
   static constexpr Devices DT = Devices::KOKKOS;
-  using spline_type = typename bspline_traits<DT, T, 3>::SplineType;
-  BsplineSetCreator(einspline::Allocator<DT>& allocator, Kokkos::View<spline_type*>& minded_splines) : allocator_(allocator), minded_splines_(minded_splines) {};
-  void operator()(int block, TinyVector<T,3> start, TinyVector<T,3> end, int nx, int ny, int nz, int splines_per_block)
+  using spline_type           = typename bspline_traits<DT, T, 3>::SplineType;
+  BsplineSetCreator(einspline::Allocator<DT>& allocator, Kokkos::View<spline_type*>& minded_splines)
+      : allocator_(allocator), minded_splines_(minded_splines){};
+  void operator()(int block, TinyVector<T, 3> start, TinyVector<T, 3> end, int nx, int ny, int nz,
+                  int splines_per_block)
   {
     TinyVector<int, 3> ng(nx, ny, nz);
     spline_type* pspline_temp;
-    allocator_.createMultiBspline(pspline_temp, T(0), start, end, ng, PERIODIC,
-                                  splines_per_block);
+    allocator_.createMultiBspline(pspline_temp, T(0), start, end, ng, PERIODIC, splines_per_block);
     minded_splines_(block) = *pspline_temp;
   };
+
 private:
   einspline::Allocator<DT>& allocator_;
   Kokkos::View<spline_type*>& minded_splines_;
@@ -61,9 +63,10 @@ class BsplineSet;
  *  The following specialization can be factored away.
  */
 template<typename T>
-class BsplineSet<Devices::KOKKOS,T>
+class BsplineSet<Devices::KOKKOS, T>
 {
   static constexpr Devices DT = Devices::KOKKOS;
+
 public:
   using spline_type = typename bspline_traits<DT, T, 3>::SplineType;
   BsplineSet(int num_blocks)
@@ -72,29 +75,27 @@ public:
     Kokkos::resize(minded_splines_, num_blocks);
   }
 
-  ~BsplineSet()
-  {
-    minded_splines_ = Kokkos::View<spline_type*>();
-  }
+  ~BsplineSet() { minded_splines_ = Kokkos::View<spline_type*>(); }
 
   void resize(int size)
   {
     assert(size > minded_splines_.size());
-    Kokkos::resize(minded_splines_, size); 
+    Kokkos::resize(minded_splines_, size);
   }
-  
-    //aligned_vector<spline_type*>& get() { return minded_splines_; }
 
-  spline_type* operator[] (int block_index) { return &minded_splines_(block_index); }
+  //aligned_vector<spline_type*>& get() { return minded_splines_; }
 
-  BsplineSetCreator<DT, T> creator() { return BsplineSetCreator<DT,T>(allocator_, minded_splines_); }
+  spline_type* operator[](int block_index) { return &minded_splines_(block_index); }
+
+  BsplineSetCreator<DT, T> creator()
+  {
+    return BsplineSetCreator<DT, T>(allocator_, minded_splines_);
+  }
 
   /** This signature is different from CPU version. */
   void setCoefficientsForOneOrbital(int spline_index, Kokkos::View<T***>& coeff, int block)
   {
-      allocator_.setCoefficientsForOneOrbital(spline_index,
-					      coeff,
-					      &(minded_splines_(block)));
+    allocator_.setCoefficientsForOneOrbital(spline_index, coeff, &(minded_splines_(block)));
   }
 
 protected:
@@ -107,6 +108,6 @@ extern template class BsplineSet<Devices::KOKKOS, float>;
 extern template class BsplineSetCreator<Devices::KOKKOS, double>;
 extern template class BsplineSetCreator<Devices::KOKKOS, float>;
 
-}
+} // namespace qmcplusplus
 
 #endif

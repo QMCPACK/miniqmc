@@ -35,25 +35,21 @@
 
 namespace qmcplusplus
 {
-
-
 template<>
-class DeterminantDeviceImp<Devices::CUDA>
-  : public DeterminantDevice<DeterminantDeviceImp<Devices::CUDA>>,
-    public LinAlgCUDA
+class DeterminantDeviceImp<Devices::CUDA> : public DeterminantDevice<DeterminantDeviceImp<Devices::CUDA>>,
+                                            public LinAlgCUDA
 {
 public:
-  using QMCT = QMCTraits;
-    using T = double;
-    static constexpr Devices ENUMT = Devices::CUDA;
-    
-    DeterminantDeviceImp(int nels, const RandomGenerator<QMCT::RealType>& RNG, DeviceBuffers<ENUMT>& host_buffer,
-			 int First = 0)
-    : DeterminantDevice( nels, RNG, First),
-      FirstIndex(First),
-      myRandom(RNG),
-      matrix_shipped(false)
-      //host_buffer_(host_buffer.determinant_host_buffer)
+  using QMCT                     = QMCTraits;
+  using T                        = double;
+  static constexpr Devices ENUMT = Devices::CUDA;
+
+  DeterminantDeviceImp(int nels,
+                       const RandomGenerator<QMCT::RealType>& RNG,
+                       DeviceBuffers<ENUMT>& host_buffer,
+                       int First = 0)
+      : DeterminantDevice(nels, RNG, First), FirstIndex(First), myRandom(RNG), matrix_shipped(false)
+  //host_buffer_(host_buffer.determinant_host_buffer)
   {
     cudaStreamCreate(&stream_);
     psiMinv.resize(nels, nels);
@@ -70,9 +66,9 @@ public:
     LWork = getGetriWorkspace(psiM.data(), nels, nels, pivot.data());
     work.resize(LWork);
 
-    cuda_buffer.resize(1, psiMinv.size() + psiV.size() *3);
-    host_buffer_.resize( (psiMinv.size() + psiV.size() *3) * sizeof(T));
-    
+    cuda_buffer.resize(1, psiMinv.size() + psiV.size() * 3);
+    host_buffer_.resize((psiMinv.size() + psiV.size() * 3) * sizeof(T));
+
     constexpr double shift(0.5);
     myRandom.generate_uniform(psiMsave.data(), nels * nels);
     psiMsave -= shift;
@@ -81,13 +77,9 @@ public:
     transpose(psiMsave.data(), psiM.data(), nels, nels);
     LogValue = InvertWithLog(psiM.data(), nels, nels, work.data(), LWork, pivot.data(), phase);
     std::copy_n(psiM.data(), nels * nels, psiMinv.data());
-
   }
 
-    ~DeterminantDeviceImp()
-	{
-	    cudaStreamDestroy(stream_);
-	}
+  ~DeterminantDeviceImp() { cudaStreamDestroy(stream_); }
   void checkMatrixImp()
   {
     if (omp_get_num_threads() == 1)
@@ -98,9 +90,7 @@ public:
     }
   }
 
-  QMCT::RealType evaluateLogImp(ParticleSet& P,
-                       ParticleSet::ParticleGradient_t& G,
-                       ParticleSet::ParticleLaplacian_t& L)
+  QMCT::RealType evaluateLogImp(ParticleSet& P, ParticleSet::ParticleGradient_t& G, ParticleSet::ParticleLaplacian_t& L)
   {
     recompute();
     // FIXME do we want remainder of evaluateLog?
@@ -112,9 +102,9 @@ public:
   QMCT::ValueType ratioGradImp(ParticleSet& P, int iat, QMCT::GradType& grad) { return ratio(P, iat); }
 
   void evaluateGLImp(ParticleSet& P,
-                  ParticleSet::ParticleGradient_t& G,
-                  ParticleSet::ParticleLaplacian_t& L,
-                  bool fromscratch = false)
+                     ParticleSet::ParticleGradient_t& G,
+                     ParticleSet::ParticleLaplacian_t& L,
+                     bool fromscratch = false)
   {}
 
   /// recompute the inverse
@@ -144,24 +134,32 @@ public:
   inline void acceptMoveImp(ParticleSet& P, int iel)
   {
     const int nels = psiV.size();
-    assert(cuda_buffer.getWidth() == (psiMinv.size() + psiV.size() * 3)*sizeof(double));
+    assert(cuda_buffer.getWidth() == (psiMinv.size() + psiV.size() * 3) * sizeof(double));
 
-    if(!matrix_shipped)
+    if (!matrix_shipped)
     {
-	host_buffer_(stream_);
-	host_buffer_.fromNormalTcpy(psiMinv.data(), 0, psiMinv.size());
-	host_buffer_.partialToDevice(cuda_buffer.get_devptr(), 0, psiMinv.size());
+      host_buffer_(stream_);
+      host_buffer_.fromNormalTcpy(psiMinv.data(), 0, psiMinv.size());
+      host_buffer_.partialToDevice(cuda_buffer.get_devptr(), 0, psiMinv.size());
     }
-    updateRow(psiMinv, psiV,
-	      nels, nels, iel - FirstIndex, curRatio, cuda_buffer.getWidth(), cuda_buffer.get_devptr(), host_buffer_, stream_);
+    updateRow(psiMinv,
+              psiV,
+              nels,
+              nels,
+              iel - FirstIndex,
+              curRatio,
+              cuda_buffer.getWidth(),
+              cuda_buffer.get_devptr(),
+              host_buffer_,
+              stream_);
   }
 
-    inline void finishUpdate_i(int iel)
-    {
-      cudaStreamSynchronize(stream_);
-      host_buffer_.toNormalTcpy(psiMinv.data(), 0, psiMinv.size());
-    }
-    
+  inline void finishUpdate_i(int iel)
+  {
+    cudaStreamSynchronize(stream_);
+    host_buffer_.toNormalTcpy(psiMinv.data(), 0, psiMinv.size());
+  }
+
   /** accessor functions for checking */
   inline double operatorParImp(int i) const { return psiMinv(i); }
   inline int sizeImp() const { return psiMinv.size(); }

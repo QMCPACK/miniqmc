@@ -54,7 +54,7 @@ struct OTBinary<Tensor<T1, D>, Tensor<T2, D>, OP>
 {
   typedef typename BinaryReturn<T1, T2, OP>::Type_t Type_t;
   KOKKOS_INLINE_FUNCTION static Tensor<Type_t, D>
-      apply(const Tensor<T1, D>& lhs, const Tensor<T2, D>& rhs, OP op)
+  apply(const Tensor<T1, D>& lhs, const Tensor<T2, D>& rhs, OP op)
   {
     Tensor<Type_t, D> ret;
     for (unsigned d = 0; d < D * D; ++d)
@@ -190,7 +190,7 @@ struct OTDot<Tensor<T1, D>, Tensor<T2, D>>
 {
   typedef typename BinaryReturn<T1, T2, OpMultiply>::Type_t Type_t;
   KOKKOS_INLINE_FUNCTION static Tensor<Type_t, D>
-      apply(const Tensor<T1, D>& lhs, const Tensor<T2, D>& rhs)
+  apply(const Tensor<T1, D>& lhs, const Tensor<T2, D>& rhs)
   {
     Tensor<Type_t, D> res = Tensor<Type_t, D>::DontInitialize();
     for (unsigned int i = 0; i < D; ++i)
@@ -210,7 +210,7 @@ struct OTDot<Tensor<T1, 1>, Tensor<T2, 1>>
 {
   typedef typename BinaryReturn<T1, T2, OpMultiply>::Type_t Type_t;
   KOKKOS_INLINE_FUNCTION static Tensor<Type_t, 1>
-      apply(const Tensor<T1, 1>& lhs, const Tensor<T2, 1>& rhs)
+  apply(const Tensor<T1, 1>& lhs, const Tensor<T2, 1>& rhs)
   {
     return Tensor<Type_t, 1>(lhs[0] * rhs[0]);
   }
@@ -221,7 +221,7 @@ struct OTDot<Tensor<T1, 2>, Tensor<T2, 2>>
 {
   typedef typename BinaryReturn<T1, T2, OpMultiply>::Type_t Type_t;
   KOKKOS_INLINE_FUNCTION static Tensor<Type_t, 2>
-      apply(const Tensor<T1, 2>& lhs, const Tensor<T2, 2>& rhs)
+  apply(const Tensor<T1, 2>& lhs, const Tensor<T2, 2>& rhs)
   {
     return Tensor<Type_t, 2>(lhs(0, 0) * rhs(0, 0) + lhs(0, 1) * rhs(1, 0),
                              lhs(0, 0) * rhs(0, 1) + lhs(0, 1) * rhs(1, 1),
@@ -235,7 +235,7 @@ struct OTDot<Tensor<T1, 3>, Tensor<T2, 3>>
 {
   typedef typename BinaryReturn<T1, T2, OpMultiply>::Type_t Type_t;
   KOKKOS_INLINE_FUNCTION static Tensor<Type_t, 3>
-      apply(const Tensor<T1, 3>& lhs, const Tensor<T2, 3>& rhs)
+  apply(const Tensor<T1, 3>& lhs, const Tensor<T2, 3>& rhs)
   {
     return Tensor<Type_t, 3>(lhs(0, 0) * rhs(0, 0) + lhs(0, 1) * rhs(1, 0) + lhs(0, 2) * rhs(2, 0),
                              lhs(0, 0) * rhs(0, 1) + lhs(0, 1) * rhs(1, 1) + lhs(0, 2) * rhs(2, 1),

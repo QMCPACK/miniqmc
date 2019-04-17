@@ -39,7 +39,6 @@
 using namespace std;
 namespace qmcplusplus
 {
-
 void print_help()
 {
   // clang-format off

@@ -24,8 +24,8 @@
 
 #include "multi_bspline_structs.h"
 
-#define MULTI_UBSPLINE_KOKKOS_VIEW_DEF \
-  typedef Kokkos::View<KokkosViewPrecision****, Kokkos::LayoutRight> coefs_view_t;\
+#define MULTI_UBSPLINE_KOKKOS_VIEW_DEF                                             \
+  typedef Kokkos::View<KokkosViewPrecision****, Kokkos::LayoutRight> coefs_view_t; \
   coefs_view_t coefs_view;
 
 template<>
@@ -41,5 +41,5 @@ struct multi_UBspline_3d_d<Devices::KOKKOS> : public multi_UBspline_3d_d_common
   using KokkosViewPrecision = double;
   MULTI_UBSPLINE_KOKKOS_VIEW_DEF
 };
-  
+
 #endif

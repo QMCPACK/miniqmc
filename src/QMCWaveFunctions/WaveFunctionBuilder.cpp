@@ -23,24 +23,25 @@
 namespace qmcplusplus
 {
 template<Devices DT>
-void WaveFunctionBuilder<DT>::devDetBuild(WaveFunction& WF, const RandomGenerator<QMCTraits::RealType>& RNG,
-		                                ParticleSet& els,DeviceBuffers<DT>& dev_bufs)
+void WaveFunctionBuilder<DT>::devDetBuild(WaveFunction& WF,
+                                          const RandomGenerator<QMCTraits::RealType>& RNG,
+                                          ParticleSet& els,
+                                          DeviceBuffers<DT>& dev_bufs)
 {
-    using DetType   = DiracDeterminant<DeterminantDeviceImp<DT>>;
+  using DetType = DiracDeterminant<DeterminantDeviceImp<DT>>;
 
-    // determinant component
-    WF.Det_up = new DetType(WF.nelup, RNG, 0);
-    WF.Det_dn = new DetType(els.getTotalNum() - WF.nelup, RNG, WF.nelup);
-
+  // determinant component
+  WF.Det_up = new DetType(WF.nelup, RNG, 0);
+  WF.Det_dn = new DetType(els.getTotalNum() - WF.nelup, RNG, WF.nelup);
 }
-    
+
 template<Devices DT>
 void WaveFunctionBuilder<DT>::build(bool useRef,
                                     WaveFunction& WF,
                                     ParticleSet& ions,
                                     ParticleSet& els,
                                     const RandomGenerator<QMCTraits::RealType>& RNG,
-				    DeviceBuffers<DT>& dev_bufs,
+                                    DeviceBuffers<DT>& dev_bufs,
                                     bool enableJ3)
 {
   using valT = WaveFunction::valT;
@@ -68,11 +69,11 @@ void WaveFunctionBuilder<DT>::build(bool useRef,
     els.addTable(els, DT_SOA);
     WF.ei_TableID = els.addTable(ions, DT_SOA);
 
- 	WF.nelup  = nelup;
+    WF.nelup = nelup;
 
     WF.Det_up = new DetType(nelup, RNG, 0);
     WF.Det_dn = new DetType(els.getTotalNum() - nelup, RNG, nelup);
-    
+
     // J1 component
     J1OrbType* J1 = new J1OrbType(ions, els);
     buildJ1(*J1, els.Lattice.WignerSeitzRadius);
@@ -104,7 +105,7 @@ void WaveFunctionBuilder<DT>::build(bool useRef,
     WF.ei_TableID = els.addTable(ions, DT_SOA);
 
     // determinant component
-    WF.nelup  = nelup;
+    WF.nelup = nelup;
     devDetBuild(WF, RNG, els, dev_bufs);
 
     // J1 component
@@ -131,8 +132,8 @@ void WaveFunctionBuilder<DT>::build(bool useRef,
 }
 
 template class WaveFunctionBuilder<Devices::CPU>;
-    // template void WaveFunctionBuilder<Devices::CPU>::devDetBuild(WaveFunction& WF, const RandomGenerator<QMCTraits::RealType>& RNG,
-    // 								 ParticleSet& els,DeviceBuffers<Devices::CPU>& dev_bufs);
+// template void WaveFunctionBuilder<Devices::CPU>::devDetBuild(WaveFunction& WF, const RandomGenerator<QMCTraits::RealType>& RNG,
+// 								 ParticleSet& els,DeviceBuffers<Devices::CPU>& dev_bufs);
 #ifdef QMC_USE_KOKKOS
 template class WaveFunctionBuilder<Devices::KOKKOS>;
 #endif

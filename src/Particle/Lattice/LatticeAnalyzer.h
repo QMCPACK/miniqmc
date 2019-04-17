@@ -59,15 +59,12 @@ struct LatticeAnalyzer<T, 3>
   /// SuperCell type
   int mySC;
 
-  inline int operator()(const TinyVector<int, 3>& box)
-  {
-    return mySC = box[0] + 2 * (box[1] + box[2] * 2);
-  }
+  inline int operator()(const TinyVector<int, 3>& box) { return mySC = box[0] + 2 * (box[1] + box[2] * 2); }
 
   inline bool isDiagonalOnly(const Tensor_t& R) const
   {
-    T offdiag = std::abs(R(0, 1)) + std::abs(R(0, 2)) + std::abs(R(1, 0)) + std::abs(R(1, 2)) +
-        std::abs(R(2, 0)) + std::abs(R(2, 1));
+    T offdiag = std::abs(R(0, 1)) + std::abs(R(0, 2)) + std::abs(R(1, 0)) + std::abs(R(1, 2)) + std::abs(R(2, 0)) +
+        std::abs(R(2, 1));
     return (offdiag < std::numeric_limits<T>::epsilon());
   }
 
@@ -75,12 +72,9 @@ struct LatticeAnalyzer<T, 3>
                                              const SingleParticlePos_t& OneOverLength)
   {
     const T rad_to_deg = 180.0 / M_PI;
-    return SingleParticlePos_t(rad_to_deg *
-                                   std::acos(dot(Rv[0], Rv[1]) * OneOverLength[0] * OneOverLength[1]),
-                               rad_to_deg *
-                                   std::acos(dot(Rv[1], Rv[2]) * OneOverLength[1] * OneOverLength[2]),
-                               rad_to_deg *
-                                   std::acos(dot(Rv[2], Rv[0]) * OneOverLength[2] * OneOverLength[0]));
+    return SingleParticlePos_t(rad_to_deg * std::acos(dot(Rv[0], Rv[1]) * OneOverLength[0] * OneOverLength[1]),
+                               rad_to_deg * std::acos(dot(Rv[1], Rv[2]) * OneOverLength[1] * OneOverLength[2]),
+                               rad_to_deg * std::acos(dot(Rv[2], Rv[0]) * OneOverLength[2] * OneOverLength[0]));
   }
 
   inline T calcWignerSeitzRadius(TinyVector<SingleParticlePos_t, 3>& a)
@@ -93,9 +87,8 @@ struct LatticeAnalyzer<T, 3>
           for (int k = -1; k <= 1; k++)
             if (i || j || k)
             {
-              SingleParticlePos_t L =
-                  (static_cast<T>(i) * a[0] + static_cast<T>(j) * a[1] + static_cast<T>(k) * a[2]);
-              rMin = std::min(rMin, dot(L, L));
+              SingleParticlePos_t L = (static_cast<T>(i) * a[0] + static_cast<T>(j) * a[1] + static_cast<T>(k) * a[2]);
+              rMin                  = std::min(rMin, dot(L, L));
             }
     }
     else if (mySC == SUPERCELL_SLAB || mySC == SUPERCELL_SLAB + SOA_OFFSET) // slab type

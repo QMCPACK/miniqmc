@@ -16,7 +16,6 @@
 
 namespace qmcplusplus
 {
-
 template<typename T>
 struct CheckSPOData
 {
@@ -39,7 +38,6 @@ struct CheckSPOData
     evalVGH_h_err += data.evalVGH_h_err;
     return *this;
   }
-
 };
-}
+} // namespace qmcplusplus
 #endif

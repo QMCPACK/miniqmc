@@ -5,16 +5,16 @@ namespace qmcplusplus
 {
 namespace einspline
 {
-
 //template<>
-Allocator<Devices::KOKKOS>::Allocator():Policy(0) {}
+Allocator<Devices::KOKKOS>::Allocator() : Policy(0) {}
 
 //template<>
 Allocator<Devices::KOKKOS>::~Allocator() {}
 
 template<typename T, typename ValT, typename IntT>
-void Allocator<Devices::KOKKOS>::createMultiBspline(typename bspline_traits<DT, T, 3>::SplineType*& spline, T dummy,
-                                      ValT& start, ValT& end, IntT& ng, bc_code bc, int num_splines)
+void Allocator<Devices::KOKKOS>::createMultiBspline(
+    typename bspline_traits<DT, T, 3>::SplineType*& spline, T dummy, ValT& start, ValT& end,
+    IntT& ng, bc_code bc, int num_splines)
 {
   Ugrid x_grid, y_grid, z_grid;
   typename bspline_traits<DT, T, 3>::BCType xBC, yBC, zBC;
@@ -33,21 +33,22 @@ void Allocator<Devices::KOKKOS>::createMultiBspline(typename bspline_traits<DT, 
   allocateMultiBspline(spline, x_grid, y_grid, z_grid, xBC, yBC, zBC, num_splines);
 }
 
-void Allocator<Devices::KOKKOS>::allocateMultiBspline(
-  multi_UBspline_3d_d<DT>*& spline, Ugrid x_grid, Ugrid y_grid, Ugrid z_grid, BCtype_d xBC, BCtype_d yBC, BCtype_d zBC, int num_splines)
+void Allocator<Devices::KOKKOS>::allocateMultiBspline(multi_UBspline_3d_d<DT>*& spline, Ugrid x_grid,
+                                                      Ugrid y_grid, Ugrid z_grid, BCtype_d xBC,
+                                                      BCtype_d yBC, BCtype_d zBC, int num_splines)
 {
   einspline_create_multi_UBspline_3d_d(spline, x_grid, y_grid, z_grid, xBC, yBC, zBC, num_splines);
 }
-void Allocator<Devices::KOKKOS>::allocateMultiBspline(
-  multi_UBspline_3d_s<DT>*& spline, Ugrid x_grid, Ugrid y_grid, Ugrid z_grid, BCtype_s xBC, BCtype_s yBC, BCtype_s zBC, int num_splines)
+void Allocator<Devices::KOKKOS>::allocateMultiBspline(multi_UBspline_3d_s<DT>*& spline, Ugrid x_grid,
+                                                      Ugrid y_grid, Ugrid z_grid, BCtype_s xBC,
+                                                      BCtype_s yBC, BCtype_s zBC, int num_splines)
 {
   einspline_create_multi_UBspline_3d_s(spline, x_grid, y_grid, z_grid, xBC, yBC, zBC, num_splines);
 }
 
 template<typename T>
 void Allocator<Devices::KOKKOS>::setCoefficientsForOneOrbital(
-    int i,
-    Kokkos::View<T***>& coeff,
+    int i, Kokkos::View<T***>& coeff,
     typename bspline_traits<Devices::KOKKOS, T, 3>::SplineType* spline)
 {
   //  #pragma omp parallel for collapse(3)
@@ -69,28 +70,32 @@ void Allocator<Devices::KOKKOS>::setCoefficientsForOneOrbital(
 template<typename SplineType>
 void Allocator<Devices::KOKKOS>::destroy(SplineType*& spline)
 {
-    //Assign coefs_view to empty view because of Kokkos reference counting
-    // and garbage collection.
-    //spline->coefs_view = multi_UBspline_3d_d::coefs_view_t();
-    spline->coefs_view = SplineType::coefs_view_t();
-    free(spline);
+  //Assign coefs_view to empty view because of Kokkos reference counting
+  // and garbage collection.
+  //spline->coefs_view = multi_UBspline_3d_d::coefs_view_t();
+  spline->coefs_view = SplineType::coefs_view_t();
+  free(spline);
 }
 
 template class Allocator<Devices::KOKKOS>;
-template void Allocator<qmcplusplus::Devices::KOKKOS>::createMultiBspline(typename bspline_traits<Devices::KOKKOS, double, 3u>::SplineType*& spline, double dummy,
-										     TinyVector<double, 3u>& start, TinyVector<double, 3u>& end, TinyVector<int, 3u>& ng, bc_code bc, int num_splines);
-template void Allocator<qmcplusplus::Devices::KOKKOS>::createMultiBspline(typename bspline_traits<Devices::KOKKOS, float, 3u>::SplineType*& spline, float dummy,
-										     TinyVector<float, 3u>& start, TinyVector<float, 3u>& end, TinyVector<int, 3u>& ng, bc_code bc, int num_splines);
+template void Allocator<qmcplusplus::Devices::KOKKOS>::createMultiBspline(
+    typename bspline_traits<Devices::KOKKOS, double, 3u>::SplineType*& spline, double dummy,
+    TinyVector<double, 3u>& start, TinyVector<double, 3u>& end, TinyVector<int, 3u>& ng, bc_code bc,
+    int num_splines);
+template void Allocator<qmcplusplus::Devices::KOKKOS>::createMultiBspline(
+    typename bspline_traits<Devices::KOKKOS, float, 3u>::SplineType*& spline, float dummy,
+    TinyVector<float, 3u>& start, TinyVector<float, 3u>& end, TinyVector<int, 3u>& ng, bc_code bc,
+    int num_splines);
 
-   template
-  void Allocator<qmcplusplus::Devices::KOKKOS>::setCoefficientsForOneOrbital(int i,
-                                    Kokkos::View<double***>&,
-                                    typename bspline_traits<Devices::KOKKOS, double, 3>::SplineType* spline);
-   template
-  void Allocator<qmcplusplus::Devices::KOKKOS>::setCoefficientsForOneOrbital(int i,
-                                    Kokkos::View<float***>&,
-                                    typename bspline_traits<Devices::KOKKOS, float, 3>::SplineType* spline);
+template void Allocator<qmcplusplus::Devices::KOKKOS>::setCoefficientsForOneOrbital(
+    int i,
+    Kokkos::View<double***>&,
+    typename bspline_traits<Devices::KOKKOS, double, 3>::SplineType* spline);
+template void Allocator<qmcplusplus::Devices::KOKKOS>::setCoefficientsForOneOrbital(
+    int i,
+    Kokkos::View<float***>&,
+    typename bspline_traits<Devices::KOKKOS, float, 3>::SplineType* spline);
 
 
-}
-}
+} // namespace einspline
+} // namespace qmcplusplus

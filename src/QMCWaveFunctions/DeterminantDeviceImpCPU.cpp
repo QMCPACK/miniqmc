@@ -2,6 +2,5 @@
 
 namespace qmcplusplus
 {
-  template class DeterminantDeviceImp<Devices::CPU>;
+template class DeterminantDeviceImp<Devices::CPU>;
 }
-

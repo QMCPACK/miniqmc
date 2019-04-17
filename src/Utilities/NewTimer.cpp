@@ -30,12 +30,11 @@
 
 namespace qmcplusplus
 {
-
 bool timer_max_level_exceeded = false;
 
 void TimerManagerClass::addTimer(NewTimer* t)
 {
-  #pragma omp critical
+#pragma omp critical
   {
     if (t->get_name().find(TIMER_STACK_SEPARATOR) != std::string::npos)
     {
@@ -50,8 +49,7 @@ void TimerManagerClass::addTimer(NewTimer* t)
       if (max_timer_id >= std::numeric_limits<timer_id_t>::max())
       {
         max_timers_exceeded = true;
-        app_log() << "Number of timers exceeds limit ("
-                  << static_cast<int>(std::numeric_limits<timer_id_t>::max())
+        app_log() << "Number of timers exceeds limit (" << static_cast<int>(std::numeric_limits<timer_id_t>::max())
                   << ").   Adjust timer_id_t in NewTimer.h and recompile." << std::endl;
       }
       else
@@ -247,7 +245,7 @@ void TimerManagerClass::print_flat()
   collate_flat_profile(p);
 
   {
-    #pragma omp master
+#pragma omp master
     {
       std::map<std::string, int>::iterator it(p.nameList.begin()), it_end(p.nameList.end());
       while (it != it_end)
@@ -258,8 +256,7 @@ void TimerManagerClass::print_flat()
                (*it).first.c_str(),
                p.timeList[i],
                p.callList[i],
-               p.timeList[i] /
-                   (static_cast<double>(p.callList[i]) + std::numeric_limits<double>::epsilon()),
+               p.timeList[i] / (static_cast<double>(p.callList[i]) + std::numeric_limits<double>::epsilon()),
                p.timeList[i] / static_cast<double>(omp_get_max_threads()));
         ++it;
       }
@@ -325,8 +322,7 @@ void TimerManagerClass::print_stack()
              p.timeList[i],
              p.timeExclList[i],
              p.callList[i],
-             p.timeList[i] /
-                 (static_cast<double>(p.callList[i]) + std::numeric_limits<double>::epsilon()));
+             p.timeList[i] / (static_cast<double>(p.callList[i]) + std::numeric_limits<double>::epsilon()));
     }
   }
 #endif
@@ -342,8 +338,7 @@ XMLNode* TimerManagerClass::output_timing(XMLDocument& doc)
 
   timing_root->InsertEndChild(
       MakeTextElement(doc, "max_stack_level_exceeded", timer_max_level_exceeded ? "yes" : "no"));
-  timing_root->InsertEndChild(
-      MakeTextElement(doc, "max_timers_exceeded", max_timers_exceeded ? "yes" : "no"));
+  timing_root->InsertEndChild(MakeTextElement(doc, "max_timers_exceeded", max_timers_exceeded ? "yes" : "no"));
 
   std::vector<XMLNode*> node_stack;
   node_stack.push_back(timing_root);

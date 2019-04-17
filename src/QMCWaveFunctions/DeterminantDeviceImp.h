@@ -14,7 +14,7 @@
 #ifndef QMCPLUSPLUS_DETERMINANT_DEVICE_IMP_H
 #define QMCPLUSPLUS_DETERMINANT_DEVICE_IMP_H
 
-#include "Devices.h" 
+#include "Devices.h"
 
 /** @file
  * Here determinant implmentations
@@ -31,7 +31,7 @@ namespace qmcplusplus
 template<Devices DT>
 class DeterminantDeviceImp
 {};
-}
+} // namespace qmcplusplus
 
 #include "QMCWaveFunctions/DeterminantDeviceImpCPU.h"
 #ifdef QMC_USE_KOKKOS

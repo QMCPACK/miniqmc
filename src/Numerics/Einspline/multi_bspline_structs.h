@@ -47,8 +47,7 @@ struct multi_UBspline_3d_s_common
 
 template<Devices D>
 struct multi_UBspline_3d_s : public multi_UBspline_3d_s_common
-{
-};
+{};
 
 ///////////////////////////
 // Double precision real //
@@ -67,9 +66,7 @@ struct multi_UBspline_3d_d_common
 
 template<Devices D>
 struct multi_UBspline_3d_d : public multi_UBspline_3d_d_common
-{
-};
-
+{};
 
 
 //////////////////////////////
@@ -91,8 +88,7 @@ struct multi_UBspline_3d_c_common
 
 template<Devices D>
 struct multi_UBspline_3d_c : public multi_UBspline_3d_c_common
-{
-};
+{};
 
 
 //////////////////////////////
@@ -114,8 +110,7 @@ struct multi_UBspline_3d_z_common
 
 template<Devices D>
 struct multi_UBspline_3d_z : public multi_UBspline_3d_z_common
-{
-};
+{};
 
 //if needed bring in KOKKOS and other device specializations
 //#ifdef QMC_USE_KOKKOS

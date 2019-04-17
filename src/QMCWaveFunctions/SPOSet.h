@@ -19,7 +19,6 @@
 
 namespace qmcplusplus
 {
-
 /** pure abstract base class for Single-particle orbital sets
  *
  * SPOSet stands for S(ingle)P(article)O(rbital)Set which contains
@@ -29,9 +28,9 @@ class SPOSet
 {
 public:
   //Type aliases
-  using QMCT = QMCTraits;
+  using QMCT    = QMCTraits;
   using PosType = QMCT::PosType;
-  
+
 public:
   /// return the size of the orbital set
   virtual int size() const = 0;
@@ -46,14 +45,11 @@ public:
   virtual void evaluate_vgh(const PosType& p) = 0;
 
   /// operates on multiple walkers
-  virtual void
-  multi_evaluate_v(const std::vector<SPOSet*>& spo_list, const std::vector<PosType>& pos_list) = 0;
+  virtual void multi_evaluate_v(const std::vector<SPOSet*>& spo_list, const std::vector<PosType>& pos_list) = 0;
 
-  virtual void
-  multi_evaluate_vgl(const std::vector<SPOSet*>& spo_list, const std::vector<PosType>& pos_list) = 0;
+  virtual void multi_evaluate_vgl(const std::vector<SPOSet*>& spo_list, const std::vector<PosType>& pos_list) = 0;
 
-  virtual void
-  multi_evaluate_vgh(const std::vector<SPOSet*>& spo_list, const std::vector<PosType>& pos_list) = 0;
+  virtual void multi_evaluate_vgh(const std::vector<SPOSet*>& spo_list, const std::vector<PosType>& pos_list) = 0;
 };
 
 } // namespace qmcplusplus

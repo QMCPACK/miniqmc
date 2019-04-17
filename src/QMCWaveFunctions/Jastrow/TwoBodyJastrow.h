@@ -95,9 +95,7 @@ struct TwoBodyJastrow : public WaveFunctionComponent
   /** add functor for (ia,ib) pair */
   void addFunc(int ia, int ib, FT* j);
 
-  RealType evaluateLog(ParticleSet& P,
-                       ParticleSet::ParticleGradient_t& G,
-                       ParticleSet::ParticleLaplacian_t& L);
+  RealType evaluateLog(ParticleSet& P, ParticleSet::ParticleGradient_t& G, ParticleSet::ParticleLaplacian_t& L);
 
   /** recompute internal data assuming distance table is fully ready */
   void recompute(ParticleSet& P);
@@ -156,7 +154,7 @@ struct TwoBodyJastrow : public WaveFunctionComponent
   /**@} */
 };
 
-  template<Devices D, typename FT>
+template<Devices D, typename FT>
 TwoBodyJastrow<D, FT>::TwoBodyJastrow(ParticleSet& p)
 {
   init(p);
@@ -165,7 +163,7 @@ TwoBodyJastrow<D, FT>::TwoBodyJastrow(ParticleSet& p)
   WaveFunctionComponentName = "TwoBodyJastrow";
 }
 
-  template<Devices D, typename FT>
+template<Devices D, typename FT>
 TwoBodyJastrow<D, FT>::~TwoBodyJastrow()
 {
   auto it = J2Unique.begin();
@@ -176,7 +174,7 @@ TwoBodyJastrow<D, FT>::~TwoBodyJastrow()
   }
 } // need to clean up J2Unique
 
-  template<Devices D,typename FT>
+template<Devices D, typename FT>
 void TwoBodyJastrow<D, FT>::init(ParticleSet& p)
 {
   N         = p.getTotalNum();
@@ -197,7 +195,7 @@ void TwoBodyJastrow<D, FT>::init(ParticleSet& p)
   DistIndice.resize(N);
 }
 
-  template<Devices D, typename FT>
+template<Devices D, typename FT>
 void TwoBodyJastrow<D, FT>::addFunc(int ia, int ib, FT* j)
 {
   if (ia == ib)
@@ -244,14 +242,14 @@ void TwoBodyJastrow<D, FT>::addFunc(int ia, int ib, FT* j)
  * @param du starting first deriv
  * @param d2u starting second deriv
  */
-  template<Devices D, typename FT>
+template<Devices D, typename FT>
 inline void TwoBodyJastrow<D, FT>::computeU3(const ParticleSet& P,
-                                          int iat,
-                                          const RealType* restrict dist,
-                                          RealType* restrict u,
-                                          RealType* restrict du,
-                                          RealType* restrict d2u,
-                                          bool triangle)
+                                             int iat,
+                                             const RealType* restrict dist,
+                                             RealType* restrict u,
+                                             RealType* restrict du,
+                                             RealType* restrict d2u,
+                                             bool triangle)
 {
   const int jelmax = triangle ? iat : N;
   constexpr valT czero(0);
@@ -281,15 +279,14 @@ typename TwoBodyJastrow<D, FT>::ValueType TwoBodyJastrow<D, FT>::ratio(ParticleS
   return std::exp(Uat[iat] - cur_Uat);
 }
 
-template<Devices D,typename FT>
+template<Devices D, typename FT>
 typename TwoBodyJastrow<D, FT>::GradType TwoBodyJastrow<D, FT>::evalGrad(ParticleSet& P, int iat)
 {
   return GradType(dUat[iat]);
 }
 
 template<Devices D, typename FT>
-typename TwoBodyJastrow<D, FT>::ValueType
-TwoBodyJastrow<D, FT>::ratioGrad(ParticleSet& P, int iat, GradType& grad_iat)
+typename TwoBodyJastrow<D, FT>::ValueType TwoBodyJastrow<D, FT>::ratioGrad(ParticleSet& P, int iat, GradType& grad_iat)
 {
   UpdateMode = ORB_PBYP_PARTIAL;
 
@@ -397,10 +394,9 @@ void TwoBodyJastrow<D, FT>::recompute(ParticleSet& P)
 }
 
 template<Devices D, typename FT>
-typename TwoBodyJastrow<D, FT>::RealType
-    TwoBodyJastrow<D, FT>::evaluateLog(ParticleSet& P,
-                                    ParticleSet::ParticleGradient_t& G,
-                                    ParticleSet::ParticleLaplacian_t& L)
+typename TwoBodyJastrow<D, FT>::RealType TwoBodyJastrow<D, FT>::evaluateLog(ParticleSet& P,
+                                                                            ParticleSet::ParticleGradient_t& G,
+                                                                            ParticleSet::ParticleLaplacian_t& L)
 {
   evaluateGL(P, G, L, true);
   return LogValue;
@@ -408,9 +404,9 @@ typename TwoBodyJastrow<D, FT>::RealType
 
 template<Devices D, typename FT>
 void TwoBodyJastrow<D, FT>::evaluateGL(ParticleSet& P,
-                                    ParticleSet::ParticleGradient_t& G,
-                                    ParticleSet::ParticleLaplacian_t& L,
-                                    bool fromscratch)
+                                       ParticleSet::ParticleGradient_t& G,
+                                       ParticleSet::ParticleLaplacian_t& L,
+                                       bool fromscratch)
 {
   if (fromscratch)
     recompute(P);

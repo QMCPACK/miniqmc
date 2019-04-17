@@ -24,14 +24,14 @@
 
 namespace qmcplusplus
 {
-template <typename T>
+template<typename T>
 struct QMCFutureTypes
 {
-  using FuturePos          = std::array<T,3>;
-  using vContainer_type    = aligned_vector<T>;
-  using gContainer_type    = VectorSoAContainer<T, 3>;
-  using lContainer_type    = VectorSoAContainer<T, 4>;
-  using hContainer_type    = VectorSoAContainer<T, 6>;
+  using FuturePos       = std::array<T, 3>;
+  using vContainer_type = aligned_vector<T>;
+  using gContainer_type = VectorSoAContainer<T, 3>;
+  using lContainer_type = VectorSoAContainer<T, 4>;
+  using hContainer_type = VectorSoAContainer<T, 6>;
 };
-}
+} // namespace qmcplusplus
 #endif

@@ -48,19 +48,19 @@ void einspline_create_multi_UBspline_3d_d(multi_UBspline_3d_d<DT>*& spline, Ugri
 
 
 template<Devices DT>
-void einspline_create_UBspline_3d_s(UBspline_3d_s<DT>*& spline, Ugrid x_grid, Ugrid y_grid, Ugrid z_grid,
-				    BCtype_s xBC, BCtype_s yBC, BCtype_s zBC);
+void einspline_create_UBspline_3d_s(UBspline_3d_s<DT>*& spline, Ugrid x_grid, Ugrid y_grid,
+                                    Ugrid z_grid, BCtype_s xBC, BCtype_s yBC, BCtype_s zBC);
 
 template<Devices DT>
-void einspline_create_UBspline_3d_d(UBspline_3d_d<DT>*& spline, Ugrid x_grid, Ugrid y_grid, Ugrid z_grid,
-				    BCtype_d xBC, BCtype_d yBC, BCtype_d zBC);
+void einspline_create_UBspline_3d_d(UBspline_3d_d<DT>*& spline, Ugrid x_grid, Ugrid y_grid,
+                                    Ugrid z_grid, BCtype_d xBC, BCtype_d yBC, BCtype_d zBC);
 
 
 //Requires specialization for some devices, specializations should be in device specifc
 //cpp files
 template<Devices DT>
-void einspline_create_multi_UBspline_3d_s_coefs(
-    multi_UBspline_3d_s<DT>*& restrict spline, int Nx, int Ny, int Nz, int N)
+void einspline_create_multi_UBspline_3d_s_coefs(multi_UBspline_3d_s<DT>*& restrict spline, int Nx,
+                                                int Ny, int Nz, int N)
 {
   spline->coefs = (float*)einspline_alloc(sizeof(float) * spline->coefs_size, QMC_CLINE);
 }
@@ -68,8 +68,8 @@ void einspline_create_multi_UBspline_3d_s_coefs(
 //Can require specialization, specializations should be in device specific
 //cpp files
 template<Devices DT>
-void einspline_create_multi_UBspline_3d_d_coefs(
-    multi_UBspline_3d_d<DT>*& restrict spline, int Nx, int Ny, int Nz, int N)
+void einspline_create_multi_UBspline_3d_d_coefs(multi_UBspline_3d_d<DT>*& restrict spline, int Nx,
+                                                int Ny, int Nz, int N)
 {
   spline->coefs = (double*)einspline_alloc(sizeof(double) * spline->coefs_size, QMC_CLINE);
 }
@@ -100,14 +100,13 @@ einspline_create_multi_UBspline_3d_s(multi_UBspline_3d_s<Devices::CPU>*& restric
                                      Ugrid x_grid, Ugrid y_grid, Ugrid z_grid, BCtype_s xBC,
                                      BCtype_s yBC, BCtype_s zBC, int num_splines);
 
-extern template void einspline_create_multi_UBspline_3d_d(multi_UBspline_3d_d<Devices::CPU>*& spline,
-                                                          Ugrid x_grid, Ugrid y_grid, Ugrid z_grid,
-                                                          BCtype_d xBC, BCtype_d yBC, BCtype_d zBC,
-                                                          int num_splines);
+extern template void
+einspline_create_multi_UBspline_3d_d(multi_UBspline_3d_d<Devices::CPU>*& spline, Ugrid x_grid,
+                                     Ugrid y_grid, Ugrid z_grid, BCtype_d xBC, BCtype_d yBC,
+                                     BCtype_d zBC, int num_splines);
 
 
-extern template void einspline_create_UBspline_3d_d(UBspline_3d_d<Devices::
-						    CPU>*& spline,
+extern template void einspline_create_UBspline_3d_d(UBspline_3d_d<Devices::CPU>*& spline,
                                                     Ugrid x_grid, Ugrid y_grid, Ugrid z_grid,
                                                     BCtype_d xBC, BCtype_d yBC, BCtype_d zBC);
 

@@ -47,9 +47,6 @@
 
 namespace qmcplusplus
 {
-
-  
-
 /** Follows implementation in QMCPack in that EinsplineSPODeviceImp is fat CPUImp
  *  Except this one is of SoA CPU and I'm looking to trim or at least share generic code
  *  BDIM is batching dimension.
@@ -69,8 +66,8 @@ public:
   using hContainer_type    = VectorSoAContainer<T, 6>;
   using lattice_type       = CrystalLattice<T, 3>;
 
-    //using HessianParticipants = HessianParticipants<Devices::CUDA, T>;
-  
+  //using HessianParticipants = HessianParticipants<Devices::CUDA, T>;
+
   /// compute engine
   MultiBsplineFuncs<Devices::CUDA, T> compute_engine;
 
@@ -132,13 +129,13 @@ public:
     dirty_v                            = false;
     dirty_g                            = false;
     dirty_h                            = false;
-    device_einsplines_ = std::make_shared<BsplineSet<Devices::CUDA,T>>(esp.nBlocks);
-    host_einsplines_ = in.getEinsplines();
+    device_einsplines_                 = std::make_shared<BsplineSet<Devices::CUDA, T>>(esp.nBlocks);
+    host_einsplines_                   = in.getEinsplines();
     for (int i = 0; i < esp.nBlocks; ++i)
     {
-	//std::cout << "EinsplineSPODeviceImp<Devices::CUDA> constructor, copy host_spline coefficients to device_spline coefficients\n";
+      //std::cout << "EinsplineSPODeviceImp<Devices::CUDA> constructor, copy host_spline coefficients to device_spline coefficients\n";
 
-      device_einsplines_->creator()(host_einsplines_->operator[](i),i);
+      device_einsplines_->creator()(host_einsplines_->operator[](i), i);
     }
     resize();
   }
@@ -159,8 +156,8 @@ public:
     dirty_v                            = false;
     dirty_g                            = false;
     dirty_h                            = false;
-    device_einsplines_                  = in.device_einsplines_;
-    host_einsplines_                    = in.host_einsplines_;
+    device_einsplines_                 = in.device_einsplines_;
+    host_einsplines_                   = in.host_einsplines_;
     resize();
   }
 
@@ -170,15 +167,15 @@ public:
    */
   EinsplineSPODeviceImp(const EinsplineSPODeviceImp<Devices::CPU, T>& in, int team_size, int member_id)
   {
-      //std::cout << "EinsplineSPODeviceImpCUDA(EinsplineSPODeviceImp<Devices::CPU, T>&) Fat Copy constructor called"
-      //       << '\n';
+    //std::cout << "EinsplineSPODeviceImpCUDA(EinsplineSPODeviceImp<Devices::CPU, T>&) Fat Copy constructor called"
+    //       << '\n';
     const EinsplineSPOParams<T>& inesp = in.getParams();
     esp.nSplinesSerialThreshold_V      = inesp.nSplinesSerialThreshold_V;
     esp.nSplinesSerialThreshold_VGH    = inesp.nSplinesSerialThreshold_VGH;
     esp.nSplines                       = inesp.nSplines;
     esp.nSplinesPerBlock               = inesp.nSplinesPerBlock;
-    esp.nBlocks                        = inesp.nBlocks;  // (inesp.nBlocks + team_size - 1) / team_size;
-    esp.firstBlock                     = 0; //esp.nBlocks * member_id;
+    esp.nBlocks                        = inesp.nBlocks; // (inesp.nBlocks + team_size - 1) / team_size;
+    esp.firstBlock                     = 0;             //esp.nBlocks * member_id;
     esp.lastBlock                      = inesp.nBlocks; //std::min(inesp.nBlocks, esp.nBlocks * (member_id + 1));
     esp.lattice                        = inesp.lattice;
     dirty_v                            = false;
@@ -187,10 +184,10 @@ public:
 
     device_einsplines_ = std::make_shared<BsplineSet<Devices::CUDA, T>>(esp.nBlocks);
     host_einsplines_   = in.getEinsplines();
-    
+
     for (int i = 0, t = esp.firstBlock; i < esp.nBlocks; ++i, ++t)
     {
-      device_einsplines_->creator()(host_einsplines_->operator[](i),i);
+      device_einsplines_->creator()(host_einsplines_->operator[](i), i);
     }
     resize();
   }
@@ -200,8 +197,8 @@ public:
   EinsplineSPODeviceImp(const EinsplineSPODeviceImp<Devices::CUDA, T>& in, int team_size, int member_id)
       : dev_psi(), dev_grad(), dev_linv(), dev_hess()
   {
-      //std::cout << "EinsplineSPODeviceImpCUDA(EinsplineSPODeviceImp<Devices::CUDA, T>&,...) Fat Copy constructor called"
-      //            << '\n';
+    //std::cout << "EinsplineSPODeviceImpCUDA(EinsplineSPODeviceImp<Devices::CUDA, T>&,...) Fat Copy constructor called"
+    //            << '\n';
     const EinsplineSPOParams<T>& inesp = in.getParams();
     esp.nSplinesSerialThreshold_V      = inesp.nSplinesSerialThreshold_V;
     esp.nSplinesSerialThreshold_VGH    = inesp.nSplinesSerialThreshold_VGH;
@@ -215,8 +212,8 @@ public:
     dirty_v                            = false;
     dirty_g                            = false;
     dirty_h                            = false;
-    host_einsplines_                    = in.host_einsplines_;
-    device_einsplines_                  = in.device_einsplines_;
+    host_einsplines_                   = in.host_einsplines_;
+    device_einsplines_                 = in.device_einsplines_;
     resize();
   }
 
@@ -259,17 +256,17 @@ public:
    *  calling this after anything but the default constructor
    *  Will drop this EinsplineSPOImp's connection to its SplineBundle, not reuse it
    */
-    void set_i(int nx, int ny, int nz, int num_splines, int num_blocks, int splines_per_block, bool init_random = true)
+  void set_i(int nx, int ny, int nz, int num_splines, int num_blocks, int splines_per_block, bool init_random = true)
   {
     this->esp.nSplines         = num_splines;
     this->esp.nBlocks          = num_blocks;
     this->esp.nSplinesPerBlock = splines_per_block;
-    if ( num_splines > splines_per_block * num_blocks )
-	throw std::runtime_error("splines_per_block * nblocks < num_splines");
+    if (num_splines > splines_per_block * num_blocks)
+      throw std::runtime_error("splines_per_block * nblocks < num_splines");
     // This would let you hold only some blocks
     // We never do this and I wouldn't do it this way.
-    this->esp.firstBlock       = 0;
-    this->esp.lastBlock        = esp.nBlocks;
+    this->esp.firstBlock = 0;
+    this->esp.lastBlock  = esp.nBlocks;
 
     std::cout << "Initializing CUDA Spline Coefficients with nBlocks: " << num_blocks
               << " and nSplinesPerblock : " << esp.nSplinesPerBlock << '\n';
@@ -298,7 +295,7 @@ public:
 
     for (int i = 0; i < esp.nBlocks; ++i)
     {
-      device_einsplines_->creator()((*host_einsplines_)[i],i);
+      device_einsplines_->creator()((*host_einsplines_)[i], i);
     }
     resize();
   }
@@ -317,7 +314,12 @@ public:
     dirty_v                           = true;
     auto u                            = esp.lattice.toUnit_floor(p);
     std::vector<std::array<T, 3>> pos = {{u[0], u[1], u[2]}};
-    compute_engine.evaluate_v(device_einsplines_->operator[](0), pos, dev_psi.get_devptr(), esp.nBlocks, (size_t)esp.nSplinesPerBlock, (size_t)esp.nSplinesPerBlock);
+    compute_engine.evaluate_v(device_einsplines_->operator[](0),
+                              pos,
+                              dev_psi.get_devptr(),
+                              esp.nBlocks,
+                              (size_t)esp.nSplinesPerBlock,
+                              (size_t)esp.nSplinesPerBlock);
   }
 
   /** Legacy single POS call
@@ -329,23 +331,23 @@ public:
     dirty_h                           = true;
     auto u                            = esp.lattice.toUnit_floor(p);
     std::vector<std::array<T, 3>> pos = {{u[0], u[1], u[2]}};
-    cudaStream_t stream = cudaStreamPerThread;
+    cudaStream_t stream               = cudaStreamPerThread;
     compute_engine.evaluate_vgh(device_einsplines_->operator[](0),
                                 pos,
                                 dev_psi.get_devptr(),
                                 dev_grad.get_devptr(),
                                 dev_hess.get_devptr(),
-				esp.nBlocks,
+                                esp.nBlocks,
                                 esp.nSplines,
                                 esp.nSplinesPerBlock,
-	stream);
+                                stream);
   }
 
   inline HessianParticipants<Devices::CUDA, T> visit_for_vgh_i()
   {
-      return HessianParticipants<Devices::CUDA, T>(*device_einsplines_, psi, grad, hess, dirty_v, dirty_g, dirty_h);
+    return HessianParticipants<Devices::CUDA, T>(*device_einsplines_, psi, grad, hess, dirty_v, dirty_g, dirty_h);
   }
-  
+
   /** Legacy single POS call
    */
   void evaluate_vgl_i(const QMCT::PosType& p)
@@ -393,10 +395,15 @@ public:
     return hess[ib].data(m)[n];
   }
 
-  std::shared_ptr<BsplineSet<Devices::CPU, T>> getHostEinsplines() const { return std::shared_ptr<BsplineSet<Devices::CPU, T>>(host_einsplines_); }
+  std::shared_ptr<BsplineSet<Devices::CPU, T>> getHostEinsplines() const
+  {
+    return std::shared_ptr<BsplineSet<Devices::CPU, T>>(host_einsplines_);
+  }
 
-  std::shared_ptr<BsplineSet<Devices::CUDA, T>> getDeviceEinsplines() const { return std::shared_ptr<BsplineSet<Devices::CUDA, T>>(device_einsplines_); }
-
+  std::shared_ptr<BsplineSet<Devices::CUDA, T>> getDeviceEinsplines() const
+  {
+    return std::shared_ptr<BsplineSet<Devices::CUDA, T>>(device_einsplines_);
+  }
 };
 
 extern template class EinsplineSPODeviceImp<Devices::CUDA, float>;

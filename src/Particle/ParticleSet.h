@@ -83,14 +83,15 @@ enum DistanceTimers
   Timer_acceptMove
 };
 
-  
+
 class ParticleSet : public QMCTraits, public PtclOnLatticeTraits
 {
   TimerNameList_t<DistanceTimers> DistanceTimerNames{
-    {Timer_makeMove, "Make move"},
-    {Timer_setActive, "Set active"},
-    {Timer_acceptMove, "Accept move"},
+      {Timer_makeMove, "Make move"},
+      {Timer_setActive, "Set active"},
+      {Timer_acceptMove, "Accept move"},
   };
+
 public:
   /// walker type
   typedef Walker<QMCTraits, PtclOnLatticeTraits> Walker_t;
@@ -341,10 +342,8 @@ protected:
   TimerList_t timers;
 };
 
-const std::vector<ParticleSet::ParticleGradient_t*>
-    extract_G_list(const std::vector<ParticleSet*>& P_list);
-const std::vector<ParticleSet::ParticleLaplacian_t*>
-    extract_L_list(const std::vector<ParticleSet*>& P_list);
+const std::vector<ParticleSet::ParticleGradient_t*> extract_G_list(const std::vector<ParticleSet*>& P_list);
+const std::vector<ParticleSet::ParticleLaplacian_t*> extract_L_list(const std::vector<ParticleSet*>& P_list);
 
 } // namespace qmcplusplus
 #endif

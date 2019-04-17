@@ -31,20 +31,19 @@
 
 namespace qmcplusplus
 {
-
 template<>
-class DeterminantDeviceImp<Devices::CPU>
-  : public DeterminantDevice<DeterminantDeviceImp<Devices::CPU>>,
-    public LinAlgCPU
+class DeterminantDeviceImp<Devices::CPU> : public DeterminantDevice<DeterminantDeviceImp<Devices::CPU>>,
+                                           public LinAlgCPU
 {
 public:
-  using QMCT = QMCTraits;
-    static constexpr Devices ENUMT = Devices::CPU;
-  
-    DeterminantDeviceImp(int nels, const RandomGenerator<QMCT::RealType>& RNG, DeviceBuffers<ENUMT> dev_bufs, int First = 0)
-    : DeterminantDevice( nels, RNG, First),
-      FirstIndex(First),
-      myRandom(RNG)
+  using QMCT                     = QMCTraits;
+  static constexpr Devices ENUMT = Devices::CPU;
+
+  DeterminantDeviceImp(int nels,
+                       const RandomGenerator<QMCT::RealType>& RNG,
+                       DeviceBuffers<ENUMT> dev_bufs,
+                       int First = 0)
+      : DeterminantDevice(nels, RNG, First), FirstIndex(First), myRandom(RNG)
   {
     psiMinv.resize(nels, nels);
     psiV.resize(nels);
@@ -80,9 +79,7 @@ public:
     }
   }
 
-  QMCT::RealType evaluateLogImp(ParticleSet& P,
-                       ParticleSet::ParticleGradient_t& G,
-                       ParticleSet::ParticleLaplacian_t& L)
+  QMCT::RealType evaluateLogImp(ParticleSet& P, ParticleSet::ParticleGradient_t& G, ParticleSet::ParticleLaplacian_t& L)
   {
     recompute();
     // FIXME do we want remainder of evaluateLog?
@@ -94,9 +91,9 @@ public:
   QMCT::ValueType ratioGradImp(ParticleSet& P, int iat, QMCT::GradType& grad) { return ratio(P, iat); }
 
   void evaluateGLImp(ParticleSet& P,
-                  ParticleSet::ParticleGradient_t& G,
-                  ParticleSet::ParticleLaplacian_t& L,
-                  bool fromscratch = false)
+                     ParticleSet::ParticleGradient_t& G,
+                     ParticleSet::ParticleLaplacian_t& L,
+                     bool fromscratch = false)
   {}
 
   /// recompute the inverse

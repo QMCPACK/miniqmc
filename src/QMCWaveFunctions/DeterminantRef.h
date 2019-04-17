@@ -29,16 +29,14 @@ namespace miniqmcreference
 {
 /**@{Determinant utilities */
 /** Inversion of a double matrix after LU factorization*/
-inline void
-    getri(int n, double* restrict a, int lda, int* restrict piv, double* restrict work, int& lwork)
+inline void getri(int n, double* restrict a, int lda, int* restrict piv, double* restrict work, int& lwork)
 {
   int status;
   dgetri(n, a, lda, piv, work, lwork, status);
 }
 
 /** Inversion of a float matrix after LU factorization*/
-inline void
-    getri(int n, float* restrict a, int lda, int* restrict piv, float* restrict work, int& lwork)
+inline void getri(int n, float* restrict a, int lda, int* restrict piv, float* restrict work, int& lwork)
 {
   int status;
   sgetri(n, a, lda, piv, work, lwork, status);
@@ -93,8 +91,7 @@ inline void transpose(const TIN* restrict in, TOUT* restrict out, int n, int lda
 
 /// used only for debugging or walker move
 template<class T>
-inline T
-    InvertWithLog(T* restrict x, int n, int lda, T* restrict work, int lwork, int* restrict pivot, T& phase)
+inline T InvertWithLog(T* restrict x, int n, int lda, T* restrict work, int lwork, int* restrict pivot, T& phase)
 {
   T logdet(0.0);
   qmcplusplus::LUFactorization(n, n, x, lda, pivot);
@@ -121,8 +118,7 @@ inline T3 inner_product_n(const T1* restrict a, const T2* restrict b, int n, T3 
 
 /// recompute inverse, do not evaluate log|det|
 template<class T>
-inline void
-    InvertOnly(T* restrict x, int n, int lda, T* restrict work, int* restrict pivot, int lwork)
+inline void InvertOnly(T* restrict x, int n, int lda, T* restrict work, int* restrict pivot, int lwork)
 {
   qmcplusplus::LUFactorization(n, n, x, lda, pivot);
   getri(n, x, lda, pivot, work, lwork);
@@ -130,8 +126,7 @@ inline void
 
 /** update Row as implemented in the full code */
 template<typename T, typename RT>
-inline void
-    updateRow(T* restrict pinv, const T* restrict tv, int m, int lda, int rowchanged, RT c_ratio_in)
+inline void updateRow(T* restrict pinv, const T* restrict tv, int m, int lda, int rowchanged, RT c_ratio_in)
 {
   constexpr T cone(1);
   constexpr T czero(0);
@@ -161,9 +156,8 @@ void checkIdentity(const MT1& a, const MT2& b, const std::string& tag)
       error += (i == j) ? std::abs(e - cone) : std::abs(e);
     }
   }
-  #pragma omp master
-  std::cout << tag << " difference from identity (average per element) = " << error / nrows / nrows
-            << std::endl;
+#pragma omp master
+  std::cout << tag << " difference from identity (average per element) = " << error / nrows / nrows << std::endl;
 }
 
 // FIXME do we want to keep this in the miniapp?
@@ -178,9 +172,8 @@ void checkDiff(const MT1& a, const MT2& b, const std::string& tag)
     for (int j = 0; j < ncols; ++j)
       error += std::abs(static_cast<double>(a(i, j) - b(i, j)));
 
-  #pragma omp master
-  std::cout << tag << " difference between matrices (average per element) = " << error / nrows / nrows
-            << std::endl;
+#pragma omp master
+  std::cout << tag << " difference between matrices (average per element) = " << error / nrows / nrows << std::endl;
 }
 
 struct DiracDeterminantRef : public qmcplusplus::WaveFunctionComponent
@@ -225,9 +218,7 @@ struct DiracDeterminantRef : public qmcplusplus::WaveFunctionComponent
     }
   }
 
-  RealType evaluateLog(ParticleSet& P,
-                       ParticleSet::ParticleGradient_t& G,
-                       ParticleSet::ParticleLaplacian_t& L)
+  RealType evaluateLog(ParticleSet& P, ParticleSet::ParticleGradient_t& G, ParticleSet::ParticleLaplacian_t& L)
   {
     recompute();
     // FIXME do we want remainder of evaluateLog?
@@ -275,7 +266,8 @@ struct DiracDeterminantRef : public qmcplusplus::WaveFunctionComponent
   /** accessor functions for checking */
   inline double operator()(int i) const { return psiMinv(i); }
   inline int size() const { return psiMinv.size(); }
-    inline void finishUpdate(int iel) {}
+  inline void finishUpdate(int iel) {}
+
 private:
   /// log|det|
   double LogValue;

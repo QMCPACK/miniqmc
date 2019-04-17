@@ -26,48 +26,36 @@
 
 #include "QMCWaveFunctions/WaveFunctionComponent.h"
 #include "QMCWaveFunctions/DeterminantDevice.h"
- 
+
 namespace qmcplusplus
 {
-
- template<class DEVICE>
+template<class DEVICE>
 struct DiracDeterminant : public WaveFunctionComponent
 {
-    DiracDeterminant(int nels, const RandomGenerator<RealType>& RNG, int First = 0)
+  DiracDeterminant(int nels, const RandomGenerator<RealType>& RNG, int First = 0)
   {
-      determinant_device = new DEVICE(nels, RNG, legacy_single_buff, First);
+    determinant_device = new DEVICE(nels, RNG, legacy_single_buff, First);
   }
 
-  DiracDeterminant(int nels, const RandomGenerator<RealType>& RNG, DeviceBuffers<DEVICE::ENUMT>& dev_bufs, int First = 0)
+  DiracDeterminant(int nels,
+                   const RandomGenerator<RealType>& RNG,
+                   DeviceBuffers<DEVICE::ENUMT>& dev_bufs,
+                   int First = 0)
   {
-      determinant_device = new DEVICE(nels, RNG, dev_bufs, First);
+    determinant_device = new DEVICE(nels, RNG, dev_bufs, First);
   }
-    
-  ~DiracDeterminant()
-  {
-    delete determinant_device;
-  }
-  
-  void checkMatrix()
-  {
-    determinant_device->checkMatrix();
-  }
-  
-  RealType evaluateLog(ParticleSet& P,
-		       ParticleSet::ParticleGradient_t& G,
-		       ParticleSet::ParticleLaplacian_t& L)
+
+  ~DiracDeterminant() { delete determinant_device; }
+
+  void checkMatrix() { determinant_device->checkMatrix(); }
+
+  RealType evaluateLog(ParticleSet& P, ParticleSet::ParticleGradient_t& G, ParticleSet::ParticleLaplacian_t& L)
   {
     return determinant_device->evaluateLog(P, G, L);
   }
 
-  GradType evalGrad(ParticleSet& P, int iat)
-  {
-    return determinant_device->evalGrad(P, iat);
-  }
-  ValueType ratioGrad(ParticleSet& P, int iat, GradType& grad)
-  {
-    return determinant_device->ratioGrad(P, iat, grad);
-  }
+  GradType evalGrad(ParticleSet& P, int iat) { return determinant_device->evalGrad(P, iat); }
+  ValueType ratioGrad(ParticleSet& P, int iat, GradType& grad) { return determinant_device->ratioGrad(P, iat, grad); }
 
   void evaluateGL(ParticleSet& P,
                   ParticleSet::ParticleGradient_t& G,
@@ -77,26 +65,16 @@ struct DiracDeterminant : public WaveFunctionComponent
     determinant_device->evaluateGL(P, G, L, fromscratch);
   }
 
-  inline void recompute()
-  {
-    determinant_device->recompute();
-  }
-  
-  inline ValueType ratio(ParticleSet& P, int iel)
-  {
-    return determinant_device->ratio(P, iel);
-  }
-  
-  inline void acceptMove(ParticleSet& P, int iel) {
-    determinant_device->acceptMove(P, iel);
-  }
+  inline void recompute() { determinant_device->recompute(); }
+
+  inline ValueType ratio(ParticleSet& P, int iel) { return determinant_device->ratio(P, iel); }
+
+  inline void acceptMove(ParticleSet& P, int iel) { determinant_device->acceptMove(P, iel); }
 
   inline void finishUpdate(int iel) { determinant_device->finishUpdate(iel); }
   // accessor functions for checking
-  inline double operator()(int i) {
-    return determinant_device->operator()(i);
-  }
-  
+  inline double operator()(int i) { return determinant_device->operator()(i); }
+
   inline int size() const { determinant_device->size(); }
 
 private:

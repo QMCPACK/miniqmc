@@ -15,8 +15,7 @@
 #include <cuda_runtime_api.h>
 
 template<T>
-__global__ static void
-fill_GPUArray(<T>* start,  size_t pitch, int value, size_t width, size_t height)
+__global__ static void fill_GPUArray(<T>* start, size_t pitch, int value, size_t width, size_t height)
 {
   cudaMemset2D((void*)start, pitch, value, width, height);
 }

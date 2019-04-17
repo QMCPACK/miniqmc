@@ -22,10 +22,9 @@
 
 namespace qmcplusplus
 {
-template <Devices DT>
+template<Devices DT>
 struct DeviceBuffers
-{    
-};
+{};
 
 #ifdef QMC_USE_CUDA
 #include "CUDA/PinnedHostBuffer.hpp"
@@ -39,6 +38,6 @@ struct DeviceBuffers<Devices::CUDA>
   PinnedHostBuffer determinant_host_buffer;
 };
 #endif
-}
+} // namespace qmcplusplus
 
 #endif

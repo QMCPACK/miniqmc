@@ -24,7 +24,7 @@ namespace qmcplusplus
 {
 template<class T>
 using aligned_allocator = qmcplusplus::Mallocator<T, QMC_CLINE>;
-  //using aligned_allocator = boost::alignment::aligned_allocator<T, QMC_CLINE>;
+//using aligned_allocator = boost::alignment::aligned_allocator<T, QMC_CLINE>;
 template<class T>
 using aligned_vector = std::vector<T, aligned_allocator<T>>;
 

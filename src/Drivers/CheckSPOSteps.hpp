@@ -25,8 +25,6 @@
 
 namespace qmcplusplus
 {
-
-
 template<Devices DT>
 class CheckSPOSteps
 {
@@ -36,7 +34,7 @@ public:
 
 public:
   using QMCT = QMCTraits;
-    static void initialize(int arc, char** argv);
+  static void initialize(int arc, char** argv);
   static void test(int& error,
                    int team_size,
                    const Tensor<int, 3>& tmat,
@@ -46,7 +44,7 @@ public:
                    const int nz,
                    const int nsteps,
                    const QMCT::RealType Rmax);
-    static void finalize();
+  static void finalize();
 
   template<typename T>
   static void thread_main(const int num_threads,
@@ -71,7 +69,7 @@ private:
                                 const int nz,
                                 const int norb,
                                 const int nTiles,
-				const int tile_size,
+                                const int tile_size,
                                 const Tensor<OHMMS_PRECISION, 3>& lattice_b);
 
   template<typename T>
@@ -94,46 +92,64 @@ private:
 #include "Drivers/CheckSPOStepsCUDA.hpp"
 namespace qmcplusplus
 {
-extern template void CheckSPOSteps<Devices::CUDA>::test(int&, int, qmcplusplus::Tensor<int, 3u> const&, int, int, int, int, int, double);
-extern template typename CheckSPOSteps<Devices::CUDA>::SPODevImp
-CheckSPOSteps<Devices::CUDA>::buildSPOMain(const int nx,
-				const int ny,
-				const int nz,
-				const int norb,
-				const int nTiles,
-					   const int tile_size,
-				const Tensor<OHMMS_PRECISION, 3>& lattice_b);
+extern template void CheckSPOSteps<Devices::CUDA>::test(int&,
+                                                        int,
+                                                        qmcplusplus::Tensor<int, 3u> const&,
+                                                        int,
+                                                        int,
+                                                        int,
+                                                        int,
+                                                        int,
+                                                        double);
+extern template typename CheckSPOSteps<Devices::CUDA>::SPODevImp CheckSPOSteps<Devices::CUDA>::buildSPOMain(
+    const int nx,
+    const int ny,
+    const int nz,
+    const int norb,
+    const int nTiles,
+    const int tile_size,
+    const Tensor<OHMMS_PRECISION, 3>& lattice_b);
 
-}
+} // namespace qmcplusplus
 #endif
 
 #ifdef QMC_USE_KOKKOS
 #include "Drivers/CheckSPOStepsKOKKOS.hpp"
 namespace qmcplusplus
 {
-extern template void CheckSPOSteps<Devices::KOKKOS>::test(int&, int, qmcplusplus::Tensor<int, 3u> const&, int, int, int, int, int, double);
-extern template typename CheckSPOSteps<Devices::KOKKOS>::SPODevImp
-CheckSPOSteps<Devices::KOKKOS>::buildSPOMain(const int nx,
-				const int ny,
-				const int nz,
-				const int norb,
-				const int nTiles,
-					   const int tile_size,
-				const Tensor<OHMMS_PRECISION, 3>& lattice_b);
+extern template void CheckSPOSteps<Devices::KOKKOS>::test(int&,
+                                                          int,
+                                                          qmcplusplus::Tensor<int, 3u> const&,
+                                                          int,
+                                                          int,
+                                                          int,
+                                                          int,
+                                                          int,
+                                                          double);
+extern template typename CheckSPOSteps<Devices::KOKKOS>::SPODevImp CheckSPOSteps<Devices::KOKKOS>::buildSPOMain(
+    const int nx,
+    const int ny,
+    const int nz,
+    const int norb,
+    const int nTiles,
+    const int tile_size,
+    const Tensor<OHMMS_PRECISION, 3>& lattice_b);
 
-}
+} // namespace qmcplusplus
 #endif
 
 namespace qmcplusplus
 {
-        template<Devices DT>
-    void CheckSPOSteps<DT>::initialize(int arc, char** argv) {}
+template<Devices DT>
+void CheckSPOSteps<DT>::initialize(int arc, char** argv)
+{}
 
-    template<Devices DT>
-    void CheckSPOSteps<DT>::finalize() {}
-    
+template<Devices DT>
+void CheckSPOSteps<DT>::finalize()
+{}
+
 extern template class CheckSPOSteps<Devices::CPU>;
-}
+} // namespace qmcplusplus
 // #ifdef QMC_USE_KOKKOS
 // #include "Drivers/CheckSPOStepsKOKKOS.hpp"
 // // namespace qmcplusplus

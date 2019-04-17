@@ -84,49 +84,48 @@ void CheckSPOSteps<Devices::CUDA>::thread_main(const int np,
     random_th.generate_uniform(ur.data(), nels);
     // VMC
     for (int iel = 0; iel < nels; ++iel)
+    {
+      QMCT::PosType pos = els.R[iel] + sqrttau * delta[iel];
+
+      // spo.evaluate_v(pos);
+      // spo_ref.evaluate_v(pos);
+      // for (int ib = 0; ib < esp.nBlocks; ib++)
+      //   for (int n = 0; n < esp.nSplinesPerBlock; n++)
+      //   {
+      //     // value
+      //     std::cout << ib << ":"<< n << "  " << spo.getPsi(ib, n) << "  " << spo_ref.psi[ib][n] << '\n';
+      //     evalV_v_err += std::fabs(spo.getPsi(ib, n) - spo_ref.psi[ib][n]);
+
+      //   }
+      // std::cout << "evalV_v_err: " << evalV_v_err << '\n';
+
+      spo.evaluate_vgh(pos);
+      spo_ref.evaluate_vgh(pos);
+
+      // accumulate error
+      for (int ib = 0; ib < esp.nBlocks; ib++)
+        for (int n = 0; n < esp.nSplinesPerBlock; n++)
+        {
+          // value
+          evalVGH_v_err += std::fabs(spo.getPsi(ib, n) - spo_ref.psi[ib][n]);
+          // grad
+          evalVGH_g_err += std::fabs(spo.getGrad(ib, 0, n) - spo_ref.grad[ib].data(0)[n]);
+          evalVGH_g_err += std::fabs(spo.getGrad(ib, 1, n) - spo_ref.grad[ib].data(1)[n]);
+          evalVGH_g_err += std::fabs(spo.getGrad(ib, 2, n) - spo_ref.grad[ib].data(2)[n]);
+          // hess
+          evalVGH_h_err += std::fabs(spo.getHess(ib, 0, n) - spo_ref.hess[ib].data(0)[n]);
+          evalVGH_h_err += std::fabs(spo.getHess(ib, 1, n) - spo_ref.hess[ib].data(1)[n]);
+          evalVGH_h_err += std::fabs(spo.getHess(ib, 2, n) - spo_ref.hess[ib].data(2)[n]);
+          evalVGH_h_err += std::fabs(spo.getHess(ib, 3, n) - spo_ref.hess[ib].data(3)[n]);
+          evalVGH_h_err += std::fabs(spo.getHess(ib, 4, n) - spo_ref.hess[ib].data(4)[n]);
+          evalVGH_h_err += std::fabs(spo.getHess(ib, 5, n) - spo_ref.hess[ib].data(5)[n]);
+        }
+      if (ur[iel] < accept)
       {
-	QMCT::PosType pos = els.R[iel] + sqrttau * delta[iel];
-
-	// spo.evaluate_v(pos);
-	// spo_ref.evaluate_v(pos);
-	// for (int ib = 0; ib < esp.nBlocks; ib++)
-	//   for (int n = 0; n < esp.nSplinesPerBlock; n++)
-	//   {
-	//     // value
-	//     std::cout << ib << ":"<< n << "  " << spo.getPsi(ib, n) << "  " << spo_ref.psi[ib][n] << '\n';
-	//     evalV_v_err += std::fabs(spo.getPsi(ib, n) - spo_ref.psi[ib][n]);
-
-	//   }
-	// std::cout << "evalV_v_err: " << evalV_v_err << '\n';
-
-	spo.evaluate_vgh(pos);
-	spo_ref.evaluate_vgh(pos);
-
-	// accumulate error
-	for (int ib = 0; ib < esp.nBlocks; ib++)
-	  for (int n = 0; n < esp.nSplinesPerBlock; n++)
-            {
-
-              // value
-              evalVGH_v_err += std::fabs(spo.getPsi(ib, n) - spo_ref.psi[ib][n]);
-              // grad
-              evalVGH_g_err += std::fabs(spo.getGrad(ib, 0, n) - spo_ref.grad[ib].data(0)[n]);
-              evalVGH_g_err += std::fabs(spo.getGrad(ib, 1, n) - spo_ref.grad[ib].data(1)[n]);
-              evalVGH_g_err += std::fabs(spo.getGrad(ib, 2, n) - spo_ref.grad[ib].data(2)[n]);
-              // hess
-              evalVGH_h_err += std::fabs(spo.getHess(ib, 0, n) - spo_ref.hess[ib].data(0)[n]);
-              evalVGH_h_err += std::fabs(spo.getHess(ib, 1, n) - spo_ref.hess[ib].data(1)[n]);
-              evalVGH_h_err += std::fabs(spo.getHess(ib, 2, n) - spo_ref.hess[ib].data(2)[n]);
-              evalVGH_h_err += std::fabs(spo.getHess(ib, 3, n) - spo_ref.hess[ib].data(3)[n]);
-              evalVGH_h_err += std::fabs(spo.getHess(ib, 4, n) - spo_ref.hess[ib].data(4)[n]);
-              evalVGH_h_err += std::fabs(spo.getHess(ib, 5, n) - spo_ref.hess[ib].data(5)[n]);
-            }
-	if (ur[iel] < accept)
-          {
-            els.R[iel] = pos;
-            my_accepted++;
-          }
+        els.R[iel] = pos;
+        my_accepted++;
       }
+    }
 
 
     random_th.generate_uniform(ur.data(), nels);
@@ -155,9 +154,9 @@ void CheckSPOSteps<Devices::CUDA>::thread_main(const int np,
         }
       } // els
     }   // ions
-  } // steps.
+  }     // steps.
 
-  ratio        += QMCT::RealType(my_accepted) / QMCT::RealType(nels * nsteps);
+  ratio += QMCT::RealType(my_accepted) / QMCT::RealType(nels * nsteps);
   nspheremoves += QMCT::RealType(my_vals) / QMCT::RealType(nsteps);
   dNumVGHCalls += nels;
 }

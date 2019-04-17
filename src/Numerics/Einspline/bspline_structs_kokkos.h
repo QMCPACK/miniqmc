@@ -24,22 +24,22 @@
 
 #include "bspline_structs.h"
 
-#define UBSPLINE_KOKKOS_VIEW_DEF					\
-  typedef Kokkos::View<KokkosViewPrecision***, Kokkos::LayoutRight> coefs_view_t;\
+#define UBSPLINE_KOKKOS_VIEW_DEF                                                  \
+  typedef Kokkos::View<KokkosViewPrecision***, Kokkos::LayoutRight> coefs_view_t; \
   coefs_view_t coefs_view;
 
 template<>
 struct UBspline_3d_s<Devices::KOKKOS> : public UBspline_3d_s_common
 {
-    using KokkosViewPrecision = float;
-    UBSPLINE_KOKKOS_VIEW_DEF;
+  using KokkosViewPrecision = float;
+  UBSPLINE_KOKKOS_VIEW_DEF;
 };
 
 template<>
 struct UBspline_3d_d<Devices::KOKKOS> : public UBspline_3d_d_common
 {
-    using KokkosViewPrecision = double;
-    UBSPLINE_KOKKOS_VIEW_DEF;
+  using KokkosViewPrecision = double;
+  UBSPLINE_KOKKOS_VIEW_DEF;
 };
 
 #endif

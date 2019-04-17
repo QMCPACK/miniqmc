@@ -25,33 +25,39 @@
  */
 namespace qmcplusplus
 {
-  namespace hana = boost::hana;
+namespace hana = boost::hana;
 
 
-  template<Devices DT, typename T>
-  struct HessianParticipants
-  {
-    using QPT = QMCFutureTypes<T>;
-    HessianParticipants(BsplineSet<DT, T>& device_einsplines_,
-			aligned_vector<typename QPT::vContainer_type>& psi_,
-			aligned_vector<typename QPT::gContainer_type>& grad_,
-			aligned_vector<typename QPT::hContainer_type>& hess_,
-			bool& dirty_v_,
-			bool& dirty_g_,
-			bool& dirty_h_
-			) : device_einsplines(device_einsplines_), psi(psi_), grad(grad_), hess(hess_), dirty_v(dirty_v_), dirty_g(dirty_g_), dirty_h(dirty_h_) {}
-    HessianParticipants(const HessianParticipants& ) = default;
-    BsplineSet<DT, T>& device_einsplines;
+template<Devices DT, typename T>
+struct HessianParticipants
+{
+  using QPT = QMCFutureTypes<T>;
+  HessianParticipants(BsplineSet<DT, T>& device_einsplines_,
+                      aligned_vector<typename QPT::vContainer_type>& psi_,
+                      aligned_vector<typename QPT::gContainer_type>& grad_,
+                      aligned_vector<typename QPT::hContainer_type>& hess_,
+                      bool& dirty_v_,
+                      bool& dirty_g_,
+                      bool& dirty_h_)
+      : device_einsplines(device_einsplines_),
+        psi(psi_),
+        grad(grad_),
+        hess(hess_),
+        dirty_v(dirty_v_),
+        dirty_g(dirty_g_),
+        dirty_h(dirty_h_)
+  {}
+  HessianParticipants(const HessianParticipants&) = default;
+  BsplineSet<DT, T>& device_einsplines;
 
-    aligned_vector<typename QPT::vContainer_type>& psi;
-    aligned_vector<typename QPT::gContainer_type>& grad;
-    aligned_vector<typename QPT::hContainer_type>& hess;
+  aligned_vector<typename QPT::vContainer_type>& psi;
+  aligned_vector<typename QPT::gContainer_type>& grad;
+  aligned_vector<typename QPT::hContainer_type>& hess;
 
-    bool& dirty_v;
-    bool& dirty_g;
-    bool& dirty_h;
-  };
-
+  bool& dirty_v;
+  bool& dirty_g;
+  bool& dirty_h;
+};
 
 
 template<class DEVICEIMP, typename T>
@@ -71,22 +77,21 @@ protected:
     //std::cout << "EinsplineSPODevice Copy constructor called\n";
   }
 
-  EinsplineSPODevice()
-  {
-    //std::cout << "EinsplineDevice() called \n";
+  EinsplineSPODevice(){
+      //std::cout << "EinsplineDevice() called \n";
   };
 
 public:
-    void set(int nx, int ny, int nz, int num_splines, int nblocks, int splines_per_block, bool init_random = true)
+  void set(int nx, int ny, int nz, int num_splines, int nblocks, int splines_per_block, bool init_random = true)
   {
-      impl().set_i(nx, ny, nz, num_splines, nblocks, splines_per_block, init_random);
+    impl().set_i(nx, ny, nz, num_splines, nblocks, splines_per_block, init_random);
   }
 
   inline void evaluate_v(const QMCT::PosType& p) { impl().evaluate_v_i(p); }
 
-  //HessianParticipants<hana::int_c<static_cast<int>(DEVICEIMP::ThisDevice)>, T> 
+  //HessianParticipants<hana::int_c<static_cast<int>(DEVICEIMP::ThisDevice)>, T>
   inline auto visit_for_vgh() { return impl().visit_for_vgh_i(); }
-  
+
   inline void evaluate_vgh(const QMCT::PosType& p) { impl().evaluate_vgh_i(p); }
 
   void evaluate_vgl(const QMCT::PosType& p) { impl().evaluate_vgl_i(p); }

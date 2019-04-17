@@ -19,111 +19,111 @@
 
 namespace qmcplusplus
 {
-
-template <typename F>
+template<typename F>
 class TaskWrapper
-    {
-	F f;
-	template<typename... T>
-	void operator()(T&&... args) {
-	    f(std::forward<T>(args)...);
-	}
-    };
+{
+  F f;
+  template<typename... T>
+  void operator()(T&&... args)
+  {
+    f(std::forward<T>(args)...);
+  }
+};
 
-    enum class Threading{
-	OPENMP,
-	STD,
-	BOOST,
-	KOKKOS
-    };
+enum class Threading
+{
+  OPENMP,
+  STD,
+  BOOST,
+  KOKKOS
+};
 
-    template<Threading TT>
-    class TaskBlockBarrier
-    {
-    public:
-	TaskBlockBarrier(unsigned int num_threads) : num_threads_(num_threads) {}
-	void wait();
-    private:
-	unsigned int num_threads_;
-    };
+template<Threading TT>
+class TaskBlockBarrier
+{
+public:
+  TaskBlockBarrier(unsigned int num_threads) : num_threads_(num_threads) {}
+  void wait();
 
-    template<Threading TT>
-    inline void TaskBlockBarrier<TT>::wait()
-    {
-	std::cout << "At omp barrier\n";
-	#pragma omp barrier
-    }
+private:
+  unsigned int num_threads_;
+};
 
-    template<>
-    inline void TaskBlockBarrier<Threading::STD>::wait()
-    {
-	std::cout << "Not sure what to do here\n";
-    }
+template<Threading TT>
+inline void TaskBlockBarrier<TT>::wait()
+{
+  std::cout << "At omp barrier\n";
+#pragma omp barrier
+}
 
-    template<>
-    inline void TaskBlockBarrier<Threading::KOKKOS>::wait()
-    {
-	std::cout << "Not sure what to do here\n";
-    }
+template<>
+inline void TaskBlockBarrier<Threading::STD>::wait()
+{
+  std::cout << "Not sure what to do here\n";
+}
+
+template<>
+inline void TaskBlockBarrier<Threading::KOKKOS>::wait()
+{
+  std::cout << "Not sure what to do here\n";
+}
 
 template<Threading TT>
 class TaskBlock
 {
 public:
-    TaskBlock(unsigned int num_threads) : num_threads_(num_threads) {}
-    template<typename F, typename... Args >
-    void operator()(F&& f, Args&&... args);
-    template<typename F, typename... Args >
-    void operator()(F&& f, TaskBlockBarrier<TT>& barrier, Args&&... args);
+  TaskBlock(unsigned int num_threads) : num_threads_(num_threads) {}
+  template<typename F, typename... Args>
+  void operator()(F&& f, Args&&... args);
+  template<typename F, typename... Args>
+  void operator()(F&& f, TaskBlockBarrier<TT>& barrier, Args&&... args);
+
 private:
-    unsigned int num_threads_;
+  unsigned int num_threads_;
 };
 
-    template<Threading TT>
-    template<typename F, typename... Args>
-    void TaskBlock<TT>::operator()(F&& f, Args&&... args)
+template<Threading TT>
+template<typename F, typename... Args>
+void TaskBlock<TT>::operator()(F&& f, Args&&... args)
 
-    	{
+{
 #pragma omp parallel for
-	    for (int task_id = 0; task_id < num_threads_; ++task_id)
-	    {
-		f(task_id, std::forward<Args>(args)...);
-	    }
-	}
-
-        template<Threading TT>
-    template<typename F, typename... Args>
-	void TaskBlock<TT>::operator()(F&& f, TaskBlockBarrier<TT>& barrier, Args&&... args)
-
-    	{
-	    omp_set_num_threads(num_threads_);
-            #pragma omp parallel for
-	    for (int task_id = 0; task_id < num_threads_; ++task_id)
-	    {
-		f(task_id, barrier, std::forward<Args>(args)...);
-	    }
-	}
-
-    template<>
-    template<typename F, typename... Args>
-    void TaskBlock<Threading::STD>::operator()(F&& f, Args&&... args)
-
-    	{
-	    std::vector<std::thread> threads(num_threads_);
-    
-	    for (int task_id = 0; task_id < num_threads_; ++task_id)
-	    {
-		threads[task_id] = std::thread(TaskWrapper<F>{std::forward<F>(f)}, task_id, std::forward<Args>(args)...);
-	    }
-	    
-	    for (int task_id = 0; task_id < num_threads_; ++task_id)
-	    {
-		threads[task_id].join();
-	    }
-
-	}
+  for (int task_id = 0; task_id < num_threads_; ++task_id)
+  {
+    f(task_id, std::forward<Args>(args)...);
+  }
 }
 
+template<Threading TT>
+template<typename F, typename... Args>
+void TaskBlock<TT>::operator()(F&& f, TaskBlockBarrier<TT>& barrier, Args&&... args)
+
+{
+  omp_set_num_threads(num_threads_);
+#pragma omp parallel for
+  for (int task_id = 0; task_id < num_threads_; ++task_id)
+  {
+    f(task_id, barrier, std::forward<Args>(args)...);
+  }
+}
+
+template<>
+template<typename F, typename... Args>
+void TaskBlock<Threading::STD>::operator()(F&& f, Args&&... args)
+
+{
+  std::vector<std::thread> threads(num_threads_);
+
+  for (int task_id = 0; task_id < num_threads_; ++task_id)
+  {
+    threads[task_id] = std::thread(TaskWrapper<F>{std::forward<F>(f)}, task_id, std::forward<Args>(args)...);
+  }
+
+  for (int task_id = 0; task_id < num_threads_; ++task_id)
+  {
+    threads[task_id].join();
+  }
+}
+} // namespace qmcplusplus
+
 #endif
-
-

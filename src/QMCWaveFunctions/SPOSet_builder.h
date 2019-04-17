@@ -25,57 +25,53 @@ class SPOSetBuilder
 {
 public:
   static SPOSet* build(bool useRef,
-		       int nx,
-		       int ny,
-		       int nz,
-		       int num_splines,
-		       int nblocks,
-		       int tile_size,
-		       const Tensor<OHMMS_PRECISION, 3>& lattice_b,
-		       bool init_random = true)
+                       int nx,
+                       int ny,
+                       int nz,
+                       int num_splines,
+                       int nblocks,
+                       int tile_size,
+                       const Tensor<OHMMS_PRECISION, 3>& lattice_b,
+                       bool init_random = true)
+  {
+    if (useRef)
     {
-  if (useRef)
-  {
-    miniqmcreference::EinsplineSPO_ref<OHMMS_PRECISION>* spo_main = new miniqmcreference::EinsplineSPO_ref<OHMMS_PRECISION>;
-    spo_main->set(nx, ny, nz, num_splines, nblocks);
-    spo_main->Lattice.set(lattice_b);
-    return dynamic_cast<SPOSet*>(spo_main);
+      miniqmcreference::EinsplineSPO_ref<OHMMS_PRECISION>* spo_main =
+          new miniqmcreference::EinsplineSPO_ref<OHMMS_PRECISION>;
+      spo_main->set(nx, ny, nz, num_splines, nblocks);
+      spo_main->Lattice.set(lattice_b);
+      return dynamic_cast<SPOSet*>(spo_main);
+    }
+    else
+    {
+      EinsplineSPO<DT, OHMMS_PRECISION>* spo_main = new EinsplineSPO<DT, OHMMS_PRECISION>;
+      spo_main->set(nx, ny, nz, num_splines, nblocks, tile_size);
+      spo_main->setLattice(lattice_b);
+      return dynamic_cast<SPOSet*>(spo_main);
+    }
   }
-  else
-  {
-    EinsplineSPO<DT, OHMMS_PRECISION>* spo_main = new EinsplineSPO<DT, OHMMS_PRECISION>;
-    spo_main->set(nx, ny, nz, num_splines, nblocks, tile_size);
-    spo_main->setLattice(lattice_b);
-    return dynamic_cast<SPOSet*>(spo_main);
-  }
-}
 
-/// build the einspline SPOSet as a view of the main one.
+  /// build the einspline SPOSet as a view of the main one.
   static SPOSet* buildView(bool useRef, const SPOSet* SPOSet_main, int team_size, int member_id)
+  {
+    if (useRef)
     {
-  if (useRef)
-  {
-    auto* temp_ptr =
-      dynamic_cast<const miniqmcreference::EinsplineSPO_ref<OHMMS_PRECISION>*>(SPOSet_main);
-    auto* spo_view =
-      new miniqmcreference::EinsplineSPO_ref<OHMMS_PRECISION>(*temp_ptr, team_size, member_id);
-    return dynamic_cast<SPOSet*>(spo_view);
+      auto* temp_ptr = dynamic_cast<const miniqmcreference::EinsplineSPO_ref<OHMMS_PRECISION>*>(SPOSet_main);
+      auto* spo_view = new miniqmcreference::EinsplineSPO_ref<OHMMS_PRECISION>(*temp_ptr, team_size, member_id);
+      return dynamic_cast<SPOSet*>(spo_view);
+    }
+    else
+    {
+      auto* temp_ptr = dynamic_cast<const EinsplineSPO<DT, OHMMS_PRECISION>*>(SPOSet_main);
+      auto* spo_view = new EinsplineSPO<DT, OHMMS_PRECISION>(*temp_ptr, team_size, member_id);
+      return dynamic_cast<SPOSet*>(spo_view);
+    }
   }
-  else
-  {
-    auto* temp_ptr = dynamic_cast<const EinsplineSPO<DT, OHMMS_PRECISION>*>(SPOSet_main);
-    auto* spo_view = new EinsplineSPO<DT, OHMMS_PRECISION>(*temp_ptr, team_size, member_id);
-    return dynamic_cast<SPOSet*>(spo_view);
-  }
-  
-}
 
   static SPOSet* buildView(bool useRef, const SPOSet& SPOSet_main, int team_size, int member_id)
   {
     return SPOSetBuilder::buildView(useRef, &SPOSet_main, team_size, member_id);
   }
-
-  
 };
 
 

@@ -9,23 +9,23 @@ __constant__ int GRAD_ELEMS = 3;
 
 __global__ static void
 eval_multi_multi_UBspline_3d_d_kernel(double* pos, double3 drInv, const double* coefs,
-                                      const double* Bcuda, double* vals, uint3 dim, uint3 strides, int num_splines,
-                                      int spline_block_size);
+                                      const double* Bcuda, double* vals, uint3 dim, uint3 strides,
+                                      int num_splines, int spline_block_size);
 
 /** eval blocks of splines
  *  num_blocks * spline_block_size < max_threads available per block
  *  num is the num of participants
  */
-void
-eval_multi_multi_UBspline_3d_d_cuda(const multi_UBspline_3d_d<Devices::CUDA>* spline, double* pos_d,
-                                    double* vals_d, int num_blocks, int spline_block_size, int num)
+void eval_multi_multi_UBspline_3d_d_cuda(const multi_UBspline_3d_d<Devices::CUDA>* spline,
+                                         double* pos_d, double* vals_d, int num_blocks,
+                                         int spline_block_size, int num)
 {
   // You want it this way because all threads are then access similar area of coefs
   dim3 dimBlock(spline_block_size);
   // Where as each block in the grid has a difference pos.
   // WHen spline_blocks_size * num_blocks exceeds > max threads this will need another dimension
   // Although that logic could and probably should lie above here.
-  dim3 dimGrid(num_blocks, num); 
+  dim3 dimGrid(num_blocks, num);
   // fprintf (stdout, "Spline num, blocksize %i, %i\n", spline->num_splines, spline_block_size);
   // fprintf (stdout, "kernel grid size: %i %i\n", spline->num_splines/spline_block_size, num);
 
@@ -33,7 +33,8 @@ eval_multi_multi_UBspline_3d_d_cuda(const multi_UBspline_3d_d<Devices::CUDA>* sp
   //if (spline->num_splines % spline_block_size) dimGrid.x++;
   eval_multi_multi_UBspline_3d_d_kernel<<<dimGrid, dimBlock>>>(pos_d, spline->gridInv, spline->coefs,
                                                                spline->Bcuda, vals_d, spline->dim,
-                                                               spline->stride, spline->num_splines, spline_block_size);
+                                                               spline->stride, spline->num_splines,
+                                                               spline_block_size);
 
   cudaError_t err = cudaGetLastError();
   if (err != cudaSuccess)
@@ -49,8 +50,8 @@ eval_multi_multi_UBspline_3d_d_cuda(const multi_UBspline_3d_d<Devices::CUDA>* sp
  */
 __global__ static void
 eval_multi_multi_UBspline_3d_d_kernel(double* pos, double3 drInv, const double* coefs,
-                                      const double* Bcuda, double* vals, uint3 dim, uint3 strides, int num_splines,
-                                      int spline_block_size)
+                                      const double* Bcuda, double* vals, uint3 dim, uint3 strides,
+                                      int num_splines, int spline_block_size)
 {
   int block = blockIdx.x;
   int thr   = threadIdx.x; //if your block size is not 64 or larger you are in trouble.
@@ -137,22 +138,24 @@ eval_multi_multi_UBspline_3d_d_kernel(double* pos, double3 drInv, const double* 
 __global__ static void
 eval_multi_multi_UBspline_3d_d_vgh_kernel(double* pos, double3 drInv, const double* coefs,
                                           const double* Bcuda, double* vals, double* grads,
-                                          double* hess, uint3 dim, uint3 strides, int spline_block_size);
+                                          double* hess, uint3 dim, uint3 strides,
+                                          int spline_block_size);
 
 
 /** blah
  *  you must call this with a num_blocks your splines will fit in
  */
-void eval_multi_multi_UBspline_3d_d_vgh_cuda(const multi_UBspline_3d_d<Devices::CUDA>* __restrict__  spline,
-                                             double* pos_d, double* vals_d, double* grads_d,
-                                             double* hess_d, int num_blocks, int spline_block_size, int num, const cudaStream_t& stream)
+void eval_multi_multi_UBspline_3d_d_vgh_cuda(
+    const multi_UBspline_3d_d<Devices::CUDA>* __restrict__ spline, double* pos_d, double* vals_d,
+    double* grads_d, double* hess_d, int num_blocks, int spline_block_size, int num,
+    const cudaStream_t& stream)
 {
   dim3 dimBlock(spline_block_size);
   dim3 dimGrid(num_blocks, num);
   //Now the callers responsibility
   //if (spline->num_splines % spline_block_size) dimGrid.x++;
 
-    //find out how many blocks can fit 
+  //find out how many blocks can fit
   // int fit_blocks;
   // cudaOccupancyMaxActiveBlocksPerMultiprocessor(
   //     &fit_blocks,
@@ -164,10 +167,12 @@ void eval_multi_multi_UBspline_3d_d_vgh_cuda(const multi_UBspline_3d_d<Devices::
 
 
   eval_multi_multi_UBspline_3d_d_vgh_kernel<<<dimGrid, dimBlock, 0, stream>>>(pos_d, spline->gridInv,
-                                                                   spline->coefs, spline->Bcuda,
-                                                                   vals_d, grads_d, hess_d,
-                                                                   spline->dim, spline->stride, spline_block_size
-								   );
+                                                                              spline->coefs,
+                                                                              spline->Bcuda, vals_d,
+                                                                              grads_d, hess_d,
+                                                                              spline->dim,
+                                                                              spline->stride,
+                                                                              spline_block_size);
 
 
   cudaError_t err = cudaGetLastError();
@@ -184,7 +189,8 @@ void eval_multi_multi_UBspline_3d_d_vgh_cuda(const multi_UBspline_3d_d<Devices::
 __global__ static void
 eval_multi_multi_UBspline_3d_d_vgh_kernel(double* pos, double3 drInv, const double* coefs,
                                           const double* Bcuda, double* vals, double* grads,
-                                          double* hess, uint3 dim, uint3 strides, int spline_block_size)
+                                          double* hess, uint3 dim, uint3 strides,
+                                          int spline_block_size)
 {
   int block = blockIdx.x;
   int thr   = threadIdx.x;
@@ -194,19 +200,19 @@ eval_multi_multi_UBspline_3d_d_vgh_kernel(double* pos, double3 drInv, const doub
   // Threads will diverge less and a sync can be skipped by having every thread calc this.
   double *myval, *mygrad, *myhess;
   double3 r;
-      
-      //if (thr == 0)
-      //{
-    size_t ir_r_off = ir * 3;
-    r.x    = pos[ir_r_off + 0];
-    r.y    = pos[ir_r_off + 1];
-    r.z    = pos[ir_r_off + 2];
-    size_t ir_buff_off = ir * gridDim.x * spline_block_size;
-    myval  = vals + ir_buff_off;
-    mygrad = grads + ir_buff_off * 3;
-    myhess = hess +  ir_buff_off * 6;
-//  }
-    //whole_block.sync();
+
+  //if (thr == 0)
+  //{
+  size_t ir_r_off    = ir * 3;
+  r.x                = pos[ir_r_off + 0];
+  r.y                = pos[ir_r_off + 1];
+  r.z                = pos[ir_r_off + 2];
+  size_t ir_buff_off = ir * gridDim.x * spline_block_size;
+  myval              = vals + ir_buff_off;
+  mygrad             = grads + ir_buff_off * 3;
+  myhess             = hess + ir_buff_off * 6;
+  //  }
+  //whole_block.sync();
   int3 index;
   double3 t;
   double s, sf;
@@ -249,9 +255,9 @@ eval_multi_multi_UBspline_3d_d_vgh_kernel(double* pos, double3 drInv, const doub
   }
   __syncthreads();
   __shared__ double abc[640];
-  int i                           = (thr >> 4) & 3;
-  int j                           = (thr >> 2) & 3;
-  int k                           = (thr & 3);
+  int i = (thr >> 4) & 3;
+  int j = (thr >> 2) & 3;
+  int k = (thr & 3);
   //This should be pretty good as its just two warps.
   //Meaning it should ping pong between them in the scheduler
   if (thr < 64)
@@ -270,61 +276,61 @@ eval_multi_multi_UBspline_3d_d_vgh_kernel(double* pos, double3 drInv, const doub
   __syncthreads();
   double v = 0.0, g0 = 0.0, g1 = 0.0, g2 = 0.0, h00 = 0.0, h01 = 0.0, h02 = 0.0, h11 = 0.0,
          h12 = 0.0, h22 = 0.0;
-  int n            = 0;
+  int n = 0;
   //Probably we shouldn't just point this at rubbish if coefs smaller than this.
   const double* b0 = coefs + index.x * strides.x + index.y * strides.y + index.z * strides.z + off;
   // If the block isn't full don't calculate values from ghost splines we just don't care about this.
   // It can save a smallish amount of memory but otherwise causes divergence.
   //if (off < N)
   //{
-    for (int i = 0; i < 4; i++)
+  for (int i = 0; i < 4; i++)
+  {
+    for (int j = 0; j < 4; j++)
     {
-      for (int j = 0; j < 4; j++)
+      const double* base = b0 + i * strides.x + j * strides.y;
+      for (int k = 0; k < 4; k++)
       {
-        const double* base = b0 + i * strides.x + j * strides.y;
-        for (int k = 0; k < 4; k++)
-        {
-          double c = base[k * strides.z];
-          v   += abc[n + 0] * c;  // val
-          g0  += abc[n + 64] * c; // d/dx
-          g1  += abc[n + 128] * c; // d/dy
-          g2  += abc[n + 192] * c; // d/dz
-          h00 += abc[n + 256] * c; // d2/dx2
-          h01 += abc[n + 320] * c; // d2/dxdy
-          h02 += abc[n + 384] * c; // d2/dxdz
-          h11 += abc[n + 448] * c; // d2/dy2
-          h12 += abc[n + 512] * c; // d2/dydz
-          h22 += abc[n + 576] * c; // d2/dz2
-          n   += 1;
-        }
+        double c = base[k * strides.z];
+        v += abc[n + 0] * c;     // val
+        g0 += abc[n + 64] * c;   // d/dx
+        g1 += abc[n + 128] * c;  // d/dy
+        g2 += abc[n + 192] * c;  // d/dz
+        h00 += abc[n + 256] * c; // d2/dx2
+        h01 += abc[n + 320] * c; // d2/dxdy
+        h02 += abc[n + 384] * c; // d2/dxdz
+        h11 += abc[n + 448] * c; // d2/dy2
+        h12 += abc[n + 512] * c; // d2/dydz
+        h22 += abc[n + 576] * c; // d2/dz2
+        n += 1;
       }
     }
-    g0  *= drInv.x;
-    g1  *= drInv.y;
-    g2  *= drInv.z;
-    h00 *= drInv.x * drInv.x;
-    h01 *= drInv.x * drInv.y;
-    h02 *= drInv.x * drInv.z;
-    h11 *= drInv.y * drInv.y;
-    h12 *= drInv.y * drInv.z;
-    h22 *= drInv.z * drInv.z;
-    myval[off] = v;
-  
+  }
+  g0 *= drInv.x;
+  g1 *= drInv.y;
+  g2 *= drInv.z;
+  h00 *= drInv.x * drInv.x;
+  h01 *= drInv.x * drInv.y;
+  h02 *= drInv.x * drInv.z;
+  h11 *= drInv.y * drInv.y;
+  h12 *= drInv.y * drInv.z;
+  h22 *= drInv.z * drInv.z;
+  myval[off] = v;
+
   // We're only doing SoA layout within a block for now
-    mygrad[off] = g0;
-    mygrad[off + spline_block_size] = g1;
-    mygrad[off + spline_block_size * 2] = g2;
+  mygrad[off]                         = g0;
+  mygrad[off + spline_block_size]     = g1;
+  mygrad[off + spline_block_size * 2] = g2;
   // Write Hessians
-    myhess[off] = h00;
-    myhess[off + spline_block_size * 1] = h01;
-    myhess[off + spline_block_size * 2] = h02;
-    myhess[off + spline_block_size * 3] = h11;
-    myhess[off + spline_block_size * 4] = h12;
-    myhess[off + spline_block_size * 5] = h22;
+  myhess[off]                         = h00;
+  myhess[off + spline_block_size * 1] = h01;
+  myhess[off + spline_block_size * 2] = h02;
+  myhess[off + spline_block_size * 3] = h11;
+  myhess[off + spline_block_size * 4] = h12;
+  myhess[off + spline_block_size * 5] = h22;
 
 
   // Sync threads insn't necessary because of the cudaStreamSynchronize above
-    __syncthreads();
+  __syncthreads();
 }
 
 __global__ static void
@@ -332,9 +338,8 @@ eval_multi_multi_UBspline_3d_d_sign_kernel(double* pos, double* sign, double3 dr
                                            const double* coefs, const double* Bcuda, double* vals,
                                            uint3 dim, uint3 strides, int N, int spline_offset);
 
-void
-eval_multi_multi_UBspline_3d_d_sign_cuda(const multi_UBspline_3d_d<Devices::CUDA>* spline,
-                                         double* pos_d, double* sign_d, double* vals_d, int num)
+void eval_multi_multi_UBspline_3d_d_sign_cuda(const multi_UBspline_3d_d<Devices::CUDA>* spline,
+                                              double* pos_d, double* sign_d, double* vals_d, int num)
 {
   dim3 dimBlock(SPLINE_BLOCK_SIZE);
   dim3 dimGrid(spline->num_splines / SPLINE_BLOCK_SIZE, num);
@@ -549,23 +554,23 @@ eval_multi_multi_UBspline_3d_d_vgl_kernel(double* pos, double3 drInv, double* co
         for (int k = 0; k < 4; k++)
         {
           double c = base[k * strides.z];
-          v   += abc[n + 0] * c;
-          g0  += abc[n + 64] * c;
-          g1  += abc[n + 128] * c;
-          g2  += abc[n + 192] * c;
+          v += abc[n + 0] * c;
+          g0 += abc[n + 64] * c;
+          g1 += abc[n + 128] * c;
+          g2 += abc[n + 192] * c;
           h00 += abc[n + 256] * c;
           h01 += abc[n + 320] * c;
           h02 += abc[n + 384] * c;
           h11 += abc[n + 448] * c;
           h12 += abc[n + 512] * c;
           h22 += abc[n + 576] * c;
-          n   += 1;
+          n += 1;
         }
       }
     }
-    g0  *= drInv.x;
-    g1  *= drInv.y;
-    g2  *= drInv.z;
+    g0 *= drInv.x;
+    g1 *= drInv.y;
+    g2 *= drInv.z;
     h00 *= drInv.x * drInv.x;
     h01 *= drInv.x * drInv.y;
     h02 *= drInv.x * drInv.z;
@@ -721,23 +726,23 @@ eval_multi_multi_UBspline_3d_d_vgl_sign_kernel(double* pos, double* sign, double
         for (int k = 0; k < 4; k++)
         {
           double c = base[k * strides.z];
-          v   += abc[n + 0] * c;
-          g0  += abc[n + 64] * c;
-          g1  += abc[n + 128] * c;
-          g2  += abc[n + 192] * c;
+          v += abc[n + 0] * c;
+          g0 += abc[n + 64] * c;
+          g1 += abc[n + 128] * c;
+          g2 += abc[n + 192] * c;
           h00 += abc[n + 256] * c;
           h01 += abc[n + 320] * c;
           h02 += abc[n + 384] * c;
           h11 += abc[n + 448] * c;
           h12 += abc[n + 512] * c;
           h22 += abc[n + 576] * c;
-          n   += 1;
+          n += 1;
         }
       }
     }
-    g0  *= drInv.x;
-    g1  *= drInv.y;
-    g2  *= drInv.z;
+    g0 *= drInv.x;
+    g1 *= drInv.y;
+    g2 *= drInv.z;
     h00 *= drInv.x * drInv.x;
     h01 *= drInv.x * drInv.y;
     h02 *= drInv.x * drInv.z;

@@ -19,7 +19,6 @@
 
 namespace qmcplusplus
 {
-
 template<>
 inline void CheckSPOSteps<Devices::KOKKOS>::finalize()
 {
@@ -33,23 +32,23 @@ inline void CheckSPOSteps<Devices::KOKKOS>::initialize(int argc, char** argv)
   Kokkos::initialize(argc, argv);
 }
 
-    /** Kokkos functor for custom reduction
+/** Kokkos functor for custom reduction
  */
 template<typename T>
 class SPOReduction
 {
 public:
-  using QMCT = QMCTraits;
+  using QMCT       = QMCTraits;
   using SPODevImp  = EinsplineSPO<Devices::KOKKOS, OHMMS_PRECISION>;
   using SPORef     = miniqmcreference::EinsplineSPO_ref<OHMMS_PRECISION>;
   using value_type = CheckSPOData<T>;
-  using size_type = int;
+  using size_type  = int;
   SPOReduction(const int team_size,
-                const ParticleSet ions,
-                const SPODevImp spo_main,
-                const SPORef spo_ref_main,
-                const int nsteps,
-	       const QMCT::RealType Rmax)
+               const ParticleSet ions,
+               const SPODevImp spo_main,
+               const SPORef spo_ref_main,
+               const int nsteps,
+               const QMCT::RealType Rmax)
       : team_size_(team_size),
         ions_(ions),
         spo_main_(spo_main),
@@ -58,12 +57,12 @@ public:
         Rmax_(Rmax)
   {
 #ifdef KOKKOS_ENABLE_OPENMP
-    ncrews_ = 	Kokkos::OpenMP::thread_pool_size();
+    ncrews_ = Kokkos::OpenMP::thread_pool_size();
 #else
     ncrews_ = 1;
 #endif
-    
-    crewsize_    = 1;
+
+    crewsize_ = 1;
   }
 
   KOKKOS_INLINE_FUNCTION void operator()(const int thread_id, value_type& data) const
@@ -100,8 +99,7 @@ private:
   int nsteps_;
   QMCT::RealType Rmax_;
 };
-    	    
+
 } // namespace qmcplusplus
 
 #endif
-

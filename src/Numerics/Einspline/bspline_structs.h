@@ -41,8 +41,7 @@ struct UBspline_3d_s_common
 
 template<Devices D>
 struct UBspline_3d_s : public UBspline_3d_s_common
-{
-};
+{};
 
 ///////////////////////////
 // Double precision real //
@@ -60,8 +59,7 @@ struct UBspline_3d_d_common
 
 template<Devices D>
 struct UBspline_3d_d : public UBspline_3d_d_common
-{
-};
+{};
 
 
 //////////////////////////////
@@ -79,8 +77,7 @@ struct UBspline_3d_c_common
 
 template<Devices D>
 struct UBspline_3d_c : public UBspline_3d_c_common
-{
-};
+{};
 
 //////////////////////////////
 // Double precision complex //
@@ -97,8 +94,7 @@ struct UBspline_3d_z_common
 
 template<Devices D>
 struct UBspline_3d_z : public UBspline_3d_z_common
-{
-};
+{};
 
 
 #endif

@@ -41,7 +41,6 @@ using namespace std;
 
 namespace qmcplusplus
 {
-
 void CheckSPOTest::printHelp()
 {
   // clang-format off

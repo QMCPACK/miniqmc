@@ -19,31 +19,36 @@ namespace qmcplusplus
 {
 namespace einspline
 {
-
 template<>
 void Allocator<Devices::CPU>::allocateMultiBspline(multi_UBspline_3d_s<Devices::CPU>*& spline,
-    Ugrid x_grid, Ugrid y_grid, Ugrid z_grid, BCtype_s xBC, BCtype_s yBC, BCtype_s zBC, int num_splines)
+                                                   Ugrid x_grid, Ugrid y_grid, Ugrid z_grid,
+                                                   BCtype_s xBC, BCtype_s yBC, BCtype_s zBC,
+                                                   int num_splines)
 {
   einspline_create_multi_UBspline_3d_s(spline, x_grid, y_grid, z_grid, xBC, yBC, zBC, num_splines);
 }
 
 template<>
 void Allocator<Devices::CPU>::allocateMultiBspline(multi_UBspline_3d_d<Devices::CPU>*& spline,
-    Ugrid x_grid, Ugrid y_grid, Ugrid z_grid, BCtype_d xBC, BCtype_d yBC, BCtype_d zBC, int num_splines)
+                                                   Ugrid x_grid, Ugrid y_grid, Ugrid z_grid,
+                                                   BCtype_d xBC, BCtype_d yBC, BCtype_d zBC,
+                                                   int num_splines)
 {
   einspline_create_multi_UBspline_3d_d(spline, x_grid, y_grid, z_grid, xBC, yBC, zBC, num_splines);
 }
 
 template<>
-void  Allocator<Devices::CPU>::allocateUBspline(UBspline_3d_s<Devices::CPU>*& spline,
-    Ugrid x_grid, Ugrid y_grid, Ugrid z_grid, BCtype_s xBC, BCtype_s yBC, BCtype_s zBC)
+void Allocator<Devices::CPU>::allocateUBspline(UBspline_3d_s<Devices::CPU>*& spline, Ugrid x_grid,
+                                               Ugrid y_grid, Ugrid z_grid, BCtype_s xBC,
+                                               BCtype_s yBC, BCtype_s zBC)
 {
   einspline_create_UBspline_3d_s(spline, x_grid, y_grid, z_grid, xBC, yBC, zBC);
 }
 
 template<>
-void Allocator<Devices::CPU>::allocateUBspline(UBspline_3d_d<Devices::CPU>*& spline,
-    Ugrid x_grid, Ugrid y_grid, Ugrid z_grid, BCtype_d xBC, BCtype_d yBC, BCtype_d zBC)
+void Allocator<Devices::CPU>::allocateUBspline(UBspline_3d_d<Devices::CPU>*& spline, Ugrid x_grid,
+                                               Ugrid y_grid, Ugrid z_grid, BCtype_d xBC,
+                                               BCtype_d yBC, BCtype_d zBC)
 {
   einspline_create_UBspline_3d_d(spline, x_grid, y_grid, z_grid, xBC, yBC, zBC);
 }
@@ -52,6 +57,6 @@ extern template class Allocator<Devices::CPU>;
 extern template void Allocator<Devices::CPU>::destroy(multi_UBspline_3d_d<Devices::CPU>*&);
 extern template void Allocator<Devices::CPU>::destroy(multi_UBspline_3d_s<Devices::CPU>*&);
 
-}
-}
+} // namespace einspline
+} // namespace qmcplusplus
 #endif

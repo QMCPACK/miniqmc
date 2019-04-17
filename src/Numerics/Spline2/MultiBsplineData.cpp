@@ -59,5 +59,5 @@ QMC_ALIGNAS const double MultiBsplineData<double>::d2A44[16] = {
 template class MultiBsplineData<double>;
 template class MultiBsplineData<float>;
 
-  
+
 } // namespace qmcplusplus

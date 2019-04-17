@@ -18,11 +18,11 @@ void MiniqmcDriverFunctions<DT>::updateFromDevice(DiracDeterminant<DeterminantDe
 
 template<Devices DT>
 void MiniqmcDriverFunctions<DT>::thread_main(const int ip,
-                                                       const int team_size,
-                                                       MiniqmcOptions& mq_opt,
-                                                       const PrimeNumberSet<uint32_t>& myPrimes,
-                                                       ParticleSet ions,
-                                                       const SPOSet* spo_main)
+                                             const int team_size,
+                                             MiniqmcOptions& mq_opt,
+                                             const PrimeNumberSet<uint32_t>& myPrimes,
+                                             ParticleSet ions,
+                                             const SPOSet* spo_main)
 {
   const int member_id = ip % team_size;
   // create and initialize movers
@@ -35,15 +35,15 @@ void MiniqmcDriverFunctions<DT>::thread_main(const int ip,
   thiswalker->spo = SPOSetBuilder<DT>::buildView(mq_opt.useRef, spo_main, team_size, member_id);
 
   DeviceBuffers<DT> device_buffers;
-  
+
   // create wavefunction per mover
   WaveFunctionBuilder<DT>::build(mq_opt.useRef,
-                                           thiswalker->wavefunction,
-                                           ions,
-                                           thiswalker->els,
-                                           thiswalker->rng,
-				 device_buffers,
-                                           mq_opt.enableJ3);
+                                 thiswalker->wavefunction,
+                                 ions,
+                                 thiswalker->els,
+                                 thiswalker->rng,
+                                 device_buffers,
+                                 mq_opt.enableJ3);
 
   // initial computing
   thiswalker->els.update();
@@ -181,22 +181,27 @@ void MiniqmcDriverFunctions<DT>::runThreads(MiniqmcOptions& mq_opt,
 
 template<Devices DT>
 void MiniqmcDriverFunctions<DT>::movers_runThreads(MiniqmcOptions& mq_opt,
-                                            const PrimeNumberSet<uint32_t>& myPrimes,
-                                            ParticleSet& ions,
-                                            const SPOSet* spo_main)
+                                                   const PrimeNumberSet<uint32_t>& myPrimes,
+                                                   ParticleSet& ions,
+                                                   const SPOSet* spo_main)
 {
-    unsigned int threads = std::min(omp_get_max_threads(), mq_opt.nmovers);
-    // This prevents crowd_thread_main instances from being destroyed and causing synchronization due to
-    // freeing memory on the GPU.
-    //boost::barrier block_complete(threads);
+  unsigned int threads = std::min(omp_get_max_threads(), mq_opt.nmovers);
+  // This prevents crowd_thread_main instances from being destroyed and causing synchronization due to
+  // freeing memory on the GPU.
+  //boost::barrier block_complete(threads);
 
-    TaskBlock<Threading::OPENMP> synchronized_crowds(mq_opt.nmovers);
-    TaskBlockBarrier<Threading::OPENMP> barrier(mq_opt.nmovers);
-    synchronized_crowds(MiniqmcDriverFunctions<DT>::crowd_thread_main<Threading::OPENMP>, barrier, 1, mq_opt, myPrimes, ions, spo_main); //, block_complete);
-
+  TaskBlock<Threading::OPENMP> synchronized_crowds(mq_opt.nmovers);
+  TaskBlockBarrier<Threading::OPENMP> barrier(mq_opt.nmovers);
+  synchronized_crowds(MiniqmcDriverFunctions<DT>::crowd_thread_main<Threading::OPENMP>,
+                      barrier,
+                      1,
+                      mq_opt,
+                      myPrimes,
+                      ions,
+                      spo_main); //, block_complete);
 }
 
-  
+
 // template<Devices DT>
 // void MiniqmcDriverFunctions<DT>::movers_runStdThreads(MiniqmcOptions& mq_opt,
 //                                             const PrimeNumberSet<uint32_t>& myPrimes,
@@ -204,7 +209,7 @@ void MiniqmcDriverFunctions<DT>::movers_runThreads(MiniqmcOptions& mq_opt,
 //                                             const SPOSet* spo_main)
 // {
 //     std::vector<std::thread> threads(mq_opt.nmovers);
-    
+
 //     for (int iw = 0; iw < mq_opt.nmovers; ++iw)
 //     {
 // 	threads[iw] = std::thread(MiniqmcDriverFunctions<DT>::crowd_thread_main<Threading::STD>, iw, 1, std::ref(mq_opt), std::ref(myPrimes), ions, std::ref(spo_main));

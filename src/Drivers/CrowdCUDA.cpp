@@ -25,18 +25,17 @@
 
 namespace qmcplusplus
 {
-
 template<>
 void Crowd<Devices::CUDA>::init()
 {
   // This initializes the threads gpu
   Gpu& gpu = Gpu::get();
 }
-    
+
 template<>
 void Crowd<Devices::CUDA>::calcNLPP(int nions, QMCT::RealType Rmax)
 {
-    //std::cout << "Crowd CUDA calcNLPP Called \n";
+  //std::cout << "Crowd CUDA calcNLPP Called \n";
   using T   = double;
   using QPT = QMCFutureTypes<T>;
   std::vector<QPT::FuturePos> pos;
@@ -71,14 +70,14 @@ void Crowd<Devices::CUDA>::calcNLPP(int nions, QMCT::RealType Rmax)
                   }
                 });
 
-  
+
   //std::cout << "Evaluating V for nlpp times: " << pos.size() << '\n';
   // should have a try or better yet consult a model
   int pos_block_size = 256;
   int num_pos_blocks = pos.size() / pos_block_size;
   if (pos.size() % pos_block_size)
     ++num_pos_blocks;
-  buffers_.dev_v_nlpp.resize(esp.nBlocks * pos_block_size * num_pos_blocks, esp.nSplinesPerBlock );
+  buffers_.dev_v_nlpp.resize(esp.nBlocks * pos_block_size * num_pos_blocks, esp.nSplinesPerBlock);
   auto pos_iter = pos.begin();
   MultiBsplineFuncs<Devices::CUDA, T> compute_engine;
   for (int ib = 0; ib < num_pos_blocks; ib++)
@@ -92,13 +91,17 @@ void Crowd<Devices::CUDA>::calcNLPP(int nions, QMCT::RealType Rmax)
         break;
     }
     size_t dev_offset = esp.nBlocks * esp.nSplinesPerBlock * pos_block_size * ib;
-    buffers_.compute_engine
-        .evaluate_v(spline.get()[0], these_pos, buffers_.dev_v_nlpp.get_devptr() + dev_offset, esp.nBlocks, esp.nSplines, esp.nSplinesPerBlock);
+    buffers_.compute_engine.evaluate_v(spline.get()[0],
+                                       these_pos,
+                                       buffers_.dev_v_nlpp.get_devptr() + dev_offset,
+                                       esp.nBlocks,
+                                       esp.nSplines,
+                                       esp.nSplinesPerBlock);
   }
   cudaStreamSynchronize(cudaStreamPerThread);
   //This likely needs to temporary update to els.
   //In the spirit of miniqmc I'm just going to run it the correct numnber of times.
-  
+
   auto& els = *(*(elss.begin()));
   for (int i = 0; i < pos.size(); ++i)
     wavefunctions[0]->ratio(els, 1);
@@ -113,18 +116,18 @@ template<>
   EinsplineSPO<Devices::CUDA, T>& spo = static_cast<EinsplineSPO<Devices::CUDA, T>&>(*(spos[0]));
   EinsplineSPOParams<T> esp           = spo.getParams();
 
-  if(buffers_.dev_psi.getWidth() == 0)
-    {
-      double size_buffer = esp.nBlocks * pack_size_ * esp.nSplinesPerBlock * sizeof(T) * (1+3+6);
-      double size_buffer_MB = size_buffer / 1024 / 1024;
-      //std::cout << "Allocating GPU buffers for  nBlocks = " << esp.nBlocks
-      //	<< " pack_size = " << pack_size_ << " esp.nSplinesPerBlock = "
-      //	<< esp.nSplinesPerBlock << " vgh eval of: " << size_buffer_MB << "MB\n";
-      buffers_.dev_psi.resize(esp.nBlocks * pack_size_, esp.nSplinesPerBlock);
-      buffers_.dev_hess.resize(esp.nBlocks * pack_size_, esp.nSplinesPerBlock);
-      buffers_.dev_grad.resize(esp.nBlocks * pack_size_, esp.nSplinesPerBlock);
-    }
-  
+  if (buffers_.dev_psi.getWidth() == 0)
+  {
+    double size_buffer    = esp.nBlocks * pack_size_ * esp.nSplinesPerBlock * sizeof(T) * (1 + 3 + 6);
+    double size_buffer_MB = size_buffer / 1024 / 1024;
+    //std::cout << "Allocating GPU buffers for  nBlocks = " << esp.nBlocks
+    //	<< " pack_size = " << pack_size_ << " esp.nSplinesPerBlock = "
+    //	<< esp.nSplinesPerBlock << " vgh eval of: " << size_buffer_MB << "MB\n";
+    buffers_.dev_psi.resize(esp.nBlocks * pack_size_, esp.nSplinesPerBlock);
+    buffers_.dev_hess.resize(esp.nBlocks * pack_size_, esp.nSplinesPerBlock);
+    buffers_.dev_grad.resize(esp.nBlocks * pack_size_, esp.nSplinesPerBlock);
+  }
+
   //for now this does use a single EinsplineSPO to call through
   std::vector<HessianParticipants<Devices::CUDA, T>> hessian_participants; //(pack_size_);
   std::vector<std::array<T, 3>> pos(pack_size_);
@@ -140,45 +143,50 @@ template<>
 
   // its possible that launch multiple kernels per pack is better.
   int n_pos = pos.size();
-  
+
   const auto& spline =
       static_cast<EinsplineSPO<Devices::CUDA, T>*>(spos[0])->einspline_spo_device.getDeviceEinsplines();
   cudaStream_t stream = cudaStreamPerThread;
 
-    buffers_.compute_engine.evaluate_vgh((*spline)[0],
-				  pos,
-				buffers_.dev_psi.get_devptr(),
-				buffers_.dev_grad.get_devptr(),
-				buffers_.dev_hess.get_devptr(),
-                              esp.nBlocks,
-                              esp.nSplines,
-				esp.nSplinesPerBlock,
-	stream);
+  buffers_.compute_engine.evaluate_vgh((*spline)[0],
+                                       pos,
+                                       buffers_.dev_psi.get_devptr(),
+                                       buffers_.dev_grad.get_devptr(),
+                                       buffers_.dev_hess.get_devptr(),
+                                       esp.nBlocks,
+                                       esp.nSplines,
+                                       esp.nSplinesPerBlock,
+                                       stream);
 
-    buffers_.psi(stream);
-    buffers_.psi.resize(esp.nBlocks * esp.nSplinesPerBlock * sizeof(T) * n_pos);
-    buffers_.psi.copyFromDevice(buffers_.dev_psi.get_devptr());
-    buffers_.grad(stream);
-    buffers_.grad.resize(esp.nBlocks * esp.nSplinesPerBlock * sizeof(T) * n_pos * 3);
-    buffers_.grad.copyFromDevice(buffers_.dev_grad.get_devptr());
-    buffers_.hess(stream);
-    buffers_.hess.resize(esp.nBlocks * esp.nSplinesPerBlock * sizeof(T) * n_pos * 6);
-    buffers_.hess.copyFromDevice(buffers_.dev_hess.get_devptr());
-    
+  buffers_.psi(stream);
+  buffers_.psi.resize(esp.nBlocks * esp.nSplinesPerBlock * sizeof(T) * n_pos);
+  buffers_.psi.copyFromDevice(buffers_.dev_psi.get_devptr());
+  buffers_.grad(stream);
+  buffers_.grad.resize(esp.nBlocks * esp.nSplinesPerBlock * sizeof(T) * n_pos * 3);
+  buffers_.grad.copyFromDevice(buffers_.dev_grad.get_devptr());
+  buffers_.hess(stream);
+  buffers_.hess.resize(esp.nBlocks * esp.nSplinesPerBlock * sizeof(T) * n_pos * 6);
+  buffers_.hess.copyFromDevice(buffers_.dev_hess.get_devptr());
+
   //Now we have to copy the data back to the participants
 
   for (int i = 0; i < pack_size_; ++i)
   {
-      for(int j = 0; j < esp.nBlocks; ++j)
-      {
-  	  buffers_.psi.toNormalTcpy(hessian_participants[i].psi[j].data(), i * esp.nBlocks * esp.nSplinesPerBlock + j * esp.nSplinesPerBlock, esp.nSplinesPerBlock);
+    for (int j = 0; j < esp.nBlocks; ++j)
+    {
+      buffers_.psi.toNormalTcpy(hessian_participants[i].psi[j].data(),
+                                i * esp.nBlocks * esp.nSplinesPerBlock + j * esp.nSplinesPerBlock,
+                                esp.nSplinesPerBlock);
 
-  	  buffers_.grad.toNormalTcpy(hessian_participants[i].grad[j].data(), i * esp.nBlocks * esp.nSplinesPerBlock + j * esp.nSplinesPerBlock * 3, esp.nSplinesPerBlock * 3);
+      buffers_.grad.toNormalTcpy(hessian_participants[i].grad[j].data(),
+                                 i * esp.nBlocks * esp.nSplinesPerBlock + j * esp.nSplinesPerBlock * 3,
+                                 esp.nSplinesPerBlock * 3);
 
-  	  buffers_.hess.toNormalTcpy(hessian_participants[i].hess[j].data(), i * esp.nBlocks * esp.nSplinesPerBlock + j * esp.nSplinesPerBlock * 6, esp.nSplinesPerBlock * 6);
-      }
+      buffers_.hess.toNormalTcpy(hessian_participants[i].hess[j].data(),
+                                 i * esp.nBlocks * esp.nSplinesPerBlock + j * esp.nSplinesPerBlock * 6,
+                                 esp.nSplinesPerBlock * 6);
+    }
   }
-
 }
 
 /** This should actually share most code with hessian
@@ -264,17 +272,14 @@ template<>
 template<>
 void Crowd<Devices::CUDA>::finishUpdate(int iels)
 {
-    std::for_each(wfs_begin(), wfs_end(),
-		  [iels](WaveFunction& wf){
-		      wf.finishUpdates(iels);
-		  }   );	 
+  std::for_each(wfs_begin(), wfs_end(), [iels](WaveFunction& wf) { wf.finishUpdates(iels); });
 }
 
-  } // namespace qmcplusplus
+} // namespace qmcplusplus
 
 #include "Drivers/CrowdCUDA.hpp"
 
-  namespace qmcplusplus
-  {
-  template class Crowd<Devices::CUDA>;
-  }
+namespace qmcplusplus
+{
+template class Crowd<Devices::CUDA>;
+}

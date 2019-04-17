@@ -148,8 +148,7 @@ struct PrimeNumberSet : public PrimeConstants<UIntType>
     if (n2add)
     {
       std::ostringstream o;
-      o << "  PrimeNumberSet::get Failed to generate " << n2add << " prime numbers among " << n
-        << " requested.";
+      o << "  PrimeNumberSet::get Failed to generate " << n2add << " prime numbers among " << n << " requested.";
       APP_ABORT(o.str());
       return false; // to make compiler happy
     }

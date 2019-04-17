@@ -16,7 +16,6 @@
 
 namespace qmcplusplus
 {
-
 /** Enum of Devices supported by this build
  *  used as a template parameter for device specializations
  *  and for template metaprogramming.

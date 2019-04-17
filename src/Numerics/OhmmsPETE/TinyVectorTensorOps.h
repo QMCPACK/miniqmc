@@ -145,7 +145,8 @@ template<class T1, class T2>
 struct OTDot<TinyVector<T1, 3>, Tensor<T2, 3>>
 {
   typedef typename BinaryReturn<T1, T2, OpMultiply>::Type_t Type_t;
-  KOKKOS_INLINE_FUNCTION static TinyVector<Type_t, 3> apply(const TinyVector<T1, 3>& lhs, const Tensor<T2, 3>& rhs)
+  KOKKOS_INLINE_FUNCTION static TinyVector<Type_t, 3>
+  apply(const TinyVector<T1, 3>& lhs, const Tensor<T2, 3>& rhs)
   {
     return TinyVector<Type_t, 3>(lhs[0] * rhs[0] + lhs[1] * rhs[3] + lhs[2] * rhs[6],
                                  lhs[0] * rhs[1] + lhs[1] * rhs[4] + lhs[2] * rhs[7],

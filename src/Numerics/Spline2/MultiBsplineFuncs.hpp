@@ -42,7 +42,7 @@ struct MultiBsplineFuncs
   using spliner_type = typename bspline_traits<D, T, 3>::SplineType;
   MultiBsplineFuncs() {}
 };
-  
+
 template<typename T>
 struct MultiBsplineFuncs<Devices::CPU, T>
 {
@@ -75,39 +75,36 @@ struct MultiBsplineFuncs<Devices::CPU, T>
    * The base address for vals, grads and lapl are set by the callers, e.g.,
    * evaluate_vgh(r,psi,grad,hess,ip).
    */
-  void
-  evaluate_v(const spliner_type* restrict spline_m,
-             const std::vector<std::array<T,3>>& pos,
-             T* restrict vals,
-             size_t num_splines) const;
+  void evaluate_v(const spliner_type* restrict spline_m,
+                  const std::vector<std::array<T, 3>>& pos,
+                  T* restrict vals,
+                  size_t num_splines) const;
 
-  void
-  evaluate_vgl(const spliner_type* restrict spline_m,
-                    const std::vector<std::array<T,3>>& pos,
+  void evaluate_vgl(const spliner_type* restrict spline_m,
+                    const std::vector<std::array<T, 3>>& pos,
                     T* restrict vals,
                     T* restrict grads,
                     T* restrict lapl,
                     size_t num_splines) const;
 
 
-  void
-  evaluate_vgh(const spliner_type* restrict spline_m,
-               const std::vector<std::array<T,3>>& pos, //size is number of participants
-               T* restrict vals,
-               T* restrict grads,
-               T* restrict hess,
-               size_t num_splines) const;
+  void evaluate_vgh(const spliner_type* restrict spline_m,
+                    const std::vector<std::array<T, 3>>& pos, //size is number of participants
+                    T* restrict vals,
+                    T* restrict grads,
+                    T* restrict hess,
+                    size_t num_splines) const;
 };
 
 template<typename T>
 inline void MultiBsplineFuncs<Devices::CPU, T>::evaluate_v(
-								      const MultiBsplineFuncs<Devices::CPU, T>::spliner_type* restrict spline_m,
-    const std::vector<std::array<T,3>>& pos,
+    const MultiBsplineFuncs<Devices::CPU, T>::spliner_type* restrict spline_m,
+    const std::vector<std::array<T, 3>>& pos,
     T* restrict vals,
     size_t num_splines) const
 {
-  T x =  pos[0][0];
-  T y =  pos[0][1];
+  T x = pos[0][0];
+  T y = pos[0][1];
   T z = pos[0][2];
   x -= spline_m->x_grid.start;
   y -= spline_m->y_grid.start;
@@ -148,14 +145,14 @@ inline void MultiBsplineFuncs<Devices::CPU, T>::evaluate_v(
 template<typename T>
 inline void MultiBsplineFuncs<Devices::CPU, T>::evaluate_vgl(
     const MultiBsplineFuncs<Devices::CPU, T>::spliner_type* restrict spline_m,
-    const std::vector<std::array<T,3>>& pos,
+    const std::vector<std::array<T, 3>>& pos,
     T* restrict vals,
     T* restrict grads,
     T* restrict lapl,
     size_t num_splines) const
 {
-  T x =  pos[0][0];
-  T y =  pos[0][1];
+  T x = pos[0][0];
+  T y = pos[0][1];
   T z = pos[0][2];
   x -= spline_m->x_grid.start;
   y -= spline_m->y_grid.start;
@@ -273,15 +270,16 @@ inline void MultiBsplineFuncs<Devices::CPU, T>::evaluate_vgl(
 }
 
 template<typename T>
-inline void MultiBsplineFuncs<Devices::CPU, T>::evaluate_vgh(const MultiBsplineFuncs<Devices::CPU, T>::spliner_type* restrict spline_m,
-							const std::vector<std::array<T,3>>& pos,
-    T* restrict vals, T* restrict grads, T* restrict hess, size_t num_splines) const
+inline void MultiBsplineFuncs<Devices::CPU, T>::evaluate_vgh(
+    const MultiBsplineFuncs<Devices::CPU, T>::spliner_type* restrict spline_m,
+    const std::vector<std::array<T, 3>>& pos, T* restrict vals, T* restrict grads, T* restrict hess,
+    size_t num_splines) const
 {
   int ix, iy, iz;
   T tx, ty, tz;
   T a[4], b[4], c[4], da[4], db[4], dc[4], d2a[4], d2b[4], d2c[4];
-  T x =  pos[0][0];
-  T y =  pos[0][1];
+  T x = pos[0][0];
+  T y = pos[0][1];
   T z = pos[0][2];
   x -= spline_m->x_grid.start;
   y -= spline_m->y_grid.start;

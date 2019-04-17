@@ -22,13 +22,7 @@ void getri_cpu_impl(const int& n, float* a, const int& n0, int* piv, float* work
 {
   sgetri(n, a, n0, piv, work, lwork, st);
 }
-void getri_cpu_impl(const int& n,
-                    double* a,
-                    const int& n0,
-                    int* piv,
-                    double* work,
-                    const int& lwork,
-                    int& st)
+void getri_cpu_impl(const int& n, double* a, const int& n0, int* piv, double* work, const int& lwork, int& st)
 {
   dgetri(n, a, n0, piv, work, lwork, st);
 }
@@ -309,12 +303,7 @@ void getri_gpu_impl(const int n, double* a, int* piv, double* b, int* info, cuso
 {
   auto st = cusolverDnDgetrs(handle, CUBLAS_OP_N, n, n, a, n, piv, b, n, info);
 }
-void getri_gpu_impl(const int n,
-                    cuFloatComplex* a,
-                    int* piv,
-                    cuFloatComplex* b,
-                    int* info,
-                    cusolverDnHandle_t& handle)
+void getri_gpu_impl(const int n, cuFloatComplex* a, int* piv, cuFloatComplex* b, int* info, cusolverDnHandle_t& handle)
 {
   auto st = cusolverDnCgetrs(handle, CUBLAS_OP_N, n, n, a, n, piv, b, n, info);
 }
@@ -513,7 +502,7 @@ void gemm_gpu_impl(cublasHandle_t& handle,
 
 namespace qmcplusplus
 {
-  template class DeterminantDeviceImp<Devices::KOKKOS>;
+template class DeterminantDeviceImp<Devices::KOKKOS>;
 }
 
 #endif

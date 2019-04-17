@@ -32,20 +32,20 @@ void CheckDeterminantSteps<Devices::KOKKOS>::initialize(int argc, char** argv)
 
 template<>
 double CheckDeterminantSteps<Devices::KOKKOS>::runThreads(int np,
-                                                            PrimeNumberSet<uint32_t>& myPrimes,
-                                                            ParticleSet& ions,
-                                                            int& nsteps,
-                                                            int& nsubsteps)
+                                                          PrimeNumberSet<uint32_t>& myPrimes,
+                                                          ParticleSet& ions,
+                                                          int& nsteps,
+                                                          int& nsubsteps)
 {
   auto main_function = KOKKOS_LAMBDA(int thread_id, double& accumulated_error)
   {
     printf(" thread_id = %d\n", thread_id);
     CheckDeterminantSteps<Devices::KOKKOS>::thread_main(thread_id,
-                                                          myPrimes,
-                                                          ions,
-                                                          nsteps,
-                                                          nsubsteps,
-                                                          accumulated_error);
+                                                        myPrimes,
+                                                        ions,
+                                                        nsteps,
+                                                        nsubsteps,
+                                                        accumulated_error);
   };
   double accumulated_error = 0.0;
 

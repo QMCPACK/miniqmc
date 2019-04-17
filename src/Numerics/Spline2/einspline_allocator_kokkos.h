@@ -45,18 +45,14 @@ einspline_create_multi_UBspline_3d_d(multi_UBspline_3d_d<Devices::KOKKOS>*& spli
 
 //inlined only due to inclusion in multiple compilation units
 template<>
-inline void einspline_create_multi_UBspline_3d_s_coefs(multi_UBspline_3d_s<Devices::KOKKOS>*& restrict spline,
-						int Nx,
-						int Ny,
-						int Nz,
-						       int N);
+inline void
+einspline_create_multi_UBspline_3d_s_coefs(multi_UBspline_3d_s<Devices::KOKKOS>*& restrict spline,
+                                           int Nx, int Ny, int Nz, int N);
 
 template<>
-inline void einspline_create_multi_UBspline_3d_d_coefs(multi_UBspline_3d_d<Devices::KOKKOS>*& restrict spline,
-						int Nx,
-						int Ny,
-						int Nz,
-						       int N);
+inline void
+einspline_create_multi_UBspline_3d_d_coefs(multi_UBspline_3d_d<Devices::KOKKOS>*& restrict spline,
+                                           int Nx, int Ny, int Nz, int N);
 
 extern template void einspline_create_UBspline_3d_d(UBspline_3d_d<Devices::KOKKOS>*& spline,
                                                     Ugrid x_grid, Ugrid y_grid, Ugrid z_grid,
@@ -72,6 +68,6 @@ extern template void einspline_create_UBspline_3d_s(UBspline_3d_s<Devices::KOKKO
 
 /* extern template void einspline_create_UBspline_3d_s_coefs(UBspline_3d_s<Devices::KOKKOS>*& spline, */
 /* 							  int Nx, int Ny, int Nz, int N); */
-                                                    
+
 
 #endif

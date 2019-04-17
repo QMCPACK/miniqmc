@@ -13,16 +13,16 @@
 
 namespace qmcplusplus
 {
-
 template<typename T>
-static SPOSet* SPOSetBuilder<Devices::CPU, T>::buildView(bool useRef, const SPOSet* SPOSet_main, int team_size, int member_id)
-    {
+static SPOSet* SPOSetBuilder<Devices::CPU, T>::buildView(bool useRef,
+                                                         const SPOSet* SPOSet_main,
+                                                         int team_size,
+                                                         int member_id)
+{
   if (useRef)
   {
-    auto* temp_ptr =
-      dynamic_cast<const miniqmcreference::EinsplineSPO_ref<OHMMS_PRECISION>*>(SPOSet_main);
-    auto* spo_view =
-      new miniqmcreference::EinsplineSPO_ref<OHMMS_PRECISION>(*temp_ptr, team_size, member_id);
+    auto* temp_ptr = dynamic_cast<const miniqmcreference::EinsplineSPO_ref<OHMMS_PRECISION>*>(SPOSet_main);
+    auto* spo_view = new miniqmcreference::EinsplineSPO_ref<OHMMS_PRECISION>(*temp_ptr, team_size, member_id);
     return dynamic_cast<SPOSet*>(spo_view);
   }
   else
@@ -33,5 +33,5 @@ static SPOSet* SPOSetBuilder<Devices::CPU, T>::buildView(bool useRef, const SPOS
   }
 }
 
-  
+
 } // namespace qmcplusplus

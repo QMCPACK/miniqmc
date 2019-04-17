@@ -240,28 +240,19 @@ struct CrystalLattice
    @note The distance between two cartesian vectors are handled
    *by dot function defined in OhmmsPETE/TinyVector.h
    */
-  inline T Dot(const SingleParticlePos_t& ra, const SingleParticlePos_t& rb) const
-  {
-    return dot(ra, dot(M, rb));
-  }
+  inline T Dot(const SingleParticlePos_t& ra, const SingleParticlePos_t& rb) const { return dot(ra, dot(M, rb)); }
 
   /** conversion of a reciprocal-vector
    *@param kin an input reciprocal vector in the Reciprocal-vector unit
    *@return k(reciprocal vector) in cartesian unit
   */
-  inline SingleParticlePos_t k_cart(const SingleParticlePos_t& kin) const
-  {
-    return TWOPI * dot(G, kin);
-  }
+  inline SingleParticlePos_t k_cart(const SingleParticlePos_t& kin) const { return TWOPI * dot(G, kin); }
 
   /** conversion of a caresian reciprocal-vector to unit k-vector
    *@param kin an input reciprocal vector in cartesian form
    *@return k(reciprocal vector) as unit vector
   */
-  inline SingleParticlePos_t k_unit(const SingleParticlePos_t& kin) const
-  {
-    return dot(R, kin) / TWOPI;
-  }
+  inline SingleParticlePos_t k_unit(const SingleParticlePos_t& kin) const { return dot(R, kin) / TWOPI; }
 
   /** evaluate \f$k^2\f$
    *

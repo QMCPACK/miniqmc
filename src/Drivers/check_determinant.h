@@ -21,7 +21,6 @@
 
 namespace qmcplusplus
 {
-
 class CheckDeterminantTest
 {
 public:
@@ -38,7 +37,7 @@ public:
   int iseed     = 11;
   int nsubsteps = 1;
   int np        = 1;
-  
+
   bool verbose = false;
 
   ParticleSet ions;
@@ -47,7 +46,7 @@ public:
 
   void setup(int argc, char** argv);
 
-  int run_test();  
+  int run_test();
 };
 
 template<Devices DT>
@@ -56,24 +55,23 @@ class CheckDeterminantSteps
 public:
   using QMCT = QMCTraits;
   static void initialize(int arc, char** argv);
-  static double runThreads(int np, PrimeNumberSet<uint32_t>& myPrimes,
-			  ParticleSet& ions, int& nsteps,
-			 int& nsubsteps);
+  static double runThreads(int np, PrimeNumberSet<uint32_t>& myPrimes, ParticleSet& ions, int& nsteps, int& nsubsteps);
   static void test(int& error, ParticleSet& ions, int& nsteps, int& nsubsteps, int& np);
   static void finalize();
+
 private:
   static void thread_main(const int ip,
-			  const PrimeNumberSet<uint32_t>& myPrimes,
-			  const ParticleSet& ions,
-			  const int& nsteps,
-			  const int& nsubsteps,
-			  double& accumulated_error);
+                          const PrimeNumberSet<uint32_t>& myPrimes,
+                          const ParticleSet& ions,
+                          const int& nsteps,
+                          const int& nsubsteps,
+                          double& accumulated_error);
   static void updateFromDevice(DiracDeterminant<DeterminantDeviceImp<DT>>& determinant_device);
 };
-}
+} // namespace qmcplusplus
 #ifdef QMC_USE_KOKKOS
 #include "Drivers/test/CheckDeterminantStepsKOKKOS.hpp"
-  //extern template class CheckDeterminantSteps<Devices::KOKKOS>;
+//extern template class CheckDeterminantSteps<Devices::KOKKOS>;
 #endif
 
 #endif

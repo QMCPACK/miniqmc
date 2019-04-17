@@ -41,31 +41,22 @@ class DeterminantDevice
 public:
   using QMCT = QMCTraits;
 
-    DeterminantDevice(int nels, const RandomGenerator<QMCT::RealType>& RNG,
-		    int First = 0) {}
-  
-  void checkMatrix()
-  {
-    static_cast<DEVICEIMP*>(this)->checkMatrixImp();
-  }
+  DeterminantDevice(int nels, const RandomGenerator<QMCT::RealType>& RNG, int First = 0) {}
 
-  QMCT::RealType evaluateLog(ParticleSet& P,
-		       ParticleSet::ParticleGradient_t& G,
-		       ParticleSet::ParticleLaplacian_t& L)
+  void checkMatrix() { static_cast<DEVICEIMP*>(this)->checkMatrixImp(); }
+
+  QMCT::RealType evaluateLog(ParticleSet& P, ParticleSet::ParticleGradient_t& G, ParticleSet::ParticleLaplacian_t& L)
   {
     return static_cast<DEVICEIMP*>(this)->evaluateLogImp(P, G, L);
   }
 
-  QMCT::GradType evalGrad(ParticleSet& P, int iat)
-  {
-    return static_cast<DEVICEIMP*>(this)->evalGradImp(P, iat);
-  }
-  
+  QMCT::GradType evalGrad(ParticleSet& P, int iat) { return static_cast<DEVICEIMP*>(this)->evalGradImp(P, iat); }
+
   QMCT::ValueType ratioGrad(ParticleSet& P, int iat, QMCT::GradType& grad)
   {
     return static_cast<DEVICEIMP*>(this)->ratioImp(P, iat);
   }
-  
+
   void evaluateGL(ParticleSet& P,
                   ParticleSet::ParticleGradient_t& G,
                   ParticleSet::ParticleLaplacian_t& L,
@@ -73,35 +64,21 @@ public:
   {
     static_cast<DEVICEIMP*>(this)->evaluateGLImp(P, G, L, fromscratch);
   }
-  
-  inline void recompute()
-  {
-    static_cast<DEVICEIMP*>(this)->recomputeImp();
-  }
-  
-  inline QMCT::ValueType ratio(ParticleSet& P, int iel)
-  {
-    return static_cast<DEVICEIMP*>(this)->ratioImp(P, iel);
-  }
-  
-  inline void acceptMove(ParticleSet& P, int iel) {
-    static_cast<DEVICEIMP*>(this)->acceptMoveImp(P, iel);
-  }
+
+  inline void recompute() { static_cast<DEVICEIMP*>(this)->recomputeImp(); }
+
+  inline QMCT::ValueType ratio(ParticleSet& P, int iel) { return static_cast<DEVICEIMP*>(this)->ratioImp(P, iel); }
+
+  inline void acceptMove(ParticleSet& P, int iel) { static_cast<DEVICEIMP*>(this)->acceptMoveImp(P, iel); }
 
   /** accessor functions for checking?
    *
    *  would like to have const on here but with CRTP...
    */
-  inline double operator()(int i) 
-  {
-    return static_cast<DEVICEIMP*>(this)->operatorParImp(i);
-  }
+  inline double operator()(int i) { return static_cast<DEVICEIMP*>(this)->operatorParImp(i); }
 
-    inline void finishUpdate(int iel)
-    	{
-    	     static_cast<DEVICEIMP*>(this)->finishUpdate_i(iel);
-    	}
-  
+  inline void finishUpdate(int iel) { static_cast<DEVICEIMP*>(this)->finishUpdate_i(iel); }
+
   inline int size() const { return static_cast<DEVICEIMP*>(this)->sizeImp(); }
 };
 } // namespace qmcplusplus

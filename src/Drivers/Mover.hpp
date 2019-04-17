@@ -74,8 +74,7 @@ struct Mover
 };
 
 template<class T, typename TBOOL>
-const std::vector<T*>
-    filtered_list(const std::vector<T*>& input_list, const std::vector<TBOOL>& chosen);
+const std::vector<T*> filtered_list(const std::vector<T*>& input_list, const std::vector<TBOOL>& chosen);
 
 const std::vector<ParticleSet*> extract_els_list(const std::vector<Mover*>& mover_list);
 const std::vector<SPOSet*> extract_spo_list(const std::vector<Mover*>& mover_list);

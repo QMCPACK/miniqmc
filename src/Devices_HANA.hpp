@@ -24,25 +24,24 @@
  */
 namespace qmcplusplus
 {
-
 namespace hana = boost::hana;
 
 // Allows expression of Devices enum as strings at compile time.
 constexpr auto device_names = hana::make_tuple("CPU",
 #ifdef QMC_USE_KOKKOS
-					       "KOKKOS",
+                                               "KOKKOS",
 #endif
 #ifdef QMC_USE_OMPOL
-					       "OMPOL",
+                                               "OMPOL",
 #endif
 #ifdef QMC_USE_CUDA
                                                "CUDA",
 #endif
-                			       "LAST");
+                                               "LAST");
 
 //Compile time integral range of the Devices enum
-constexpr auto devices_range = hana::make_range(hana::int_c<static_cast<int>(Devices::CPU)>,
-					    hana::int_c<static_cast<int>(Devices::LAST)>);
+constexpr auto devices_range =
+    hana::make_range(hana::int_c<static_cast<int>(Devices::CPU)>, hana::int_c<static_cast<int>(Devices::LAST)>);
 } // namespace qmcplusplus
 
 #endif

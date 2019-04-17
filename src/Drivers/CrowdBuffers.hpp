@@ -17,16 +17,14 @@
 
 #ifndef QMCPLUSPLUS_CROWD_BUFFERS_HPP
 #define QMCPLUSPLUS_CROWD_BUFFERS_HPP
- 
+
 namespace qmcplusplus
 {
 /** By default there are no buffers shared at this level
  */
 template<Devices DT>
 class CrowdBuffers
-{
-
-};
+{};
 
 #ifdef QMC_USE_CUDA
 #include "CUDA/GPUArray.h"
@@ -50,6 +48,6 @@ public:
   MultiBsplineFuncs<Devices::CUDA, T> compute_engine;
 };
 #endif
-}
+} // namespace qmcplusplus
 
 #endif

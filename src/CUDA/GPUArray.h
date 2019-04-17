@@ -58,7 +58,7 @@ public:
   GPUArray() : data(nullptr), pitch(0), max_width_(0), width(0), height(0), owner(true) {}
   GPUArray(const GPUArray&& in)
   {
-    owner = in.owner;
+    owner  = in.owner;
     data   = in[0];
     pitch  = in.getPitch();
     width  = in.getWidth();
@@ -69,17 +69,17 @@ public:
    */
   GPUArray(T* dev_ptr, size_t size, int blocks, int splines_per_block)
   {
-      owner = false;
-      nBlocks_ = blocks;
-      nSplinesPerBlock_ = splines_per_block;
-      data = dev_ptr;
-      width = size;
+    owner             = false;
+    nBlocks_          = blocks;
+    nSplinesPerBlock_ = splines_per_block;
+    data              = dev_ptr;
+    width             = size;
   }
-  
+
   GPUArray& operator=(const GPUArray& in) = delete;
   ~GPUArray()
   {
-      if (data != nullptr && owner == true)
+    if (data != nullptr && owner == true)
       cudaFree(data);
   }
   /** returns pointer to element(1D), row(2D), plane(3D)
@@ -112,23 +112,23 @@ public:
   void pull(aligned_vector<aligned_vector<T>>& av_aVec, int block_offset = 0, int blocks = 0)
   {
     // This should in the default case be the entire width
-    if(blocks == 0)
+    if (blocks == 0)
       blocks = nBlocks_;
-    size_t this_width = std::min(blocks * nSplinesPerBlock_ * sizeof(T),
-				 width - block_offset * nSplinesPerBlock_ * sizeof(T))  ;
+    size_t this_width =
+        std::min(blocks * nSplinesPerBlock_ * sizeof(T), width - block_offset * nSplinesPerBlock_ * sizeof(T));
     CopyHome copy_home(this_width);
     //The rside is operations on a double* so no sizeof multiplier
-    void* offset_data = data + block_offset * nSplinesPerBlock_;
-    T* buffer    = static_cast<T*>(copy_home(offset_data));
+    void* offset_data  = data + block_offset * nSplinesPerBlock_;
+    T* buffer          = static_cast<T*>(copy_home(offset_data));
     int total_elements = this_width / sizeof(T);
-    int this_blocks = std::min(nBlocks_, blocks);
+    int this_blocks    = std::min(nBlocks_, blocks);
     av_aVec.resize(this_blocks);
     for (int i = 0; i < this_blocks; ++i)
     {
-      int elements = std::min(nSplinesPerBlock_, total_elements - i * nSplinesPerBlock_);
+      int elements            = std::min(nSplinesPerBlock_, total_elements - i * nSplinesPerBlock_);
       aligned_vector<T>& aVec = av_aVec[i];
       aVec.resize(elements);
-      assert((i * nSplinesPerBlock_ + elements)*sizeof(T) <= width);
+      assert((i * nSplinesPerBlock_ + elements) * sizeof(T) <= width);
       std::memcpy(aVec.data(), (void*)(buffer + i * nSplinesPerBlock_), elements * sizeof(T));
     }
   }
@@ -136,7 +136,7 @@ public:
   void pull(VectorSoAContainer<T, ELEMWIDTH>& vSoA)
   {
     CopyHome copy_home(width);
-    T* buffer = static_cast<T*>(copy_home(data));
+    T* buffer    = static_cast<T*>(copy_home(data));
     int elements = width / (ELEMWIDTH * sizeof(T));
     vSoA.resize(elements);
     std::memcpy(vSoA.data(), buffer, width);
@@ -147,23 +147,23 @@ public:
     if (blocks == 0)
       blocks = nBlocks_;
     size_t this_width = std::min(blocks * nSplinesPerBlock_ * ELEMWIDTH * sizeof(T),
-				 width - block_offset * nSplinesPerBlock_ * ELEMWIDTH *sizeof(T))  ;
-    
+                                 width - block_offset * nSplinesPerBlock_ * ELEMWIDTH * sizeof(T));
+
     CopyHome copy_home(this_width);
-    void* offset_data = data + block_offset * nSplinesPerBlock_ * ELEMWIDTH;
-    T* buffer = static_cast<T*>(copy_home(offset_data));
+    void* offset_data  = data + block_offset * nSplinesPerBlock_ * ELEMWIDTH;
+    T* buffer          = static_cast<T*>(copy_home(offset_data));
     int total_elements = this_width / (ELEMWIDTH * sizeof(T));
-    int this_blocks = std::min(nBlocks_, blocks);
+    int this_blocks    = std::min(nBlocks_, blocks);
     av_vSoA.resize(this_blocks);
     // The number of elements and nSplinesPerBock * nBlocks may not be equal
     // Within each block the CUDA data is also in SoA order
     for (int i = 0; i < this_blocks; ++i)
     {
-      int elements = std::min(nSplinesPerBlock_, total_elements - i * nSplinesPerBlock_);
+      int elements                           = std::min(nSplinesPerBlock_, total_elements - i * nSplinesPerBlock_);
       VectorSoAContainer<T, ELEMWIDTH>& vSoA = av_vSoA[i];
       vSoA.resize(elements);
-      assert((i * nSplinesPerBlock_ + elements)*ELEMWIDTH*sizeof(T) <= width);
-      std::memcpy(vSoA.data(), (void*)(buffer + i * nSplinesPerBlock_) , elements * ELEMWIDTH * sizeof(T));
+      assert((i * nSplinesPerBlock_ + elements) * ELEMWIDTH * sizeof(T) <= width);
+      std::memcpy(vSoA.data(), (void*)(buffer + i * nSplinesPerBlock_), elements * ELEMWIDTH * sizeof(T));
     }
   }
 
@@ -246,11 +246,11 @@ T*&& GPUArray<T, ELEMWIDTH, 2>::operator()(int i)
 template<typename T, int ELEMWIDTH>
 void GPUArray<T, ELEMWIDTH, 1>::resize(int nBlocks, int nSplinesPerBlock)
 {
-  nBlocks_         = nBlocks;
+  nBlocks_          = nBlocks;
   nSplinesPerBlock_ = nSplinesPerBlock;
 
-  width             = sizeof(T) * nBlocks * ELEMWIDTH * nSplinesPerBlock;
-  height            = 1;
+  width  = sizeof(T) * nBlocks * ELEMWIDTH * nSplinesPerBlock;
+  height = 1;
   if (max_width_ < width)
   {
     if (data != nullptr)

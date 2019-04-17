@@ -43,8 +43,7 @@ void expandSuperCell(PS& ref_, const Tensor<int, 3>& tmat)
   }
   if (identity)
     return;
-  app_log() << "  TileMatrix != Identity. Expanding a simulation cell for " << ref_.getName()
-            << std::endl;
+  app_log() << "  TileMatrix != Identity. Expanding a simulation cell for " << ref_.getName() << std::endl;
   {
     char buff[500];
     snprintf(buff,
@@ -87,11 +86,11 @@ void expandSuperCell(PS& ref_, const Tensor<int, 3>& tmat)
             SingleParticlePos_t uPrim = primPos[iat];
             for (int i = 0; i < 3; i++)
               uPrim[i] -= std::floor(uPrim[i]);
-            SingleParticlePos_t r = PrimCell.toCart(uPrim) + (double)i0 * PrimCell.a(0) +
-                (double)i1 * PrimCell.a(1) + (double)i2 * PrimCell.a(2);
+            SingleParticlePos_t r = PrimCell.toCart(uPrim) + (double)i0 * PrimCell.a(0) + (double)i1 * PrimCell.a(1) +
+                (double)i2 * PrimCell.a(2);
             SingleParticlePos_t uSuper = ref_.Lattice.toUnit(r);
-            if ((uSuper[0] >= -1.0e-6) && (uSuper[0] < 0.9999) && (uSuper[1] >= -1.0e-6) &&
-                (uSuper[1] < 0.9999) && (uSuper[2] >= -1.0e-6) && (uSuper[2] < 0.9999))
+            if ((uSuper[0] >= -1.0e-6) && (uSuper[0] < 0.9999) && (uSuper[1] >= -1.0e-6) && (uSuper[1] < 0.9999) &&
+                (uSuper[2] >= -1.0e-6) && (uSuper[2] < 0.9999))
             {
               char buff[500];
               snprintf(buff,

@@ -82,8 +82,7 @@ struct EinsplineSPO_ref : public qmcplusplus::SPOSetImp<Devices::CPU>
    * Of course you'd also need this if you were doing
    * MPI in a straight forward way
    */
-  EinsplineSPO_ref(const EinsplineSPO_ref& in)
-      : Owner(false), Lattice(in.Lattice)
+  EinsplineSPO_ref(const EinsplineSPO_ref& in) : Owner(false), Lattice(in.Lattice)
   {
     nSplines         = in.nSplines;
     nSplinesPerBlock = in.nSplinesPerBlock;
@@ -106,8 +105,7 @@ struct EinsplineSPO_ref : public qmcplusplus::SPOSetImp<Devices::CPU>
    *
    * Create a view of the big object. A simple blocking & padding  method.
    */
-  EinsplineSPO_ref(const EinsplineSPO_ref& in, int team_size, int member_id)
-      : Owner(false), Lattice(in.Lattice)
+  EinsplineSPO_ref(const EinsplineSPO_ref& in, int team_size, int member_id) : Owner(false), Lattice(in.Lattice)
   {
     nSplines         = in.nSplines;
     nSplinesPerBlock = in.nSplinesPerBlock;
@@ -162,10 +160,10 @@ struct EinsplineSPO_ref : public qmcplusplus::SPOSetImp<Devices::CPU>
       RandomGenerator<T> myrandom(11);
       Array<T, 3> coef_data(nx + 3, ny + 3, nz + 3);
       std::cout << "Initializing Reference Spline Coefficients with nBlocks: " << nBlocks
-		<< " and nSplinesPerblock : " << nSplinesPerBlock << '\n';
+                << " and nSplinesPerblock : " << nSplinesPerBlock << '\n';
       for (int i = 0; i < nBlocks; ++i)
       {
-	myAllocator.createMultiBspline(einsplines[i], T(0), start, end, ng, PERIODIC, nSplinesPerBlock);
+        myAllocator.createMultiBspline(einsplines[i], T(0), start, end, ng, PERIODIC, nSplinesPerBlock);
         if (init_random)
         {
           for (int j = 0; j < nSplinesPerBlock; ++j)
@@ -194,7 +192,7 @@ struct EinsplineSPO_ref : public qmcplusplus::SPOSetImp<Devices::CPU>
   inline void evaluate_v_pfor(const PosType& p)
   {
     auto u = Lattice.toUnit_floor(p);
-    #pragma omp for nowait
+#pragma omp for nowait
     for (int i = 0; i < nBlocks; ++i)
       compute_engine.evaluate_v(einsplines[i], u[0], u[1], u[2], psi[i].data(), nSplinesPerBlock);
   }
@@ -218,7 +216,7 @@ struct EinsplineSPO_ref : public qmcplusplus::SPOSetImp<Devices::CPU>
   inline void evaluate_vgl_pfor(const PosType& p)
   {
     auto u = Lattice.toUnit_floor(p);
-    #pragma omp for nowait
+#pragma omp for nowait
     for (int i = 0; i < nBlocks; ++i)
       compute_engine.evaluate_vgl(einsplines[i],
                                   u[0],
@@ -252,7 +250,7 @@ struct EinsplineSPO_ref : public qmcplusplus::SPOSetImp<Devices::CPU>
   inline void evaluate_vgh_pfor(const PosType& p)
   {
     auto u = Lattice.toUnit_floor(p);
-    #pragma omp for nowait
+#pragma omp for nowait
     for (int i = 0; i < nBlocks; ++i)
       compute_engine.evaluate_vgh(einsplines[i],
                                   u[0],
@@ -264,16 +262,10 @@ struct EinsplineSPO_ref : public qmcplusplus::SPOSetImp<Devices::CPU>
                                   nSplinesPerBlock);
   }
 
-  T getGrad(int ib, int n, int m)
-  {
-    return grad[ib].data(m)[n];
-  }
+  T getGrad(int ib, int n, int m) { return grad[ib].data(m)[n]; }
 
-  T getHess(int ib, int n, int m)
-  {
-    return hess[ib].data(m)[n];
-  }
-  
+  T getHess(int ib, int n, int m) { return hess[ib].data(m)[n]; }
+
   void print(std::ostream& os)
   {
     os << "SPO nBlocks=" << nBlocks << " firstBlock=" << firstBlock << " lastBlock=" << lastBlock

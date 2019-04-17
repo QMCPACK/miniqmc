@@ -39,16 +39,13 @@ enum class LogType
 class ISSingle
 {
 private:
-  ISSingle() : infoSummary(&std::cout),
-	       infoLog(&std::cout),
-	       infoError(&std::cerr),
-	       infoDebug(&std::cout)
-  {}
+  ISSingle() : infoSummary(&std::cout), infoLog(&std::cout), infoError(&std::cerr), infoDebug(&std::cout) {}
   ~ISSingle() {}
   ISSingle(const ISSingle&) = delete;
   ISSingle& operator=(const ISSingle&) = delete;
-  ISSingle(ISSingle&) = delete;
+  ISSingle(ISSingle&)                  = delete;
   ISSingle& operator=(ISSingle&) = delete;
+
 public:
   static ISSingle& get()
   {
@@ -68,14 +65,15 @@ public:
   Verbosity global_verbosity_level;
 
 private:
-  OutputManagerClass(){ setVerbosity(Verbosity::LOW); }
+  OutputManagerClass() { setVerbosity(Verbosity::LOW); }
   OutputManagerClass(const OutputManagerClass&) = delete;
   OutputManagerClass& operator=(const OutputManagerClass&) = delete;
-  
+
 public:
   static OutputManagerClass& get()
   {
-    static OutputManagerClass instance;;
+    static OutputManagerClass instance;
+    ;
     return instance;
   }
 
@@ -115,7 +113,7 @@ public:
 
 namespace qmcplusplus
 {
-  inline std::ostream& app_summary() { return OutputManagerClass::get().getStream(LogType::SUMMARY); }
+inline std::ostream& app_summary() { return OutputManagerClass::get().getStream(LogType::SUMMARY); }
 
 inline std::ostream& app_log() { return OutputManagerClass::get().getStream(LogType::APP); }
 
@@ -135,9 +133,9 @@ inline std::ostream& app_debug_stream() { return OutputManagerClass::get().getSt
 
 // From https://stackoverflow.com/questions/11826554/standard-no-op-output-stream
 // If debugging is not active, this skips evaluation of the arguments
-#define app_debug                        \
+#define app_debug                                    \
   if (!OutputManagerClass::get().isDebugActive()) {} \
-  else                                   \
+  else                                               \
     app_debug_stream
 
 }; // namespace qmcplusplus

@@ -29,14 +29,12 @@
 class InfoStream
 {
 public:
-  InfoStream(std::ostream* output_stream)
-      : prevStream(NULL), nullStream(new std::ostream(NULL)), ownStream(false)
+  InfoStream(std::ostream* output_stream) : prevStream(NULL), nullStream(new std::ostream(NULL)), ownStream(false)
   {
     currStream = output_stream;
   }
 
-  InfoStream(InfoStream& in)
-      : prevStream(NULL), nullStream(new std::ostream(NULL)), ownStream(false)
+  InfoStream(InfoStream& in) : prevStream(NULL), nullStream(new std::ostream(NULL)), ownStream(false)
   {
     redirectToSameStream(in);
   }

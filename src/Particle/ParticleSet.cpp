@@ -43,7 +43,6 @@
 
 namespace qmcplusplus
 {
-
 ParticleSet::ParticleSet()
     : UseBoundBox(true), IsGrouped(true), myName("none"), SameMass(true), myTwist(0.0), activePtcl(-1)
 {
@@ -67,8 +66,8 @@ ParticleSet::ParticleSet(const ParticleSet& p)
   Mass = p.Mass;
   Z    = p.Z;
   this->setName(p.getName());
-  app_log() << "  Copying a particle set " << p.getName() << " to " << this->getName()
-            << " groups=" << groups() << std::endl;
+  app_log() << "  Copying a particle set " << p.getName() << " to " << this->getName() << " groups=" << groups()
+            << std::endl;
   // construct the distance tables with the same order
   if (p.DistTables.size())
   {
@@ -125,8 +124,7 @@ void ParticleSet::resetGroups()
   int qind = mySpecies.addAttribute("charge");
   if (natt == qind)
   {
-    app_log() << " Missing charge attribute of the SpeciesSet " << myName << " particleset"
-              << std::endl;
+    app_log() << " Missing charge attribute of the SpeciesSet " << myName << " particleset" << std::endl;
     app_log() << " Assume neutral particles Z=0.0 " << std::endl;
     for (int ig = 0; ig < nspecies; ig++)
       mySpecies(qind, ig) = 0.0;
@@ -231,8 +229,7 @@ int ParticleSet::addTable(const ParticleSet& psrc, int dt_type)
   }
   if (psrc.getName() == myName)
   {
-    app_log() << "  ... ParticleSet::addTable Reuse Table #" << 0 << " " << DistTables[0]->Name
-              << std::endl;
+    app_log() << "  ... ParticleSet::addTable Reuse Table #" << 0 << " " << DistTables[0]->Name << std::endl;
     // if(!DistTables[0]->is_same_type(dt_type))
     //{//itself is special, cannot mix them: some of the users do not check the
     // index
@@ -248,16 +245,14 @@ int ParticleSet::addTable(const ParticleSet& psrc, int dt_type)
     tid = DistTables.size();
     DistTables.push_back(createDistanceTable(psrc, *this, dt_type));
     myDistTableMap[psrc.getName()] = tid;
-    app_log() << "  ... ParticleSet::addTable Create Table #" << tid << " " << DistTables[tid]->Name
-              << std::endl;
+    app_log() << "  ... ParticleSet::addTable Create Table #" << tid << " " << DistTables[tid]->Name << std::endl;
   }
   else
   {
     tid = (*tit).second;
     if (dt_type == DT_SOA_PREFERRED || DistTables[tid]->is_same_type(dt_type)) // good to reuse
     {
-      app_log() << "  ... ParticleSet::addTable Reuse Table #" << tid << " "
-                << DistTables[tid]->Name << std::endl;
+      app_log() << "  ... ParticleSet::addTable Reuse Table #" << tid << " " << DistTables[tid]->Name << std::endl;
     }
     else
     {
@@ -389,8 +384,7 @@ void ParticleSet::clearDistanceTables()
   DistTables.clear();
 }
 
-const std::vector<ParticleSet::ParticleGradient_t*>
-    extract_G_list(const std::vector<ParticleSet*>& P_list)
+const std::vector<ParticleSet::ParticleGradient_t*> extract_G_list(const std::vector<ParticleSet*>& P_list)
 {
   std::vector<ParticleSet::ParticleGradient_t*> G_list;
   for (auto it = P_list.begin(); it != P_list.end(); it++)
@@ -398,8 +392,7 @@ const std::vector<ParticleSet::ParticleGradient_t*>
   return G_list;
 }
 
-const std::vector<ParticleSet::ParticleLaplacian_t*>
-    extract_L_list(const std::vector<ParticleSet*>& P_list)
+const std::vector<ParticleSet::ParticleLaplacian_t*> extract_L_list(const std::vector<ParticleSet*>& P_list)
 {
   std::vector<ParticleSet::ParticleLaplacian_t*> L_list;
   for (auto it = P_list.begin(); it != P_list.end(); it++)

@@ -14,7 +14,7 @@
 #ifndef QMCPLUSPLUS_EINSPLINE_SPO_DEVICE_IMP_H
 #define QMCPLUSPLUS_EINSPLINE_SPO_DEVICE_IMP_H
 
-#include "Devices.h" 
+#include "Devices.h"
 #include <ostream>
 #include "QMCWaveFunctions/EinsplineSPOParams.h"
 #include "QMCWaveFunctions/EinsplineSPODevice.hpp"
@@ -23,19 +23,19 @@
  */
 
 namespace qmcplusplus
-{  
+{
 template<Devices DT, typename T>
 class EinsplineSPODeviceImp;
 
 template<Devices DT, typename T>
-std::ostream& operator<< (std::ostream& os, EinsplineSPODeviceImp<DT, T>& espodi)
+std::ostream& operator<<(std::ostream& os, EinsplineSPODeviceImp<DT, T>& espodi)
 {
   const EinsplineSPOParams<T>& e = espodi.getParams();
-  os  << "SPO nBlocks=" << e.nBlocks << " firstBlock=" << e.firstBlock << " lastBlock=" << e.lastBlock
-      << " nSplines=" << e.nSplines << " nSplinesPerBlock=" << e.nSplinesPerBlock << '\n';
+  os << "SPO nBlocks=" << e.nBlocks << " firstBlock=" << e.firstBlock << " lastBlock=" << e.lastBlock
+     << " nSplines=" << e.nSplines << " nSplinesPerBlock=" << e.nSplinesPerBlock << '\n';
 }
 
-}
+} // namespace qmcplusplus
 #include "QMCWaveFunctions/EinsplineSPODeviceImpCPU.hpp"
 #ifdef QMC_USE_KOKKOS
 #include "QMCWaveFunctions/EinsplineSPODeviceImpKOKKOS.hpp"
@@ -46,10 +46,10 @@ std::ostream& operator<< (std::ostream& os, EinsplineSPODeviceImp<DT, T>& espodi
 namespace qmcplusplus
 {
 #ifdef QMC_USE_KOKKOS
-  //extern template class EinsplineSPODeviceImp<Devices::KOKKOS, float>;
-  //extern template class EinsplineSPODeviceImp<Devices::KOKKOS, double>;
+//extern template class EinsplineSPODeviceImp<Devices::KOKKOS, float>;
+//extern template class EinsplineSPODeviceImp<Devices::KOKKOS, double>;
 #endif
-}
+} // namespace qmcplusplus
 
 
 #endif

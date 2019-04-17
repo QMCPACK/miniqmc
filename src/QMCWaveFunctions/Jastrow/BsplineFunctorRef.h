@@ -221,10 +221,10 @@ struct BsplineFunctorRef : public OptimizableFunctorBase
 
 template<typename T>
 inline T BsplineFunctorRef<T>::evaluateV(const int iat,
-                                      const int iStart,
-                                      const int iEnd,
-                                      const T* restrict _distArray,
-                                      T* restrict distArrayCompressed) const
+                                         const int iStart,
+                                         const int iEnd,
+                                         const T* restrict _distArray,
+                                         T* restrict distArrayCompressed) const
 {
   const real_type* restrict distArray = _distArray + iStart;
 
@@ -242,7 +242,7 @@ inline T BsplineFunctorRef<T>::evaluateV(const int iat,
   }
 
   real_type d = 0.0;
-  #pragma omp simd reduction(+ : d)
+#pragma omp simd reduction(+ : d)
   for (int jat = 0; jat < iCount; jat++)
   {
     real_type r = distArrayCompressed[jat];
@@ -264,14 +264,14 @@ inline T BsplineFunctorRef<T>::evaluateV(const int iat,
 
 template<typename T>
 inline void BsplineFunctorRef<T>::evaluateVGL(const int iat,
-                                           const int iStart,
-                                           const int iEnd,
-                                           const T* _distArray,
-                                           T* restrict _valArray,
-                                           T* restrict _gradArray,
-                                           T* restrict _laplArray,
-                                           T* restrict distArrayCompressed,
-                                           int* restrict distIndices) const
+                                              const int iStart,
+                                              const int iEnd,
+                                              const T* _distArray,
+                                              T* restrict _valArray,
+                                              T* restrict _gradArray,
+                                              T* restrict _laplArray,
+                                              T* restrict distArrayCompressed,
+                                              int* restrict distIndices) const
 {
   real_type dSquareDeltaRinv = DeltaRInv * DeltaRInv;
   constexpr real_type cOne(1);
@@ -299,7 +299,7 @@ inline void BsplineFunctorRef<T>::evaluateVGL(const int iat,
     }
   }
 
-  #pragma omp simd
+#pragma omp simd
   for (int j = 0; j < iCount; j++)
   {
     real_type r    = distArrayCompressed[j];

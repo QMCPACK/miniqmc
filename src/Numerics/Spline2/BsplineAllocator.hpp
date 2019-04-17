@@ -119,9 +119,8 @@ public:
 
 template<Devices DT>
 template<typename T>
-void Allocator<DT>::setCoefficientsForOneOrbital(int i,
-						Array<T, 3>& coeff,
-                                                typename bspline_traits<DT, T, 3>::SplineType*& spline)
+void Allocator<DT>::setCoefficientsForOneOrbital(int i, Array<T, 3>& coeff,
+                                                 typename bspline_traits<DT, T, 3>::SplineType*& spline)
 {
   //#pragma omp parallel for collapse(3)
   for (int ix = 0; ix < spline->x_grid.num + 3; ix++)
@@ -141,8 +140,9 @@ void Allocator<DT>::setCoefficientsForOneOrbital(int i,
 
 template<Devices DT>
 template<typename T, typename ValT, typename IntT>
-void Allocator<DT>::createMultiBspline(typename bspline_traits<DT, T, 3>::SplineType*& spline, T dummy,
-                                      ValT& start, ValT& end, IntT& ng, bc_code bc, int num_splines)
+void Allocator<DT>::createMultiBspline(typename bspline_traits<DT, T, 3>::SplineType*& spline,
+                                       T dummy, ValT& start, ValT& end, IntT& ng, bc_code bc,
+                                       int num_splines)
 {
   Ugrid x_grid, y_grid, z_grid;
   typename bspline_traits<DT, T, 3>::BCType xBC, yBC, zBC;
@@ -164,7 +164,7 @@ void Allocator<DT>::createMultiBspline(typename bspline_traits<DT, T, 3>::Spline
 template<Devices DT>
 template<typename ValT, typename IntT, typename T>
 void Allocator<DT>::createUBspline(typename bspline_traits<DT, T, 3>::SingleSplineType*& spline,
-                                  ValT& start, ValT& end, IntT& ng, bc_code bc)
+                                   ValT& start, ValT& end, IntT& ng, bc_code bc)
 {
   Ugrid x_grid, y_grid, z_grid;
   typename bspline_traits<DT, T, 3>::BCType xBC, yBC, zBC;
@@ -211,7 +211,6 @@ void Allocator<DT>::copy(UBT* single, MBT* multi, int i, const int* offset, cons
       }
     }
 }
-
 
 
 } // namespace einspline

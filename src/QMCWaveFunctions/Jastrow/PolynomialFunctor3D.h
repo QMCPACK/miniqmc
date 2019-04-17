@@ -264,8 +264,7 @@ struct PolynomialFunctor3D : public OptimizableFunctorBase
       }
       if (std::abs(sum) > 1.0e-6)
       {
-        app_error() << "e-e constraint not satisfied in PolynomialFunctor3D:  k=" << k
-                    << "  sum=" << sum << std::endl;
+        app_error() << "e-e constraint not satisfied in PolynomialFunctor3D:  k=" << k << "  sum=" << sum << std::endl;
         abort();
       }
     }
@@ -283,8 +282,7 @@ struct PolynomialFunctor3D : public OptimizableFunctorBase
       }
       if (std::abs(sum) > 1.0e-6)
       {
-        app_error() << "e-I constraint not satisfied in PolynomialFunctor3D:  k=" << k
-                    << "  sum=" << sum << std::endl;
+        app_error() << "e-I constraint not satisfied in PolynomialFunctor3D:  k=" << k << "  sum=" << sum << std::endl;
         abort();
       }
     }
@@ -471,9 +469,9 @@ struct PolynomialFunctor3D : public OptimizableFunctorBase
     constexpr real_type ctwo(2);
 
     const real_type L = chalf * cutoff_radius;
-    #pragma omp simd aligned(r_12_array,   \
-                             r_1I_array,   \
-                             r_2I_array,   \
+#pragma omp simd aligned(r_12_array,   \
+                         r_1I_array,   \
+                         r_2I_array,   \
                          val_array,    \
                          grad0_array,  \
                          grad1_array,  \

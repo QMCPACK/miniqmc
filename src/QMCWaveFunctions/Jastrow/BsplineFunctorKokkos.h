@@ -256,17 +256,16 @@ inline T BsplineFunctor<Devices::KOKKOS, T>::evaluateV(const int iat,
 
 template<typename T>
 template<typename TeamType>
-KOKKOS_INLINE_FUNCTION void
-    BsplineFunctor<Devices::KOKKOS, T>::evaluateVGL(const TeamType& team,
-                                                    const int iat,
-                                                    const int iStart,
-                                                    const int iEnd,
-                                                    const T* _distArray,
-                                                    T* restrict _valArray,
-                                                    T* restrict _gradArray,
-                                                    T* restrict _laplArray,
-                                                    T* restrict distArrayCompressed,
-                                                    int* restrict distIndices) const
+KOKKOS_INLINE_FUNCTION void BsplineFunctor<Devices::KOKKOS, T>::evaluateVGL(const TeamType& team,
+                                                                            const int iat,
+                                                                            const int iStart,
+                                                                            const int iEnd,
+                                                                            const T* _distArray,
+                                                                            T* restrict _valArray,
+                                                                            T* restrict _gradArray,
+                                                                            T* restrict _laplArray,
+                                                                            T* restrict distArrayCompressed,
+                                                                            int* restrict distIndices) const
 {
   real_type dSquareDeltaRinv = DeltaRInv * DeltaRInv;
   constexpr real_type cOne(1);
@@ -290,19 +289,18 @@ KOKKOS_INLINE_FUNCTION void
                           },
                           iCount);
 
-  Kokkos::parallel_scan(Kokkos::ThreadVectorRange(team, iLimit),
-                        [&](const int& jat, int& count, const bool& final) {
-                          real_type r = distArray[jat];
-                          if (r < cutoff_radius && iStart + jat != iat)
-                          {
-                            if (final)
-                            {
-                              distIndices[count]         = jat;
-                              distArrayCompressed[count] = r;
-                            }
-                            count++;
-                          }
-                        });
+  Kokkos::parallel_scan(Kokkos::ThreadVectorRange(team, iLimit), [&](const int& jat, int& count, const bool& final) {
+    real_type r = distArray[jat];
+    if (r < cutoff_radius && iStart + jat != iat)
+    {
+      if (final)
+      {
+        distIndices[count]         = jat;
+        distArrayCompressed[count] = r;
+      }
+      count++;
+    }
+  });
 
   Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, iCount), [&](const int& j) {
     real_type r    = distArrayCompressed[j];

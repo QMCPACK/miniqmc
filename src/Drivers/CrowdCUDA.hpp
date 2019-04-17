@@ -27,9 +27,8 @@
 #include "Input/pseudo.hpp"
 #include "Utilities/RandomGenerator.h"
 #include "Utilities/PrimeNumberSet.h"
-namespace  qmcplusplus
+namespace qmcplusplus
 {
-
 extern template class Crowd<Devices::CUDA>;
 
 } // namespace qmcplusplus

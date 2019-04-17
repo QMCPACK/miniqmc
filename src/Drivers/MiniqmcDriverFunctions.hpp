@@ -33,7 +33,6 @@
 
 namespace qmcplusplus
 {
-
 /** A purely functional class implementing miniqmcdriver functions.
  *  functions can be specialized for a particular device.
  *  These are the driver steps that any device must either use the default for
@@ -48,11 +47,11 @@ public:
 
   /** build main SPOset once */
   static void buildSPOSet(SPOSet*& spo_set,
-			  MiniqmcOptions& mq_opt,
-			  const int norb,
-			  const int nTiles,
-			  const int tile_size,
-			  const Tensor<OHMMS_PRECISION, 3>& lattice_b);
+                          MiniqmcOptions& mq_opt,
+                          const int norb,
+                          const int nTiles,
+                          const int tile_size,
+                          const Tensor<OHMMS_PRECISION, 3>& lattice_b);
 
   /** @name Thread Launchers
    *  These launch the threads that run a QMC block. 
@@ -60,7 +59,7 @@ public:
    *  No assumptions should be made that they actually execute in parallel.
    */
   ///@{
-  
+
   /** This calls the old non batch threadmain, kept around for comparison.
    *  As long as single evaluates and the internal data structures in einplsine, wavefunction, etc.
    *  are retained it should work.
@@ -68,21 +67,21 @@ public:
   static void runThreads(MiniqmcOptions& mq_opt,
                          const PrimeNumberSet<uint32_t>& myPrimes,
                          ParticleSet& ions,
-			 const SPOSet* spo_main);
+                         const SPOSet* spo_main);
 
   /** This is the new batched thread launcher.
    *  Each thread through Crowd<device> it should leave the actual method of batch evaluation to
    *  the device through specializations of crowd.
    */
   static void movers_runThreads(MiniqmcOptions& mq_opt,
-                         const PrimeNumberSet<uint32_t>& myPrimes,
-                         ParticleSet& ions,
-				const SPOSet* spo_main);
+                                const PrimeNumberSet<uint32_t>& myPrimes,
+                                ParticleSet& ions,
+                                const SPOSet* spo_main);
   ///@}
-  
-  static void finalize();
-private:
 
+  static void finalize();
+
+private:
   /** @name Thread Bodies
    *  Each top level thread gets one of these.
    *  They should be are not guaranteed to run concurrently.
@@ -90,22 +89,22 @@ private:
   ///@{
   template<Threading TT>
   static void crowd_thread_main(const int ip,
-				 TaskBlockBarrier<TT>& barrier,
-			  const int team_size,
-			  MiniqmcOptions& mq_opt,
-                          const PrimeNumberSet<uint32_t>& myPrimes,
-                          ParticleSet ions,
-				 const SPOSet* spo_main);
+                                TaskBlockBarrier<TT>& barrier,
+                                const int team_size,
+                                MiniqmcOptions& mq_opt,
+                                const PrimeNumberSet<uint32_t>& myPrimes,
+                                ParticleSet ions,
+                                const SPOSet* spo_main);
 
   /** Legacy unbatched thread body. 
    *  Depends only on "object" local data and single evaluations that use it.
    */
   static void thread_main(const int ip,
-			  const int team_size,
-			  MiniqmcOptions& mq_opt,
+                          const int team_size,
+                          MiniqmcOptions& mq_opt,
                           const PrimeNumberSet<uint32_t>& myPrimes,
                           ParticleSet ions,
-			  const SPOSet* spo_main);
+                          const SPOSet* spo_main);
 
   ///@}
 
@@ -119,7 +118,7 @@ private:
 #include "Drivers/MiniqmcDriverFunctionsKokkos.hpp"
 #endif
 
-    
+
 /** currently used by all devices
  */
 template<Devices DT>
@@ -127,7 +126,7 @@ void MiniqmcDriverFunctions<DT>::buildSPOSet(SPOSet*& spo_set,
                                              MiniqmcOptions& mq_opt,
                                              const int norb,
                                              const int nTiles,
-					     const int tile_size,
+                                             const int tile_size,
                                              const Tensor<OHMMS_PRECISION, 3>& lattice_b)
 {
   spo_set =
@@ -139,18 +138,18 @@ void MiniqmcDriverFunctions<DT>::buildSPOSet(SPOSet*& spo_set,
 template<Devices DT>
 template<Threading TT>
 void MiniqmcDriverFunctions<DT>::crowd_thread_main(const int ip,
-						    				    TaskBlockBarrier<TT>& barrier,
-                                                              const int team_size,
-                                                              MiniqmcOptions& mq_opt,
-                                                              const PrimeNumberSet<uint32_t>& myPrimes,
-                                                              ParticleSet ions,
-						    const SPOSet* spo_main)
+                                                   TaskBlockBarrier<TT>& barrier,
+                                                   const int team_size,
+                                                   MiniqmcOptions& mq_opt,
+                                                   const PrimeNumberSet<uint32_t>& myPrimes,
+                                                   ParticleSet ions,
+                                                   const SPOSet* spo_main)
 {
   const int member_id = ip % team_size;
   // create and initialize movers
   //app_summary() << "pack size:" << mq_opt.pack_size << '\n';
-  app_summary() << "thread:" << ip << " starting up, with team_size: " << team_size
-		<<  " member_id: " << member_id << ".\n";
+  app_summary() << "thread:" << ip << " starting up, with team_size: " << team_size << " member_id: " << member_id
+                << ".\n";
   int my_accepts = 0;
   Crowd<DT> crowd(ip, myPrimes, ions, mq_opt.pack_size);
 
@@ -158,12 +157,12 @@ void MiniqmcDriverFunctions<DT>::crowd_thread_main(const int ip,
   // For VMC, tau is large and should result in an acceptance ratio of roughly
   // 50%
   // For DMC, tau is small and should result in an acceptance ratio of 99%
-  
+
   const QMCT::RealType tau = 2.0;
 
   QMCT::RealType sqrttau = std::sqrt(tau);
 
-  
+
   // create a spo view in each Mover
   crowd.buildViews(mq_opt.useRef, spo_main, team_size, member_id);
 
@@ -194,7 +193,7 @@ void MiniqmcDriverFunctions<DT>::crowd_thread_main(const int ip,
     for (int l = 0; l < mq_opt.nsubsteps; ++l) // drift-and-diffusion
     {
       crowd.fillRandoms();
-      
+
       for (int iel = 0; iel < nels; ++iel)
       {
         // Operate on electron with index iel
@@ -208,29 +207,29 @@ void MiniqmcDriverFunctions<DT>::crowd_thread_main(const int ip,
 
         crowd.constructTrialMoves(iel);
 
-	// Compute gradient at the trial position 
+        // Compute gradient at the trial position
         mq_opt.Timers[Timer_ratioGrad]->start();
-	crowd.evaluateRatioGrad(iel);
+        crowd.evaluateRatioGrad(iel);
         mq_opt.Timers[Timer_ratioGrad]->stop();
 
 
-	mq_opt.Timers[Timer_evalVGH]->start();
-	crowd.evaluateHessian(iel);
-	mq_opt.Timers[Timer_evalVGH]->stop();
+        mq_opt.Timers[Timer_evalVGH]->start();
+        crowd.evaluateHessian(iel);
+        mq_opt.Timers[Timer_evalVGH]->stop();
 
-	mq_opt.Timers[Timer_Update]->start();
-	crowd.finishUpdate(iel);
-        mq_opt.Timers[Timer_Update]->stop();
-
-  
-	// Accept/reject the trial move
         mq_opt.Timers[Timer_Update]->start();
-	int these_accepts = crowd.acceptRestoreMoves(iel, mq_opt.accept);
-	//app_summary() << "Moves accepted: " << these_accepts << "\n";
-	my_accepts += these_accepts;
+        crowd.finishUpdate(iel);
         mq_opt.Timers[Timer_Update]->stop();
-      }//iel
-    }//substeps
+
+
+        // Accept/reject the trial move
+        mq_opt.Timers[Timer_Update]->start();
+        int these_accepts = crowd.acceptRestoreMoves(iel, mq_opt.accept);
+        //app_summary() << "Moves accepted: " << these_accepts << "\n";
+        my_accepts += these_accepts;
+        mq_opt.Timers[Timer_Update]->stop();
+      } //iel
+    }   //substeps
     crowd.donePbyP();
     crowd.evaluateGL();
 

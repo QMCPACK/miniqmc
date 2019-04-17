@@ -35,7 +35,7 @@ namespace qmcplusplus
 namespace hana = boost::hana;
 
 /** This creates a compile time tuple of the different devices types, indexed by the device range
- */ 
+ */
 constexpr auto device_tuple = hana::make_tuple(hana::type_c<MiniqmcDriverFunctions<Devices::CPU>>,
 #ifdef QMC_USE_KOKKOS
                                                hana::type_c<MiniqmcDriverFunctions<Devices::KOKKOS>>,
@@ -75,7 +75,7 @@ public:
                      MiniqmcOptions& mq_opt,
                      const int norb,
                      const int nTiles,
-		     const int splines_per_block,
+                     const int splines_per_block,
                      const Tensor<OHMMS_PRECISION, 3>& lattice_b,
                      int i,
                      IntList<>)
@@ -86,11 +86,11 @@ public:
                      MiniqmcOptions& mq_opt,
                      const int norb,
                      const int nTiles,
-		     const int splines_per_block,
+                     const int splines_per_block,
                      const Tensor<OHMMS_PRECISION, 3>& lattice_b,
                      int i)
     {
-	build_cases(spo_set, mq_opt, norb, nTiles, splines_per_block, lattice_b, i, IntList<N...>());
+      build_cases(spo_set, mq_opt, norb, nTiles, splines_per_block, lattice_b, i, IntList<N...>());
     }
 
     template<typename I, typename... N>
@@ -98,21 +98,24 @@ public:
                      MiniqmcOptions& mq_opt,
                      const int norb,
                      const int nTiles,
-		     const int splines_per_block,
+                     const int splines_per_block,
                      const Tensor<OHMMS_PRECISION, 3>& lattice_b,
                      int i,
                      IntList<I, N...>)
     {
       if (I::value != i)
       {
-	  return build_cases(spo_set, mq_opt, norb, nTiles, splines_per_block, lattice_b, i, IntList<N...>());
+        return build_cases(spo_set, mq_opt, norb, nTiles, splines_per_block, lattice_b, i, IntList<N...>());
       }
-      decltype(+device_tuple[hana::size_c<I::value>])::type::buildSPOSet(spo_set, mq_opt, norb, nTiles, splines_per_block, lattice_b);
+      decltype(+device_tuple[hana::size_c<I::value>])::type::buildSPOSet(spo_set,
+                                                                         mq_opt,
+                                                                         norb,
+                                                                         nTiles,
+                                                                         splines_per_block,
+                                                                         lattice_b);
     }
 
-    void run_cases(MiniqmcDriver& my_, int, IntList<>)
-    {
-    }
+    void run_cases(MiniqmcDriver& my_, int, IntList<>) {}
 
     template<typename... N>
     void run_cases(MiniqmcDriver& my_, int i)
@@ -127,15 +130,17 @@ public:
       {
         return run_cases(my_, i, IntList<N...>());
       }
-      if(my_.mq_opt_.enableCrowd)
+      if (my_.mq_opt_.enableCrowd)
       {
-	decltype(
-          +device_tuple[hana::size_c<I::value>])::type::movers_runThreads(my_.mq_opt_, my_.myPrimes, my_.ions, my_.spo_main);
+        decltype(+device_tuple[hana::size_c<I::value>])::type::movers_runThreads(my_.mq_opt_,
+                                                                                 my_.myPrimes,
+                                                                                 my_.ions,
+                                                                                 my_.spo_main);
       }
       else
       {
-		decltype(
-          +device_tuple[hana::size_c<I::value>])::type::runThreads(my_.mq_opt_, my_.myPrimes, my_.ions, my_.spo_main);
+        decltype(
+            +device_tuple[hana::size_c<I::value>])::type::runThreads(my_.mq_opt_, my_.myPrimes, my_.ions, my_.spo_main);
       }
     }
 
@@ -162,18 +167,18 @@ public:
 
     /** build the main sposet for the correct device. 
      *  build_cases will expand to handle all the built devices.
-     */      
+     */
     MiniqmcDriver& my_;
     CaseHandler(MiniqmcDriver& my) : my_(my) {}
     void build(SPOSet*& spo_set,
                MiniqmcOptions& mq_opt,
                const int norb,
                const int nTiles,
-	       const int splines_per_block,
+               const int splines_per_block,
                const Tensor<OHMMS_PRECISION, 3>& lattice_b,
                int i)
     {
-	build_cases<DN...>(spo_set, mq_opt, norb, nTiles, splines_per_block, lattice_b, i);
+      build_cases<DN...>(spo_set, mq_opt, norb, nTiles, splines_per_block, lattice_b, i);
     }
 
     /** run_cases will expand to handle all the built devices. */
@@ -243,8 +248,8 @@ private:
   void main_function() {}
 
   using QMCT = QMCTraits;
-  typedef ParticleSet::ParticlePos_t    ParticlePos_t;
-  typedef ParticleSet::PosType          PosType;
+  typedef ParticleSet::ParticlePos_t ParticlePos_t;
+  typedef ParticleSet::PosType PosType;
 
   MiniqmcOptions mq_opt_;
   PrimeNumberSet<uint32_t> myPrimes;

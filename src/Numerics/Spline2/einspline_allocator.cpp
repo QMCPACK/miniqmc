@@ -308,10 +308,10 @@ void einspline_create_UBspline_3d_s(UBspline_3d_s<D>*& spline, Ugrid x_grid, Ugr
 // Looking into metaprogramming solution or refactor that eleminates the need
 // for so much explicit instantiation
 
-template void
-einspline_create_multi_UBspline_3d_s(multi_UBspline_3d_s<Devices::CPU>*& spline,
-                                     Ugrid x_grid, Ugrid y_grid, Ugrid z_grid, BCtype_s xBC,
-                                     BCtype_s yBC, BCtype_s zBC, int num_splines);
+template void einspline_create_multi_UBspline_3d_s(multi_UBspline_3d_s<Devices::CPU>*& spline,
+                                                   Ugrid x_grid, Ugrid y_grid, Ugrid z_grid,
+                                                   BCtype_s xBC, BCtype_s yBC, BCtype_s zBC,
+                                                   int num_splines);
 
 template void einspline_create_multi_UBspline_3d_d(multi_UBspline_3d_d<Devices::CPU>*& spline,
                                                    Ugrid x_grid, Ugrid y_grid, Ugrid z_grid,

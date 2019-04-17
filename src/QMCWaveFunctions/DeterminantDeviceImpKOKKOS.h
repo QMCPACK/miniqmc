@@ -224,13 +224,7 @@ void getrf_cpu_impl(const int& n, const int& m, double* a, const int& n0, int* p
 void getrf_cpu_impl(const int& n, const int& m, std::complex<float>* a, const int& n0, int* piv, int& st);
 void getrf_cpu_impl(const int& n, const int& m, std::complex<double>* a, const int& n0, int* piv, int& st);
 void getri_cpu_impl(const int& n, float* a, const int& n0, int* piv, float* work, const int& lwork, int& st);
-void getri_cpu_impl(const int& n,
-                    double* a,
-                    const int& n0,
-                    int* piv,
-                    double* work,
-                    const int& lwork,
-                    int& st);
+void getri_cpu_impl(const int& n, double* a, const int& n0, int* piv, double* work, const int& lwork, int& st);
 void getri_cpu_impl(const int& n,
                     std::complex<float>* a,
                     const int& n0,
@@ -422,12 +416,7 @@ int getrf_gpu_buffer_size(int m, int n, cuDoubleComplex* a, int lda, cusolverDnH
 // also, all strides should be 1
 void getri_gpu_impl(const int n, float* a, int* piv, float* b, int* info, cusolverDnHandle_t& handle);
 void getri_gpu_impl(const int n, double* a, int* piv, double* b, int* info, cusolverDnHandle_t& handle);
-void getri_gpu_impl(const int n,
-                    cuFloatComplex* a,
-                    int* piv,
-                    cuFloatComplex* b,
-                    int* info,
-                    cusolverDnHandle_t& handle);
+void getri_gpu_impl(const int n, cuFloatComplex* a, int* piv, cuFloatComplex* b, int* info, cusolverDnHandle_t& handle);
 void getri_gpu_impl(const int n,
                     cuDoubleComplex* a,
                     int* piv,
@@ -601,9 +590,9 @@ void elementWiseCopy(ViewType1 destination,
   {
     assert(destination.extent(i) == source.extent(i));
   }
-  Kokkos::parallel_for("elementWiseCopy::copy_elements_rk1",
-                       destination.extent(0),
-                       KOKKOS_LAMBDA(const int& i0) { destination(i0) = source(i0); });
+  Kokkos::parallel_for("elementWiseCopy::copy_elements_rk1", destination.extent(0), KOKKOS_LAMBDA(const int& i0) {
+    destination(i0) = source(i0);
+  });
   Kokkos::fence();
 }
 template<class ViewType1, class ViewType2>
@@ -617,13 +606,10 @@ void elementWiseCopy(ViewType1 destination,
     assert(destination.extent(i) == source.extent(i));
   }
   Kokkos::parallel_for("elementWiseCopy::copy_elements_rk2",
-                       Kokkos::MDRangePolicy<
-                           Kokkos::Rank<2, Kokkos::Iterate::Left>>({0, 0},
-                                                                   {destination.extent(0),
-                                                                    destination.extent(1)}),
-                       KOKKOS_LAMBDA(const int& i0, const int& i1) {
-                         destination(i0, i1) = source(i0, i1);
-                       });
+                       Kokkos::MDRangePolicy<Kokkos::Rank<2, Kokkos::Iterate::Left>>({0, 0},
+                                                                                     {destination.extent(0),
+                                                                                      destination.extent(1)}),
+                       KOKKOS_LAMBDA(const int& i0, const int& i1) { destination(i0, i1) = source(i0, i1); });
   Kokkos::fence();
 }
 template<class ViewType1, class ViewType2>
@@ -636,13 +622,10 @@ void elementWiseCopyTrans(ViewType1 destination,
   assert(destination.extent(1) == source.extent(0));
 
   Kokkos::parallel_for("elementWiseCopy::copy_elements_rk2",
-                       Kokkos::MDRangePolicy<
-                           Kokkos::Rank<2, Kokkos::Iterate::Left>>({0, 0},
-                                                                   {destination.extent(0),
-                                                                    destination.extent(1)}),
-                       KOKKOS_LAMBDA(const int& i0, const int& i1) {
-                         destination(i0, i1) = source(i1, i0);
-                       });
+                       Kokkos::MDRangePolicy<Kokkos::Rank<2, Kokkos::Iterate::Left>>({0, 0},
+                                                                                     {destination.extent(0),
+                                                                                      destination.extent(1)}),
+                       KOKKOS_LAMBDA(const int& i0, const int& i1) { destination(i0, i1) = source(i1, i0); });
   Kokkos::fence();
 }
 template<class ViewType1, class ViewType2>
@@ -656,11 +639,10 @@ void elementWiseCopy(ViewType1 destination,
     assert(destination.extent(i) == source.extent(i));
   }
   Kokkos::parallel_for("elementWiseCopy::copy_elements_rk3",
-                       Kokkos::MDRangePolicy<
-                           Kokkos::Rank<3, Kokkos::Iterate::Left>>({0, 0, 0},
-                                                                   {destination.extent(0),
-                                                                    destination.extent(1),
-                                                                    destination.extent(2)}),
+                       Kokkos::MDRangePolicy<Kokkos::Rank<3, Kokkos::Iterate::Left>>({0, 0, 0},
+                                                                                     {destination.extent(0),
+                                                                                      destination.extent(1),
+                                                                                      destination.extent(2)}),
                        KOKKOS_LAMBDA(const int& i0, const int& i1, const int& i2) {
                          destination(i0, i1, i2) = source(i0, i1, i2);
                        });
@@ -677,12 +659,11 @@ void elementWiseCopy(ViewType1 destination,
     assert(destination.extent(i) == source.extent(i));
   }
   Kokkos::parallel_for("elementWiseCopy::copy_elements_rk4",
-                       Kokkos::MDRangePolicy<
-                           Kokkos::Rank<4, Kokkos::Iterate::Left>>({0, 0, 0, 0},
-                                                                   {destination.extent(0),
-                                                                    destination.extent(1),
-                                                                    destination.extent(2),
-                                                                    destination.extent(3)}),
+                       Kokkos::MDRangePolicy<Kokkos::Rank<4, Kokkos::Iterate::Left>>({0, 0, 0, 0},
+                                                                                     {destination.extent(0),
+                                                                                      destination.extent(1),
+                                                                                      destination.extent(2),
+                                                                                      destination.extent(3)}),
                        KOKKOS_LAMBDA(const int& i0, const int& i1, const int& i2, const int& i3) {
                          destination(i0, i1, i2, i3) = source(i0, i1, i2, i3);
                        });
@@ -699,18 +680,13 @@ void elementWiseCopy(ViewType1 destination,
     assert(destination.extent(i) == source.extent(i));
   }
   Kokkos::parallel_for("elementWiseCopy::copy_elements_rk5",
-                       Kokkos::MDRangePolicy<
-                           Kokkos::Rank<5, Kokkos::Iterate::Left>>({0, 0, 0, 0, 0},
-                                                                   {destination.extent(0),
-                                                                    destination.extent(1),
-                                                                    destination.extent(2),
-                                                                    destination.extent(3),
-                                                                    destination.extent(4)}),
-                       KOKKOS_LAMBDA(const int& i0,
-                                     const int& i1,
-                                     const int& i2,
-                                     const int& i3,
-                                     const int& i4) {
+                       Kokkos::MDRangePolicy<Kokkos::Rank<5, Kokkos::Iterate::Left>>({0, 0, 0, 0, 0},
+                                                                                     {destination.extent(0),
+                                                                                      destination.extent(1),
+                                                                                      destination.extent(2),
+                                                                                      destination.extent(3),
+                                                                                      destination.extent(4)}),
+                       KOKKOS_LAMBDA(const int& i0, const int& i1, const int& i2, const int& i3, const int& i4) {
                          destination(i0, i1, i2, i3, i4) = source(i0, i1, i2, i3, i4);
                        });
   Kokkos::fence();
@@ -734,8 +710,7 @@ void checkTemplateParams()
                     std::is_same<valueType, std::complex<float>>::value ||
                     std::is_same<valueType, Kokkos::complex<double>>::value ||
                     std::is_same<valueType, std::complex<double>>::value ||
-                    std::is_same<valueType, cuFloatComplex>::value ||
-                    std::is_same<valueType, cuDoubleComplex>::value,
+                    std::is_same<valueType, cuFloatComplex>::value || std::is_same<valueType, cuDoubleComplex>::value,
                 "Currently only support, float, double, and std/Kokkos/ complex<float> or "
                 "complex<double>, cor cuFloatComplex or cuDoubleComplex");
 #else
@@ -751,7 +726,6 @@ void checkTemplateParams()
                 "complex<double>");
 #endif
 }
-
 
 
 template<typename valueType, typename arrayLayout, typename memorySpace>
@@ -773,15 +747,9 @@ private:
   double* pointerConverter(double* d) { return d; }
   float* pointerConverter(float* d) { return d; }
   std::complex<float>* pointerConverter(std::complex<float>* d) { return d; }
-  std::complex<float>* pointerConverter(Kokkos::complex<float>* d)
-  {
-    return (std::complex<float>*)d;
-  }
+  std::complex<float>* pointerConverter(Kokkos::complex<float>* d) { return (std::complex<float>*)d; }
   std::complex<double>* pointerConverter(std::complex<double>* d) { return d; }
-  std::complex<double>* pointerConverter(Kokkos::complex<double>* d)
-  {
-    return (std::complex<double>*)d;
-  }
+  std::complex<double>* pointerConverter(Kokkos::complex<double>* d) { return (std::complex<double>*)d; }
 
 public:
   linalgHelper(int serialThreshold = 32768)
@@ -1432,9 +1400,7 @@ public:
     valueType curRatio_     = 0.0;
     int firstIndex_         = firstIndex;
     Kokkos::parallel_reduce(psiV_.extent_int(0),
-                            KOKKOS_LAMBDA(int i, valueType& update) {
-                              update += psiV_(i) * psiMinv_(firstIndex_, i);
-                            },
+                            KOKKOS_LAMBDA(int i, valueType& update) { update += psiV_(i) * psiMinv_(firstIndex_, i); },
                             curRatio_);
     return curRatio_;
   }
@@ -1444,20 +1410,17 @@ public:
     doubleViewType psiMsave_ = psiMsave;
     arrType psiV_            = psiV;
     int firstIndex_          = firstIndex;
-    Kokkos::parallel_for(psiV_.extent_int(0),
-                         KOKKOS_LAMBDA(int i) { psiMsave_(firstIndex_, i) = psiV_(i); });
+    Kokkos::parallel_for(psiV_.extent_int(0), KOKKOS_LAMBDA(int i) { psiMsave_(firstIndex_, i) = psiV_(i); });
     Kokkos::fence();
   }
 };
 
 template<typename valueType, typename layoutType>
-class linalgHelper<valueType, layoutType, Kokkos::CudaSpace>
-    : public gpuLinalgHelper<valueType, layoutType>
+class linalgHelper<valueType, layoutType, Kokkos::CudaSpace> : public gpuLinalgHelper<valueType, layoutType>
 {};
 
 template<typename valueType, typename layoutType>
-class linalgHelper<valueType, layoutType, Kokkos::CudaUVMSpace>
-    : public gpuLinalgHelper<valueType, layoutType>
+class linalgHelper<valueType, layoutType, Kokkos::CudaUVMSpace> : public gpuLinalgHelper<valueType, layoutType>
 {};
 
 #endif
@@ -1483,8 +1446,8 @@ void checkIdentity(viewType1 a, viewType2 b, const std::string& tag, linAlgHelpe
       error += (i == j) ? std::abs(result_h(i, j) - cone) : std::abs(result_h(i, j));
     }
   }
-  std::cout << tag << " difference from identity (average per element) = "
-            << error / a.extent(0) / a.extent(1) << std::endl;
+  std::cout << tag << " difference from identity (average per element) = " << error / a.extent(0) / a.extent(1)
+            << std::endl;
 }
 
 template<class viewType1, class viewType2>
@@ -1502,8 +1465,7 @@ void checkDiff(viewType1 a, viewType2 b, const std::string& tag)
                           },
                           error);
   Kokkos::fence();
-  std::cout << tag << " difference between matrices (average per element) = " << error / dim0 / dim1
-            << std::endl;
+  std::cout << tag << " difference between matrices (average per element) = " << error / dim0 / dim1 << std::endl;
 }
 
 
@@ -1526,11 +1488,7 @@ value_type InvertWithLog(ViewType view, LinAlgHelperType& lah, value_type& phase
 }
 
 template<class ViewType, class ArrayViewType, class LinAlgHelperType, typename value_type>
-void updateRow(ViewType pinv,
-               ArrayViewType tv,
-               int rowchanged,
-               value_type c_ratio_in,
-               LinAlgHelperType& lah)
+void updateRow(ViewType pinv, ArrayViewType tv, int rowchanged, value_type c_ratio_in, LinAlgHelperType& lah)
 {
   constexpr value_type cone(1.0);
   constexpr value_type czero(0.0);
@@ -1564,13 +1522,15 @@ void updateRow(ViewType pinv,
 }
 
 template<>
-class DeterminantDeviceImp<Devices::KOKKOS>
-    : public DeterminantDevice<DeterminantDeviceImp<Devices::KOKKOS>>
+class DeterminantDeviceImp<Devices::KOKKOS> : public DeterminantDevice<DeterminantDeviceImp<Devices::KOKKOS>>
 {
 public:
-  using QMCT = QMCTraits;
+  using QMCT                     = QMCTraits;
   static constexpr Devices ENUMT = Devices::KOKKOS;
-    DeterminantDeviceImp(int nels, const RandomGenerator<QMCT::RealType>& RNG, DeviceBuffers<ENUMT> dev_bufs_dummy,  int First = 0)
+  DeterminantDeviceImp(int nels,
+                       const RandomGenerator<QMCT::RealType>& RNG,
+                       DeviceBuffers<ENUMT> dev_bufs_dummy,
+                       int First = 0)
       : DeterminantDevice(nels, RNG, First), FirstIndex(First), myRandom(RNG)
   {
     //std::cout << "DeterminantDeviceImp<KOKKOS>::DeterminantDeviceImp(...)" << '\n';
@@ -1624,19 +1584,14 @@ public:
     checkDiff(psiMRealType, psiMinv, "psiM - psiMinv(T)");
   }
 
-  QMCT::RealType evaluateLogImp(ParticleSet& P,
-                                ParticleSet::ParticleGradient_t& G,
-                                ParticleSet::ParticleLaplacian_t& L)
+  QMCT::RealType evaluateLogImp(ParticleSet& P, ParticleSet::ParticleGradient_t& G, ParticleSet::ParticleLaplacian_t& L)
   {
     recompute();
     return 0.0;
   }
 
   QMCT::GradType evalGradImp(ParticleSet& P, int iat) { return QMCT::GradType(); }
-  QMCT::ValueType ratioGradImp(ParticleSet& P, int iat, QMCT::GradType& grad)
-  {
-    return ratio(P, iat);
-  }
+  QMCT::ValueType ratioGradImp(ParticleSet& P, int iat, QMCT::GradType& grad) { return ratio(P, iat); }
   void evaluateGLImp(ParticleSet& P,
                      ParticleSet::ParticleGradient_t& G,
                      ParticleSet::ParticleLaplacian_t& L,
@@ -1715,9 +1670,7 @@ public:
   }
   inline int sizeImp() const { return psiMinv.extent(0) * psiMinv.extent(1); }
 
-        inline void finishUpdate_i(int iel)
-    {
-    }
+  inline void finishUpdate_i(int iel) {}
 
 private:
   /// log|det|

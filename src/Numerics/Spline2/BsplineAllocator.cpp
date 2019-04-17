@@ -23,42 +23,43 @@
 
 template<Devices DT>
 void einspline_create_multi_UBspline_3d_s(multi_UBspline_3d_s<DT>* spline,
-					  Ugrid x_grid,
-                                                          Ugrid y_grid,
-                                                          Ugrid z_grid,
-                                                          BCtype_s xBC,
-                                                          BCtype_s yBC,
-                                                          BCtype_s zBC,
-                                                          int num_splines);
+                                          Ugrid x_grid,
+                                          Ugrid y_grid,
+                                          Ugrid z_grid,
+                                          BCtype_s xBC,
+                                          BCtype_s yBC,
+                                          BCtype_s zBC,
+                                          int num_splines);
 
 template<Devices DT>
-void einspline_create_UBspline_3d_s(
-				    UBspline_3d_s<DT>* spline,
-				    Ugrid x_grid, Ugrid y_grid, Ugrid z_grid, BCtype_s xBC, BCtype_s yBC, BCtype_s zBC);
+void einspline_create_UBspline_3d_s(UBspline_3d_s<DT>* spline, Ugrid x_grid, Ugrid y_grid,
+                                    Ugrid z_grid, BCtype_s xBC, BCtype_s yBC, BCtype_s zBC);
 
 template<Devices DT>
 void einspline_create_multi_UBspline_3d_d(multi_UBspline_3d_d<DT>* spline,
-					  Ugrid x_grid,
-                                                          Ugrid y_grid,
-                                                          Ugrid z_grid,
-                                                          BCtype_d xBC,
-                                                          BCtype_d yBC,
-                                                          BCtype_d zBC,
-                                                          int num_splines);
+                                          Ugrid x_grid,
+                                          Ugrid y_grid,
+                                          Ugrid z_grid,
+                                          BCtype_d xBC,
+                                          BCtype_d yBC,
+                                          BCtype_d zBC,
+                                          int num_splines);
 
 template<Devices DT>
-void einspline_create_UBspline_3d_d(UBspline_3d_d<DT>* spline,
-    Ugrid x_grid, Ugrid y_grid, Ugrid z_grid, BCtype_d xBC, BCtype_d yBC, BCtype_d zBC);
+void einspline_create_UBspline_3d_d(UBspline_3d_d<DT>* spline, Ugrid x_grid, Ugrid y_grid,
+                                    Ugrid z_grid, BCtype_d xBC, BCtype_d yBC, BCtype_d zBC);
 
 namespace qmcplusplus
 {
 namespace einspline
 {
 template<Devices DT>
-Allocator<DT>::Allocator() : Policy(0) {}
+Allocator<DT>::Allocator() : Policy(0)
+{}
 
 template<Devices DT>
-Allocator<DT>::~Allocator() {}
+Allocator<DT>::~Allocator()
+{}
 
 template<>
 template<typename SplineType>

@@ -229,8 +229,7 @@ typedef StackKeyParam<2> StackKey;
 class TimerManagerClass
 {
 private:
-  TimerManagerClass()
-      : timer_threshold(timer_level_coarse), max_timer_id(1), max_timers_exceeded(false)
+  TimerManagerClass() : timer_threshold(timer_level_coarse), max_timer_id(1), max_timers_exceeded(false)
   {
 #ifdef USE_VTUNE_TASKS
     task_domain = __itt_domain_create("QMCPACK");
@@ -257,7 +256,7 @@ public:
   __itt_domain* task_domain;
 #endif
 
-  
+
   void NO_SANITIZE addTimer(NewTimer* t);
   NewTimer* createTimer(const std::string& myname, timer_levels mytimer = timer_level_fine);
 
@@ -367,7 +366,7 @@ public:
 #endif
 
 #ifdef USE_STACK_TIMERS
-      #pragma omp master
+#pragma omp master
       {
         if (manager)
         {
@@ -547,9 +546,7 @@ template<class T>
 using TimerNameLevelList_t = std::vector<TimerIDNameLevel_t<T>>;
 
 template<class T>
-void setup_timers(TimerList_t& timers,
-                  TimerNameList_t<T> timer_list,
-                  timer_levels timer_level = timer_level_fine)
+void setup_timers(TimerList_t& timers, TimerNameList_t<T> timer_list, timer_levels timer_level = timer_level_fine)
 {
   timers.resize(timer_list.size());
   for (int i = 0; i < timer_list.size(); i++)
@@ -571,10 +568,7 @@ void setup_timers(TimerList_t& timers, TimerNameLevelList_t<T> timer_list)
 
 struct TimerComparator
 {
-  inline bool operator()(const NewTimer* a, const NewTimer* b)
-  {
-    return a->get_name() < b->get_name();
-  }
+  inline bool operator()(const NewTimer* a, const NewTimer* b) { return a->get_name() < b->get_name(); }
 };
 } // namespace qmcplusplus
 

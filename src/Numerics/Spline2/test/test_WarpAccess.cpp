@@ -18,19 +18,14 @@
 
 namespace qmcplusplus
 {
+TEST_CASE("WarpAccess Basic Launch", "[CUDA]") { launch_test_kernel(1); }
 
-TEST_CASE("WarpAccess Basic Launch","[CUDA]")
+TEST_CASE("WarpAccess With Spline", "[CUDA]")
 {
-  launch_test_kernel(1);
-}
-
-TEST_CASE("WarpAccess With Spline","[CUDA]")
-{
-  TestMultiBspline<double,double> tmb(100);
+  TestMultiBspline<double, double> tmb(100);
   tmb.create();
   launch_test_kernel_with_spline(tmb.cuda_spline, 1);
 }
 
-  
-}
 
+} // namespace qmcplusplus

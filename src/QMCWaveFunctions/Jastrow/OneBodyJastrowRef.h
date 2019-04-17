@@ -118,9 +118,7 @@ struct OneBodyJastrowRef : public WaveFunctionComponent
     }
   }
 
-  RealType evaluateLog(ParticleSet& P,
-                       ParticleSet::ParticleGradient_t& G,
-                       ParticleSet::ParticleLaplacian_t& L)
+  RealType evaluateLog(ParticleSet& P, ParticleSet::ParticleGradient_t& G, ParticleSet::ParticleLaplacian_t& L)
   {
     evaluateGL(P, G, L, true);
     return LogValue;
@@ -275,7 +273,6 @@ struct OneBodyJastrowRef : public WaveFunctionComponent
     Grad[iat] = curGrad;
     Lap[iat]  = curLap;
   }
-
 };
 
 } // namespace miniqmcreference

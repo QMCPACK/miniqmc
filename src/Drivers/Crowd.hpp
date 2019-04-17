@@ -34,7 +34,6 @@
 
 namespace qmcplusplus
 {
-
 /** exercise for the reader
  *  works for std::algorithms
  *  But not with standard iterator loop syntax
@@ -62,12 +61,12 @@ DereferenceIterator<Iterator> dereference_iterator(Iterator t)
 }
 
 enum CrowdTimers
-  {
-    Timer_VGH,
-    Timer_WF,
-  };
+{
+  Timer_VGH,
+  Timer_WF,
+};
 
-    
+
 /** runs a packsize of walkers with device specializations that handle that packsize efficiently
  *  Crowd owns walker indexed arrays of all the result objects does calculations on them.
  *  Should degrade to running individual evaluates for ref implementations.
@@ -92,7 +91,8 @@ class Crowd
    */
   struct buildWaveFunctionsFunc
       : public std::unary_function<
-            const boost::tuple<WaveFunction&, ParticleSet&, ParticleSet&, const RandomGenerator<QMCT::RealType>&>&, void>
+            const boost::tuple<WaveFunction&, ParticleSet&, ParticleSet&, const RandomGenerator<QMCT::RealType>&>&,
+            void>
   {
   private:
     bool useRef_;
@@ -101,33 +101,30 @@ class Crowd
     DeviceBuffers<DT>& device_buffers_;
 
   public:
-      buildWaveFunctionsFunc(ParticleSet& ions, DeviceBuffers<DT>& device_buffers, bool useRef = false, bool enableJ3 = false)
-	  : useRef_(useRef), enableJ3_(enableJ3), ions_(ions), device_buffers_(device_buffers)
-          {}
-      void operator()(const boost::tuple<WaveFunction&, ParticleSet&, const RandomGenerator<QMCT::RealType>&>& t) const
+    buildWaveFunctionsFunc(ParticleSet& ions,
+                           DeviceBuffers<DT>& device_buffers,
+                           bool useRef   = false,
+                           bool enableJ3 = false)
+        : useRef_(useRef), enableJ3_(enableJ3), ions_(ions), device_buffers_(device_buffers)
+    {}
+    void operator()(const boost::tuple<WaveFunction&, ParticleSet&, const RandomGenerator<QMCT::RealType>&>& t) const
     {
-	WaveFunctionBuilder<DT>::build(useRef_, t.get<0>(), ions_, t.get<1>(), t.get<2>(), device_buffers_, enableJ3_);
+      WaveFunctionBuilder<DT>::build(useRef_, t.get<0>(), ions_, t.get<1>(), t.get<2>(), device_buffers_, enableJ3_);
     }
   };
 
   struct constructTrialMove
-    : public std::unary_function<const boost::tuple<std::vector<QMCT::PosType>&,
-						    ParticleSet&,
-						    int&>&, void>
+      : public std::unary_function<const boost::tuple<std::vector<QMCT::PosType>&, ParticleSet&, int&>&, void>
   {
     int iel_;
     QMCT::RealType sqrttau_;
-    constructTrialMove(QMCT::RealType sqrttau, int iel)
-      : iel_(iel), sqrttau_(sqrttau)
-    {}
-    void operator()(const boost::tuple<std::vector<QMCT::PosType>&,
-		    ParticleSet&,
-		    int&>& t) const
+    constructTrialMove(QMCT::RealType sqrttau, int iel) : iel_(iel), sqrttau_(sqrttau) {}
+    void operator()(const boost::tuple<std::vector<QMCT::PosType>&, ParticleSet&, int&>& t) const
     {
       QMCT::PosType dr = sqrttau_ * t.get<0>()[iel_];
-      int isValid = t.get<1>().makeMoveAndCheck(iel_, dr);
-      if(isValid == 0)
-	throw std::logic_error("moves must be valid");
+      int isValid      = t.get<1>().makeMoveAndCheck(iel_, dr);
+      if (isValid == 0)
+        throw std::logic_error("moves must be valid");
     }
   };
   //@}
@@ -220,7 +217,7 @@ public:
     */
   template<Devices ODT>
   Crowd(const Crowd<ODT>& m);
-  
+
   /// destructor
   ~Crowd();
 
@@ -228,7 +225,7 @@ public:
   /** takes over the 'movers' of passed in mover
    *  that object becomes invalid
    */
-  void merge(Crowd& m_in) {} 
+  void merge(Crowd& m_in) {}
   void buildViews(bool useRef, const SPOSet* const spo_main, int team_size, int member_id);
 
   void buildWaveFunctions(bool useRef, bool enableJ3);
@@ -245,21 +242,23 @@ public:
   void constructTrialMoves(int iels);
   void updatePosFromCurrentEls(int iels);
   int acceptRestoreMoves(int iels, QMCT::RealType accept);
-    void finishUpdate(int iels);
-    void setupTimers() {
-	  TimerNameLevelList_t<CrowdTimers> CrowdTimerNames =
-    {{Timer_VGH, "Actual VGH eval", timer_level_fine}, {Timer_WF, "WF after VGH", timer_level_fine}};
+  void finishUpdate(int iels);
+  void setupTimers()
+  {
+    TimerNameLevelList_t<CrowdTimers> CrowdTimerNames = {{Timer_VGH, "Actual VGH eval", timer_level_fine},
+                                                         {Timer_WF, "WF after VGH", timer_level_fine}};
 
-  setup_timers(timers, CrowdTimerNames);
-    }
+    setup_timers(timers, CrowdTimerNames);
+  }
 
-    TimerList_t timers;
+  TimerList_t timers;
+
 private:
   CrowdBuffers<DT> buffers_;
   DeviceBuffers<DT> device_buffers_;
   int pack_size_;
   static constexpr QMCT::RealType tau = 2.0;
-  QMCT::RealType sqrttau = std::sqrt(tau);
+  QMCT::RealType sqrttau              = std::sqrt(tau);
   int nels_;
 };
 
@@ -295,8 +294,8 @@ template<Devices DT>
 template<Devices ODT>
 Crowd<DT>::Crowd(const Crowd<ODT>& m)
 {
-  ions_     = m.ions_;
-  rngs_     = m.rngs_; //Takes possessiong of ptrs?
+  ions_ = m.ions_;
+  rngs_ = m.rngs_; //Takes possessiong of ptrs?
 }
 
 template<Devices DT>
@@ -305,12 +304,11 @@ Crowd<DT>::~Crowd()
 
 template<Devices DT>
 void Crowd<DT>::init()
-{
-}
+{}
 
 
-  //This std::for_each idiom will make trying hpx threads very easy.
-  
+//This std::for_each idiom will make trying hpx threads very easy.
+
 template<Devices DT>
 void Crowd<DT>::updatePosFromCurrentEls(int iel)
 {
@@ -332,7 +330,7 @@ void Crowd<DT>::buildWaveFunctions(bool useRef, bool enableJ3)
 {
   std::for_each(boost::make_zip_iterator(boost::make_tuple(wfs_begin(), elss_begin(), rngs_begin())),
                 boost::make_zip_iterator(boost::make_tuple(wfs_end(), elss_end(), rngs_end())),
-                buildWaveFunctionsFunc(ions_, device_buffers_, useRef , enableJ3));
+                buildWaveFunctionsFunc(ions_, device_buffers_, useRef, enableJ3));
 }
 
 template<Devices DT>
@@ -369,13 +367,14 @@ void Crowd<DT>::evaluateGL()
 template<Devices DT>
 void Crowd<DT>::calcNLPP(int nions, QMCT::RealType Rmax)
 {
-  //std::cout << "Crowd calcNLPP Called \n"; 
+  //std::cout << "Crowd calcNLPP Called \n";
 
   //So basically we need to unwrap this.
 
   std::for_each(boost::make_zip_iterator(boost::make_tuple(wfs_begin(), spos.begin(), elss_begin(), nlpps_begin())),
                 boost::make_zip_iterator(boost::make_tuple(wfs_end(), spos.end(), elss_end(), nlpps_end())),
-                [nions, Rmax](const boost::tuple<WaveFunction&, SPOSet*, ParticleSet&, NonLocalPP<QMCT::RealType>&>& t) {
+                [nions,
+                 Rmax](const boost::tuple<WaveFunction&, SPOSet*, ParticleSet&, NonLocalPP<QMCT::RealType>&>& t) {
                   auto& wavefunction = t.get<0>();
                   auto& spo          = *(t.get<1>());
                   auto& els          = t.get<2>();
@@ -417,11 +416,12 @@ int Crowd<DT>::acceptRestoreMoves(int iel, QMCT::RealType accept)
   int accepted = 0;
   std::for_each(boost::make_zip_iterator(boost::make_tuple(urs_begin(), wfs_begin(), elss_begin())),
                 boost::make_zip_iterator(boost::make_tuple(urs_end(), wfs_end(), elss_end())),
-                [iel, accept, &accepted](const boost::tuple<aligned_vector<QMCT::RealType>&, WaveFunction&, ParticleSet&>& t) {
+                [iel, accept, &accepted](
+                    const boost::tuple<aligned_vector<QMCT::RealType>&, WaveFunction&, ParticleSet&>& t) {
                   auto& els = t.get<2>();
                   if (t.get<0>()[iel] < accept)
                   {
-		    ++accepted;
+                    ++accepted;
                     t.get<1>().acceptMove(els, iel);
                     els.acceptMove(iel);
                   }
@@ -433,12 +433,12 @@ template<Devices DT>
 void Crowd<DT>::finishUpdate(int iel)
 {}
 
-  template<Devices DT>
-  void Crowd<DT>::donePbyP()
-  {
-    std::for_each(elss_begin(), elss_end(), [](ParticleSet& els) { els.donePbyP(); });
-  }
-  
+template<Devices DT>
+void Crowd<DT>::donePbyP()
+{
+  std::for_each(elss_begin(), elss_end(), [](ParticleSet& els) { els.donePbyP(); });
+}
+
 template<Devices DT>
 void Crowd<DT>::fillRandoms()
 {
@@ -464,7 +464,6 @@ void Crowd<DT>::constructTrialMoves(int iel)
                 boost::make_zip_iterator(boost::make_tuple(deltas_end(), elss_end(), valids.end())),
                 constructTrialMove(sqrttau, iel));
 }
-
 
 
 extern template class Crowd<Devices::CPU>;

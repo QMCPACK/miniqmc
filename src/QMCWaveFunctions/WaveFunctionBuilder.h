@@ -14,25 +14,26 @@ template<Devices DT>
 class WaveFunctionBuilder
 {
 public:
-static void build(bool useRef,
-                        WaveFunction& WF,
-                        ParticleSet& ions,
-                        ParticleSet& els,
-                        const RandomGenerator<QMCTraits::RealType>& RNG,
-                        DeviceBuffers<DT>& dev_bufs,
-                        bool enableJ3);
+  static void build(bool useRef,
+                    WaveFunction& WF,
+                    ParticleSet& ions,
+                    ParticleSet& els,
+                    const RandomGenerator<QMCTraits::RealType>& RNG,
+                    DeviceBuffers<DT>& dev_bufs,
+                    bool enableJ3);
+
 private:
-static void devDetBuild(WaveFunction& WF,
-			const RandomGenerator<QMCTraits::RealType>& RNG,
-			                                    ParticleSet& els,
-			DeviceBuffers<DT>& dev_bufs);
+  static void devDetBuild(WaveFunction& WF,
+                          const RandomGenerator<QMCTraits::RealType>& RNG,
+                          ParticleSet& els,
+                          DeviceBuffers<DT>& dev_bufs);
 };
 
 extern template class WaveFunctionBuilder<Devices::CPU>;
 #ifdef QMC_USE_KOKKOS
 extern template class WaveFunctionBuilder<Devices::KOKKOS>;
 #endif
-}
+} // namespace qmcplusplus
 
 #ifdef QMC_USE_CUDA
 #include "QMCWaveFunctions/WaveFunctionBuilderCUDA.hpp"

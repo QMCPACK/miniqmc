@@ -33,16 +33,13 @@ struct EinsplineSPOParams
   int lastBlock;
 
 
-
-
-
   /// number of splines
   int nSplines;
   /// number of splines per block
   int nSplinesPerBlock;
   int nSplinesSerialThreshold_V;
   int nSplinesSerialThreshold_VGH;
-  
+
 
   /// if true, responsible for cleaning up einsplines
   bool Owner;
@@ -53,7 +50,7 @@ struct EinsplineSPOParams
 
   CrystalLattice<T, 3> lattice;
 };
-  
-}
+
+} // namespace qmcplusplus
 
 #endif

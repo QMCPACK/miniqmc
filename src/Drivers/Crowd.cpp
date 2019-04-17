@@ -22,7 +22,6 @@
 
 namespace qmcplusplus
 {
-
 template class Crowd<Devices::CPU>;
 #ifdef QMC_USE_KOKKOS
 template class Crowd<Devices::KOKKOS>;

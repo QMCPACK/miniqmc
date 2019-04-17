@@ -26,18 +26,18 @@
 
 namespace qmcplusplus
 {
-  enum MiniQMCTimers
-  {
-    Timer_Total,
-    Timer_Init,
-    Timer_Diffusion,
-    Timer_ECP,
-    Timer_Value,
-    Timer_evalGrad,
-    Timer_evalVGH,
-    Timer_ratioGrad,
-    Timer_Update,
-  };
+enum MiniQMCTimers
+{
+  Timer_Total,
+  Timer_Init,
+  Timer_Diffusion,
+  Timer_ECP,
+  Timer_Value,
+  Timer_evalGrad,
+  Timer_evalVGH,
+  Timer_ratioGrad,
+  Timer_Update,
+};
 
 /** reads and holds the options
  *  composed into MiniqmcDriver
@@ -52,7 +52,7 @@ public:
       {Timer_ECP, "Pseudopotential"},
       {Timer_Value, "Value"},
       {Timer_evalGrad, "Current Gradient"},
-	  {Timer_evalVGH, "Spline Hessian Evaluation"},
+      {Timer_evalVGH, "Spline Hessian Evaluation"},
       {Timer_ratioGrad, "New Gradient"},
       {Timer_Update, "Update"},
   };
@@ -103,25 +103,24 @@ public:
   int nx = 37, ny = 37, nz = 37;
   int nmovers = 1;
   // thread blocking
-  int splines_per_block  = -1;
-  int team_size = 1;
-  int nsubsteps = 1;
-  int ncrews    = 1;
+  int splines_per_block = -1;
+  int team_size         = 1;
+  int nsubsteps         = 1;
+  int ncrews            = 1;
   // Set cutoff for NLPP use.
   QMCT::RealType accept        = 0.5;
   QMCT::RealType Rmax          = 1.7;
   bool useRef                  = false;
   bool enableJ3                = false;
-  bool enableCrowd            = false;
+  bool enableCrowd             = false;
   bool verbose                 = false;
   std::string timer_level_name = "fine";
   TimerList_t Timers;
 
   int pack_size;
-  
-  MiniqmcOptions() = default;
-  MiniqmcOptions(const MiniqmcOptions&) = default; // { std::cout << "MiniqmcOptions copy made" << '\n'; }
 
+  MiniqmcOptions()                      = default;
+  MiniqmcOptions(const MiniqmcOptions&) = default; // { std::cout << "MiniqmcOptions copy made" << '\n'; }
 };
 
 MiniqmcOptions readOptions(int argc, char** argv);

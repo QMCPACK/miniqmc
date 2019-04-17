@@ -42,7 +42,7 @@ struct SplineBound
 
 // template<typename T>
 // struct MultiBsplineData;
-  
+
 
 template<typename T>
 struct MultiBsplineData
@@ -52,17 +52,17 @@ struct MultiBsplineData
   static const T d2A44[16];
   //static const T d3A44[16];
 
-// QMC_ALIGNAS static constexpr T A44[16] = {
-//     -1.0 / 6.0, 3.0 / 6.0, -3.0 / 6.0, 1.0 / 6.0, 3.0 / 6.0, -6.0 / 6.0,
-//     0.0 / 6.0,  4.0 / 6.0, -3.0 / 6.0, 3.0 / 6.0, 3.0 / 6.0, 1.0 / 6.0,
-//     1.0 / 6.0,  0.0 / 6.0, 0.0 / 6.0,  0.0 / 6.0};
+  // QMC_ALIGNAS static constexpr T A44[16] = {
+  //     -1.0 / 6.0, 3.0 / 6.0, -3.0 / 6.0, 1.0 / 6.0, 3.0 / 6.0, -6.0 / 6.0,
+  //     0.0 / 6.0,  4.0 / 6.0, -3.0 / 6.0, 3.0 / 6.0, 3.0 / 6.0, 1.0 / 6.0,
+  //     1.0 / 6.0,  0.0 / 6.0, 0.0 / 6.0,  0.0 / 6.0};
 
-// QMC_ALIGNAS static constexpr T dA44[16] = {0.0, -0.5, 1.0, -0.5, 0.0, 1.5, -2.0, 0.0,
-//     0.0, -1.5, 1.0, 0.5,  0.0, 0.5, 0.0,  0.0};
+  // QMC_ALIGNAS static constexpr T dA44[16] = {0.0, -0.5, 1.0, -0.5, 0.0, 1.5, -2.0, 0.0,
+  //     0.0, -1.5, 1.0, 0.5,  0.0, 0.5, 0.0,  0.0};
 
-// QMC_ALIGNAS static constexpr T d2A44[16] = {
-//     0.0, 0.0, -1.0, 1.0, 0.0, 0.0, 3.0, -2.0,
-//     0.0, 0.0, -3.0, 1.0, 0.0, 0.0, 1.0, 0.0};
+  // QMC_ALIGNAS static constexpr T d2A44[16] = {
+  //     0.0, 0.0, -1.0, 1.0, 0.0, 0.0, 3.0, -2.0,
+  //     0.0, 0.0, -3.0, 1.0, 0.0, 0.0, 1.0, 0.0};
 
   static void compute_prefactors(T a[4], T tx)
   {

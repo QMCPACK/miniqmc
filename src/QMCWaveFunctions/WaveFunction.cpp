@@ -33,7 +33,6 @@
 
 namespace qmcplusplus
 {
-
 WaveFunction::~WaveFunction()
 {
   if (Is_built)
@@ -47,15 +46,15 @@ WaveFunction::~WaveFunction()
 
 void WaveFunction::setupTimers()
 {
-  TimerNameLevelList_t<WaveFunctionTimers> WaveFunctionTimerNames =
-      {{Timer_Det, "Determinant", timer_level_fine}, {Timer_Finish, "FinishUpdate", timer_level_fine},
-       {Timer_GL, "Kinetic Energy", timer_level_coarse}};
+  TimerNameLevelList_t<WaveFunctionTimers> WaveFunctionTimerNames = {{Timer_Det, "Determinant", timer_level_fine},
+                                                                     {Timer_Finish, "FinishUpdate", timer_level_fine},
+                                                                     {Timer_GL, "Kinetic Energy", timer_level_coarse}};
 
   setup_timers(timers, WaveFunctionTimerNames);
   for (int i = 0; i < Jastrows.size(); i++)
   {
     jastrow_timers.push_back(
-			     TimerManagerClass::get().createTimer(Jastrows[i]->WaveFunctionComponentName, timer_level_fine));
+        TimerManagerClass::get().createTimer(Jastrows[i]->WaveFunctionComponentName, timer_level_fine));
   }
 }
 
@@ -341,8 +340,7 @@ const std::vector<WaveFunctionComponent*> extract_dn_list(const std::vector<Wave
   return dn_list;
 }
 
-const std::vector<WaveFunctionComponent*>
-    extract_jas_list(const std::vector<WaveFunction*>& WF_list, int jas_id)
+const std::vector<WaveFunctionComponent*> extract_jas_list(const std::vector<WaveFunction*>& WF_list, int jas_id)
 {
   std::vector<WaveFunctionComponent*> jas_list;
   for (auto it = WF_list.begin(); it != WF_list.end(); it++)

@@ -29,13 +29,13 @@
 
 template<>
 void einspline_create_multi_UBspline_3d_s(multi_UBspline_3d_s<Devices::KOKKOS>*& restrict spline,
-							  Ugrid x_grid,
-                                                          Ugrid y_grid,
-                                                          Ugrid z_grid,
-                                                          BCtype_s xBC,
-                                                          BCtype_s yBC,
-                                                          BCtype_s zBC,
-                                                          int num_splines)
+                                          Ugrid x_grid,
+                                          Ugrid y_grid,
+                                          Ugrid z_grid,
+                                          BCtype_s xBC,
+                                          BCtype_s yBC,
+                                          BCtype_s zBC,
+                                          int num_splines)
 {
   // Create new spline
   spline = new multi_UBspline_3d_s<Devices::KOKKOS>;
@@ -80,15 +80,16 @@ void einspline_create_multi_UBspline_3d_s(multi_UBspline_3d_s<Devices::KOKKOS>*&
   z_grid.delta_inv = 1.0 / z_grid.delta;
   spline->z_grid   = z_grid;
 
-  const int ND   = QMC_CLINE / sizeof(float);
-  int N        = (num_splines % ND) ? (num_splines + ND - num_splines % ND) : num_splines;
+  const int ND     = QMC_CLINE / sizeof(float);
+  int N            = (num_splines % ND) ? (num_splines + ND - num_splines % ND) : num_splines;
   spline->x_stride = (size_t)Ny * (size_t)Nz * (size_t)N;
   spline->y_stride = (size_t)Nz * N;
   spline->z_stride = N;
 
   spline->coefs_size = (size_t)Nx * spline->x_stride;
 
-  spline->coefs_view = multi_UBspline_3d_s<Devices::KOKKOS>::coefs_view_t("Multi_UBspline_3d_s", Nx, Ny, Nz, N);
+  spline->coefs_view =
+      multi_UBspline_3d_s<Devices::KOKKOS>::coefs_view_t("Multi_UBspline_3d_s", Nx, Ny, Nz, N);
 
 
   //Check that data layout is as expected
@@ -119,13 +120,13 @@ void einspline_create_multi_UBspline_3d_s(multi_UBspline_3d_s<Devices::KOKKOS>*&
 
 template<>
 void einspline_create_multi_UBspline_3d_d(multi_UBspline_3d_d<Devices::KOKKOS>*& spline,
-							  Ugrid x_grid,
-                                                          Ugrid y_grid,
-                                                          Ugrid z_grid,
-                                                          BCtype_d xBC,
-                                                          BCtype_d yBC,
-                                                          BCtype_d zBC,
-                                                          int num_splines)
+                                          Ugrid x_grid,
+                                          Ugrid y_grid,
+                                          Ugrid z_grid,
+                                          BCtype_d xBC,
+                                          BCtype_d yBC,
+                                          BCtype_d zBC,
+                                          int num_splines)
 {
   // Create new spline
   spline = new multi_UBspline_3d_d<Devices::KOKKOS>;
@@ -170,15 +171,16 @@ void einspline_create_multi_UBspline_3d_d(multi_UBspline_3d_d<Devices::KOKKOS>*&
   z_grid.delta_inv = 1.0 / z_grid.delta;
   spline->z_grid   = z_grid;
 
-  const int ND   = QMC_CLINE / sizeof(double);
-  int N        = (num_splines % ND) ? (num_splines + ND - num_splines % ND) : num_splines;
+  const int ND     = QMC_CLINE / sizeof(double);
+  int N            = (num_splines % ND) ? (num_splines + ND - num_splines % ND) : num_splines;
   spline->x_stride = (size_t)Ny * (size_t)Nz * (size_t)N;
   spline->y_stride = (size_t)Nz * N;
   spline->z_stride = N;
 
   spline->coefs_size = (size_t)Nx * spline->x_stride;
 
-  spline->coefs_view = multi_UBspline_3d_d<Devices::KOKKOS>::coefs_view_t("Multi_UBspline_3d_s", Nx, Ny, Nz, N);
+  spline->coefs_view =
+      multi_UBspline_3d_d<Devices::KOKKOS>::coefs_view_t("Multi_UBspline_3d_s", Nx, Ny, Nz, N);
 
 
   //Check that data layout is as expected
@@ -209,13 +211,11 @@ void einspline_create_multi_UBspline_3d_d(multi_UBspline_3d_d<Devices::KOKKOS>*&
 
 
 template<>
-void einspline_create_multi_UBspline_3d_s_coefs(multi_UBspline_3d_s<Devices::KOKKOS>*& restrict spline,
-						int Nx,
-						int Ny,
-						int Nz,
-						int N)
+void einspline_create_multi_UBspline_3d_s_coefs(
+    multi_UBspline_3d_s<Devices::KOKKOS>*& restrict spline, int Nx, int Ny, int Nz, int N)
 {
-  spline->coefs_view = multi_UBspline_3d_s<Devices::KOKKOS>::coefs_view_t("Multi_UBspline_3d_s", Nx, Ny, Nz, N);
+  spline->coefs_view =
+      multi_UBspline_3d_s<Devices::KOKKOS>::coefs_view_t("Multi_UBspline_3d_s", Nx, Ny, Nz, N);
 
 
   //Check that data layout is as expected
@@ -237,13 +237,11 @@ void einspline_create_multi_UBspline_3d_s_coefs(multi_UBspline_3d_s<Devices::KOK
 }
 
 template<>
-void einspline_create_multi_UBspline_3d_d_coefs(multi_UBspline_3d_d<Devices::KOKKOS>*& restrict spline,
-						int Nx,
-						int Ny,
-						int Nz,
-						int N)
+void einspline_create_multi_UBspline_3d_d_coefs(
+    multi_UBspline_3d_d<Devices::KOKKOS>*& restrict spline, int Nx, int Ny, int Nz, int N)
 {
-  spline->coefs_view = multi_UBspline_3d_d<Devices::KOKKOS>::coefs_view_t("Multi_UBspline_3d_d", Nx, Ny, Nz, N);
+  spline->coefs_view =
+      multi_UBspline_3d_d<Devices::KOKKOS>::coefs_view_t("Multi_UBspline_3d_d", Nx, Ny, Nz, N);
 
   //Check that data layout is as expected
   //
@@ -262,4 +260,3 @@ void einspline_create_multi_UBspline_3d_d_coefs(multi_UBspline_3d_d<Devices::KOK
 
   spline->coefs = spline->coefs_view.data();
 }
-

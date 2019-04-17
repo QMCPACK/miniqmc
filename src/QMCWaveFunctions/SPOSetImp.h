@@ -24,12 +24,12 @@
 
 namespace qmcplusplus
 {
-
 template<Devices DT>
 class SPOSetImp : public SPOSet
 {
 public:
   int size() const { return OrbitalSetSize; }
+
 private:
   /// number of SPOs
   int OrbitalSetSize;
@@ -37,34 +37,30 @@ private:
   std::string className;
 
 public:
-  //  Still necessary for reference but this is not how we handle blocking now 
+  //  Still necessary for reference but this is not how we handle blocking now
   //  operates on multiple walkers
-  virtual void
-  multi_evaluate_v(const std::vector<SPOSet*>& spo_list, const std::vector<PosType>& pos_list)
+  virtual void multi_evaluate_v(const std::vector<SPOSet*>& spo_list, const std::vector<PosType>& pos_list)
   {
-    #pragma omp parallel for
+#pragma omp parallel for
     for (int iw = 0; iw < spo_list.size(); iw++)
       spo_list[iw]->evaluate_v(pos_list[iw]);
   }
 
-  virtual void
-  multi_evaluate_vgl(const std::vector<SPOSet*>& spo_list, const std::vector<PosType>& pos_list)
+  virtual void multi_evaluate_vgl(const std::vector<SPOSet*>& spo_list, const std::vector<PosType>& pos_list)
   {
-    #pragma omp parallel for
+#pragma omp parallel for
     for (int iw = 0; iw < spo_list.size(); iw++)
       spo_list[iw]->evaluate_vgl(pos_list[iw]);
   }
 
-  virtual void
-  multi_evaluate_vgh(const std::vector<SPOSet*>& spo_list, const std::vector<PosType>& pos_list)
+  virtual void multi_evaluate_vgh(const std::vector<SPOSet*>& spo_list, const std::vector<PosType>& pos_list)
   {
-    #pragma omp parallel for
+#pragma omp parallel for
     for (int iw = 0; iw < spo_list.size(); iw++)
       spo_list[iw]->evaluate_vgh(pos_list[iw]);
   }
-
 };
 
-}
+} // namespace qmcplusplus
 
 #endif

@@ -29,7 +29,7 @@ namespace qmcplusplus
  *For electrons, distinct pair correlation functions are used
  *for spins up-up/down-down and up-down/down-up.
  */
-template <Devices DT, class FT>
+template<Devices DT, class FT>
 class ThreeBodyJastrow : public WaveFunctionComponent
 {
   /// type of each component U, dU, d2U;
@@ -244,9 +244,7 @@ public:
           }
   }
 
-  RealType evaluateLog(ParticleSet& P,
-                       ParticleSet::ParticleGradient_t& G,
-                       ParticleSet::ParticleLaplacian_t& L)
+  RealType evaluateLog(ParticleSet& P, ParticleSet::ParticleGradient_t& G, ParticleSet::ParticleLaplacian_t& L)
   {
     evaluateGL(P, G, L, true);
     return LogValue;
@@ -344,12 +342,10 @@ public:
     // update compact list elecs_inside
     for (int jat = 0; jat < Nion; jat++)
     {
-      bool inside = eI_table.Temp_r[jat] < Ion_cutoff[jat];
-      auto iter   = find(elecs_inside(ig, jat).begin(), elecs_inside(ig, jat).end(), iat);
-      auto iter_dist =
-          elecs_inside_dist(ig, jat).begin() + std::distance(elecs_inside(ig, jat).begin(), iter);
-      auto iter_displ =
-          elecs_inside_displ(ig, jat).begin() + std::distance(elecs_inside(ig, jat).begin(), iter);
+      bool inside     = eI_table.Temp_r[jat] < Ion_cutoff[jat];
+      auto iter       = find(elecs_inside(ig, jat).begin(), elecs_inside(ig, jat).end(), iat);
+      auto iter_dist  = elecs_inside_dist(ig, jat).begin() + std::distance(elecs_inside(ig, jat).begin(), iter);
+      auto iter_displ = elecs_inside_displ(ig, jat).begin() + std::distance(elecs_inside(ig, jat).begin(), iter);
       if (inside)
       {
         if (iter == elecs_inside(ig, jat).end())
@@ -418,8 +414,7 @@ public:
     }
   }
 
-  inline valT
-      computeU(const ParticleSet& P, int jel, int jg, const RealType* distjI, const RealType* distjk)
+  inline valT computeU(const ParticleSet& P, int jel, int jg, const RealType* distjI, const RealType* distjk)
   {
     const DistanceTableData& eI_table = (*P.DistTables[myTableID]);
 
@@ -457,14 +452,11 @@ public:
             }
           }
         }
-        if ((iind + 1 == ions_nearby.size() || ig != Ions.GroupID[ions_nearby[iind + 1]]) &&
-            kel_counter > 0)
+        if ((iind + 1 == ions_nearby.size() || ig != Ions.GroupID[ions_nearby[iind + 1]]) && kel_counter > 0)
         {
           const FT& feeI(*F(ig, jg, kg));
-          Uj += feeI.evaluateV(kel_counter,
-                               Distjk_Compressed.data(),
-                               DistjI_Compressed.data(),
-                               DistkI_Compressed.data());
+          Uj +=
+              feeI.evaluateV(kel_counter, Distjk_Compressed.data(), DistjI_Compressed.data(), DistkI_Compressed.data());
           kel_counter = 0;
         }
       }
@@ -558,8 +550,7 @@ public:
     d2Uj -= ctwo * sum;
 
     for (int kel_index = 0; kel_index < kel_counter; kel_index++)
-      hessF00[kel_index] = hessF00[kel_index] + hessF22[kel_index] +
-          lapfac * (gradF0[kel_index] + gradF2[kel_index]) -
+      hessF00[kel_index] = hessF00[kel_index] + hessF22[kel_index] + lapfac * (gradF0[kel_index] + gradF2[kel_index]) -
           ctwo * hessF02[kel_index] * hessF11[kel_index];
 
     for (int kel_index = 0; kel_index < kel_counter; kel_index++)
@@ -633,8 +624,7 @@ public:
             }
           }
         }
-        if ((iind + 1 == ions_nearby.size() || ig != Ions.GroupID[ions_nearby[iind + 1]]) &&
-            kel_counter > 0)
+        if ((iind + 1 == ions_nearby.size() || ig != Ions.GroupID[ions_nearby[iind + 1]]) && kel_counter > 0)
         {
           const FT& feeI(*F(ig, jg, kg));
           computeU3_engine(P, feeI, kel_counter, Uj, dUj, d2Uj, Uk, dUk, d2Uk);

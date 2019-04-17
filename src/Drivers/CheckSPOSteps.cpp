@@ -16,14 +16,13 @@
 
 namespace qmcplusplus
 {
-
 template<Devices DT>
 typename CheckSPOSteps<DT>::SPODevImp CheckSPOSteps<DT>::buildSPOMain(const int nx,
                                                                       const int ny,
                                                                       const int nz,
                                                                       const int norb,
                                                                       const int nTiles,
-								      const int splines_per_block,
+                                                                      const int splines_per_block,
                                                                       const Tensor<OHMMS_PRECISION, 3>& lattice_b)
 {
   SPODevImp spo_main;
@@ -52,8 +51,8 @@ void CheckSPOSteps<DT>::test(int& error,
   const int norb = count_electrons(ions, 1) / 2;
   tileSize       = (tileSize > 0) ? tileSize : norb;
   int nTiles     = norb / tileSize;
-  if ( norb > tileSize && norb % tileSize )
-      ++nTiles;
+  if (norb > tileSize && norb % tileSize)
+    ++nTiles;
 
   const size_t SPO_coeff_size    = static_cast<size_t>(norb) * (nx + 3) * (ny + 3) * (nz + 3) * sizeof(QMCT::RealType);
   const double SPO_coeff_size_MB = SPO_coeff_size * 1.0 / 1024 / 1024;
@@ -77,7 +76,7 @@ void CheckSPOSteps<DT>::test(int& error,
 
   OutputManagerClass::get().resume();
 
-  check_data.evalV_v_err   /= check_data.nspheremoves;
+  check_data.evalV_v_err /= check_data.nspheremoves;
   check_data.evalVGH_v_err /= check_data.dNumVGHCalls;
   check_data.evalVGH_g_err /= check_data.dNumVGHCalls;
   check_data.evalVGH_h_err /= check_data.dNumVGHCalls;
@@ -256,7 +255,6 @@ void CheckSPOSteps<DT>::thread_main(const int np,
           els.R[iel] = pos;
           my_accepted++;
         }
-
       }
 
     random_th.generate_uniform(ur.data(), nels);
@@ -285,7 +283,7 @@ void CheckSPOSteps<DT>::thread_main(const int np,
 
   } // steps.
 
-  ratio        += QMCT::RealType(my_accepted) / QMCT::RealType(nels * nsteps);
+  ratio += QMCT::RealType(my_accepted) / QMCT::RealType(nels * nsteps);
   nspheremoves += QMCT::RealType(my_vals) / QMCT::RealType(nsteps);
   dNumVGHCalls += nels;
 }
@@ -296,27 +294,27 @@ template class CheckSPOSteps<Devices::CPU>;
 //Anoother is to put them in the header.
 #ifdef QMC_USE_CUDA
 template void CheckSPOSteps<Devices::CUDA>::test(int&, int, Tensor<int, 3u> const&, int, int, int, int, int, double);
-template typename CheckSPOSteps<Devices::CUDA>::SPODevImp
-CheckSPOSteps<Devices::CUDA>::buildSPOMain(const int nx,
-				const int ny,
-				const int nz,
-				const int norb,
-				const int nTiles,
-					   const int tile_size,
-				const Tensor<OHMMS_PRECISION, 3>& lattice_b);
+template typename CheckSPOSteps<Devices::CUDA>::SPODevImp CheckSPOSteps<Devices::CUDA>::buildSPOMain(
+    const int nx,
+    const int ny,
+    const int nz,
+    const int norb,
+    const int nTiles,
+    const int tile_size,
+    const Tensor<OHMMS_PRECISION, 3>& lattice_b);
 #endif
 
 #ifdef QMC_USE_KOKKOS
 template void CheckSPOSteps<Devices::KOKKOS>::test(int&, int, Tensor<int, 3u> const&, int, int, int, int, int, double);
-template typename CheckSPOSteps<Devices::KOKKOS>::SPODevImp
-CheckSPOSteps<Devices::KOKKOS>::buildSPOMain(const int nx,
-				const int ny,
-				const int nz,
-				const int norb,
-				const int nTiles,
-					   const int tile_size,
-				const Tensor<OHMMS_PRECISION, 3>& lattice_b);
+template typename CheckSPOSteps<Devices::KOKKOS>::SPODevImp CheckSPOSteps<Devices::KOKKOS>::buildSPOMain(
+    const int nx,
+    const int ny,
+    const int nz,
+    const int norb,
+    const int nTiles,
+    const int tile_size,
+    const Tensor<OHMMS_PRECISION, 3>& lattice_b);
 
-#endif 
+#endif
 
 } // namespace qmcplusplus

@@ -16,7 +16,6 @@
 
 namespace qmcplusplus
 {
-
 // template<>
 // inline void MultiBspline<Devices::CUDA, double>::evaluate_vgl(
 //     const MultiBspline<Devices::CUDA, double>::spliner_type* restrict spline_m,
@@ -30,7 +29,7 @@ namespace qmcplusplus
 //     size_t num_splines) const
 // {
 //   double pos_d[] = {x,y,z};
-// 	     eval_multi_multi_UBspline_3d_d_vgl_cuda(spline_m, pos_d, linv, &vals, &grads, &lapl, num_splines); 
+// 	     eval_multi_multi_UBspline_3d_d_vgl_cuda(spline_m, pos_d, linv, &vals, &grads, &lapl, num_splines);
 // }
 
 // template<T>
@@ -48,10 +47,10 @@ namespace qmcplusplus
 //   float pos_d[] = {(float)x,
 // 		   (float)y,
 // 		   (float)z};
-//   eval_multi_multi_UBspline_3d_s_vgl_cuda(spline_m,pos_d, linv, &vals, &grads, &lapl, num_splines); 
+//   eval_multi_multi_UBspline_3d_s_vgl_cuda(spline_m,pos_d, linv, &vals, &grads, &lapl, num_splines);
 // }
 
-  
+
 template class MultiBsplineFuncs<Devices::CUDA, float>;
 template class MultiBsplineFuncs<Devices::CUDA, double>;
-}
+} // namespace qmcplusplus

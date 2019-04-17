@@ -13,9 +13,11 @@
 
 namespace qmcplusplus
 {
-
 template<typename T>
-static SPOSet* SPOSetBuilder<Devices::CUDA, T>::buildView(bool useRef, const SPOSet* SPOSet_main, int team_size, int member_id)
+static SPOSet* SPOSetBuilder<Devices::CUDA, T>::buildView(bool useRef,
+                                                          const SPOSet* SPOSet_main,
+                                                          int team_size,
+                                                          int member_id)
 {
   if (useRef)
   {
@@ -29,5 +31,5 @@ static SPOSet* SPOSetBuilder<Devices::CUDA, T>::buildView(bool useRef, const SPO
   }
 }
 
-  
+
 } // namespace qmcplusplus

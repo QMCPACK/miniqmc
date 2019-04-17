@@ -3,8 +3,7 @@
 namespace qmcplusplus
 {
 template<class T, typename TBOOL>
-const std::vector<T*>
-    filtered_list(const std::vector<T*>& input_list, const std::vector<TBOOL>& chosen)
+const std::vector<T*> filtered_list(const std::vector<T*>& input_list, const std::vector<TBOOL>& chosen)
 {
   std::vector<T*> final_list;
   for (int iw = 0; iw < input_list.size(); iw++)

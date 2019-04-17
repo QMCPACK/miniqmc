@@ -22,6 +22,6 @@
 
 namespace qmcplusplus
 {
-  template class EinsplineSPODeviceImp<Devices::KOKKOS, double>;
-  template class EinsplineSPODeviceImp<Devices::KOKKOS, float>;
-}
+template class EinsplineSPODeviceImp<Devices::KOKKOS, double>;
+template class EinsplineSPODeviceImp<Devices::KOKKOS, float>;
+} // namespace qmcplusplus

@@ -180,7 +180,7 @@ struct DTD_BConds<T, 3, PPPG + SOA_OFFSET>
 
     constexpr T minusone(-1);
     constexpr T one(1);
-    #pragma omp simd aligned(temp_r, px, py, pz, dx, dy, dz)
+#pragma omp simd aligned(temp_r, px, py, pz, dx, dy, dz)
     for (int iat = first; iat < last; ++iat)
     {
       const T flip    = iat < flip_ind ? one : minusone;

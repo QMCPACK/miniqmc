@@ -31,8 +31,7 @@ struct DistanceTableAA : public DTD_BConds<T, D, SC>, public DistanceTableData
   int Ntargets_padded;
   int BlockSize;
 
-  DistanceTableAA(ParticleSet& target)
-      : DTD_BConds<T, D, SC>(target.Lattice), DistanceTableData(target, target)
+  DistanceTableAA(ParticleSet& target) : DTD_BConds<T, D, SC>(target.Lattice), DistanceTableData(target, target)
   {
     resize(target.getTotalNum());
   }
@@ -71,26 +70,14 @@ struct DistanceTableAA : public DTD_BConds<T, D, SC>, public DistanceTableData
     // P.RSoA.copyIn(P.R);
     for (int iat = 0; iat < Ntargets; ++iat)
     {
-      DTD_BConds<T, D, SC>::computeDistances(P.R[iat],
-                                             P.RSoA,
-                                             Distances[iat],
-                                             Displacements[iat],
-                                             0,
-                                             Ntargets,
-                                             iat);
+      DTD_BConds<T, D, SC>::computeDistances(P.R[iat], P.RSoA, Distances[iat], Displacements[iat], 0, Ntargets, iat);
       Distances[iat][iat] = BigR; // assign big distance
     }
   }
 
   inline void evaluate(ParticleSet& P, IndexType jat)
   {
-    DTD_BConds<T, D, SC>::computeDistances(P.R[jat],
-                                           P.RSoA,
-                                           Distances[jat],
-                                           Displacements[jat],
-                                           0,
-                                           Ntargets,
-                                           jat);
+    DTD_BConds<T, D, SC>::computeDistances(P.R[jat], P.RSoA, Distances[jat], Displacements[jat], 0, Ntargets, jat);
     Distances[jat][jat] = std::numeric_limits<T>::max(); // assign a big number
   }
 

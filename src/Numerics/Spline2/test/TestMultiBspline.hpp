@@ -41,7 +41,7 @@ struct TestMultiBspline
   aligned_vector<typename CpuST::SplineType*> cpu_splines;
 
   TestMultiBspline(int num_splines = 100, int num_blocks = 1, int grid_num = 100)
-    : cuda_spline(nullptr), num_splines_(num_splines), num_blocks_(num_blocks), grid_num_(grid_num)
+      : cuda_spline(nullptr), num_splines_(num_splines), num_blocks_(num_blocks), grid_num_(grid_num)
   {
     cpu_splines.resize(num_blocks_);
     for (int i = 0; i < num_blocks_; ++i)
@@ -68,7 +68,7 @@ struct TestMultiBspline
       typename CpuST::SplineType*& cpu_spline = cpu_splines[b];
       cpu_allocator.allocateMultiBspline(cpu_spline, grid, grid, grid, bc, bc, bc, num_splines_);
       REQUIRE(cpu_spline != nullptr);
-      RandomGenerator<T> myrandom(11+b);
+      RandomGenerator<T> myrandom(11 + b);
       Array<T, 3> coef_data(cpu_spline->x_grid.num + 3, cpu_spline->y_grid.num + 3,
                             cpu_spline->z_grid.num + 3);
       for (int i = 0; i < splines_this_block; ++i)

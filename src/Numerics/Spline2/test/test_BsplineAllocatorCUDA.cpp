@@ -26,10 +26,7 @@ namespace qmcplusplus
 using namespace einspline;
 
 
-TEST_CASE("Allocator<CUDA> instantiation", "[CUDA]")
-{
-  Allocator<Devices::CUDA> cuda_allocator;
-}
+TEST_CASE("Allocator<CUDA> instantiation", "[CUDA]") { Allocator<Devices::CUDA> cuda_allocator; }
 
 TEST_CASE("Allocator<CUDA> Multibspline double", "[CUDA][Spline2]")
 {
@@ -53,4 +50,4 @@ TEST_CASE("Allocator<CUDA> Multibspline mixed", "[CUDA][Spline2]")
 }
 
 
-}
+} // namespace qmcplusplus

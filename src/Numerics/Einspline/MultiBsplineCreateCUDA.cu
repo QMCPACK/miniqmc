@@ -34,8 +34,8 @@ create_multi_UBspline_3d_s_cuda(multi_UBspline_3d_s<Devices::CPU>* spline, int b
 		   0.0,        0.0,       -3.0,       1.0,
 		   0.0,        0.0,       1.0,       0.0};
   // clang-format on
-  
-  Gpu& gpu      = Gpu::get();
+
+  Gpu& gpu = Gpu::get();
   if (gpu.device_group_size > 1)
   {
     for (unsigned int i = 0; i < gpu.device_group_size; i++)
@@ -278,8 +278,7 @@ create_multi_UBspline_3d_d_cuda(multi_UBspline_3d_d<Devices::CPU>* spline, int b
   {
     cudaMalloc((void**)&cuda_spline->Bcuda, 48 * sizeof(double));
     err = cudaMemcpy(cuda_spline->Bcuda, B_h, 48 * sizeof(double), cudaMemcpyHostToDevice);
-    if (err != cudaError::cudaSuccess)
-      throw std::runtime_error("Failed GPU allocation");
+    if (err != cudaError::cudaSuccess) throw std::runtime_error("Failed GPU allocation");
   }
 
   cuda_spline->num_splines       = spline->num_splines;
@@ -322,8 +321,7 @@ create_multi_UBspline_3d_d_cuda(multi_UBspline_3d_d<Devices::CPU>* spline, int b
           {
             spline_buff[ix * cuda_spline->stride.x + iy * cuda_spline->stride.y +
                         iz * cuda_spline->stride.z + isp] =
-                spline->coefs[ix * spline->x_stride + iy * spline->y_stride +
-                              iz * spline->z_stride + isp];
+                spline->coefs[ix * spline->x_stride + iy * spline->y_stride + iz * spline->z_stride + isp];
           }
           else
             spline_buff[ix * cuda_spline->stride.x + iy * cuda_spline->stride.y +

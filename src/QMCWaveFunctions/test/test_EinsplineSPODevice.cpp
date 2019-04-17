@@ -4,9 +4,5 @@
 
 namespace qmcpluplus
 {
-
-TEST_CASE("EinsplineSPODevice Instantiation", "[wavefunction]")
-{
-  EinsplineSPODevice<Device::CUDA,double> cuda_ein;
-}
-}
+TEST_CASE("EinsplineSPODevice Instantiation", "[wavefunction]") { EinsplineSPODevice<Device::CUDA, double> cuda_ein; }
+} // namespace qmcpluplus

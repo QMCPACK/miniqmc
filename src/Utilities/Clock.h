@@ -52,7 +52,7 @@ inline double cpu_clock()
 }
 
 #else
-  // ENABLE_OPENMP is getting enable in KOKKOS builds where it shouldn't be, temp workaround
+// ENABLE_OPENMP is getting enable in KOKKOS builds where it shouldn't be, temp workaround
 // #if defined(ENABLE_OPENMP)
 // inline double cpu_clock() { return omp_get_wtime(); }
 // #else

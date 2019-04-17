@@ -45,8 +45,7 @@
 namespace qmcplusplus
 {
 template<typename T>
-class EinsplineSPODeviceImp<Devices::CPU, T>
-    : public EinsplineSPODevice<EinsplineSPODeviceImp<Devices::CPU, T>, T>
+class EinsplineSPODeviceImp<Devices::CPU, T> : public EinsplineSPODevice<EinsplineSPODeviceImp<Devices::CPU, T>, T>
 {
   using QMCT = QMCTraits;
   /// define the einspline data object type
@@ -63,12 +62,13 @@ class EinsplineSPODeviceImp<Devices::CPU, T>
 
   //using einspline_type = spline_type*;
   std::shared_ptr<BsplineSet<Devices::CPU, T>> einsplines;
-  
+
   //  aligned_vector<vContainer_type> psi;
   aligned_vector<vContainer_type> psi;
   aligned_vector<gContainer_type> grad;
   aligned_vector<hContainer_type> hess;
   EinsplineSPOParams<T> esp;
+
 public:
   EinsplineSPODeviceImp()
   {
@@ -77,7 +77,7 @@ public:
     esp.nSplines   = 0;
     esp.firstBlock = 0;
     esp.lastBlock  = 0;
-    einsplines = nullptr;
+    einsplines     = nullptr;
     psi            = {};
     grad           = {};
     hess           = {};
@@ -97,14 +97,13 @@ public:
     esp.firstBlock                     = 0;
     esp.lastBlock                      = inesp.nBlocks;
     esp.lattice                        = inesp.lattice;
-    einsplines = in.einsplines;
+    einsplines                         = in.einsplines;
     resize();
   }
 
   /** "Fat" Copy Constructor only supports CPU to CPU
    */
-    EinsplineSPODeviceImp(const EinsplineSPODeviceImp<Devices::CPU, T>& in, int team_size,
-                        int member_id)
+  EinsplineSPODeviceImp(const EinsplineSPODeviceImp<Devices::CPU, T>& in, int team_size, int member_id)
   {
     std::cout << "EinsplineSPODeviceImpCPU Fat Copy constructor called" << '\n';
     const EinsplineSPOParams<T>& inesp = in.getParams();
@@ -117,14 +116,12 @@ public:
     esp.lastBlock                      = std::min(inesp.nBlocks, esp.nBlocks * (member_id + 1));
     esp.nBlocks                        = esp.lastBlock - esp.firstBlock;
     esp.lattice                        = inesp.lattice;
-    einsplines = in.einsplines;
+    einsplines                         = in.einsplines;
     resize();
   }
 
   /// destructors
-  ~EinsplineSPODeviceImp()
-  {
-  }
+  ~EinsplineSPODeviceImp() {}
 
   /// resize the containers
   void resize()
@@ -143,21 +140,21 @@ public:
     }
   }
 
-    void set_i(int nx, int ny, int nz, int num_splines, int num_blocks, int splines_per_block, bool init_random = true)
+  void set_i(int nx, int ny, int nz, int num_splines, int num_blocks, int splines_per_block, bool init_random = true)
   {
     this->esp.nSplines         = num_splines;
     this->esp.nBlocks          = num_blocks;
     this->esp.nSplinesPerBlock = splines_per_block;
-    if ( num_splines > splines_per_block * num_blocks )
-        throw std::runtime_error("splines_per_block * nblocks < num_splines");
+    if (num_splines > splines_per_block * num_blocks)
+      throw std::runtime_error("splines_per_block * nblocks < num_splines");
 
-    this->esp.firstBlock       = 0;
-    this->esp.lastBlock        = esp.nBlocks;
+    this->esp.firstBlock = 0;
+    this->esp.lastBlock  = esp.nBlocks;
     if (einsplines == nullptr)
     {
       QMCT::PosType start(0); // special constructor for 3d type
       QMCT::PosType end(1);   // special constructor for 3d type
-      einsplines = std::make_shared<BsplineSet<Devices::CPU,T>>(esp.nBlocks);
+      einsplines = std::make_shared<BsplineSet<Devices::CPU, T>>(esp.nBlocks);
       RandomGenerator<T> myrandom(11);
       Array<T, 3> coef_data(nx + 3, ny + 3, nz + 3);
       for (int i = 0; i < esp.nBlocks; ++i)
@@ -181,8 +178,11 @@ public:
 
   /** This is the proper way to hand back a shared pointer.  RVO insures this is efficient
    */
-  std::shared_ptr<BsplineSet<Devices::CPU, T>> getEinsplines() const { return std::shared_ptr<BsplineSet<Devices::CPU, T>>(einsplines); }
-  
+  std::shared_ptr<BsplineSet<Devices::CPU, T>> getEinsplines() const
+  {
+    return std::shared_ptr<BsplineSet<Devices::CPU, T>>(einsplines);
+  }
+
   /** Consumer must makes sure the EinsplineSPO lives while you use this.
    */
   void* getEinspline_i(int i) const { return einsplines->get()[i]; }
@@ -191,38 +191,30 @@ public:
 
   inline void evaluate_v_i(const QMCT::PosType& p)
   {
-    auto u = esp.lattice.toUnit_floor(p);
-    std::vector<std::array<T,3>> pos = {{u[0],u[1],u[2]}}; 
+    auto u                            = esp.lattice.toUnit_floor(p);
+    std::vector<std::array<T, 3>> pos = {{u[0], u[1], u[2]}};
     for (int i = 0; i < esp.nBlocks; ++i)
       compute_engine.evaluate_v(einsplines->get()[i], pos, psi[i].data(), esp.nSplinesPerBlock);
   }
 
   inline void evaluate_vgh_i(const QMCT::PosType& p)
   {
-    auto u = esp.lattice.toUnit_floor(p);
-    std::vector<std::array<T,3>> pos = {{u[0],u[1],u[2]}}; 
+    auto u                            = esp.lattice.toUnit_floor(p);
+    std::vector<std::array<T, 3>> pos = {{u[0], u[1], u[2]}};
     for (int i = 0; i < esp.nBlocks; ++i)
     {
-      compute_engine.evaluate_vgh(einsplines->get()[i],
-                                  pos,
-                                  psi[i].data(),
-                                  grad[i].data(),
-                                  hess[i].data(),
-                                  esp.nSplinesPerBlock);
+      compute_engine
+          .evaluate_vgh(einsplines->get()[i], pos, psi[i].data(), grad[i].data(), hess[i].data(), esp.nSplinesPerBlock);
     }
   }
 
   void evaluate_vgl_i(const QMCT::PosType& p)
   {
-    auto u = esp.lattice.toUnit_floor(p);
-    std::vector<std::array<T,3>> pos = {{u[0],u[1],u[2]}}; 
+    auto u                            = esp.lattice.toUnit_floor(p);
+    std::vector<std::array<T, 3>> pos = {{u[0], u[1], u[2]}};
     for (int i = 0; i < esp.nBlocks; ++i)
-      compute_engine.evaluate_vgl(einsplines->get()[i],
-                                  pos,
-                                  psi[i].data(),
-                                  grad[i].data(),
-                                  hess[i].data(),
-                                  esp.nSplinesPerBlock);
+      compute_engine
+          .evaluate_vgl(einsplines->get()[i], pos, psi[i].data(), grad[i].data(), hess[i].data(), esp.nSplinesPerBlock);
   }
 
   T getPsi_i(int ib, int n) { return psi[ib][n]; }

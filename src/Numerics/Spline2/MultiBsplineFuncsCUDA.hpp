@@ -47,46 +47,47 @@ struct MultiBsplineFuncs<Devices::CUDA, T>
   MultiBsplineFuncs(const MultiBsplineFuncs<D, T>& in) = default;
   MultiBsplineFuncs& operator=(const MultiBsplineFuncs<D, T>& in) = delete;
 
-    /** This could be a general small cuda parameter buffer except for the 3
+  /** This could be a general small cuda parameter buffer except for the 3
      */
   template<typename T_>
   struct PosBuffer
   {
-     PosBuffer() : stream_(cudaStreamPerThread), buffer(nullptr), dev_buffer(nullptr), size_(0) {}
-      PosBuffer(cudaStream_t stream) : stream_(stream), buffer(nullptr), dev_buffer(nullptr), size_(0) {}
-     
+    PosBuffer() : stream_(cudaStreamPerThread), buffer(nullptr), dev_buffer(nullptr), size_(0) {}
+    PosBuffer(cudaStream_t stream) : stream_(stream), buffer(nullptr), dev_buffer(nullptr), size_(0)
+    {}
+
     ~PosBuffer()
     {
       if (buffer != nullptr) cudaFreeHost(buffer);
       if (dev_buffer != nullptr) cudaFree(dev_buffer);
     }
 
-    void operator() (cudaStream_t stream) { stream_ = stream; }
+    void operator()(cudaStream_t stream) { stream_ = stream; }
     void resize(int size)
     {
       if (size > size_)
       {
-	  if (buffer != nullptr) cudaFreeHost(buffer);
-	  if (dev_buffer != nullptr) cudaFree(dev_buffer);
-	  cudaMallocHost((void**)&buffer, size );
-	  cudaMalloc((void**)&dev_buffer, size);
-	  size_ = size;
+        if (buffer != nullptr) cudaFreeHost(buffer);
+        if (dev_buffer != nullptr) cudaFree(dev_buffer);
+        cudaMallocHost((void**)&buffer, size);
+        cudaMalloc((void**)&dev_buffer, size);
+        size_ = size;
       }
     }
-	      
+
     T_* make(const std::vector<std::array<T_, 3>>& pos)
     {
-      int n_pos = pos.size();
+      int n_pos        = pos.size();
       size_t byte_size = 3 * n_pos * sizeof(T_);
       resize(byte_size);
-      
+
       for (int i = 0; i < n_pos; i++)
       {
         buffer[i * 3 + 0] = pos[i][0];
         buffer[i * 3 + 1] = pos[i][1];
         buffer[i * 3 + 2] = pos[i][2];
       }
-      
+
       cudaError_t err = cudaMemcpyAsync(dev_buffer, buffer, byte_size, cudaMemcpyDefault, stream_);
       if (err != cudaSuccess)
       {
@@ -95,15 +96,15 @@ struct MultiBsplineFuncs<Devices::CUDA, T>
       }
       return dev_buffer;
     }
+
   private:
     T_* buffer;
     T_* dev_buffer;
-    size_t size_;  //in bytes
+    size_t size_; //in bytes
     cudaStream_t stream_;
-
   };
 
-  
+
   // void evaluate_v(const spliner_type* spline_m,
   // 			 const std::vector<std::array<T,3>>&,
   // 		         GPUArray<T,1>& vals, size_t num_splines);
@@ -123,8 +124,8 @@ struct MultiBsplineFuncs<Devices::CUDA, T>
                     T* vals,
                     T* grads,
                     T* hess,
-		    int num_blocks,
-		    size_t num_splines,
+                    int num_blocks,
+                    size_t num_splines,
                     size_t spline_block_size,
                     cudaStream_t stream = cudaStreamPerThread);
 
@@ -139,10 +140,11 @@ template<>
 inline void
 MultiBsplineFuncs<Devices::CUDA, double>::evaluate_v(const multi_UBspline_3d_d<Devices::CUDA>* spline_m,
                                                      const std::vector<std::array<double, 3>>& pos,
-                                                     double* vals, int num_blocks, size_t num_splines,
-                                                     size_t spline_block_size)
+                                                     double* vals, int num_blocks,
+                                                     size_t num_splines, size_t spline_block_size)
 {
-  eval_multi_multi_UBspline_3d_d_cuda(spline_m, pos_buf_.make(pos), vals, num_blocks, spline_block_size, pos.size());
+  eval_multi_multi_UBspline_3d_d_cuda(spline_m, pos_buf_.make(pos), vals, num_blocks,
+                                      spline_block_size, pos.size());
 }
 
 template<>
@@ -173,8 +175,8 @@ inline void MultiBsplineFuncs<Devices::CUDA, double>::evaluate_vgh(
   // This is a bit of legacy, the implementation should be aware of this and pass it
   if (spline_block_size == 0) spline_block_size = spline_m->num_splines;
 
-  eval_multi_multi_UBspline_3d_d_vgh_cuda(spline_m, pos_buf_.make(pos), vals, grads, hess, num_blocks,
-                                          spline_block_size, pos.size(), stream);
+  eval_multi_multi_UBspline_3d_d_vgh_cuda(spline_m, pos_buf_.make(pos), vals, grads, hess,
+                                          num_blocks, spline_block_size, pos.size(), stream);
 }
 
 // template<>
@@ -182,7 +184,7 @@ inline void MultiBsplineFuncs<Devices::CUDA, double>::evaluate_vgh(
 // 								  std::vector<std::array<float, 3>>& pos)
 // {
 //   //for now there is no support for group eval of walkers with different einspline basis.
-  
+
 // }
 
 template<>
@@ -200,7 +202,8 @@ inline void MultiBsplineFuncs<Devices::CUDA, float>::evaluate_vgh(
   pos_buf_(stream);
 
   if (spline_block_size == 0) spline_block_size = spline_m->num_splines;
-  eval_multi_multi_UBspline_3d_s_vgh_cuda(spline_m, pos_buf_.make(pos), vals, grads, hess, num_splines);
+  eval_multi_multi_UBspline_3d_s_vgh_cuda(spline_m, pos_buf_.make(pos), vals, grads, hess,
+                                          num_splines);
 }
 
 template<>
@@ -213,8 +216,8 @@ inline void MultiBsplineFuncs<Devices::CUDA, double>::evaluate_vgl(
     size_t num_splines)
 {
   int row_stride = 2;
-  eval_multi_multi_UBspline_3d_d_vgl_cuda(spline_m, pos_buf_.make(pos), linv, vals, lapl, num_splines,
-                                          row_stride);
+  eval_multi_multi_UBspline_3d_d_vgl_cuda(spline_m, pos_buf_.make(pos), linv, vals, lapl,
+                                          num_splines, row_stride);
 }
 
 template<>
@@ -227,8 +230,8 @@ inline void MultiBsplineFuncs<Devices::CUDA, float>::evaluate_vgl(
     size_t num_splines)
 {
   int row_stride = 2;
-  eval_multi_multi_UBspline_3d_s_vgl_cuda(spline_m, pos_buf_.make(pos), linv, vals, lapl, num_splines,
-                                          row_stride);
+  eval_multi_multi_UBspline_3d_s_vgl_cuda(spline_m, pos_buf_.make(pos), linv, vals, lapl,
+                                          num_splines, row_stride);
 }
 
 

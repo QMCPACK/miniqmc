@@ -59,12 +59,7 @@ struct StdRandom
    */
   template<typename T1>
   StdRandom(const StdRandom<T1, RNG>& rng)
-      : nContexts(1),
-        myContext(0),
-        baseOffset(0),
-        myRNG(rng.myRNG),
-        uniform(T(0), T(1)),
-        normal(T(0), T(1))
+      : nContexts(1), myContext(0), baseOffset(0), myRNG(rng.myRNG), uniform(T(0), T(1)), normal(T(0), T(1))
   {}
 
   /** initialize the stream */

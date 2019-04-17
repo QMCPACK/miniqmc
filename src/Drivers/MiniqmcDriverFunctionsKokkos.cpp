@@ -21,7 +21,6 @@
 #include "Numerics/Spline2/BsplineAllocatorKOKKOS.hpp"
 namespace qmcplusplus
 {
-
 template<>
 void MiniqmcDriverFunctions<Devices::KOKKOS>::initialize(int argc, char** argv)
 {
@@ -71,17 +70,17 @@ void MiniqmcDriverFunctions<Devices::KOKKOS>::thread_main(const int ip,
   // This updates ions
   // build_WaveFunction is not thread safe!
   WaveFunctionBuilder<DT>::build(mq_opt.useRef,
-                     thiswalker.wavefunction,
-                     ions,
-                     thiswalker.els,
-                     thiswalker.rng,
-				 device_buffers,
-                     mq_opt.enableJ3);
+                                 thiswalker.wavefunction,
+                                 ions,
+                                 thiswalker.els,
+                                 thiswalker.rng,
+                                 device_buffers,
+                                 mq_opt.enableJ3);
 
   // initial computing
   thiswalker.els.update();
   thiswalker.wavefunction.evaluateLog(thiswalker.els);
-  
+
   auto& els          = thiswalker.els;
   auto& spo          = *thiswalker.spo;
   auto& random_th    = thiswalker.rng;
@@ -217,36 +216,35 @@ void MiniqmcDriverFunctions<Devices::KOKKOS>::runThreads(MiniqmcOptions& mq_opt,
 
 template<>
 void MiniqmcDriverFunctions<Devices::KOKKOS>::movers_runThreads(MiniqmcOptions& mq_opt,
-                                            const PrimeNumberSet<uint32_t>& myPrimes,
-                                            ParticleSet& ions,
-                                            const SPOSet* spo_main)
+                                                                const PrimeNumberSet<uint32_t>& myPrimes,
+                                                                ParticleSet& ions,
+                                                                const SPOSet* spo_main)
 {
   auto main_function = KOKKOS_LAMBDA(int thread_id, int team_size)
   {
     printf(" thread_id = %d\n", thread_id);
     TaskBlockBarrier<Threading::KOKKOS> barrier(team_size); /// maybe
 
-    MiniqmcDriverFunctions<Devices::KOKKOS>::crowd_thread_main(thread_id, 							       barrier,
- team_size,
-								const_cast<MiniqmcOptions&>(mq_opt),
-								myPrimes,
-								ions,
-								spo_main);
-    
+    MiniqmcDriverFunctions<Devices::KOKKOS>::crowd_thread_main(thread_id,
+                                                               barrier,
+                                                               team_size,
+                                                               const_cast<MiniqmcOptions&>(mq_opt),
+                                                               myPrimes,
+                                                               ions,
+                                                               spo_main);
   };
 #if defined(KOKKOS_ENABLE_OPENMP) && !defined(KOKKOS_ENABLE_CUDA)
   int num_threads = Kokkos::OpenMP::thread_pool_size();
-  int crewsize = std::max(1, num_threads / mq_opt.ncrews);
+  int crewsize    = std::max(1, num_threads / mq_opt.ncrews);
   printf(" In partition master with %d threads, %d crews, and %d movers.  Crewsize = %d \n",
          num_threads,
          mq_opt.ncrews,
          mq_opt.nmovers,
          crewsize);
   Kokkos::OpenMP::partition_master(main_function, mq_opt.nmovers, crewsize);
-  #else
-  main_function(0,1);
-  #endif
-
+#else
+  main_function(0, 1);
+#endif
 }
 
 template class MiniqmcDriverFunctions<Devices::KOKKOS>;

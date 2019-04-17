@@ -38,7 +38,7 @@ struct BsplineSetCreator<Devices::CUDA, T>
       : allocator_(allocator), minded_splines_(minded_splines){};
 
   template<typename HOST_SPLINE>
-  void operator()(aligned_vector < HOST_SPLINE*> & cpu_splines, int device_block )
+  void operator()(aligned_vector<HOST_SPLINE*>& cpu_splines, int device_block)
   {
     using HT = typename bspline_type<HOST_SPLINE>::value_type;
     T dummy_DT;
@@ -47,7 +47,7 @@ struct BsplineSetCreator<Devices::CUDA, T>
   }
 
   template<typename HOST_SPLINE>
-  void operator()(HOST_SPLINE*& cpu_spline, int device_block )
+  void operator()(HOST_SPLINE*& cpu_spline, int device_block)
   {
     using HT = typename bspline_type<HOST_SPLINE>::value_type;
     T dummy_DT;

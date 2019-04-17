@@ -49,26 +49,25 @@ public:
   /// Timer
   NewTimer* timer;
   NewTimer* evalV_timer;
-  
+
   /// default constructor
   EinsplineSPO()
   {
     std::cout << "EinsplineSPO() called\n";
-    timer = TimerManagerClass::get().createTimer("Single-Particle Orbitals", timer_level_fine);
+    timer       = TimerManagerClass::get().createTimer("Single-Particle Orbitals", timer_level_fine);
     evalV_timer = TimerManagerClass::get().createTimer("Eval V", timer_level_fine);
   }
 
-  EinsplineSPO(const EinsplineSPO& in)
-    : einspline_spo_device(in.einspline_spo_device)
+  EinsplineSPO(const EinsplineSPO& in) : einspline_spo_device(in.einspline_spo_device)
   {
-    timer = TimerManagerClass::get().createTimer("Single-Particle Orbitals", timer_level_fine);
+    timer       = TimerManagerClass::get().createTimer("Single-Particle Orbitals", timer_level_fine);
     evalV_timer = TimerManagerClass::get().createTimer("Eval V", timer_level_fine);
   }
 
   // EinsplineSPO(const EinsplineSPO& in)
   //     : einspline_spo_device(in.enspline_spo_device)
   // {}
-  
+
   /// disable assignment operator
   EinsplineSPO& operator=(const EinsplineSPO& in) = delete;
 
@@ -83,7 +82,7 @@ public:
   EinsplineSPO(const EinsplineSPO& in, int team_size, int member_id)
       : einspline_spo_device(in.einspline_spo_device, team_size, member_id)
   {
-    timer = TimerManagerClass::get().createTimer("Single-Particle Orbitals", timer_level_fine);
+    timer       = TimerManagerClass::get().createTimer("Single-Particle Orbitals", timer_level_fine);
     evalV_timer = TimerManagerClass::get().createTimer("Eval V", timer_level_fine);
   }
 
@@ -103,9 +102,9 @@ public:
 
 
   // fix for general num_splines
-    void set(int nx, int ny, int nz, int num_splines, int num_blocks, int splines_per_block, bool init_random = true)
+  void set(int nx, int ny, int nz, int num_splines, int num_blocks, int splines_per_block, bool init_random = true)
   {
-      einspline_spo_device.set(nx, ny, nz, num_splines, num_blocks, splines_per_block, init_random);
+    einspline_spo_device.set(nx, ny, nz, num_splines, num_blocks, splines_per_block, init_random);
   }
 
   /** evaluate psi */

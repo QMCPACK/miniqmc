@@ -26,7 +26,7 @@ TEST_CASE("GPUArray Instantiate", "[CUDA]")
 
 TEST_CASE("GPUArray Resize", "[CUDA]")
 {
-  qmcplusplus::GPUArray<double, 1,2> gD;
+  qmcplusplus::GPUArray<double, 1, 2> gD;
   gD.resize(16, 10);
   // Width and Height are in bytes
   REQUIRE(gD.getWidth() == 16 * sizeof(double));
@@ -41,7 +41,7 @@ TEST_CASE("GPUArray Resize", "[CUDA]")
 
 TEST_CASE("GPUArray Access", "[CUDA]")
 {
-  qmcplusplus::GPUArray<double, 1,2> gD;
+  qmcplusplus::GPUArray<double, 1, 2> gD;
   gD.resize(16, 10);
   // Width and Height are in bytes
   REQUIRE(gD.getWidth() == 16 * sizeof(double));
@@ -57,25 +57,24 @@ TEST_CASE("GPUArray Access", "[CUDA]")
 
 TEST_CASE("GPUArray Zero", "[CUDA]")
 {
-  qmcplusplus::GPUArray<double, 1,2> gD;
+  qmcplusplus::GPUArray<double, 1, 2> gD;
   gD.resize(16, 10);
   gD.zero();
-  
 }
 
 TEST_CASE("GPUArray pull", "[CUDA]")
 {
-  GPUArray<double, 1,1> gD;
+  GPUArray<double, 1, 1> gD;
   gD.resize(16, 10);
   gD.zero();
   aligned_vector<double> avec;
   gD.pull(avec);
 
-  GPUArray<double, 3,1> gDgrad;
-  gDgrad.resize(14,11);
+  GPUArray<double, 3, 1> gDgrad;
+  gDgrad.resize(14, 11);
   gDgrad.zero();
-  VectorSoAContainer<double,3> vSoA;
+  VectorSoAContainer<double, 3> vSoA;
   gDgrad.pull(vSoA);
 }
-  
-} // namespace qmcpluplus
+
+} // namespace qmcplusplus

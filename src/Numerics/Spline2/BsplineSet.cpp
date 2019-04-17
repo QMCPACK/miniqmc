@@ -16,8 +16,7 @@
 
 namespace qmcplusplus
 {
-
 template class BsplineSet<Devices::CPU, double>;
 template class BsplineSet<Devices::CPU, float>;
 
-}
+} // namespace qmcplusplus

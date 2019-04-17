@@ -31,7 +31,7 @@
 ///////////////////////////
 namespace future
 {
-template <DeviceType DT>
+template<DeviceType DT>
 struct multi_UBspline_3d_s
 {
   spline_code spcode;
@@ -125,5 +125,5 @@ struct multi_UBspline_3d_z
   // temporary storage for laplacian components
   complex_double* restrict lapl3;
 };
-}
+} // namespace future
 #endif

@@ -10,10 +10,9 @@
 //#include <boost/hana/experimental/printable.hpp>
 namespace qmcplusplus
 {
-
 void MiniqmcDriver::initialize(int argc, char** argv)
 {
-  using MyHandler = decltype(hana::unpack(devices_range, hana::template_<CaseHandler>))::type;  
+  using MyHandler = decltype(hana::unpack(devices_range, hana::template_<CaseHandler>))::type;
   MyHandler handler(*this);
   handler.initialize(argc, argv, mq_opt_.device_number);
   comm = new Communicate(argc, argv);
@@ -38,7 +37,7 @@ void MiniqmcDriver::initialize(int argc, char** argv)
   //               << mq_opt_.timer_level_name << '\n';
   //   return; //should throw
   // }
-  
+
   TimerManagerClass::get().set_timer_threshold(timer_level);
   setup_timers(mq_opt_.Timers, mq_opt_.MiniQMCTimerNames, timer_level_coarse);
 
@@ -58,48 +57,48 @@ void MiniqmcDriver::initialize(int argc, char** argv)
   mq_opt_.Timers[Timer_Init]->start();
 
   // initialize ions and splines which are shared by all threads later
-  
-    Tensor<OHMMS_PRECISION, 3> lattice_b;
-    build_ions(ions, tmat, lattice_b);
-    const int nels   = count_electrons(ions, 1);
-    const int norb   = nels / 2;
-    mq_opt_.splines_per_block = (mq_opt_.splines_per_block > 0) ? mq_opt_.splines_per_block : norb;
-    nTiles           = norb / mq_opt_.splines_per_block;
 
-    if ( norb > mq_opt_.splines_per_block || norb % mq_opt_.splines_per_block )
-      ++nTiles;
+  Tensor<OHMMS_PRECISION, 3> lattice_b;
+  build_ions(ions, tmat, lattice_b);
+  const int nels            = count_electrons(ions, 1);
+  const int norb            = nels / 2;
+  mq_opt_.splines_per_block = (mq_opt_.splines_per_block > 0) ? mq_opt_.splines_per_block : norb;
+  nTiles                    = norb / mq_opt_.splines_per_block;
 
-    number_of_electrons = nels;
+  if (norb > mq_opt_.splines_per_block || norb % mq_opt_.splines_per_block)
+    ++nTiles;
 
-    const size_t SPO_coeff_size = static_cast<size_t>(norb) * (mq_opt_.nx + 3) * (mq_opt_.ny + 3) *
-        (mq_opt_.nz + 3) * sizeof(QMCT::RealType);
-    const double SPO_coeff_size_MB = SPO_coeff_size * 1.0 / 1024 / 1024;
-  const size_t determinant_buffer_size = (static_cast<size_t>(norb) * norb + norb * 3) * sizeof(QMCT::RealType) * 2;
-  const double determinant_buffer_size_MB =  determinant_buffer_size * 1.0 / 1024 / 1024;
+  number_of_electrons = nels;
+
+  const size_t SPO_coeff_size =
+      static_cast<size_t>(norb) * (mq_opt_.nx + 3) * (mq_opt_.ny + 3) * (mq_opt_.nz + 3) * sizeof(QMCT::RealType);
+  const double SPO_coeff_size_MB          = SPO_coeff_size * 1.0 / 1024 / 1024;
+  const size_t determinant_buffer_size    = (static_cast<size_t>(norb) * norb + norb * 3) * sizeof(QMCT::RealType) * 2;
+  const double determinant_buffer_size_MB = determinant_buffer_size * 1.0 / 1024 / 1024;
 
   app_summary() << "primitive cells (" << mq_opt_.na << " " << mq_opt_.nb << " " << mq_opt_.nc << ")\n"
-		<< "Number of orbitals/splines = " << norb << '\n'
-		<< "splines per block = " << mq_opt_.splines_per_block << '\n'
-		<< "Number of tiles = " << nTiles << '\n'
-		<< "Number of electrons = " << nels << '\n'
-		<< "Rmax = " << mq_opt_.Rmax << '\n';
-    app_summary() << "Iterations = " << mq_opt_.nsteps << '\n';
-    app_summary() << "OpenMP threads = " << omp_get_max_threads() << '\n';
+                << "Number of orbitals/splines = " << norb << '\n'
+                << "splines per block = " << mq_opt_.splines_per_block << '\n'
+                << "Number of tiles = " << nTiles << '\n'
+                << "Number of electrons = " << nels << '\n'
+                << "Rmax = " << mq_opt_.Rmax << '\n';
+  app_summary() << "Iterations = " << mq_opt_.nsteps << '\n';
+  app_summary() << "OpenMP threads = " << omp_get_max_threads() << '\n';
 #ifdef HAVE_MPI
-    app_summary() << "MPI processes = " << comm.size() << '\n';
+  app_summary() << "MPI processes = " << comm.size() << '\n';
 #endif
 
-    app_summary() << "\nSPO coefficients size = " << SPO_coeff_size << " bytes ("
-                  << SPO_coeff_size_MB << " MB)" << '\n';
-    app_summary() << "\nDeterminant Buffer size (per walker) = " << determinant_buffer_size << " bytes (" << determinant_buffer_size_MB << " MB)" << '\n';
+  app_summary() << "\nSPO coefficients size = " << SPO_coeff_size << " bytes (" << SPO_coeff_size_MB << " MB)" << '\n';
+  app_summary() << "\nDeterminant Buffer size (per walker) = " << determinant_buffer_size << " bytes ("
+                << determinant_buffer_size_MB << " MB)" << '\n';
 
-    handler.build(spo_main, mq_opt_, norb, nTiles, mq_opt_.splines_per_block, lattice_b, mq_opt_.device_number);
-  
+  handler.build(spo_main, mq_opt_, norb, nTiles, mq_opt_.splines_per_block, lattice_b, mq_opt_.device_number);
+
 
   if (!mq_opt_.useRef)
     app_summary() << "Using SoA distance table, Jastrow + einspline, " << '\n'
                   << "and determinant update." << '\n'
-		  << "with " << mq_opt_.device_number << " device implementation" << '\n';
+                  << "with " << mq_opt_.device_number << " device implementation" << '\n';
   else
     app_summary() << "Using the reference implementation for Jastrow, " << '\n'
                   << "determinant update, and distance table + einspline of the " << '\n'
@@ -107,7 +106,7 @@ void MiniqmcDriver::initialize(int argc, char** argv)
 
   if (mq_opt_.enableCrowd)
     app_summary() << "batched walkers activated \n"
-		  << "crowds = " << mq_opt_.nmovers << '\n'
+                  << "crowds = " << mq_opt_.nmovers << '\n'
                   << "pack size = " << mq_opt_.pack_size << '\n';
   mq_opt_.Timers[Timer_Init]->stop();
 
