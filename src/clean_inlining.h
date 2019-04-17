@@ -14,6 +14,7 @@
 
 #ifndef QMCPLUSPLUS_CLEAN_INLINING_H
 #define QMCPLUSPLUS_CLEAN_INLINING_H
+#include "config.h"
 #ifdef QMC_USE_KOKKOS
 #include <Kokkos_Core.hpp>
 #else
