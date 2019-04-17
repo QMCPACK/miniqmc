@@ -29,6 +29,7 @@ SET(QMC_USE_CLANG_CUDA FALSE CACHE BOOL "Use clang to build CUDA code")
 
 # Set clang specfic flags (which we always want)
 ADD_DEFINITIONS( -Drestrict=__restrict__ )
+ADD_DEFINITIONS( -Drestrict=__restrict__ -DNO_SANITIZE=__attribute__((no_sanitize("memory"))) )
 
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__forceinline=inline")
 SET( HAVE_POSIX_MEMALIGN 0 )    # Clang doesn't support -malign-double

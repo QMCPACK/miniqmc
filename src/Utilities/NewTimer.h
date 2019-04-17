@@ -258,7 +258,7 @@ public:
 #endif
 
   
-  void __attribute__((no_sanitize("memory"))) addTimer(NewTimer* t);
+  void NO_SANITIZE addTimer(NewTimer* t);
   NewTimer* createTimer(const std::string& myname, timer_levels mytimer = timer_level_fine);
 
   void push_timer(NewTimer* t)

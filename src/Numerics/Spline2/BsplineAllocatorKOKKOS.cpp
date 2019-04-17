@@ -1,17 +1,16 @@
-#include "Numbers/Spline2/BsplineAllocatorKokkos.hpp"
+#include "Numerics/Spline2/BsplineAllocatorKOKKOS.hpp"
 
 namespace qmcplusplus
 {
 namespace einspline
 {
-template<>
+
 template<typename T>
 void Allocator<Devices::KOKKOS>::setCoefficientsForOneOrbital(
     int i,
     Kokkos::View<T***>& coeff,
     typename bspline_traits<Devices::KOKKOS, T, 3>::SplineType* spline)
 {
-  Kokkos::View<T***> coeff("coef_data", coef_std[0] + 3, coef_std[1] + 3, coef_std[2] + 3);
   //  #pragma omp parallel for collapse(3)
   for (int ix = 0; ix < spline->x_grid.num + 3; ix++)
   {
@@ -28,7 +27,6 @@ void Allocator<Devices::KOKKOS>::setCoefficientsForOneOrbital(
   }
 }
 
-template<>
 template<typename SplineType>
 void Allocator<Devices::KOKKOS>::destroy(SplineType*& spline)
 {

@@ -4,6 +4,8 @@
 namespace qmcplusplus
 {
 
+/** Kokkos functor for custom reduction
+ */
 template<typename T>
 class SPOReduction
 {
@@ -83,7 +85,7 @@ void CheckSPOSteps<Devices::KOKKOS>::initialize(int argc, char** argv)
   Kokkos::initialize(argc, argv);
 }
 
-    template<>
+template<>
 template<typename T>
 CheckSPOData<T> CheckSPOSteps<Devices::KOKKOS>::runThreads(const int team_size,
 							   ParticleSet& ions,
@@ -161,7 +163,7 @@ CheckSPOData<T> CheckSPOSteps<Devices::KOKKOS>::runThreads(const int team_size,
 
   namespace qmcplusplus
   {
-        template void CheckSPOSteps<Devices::KOKKOS>::test(int&, int, qmcplusplus::Tensor<int, 3u> const&, int, int, int, int, int, double);
+  template void CheckSPOSteps<Devices::KOKKOS>::test(int&, int, qmcplusplus::Tensor<int, 3u> const&, int, int, int, int, int, double);
 
   template class CheckSPOSteps<Devices::KOKKOS>;
 

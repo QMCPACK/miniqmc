@@ -17,7 +17,7 @@
 //  Foundation, Inc., 51 Franklin Street, Fifth Floor,                     //
 //  Boston, MA  02110-1301  USA                                            //
 /////////////////////////////////////////////////////////////////////////////
-/** @file einspline_allocator.h
+/** @file
  *
  * Rename aligned_alloc/aligned_free as einspline_alloc/einspline_free to
  * avoid naming conflicts with the standards

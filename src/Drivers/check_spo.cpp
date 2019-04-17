@@ -36,9 +36,6 @@
 // #ifdef QMC_USE_CUDA
 // #include "Drivers/test/CheckSPOStepsCUDA.hpp"
 // #endif
-#ifdef QMC_USE_KOKKOS
-#include "Drivers/CheckSPOStepsKOKKOS.hpp"
-#endif
 
 using namespace std;
 

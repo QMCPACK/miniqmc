@@ -83,7 +83,7 @@ public:
     Kokkos::resize(minded_splines_, size); 
   }
   
-  aligned_vector<spline_type*>& get() { return minded_splines_; }
+    //aligned_vector<spline_type*>& get() { return minded_splines_; }
 
   spline_type* operator[] (int block_index) { return &minded_splines_(block_index); }
 

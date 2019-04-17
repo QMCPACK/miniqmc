@@ -1570,7 +1570,7 @@ class DeterminantDeviceImp<Devices::KOKKOS>
 public:
   using QMCT = QMCTraits;
   static constexpr Devices ENUMT = Devices::KOKKOS;
-  DeterminantDeviceImp(int nels, const RandomGenerator<QMCT::RealType>& RNG, int First = 0)
+    DeterminantDeviceImp(int nels, const RandomGenerator<QMCT::RealType>& RNG, DeviceBuffers<ENUMT> dev_bufs_dummy,  int First = 0)
       : DeterminantDevice(nels, RNG, First), FirstIndex(First), myRandom(RNG)
   {
     //std::cout << "DeterminantDeviceImp<KOKKOS>::DeterminantDeviceImp(...)" << '\n';
@@ -1714,6 +1714,10 @@ public:
     return dev_subview_host(0, 0);
   }
   inline int sizeImp() const { return psiMinv.extent(0) * psiMinv.extent(1); }
+
+        inline void finishUpdate_i(int iel)
+    {
+    }
 
 private:
   /// log|det|
