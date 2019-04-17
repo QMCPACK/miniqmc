@@ -119,6 +119,34 @@ struct einspline_spo : public SPOSet
     auto u = Lattice.toUnit_floor(p);
     spline.evaluate_v(u[0], u[1], u[2], psi);
   }
+  
+  /** alternative to hand in psi rather than use the integrated one **/
+  inline void evaluate_v(const PosType& p, vContainer_type& inPsi) {
+    ScopedTimer local_timer(timer);
+    auto u = Lattice.toUnit_floor(p);
+    spline.evaluate_v(u[0], u[1], u[2], inPsi);
+  }    
+
+  inline void multi_evaluate_v(std::vector<PosType>& pos_list, std::vector<vContainer_type>& vals) {
+    Kokkos::View<vContainer_type*> allPsi("allPsi", vals.size());
+    auto allPsiMirror = Kokkos::create_host_mirror(allPsi);
+    for (int i = 0; i < vals.size(); i++) {
+      allPsiMirror(i) = vals[i];
+    }
+    Kokkos::deep_copy(allPsi, allPsiMirror);
+
+    // do this in soa spirit
+    Kokkos::View<double*[3],Kokkos::LayoutLeft> allPos("allPos", pos_list.size());
+    auto allPosMirror = Kokkos::create_host_mirror(allPos);
+    for (int i = 0; i < pos_list.size(); i++) {
+      auto u = Lattice.toUnit_floor(pos_list[i]);
+      allPosMirror(i,0) = u[0];
+      allPosMirror(i,1) = u[1];
+      allPosMirror(i,2) = u[2];
+    }
+    Kokkos::deep_copy(allPos, allPosMirror);
+    spline.multi_evaluate_v(allPos, allPsi);
+  }
 
   /** evaluate psi, grad and hess */
   inline void evaluate_vgh(const PosType& p)
@@ -126,6 +154,48 @@ struct einspline_spo : public SPOSet
     ScopedTimer local_timer(timer);
     auto u = Lattice.toUnit_floor(p);
     spline.evaluate_vgh(u[0], u[1], u[2], psi, grad, hess);
+  }
+
+  /** alternative to hand in psi rather than use the integrated one **/
+  inline void evaluate_vgh(const PosType& p, vContainer_type& inPsi,
+			   gContainer_type& inGrad, hContainer_type& inHess)
+  {
+    ScopedTimer local_timer(timer);
+    auto u = Lattice.toUnit_floor(p);
+    spline.evaluate_vgh(u[0], u[1], u[2], inPsi, inGrad, inHess);
+  }
+
+  // the hope / point here is that everything will be a cheap shallow copy
+  // if that is not the case, probably need a rethink
+  inline void multi_evaluate_vgh(std::vector<PosType>& pos_list, std::vector<vContainer_type>& vals, 
+				 std::vector<gContainer_type>& grads, std::vector<hContainer_type>& hesss) {
+    Kokkos::View<vContainer_type*> allPsi("allPsi", vals.size());
+    Kokkos::View<gContainer_type*> allGrad("allGrad", grads.size());
+    Kokkos::View<hContainer_type*> allHess("allHess", hesss.size());
+    auto allPsiMirror = Kokkos::create_host_mirror(allPsi);
+    auto allGradMirror = Kokkos::create_host_mirror(allGrad);
+    auto allHessMirror = Kokkos::create_host_mirror(allHess);
+    
+    for (int i = 0; i < vals.size(); i++) {
+      allPsiMirror(i) = vals[i];
+      allGradMirror(i) = grads[i];
+      allHessMirror(i) = hesss[i];
+    }
+    Kokkos::deep_copy(allPsi, allPsiMirror);
+    Kokkos::deep_copy(allGrad, allGradMirror);
+    Kokkos::deep_copy(allHess, allHessMirror);
+
+    // do this in soa spirit
+    Kokkos::View<double*[3],Kokkos::LayoutLeft> allPos("allPos", pos_list.size());
+    auto allPosMirror = Kokkos::create_host_mirror(allPos);
+    for (int i = 0; i < pos_list.size(); i++) {
+      auto u = Lattice.toUnit_floor(pos_list[i]);
+      allPosMirror(i,0) = u[0];
+      allPosMirror(i,1) = u[1];
+      allPosMirror(i,2) = u[2];
+    }
+    Kokkos::deep_copy(allPos, allPosMirror);
+    spline.multi_evaluate_vgh(allPos, allPsi, allGrad, allHess);
   }
 
   void print(std::ostream& os)
