@@ -524,7 +524,7 @@ int main(int argc, char** argv)
 
     TimerManager.print();
 
-    cout << endl << "================================== " << endl << endl;
+    cout << endl << "========== Throughput ============ " << endl << endl;
     cout << "Total throughput ( N_walkers * N_elec^3 / Total time ) = "
          << (nmovers * comm.size() * std::pow(double(nels),3) / Timers[Timer_Total]->get_total()) << std::endl;
     cout << "Diffusion throughput ( N_walkers * N_elec^3 / Diffusion time ) = "
