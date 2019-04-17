@@ -222,23 +222,6 @@ void MiniqmcDriverFunctions<DT>::movers_runThreads(MiniqmcOptions& mq_opt,
 template class MiniqmcDriverFunctions<Devices::CPU>;
 
 #ifdef QMC_USE_CUDA
-template void MiniqmcDriverFunctions<Devices::CUDA>::initialize(int, char**);
-template void MiniqmcDriverFunctions<Devices::CUDA>::movers_runThreads(MiniqmcOptions& mq_opt,
-                                                   const PrimeNumberSet<uint32_t>& myPrimes,
-                                                   ParticleSet& ions,
-								       const SPOSet* spo_main);
-template
-void MiniqmcDriverFunctions<Devices::CUDA>::runThreads(MiniqmcOptions& mq_opt,
-                                            const PrimeNumberSet<uint32_t>& myPrimes,
-                                            ParticleSet& ions,
-                                            const SPOSet* spo_main);
-
-template void MiniqmcDriverFunctions<Devices::CUDA>::thread_main(const int ip,
-                                             const int team_size,
-                                             MiniqmcOptions& mq_opt,
-                                             const PrimeNumberSet<uint32_t>& myPrimes,
-                                             ParticleSet ions,
-								 const SPOSet* spo_main);
-
+template class MiniqmcDriverFunctions<Devices::CUDA>;
     #endif
 } // namespace qmcplusplus

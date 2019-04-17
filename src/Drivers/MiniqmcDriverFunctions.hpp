@@ -31,6 +31,10 @@
 #include "Utilities/qmcpack_version.h"
 #include "Utilities/PrimeNumberSet.h"
 
+#ifdef QMC_USE_CUDA
+#include "Drivers/CrowdCUDA.hpp"
+#endif
+
 namespace qmcplusplus
 {
 /** A purely functional class implementing miniqmcdriver functions.
@@ -115,7 +119,7 @@ private:
 };
 
 #ifdef QMC_USE_KOKKOS
-#include "Drivers/MiniqmcDriverFunctionsKokkos.hpp"
+#include "Drivers/MiniqmcDriverFunctionsKOKKOS.hpp"
 #endif
 
 
