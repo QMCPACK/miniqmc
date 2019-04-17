@@ -30,17 +30,11 @@ private:
 };
 
 extern template class WaveFunctionBuilder<Devices::CPU>;
+
 #ifdef QMC_USE_KOKKOS
 extern template class WaveFunctionBuilder<Devices::KOKKOS>;
 #endif
-} // namespace qmcplusplus
 
-#ifdef QMC_USE_CUDA
-#include "QMCWaveFunctions/WaveFunctionBuilderCUDA.hpp"
-namespace qmcplusplus
-{
-extern template class WaveFunctionBuilder<Devices::CUDA>;
-}
-#endif
+} // namespace qmcplusplus
 
 #endif

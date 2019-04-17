@@ -25,15 +25,12 @@
 #include <cstdio>
 #include <cstdlib>
 #include <type_traits>
-#ifdef KOKKOS_ENABLE_CUDA
-#include "cublas_v2.h"
-#include "cusolverDn.h"
-#endif
 #include "Utilities/Configuration.h"
 #include "QMCWaveFunctions/WaveFunctionComponent.h"
 #include "Utilities/RandomGenerator.h"
 #include "Memory/DeviceBuffers.hpp"
 namespace qmcplusplus
+
 {
 template<class DEVICEIMP>
 class DeterminantDevice

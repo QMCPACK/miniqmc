@@ -3,4 +3,4 @@
 namespace qmcplusplus
 {
 template class DeterminantDeviceImp<Devices::CPU>;
-}
+} // namespace qmcplusplus

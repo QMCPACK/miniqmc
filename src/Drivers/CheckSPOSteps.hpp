@@ -150,22 +150,5 @@ void CheckSPOSteps<DT>::finalize()
 
 extern template class CheckSPOSteps<Devices::CPU>;
 } // namespace qmcplusplus
-// #ifdef QMC_USE_KOKKOS
-// #include "Drivers/CheckSPOStepsKOKKOS.hpp"
-// // namespace qmcplusplus
-// // {
-
-// // extern template void CheckSPOSteps<Devices::KOKKOS>::test(int&, int, qmcplusplus::Tensor<int, 3u> const&, int, int, int, int, int, double);
-// // extern template typename CheckSPOSteps<Devices::KOKKOS>::SPODevImp
-// // CheckSPOSteps<Devices::KOKKOS>::buildSPOMain(const int nx,
-// // 				const int ny,
-// // 				const int nz,
-// // 				const int norb,
-// // 				const int nTiles,
-// // 					   const int tile_size,
-// // 				const Tensor<OHMMS_PRECISION, 3>& lattice_b);
-
-// // }
-// #endif
 
 #endif

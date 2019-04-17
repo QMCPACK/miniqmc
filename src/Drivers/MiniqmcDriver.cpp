@@ -5,9 +5,9 @@
 #include <boost/hana/eval.hpp>
 #include <boost/hana/length.hpp>
 #include <boost/hana/equal.hpp>
-#include <boost/hana/find.hpp>
-#include <boost/hana/assert.hpp>
-//#include <boost/hana/experimental/printable.hpp>
+
+
+
 namespace qmcplusplus
 {
 void MiniqmcDriver::initialize(int argc, char** argv)

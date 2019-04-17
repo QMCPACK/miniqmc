@@ -282,4 +282,4 @@ void Crowd<Devices::CUDA>::finishUpdate(int iels)
 namespace qmcplusplus
 {
 template class Crowd<Devices::CUDA>;
-}
+} // namespace qmcplusplus

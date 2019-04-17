@@ -25,16 +25,19 @@ if(QMC_USE_KOKKOS)
 endif(QMC_USE_KOKKOS)
 
 
-
+SET(MINIWFS_CUDA_SRC "")
+IF(QMC_USE_CUDA)
+  SET(MINIWFS_CUDA_SRC ../QMCWaveFunctions/WaveFunctionBuilderCUDA.cpp)
+ENDIF(QMC_USE_CUDA)
 ADD_LIBRARY(miniwfs ../QMCWaveFunctions/WaveFunction.cpp
-  ../QMCWaveFunctions/WaveFunctionBuilder.cpp ${KOKKOS_SRCS})
+  ../QMCWaveFunctions/WaveFunctionBuilder.cpp ${KOKKOS_SRCS} ${MINIWFS_CUDA_SRC})
 TARGET_LINK_LIBRARIES(miniwfs qmcutil)
 SET(DRIVERS miniqmc) # miniqmc_sync_move)
 
 
 SET(MINI_FUNCTIONS_SRC Crowd.cpp)
 IF(QMC_USE_CUDA)
-  SET(MINI_FUNCTIONS_SRC ${MINI_FUNCTIONS_SRC} CrowdCUDA.cpp)
+  SET(MINI_FUNCTIONS_SRC ${MINI_FUNCTIONS_SRC} CrowdCUDA.cpp MiniqmcDriverFunctionsCUDA.cpp)
 ENDIF(QMC_USE_CUDA)
 
 IF(QMC_USE_KOKKOS)

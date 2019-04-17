@@ -27,8 +27,13 @@
 #include "Input/pseudo.hpp"
 #include "Utilities/RandomGenerator.h"
 #include "Utilities/PrimeNumberSet.h"
+#include "Drivers/Crowd.hpp"
+
 namespace qmcplusplus
 {
+    template<Devices DT>
+    class Crowd;
+    
 extern template class Crowd<Devices::CUDA>;
 
 } // namespace qmcplusplus

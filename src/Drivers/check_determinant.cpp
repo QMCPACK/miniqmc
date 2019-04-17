@@ -297,6 +297,7 @@ int CheckDeterminantTest::run_test()
 template class CheckDeterminantSteps<Devices::KOKKOS>;
 #endif
 }
+
 using namespace qmcplusplus;
 
 

@@ -7,10 +7,11 @@
 #include <stdexcept>
 #include <cuda_runtime_api.h>
 
+namespace qmcplusplus
+{
 /** Wrapper class for pinned cuda host memory
  * all operations are async so you must synchronize if you are going to do something with the data outside of a stream
  */
-
 class PinnedHostBuffer
 {
 public:
@@ -95,4 +96,5 @@ private:
   size_t byte_size_;
   cudaStream_t stream_;
 };
+}
 #endif

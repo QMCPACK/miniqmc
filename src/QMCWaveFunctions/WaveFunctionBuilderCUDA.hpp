@@ -3,9 +3,11 @@
 #include "Devices.h"
 #include "QMCWaveFunctions/WaveFunction.h"
 #include "QMCWaveFunctions/Determinant.h"
-#include "QMCWaveFunctions/DeterminantDeviceImp.h"
+#include "QMCWaveFunctions/DeterminantDeviceImpCUDA.h"
+#include "QMCWaveFunctions/DeterminantDeviceImpCPU.h"
 
 #include "QMCWaveFunctions/WaveFunctionBuilder.h"
+
 namespace qmcplusplus
 {
 template<>
@@ -31,6 +33,8 @@ inline void WaveFunctionBuilder<Devices::CUDA>::devDetBuild(WaveFunction& WF,
     WF.Det_dn = new DetType(els.getTotalNum() - WF.nelup, RNG, dev_bufs, WF.nelup);
   }
 }
+
+extern template class WaveFunctionBuilder<Devices::CUDA>;
 
 } // namespace qmcplusplus
 

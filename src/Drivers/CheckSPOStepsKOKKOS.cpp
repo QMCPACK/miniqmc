@@ -74,6 +74,4 @@ CheckSPOData<T> CheckSPOSteps<Devices::KOKKOS>::runThreads(const int team_size,
 namespace qmcplusplus
 {
 template class CheckSPOSteps<Devices::KOKKOS>;
-
-
-}
+} // namespace qmcplusplus

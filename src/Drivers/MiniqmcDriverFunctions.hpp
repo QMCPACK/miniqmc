@@ -246,6 +246,7 @@ void MiniqmcDriverFunctions<DT>::crowd_thread_main(const int ip,
 }
 
 extern template class qmcplusplus::MiniqmcDriverFunctions<Devices::CPU>;
+
 #ifdef QMC_USE_CUDA
 extern template class qmcplusplus::MiniqmcDriverFunctions<Devices::CUDA>;
 #endif

@@ -26,18 +26,22 @@ template<Devices DT>
 struct DeviceBuffers
 {};
 
+} // namespace qmcplusplus
+
 #ifdef QMC_USE_CUDA
 #include "CUDA/PinnedHostBuffer.hpp"
 
 /** This is used to share one pinned host buffer between all the dterminants in a crowd
  *  having many in play at once seems to cause performance issues
  */
+namespace qmcplusplus
+{
 template<>
 struct DeviceBuffers<Devices::CUDA>
 {
   PinnedHostBuffer determinant_host_buffer;
 };
+}
 #endif
-} // namespace qmcplusplus
 
 #endif
