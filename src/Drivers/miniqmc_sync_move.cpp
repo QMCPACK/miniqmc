@@ -345,10 +345,11 @@ int main(int argc, char** argv)
                   << "Rmax = " << Rmax << endl
                   << "AcceptanceRatio = " << accept << endl;
     app_summary() << "Iterations = " << nsteps << endl;
-    app_summary() << "OpenMP threads = " << omp_get_max_threads() << endl;
 #ifdef HAVE_MPI
     app_summary() << "MPI processes = " << comm.size() << endl;
 #endif
+    app_summary() << "OpenMP threads = " << omp_get_max_threads() << endl;
+    app_summary() << "Number of walkers per rank = " << nmovers << endl;
 
     app_summary() << "\nSPO coefficients size = " << SPO_coeff_size << " bytes ("
                   << SPO_coeff_size_MB << " MB)" << endl;
@@ -559,6 +560,15 @@ int main(int argc, char** argv)
     cout << "================================== " << endl;
 
     TimerManager.print();
+
+    cout << endl << "========== Throughput ============ " << endl << endl;
+    cout << "Total throughput ( N_walkers * N_elec^3 / Total time ) = "
+         << (nmovers * comm.size() * std::pow(double(nels),3) / Timers[Timer_Total]->get_total()) << std::endl;
+    cout << "Diffusion throughput ( N_walkers * N_elec^3 / Diffusion time ) = "
+         << (nmovers * comm.size() * std::pow(double(nels),3) / Timers[Timer_Diffusion]->get_total()) << std::endl;
+    cout << "Pseudopotential throughput ( N_walkers * N_elec^2 / Pseudopotential time ) = "
+         << (nmovers * comm.size() * std::pow(double(nels),2) / Timers[Timer_ECP]->get_total()) << std::endl;
+    cout << endl;
 
     XMLDocument doc;
     XMLNode* resources = doc.NewElement("resources");
