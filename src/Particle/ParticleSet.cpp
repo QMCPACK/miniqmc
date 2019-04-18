@@ -326,7 +326,7 @@ void ParticleSet::makeMove(Index_t iat, const SingleParticlePos_t& displ)
   activePtcl = iat;
   activePos  = R[iat] + displ;
   for (int i = 0; i < DistTables.size(); ++i)
-    DistTables[i]->moveOnSphere(*this, activePos);
+    DistTables[i]->move(*this, activePos);
 }
 
 void ParticleSet::flex_makeMove(const std::vector<ParticleSet*>& P_list, Index_t iat, const std::vector<SingleParticlePos_t>& displs) const

@@ -90,11 +90,6 @@ struct DistanceTableBA : public DTD_BConds<T, D, SC>, public DistanceTableData
                                            Nsources);
   }
 
-  inline void moveOnSphere(const ParticleSet& P, const PosType& rnew)
-  {
-    DTD_BConds<T, D, SC>::computeDistances(rnew, Origin->RSoA, Temp_r.data(), Temp_dr, 0, Nsources);
-  }
-
   /// evaluate the temporary pair relations
   inline void move(const ParticleSet& P, const PosType& rnew)
   {
