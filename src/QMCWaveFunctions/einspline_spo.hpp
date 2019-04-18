@@ -167,7 +167,10 @@ struct einspline_spo : public SPOSet
 
   // the hope / point here is that everything will be a cheap shallow copy
   // if that is not the case, probably need a rethink
-  inline void multi_evaluate_vgh(std::vector<PosType>& pos_list, std::vector<vContainer_type>& vals, 
+
+  
+
+  inline void multi_evaluate_vgh(Kokkos::View<RealType*[3],Kokkos::LayoutLeft>& pos_list, std::vector<vContainer_type>& vals, 
 				 std::vector<gContainer_type>& grads, std::vector<hContainer_type>& hesss) {
     Kokkos::View<vContainer_type*> allPsi("allPsi", vals.size());
     Kokkos::View<gContainer_type*> allGrad("allGrad", grads.size());
@@ -185,6 +188,11 @@ struct einspline_spo : public SPOSet
     Kokkos::deep_copy(allGrad, allGradMirror);
     Kokkos::deep_copy(allHess, allHessMirror);
 
+    spline.multi_evaluate_vgh(pos_list, allPsi, allGrad, allHess);
+  }
+
+  inline void multi_evaluate_vgh(std::vector<PosType>& pos_list, std::vector<vContainer_type>& vals, 
+				 std::vector<gContainer_type>& grads, std::vector<hContainer_type>& hesss) {
     // do this in soa spirit
     Kokkos::View<double*[3],Kokkos::LayoutLeft> allPos("allPos", pos_list.size());
     auto allPosMirror = Kokkos::create_host_mirror(allPos);
@@ -195,9 +203,14 @@ struct einspline_spo : public SPOSet
       allPosMirror(i,2) = u[2];
     }
     Kokkos::deep_copy(allPos, allPosMirror);
-    spline.multi_evaluate_vgh(allPos, allPsi, allGrad, allHess);
+    multi_evaluate_vgh(allPos, vasl, grads, hesss);
   }
 
+
+
+
+
+  
   void print(std::ostream& os)
   {
     os << " nSplines=" << nSplines << " nSplinesPerBlock=" << blockSize << std::endl;

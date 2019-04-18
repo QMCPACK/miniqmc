@@ -509,8 +509,7 @@ int main(int argc, char** argv)
 	      for (int iw = 0; iw < nmovers; iw++)
 		mover_list_ref[iw]->els.setActive(iel); // watch out for this, does a bunch of evaluates on distanceTables
 	    } else {
-	      anon_mover->els.multi_setActiveKokkos(P_list,iel); //// LNS - figure out where and how to do this.  Probably look in ParticleSet.h
-	                                                         //// big question is whether to also do this on the host as well.
+	      anon_mover->els.multi_setActiveKokkos(P_list,iel); // note this is only doing this on the device, not the host
 	    }
 	    // Compute gradient at the current position
 	    Timers[Timer_evalGrad]->start();
@@ -530,18 +529,21 @@ int main(int argc, char** argv)
 	      mover_list[0]->rng.generate_normal(&delta[0][0], nmovers3);
 	    }
 	      
-	    // LNS -- need to get rid of openmp here.  Also wondering whether parallel is necessary
-#pragma omp parallel for
-	    for (int iw = 0; iw < nmovers; iw++)
-	    {
-	      PosType dr  = sqrttau * delta[iw];
-	      isValid[iw] = mover_list_ref[iw]->els.makeMoveAndCheck(iel, dr);
-	      // LNS should make a multiMakeMoveAndCheck, but will either need to do the
-	      // to Lattice stuff on the GPU, or will need to do a hybrid.  If hybrid,
-	      // will also want to keep CPU's copy of R, activePtcl and activePos up to date
-
-	      // if on device, need lattice.outOfBound, lattice.toUnit, lattice.isValid
-	      // and the move methods for the distance tables  (isValid is the only hard one)
+	    if (useRef) {
+	      for (int iw = 0; iw < nmovers; iw++) {
+		  PosType dr  = sqrttau * delta[iw];
+		  isValid[iw] = mover_list_ref[iw]->els.makeMoveAndCheck(iel, dr);
+		}
+	    } else {
+	      Kokkos::View<RealType*[3]> dr("dr", nmovers);
+	      auto drMirror = Kokkos::create_mirror_view(dr);
+	      for (int iw = 0; iw < nmovers; iw++) {
+		for (int d = 0; d < 3; d++) {
+		  drMirror(iw,d) = sqrttau * delta[iw][d];
+		}
+	      }
+	      Kokkos::deep_copy(dr, drMirror);
+	      anon_mover->els.multi_makeMoveAndCheckKokkos(P_list, dr, iel, isValid);
 	    }
 
 	    std::vector<ParticleSet*> valid_P_list;
@@ -564,7 +566,6 @@ int main(int argc, char** argv)
 	    
 	    // Compute gradient at the trial position
 	    Timers[Timer_ratioGrad]->start();
-	    // LNS -- need to get this working
 	    if (useRef) {
 	      anon_mover_ref->wavefunction.multi_ratioGrad(valid_WF_list, valid_P_list, iel, ratios, grad_new);
 	    } else {
@@ -574,26 +575,38 @@ int main(int argc, char** argv)
 	    // LNS -- what we need is the
 	    if (useRef) {
 	      for (int iw = 0; iw < valid_P_list.size(); iw++)
-		pos_list[iw] = valid_P_list[iw].R[iel];   // just getting the value out, so maybe keep R accessible 
+		pos_list[iw] = valid_P_list[iw].R[iel];
+	      anon_mover_ref.spo->multi_evaluate_vgh(valid_spo_list, pos_list); 
 	    } else {
-	      // LNS, R[iel] is already on the device.  Need to make a kernel that puts these together
-	      // into a View<double*[3],Kokkos::LayoutLeft> so that this could be directly haded to multi_evaluate_vgh
-	      // note, would also need to apply toUnit_floor on each of them
-	    }
-	    if (useRef) { 
-	      anon_mover_ref.spo->multi_evaluate_vgh(valid_spo_list, pos_list); // doesn't seem to touch particleset at all
-	    } else {
+
+	      Kokkos::View<double*[3],Kokkos::LayoutLeft> pos_list("positions", valid_P_list.size());
+	      Kokkos::View<valid_P_list[0]::pskType*> allParticleSetData("apsd", valid_P_list.size());
+	      auto apsdMirror = Kokkos::create_mirror_view(allParticleSetData);
+	      for (int i = 0; i < valid_P_list.size(); i++) {
+		apsdMirror(i) = valid_P_list[i]->psk;
+	      }
+	      Kokkos::deep_copy(allParticleSetData, apsdMirror);
+	      Kokkos::parallel_for("populatePositions", valid_P_list.size(),
+				   KOKKOS_LAMBDA(const int& i) {
+				     double x, y, z;
+				     
+				     allParticleSetData(i).toUnit_floor(allParticleSetData(i).R(iel,0),
+									allParticleSetData(i).R(iel,1),
+									allParticleSetData(i).R(iel,2),
+									x,y,z);
+				     pos_list(i,0) = x;
+				     pos_list(i,1) = y;
+				     pos_list(i,2) = z;
+				   });
 	      const std::vector<mover_type*> valid_mover_list(filtered_list(mover_list, isValid));
 	      auto vals = extract_spo_psi_list(valid_mover_list);
 	      auto grads = extract_spo_grad_list(valid_mover_list);
 	      auto hesss = extract_spo_grad_list(valid_mover_list);
-	      spo.multi_evaluate_vgh(pos_list, vals, grads, hesss); // LNS, think about handing in a View for the positions
+	      spo.multi_evaluate_vgh(pos_list, vals, grads, hesss);
 	    }
 	    Timers[Timer_ratioGrad]->stop();
 	    
 	    // Accept/reject the trial move
-
-	    
 	    for (int iw = 0; iw < isAccepted.size(); iw++)
 	      if (ur[iw] < accept)
 		isAccepted[iw] = true;

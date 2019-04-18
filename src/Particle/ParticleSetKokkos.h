@@ -43,6 +43,7 @@ public:
   Kokkos::View<RealType[dim][dim]>                      DT_G; // [dim][dim]
   Kokkos::View<RealType[dim][dim]>                      DT_R; // [dim][dim]
   Kokkos::View<RealType[8][dim],Kokkos::LayoutLeft>     corners; // [8][dim]
+  Kokkos::View<int[dim]>                                BoxBConds
   
   Kokkos::View<RealType**>                              LikeDTDistances; // [nparticles][nparticles]
   Kokkos::View<RealType**[dim]>                         LikeDTDisplacements; // [nparticles][nparticles][dim]
@@ -81,6 +82,7 @@ public:
     activePos = rhs.activePos;
     DT_G = rhs.DT_G;
     DT_R = rhs.DT_R;
+    BoxBConds = rhs.BoxBConds;
     corners = rhs.corners;
     LikeDTDDistances = rhs.LikeDTDDistances;
     LikeDTDisplacements = rhs.LikeDTDisplacements;
@@ -192,12 +194,53 @@ public:
   }
 
   KOKKOS_INLINE_FUNCTION
+  void toUnit(RealType inX, RealType inY, RealType inZ, RealType& outX, RealType& outY, RealType& outZ) {
+    outX = inX * DT_G(0,0) + inY * DT_G(1,0) + inZ * DT_G(2,0);
+    outY = inX * DT_G(0,1) + inY * DT_G(1,1) + inZ * DT_G(2,1);
+    outZ = inX * DT_G(0,2) + inY * DT_G(1,2) + inZ * DT_G(2,2);
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  void toUnit_floor(RealType inX, RealType inY, RealType inZ, RealType& outX, RealType& outY, RealType& outZ) {
+    outX = inX * DT_G(0,0) + inY * DT_G(1,0) + inZ * DT_G(2,0);
+    outY = inX * DT_G(0,1) + inY * DT_G(1,1) + inZ * DT_G(2,1);
+    outZ = inX * DT_G(0,2) + inY * DT_G(1,2) + inZ * DT_G(2,2);
+    if (-std::numeric_limits<T1>::epsilon() < outX && outX < 0)
+        outX = T1(0.0);
+      else
+        outX -= std::floor(outX);
+    if (-std::numeric_limits<T1>::epsilon() < outY && outY < 0)
+        outY = T1(0.0);
+      else
+        outY -= std::floor(outY);
+    if (-std::numeric_limits<T1>::epsilon() < outZ && outZ < 0)
+        outZ = T1(0.0);
+      else
+        outZ -= std::floor(outZ);
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  bool outOfBound(RealType inX, RealType inY, RealType inZ) {
+    if (std::abs(inX) > 0.5 || std::abs(inY) > 0.5 || std::abs(inZ) > 0.5) {
+      return true;
+    }
+    return false;
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  bool isValid(RealType inX, RealType inY, RealType inZ) {
+    return (BoxBConds(0) || (inX > 0.0 && inX < 1.0)) &&
+      (BoxBConds(1) || (inY > 0.0 && inY < 1.0)) &&
+      (BoxBConds(2) || (inZ > 0.0 && inZ < 1.0));
+  }
+  
+  KOKKOS_INLINE_FUNCTION
   void LikeEvaluate() {
     constexpr RealType BigR = std::numeric_limits<T>::max();
     for (int iat = 0; iat < LikeDTDistances.extent(1); ++iat)
     {
       auto distancesSubview = Kokkos::subview(LikeDTDistances,Kokkos::ALL(),iat);
-    auto displacementsSubview = Kokkos::subview(LikeDTDisplacements,Kokkos::ALL(),iat,Kokkos::All());
+      auto displacementsSubview = Kokkos::subview(LikeDTDisplacements,Kokkos::ALL(),iat,Kokkos::All());
       DTComputeDistances(R(iat,0), R(iat,1), R(iat,2), RSoA,
 			 distancesSubview, displacementsSubview,
 			 0, LikeDTDistances.extent(1), iat);

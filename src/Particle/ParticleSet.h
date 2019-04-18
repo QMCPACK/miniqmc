@@ -214,6 +214,7 @@ public:
    */
   void setActive(int iat);
 
+  void multi_setActiveKokkos(std::vector<ParticleSet*>& P_list, int iel);
   /** return the position of the active partice
    *
    * activePtcl=-1 is used to flag non-physical moves

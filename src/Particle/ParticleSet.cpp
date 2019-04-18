@@ -116,8 +116,9 @@ void ParticleSet::PushDataToParticleSetKokkos() {
   psk.activePos    = Kokkos::View<RealType[DIM]>("activePos");
 
   // distance table related stuff
-  psk.DT_G                  = Kokkos::View<RealType[DIM][DIM]>("DT_G");
-  psk.DT_R                  = Kokkos::View<RealType[DIM][DIM]>("DT_R");
+  psk.DT_G                  = Kokkos::View<RealType[DIM][DIM]>("DT_G"); //reciprocal lattice vectors
+  psk.DT_R                  = Kokkos::View<RealType[DIM][DIM]>("DT_R"); //real lattice vectors (from Lattice.a)
+  psk.BoxBConds             = Kokkos::View<int[DIM]>("BoxBConds");
   psk.corners               = Kokkos::View<RealType[8][DIM],Kokkos::LayoutLeft>("corners");
   psk.LikeDTDistances       = Kokkos::View<RealType**>("LikeDTDistances", NumPtcl, NumPtcl);
   psk.LikeDTDisplacements   = Kokkos::View<RealType**[DIM]("LikeDTDisplacements", NumPtcl, NumPtcl);
@@ -146,6 +147,7 @@ void ParticleSet::PushDataToParticleSetKokkos() {
   auto activePosMirror             = Kokkos::create_mirror_view(psk.activePos);
   auto DT_GMirror                  = Kokkos::create_mirror_view(psk.DT_G);
   auto DT_RMirror                  = Kokkos::create_mirror_view(psk.DT_R);
+  auto BoxBCondsMirror             = Kokkos::create_mirror_View(psk.BoxBConds);
   auto cornersMirror               = Kokkos::create_mirror_view(psk.corners);
   auto LikeDTDistancesMirror       = Kokkos::create_mirror_view(psk.LikeDTDistances);
   auto LikeDTDisplacementsMirror   = Kokkos::create_mirror_view(psk.LikeDTDisplacements);
@@ -188,14 +190,18 @@ void ParticleSet::PushDataToParticleSetKokkos() {
   }
 
   DT_GMirror(0,0) = DistTables[0]->g00;    DT_RMirror(0,0) = DistTables[0]->r00;
-  DT_GMirror(0,1) = DistTables[0]->g10;	   DT_RMirror(0,1) = DistTables[0]->r10;
-  DT_GMirror(0,2) = DistTables[0]->g20;	   DT_RMirror(0,2) = DistTables[0]->r20;
+  DT_GMirror(0,1) = DistTables[0]->g01;	   DT_RMirror(0,1) = DistTables[0]->r01;
+  DT_GMirror(0,2) = DistTables[0]->g02;	   DT_RMirror(0,2) = DistTables[0]->r02;
   DT_GMirror(1,0) = DistTables[0]->g10;	   DT_RMirror(1,0) = DistTables[0]->r10;
   DT_GMirror(1,1) = DistTables[0]->g11;	   DT_RMirror(1,1) = DistTables[0]->r11;
   DT_GMirror(1,2) = DistTables[0]->g12;	   DT_RMirror(1,2) = DistTables[0]->r12;
   DT_GMirror(2,0) = DistTables[0]->g20;	   DT_RMirror(2,0) = DistTables[0]->r20;
   DT_GMirror(2,1) = DistTables[0]->g21;	   DT_RMirror(2,1) = DistTables[0]->r21;
   DT_GMirror(2,2) = DistTables[0]->g22;	   DT_RMirror(2,2) = DistTables[0]->r22;
+
+  for (int d = 0; d < DIM; d++) {
+    BoxBCondsMirror(d) = BoxBConds[d];
+  }
   
   for (int i = 0; i < 8; i++) {
     for (int d = 0; d < DIM; d++) {
@@ -255,6 +261,7 @@ void ParticleSet::PushDataToParticleSetKokkos() {
   Kokkos::deep_copy(psk.activePos, activePosMirror);
   Kokkos::deep_copy(psk.DT_G, DT_GMirror);
   Kokkos::deep_copy(psk.DT_R, DT_RMirror);
+  Kokkos::deep_copy(psk.BoxBConds, BoxBCondsMirror);
   Kokkos::deep_copy(psk.corners, cornersMirror);
   Kokkos::deep_copy(psk.LikeDTDistances, LikeDTDistancesMirror);
   Kokkos::deep_copy(psk.LikeDTDisplacements, LikeDTDisplacementsMirror);
@@ -469,6 +476,22 @@ void ParticleSet::setActive(int iat)
     DistTables[i]->evaluate(*this, iat);
 }
 
+void ParticleSet::multi_setActiveKokkos(std::vector<ParticleSet*>& P_list, int iel)
+{
+  ScopedTimer local_timer(timers[Timer_setActive]);
+  Kokkos::View<P_list[0]::pskType*> allParticleSetData("apsd", P_list.size());
+  auto apsdMirror = Kokkos::create_mirror_view(allParticleSetData);
+  for (int i = 0; i < P_list.size(); i++) {
+    apsdMirror(i) = P_list[i]->psk;
+  }
+  int locIel = iel;
+  Kokkos::deep_copy(allParticleSetData, apsdMirror);
+  Kokkos::parallel_for("setActive", P_list.size(),
+		       KOKKOS_LAMBDA(const int& i) {
+			 allParticleSetData(i).setActivePtcl(locIel);
+		       });
+}
+
 /** move a particle iat
  * @param iat the index of the particle to be moved
  * @param displ the displacement of the iath-particle position
@@ -507,6 +530,60 @@ bool ParticleSet::makeMoveAndCheck(Index_t iat, const SingleParticlePos_t& displ
       DistTables[i]->move(*this, activePos);
     return true;
   }
+}
+
+typename <drType>
+void ParticleSet::multi_makeMoveAndCheckKokkos(std::vector<ParticleSet*>& P_list, drType& dr,
+					       int iel, std::vector<int> isValid)
+{
+  ScopedTimer local_timer(timers[Timer_setmakeMove]);
+  Kokkos::View<P_list[0]::pskType*> allParticleSetData("apsd", P_list.size());
+  auto apsdMirror = Kokkos::create_mirror_view(allParticleSetData);
+  for (int i = 0; i < P_list.size(); i++) {
+    apsdMirror(i) = P_list[i]->psk;
+  }
+  int locIel = iel;
+  auto& locDr = dr;
+
+  Kokkos::deep_copy(allParticleSetData, apsdMirror);
+  Kokkos::View<int*> devIsValid("devIsValid", P_list.size());
+
+  Kokkos::parallel_for("makeMoveAndCheck", P_list.size(),
+		       KOKKOS_LAMBDA(const int& i) {
+			 auto pset = allParticleSetData(i);
+			 pset.activePtcl(0) = locIel;
+			 for (int d = 0; d < 3; d++) { 
+			   pset.activePos(d) = R(i,d) + dr(i,d);
+			 }
+			 if (UseBoundBox(0)) {
+			   RealType x;
+			   RealType y;
+			   RealType z;
+			   pset.toUnit(dr(i,0), dr(i,1), dr(i,2), x, y, z);
+			   if (pset.outOfBound(x,y,z)) {
+			     pset.activePtcl(0) = -1;
+			     devIsValid(i) = 0;
+			   } else {
+			     pset.toUnit(pset.activePos(0), pset.activePos(1), pset.activePos(2), x, y, z);
+			     if (pset.isValid(x,y,z)) {
+			       pset.LikeMove(pset.activePos(0), pset.activePos(1), pset.activePos(2));
+			       pset.UnLikeMove(pset.activePos(0), pset.activePos(1), pset.activePos(2));
+			       devIsValid(i) = 1;
+			     } else {
+			       devIsValid(i) = 0;
+			     }
+			   }
+			 } else {
+			   pset.LikeMove(pset.activePos(0), pset.activePos(1), pset.activePos(2));
+			   pset.UnLikeMove(pset.activePos(0), pset.activePos(1), pset.activePos(2));
+			   devIsValid(i) = 1;
+			 }
+		       });
+  auto devIsValidMirror = Kokkos::create_mirror_view(devIsValid);
+  Kokkos::deep_copy(devIsValidMirror, devIsValid);
+  for (int i = 0; i < isValid.size(); i++) {
+    isValid(i) = devIsValidMirror(i);
+  }  
 }
 
 /** move the iat-th particle by displ
