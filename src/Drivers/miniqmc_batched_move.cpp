@@ -413,25 +413,18 @@ int main(int argc, char** argv)
   // this is the number of qudrature points for the non-local PP
   const int nknots(mover_list[0]->nlpp.size());
 
-  // For VMC, tau is large and should result in an acceptance ratio of roughly
-  // 50%
-  // For DMC, tau is small and should result in an acceptance ratio of 99%
-  const RealType tau = 2.0;
-
-  RealType sqrttau = std::sqrt(tau);
-
   for (int mc = 0; mc < nsteps; ++mc)
   {
     #pragma omp parallel for
     for(int batch = 0; batch < nbatches; batch++)
     {
-
       Timers[Timer_Diffusion]->start();
 
       int first, last;
       FairDivideLow(mover_list.size(), nbatches, batch, first, last);
       const std::vector<Mover*> Sub_list(extract_sub_list(mover_list, first, last));
       const std::vector<ParticleSet*> P_list(extract_els_list(Sub_list));
+      const std::vector<SPOSet*> spo_list(extract_spo_list(Sub_list));
       const std::vector<WaveFunction*> WF_list(extract_wf_list(Sub_list));
       const Mover& anon_mover = *Sub_list[0];
 
@@ -466,29 +459,21 @@ int main(int argc, char** argv)
 
           #pragma omp parallel for
           for (int iw = 0; iw < nw_this_batch; iw++)
-          {
-            PosType dr  = sqrttau * delta[iw];
-            isValid[iw] = Sub_list[iw]->els.makeMoveAndCheck(iel, dr);
-          }
+            Sub_list[iw]->els.makeMove(iel, delta[iw]);
 
-          std::vector<Mover*> valid_mover_list(filtered_list(Sub_list, isValid));
-          std::vector<bool> isAccepted(valid_mover_list.size());
-
-          const std::vector<ParticleSet*> valid_P_list(extract_els_list(valid_mover_list));
-          const std::vector<SPOSet*> valid_spo_list(extract_spo_list(valid_mover_list));
-          const std::vector<WaveFunction*> valid_WF_list(extract_wf_list(valid_mover_list));
+          std::vector<bool> isAccepted(Sub_list.size());
 
           // Compute gradient at the trial position
           Timers[Timer_ratioGrad]->start();
-          anon_mover.wavefunction.flex_ratioGrad(valid_WF_list, valid_P_list, iel, ratios, grad_new);
+          anon_mover.wavefunction.flex_ratioGrad(WF_list, P_list, iel, ratios, grad_new);
 
-          for (int iw = 0; iw < valid_mover_list.size(); iw++)
-            pos_list[iw] = valid_mover_list[iw]->els.R[iel];
-          anon_mover.spo->multi_evaluate_vgh(valid_spo_list, pos_list);
+          for (int iw = 0; iw < nw_this_batch; iw++)
+            pos_list[iw] = Sub_list[iw]->els.R[iel];
+          anon_mover.spo->multi_evaluate_vgh(spo_list, pos_list);
           Timers[Timer_ratioGrad]->stop();
 
           // Accept/reject the trial move
-          for (int iw = 0; iw < valid_mover_list.size(); iw++)
+          for (int iw = 0; iw < nw_this_batch; iw++)
             if (ur[iw] < accept)
               isAccepted[iw] = true;
             else
@@ -496,27 +481,24 @@ int main(int argc, char** argv)
 
           Timers[Timer_Update]->start();
           // update WF storage
-          anon_mover.wavefunction.flex_acceptrestoreMove(valid_WF_list, valid_P_list, isAccepted, iel);
+          anon_mover.wavefunction.flex_acceptrestoreMove(WF_list, P_list, isAccepted, iel);
           Timers[Timer_Update]->stop();
 
           // Update position
-          #pragma omp parallel for
-          for (int iw = 0; iw < valid_mover_list.size(); iw++)
+          for (int iw = 0; iw < nw_this_batch; iw++)
           {
             if (isAccepted[iw]) // MC
-              valid_mover_list[iw]->els.acceptMove(iel);
+              Sub_list[iw]->els.acceptMove(iel);
             else
-              valid_mover_list[iw]->els.rejectMove(iel);
+              Sub_list[iw]->els.rejectMove(iel);
           }
         } // iel
-      }   // substeps
+      } // substeps
 
-      #pragma omp parallel for
       for (int iw = 0; iw < nw_this_batch; iw++)
-      {
         Sub_list[iw]->els.donePbyP();
-        // evaluate Kinetic Energy
-      }
+
+      // evaluate Kinetic Energy
       anon_mover.wavefunction.flex_evaluateGL(WF_list, P_list);
 
       Timers[Timer_Diffusion]->stop();
@@ -546,7 +528,7 @@ int main(int argc, char** argv)
               {
                 PosType deltar(dist[iat] * rOnSphere[k] - displ[iat]);
 
-                els.makeMoveOnSphere(jel, deltar);
+                els.makeMove(jel, deltar);
 
                 Timers[Timer_Value]->start();
                 spo.evaluate_v(els.R[jel]);
