@@ -195,7 +195,7 @@ void MiniqmcDriverFunctions<DT>::movers_runThreads(MiniqmcOptions& mq_opt,
                       mq_opt,
                       myPrimes,
                       ions,
-                      spo_main); //, block_complete);
+                      spo_main);
 }
 
 

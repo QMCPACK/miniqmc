@@ -107,6 +107,7 @@ public:
   int team_size         = 1;
   int nsubsteps         = 1;
   int ncrews            = 1;
+  int nels = 0;
   // Set cutoff for NLPP use.
   QMCT::RealType accept        = 0.5;
   QMCT::RealType Rmax          = 1.7;

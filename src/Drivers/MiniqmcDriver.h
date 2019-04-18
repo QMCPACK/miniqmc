@@ -212,6 +212,16 @@ private:
       std::cout << "================================== " << '\n';
 
       mq_opt_.Timers[Timer_Total]->stop();
+
+      std::cout << '\n' << "========== Throughput ============ " << '\n' << '\n';
+      std::cout << "Total throughput ( N_walkers * N_elec^3 / Total time ) = "
+		<< (mq_opt_.nmovers * mq_opt_.pack_size * comm->size() * std::pow(double(mq_opt_.nels),3) / mq_opt_.Timers[Timer_Total]->get_total()) << '\n';
+      std::cout << "Diffusion throughput ( N_walkers * N_elec^3 / Diffusion time ) = "
+         << (mq_opt_.nmovers * mq_opt_.pack_size * comm->size() * std::pow(double(mq_opt_.nels),3) / mq_opt_.Timers[Timer_Diffusion]->get_total()) << '\n';
+      std::cout << "Pseudopotential throughput ( N_walkers * N_elec^2 / Pseudopotential time ) = "
+         << (mq_opt_.nmovers * mq_opt_.pack_size * comm->size() * std::pow(double(mq_opt_.nels),2) / mq_opt_.Timers[Timer_ECP]->get_total()) << '\n';
+      std::cout << std::endl;
+    
       TimerManagerClass::get().print();
 
       XMLDocument doc;
@@ -228,7 +238,6 @@ private:
       electron_info->InsertEndChild(MakeTextElement(doc, "name", "e"));
       electron_info->InsertEndChild(MakeTextElement(doc, "size", std::to_string(count_electrons(ions, 1))));
       particle_info->InsertEndChild(electron_info);
-
 
       XMLNode* run_info    = doc.NewElement("run");
       XMLNode* driver_info = doc.NewElement("driver");

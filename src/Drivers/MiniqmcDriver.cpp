@@ -21,9 +21,7 @@ void MiniqmcDriver::initialize(int argc, char** argv)
   {
     OutputManagerClass::get().shutOff();
   }
-
-  int number_of_electrons = 0;
-
+  
   Tensor<int, 3> tmat(mq_opt_.na, 0, 0, 0, mq_opt_.nb, 0, 0, 0, mq_opt_.nc);
 
   timer_levels timer_level = timer_level_fine;
@@ -68,7 +66,7 @@ void MiniqmcDriver::initialize(int argc, char** argv)
   if (norb > mq_opt_.splines_per_block || norb % mq_opt_.splines_per_block)
     ++nTiles;
 
-  number_of_electrons = nels;
+  mq_opt_.nels = nels;
 
   const size_t SPO_coeff_size =
       static_cast<size_t>(norb) * (mq_opt_.nx + 3) * (mq_opt_.ny + 3) * (mq_opt_.nz + 3) * sizeof(QMCT::RealType);
