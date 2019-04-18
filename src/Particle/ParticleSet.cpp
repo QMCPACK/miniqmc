@@ -311,7 +311,7 @@ void ParticleSet::makeMove(Index_t iat, const SingleParticlePos_t& displ)
   activePtcl = iat;
   activePos  = R[iat] + displ;
   for (int i = 0; i < DistTables.size(); ++i)
-    DistTables[i]->moveOnSphere(*this, activePos);
+    DistTables[i]->move(*this, activePos);
 }
 
 /** update the particle attribute by the proposed move
