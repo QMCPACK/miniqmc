@@ -80,7 +80,7 @@ struct MCDataType
 class ParticleSet : public QMCTraits, public PtclOnLatticeTraits
 {
 public:
-  using pskType = ParticleSetKokkos<RealType, ValueType>;
+  using pskType = ParticleSetKokkos<RealType, ValueType, DIM>;
   /// Adding in my Kokkos ParticleSet View
   pskType psk;
   /// Function which will push data in this class to psk

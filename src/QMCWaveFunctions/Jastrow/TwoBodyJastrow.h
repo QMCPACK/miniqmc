@@ -369,10 +369,11 @@ void TwoBodyJastrow<FT>::init(ParticleSet& p)
   for(int i=0; i<NumGroups*NumGroups; i++){
     new(&F(i)) FT();
   }
+  initializeJastrowKokkos();
 }
 
 template<typename FT>
-void TwoBodyJastrow<FT>::initializeKokkos() {
+void TwoBodyJastrow<FT>::initializeJastrowKokkos() {
   jasData.LogValue       = Kokkos::View<valT[1]>("LogValue");
 
   jasData.Nelec          = Kokkos::View<int[1]>("Nelec");

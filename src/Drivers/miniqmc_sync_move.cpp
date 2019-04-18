@@ -320,7 +320,12 @@ int main(int argc, char** argv)
     
     print_version(verbose);
 
+    // use this pointer if I'm doing reference, but acutal spo if not
     SPOSet* spo_main;
+    using spo_type = einspline_spo<OHMMS_PRECISION, 32>;
+    using mover_type = mover<OHMMS_PRECISION, 32>;
+    spo_type spo;
+
     int nTiles = 1;
     
     ParticleSet ions;
@@ -354,8 +359,14 @@ int main(int argc, char** argv)
       
       app_summary() << "\nSPO coefficients size = " << SPO_coeff_size << " bytes ("
 		    << SPO_coeff_size_MB << " MB)" << endl;
+
+      if (useRef) {
+	spo_main = build_SPOSet(useRef, nx, ny, nz, norb, nTiles, lattice_b);
+      } else {
+	spo.set(nx, ny, nz, norb);
+	spo.Lattice.set(lattice_b);
+      }
       
-      spo_main = build_SPOSet(useRef, nx, ny, nz, norb, nTiles, lattice_b);
       Timers[Timer_Setup]->stop();
     }
 
@@ -370,7 +381,12 @@ int main(int argc, char** argv)
     Timers[Timer_Total]->start();
     
     Timers[Timer_Init]->start();
-    std::vector<Mover*> mover_list(nmovers, nullptr);
+   
+    // use this if doing ref
+    std::vector<Mover_ref*> mover_list_ref(nmovers, nullptr);
+    // use this if not
+    std::vector<mover_type*> mover_list(nmovers, nullptr);
+    
     // prepare movers
     // LNS -- something interesting is happening here
     //        I should probably make this a lambda and call it with nmovers and
@@ -379,36 +395,55 @@ int main(int argc, char** argv)
     //        thread teams
     for (int iw = 0; iw < nmovers; iw++)
     {
-		
       const int ip        = omp_get_thread_num();
       const int member_id = ip % team_size;
       
       // create and initialize movers
-      Mover* thiswalker = new Mover(myPrimes[ip], ions);
-      mover_list[iw]    = thiswalker;
-      
+      if (useRef) {      
+	Mover_ref* thiswalker = new Mover_ref(myPrimes[ip], ions);
+	mover_list_ref[iw]    = thiswalker;
+      } else {
+	mover_type* thiswalker = new mover_type(myPrimes[i], ions, spo);
+	mover_list[iw]    = thiswalker;
+      }
+	
       // create a spo view in each Mover
-      //LNS -- this is the problem, maybe see how this is done in other miniapp
-      thiswalker->spo = build_SPOSet_view(useRef, spo_main, team_size, member_id);
-      
+      if (useRef) {
+	mover_list_ref[iw]->spo = build_SPOSet_view(useRef, spo_main, team_size, member_id);
+      }
+
       // create wavefunction per mover
-      build_WaveFunction(useRef, thiswalker->wavefunction, ions, thiswalker->els, thiswalker->rng, enableJ3);
+      if (useRef) {
+	build_WaveFunction(useRef, mover_list_ref[iw]->wavefunction, ions, mover_list_ref[iw]->els, mover_list_ref[iw]->rng, enableJ3);
+      } else {
+	build_WaveFunction(useRef, mover_list[iw]->wavefunction, ions, mover_list[iw]->els, mover_list[iw]->rng, enableJ3);
+      }
       
       // initial computing
-      thiswalker->els.update(); // basically goes through the distance tables and calls evaluate from the current particleset
-
+      if (useRef) {
+	mover_list_ref[iw]->els.update(); // basically goes through the distance tables and calls evaluate from the current particleset
+      } else {
+	mover_list[iw]->els.update();
+      }
+      
       // LNS new -- push necessary contents of els particleset up to the device
       //            note that by now, the electron-ion distance table is present in els
       if (useRef == false)
       {
-	thiswalker->els.PushDataToParticleSetKokkos();
+	mover_list[iw]->els.PushDataToParticleSetKokkos();
       }
     }
     
     { // initial computing
-      const std::vector<ParticleSet*> P_list(extract_els_list(mover_list));
-      const std::vector<WaveFunction*> WF_list(extract_wf_list(mover_list));
-      mover_list[0]->wavefunction.multi_evaluateLog(WF_list, P_list);  // LNS -- need to get this working
+      if (useRef) {
+	const std::vector<ParticleSet*> P_list(extract_els_list(mover_list_ref));
+	const std::vector<WaveFunction*> WF_list(extract_wf_list(mover_list_ref));
+	mover_list_ref[0]->wavefunction.multi_evaluateLog(WF_list, P_list);
+      } else {
+	const std::vector<ParticleSet*> P_list(extract_els_list(mover_list));
+	const std::vector<WaveFunction*> WF_list(extract_wf_list(mover_list));
+	mover_list[0]->wavefunction.multi_evaluateLog(WF_list, P_list);
+      }
     }
     Timers[Timer_Init]->stop();
     
@@ -418,7 +453,12 @@ int main(int argc, char** argv)
     const int nmovers3 = 3 * nmovers;
     
     // this is the number of qudrature points for the non-local PP
-    const int nknots(mover_list[0]->nlpp.size());
+    int nknots;
+    if (useRef) {
+      nknots = mover_list_ref[0]->nlpp.size();
+    } else {
+      nknots = mover_list[0]->nlpp.size();
+    }
     
     // For VMC, tau is large and should result in an acceptance ratio of roughly
     // 50%
@@ -441,60 +481,120 @@ int main(int argc, char** argv)
       for (int mc = 0; mc < nsteps; ++mc)
       {
 	Timers[Timer_Diffusion]->start();
-	
-	const std::vector<ParticleSet*> P_list(extract_els_list(mover_list));
-	const std::vector<WaveFunction*> WF_list(extract_wf_list(mover_list));
-	const Mover& anon_mover = *mover_list[0];
-	
+
+	std::vector<ParticleSet*> P_list;
+	std::vector<WaveFunction*> WF_list;
+	if (useRef) {
+	  P_list(extract_els_list(mover_list_ref));
+	  WF_list(extract_wf_list(mover_list_ref));
+	} else {
+	  P_list = extract_els_list(mover_list);
+	  WF_list = extract_wf_list(mover_list);
+	}
+
+	Mover* anon_mover_ref;
+	mover_type* anon_mover;
+	if (useRef) {
+	  anon_mover_ref = mover_list_ref[0];
+	} else {
+	  anon_mover = mover_list[0];
+	}
+	  
 	for (int l = 0; l < nsubsteps; ++l) // drift-and-diffusion
 	{
 	  for (int iel = 0; iel < nels; ++iel)
 	  {
 	    // Operate on electron with index iel
-	    // LNS -- need to kill omp here (probably not enough work to care anyway, but check this)
-#pragma omp parallel for
-	    for (int iw = 0; iw < nmovers; iw++)
-	      mover_list[iw]->els.setActive(iel); // watch out for this, does a bunch of evaluates on distanceTables
-
+	    if (useRef) {
+	      for (int iw = 0; iw < nmovers; iw++)
+		mover_list_ref[iw]->els.setActive(iel); // watch out for this, does a bunch of evaluates on distanceTables
+	    } else {
+	      anon_mover->els.multi_setActiveKokkos(P_list,iel); //// LNS - figure out where and how to do this.  Probably look in ParticleSet.h
+	                                                         //// big question is whether to also do this on the host as well.
+	    }
 	    // Compute gradient at the current position
 	    Timers[Timer_evalGrad]->start();
-	    // LNS -- need to get this working
-	    anon_mover.wavefunction.multi_evalGrad(WF_list, P_list, iel, grad_now);
+	    if (useRef) {
+	      anon_mover_ref->wavefunction.multi_evalGrad(WF_list, P_list, iel, grad_now);
+	    } else {
+	      anon_mover->wavefunction.multi_evalGrad(WF_list, P_list, iel, grad_now);
+	    }
 	    Timers[Timer_evalGrad]->stop();
 	    
 	    // Construct trial move
-	    // LNS -- figure out whether this covers all walkers or not (I think yes)
-	    mover_list[0]->rng.generate_uniform(ur.data(), nmovers);
-	    mover_list[0]->rng.generate_normal(&delta[0][0], nmovers3);
-	    
+	    if (useRef) {
+	      mover_list_ref[0]->rng.generate_uniform(ur.data(), nmovers);
+	      mover_list_ref[0]->rng.generate_normal(&delta[0][0], nmovers3);
+	    } else {
+	      mover_list[0]->rng.generate_uniform(ur.data(), nmovers);
+	      mover_list[0]->rng.generate_normal(&delta[0][0], nmovers3);
+	    }
+	      
 	    // LNS -- need to get rid of openmp here.  Also wondering whether parallel is necessary
 #pragma omp parallel for
 	    for (int iw = 0; iw < nmovers; iw++)
 	    {
 	      PosType dr  = sqrttau * delta[iw];
-	      isValid[iw] = mover_list[iw]->els.makeMoveAndCheck(iel, dr);
+	      isValid[iw] = mover_list_ref[iw]->els.makeMoveAndCheck(iel, dr);
+	      // LNS should make a multiMakeMoveAndCheck, but will either need to do the
+	      // to Lattice stuff on the GPU, or will need to do a hybrid.  If hybrid,
+	      // will also want to keep CPU's copy of R, activePtcl and activePos up to date
+
+	      // if on device, need lattice.outOfBound, lattice.toUnit, lattice.isValid
+	      // and the move methods for the distance tables  (isValid is the only hard one)
 	    }
 
-	    std::vector<Mover*> valid_mover_list(filtered_list(mover_list, isValid));
-	    std::vector<bool> isAccepted(valid_mover_list.size());
-	    
-	    const std::vector<ParticleSet*> valid_P_list(extract_els_list(valid_mover_list));
-	    const std::vector<SPOSet*> valid_spo_list(extract_spo_list(valid_mover_list));
-	    const std::vector<WaveFunction*> valid_WF_list(extract_wf_list(valid_mover_list));
+	    std::vector<ParticleSet*> valid_P_list;
+	    std::vector<SPOSet*> valid_spo_list;
+	    std::vector<WaveFunction*> valid_WF_list;
+	    std::vector<bool> isAccepted;	    
+	    if (useRef) {
+	      const std::vector<Mover*> valid_mover_list(filtered_list(mover_list_ref, isValid));
+	      isAccepted.resize(valid_mover_list.size());
+	      valid_P_list = extract_els_list(valid_mover_list);
+	      valid_spo_list = extract_spo_list(valid_mover_list);
+	      valid_WF_list = extract_wf_list(valid_mover_list);
+	    } else {
+	      const std::vector<mover_type*> valid_mover_list(filtered_list(mover_list, isValid));
+	      isAccepted.resize(valid_mover_list.size());
+	      valid_P_list = extract_els_list(valid_mover_list);
+	      valid_spo_list = extract_spo_list(valid_mover_list);
+	      valid_WF_list = extract_wf_list(valid_mover_list);
+	    }
 	    
 	    // Compute gradient at the trial position
 	    Timers[Timer_ratioGrad]->start();
 	    // LNS -- need to get this working
-	    anon_mover.wavefunction.multi_ratioGrad(valid_WF_list, valid_P_list, iel, ratios, grad_new);
-	    
-	    for (int iw = 0; iw < valid_mover_list.size(); iw++)
-	      pos_list[iw] = valid_mover_list[iw]->els.R[iel];   // just getting the value out, so maybe keep R accessible 
-	    // LNS -- need to get this working as well
-	    anon_mover.spo->multi_evaluate_vgh(valid_spo_list, pos_list); // doesn't seem to touch particleset at all
+	    if (useRef) {
+	      anon_mover_ref->wavefunction.multi_ratioGrad(valid_WF_list, valid_P_list, iel, ratios, grad_new);
+	    } else {
+	      anon_mover->wavefunction.multi_ratioGrad(valid_WF_list, valid_P_list, iel, ratios, grad_new);
+	    }
+
+	    // LNS -- what we need is the
+	    if (useRef) {
+	      for (int iw = 0; iw < valid_P_list.size(); iw++)
+		pos_list[iw] = valid_P_list[iw].R[iel];   // just getting the value out, so maybe keep R accessible 
+	    } else {
+	      // LNS, R[iel] is already on the device.  Need to make a kernel that puts these together
+	      // into a View<double*[3],Kokkos::LayoutLeft> so that this could be directly haded to multi_evaluate_vgh
+	      // note, would also need to apply toUnit_floor on each of them
+	    }
+	    if (useRef) { 
+	      anon_mover_ref.spo->multi_evaluate_vgh(valid_spo_list, pos_list); // doesn't seem to touch particleset at all
+	    } else {
+	      const std::vector<mover_type*> valid_mover_list(filtered_list(mover_list, isValid));
+	      auto vals = extract_spo_psi_list(valid_mover_list);
+	      auto grads = extract_spo_grad_list(valid_mover_list);
+	      auto hesss = extract_spo_grad_list(valid_mover_list);
+	      spo.multi_evaluate_vgh(pos_list, vals, grads, hesss); // LNS, think about handing in a View for the positions
+	    }
 	    Timers[Timer_ratioGrad]->stop();
 	    
 	    // Accept/reject the trial move
-	    for (int iw = 0; iw < valid_mover_list.size(); iw++)
+
+	    
+	    for (int iw = 0; iw < isAccepted.size(); iw++)
 	      if (ur[iw] < accept)
 		isAccepted[iw] = true;
 	      else
@@ -502,13 +602,19 @@ int main(int argc, char** argv)
 	    
 	    Timers[Timer_Update]->start();
 	    // update WF storage
-	    // LNS -- need to get this working
-	    anon_mover.wavefunction.multi_acceptrestoreMove(valid_WF_list, valid_P_list, isAccepted, iel);
+	    if (useRef) {
+	      anon_mover_ref.wavefunction.multi_acceptrestoreMove(valid_WF_list, valid_P_list, isAccepted, iel);
+	    } else {
+	      anon_mover.wavefunction.multi_acceptrestoreMove(valid_WF_list, valid_P_list, isAccepted, iel);
+	    }
 	    Timers[Timer_Update]->stop();
 	    
 	    // Update position
 #pragma omp parallel for
+
 	    // LNS -- need to get rid of openmp (see if parallelization is necessary)
+	    //        on the device side, this should be easy, all the pieces are there
+	    //        probably even do it in parallel
 	    for (int iw = 0; iw < valid_mover_list.size(); iw++)
 	    {
 	      if (isAccepted[iw]) // MC
@@ -526,8 +632,12 @@ int main(int argc, char** argv)
 	  mover_list[iw]->els.donePbyP();   // just sets activePtcl to -1
 	  // evaluate Kinetic Energy
 	}
-	// LNS -- need to get this working
-	anon_mover.wavefunction.multi_evaluateGL(WF_list, P_list);   // look at what is needed here
+
+	if (useRef) {
+	  anon_mover_ref.wavefunction.multi_evaluateGL(WF_list, P_list);   // look at what is needed here
+	} else {
+	  anon_mover.wavefunction.multi_evaluateGL(WF_list, P_list);   // look at what is needed here
+	}
 	
 	Timers[Timer_Diffusion]->stop();
 	

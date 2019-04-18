@@ -1,5 +1,5 @@
-#ifndef QMCPLUSPLUS_ONEBODY_JAS_DATA_H
-#define QMCPLUSPLUS_ONEBODY_JAS_DATA_H
+#ifndef QMCPLUSPLUS_ONEBODY_JAS_KOKKOS_H
+#define QMCPLUSPLUS_ONEBODY_JAS_KOKKOS_H
 #include <Kokkos_Core.hpp>
 #include "Particle/ParticleSetKokkos.h"
 
@@ -7,7 +7,7 @@ namespace qmcplusplus
 {
 
 template<typename RealType, int dim>
-class OneBodyJastrowData {
+class OneBodyJastrowKokkos {
 public:
   using RealType == RealType;
   
@@ -39,13 +39,13 @@ public:
 
   // default constructor
   KOKKOS_INLINE_FUNCTION
-  OneBodyJastrowData() { ; }
+  OneBodyJastrowKokkos() { ; }
   // Don't do a real constructor, just put this in OneBodyJastrow
   
   // operator=
   // see if we can just say = default but keep the KOKKOS_INLINE_FUNCTION label
   KOKKOS_INLINE_FUNCTION
-  OneBodyJastrowData* operator=(const OneBodyJastrowData& rhs) {  
+  OneBodyJastrowKokkos* operator=(const OneBodyJastrowKokkos& rhs) {  
     LogValue = rhs.LogValue;
     Nelec = rhs.Nelec;
     Nions = rhs.Nions;
@@ -70,7 +70,7 @@ public:
     d2A = rhs.d2A;
     return this;
   }
-  OneBodyJastrowData(const OneBodyJastrowData&) = default;
+  OneBodyJastrowKokkos(const OneBodyJastrowKokkos&) = default;
   
   // 
   template<typename pskType>

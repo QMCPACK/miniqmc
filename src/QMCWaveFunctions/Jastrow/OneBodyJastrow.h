@@ -16,7 +16,7 @@
 #include <Utilities/SIMD/allocator.hpp>
 #include <Utilities/SIMD/algorithm.hpp>
 #include <numeric>
-#include "OneBodyJastrowData.h"
+#include "OneBodyJastrowKokkos.h"
 
 /*!
  * @file OneBodyJastrow.h
@@ -99,7 +99,7 @@ void doOneBodyJastrowMultiEvaluateLog(aobjdType aobjd, apsdType apsd, Kokkos::Vi
 template<class FT>
 struct OneBodyJastrow : public WaveFunctionComponent
 {
-  using jasDataType = OneBodyJastrowData<FT::real_type, OHMMS_DIM>;
+  using jasDataType = OneBodyJastrowKokkos<FT::real_type, OHMMS_DIM>;
   jasDataType jasData;
   bool splCoefsNotAllocated;
 
@@ -158,7 +158,6 @@ struct OneBodyJastrow : public WaveFunctionComponent
     initalize(els);
     myTableID                 = els.addTable(ions, DT_SOA);
     WaveFunctionComponentName = "OneBodyJastrow";
-    InitializeJastrowData();
   }
 
   OneBodyJastrow(const OneBodyJastrow& rhs) = default;
@@ -197,6 +196,7 @@ struct OneBodyJastrow : public WaveFunctionComponent
     for(int i=0; i<fsize; i++){
       new (&F(i)) FT();
     }
+    initializeJastrowKokkos();
   }
 
   void initializeJastrowData() {

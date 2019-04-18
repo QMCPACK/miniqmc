@@ -115,6 +115,8 @@ public:
     activePos(0) = R(i,0);
     activePos(1) = R(i,1);
     activePos(2) = R(i,2);
+    LikeEvaluate(i);
+    UnlikeEvaluate(i);
   }
 
   // intended to be called by LikeDTComputeDistances and UnlikeDtComputeDistances

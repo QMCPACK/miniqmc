@@ -26,10 +26,10 @@
 #include <Utilities/Configuration.h>
 #include <Utilities/RandomGenerator.h>
 #include <Particle/ParticleSet.h>
-#include "QMCWaveFunctions/SPOSet.h"
 #include <QMCWaveFunctions/WaveFunction.h>
 #include <Particle/ParticleSet_builder.hpp>
 #include <Input/pseudo.hpp>
+#include "QMCWaveFunction/einspline_spo.hpp"
 
 namespace qmcplusplus
 {
@@ -43,6 +43,14 @@ namespace qmcplusplus
    *
    * This class is used only by QMC drivers.
    */
+
+
+/**
+ * breaking Ye's design a bit here.  Introducing spo_psi, spo_grad and spo_hess here,
+ * whereas they would probably better live in a walker.  
+ */
+  
+template<typename T, int blockSize>
 struct Mover
 {
   using RealType = QMCTraits::RealType;
@@ -51,30 +59,36 @@ struct Mover
   RandomGenerator<RealType> rng;
   /// electrons
   ParticleSet els;
-  /// single particle orbitals
-  SPOSet* spo;
   /// wavefunction container
   WaveFunction wavefunction;
   /// non-local pseudo-potentials
   NonLocalPP<RealType> nlpp;
 
+  ///
+  using vContainer_type = einspine_spo<T,blocksize>::vContainer_type;
+  using gContainer_type = einspine_spo<T,blocksize>::gContainer_type;
+  using hContainer_type = einspine_spo<T,blocksize>::hContainer_type;
+
+  vContainer_type spo_psi;
+  gContainer_type spo_grad;
+  hContainer_type spo_hess;
+  
   /// constructor
-  Mover(const uint32_t myPrime, const ParticleSet& ions) : spo(nullptr), rng(myPrime), nlpp(rng)
+  template<spotype>
+  Mover(const uint32_t myPrime, const ParticleSet& ions, const spotype& spo) : rng(myPrime), nlpp(rng)
   {
     build_els(els, ions, rng);
+    spo_psi = vContainer_type("spo_psi", spo.nSplines);
+    spo_grad = gContainer_type("spo_grad", spo.nSplines);
+    spo_hess = hContainer_type("spo_hess", spo.nSplines);
   }
 
   /// destructor
-  ~Mover()
-  {
-    if (spo != nullptr)
-      delete spo;
-  }
+  ~Mover() = default;
 };
 
 template<class T, typename TBOOL>
-const std::vector<T*>
-    filtered_list(const std::vector<T*>& input_list, const std::vector<TBOOL>& chosen)
+const std::vector<T*> filtered_list(const std::vector<T*>& input_list, const std::vector<TBOOL>& chosen)
 {
   std::vector<T*> final_list;
   for (int iw = 0; iw < input_list.size(); iw++)
@@ -83,7 +97,8 @@ const std::vector<T*>
   return final_list;
 }
 
-const std::vector<ParticleSet*> extract_els_list(const std::vector<Mover*>& mover_list)
+template<moverType>
+const std::vector<ParticleSet*> extract_els_list(const std::vector<moverType*>& mover_list)
 {
   std::vector<ParticleSet*> els_list;
   for (auto it = mover_list.begin(); it != mover_list.end(); it++)
@@ -91,15 +106,44 @@ const std::vector<ParticleSet*> extract_els_list(const std::vector<Mover*>& move
   return els_list;
 }
 
-const std::vector<SPOSet*> extract_spo_list(const std::vector<Mover*>& mover_list)
+tempalte<moverType>
+const std::vector<ParticleSet*> extract_els_list(const std::vector<moverType*>& mover_list)
 {
-  std::vector<SPOSet*> spo_list;
+  std::vector<ParticleSet*> els_list;
   for (auto it = mover_list.begin(); it != mover_list.end(); it++)
-    spo_list.push_back((*it)->spo);
-  return spo_list;
+    els_list.push_back(&(*it)->els);
+  return els_list;
 }
 
-const std::vector<WaveFunction*> extract_wf_list(const std::vector<Mover*>& mover_list)
+template<moverType>
+const std::vector<moverType::vContainer_type> extract_spo_psi_list(const std::vector<moverType*>& mover_list)
+{
+  std::vector<moverType::vContainer_type> vals;
+  for (auto it = mover_list.begin(); it != mover_list.end(); it++)
+    vals.push_back((*it)->spo_psi);
+  return vals;
+}
+
+template<moverType>
+const std::vector<moverType::vContainer_type> extract_spo_grad_list(const std::vector<moverType*>& mover_list)
+{
+  std::vector<moverType::vContainer_type> grads;
+  for (auto it = mover_list.begin(); it != mover_list.end(); it++)
+    grads.push_back((*it)->spo_grad);
+  return grads;
+}
+
+template<moverType>
+const std::vector<moverType::vContainer_type> extract_spo_psi_list(const std::vector<moverType*>& mover_list)
+{
+  std::vector<moverType::vContainer_type> hesss;
+  for (auto it = mover_list.begin(); it != mover_list.end(); it++)
+    hesss.push_back((*it)->spo_hess);
+  return hesss;
+}
+  
+template<moverType>
+const std::vector<WaveFunction*> extract_wf_list(const std::vector<moverType*>& mover_list)
 {
   std::vector<WaveFunction*> wf_list;
   for (auto it = mover_list.begin(); it != mover_list.end(); it++)
