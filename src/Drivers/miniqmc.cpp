@@ -131,6 +131,7 @@ enum MiniQMCTimers
   Timer_evalGrad,
   Timer_ratioGrad,
   Timer_Update,
+  Timer_Setup,
 };
 
 TimerNameList_t<MiniQMCTimers> MiniQMCTimerNames = {
@@ -142,6 +143,7 @@ TimerNameList_t<MiniQMCTimers> MiniQMCTimerNames = {
     {Timer_evalGrad, "Current Gradient"},
     {Timer_ratioGrad, "New Gradient"},
     {Timer_Update, "Update"},
+    {Timer_Setup, "Setup"},
 };
 
 void print_help()
@@ -320,6 +322,7 @@ int main(int argc, char** argv)
   ParticleSet ions;
   // initialize ions and splines which are shared by all threads later
   {
+    Timers[Timer_Setup]->start();
     Tensor<OHMMS_PRECISION, 3> lattice_b;
     build_ions(ions, tmat, lattice_b);
     const int nels = count_electrons(ions, 1);
@@ -340,15 +343,17 @@ int main(int argc, char** argv)
                   << "Rmax = " << Rmax << endl
                   << "AcceptanceRatio = " << accept << endl;
     app_summary() << "Iterations = " << nsteps << endl;
-    app_summary() << "OpenMP threads = " << omp_get_max_threads() << endl;
 #ifdef HAVE_MPI
     app_summary() << "MPI processes = " << comm.size() << endl;
 #endif
+    app_summary() << "OpenMP threads = " << omp_get_max_threads() << endl;
+    app_summary() << "Number of walkers per rank = " << nmovers << endl;
 
     app_summary() << "\nSPO coefficients size = " << SPO_coeff_size << " bytes ("
                   << SPO_coeff_size_MB << " MB)" << endl;
 
     spo_main = build_SPOSet(useRef, nx, ny, nz, norb, nTiles, lattice_b);
+    Timers[Timer_Setup]->stop();
   }
 
   if (!useRef)
@@ -518,6 +523,15 @@ int main(int argc, char** argv)
     cout << "================================== " << endl;
 
     TimerManager.print();
+
+    cout << endl << "========== Throughput ============ " << endl << endl;
+    cout << "Total throughput ( N_walkers * N_elec^3 / Total time ) = "
+         << (nmovers * comm.size() * std::pow(double(nels),3) / Timers[Timer_Total]->get_total()) << std::endl;
+    cout << "Diffusion throughput ( N_walkers * N_elec^3 / Diffusion time ) = "
+         << (nmovers * comm.size() * std::pow(double(nels),3) / Timers[Timer_Diffusion]->get_total()) << std::endl;
+    cout << "Pseudopotential throughput ( N_walkers * N_elec^2 / Pseudopotential time ) = "
+         << (nmovers * comm.size() * std::pow(double(nels),2) / Timers[Timer_ECP]->get_total()) << std::endl;
+    cout << endl;
 
     XMLDocument doc;
     XMLNode* resources = doc.NewElement("resources");
