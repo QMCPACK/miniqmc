@@ -430,10 +430,7 @@ int main(int argc, char** argv)
           Timers[Timer_evalGrad]->stop();
 
           // Construct trial move
-          bool isValid = els.makeMoveAndCheck(iel, delta[iel]);
-
-          if (!isValid)
-            continue;
+          els.makeMove(iel, delta[iel]);
 
           // Compute gradient at the trial position
           Timers[Timer_ratioGrad]->start();
@@ -486,7 +483,7 @@ int main(int argc, char** argv)
             {
               PosType deltar(dist[iat] * rOnSphere[k] - displ[iat]);
 
-              els.makeMoveOnSphere(jel, deltar);
+              els.makeMove(jel, deltar);
 
               Timers[Timer_Value]->start();
               spo.evaluate_v(els.R[jel]);

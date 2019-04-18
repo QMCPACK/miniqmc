@@ -299,52 +299,12 @@ void ParticleSet::setActive(int iat)
     DistTables[i]->evaluate(*this, iat);
 }
 
-/** move a particle iat
- * @param iat the index of the particle to be moved
- * @param displ the displacement of the iath-particle position
- * @return the proposed position
- *
- * Update activePtcl index and activePos position for the proposed move.
- * Evaluate the related distance table data DistanceTableData::Temp.
- */
-bool ParticleSet::makeMoveAndCheck(Index_t iat, const SingleParticlePos_t& displ)
-{
-  ScopedTimer local_timer(timers[Timer_makeMove]);
-
-  activePtcl = iat;
-  activePos  = R[iat] + displ;
-  if (UseBoundBox)
-  {
-    if (Lattice.outOfBound(Lattice.toUnit(displ)))
-    {
-      activePtcl = -1;
-      return false;
-    }
-    newRedPos = Lattice.toUnit(activePos);
-    if (Lattice.isValid(newRedPos))
-    {
-      for (int i = 0; i < DistTables.size(); ++i)
-        DistTables[i]->move(*this, activePos);
-      return true;
-    }
-    // out of bound
-    activePtcl = -1;
-    return false;
-  }
-  else
-  {
-    for (int i = 0; i < DistTables.size(); ++i)
-      DistTables[i]->move(*this, activePos);
-    return true;
-  }
-}
-
 /** move the iat-th particle by displ
  *
  * @param iat the particle that is moved on a sphere
  * @param displ displacement from the current position
  */
-void ParticleSet::makeMoveOnSphere(Index_t iat, const SingleParticlePos_t& displ)
+void ParticleSet::makeMove(Index_t iat, const SingleParticlePos_t& displ)
 {
   ScopedTimer local_timer(timers[Timer_makeMove]);
 
