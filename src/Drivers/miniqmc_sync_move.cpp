@@ -406,13 +406,6 @@ int main(int argc, char** argv)
   // this is the number of qudrature points for the non-local PP
   const int nknots(mover_list[0]->nlpp.size());
 
-  // For VMC, tau is large and should result in an acceptance ratio of roughly
-  // 50%
-  // For DMC, tau is small and should result in an acceptance ratio of 99%
-  const RealType tau = 2.0;
-
-  RealType sqrttau = std::sqrt(tau);
-
   // synchronous walker moves
   {
     std::vector<PosType> delta(nmovers);
@@ -452,10 +445,7 @@ int main(int argc, char** argv)
 
           #pragma omp parallel for
           for (int iw = 0; iw < nmovers; iw++)
-          {
-            PosType dr  = sqrttau * delta[iw];
-            isValid[iw] = mover_list[iw]->els.makeMoveAndCheck(iel, dr);
-          }
+            isValid[iw] = mover_list[iw]->els.makeMoveAndCheck(iel, delta[iw]);
 
           std::vector<Mover*> valid_mover_list(filtered_list(mover_list, isValid));
           std::vector<bool> isAccepted(valid_mover_list.size());
