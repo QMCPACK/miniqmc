@@ -329,6 +329,28 @@ void ParticleSet::makeMove(Index_t iat, const SingleParticlePos_t& displ)
     DistTables[i]->moveOnSphere(*this, activePos);
 }
 
+void ParticleSet::flex_makeMove(const std::vector<ParticleSet*>& P_list, Index_t iat, const std::vector<SingleParticlePos_t>& displs) const
+{
+  if (P_list.size() > 1)
+  {
+    ScopedTimer local_timer(timers[Timer_makeMove]);
+
+    for (int iw = 0; iw < P_list.size(); iw++)
+    {
+      P_list[iw]->activePtcl = iat;
+      P_list[iw]->activePos  = P_list[iw]->R[iat] + displs[iw];
+    }
+
+    for (int i = 0; i < DistTables.size(); ++i)
+    {
+      #pragma omp parallel for
+      for (int iw = 0; iw < P_list.size(); iw++)
+        P_list[iw]->DistTables[i]->move(*P_list[iw], P_list[iw]->activePos);
+    }
+  } else if (P_list.size()==1)
+    P_list[0]->makeMove(iat, displs[0]);
+}
+
 /** update the particle attribute by the proposed move
  *@param iat the particle index
  *

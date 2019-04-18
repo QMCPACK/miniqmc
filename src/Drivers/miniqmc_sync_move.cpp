@@ -456,10 +456,7 @@ int main(int argc, char** argv)
           // Construct trial move
           Sub_list[0]->rng.generate_uniform(ur.data(), nw_this_batch);
           Sub_list[0]->rng.generate_normal(&delta[0][0], nw_this_batch_3);
-
-          #pragma omp parallel for
-          for (int iw = 0; iw < nw_this_batch; iw++)
-            Sub_list[iw]->els.makeMove(iel, delta[iw]);
+          anon_mover.els.flex_makeMove(P_list, iel, delta);
 
           std::vector<bool> isAccepted(Sub_list.size());
 

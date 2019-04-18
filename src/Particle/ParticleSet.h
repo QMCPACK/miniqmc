@@ -219,6 +219,7 @@ public:
    * @param displ random displacement of the iat-th particle
    */
   void makeMove(Index_t iat, const SingleParticlePos_t& displ);
+  void flex_makeMove(const std::vector<ParticleSet*>& P_list, int iat, const std::vector<SingleParticlePos_t>& displs) const;
 
   /** accept the move
    *@param iat the index of the particle whose position and other attributes to
