@@ -529,8 +529,8 @@ int main(int argc, char** argv)
          << (nmovers * comm.size() * std::pow(double(nels),3) / Timers[Timer_Total]->get_total()) << std::endl;
     cout << "Diffusion throughput ( N_walkers * N_elec^3 / Diffusion time ) = "
          << (nmovers * comm.size() * std::pow(double(nels),3) / Timers[Timer_Diffusion]->get_total()) << std::endl;
-    cout << "Pseudopotential throughput ( N_walkers * N_elec^3 / Pseudopotential time ) = "
-         << (nmovers * comm.size() * std::pow(double(nels),3) / Timers[Timer_ECP]->get_total()) << std::endl;
+    cout << "Pseudopotential throughput ( N_walkers * N_elec^2 / Pseudopotential time ) = "
+         << (nmovers * comm.size() * std::pow(double(nels),2) / Timers[Timer_ECP]->get_total()) << std::endl;
     cout << endl;
 
     XMLDocument doc;
