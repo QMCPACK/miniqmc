@@ -79,17 +79,6 @@ inline void FairDivideLow(int ntot, int nparts, int me, int& first, int& last)
   }
 }
 
-template<class T, typename TBOOL>
-const std::vector<T*>
-    filtered_list(const std::vector<T*>& input_list, const std::vector<TBOOL>& chosen)
-{
-  std::vector<T*> final_list;
-  for (int iw = 0; iw < input_list.size(); iw++)
-    if (chosen[iw])
-      final_list.push_back(input_list[iw]);
-  return final_list;
-}
-
 const std::vector<Mover*> extract_sub_list(const std::vector<Mover*>& mover_list, int first, int last)
 {
   std::vector<Mover*> sub_list;

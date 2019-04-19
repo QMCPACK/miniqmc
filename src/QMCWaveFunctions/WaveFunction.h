@@ -101,13 +101,13 @@ public:
                                  ParticleSet& els,
                                  const RandomGenerator<QMCTraits::RealType>& RNG,
                                  bool enableJ3);
-  friend const std::vector<SPOSet*> extract_spo_list(const std::vector<WaveFunction*>& WF_list);
-  friend const std::vector<WaveFunctionComponent*>
-      extract_up_list(const std::vector<WaveFunction*>& WF_list);
-  friend const std::vector<WaveFunctionComponent*>
-      extract_dn_list(const std::vector<WaveFunction*>& WF_list);
-  friend const std::vector<WaveFunctionComponent*>
-      extract_jas_list(const std::vector<WaveFunction*>& WF_list, int jas_id);
+  const std::vector<SPOSet*> extract_spo_list(const std::vector<WaveFunction*>& WF_list) const;
+  const std::vector<WaveFunctionComponent*>
+      extract_up_list(const std::vector<WaveFunction*>& WF_list) const;
+  const std::vector<WaveFunctionComponent*>
+      extract_dn_list(const std::vector<WaveFunction*>& WF_list) const;
+  const std::vector<WaveFunctionComponent*>
+      extract_jas_list(const std::vector<WaveFunction*>& WF_list, int jas_id) const;
 };
 
 void build_WaveFunction(bool useRef,
@@ -117,13 +117,6 @@ void build_WaveFunction(bool useRef,
                         ParticleSet& els,
                         const RandomGenerator<QMCTraits::RealType>& RNG,
                         bool enableJ3);
-
-const std::vector<SPOSet*> extract_spo_list(const std::vector<WaveFunction*>& WF_list);
-const std::vector<WaveFunctionComponent*> extract_up_list(const std::vector<WaveFunction*>& WF_list);
-const std::vector<WaveFunctionComponent*> extract_dn_list(const std::vector<WaveFunction*>& WF_list);
-const std::vector<WaveFunctionComponent*>
-    extract_jas_list(const std::vector<WaveFunction*>& WF_list, int jas_id);
-
 } // namespace qmcplusplus
 
 #endif
