@@ -225,6 +225,7 @@ int main(int argc, char** argv)
   // construct a list of movers
   std::vector<Mover*> mover_list(nmovers, nullptr);
   std::cout << "Constructing " << nmovers << " movers!" << std::endl;
+  std::vector<spo_type*> spo_views(nmovers, nullptr);
   std::vector<spo_ref_type*> spo_ref_views(nmovers, nullptr);
   // per mover data
   std::vector<ParticlePos_t> delta_list(nmovers);
@@ -242,8 +243,8 @@ int main(int argc, char** argv)
     mover_list[iw]    = thiswalker;
 
     // create a spo view in each Mover
-    thiswalker->spo   = dynamic_cast<SPOSet*>(new spo_type(spo_main, 1, 0));
-    spo_shadows[iw]   = thiswalker->spo;
+    spo_views[iw]     = new spo_type(spo_main, 1, 0);
+    spo_shadows[iw]   = spo_views[iw];
     spo_ref_views[iw] = new spo_ref_type(spo_ref_main, 1, 0);
 
     // initial computing
@@ -284,7 +285,7 @@ int main(int argc, char** argv)
       random_th.generate_uniform(ur.data(), nels);
     }
 
-    spo_type* anon_spo = dynamic_cast<spo_type*>(mover_list[0]->spo);
+    spo_type* anon_spo = spo_views[0];
     // VMC
     for (int iel = 0; iel < nels; ++iel)
     {
@@ -306,7 +307,7 @@ int main(int argc, char** argv)
       for (size_t iw = 0; iw < mover_list.size(); iw++)
       {
         auto& mover       = *mover_list[iw];
-        auto& spo         = *dynamic_cast<spo_type*>(mover.spo);
+        auto& spo         = *spo_views[iw];
         auto& spo_ref     = *spo_ref_views[iw];
         auto& pos         = pos_list[iw];
         auto& els         = mover.els;
@@ -382,9 +383,11 @@ int main(int argc, char** argv)
   for (int iw = 0; iw < nmovers; iw++)
   {
     delete mover_list[iw];
+    delete spo_views[iw];
     delete spo_ref_views[iw];
   }
   mover_list.clear();
+  spo_views.clear();
   spo_ref_views.clear();
 
   outputManager.resume();
