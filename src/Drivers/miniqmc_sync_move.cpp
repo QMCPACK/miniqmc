@@ -664,44 +664,53 @@ int main(int argc, char** argv)
 	// Compute NLPP energy using integral over spherical points
 	// Ye: I have not found a strategy for NLPP
 	Timers[Timer_ECP]->start();
-#pragma omp parallel for
-	// LNS -- need to get rid of openmp here, maybe replace with parallel loop over walkers
-	//     -- it would be better to make a list of active electrons and then just
-	//     -- have a huge loop over ones that need evaluation of NLPP
-	for (int iw = 0; iw < nmovers; iw++)
-	{
-	  auto& els          = mover_list[iw]->els;
-	  auto& spo          = *mover_list[iw]->spo;
-	  auto& wavefunction = mover_list[iw]->wavefunction;
-	  auto& ecp          = mover_list[iw]->nlpp;
-
-	  ParticlePos_t rOnSphere(nknots);
-	  ecp.randomize(rOnSphere); // pick random sphere
-	  const DistanceTableData* d_ie = els.DistTables[wavefunction.get_ei_TableID()];
-	  
-	  for (int jel = 0; jel < els.getTotalNum(); ++jel)
+	if (useRef) {
+	  for (int iw = 0; iw < nmovers; iw++)
 	  {
-	    const auto& dist  = d_ie->Distances[jel];   // get distances for this electron
-	    const auto& displ = d_ie->Displacements[jel];  // get displacements for this electron
-	    for (int iat = 0; iat < nions; ++iat)
-	      if (dist[iat] < Rmax)   // check whether the distance to this ion is less than a cutoff
-		for (int k = 0; k < nknots; k++)
-		{
-		  PosType deltar(dist[iat] * rOnSphere[k] - displ[iat]);
-		  
-		  els.makeMoveOnSphere(jel, deltar);  // sets activePtcl and calls DistTables->moveOnSphere
-		  // that does update some stuff, but can probably just figure out what is needed to get R for jastrow ratios and
-		  // make sure that it ends up in a kernel
-		  Timers[Timer_Value]->start();
-		  spo.evaluate_v(els.activePos);  // call shouldn't depend on other calls, just positions
-		  wavefunction.ratio(els, jel);  // note that the particleset isn't even used here for the spo part
-		                                 // it does come in for the jastrows though
-		  Timers[Timer_Value]->stop();
-		  
-		  els.rejectMove(jel);  // note just sets activePtcl back to -1
-		}
+	    auto& els          = mover_list[iw]->els;
+	    auto& spo          = *mover_list[iw]->spo;
+	    auto& wavefunction = mover_list[iw]->wavefunction;
+	    auto& ecp          = mover_list[iw]->nlpp;
+	    
+	    ParticlePos_t rOnSphere(nknots);
+	    ecp.randomize(rOnSphere); // pick random sphere
+	    const DistanceTableData* d_ie = els.DistTables[wavefunction.get_ei_TableID()];
+	    
+	    for (int jel = 0; jel < els.getTotalNum(); ++jel)
+	    {
+	      const auto& dist  = d_ie->Distances[jel];   // get distances for this electron
+	      const auto& displ = d_ie->Displacements[jel];  // get displacements for this electron
+	      for (int iat = 0; iat < nions; ++iat)
+		if (dist[iat] < Rmax)   // check whether the distance to this ion is less than a cutoff
+		  for (int k = 0; k < nknots; k++)
+		  {
+		    PosType deltar(dist[iat] * rOnSphere[k] - displ[iat]);
+		    
+		    els.makeMoveOnSphere(jel, deltar);  // sets activePtcl and calls DistTables->moveOnSphere
+		    // that does update some stuff, but can probably just figure out what is needed to get R for jastrow ratios and
+		    // make sure that it ends up in a kernel
+		    Timers[Timer_Value]->start();
+		    spo.evaluate_v(els.activePos);  // call shouldn't depend on other calls, just positions
+		    wavefunction.ratio(els, jel);  // note that the particleset isn't even used here for the spo part
+		    // it does come in for the jastrows though
+		    Timers[Timer_Value]->stop();
+		    
+		    els.rejectMove(jel);  // note just sets activePtcl back to -1
+		  }
+	    }
 	  }
-	}
+	} else { // not the reference implementation
+	  // strategy.  
+	  // 1. Have a loop that makes a list for each walker of all electron-ion pairs that are active
+	  //    a. hope that the number of such pairs is basically equal for all walkers
+	  // 2. make a parallel loop where for every walker we are doing all knots for a given e-i pair at once
+	  //    a. will need to separate out data so that we are handing activeParticle, activePos, temp_r and temp_dr
+          //       to the wavefunction components.  Also see what is needed for a general spo.evaluate_v that is not
+          //       just one move per walker
+          // 3. Could eventually think about having a general batch size where it was not just one e-i pair per walker
+	}    
+
+
 	Timers[Timer_ECP]->stop();
       } // nsteps
     }
