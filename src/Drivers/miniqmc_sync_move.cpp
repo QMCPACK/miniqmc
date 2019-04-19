@@ -157,6 +157,7 @@ void print_help()
   app_summary() << "options:"                                                    << '\n';
   app_summary() << "  -a  size of each spline tile       default: num of orbs"   << '\n';
   app_summary() << "  -b  use reference implementations  default: off"           << '\n';
+  app_summary() << "  -B  number of walkers per batch    default: 1"           << '\n';
   app_summary() << "  -g  set the 3D tiling.             default: 1 1 1"         << '\n';
   app_summary() << "  -h  print help and exit"                                   << '\n';
   app_summary() << "  -j  enable three body Jastrow      default: off"           << '\n';
@@ -219,7 +220,7 @@ int main(int argc, char** argv)
   int opt;
   while (optind < argc)
   {
-    if ((opt = getopt(argc, argv, "bhjvVa:c:g:m:n:N:r:s:t:w:x:")) != -1)
+    if ((opt = getopt(argc, argv, "bhjvVa:B:c:g:m:n:N:r:s:t:w:x:")) != -1)
     {
       switch (opt)
       {
@@ -228,6 +229,9 @@ int main(int argc, char** argv)
         break;
       case 'b':
         useRef = true;
+        break;
+      case 'B': // number of walkers per batch
+        nw_b = atoi(optarg);
         break;
       case 'c': // number of members per team
         team_size = atoi(optarg);
@@ -289,6 +293,11 @@ int main(int argc, char** argv)
       print_help();
     }
   }
+
+  // cap nw_b
+  if(nw_b>nmovers) nw_b = nmovers;
+  // number of batches
+  const int nbatches = (nmovers+nw_b-1)/nw_b;
 
   int number_of_electrons = 0;
 
@@ -352,6 +361,7 @@ int main(int argc, char** argv)
 #endif
     app_summary() << "OpenMP threads = " << omp_get_max_threads() << endl;
     app_summary() << "Number of walkers per rank = " << nmovers << endl;
+    app_summary() << "Number of batches = " << nbatches << endl;
 
     app_summary() << "\nSPO coefficients size = " << SPO_coeff_size << " bytes ("
                   << SPO_coeff_size_MB << " MB)" << endl;
@@ -362,20 +372,17 @@ int main(int argc, char** argv)
 
   if (!useRef)
     app_summary() << "Using SoA distance table, Jastrow + einspline, " << endl
-                  << "and determinant update." << endl;
+                  << "and determinant update." << endl << endl;
   else
     app_summary() << "Using the reference implementation for Jastrow, " << endl
                   << "determinant update, and distance table + einspline of the " << endl
-                  << "reference implementation " << endl;
+                  << "reference implementation " << endl << endl;
 
   Timers[Timer_Total]->start();
 
   Timers[Timer_Init]->start();
   std::vector<Mover*> mover_list(nmovers, nullptr);
-  // cap nw_b
-  if(nw_b>nmovers) nw_b = nmovers;
-  // number of batches
-  const int nbatches = (nmovers+nw_b-1)/nw_b;
+
   // prepare movers
   #pragma omp parallel for
   for (int iw = 0; iw < nmovers; iw++)
