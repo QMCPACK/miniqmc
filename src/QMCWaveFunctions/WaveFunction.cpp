@@ -478,7 +478,7 @@ void WaveFunction::flex_evaluateGL(const std::vector<WaveFunction*>& WF_list,
     WF_list[0]->evaluateGL(*P_list[0]);
 }
 
-const std::vector<SPOSet*> extract_spo_list(const std::vector<WaveFunction*>& WF_list)
+const std::vector<SPOSet*> WaveFunction::extract_spo_list(const std::vector<WaveFunction*>& WF_list) const
 {
   std::vector<SPOSet*> spo_list;
   for (auto it = WF_list.begin(); it != WF_list.end(); it++)
@@ -486,7 +486,7 @@ const std::vector<SPOSet*> extract_spo_list(const std::vector<WaveFunction*>& WF
   return spo_list;
 }
 
-const std::vector<WaveFunctionComponent*> extract_up_list(const std::vector<WaveFunction*>& WF_list)
+const std::vector<WaveFunctionComponent*> WaveFunction::extract_up_list(const std::vector<WaveFunction*>& WF_list) const
 {
   std::vector<WaveFunctionComponent*> up_list;
   for (auto it = WF_list.begin(); it != WF_list.end(); it++)
@@ -494,7 +494,7 @@ const std::vector<WaveFunctionComponent*> extract_up_list(const std::vector<Wave
   return up_list;
 }
 
-const std::vector<WaveFunctionComponent*> extract_dn_list(const std::vector<WaveFunction*>& WF_list)
+const std::vector<WaveFunctionComponent*> WaveFunction::extract_dn_list(const std::vector<WaveFunction*>& WF_list) const
 {
   std::vector<WaveFunctionComponent*> dn_list;
   for (auto it = WF_list.begin(); it != WF_list.end(); it++)
@@ -503,7 +503,7 @@ const std::vector<WaveFunctionComponent*> extract_dn_list(const std::vector<Wave
 }
 
 const std::vector<WaveFunctionComponent*>
-    extract_jas_list(const std::vector<WaveFunction*>& WF_list, int jas_id)
+    WaveFunction::extract_jas_list(const std::vector<WaveFunction*>& WF_list, int jas_id) const
 {
   std::vector<WaveFunctionComponent*> jas_list;
   for (auto it = WF_list.begin(); it != WF_list.end(); it++)
