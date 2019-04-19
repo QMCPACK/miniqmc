@@ -283,11 +283,8 @@ int main(int argc, char** argv)
         PosType grad_ref = wfc_ref->evalGrad(els_ref, iel) - grad_soa;
         g_eval += sqrt(dot(grad_ref, grad_ref));
 
-        els.makeMoveAndCheck(iel, delta[iel]);
-        bool good_ref = els_ref.makeMoveAndCheck(iel, delta[iel]);
-
-        if (!good_ref)
-          continue;
+        els.makeMove(iel, delta[iel]);
+        els_ref.makeMove(iel, delta[iel]);
 
         grad_soa       = 0;
         RealType r_soa = wfc->ratioGrad(els, iel, grad_soa);
@@ -368,11 +365,11 @@ int main(int argc, char** argv)
             random_th.generate_uniform(&delta[0][0], nknots * 3);
             for (int k = 0; k < nknots; ++k)
             {
-              els.makeMoveOnSphere(jel, delta[k]);
+              els.makeMove(jel, delta[k]);
               RealType r_soa = wfc->ratio(els, jel);
               els.rejectMove(jel);
 
-              els_ref.makeMoveOnSphere(jel, delta[k]);
+              els_ref.makeMove(jel, delta[k]);
               RealType r_ref = wfc_ref->ratio(els_ref, jel);
               els_ref.rejectMove(jel);
               r_ratio += abs(r_soa / r_ref - 1);

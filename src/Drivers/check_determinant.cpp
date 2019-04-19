@@ -171,10 +171,7 @@ int main(int argc, char** argv)
           els.setActive(iel);
 
           // Construct trial move
-          bool isValid = els.makeMoveAndCheck(iel, delta[iel]);
-
-          if (!isValid)
-            continue;
+          els.makeMove(iel, delta[iel]);
 
           // Compute gradient at the trial position
 

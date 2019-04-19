@@ -414,14 +414,13 @@ int main(int argc, char** argv)
     std::vector<GradType> grad_new(nmovers);
     std::vector<ValueType> ratios(nmovers);
     aligned_vector<RealType> ur(nmovers);
-    /// masks for movers with valid moves
-    std::vector<int> isValid(nmovers);
 
     for (int mc = 0; mc < nsteps; ++mc)
     {
       Timers[Timer_Diffusion]->start();
 
       const std::vector<ParticleSet*> P_list(extract_els_list(mover_list));
+      const std::vector<SPOSet*> spo_list(extract_spo_list(mover_list));
       const std::vector<WaveFunction*> WF_list(extract_wf_list(mover_list));
       const Mover& anon_mover = *mover_list[0];
 
@@ -445,26 +444,21 @@ int main(int argc, char** argv)
 
           #pragma omp parallel for
           for (int iw = 0; iw < nmovers; iw++)
-            isValid[iw] = mover_list[iw]->els.makeMoveAndCheck(iel, delta[iw]);
+            mover_list[iw]->els.makeMove(iel, delta[iw]);
 
-          std::vector<Mover*> valid_mover_list(filtered_list(mover_list, isValid));
-          std::vector<bool> isAccepted(valid_mover_list.size());
-
-          const std::vector<ParticleSet*> valid_P_list(extract_els_list(valid_mover_list));
-          const std::vector<SPOSet*> valid_spo_list(extract_spo_list(valid_mover_list));
-          const std::vector<WaveFunction*> valid_WF_list(extract_wf_list(valid_mover_list));
+          std::vector<bool> isAccepted(mover_list.size());
 
           // Compute gradient at the trial position
           Timers[Timer_ratioGrad]->start();
-          anon_mover.wavefunction.multi_ratioGrad(valid_WF_list, valid_P_list, iel, ratios, grad_new);
+          anon_mover.wavefunction.multi_ratioGrad(WF_list, P_list, iel, ratios, grad_new);
 
-          for (int iw = 0; iw < valid_mover_list.size(); iw++)
-            pos_list[iw] = valid_mover_list[iw]->els.R[iel];
-          anon_mover.spo->multi_evaluate_vgh(valid_spo_list, pos_list);
+          for (int iw = 0; iw < mover_list.size(); iw++)
+            pos_list[iw] = mover_list[iw]->els.R[iel];
+          anon_mover.spo->multi_evaluate_vgh(spo_list, pos_list);
           Timers[Timer_ratioGrad]->stop();
 
           // Accept/reject the trial move
-          for (int iw = 0; iw < valid_mover_list.size(); iw++)
+          for (int iw = 0; iw < mover_list.size(); iw++)
             if (ur[iw] < accept)
               isAccepted[iw] = true;
             else
@@ -472,17 +466,17 @@ int main(int argc, char** argv)
 
           Timers[Timer_Update]->start();
           // update WF storage
-          anon_mover.wavefunction.multi_acceptrestoreMove(valid_WF_list, valid_P_list, isAccepted, iel);
+          anon_mover.wavefunction.multi_acceptrestoreMove(WF_list, P_list, isAccepted, iel);
           Timers[Timer_Update]->stop();
 
           // Update position
           #pragma omp parallel for
-          for (int iw = 0; iw < valid_mover_list.size(); iw++)
+          for (int iw = 0; iw < mover_list.size(); iw++)
           {
             if (isAccepted[iw]) // MC
-              valid_mover_list[iw]->els.acceptMove(iel);
+              mover_list[iw]->els.acceptMove(iel);
             else
-              valid_mover_list[iw]->els.rejectMove(iel);
+              mover_list[iw]->els.rejectMove(iel);
           }
         } // iel
       }   // substeps
@@ -522,7 +516,7 @@ int main(int argc, char** argv)
               {
                 PosType deltar(dist[iat] * rOnSphere[k] - displ[iat]);
 
-                els.makeMoveOnSphere(jel, deltar);
+                els.makeMove(jel, deltar);
 
                 Timers[Timer_Value]->start();
                 spo.evaluate_v(els.R[jel]);

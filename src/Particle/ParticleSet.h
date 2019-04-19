@@ -216,15 +216,8 @@ public:
   /** move a particle
    * @param iat the index of the particle to be moved
    * @param displ random displacement of the iat-th particle
-   * @return true, if the move is valid
    */
-  bool makeMoveAndCheck(Index_t iat, const SingleParticlePos_t& displ);
-
-  /** move a particle
-   * @param iat the index of the particle to be moved
-   * @param displ random displacement of the iat-th particle
-   */
-  void makeMoveOnSphere(Index_t iat, const SingleParticlePos_t& displ);
+  void makeMove(Index_t iat, const SingleParticlePos_t& displ);
 
   /** accept the move
    *@param iat the index of the particle whose position and other attributes to
