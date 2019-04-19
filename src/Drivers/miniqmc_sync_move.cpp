@@ -194,7 +194,7 @@ int main(int argc, char** argv)
   int nsteps = 5;
   int iseed  = 11;
   int nx = 37, ny = 37, nz = 37;
-  int nmovers = omp_get_max_threads();
+  int nmovers = -1;
   // number of walkers per batch
   int nw_b = 1;
   // thread blocking
@@ -294,6 +294,8 @@ int main(int argc, char** argv)
     }
   }
 
+  // set default number of walkers
+  if(nmovers<0) nmovers = omp_get_max_threads() * nw_b;
   // cap nw_b
   if(nw_b>nmovers) nw_b = nmovers;
   // number of batches
