@@ -295,48 +295,23 @@ void ParticleSet::setActive(int iat)
 {
   ScopedTimer local_timer(timers[Timer_setActive]);
 
-  for (size_t i = 0, n = DistTables.size(); i < n; i++)
+  for (size_t i = 0; i < DistTables.size(); i++)
     DistTables[i]->evaluate(*this, iat);
 }
 
-/** move a particle iat
- * @param iat the index of the particle to be moved
- * @param displ the displacement of the iath-particle position
- * @return the proposed position
- *
- * Update activePtcl index and activePos position for the proposed move.
- * Evaluate the related distance table data DistanceTableData::Temp.
- */
-bool ParticleSet::makeMoveAndCheck(Index_t iat, const SingleParticlePos_t& displ)
+void ParticleSet::flex_setActive(const std::vector<ParticleSet*>& P_list, int iat) const
 {
-  ScopedTimer local_timer(timers[Timer_makeMove]);
-
-  activePtcl = iat;
-  activePos  = R[iat] + displ;
-  if (UseBoundBox)
+  if (P_list.size() > 1)
   {
-    if (Lattice.outOfBound(Lattice.toUnit(displ)))
+    ScopedTimer local_timer(timers[Timer_setActive]);
+    for (size_t i = 0; i < DistTables.size(); i++)
     {
-      activePtcl = -1;
-      return false;
+      #pragma omp parallel for
+      for (int iw = 0; iw < P_list.size(); iw++)
+        P_list[iw]->DistTables[i]->evaluate(*P_list[iw], iat);
     }
-    newRedPos = Lattice.toUnit(activePos);
-    if (Lattice.isValid(newRedPos))
-    {
-      for (int i = 0; i < DistTables.size(); ++i)
-        DistTables[i]->move(*this, activePos);
-      return true;
-    }
-    // out of bound
-    activePtcl = -1;
-    return false;
-  }
-  else
-  {
-    for (int i = 0; i < DistTables.size(); ++i)
-      DistTables[i]->move(*this, activePos);
-    return true;
-  }
+  } else if (P_list.size()==1)
+    P_list[0]->setActive(iat);
 }
 
 /** move the iat-th particle by displ
@@ -344,14 +319,36 @@ bool ParticleSet::makeMoveAndCheck(Index_t iat, const SingleParticlePos_t& displ
  * @param iat the particle that is moved on a sphere
  * @param displ displacement from the current position
  */
-void ParticleSet::makeMoveOnSphere(Index_t iat, const SingleParticlePos_t& displ)
+void ParticleSet::makeMove(Index_t iat, const SingleParticlePos_t& displ)
 {
   ScopedTimer local_timer(timers[Timer_makeMove]);
 
   activePtcl = iat;
   activePos  = R[iat] + displ;
   for (int i = 0; i < DistTables.size(); ++i)
-    DistTables[i]->moveOnSphere(*this, activePos);
+    DistTables[i]->move(*this, activePos);
+}
+
+void ParticleSet::flex_makeMove(const std::vector<ParticleSet*>& P_list, Index_t iat, const std::vector<SingleParticlePos_t>& displs) const
+{
+  if (P_list.size() > 1)
+  {
+    ScopedTimer local_timer(timers[Timer_makeMove]);
+
+    for (int iw = 0; iw < P_list.size(); iw++)
+    {
+      P_list[iw]->activePtcl = iat;
+      P_list[iw]->activePos  = P_list[iw]->R[iat] + displs[iw];
+    }
+
+    for (int i = 0; i < DistTables.size(); ++i)
+    {
+      #pragma omp parallel for
+      for (int iw = 0; iw < P_list.size(); iw++)
+        P_list[iw]->DistTables[i]->move(*P_list[iw], P_list[iw]->activePos);
+    }
+  } else if (P_list.size()==1)
+    P_list[0]->makeMove(iat, displs[0]);
 }
 
 /** update the particle attribute by the proposed move

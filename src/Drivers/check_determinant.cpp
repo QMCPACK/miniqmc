@@ -148,14 +148,8 @@ int main(int argc, char** argv)
     DiracDeterminant determinant(nels, random_th);
     determinant.checkMatrix();
 
-    // For VMC, tau is large and should result in an acceptance ratio of roughly
-    // 50%
-    // For DMC, tau is small and should result in an acceptance ratio of 99%
-    const RealType tau = 2.0;
-
     ParticlePos_t delta(nels);
 
-    RealType sqrttau = std::sqrt(tau);
     RealType accept  = 0.5;
 
     aligned_vector<RealType> ur(nels);
@@ -177,11 +171,7 @@ int main(int argc, char** argv)
           els.setActive(iel);
 
           // Construct trial move
-          PosType dr   = sqrttau * delta[iel];
-          bool isValid = els.makeMoveAndCheck(iel, dr);
-
-          if (!isValid)
-            continue;
+          els.makeMove(iel, delta[iel]);
 
           // Compute gradient at the trial position
 

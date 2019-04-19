@@ -233,7 +233,6 @@ int main(int argc, char** argv)
     ParticlePos_t delta(nels);
     ParticlePos_t rOnSphere(nknots);
 
-    RealType sqrttau = 2.0;
     RealType accept  = 0.5;
 
     vector<RealType> ur(nels);
@@ -250,7 +249,7 @@ int main(int argc, char** argv)
       // VMC
       for (int iel = 0; iel < nels; ++iel)
       {
-        PosType pos = els.R[iel] + sqrttau * delta[iel];
+        PosType pos = els.R[iel] + delta[iel];
         spo.evaluate_vgh(pos);
         spo.transfer_vgh_from_device();
         spo_ref.evaluate_vgh(pos);

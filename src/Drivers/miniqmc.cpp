@@ -379,11 +379,8 @@ int main(int argc, char** argv)
     Mover* thiswalker = new Mover(myPrimes[ip], ions);
     mover_list[iw]    = thiswalker;
 
-    // create a spo view in each Mover
-    thiswalker->spo = build_SPOSet_view(useRef, spo_main, team_size, member_id);
-
     // create wavefunction per mover
-    build_WaveFunction(useRef, thiswalker->wavefunction, ions, thiswalker->els, thiswalker->rng, enableJ3);
+    build_WaveFunction(useRef, spo_main, thiswalker->wavefunction, ions, thiswalker->els, thiswalker->rng, enableJ3);
 
     // initial computing
     thiswalker->els.update();
@@ -398,18 +395,10 @@ int main(int argc, char** argv)
   // this is the number of quadrature points for the non-local PP
   const int nknots(mover_list[0]->nlpp.size());
 
-  // For VMC, tau is large and should result in an acceptance ratio of roughly
-  // 50%
-  // For DMC, tau is small and should result in an acceptance ratio of 99%
-  const RealType tau = 2.0;
-
-  RealType sqrttau = std::sqrt(tau);
-
   #pragma omp parallel for
   for (int iw = 0; iw < nmovers; iw++)
   {
     auto& els          = mover_list[iw]->els;
-    auto& spo          = *mover_list[iw]->spo;
     auto& random_th    = mover_list[iw]->rng;
     auto& wavefunction = mover_list[iw]->wavefunction;
     auto& ecp          = mover_list[iw]->nlpp;
@@ -437,20 +426,12 @@ int main(int argc, char** argv)
           Timers[Timer_evalGrad]->stop();
 
           // Construct trial move
-          PosType dr   = sqrttau * delta[iel];
-          bool isValid = els.makeMoveAndCheck(iel, dr);
-
-          if (!isValid)
-            continue;
+          els.makeMove(iel, delta[iel]);
 
           // Compute gradient at the trial position
           Timers[Timer_ratioGrad]->start();
-
           PosType grad_new;
           wavefunction.ratioGrad(els, iel, grad_new);
-
-          spo.evaluate_vgh(els.R[iel]);
-
           Timers[Timer_ratioGrad]->stop();
 
           // Accept/reject the trial move
@@ -494,10 +475,9 @@ int main(int argc, char** argv)
             {
               PosType deltar(dist[iat] * rOnSphere[k] - displ[iat]);
 
-              els.makeMoveOnSphere(jel, deltar);
+              els.makeMove(jel, deltar);
 
               Timers[Timer_Value]->start();
-              spo.evaluate_v(els.R[jel]);
               wavefunction.ratio(els, jel);
               Timers[Timer_Value]->stop();
 

@@ -41,6 +41,7 @@ TimerNameLevelList_t<WaveFunctionTimers> WaveFunctionTimerNames =
 
 
 void build_WaveFunction(bool useRef,
+                        const SPOSet* spo_main,
                         WaveFunction& WF,
                         ParticleSet& ions,
                         ParticleSet& els,
@@ -55,6 +56,9 @@ void build_WaveFunction(bool useRef,
     app_log() << "The wavefunction was built before!" << std::endl;
     return;
   }
+
+  // create a spo view
+  WF.spo = build_SPOSet_view(useRef, spo_main, 1, 0);
 
   const int nelup = els.getTotalNum() / 2;
 
@@ -138,6 +142,17 @@ void build_WaveFunction(bool useRef,
   WF.Is_built = true;
 }
 
+WaveFunction::WaveFunction()
+      : FirstTime(true),
+        Is_built(false),
+        nelup(0),
+        ei_TableID(1),
+        spo(nullptr),
+        Det_up(nullptr),
+        Det_dn(nullptr),
+        LogValue(0.0)
+  {}
+
 WaveFunction::~WaveFunction()
 {
   if (Is_built)
@@ -191,6 +206,8 @@ WaveFunction::posT WaveFunction::evalGrad(ParticleSet& P, int iat)
 
 WaveFunction::valT WaveFunction::ratioGrad(ParticleSet& P, int iat, posT& grad)
 {
+  spo->evaluate_vgh(P.R[iat]);
+
   timers[Timer_Det]->start();
   grad       = valT(0);
   valT ratio = (iat < nelup ? Det_up->ratioGrad(P, iat, grad) : Det_dn->ratioGrad(P, iat, grad));
@@ -207,6 +224,8 @@ WaveFunction::valT WaveFunction::ratioGrad(ParticleSet& P, int iat, posT& grad)
 
 WaveFunction::valT WaveFunction::ratio(ParticleSet& P, int iat)
 {
+  spo->evaluate_v(P.R[iat]);
+
   timers[Timer_Det]->start();
   valT ratio = (iat < nelup ? Det_up->ratio(P, iat) : Det_dn->ratio(P, iat));
   timers[Timer_Det]->stop();
@@ -261,10 +280,12 @@ void WaveFunction::evaluateGL(ParticleSet& P)
   }
 }
 
-void WaveFunction::multi_evaluateLog(const std::vector<WaveFunction*>& WF_list,
-                                     const std::vector<ParticleSet*>& P_list) const
+void WaveFunction::flex_evaluateLog(const std::vector<WaveFunction*>& WF_list,
+                                    const std::vector<ParticleSet*>& P_list) const
 {
-  if (WF_list[0]->FirstTime)
+  if (!WF_list[0]->FirstTime)
+    return;
+  else if (P_list.size() > 1)
   {
     constexpr valT czero(0);
     const std::vector<ParticleSet::ParticleGradient_t*> G_list(extract_G_list(P_list));
@@ -277,6 +298,7 @@ void WaveFunction::multi_evaluateLog(const std::vector<WaveFunction*>& WF_list,
       *L_list[iw] = czero;
     }
     // det up/dn
+    timers[Timer_Det]->start();
     std::vector<WaveFunctionComponent*> up_list(extract_up_list(WF_list));
     Det_up->multi_evaluateLog(up_list, P_list, G_list, L_list, LogValues);
     for (int iw = 0; iw < P_list.size(); iw++)
@@ -285,144 +307,183 @@ void WaveFunction::multi_evaluateLog(const std::vector<WaveFunction*>& WF_list,
     Det_dn->multi_evaluateLog(dn_list, P_list, G_list, L_list, LogValues);
     for (int iw = 0; iw < P_list.size(); iw++)
       WF_list[iw]->LogValue += LogValues[iw];
+    timers[Timer_Det]->stop();
     // Jastrow factors
     for (size_t i = 0; i < Jastrows.size(); i++)
     {
+      jastrow_timers[i]->start();
       std::vector<WaveFunctionComponent*> jas_list(extract_jas_list(WF_list, i));
       Jastrows[i]->multi_evaluateLog(jas_list, P_list, G_list, L_list, LogValues);
       for (int iw = 0; iw < P_list.size(); iw++)
         WF_list[iw]->LogValue += LogValues[iw];
+      jastrow_timers[i]->stop();
     }
     for (int iw = 0; iw < P_list.size(); iw++)
       WF_list[iw]->FirstTime = false;
   }
+  else if(P_list.size()==1)
+    WF_list[0]->evaluateLog(*P_list[0]);
 }
 
-void WaveFunction::multi_evalGrad(const std::vector<WaveFunction*>& WF_list,
+void WaveFunction::flex_evalGrad(const std::vector<WaveFunction*>& WF_list,
+                                 const std::vector<ParticleSet*>& P_list,
+                                 int iat,
+                                 std::vector<posT>& grad_now) const
+{
+  if (P_list.size() > 1)
+  {
+    timers[Timer_Det]->start();
+    std::vector<posT> grad_now_det(P_list.size());
+    if (iat < nelup)
+    {
+      std::vector<WaveFunctionComponent*> up_list(extract_up_list(WF_list));
+      Det_up->multi_evalGrad(up_list, P_list, iat, grad_now_det);
+    }
+    else
+    {
+      std::vector<WaveFunctionComponent*> dn_list(extract_dn_list(WF_list));
+      Det_dn->multi_evalGrad(dn_list, P_list, iat, grad_now_det);
+    }
+    for (int iw = 0; iw < P_list.size(); iw++)
+      grad_now[iw] = grad_now_det[iw];
+    timers[Timer_Det]->stop();
+
+    for (size_t i = 0; i < Jastrows.size(); i++)
+    {
+      jastrow_timers[i]->start();
+      std::vector<posT> grad_now_jas(P_list.size());
+      std::vector<WaveFunctionComponent*> jas_list(extract_jas_list(WF_list, i));
+      Jastrows[i]->multi_evalGrad(jas_list, P_list, iat, grad_now_jas);
+      for (int iw = 0; iw < P_list.size(); iw++)
+        grad_now[iw] += grad_now_jas[iw];
+      jastrow_timers[i]->stop();
+    }
+  }
+  else if(P_list.size()==1)
+    grad_now[0] = WF_list[0]->evalGrad(*P_list[0], iat);
+}
+
+void WaveFunction::flex_ratioGrad(const std::vector<WaveFunction*>& WF_list,
                                   const std::vector<ParticleSet*>& P_list,
                                   int iat,
-                                  std::vector<posT>& grad_now) const
+                                  std::vector<valT>& ratios,
+                                  std::vector<posT>& grad_new) const
 {
-  timers[Timer_Det]->start();
-  std::vector<posT> grad_now_det(P_list.size());
-  if (iat < nelup)
+  if (P_list.size() > 1)
   {
-    std::vector<WaveFunctionComponent*> up_list(extract_up_list(WF_list));
-    Det_up->multi_evalGrad(up_list, P_list, iat, grad_now_det);
-  }
-  else
-  {
-    std::vector<WaveFunctionComponent*> dn_list(extract_dn_list(WF_list));
-    Det_dn->multi_evalGrad(dn_list, P_list, iat, grad_now_det);
-  }
-  for (int iw = 0; iw < P_list.size(); iw++)
-    grad_now[iw] = grad_now_det[iw];
-  timers[Timer_Det]->stop();
-
-  for (size_t i = 0; i < Jastrows.size(); i++)
-  {
-    jastrow_timers[i]->start();
-    std::vector<posT> grad_now_jas(P_list.size());
-    std::vector<WaveFunctionComponent*> jas_list(extract_jas_list(WF_list, i));
-    Jastrows[i]->multi_evalGrad(jas_list, P_list, iat, grad_now_jas);
+    std::vector<posT> pos_list(P_list.size());
     for (int iw = 0; iw < P_list.size(); iw++)
-      grad_now[iw] += grad_now_jas[iw];
-    jastrow_timers[i]->stop();
+      pos_list[iw] = P_list[iw]->R[iat];
+    auto spo_list(extract_spo_list(WF_list));
+    spo->multi_evaluate_vgh(spo_list, pos_list);
+
+    timers[Timer_Det]->start();
+    std::vector<valT> ratios_det(P_list.size());
+    for (int iw = 0; iw < P_list.size(); iw++)
+      grad_new[iw] = valT(0);
+    if (iat < nelup)
+    {
+      std::vector<WaveFunctionComponent*> up_list(extract_up_list(WF_list));
+      Det_up->multi_ratioGrad(up_list, P_list, iat, ratios_det, grad_new);
+    }
+    else
+    {
+      std::vector<WaveFunctionComponent*> dn_list(extract_dn_list(WF_list));
+      Det_dn->multi_ratioGrad(dn_list, P_list, iat, ratios_det, grad_new);
+    }
+    for (int iw = 0; iw < P_list.size(); iw++)
+      ratios[iw] = ratios_det[iw];
+    timers[Timer_Det]->stop();
+
+    for (size_t i = 0; i < Jastrows.size(); i++)
+    {
+      jastrow_timers[i]->start();
+      std::vector<valT> ratios_jas(P_list.size());
+      std::vector<WaveFunctionComponent*> jas_list(extract_jas_list(WF_list, i));
+      Jastrows[i]->multi_ratioGrad(jas_list, P_list, iat, ratios_jas, grad_new);
+      for (int iw = 0; iw < P_list.size(); iw++)
+        ratios[iw] *= ratios_jas[iw];
+      jastrow_timers[i]->stop();
+    }
   }
+  else if(P_list.size()==1)
+    ratios[0] = WF_list[0]->ratioGrad(*P_list[0], iat, grad_new[0]);
 }
 
-void WaveFunction::multi_ratioGrad(const std::vector<WaveFunction*>& WF_list,
-                                   const std::vector<ParticleSet*>& P_list,
-                                   int iat,
-                                   std::vector<valT>& ratios,
-                                   std::vector<posT>& grad_new) const
+void WaveFunction::flex_acceptrestoreMove(const std::vector<WaveFunction*>& WF_list,
+                                          const std::vector<ParticleSet*>& P_list,
+                                          const std::vector<bool>& isAccepted,
+                                          int iat) const
 {
-  timers[Timer_Det]->start();
-  std::vector<valT> ratios_det(P_list.size());
-  for (int iw = 0; iw < P_list.size(); iw++)
-    grad_new[iw] = valT(0);
-  if (iat < nelup)
+  if (P_list.size() > 1)
   {
-    std::vector<WaveFunctionComponent*> up_list(extract_up_list(WF_list));
-    Det_up->multi_ratioGrad(up_list, P_list, iat, ratios_det, grad_new);
-  }
-  else
-  {
-    std::vector<WaveFunctionComponent*> dn_list(extract_dn_list(WF_list));
-    Det_dn->multi_ratioGrad(dn_list, P_list, iat, ratios_det, grad_new);
-  }
-  for (int iw = 0; iw < P_list.size(); iw++)
-    ratios[iw] = ratios_det[iw];
-  timers[Timer_Det]->stop();
+    timers[Timer_Det]->start();
+    if (iat < nelup)
+    {
+      std::vector<WaveFunctionComponent*> up_list(extract_up_list(WF_list));
+      Det_up->multi_acceptrestoreMove(up_list, P_list, isAccepted, iat);
+    }
+    else
+    {
+      std::vector<WaveFunctionComponent*> dn_list(extract_dn_list(WF_list));
+      Det_dn->multi_acceptrestoreMove(dn_list, P_list, isAccepted, iat);
+    }
+    timers[Timer_Det]->stop();
 
-  for (size_t i = 0; i < Jastrows.size(); i++)
-  {
-    jastrow_timers[i]->start();
-    std::vector<valT> ratios_jas(P_list.size());
-    std::vector<WaveFunctionComponent*> jas_list(extract_jas_list(WF_list, i));
-    Jastrows[i]->multi_ratioGrad(jas_list, P_list, iat, ratios_jas, grad_new);
-    for (int iw = 0; iw < P_list.size(); iw++)
-      ratios[iw] *= ratios_jas[iw];
-    jastrow_timers[i]->stop();
+    for (size_t i = 0; i < Jastrows.size(); i++)
+    {
+      jastrow_timers[i]->start();
+      std::vector<WaveFunctionComponent*> jas_list(extract_jas_list(WF_list, i));
+      Jastrows[i]->multi_acceptrestoreMove(jas_list, P_list, isAccepted, iat);
+      jastrow_timers[i]->stop();
+    }
   }
+  else if(P_list.size()==1 && isAccepted[0])
+    WF_list[0]->acceptMove(*P_list[0], iat);
 }
 
-void WaveFunction::multi_acceptrestoreMove(const std::vector<WaveFunction*>& WF_list,
-                                           const std::vector<ParticleSet*>& P_list,
-                                           const std::vector<bool>& isAccepted,
-                                           int iat) const
+void WaveFunction::flex_evaluateGL(const std::vector<WaveFunction*>& WF_list,
+                                   const std::vector<ParticleSet*>& P_list) const
 {
-  timers[Timer_Det]->start();
-  if (iat < nelup)
+  if (P_list.size() > 1)
   {
-    std::vector<WaveFunctionComponent*> up_list(extract_up_list(WF_list));
-    Det_up->multi_acceptrestoreMove(up_list, P_list, isAccepted, iat);
-  }
-  else
-  {
-    std::vector<WaveFunctionComponent*> dn_list(extract_dn_list(WF_list));
-    Det_dn->multi_acceptrestoreMove(dn_list, P_list, isAccepted, iat);
-  }
-  timers[Timer_Det]->stop();
+    constexpr valT czero(0);
+    const std::vector<ParticleSet::ParticleGradient_t*> G_list(extract_G_list(P_list));
+    const std::vector<ParticleSet::ParticleLaplacian_t*> L_list(extract_L_list(P_list));
 
-  for (size_t i = 0; i < Jastrows.size(); i++)
-  {
-    jastrow_timers[i]->start();
-    std::vector<WaveFunctionComponent*> jas_list(extract_jas_list(WF_list, i));
-    Jastrows[i]->multi_acceptrestoreMove(jas_list, P_list, isAccepted, iat);
-    jastrow_timers[i]->stop();
+    for (int iw = 0; iw < P_list.size(); iw++)
+    {
+      *G_list[iw] = czero;
+      *L_list[iw] = czero;
+    }
+    // det up/dn
+    std::vector<WaveFunctionComponent*> up_list(extract_up_list(WF_list));
+    Det_up->multi_evaluateGL(up_list, P_list, G_list, L_list);
+    for (int iw = 0; iw < P_list.size(); iw++)
+      WF_list[iw]->LogValue = up_list[iw]->LogValue;
+    std::vector<WaveFunctionComponent*> dn_list(extract_dn_list(WF_list));
+    Det_dn->multi_evaluateGL(dn_list, P_list, G_list, L_list);
+    for (int iw = 0; iw < P_list.size(); iw++)
+      WF_list[iw]->LogValue += dn_list[iw]->LogValue;
+    // Jastrow factors
+    for (size_t i = 0; i < Jastrows.size(); i++)
+    {
+      std::vector<WaveFunctionComponent*> jas_list(extract_jas_list(WF_list, i));
+      Jastrows[i]->multi_evaluateGL(jas_list, P_list, G_list, L_list);
+      for (int iw = 0; iw < P_list.size(); iw++)
+        WF_list[iw]->LogValue += jas_list[iw]->LogValue;
+    }
   }
+  else if(P_list.size()==1)
+    WF_list[0]->evaluateGL(*P_list[0]);
 }
 
-void WaveFunction::multi_evaluateGL(const std::vector<WaveFunction*>& WF_list,
-                                    const std::vector<ParticleSet*>& P_list) const
+const std::vector<SPOSet*> extract_spo_list(const std::vector<WaveFunction*>& WF_list)
 {
-  constexpr valT czero(0);
-  const std::vector<ParticleSet::ParticleGradient_t*> G_list(extract_G_list(P_list));
-  const std::vector<ParticleSet::ParticleLaplacian_t*> L_list(extract_L_list(P_list));
-
-  for (int iw = 0; iw < P_list.size(); iw++)
-  {
-    *G_list[iw] = czero;
-    *L_list[iw] = czero;
-  }
-  // det up/dn
-  std::vector<WaveFunctionComponent*> up_list(extract_up_list(WF_list));
-  Det_up->multi_evaluateGL(up_list, P_list, G_list, L_list);
-  for (int iw = 0; iw < P_list.size(); iw++)
-    WF_list[iw]->LogValue = up_list[iw]->LogValue;
-  std::vector<WaveFunctionComponent*> dn_list(extract_dn_list(WF_list));
-  Det_dn->multi_evaluateGL(dn_list, P_list, G_list, L_list);
-  for (int iw = 0; iw < P_list.size(); iw++)
-    WF_list[iw]->LogValue += dn_list[iw]->LogValue;
-  // Jastrow factors
-  for (size_t i = 0; i < Jastrows.size(); i++)
-  {
-    std::vector<WaveFunctionComponent*> jas_list(extract_jas_list(WF_list, i));
-    Jastrows[i]->multi_evaluateGL(jas_list, P_list, G_list, L_list);
-    for (int iw = 0; iw < P_list.size(); iw++)
-      WF_list[iw]->LogValue += jas_list[iw]->LogValue;
-  }
+  std::vector<SPOSet*> spo_list;
+  for (auto it = WF_list.begin(); it != WF_list.end(); it++)
+    spo_list.push_back((*it)->spo);
+  return spo_list;
 }
 
 const std::vector<WaveFunctionComponent*> extract_up_list(const std::vector<WaveFunction*>& WF_list)

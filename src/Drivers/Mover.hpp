@@ -51,26 +51,33 @@ struct Mover
   RandomGenerator<RealType> rng;
   /// electrons
   ParticleSet els;
-  /// single particle orbitals
-  SPOSet* spo;
   /// wavefunction container
   WaveFunction wavefunction;
   /// non-local pseudo-potentials
   NonLocalPP<RealType> nlpp;
 
   /// constructor
-  Mover(const uint32_t myPrime, const ParticleSet& ions) : spo(nullptr), rng(myPrime), nlpp(rng)
+  Mover(const uint32_t myPrime, const ParticleSet& ions) : rng(myPrime), nlpp(rng)
   {
     build_els(els, ions, rng);
   }
-
-  /// destructor
-  ~Mover()
-  {
-    if (spo != nullptr)
-      delete spo;
-  }
 };
+
+inline void FairDivideLow(int ntot, int nparts, int me, int& first, int& last)
+{
+  int bat     = ntot / nparts;
+  int residue = nparts - ntot % nparts;
+  if(me<residue)
+  {
+    first = bat * me;
+    last  = bat * (me + 1);
+  }
+  else
+  {
+    first = (bat + 1) * me - residue;
+    last  = (bat + 1) * (me + 1) - residue;
+  }
+}
 
 template<class T, typename TBOOL>
 const std::vector<T*>
@@ -83,20 +90,20 @@ const std::vector<T*>
   return final_list;
 }
 
+const std::vector<Mover*> extract_sub_list(const std::vector<Mover*>& mover_list, int first, int last)
+{
+  std::vector<Mover*> sub_list;
+  for (auto it = mover_list.begin() + first; it != mover_list.begin() + last; it++)
+    sub_list.push_back(*it);
+  return sub_list;
+}
+
 const std::vector<ParticleSet*> extract_els_list(const std::vector<Mover*>& mover_list)
 {
   std::vector<ParticleSet*> els_list;
   for (auto it = mover_list.begin(); it != mover_list.end(); it++)
     els_list.push_back(&(*it)->els);
   return els_list;
-}
-
-const std::vector<SPOSet*> extract_spo_list(const std::vector<Mover*>& mover_list)
-{
-  std::vector<SPOSet*> spo_list;
-  for (auto it = mover_list.begin(); it != mover_list.end(); it++)
-    spo_list.push_back((*it)->spo);
-  return spo_list;
 }
 
 const std::vector<WaveFunction*> extract_wf_list(const std::vector<Mover*>& mover_list)
