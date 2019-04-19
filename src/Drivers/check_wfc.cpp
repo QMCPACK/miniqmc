@@ -182,8 +182,6 @@ int main(int argc, char** argv)
 
     ParticlePos_t delta(nels);
 
-    RealType sqrttau = 2.0;
-
     vector<RealType> ur(nels);
     random_th.generate_uniform(ur.data(), nels);
 
@@ -285,9 +283,8 @@ int main(int argc, char** argv)
         PosType grad_ref = wfc_ref->evalGrad(els_ref, iel) - grad_soa;
         g_eval += sqrt(dot(grad_ref, grad_ref));
 
-        PosType dr = sqrttau * delta[iel];
-        els.makeMoveAndCheck(iel, dr);
-        bool good_ref = els_ref.makeMoveAndCheck(iel, dr);
+        els.makeMoveAndCheck(iel, delta[iel]);
+        bool good_ref = els_ref.makeMoveAndCheck(iel, delta[iel]);
 
         if (!good_ref)
           continue;
