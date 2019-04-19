@@ -1,87 +1,39 @@
 import re
 import subprocess
-import os
-import pickle
+import itertools
+import argparse
 
-collect_timings = [r'Total',
-                   r'Pseudopotential',
-                   r'Spline Hessian Evaluation',
-                   r'Update']
-                   
-collect_parameters = ['Number of orbitals',
-                      'Splines per block',
-                      'Number of tiles',
-                      'Number of electrons',
-                      'Rmax',
-                      'Iterations',
-                      'OpenMP threads',
-                      'pack size =',
-                      'crowds =']
-                      
-parameter_capture = r'.*\s([\d\.]+)'
+parser = argparse.ArgumentParser()
+parser.add_argument("run_tag", type=str,  help="run tag")
+parser.add_argument('-p', '--crowd_size', nargs="+", type=int, help="crowd sizes [1..N]", default= [1,2,4,8]) 
+parser.add_argument('-c', '--crowds', nargs="+", type=int, help="numbers of crowds [1..N]", default = [1,4,8,16]) 
+parser.add_argument('-b', '--block_size', nargs="+", type=int, help="block sizes [1..N]", default = [256])
+parser.add_argument('-t', '--trials', type=int, help="number of each combination to run", default = 1)
+parser.add_argument('-g', '--cells', nargs="+", type=str, help="cells to run string [1..N]", default = '2 1 1' )
+parser.add_argument('-d', '--devices', nargs="+", type=int, help="device [1..N]", default = [1] )
+args = parser.parse_args()
 
-all_runs_timings = []
-all_runs_parameters = []
-def parse_output(filename, all_run_timings, all_runs_parameters):
-    with open(filename, 'r') as f:
-        lines = f.readlines()
-        this_runs_timings = {}
-        this_runs_parameters = {}
-        for line in lines:
-            for param in collect_parameters:
-                regex = param + parameter_capture;
-                match = re.search(regex, line);
-                if match:
-                    this_runs_parameters[param] = match.group(1)
-            for timing in collect_timings:
-                regex = timing + r'\s+([0-9\.]+)'
-                match = re.search(regex, line);
-                if match:
-                    this_runs_timings[timing] = match.group(1)
-        print (this_runs_parameters)
-        print (this_runs_timings)
-        all_runs_timings.append(this_runs_timings) 
-        all_runs_parameters.append(this_runs_parameters)
+print (args)
+# defaults
 
-
-packs = [1,2,4,8,12,16,24,32]
-batching = [1,2,4,8]
-block_size = [256]
-trials = 3
-
-for pack_number in packs:
-    for pack_size in batching:
-        for bsize in block_size:
-            for trial in range(trials):
-                outfile = "scan_miniqmc_2_2_1_gpu_bsp_p{}_w{}_a{}.out_{}".format(pack_size, pack_number, bsize, trial)
-                print("trying",outfile)
-                with open(outfile, 'w') as f:
-                    process_complete = subprocess.run(["bin/miniqmc","-d","1","-M","-p", "{}".format(pack_size),
-                                                       "-w", "{}".format(pack_number), "-a", "{}".format(bsize),
-                                                       "-g", "2 2 1"], stdout=f)
-                    if process_complete.returncode != 0:
-                        print ("fail", outfile)
-
-                        
-# parse_output(outfile,all_runs_timings,all_runs_parameters)
-
-# with open('pickled_miniqmc_scan', 'w') as f:
-#     my_pickle = pickle.Pickler(f)
-#     my_pickle.dump(all_runs_parameters)
-#     my_pickle.dump(all_runs_timings)
-
-# pkeys = [key for key in keys(all_runs_parameters[0])]
-# pkey_string = pkeys.join(" ")
-# tkeys = [key for key in keys(all_runs_timings[0])]
-# tkey_string = tkeys.join(" ")
-# header_string = pkey_string + " " + tkey_string
-# print(header_string)
-# for params, timings in zip(all_runs_param, all_runs_timings):
-#     pvals = [val for key, val in params.items()]
-#     tvals = [val for key, val in timings.items()]
-#     pval_string = pvals.join(" ")
-#     tval_string = tvals.join(" ")
-#     val_string = pval_string + " " + tval_string
-#     print(val_string)
-
+for p in itertools.product(args.devices,
+                           args.cells,
+                           args.crowds,
+                           args.crowd_size,
+                           args.block_size):
+    device, cell, pack_number, pack_size, bsize = p
+    for trial in range(args.trials):
+        cell_str = re.sub('\s','_',cell)
+        outfile = "scan_miniqmc_{}_d{}_g{}_p{}_w{}_a{}.out_{}".format(args.run_tag,device,cell_str,pack_size, pack_number, bsize, trial)
+        command_str = str(["bin/miniqmc","-d",device,"-M","-p", "{}".format(pack_size),
+                                               "-w", "{}".format(pack_number), "-a", "{}".format(bsize),
+                                               "-g", "{}".format(cell)])
+        print("trying",command_str)
+        print(outfile)
+        with open(outfile, 'w') as f:
+            process_complete =  subprocess.run(["bin/miniqmc","-d",str(device),"-M","-p", "{}".format(pack_size),
+                                               "-w", "{}".format(pack_number), "-a", "{}".format(bsize),
+                                               "-g", "{}".format(cell)], stdout=f)
+            if process_complete.returncode != 0:
+                print ("fail", outfile)
 
