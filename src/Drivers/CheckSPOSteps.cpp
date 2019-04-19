@@ -42,7 +42,7 @@ void CheckSPOSteps<DT>::test(int& error,
                              const int nsteps,
                              const double Rmax)
 {
-  std::string enum_name = device_names[hana::int_c<static_cast<int>(DT)>];
+    std::string enum_name = device_names[hana::int_c<static_cast<int>(DT)>].c_str();
   std::cout << "Testing Determinant Device Implementation: " << enum_name << '\n';
 
   ParticleSet ions;

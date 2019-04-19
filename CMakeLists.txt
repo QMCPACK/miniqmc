@@ -552,6 +552,10 @@ endif()
 ###################################################
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/external_codes/hana/include)
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/external_codes/catch)
+INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/external_codes)
+
+
+ADD_SUBDIRECTORY(${PROJECT_SOURCE_DIR}/external_codes/yaml-cpp)
 
 ###################################################
 # Add user extra flags

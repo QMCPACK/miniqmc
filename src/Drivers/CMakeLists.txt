@@ -59,6 +59,9 @@ FOREACH(p ${DRIVERS})
 ENDFOREACH(p ${ESTEST})
 
 
+ADD_EXECUTABLE(testComputationalGraph ../test/catch-main.cpp test/test_ComputationGraph.cpp)
+ADD_UNIT_TEST(testComputationGraph "${qmcpack_BINARY_DIR}/bin/testComputationGraph")
+
 
 #SET(boost_test exchange_walker)
 #FOREACH(p ${boost_test})

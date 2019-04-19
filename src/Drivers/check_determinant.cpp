@@ -194,7 +194,7 @@ void CheckDeterminantSteps<DT>::test(int& error, ParticleSet& ions,
 {
   PrimeNumberSet<uint32_t> myPrimes;
 
-  std::string enum_name = device_names[hana::int_c<static_cast<int>(DT)>];
+  std::string enum_name = device_names[hana::int_c<static_cast<int>(DT)>].c_str();
   std::cout << "Testing Determinant Device Implementation: "<< enum_name << '\n';
   
   double accumulated_error;

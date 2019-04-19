@@ -86,7 +86,7 @@ public:
     app_summary() << "  -d  device implementation.         default: CPU          " << '\n';
     app_summary() << "      Available devices:" << '\n';
     hana::for_each(devices_range, [&](auto x) {
-      std::string enum_name = device_names[x];
+				      std::string enum_name(hana::to<char const*>(device_names[x]));
       app_summary() << "                         " << x << ".  " << enum_name << '\n';
     });
   }
