@@ -477,7 +477,14 @@ int main(int argc, char** argv)
       aligned_vector<RealType> ur(nmovers);
       /// masks for movers with valid moves
       std::vector<int> isValid(nmovers);
-      
+
+      // LNS: Note that we are assembling lists of vector<ParticleSet*> or other 
+      //      things like it way too often because interoperability with the 
+      //      reference version discourages making data whose types don't make
+      //      sense to the reference.  Could come up with a design that avoids
+      //      this and saves a lot of pointless deep copying of pointers to the device
+      //      If you did this, would also likely re-plumb the wavefunction_multi method
+      //      so that perhaps things like J1 and J2 could avoid this as well
       for (int mc = 0; mc < nsteps; ++mc)
       {
 	Timers[Timer_Diffusion]->start();
@@ -572,13 +579,11 @@ int main(int argc, char** argv)
 	      anon_mover->wavefunction.multi_ratioGrad(valid_WF_list, valid_P_list, iel, ratios, grad_new);
 	    }
 
-	    // LNS -- what we need is the
 	    if (useRef) {
 	      for (int iw = 0; iw < valid_P_list.size(); iw++)
 		pos_list[iw] = valid_P_list[iw].R[iel];
 	      anon_mover_ref.spo->multi_evaluate_vgh(valid_spo_list, pos_list); 
 	    } else {
-
 	      Kokkos::View<double*[3],Kokkos::LayoutLeft> pos_list("positions", valid_P_list.size());
 	      Kokkos::View<valid_P_list[0]::pskType*> allParticleSetData("apsd", valid_P_list.size());
 	      auto apsdMirror = Kokkos::create_mirror_view(allParticleSetData);
@@ -616,42 +621,44 @@ int main(int argc, char** argv)
 	    Timers[Timer_Update]->start();
 	    // update WF storage
 	    if (useRef) {
-	      anon_mover_ref.wavefunction.multi_acceptrestoreMove(valid_WF_list, valid_P_list, isAccepted, iel);
+	      anon_mover_ref->wavefunction.multi_acceptrestoreMove(valid_WF_list, valid_P_list, isAccepted, iel);
 	    } else {
-	      anon_mover.wavefunction.multi_acceptrestoreMove(valid_WF_list, valid_P_list, isAccepted, iel);
+	      anon_mover->wavefunction.multi_acceptrestoreMove(valid_WF_list, valid_P_list, isAccepted, iel);
 	    }
 	    Timers[Timer_Update]->stop();
 	    
 	    // Update position
-#pragma omp parallel for
-
-	    // LNS -- need to get rid of openmp (see if parallelization is necessary)
-	    //        on the device side, this should be easy, all the pieces are there
-	    //        probably even do it in parallel
-	    for (int iw = 0; iw < valid_mover_list.size(); iw++)
-	    {
-	      if (isAccepted[iw]) // MC
-		valid_mover_list[iw]->els.acceptMove(iel);  // lots of calls to distanceTables.update
-	      else
-		valid_mover_list[iw]->els.rejectMove(iel);  // just sets activePtcl to -1
+	    if (useRef) {
+	      const std::vector<Mover*> valid_mover_list(filtered_list(mover_list_ref, isValid));
+	      for (int iw = 0; iw < valid_mover_list.size(); iw++)
+		{
+		  if (isAccepted[iw]) // MC
+		    valid_mover_list[iw]->els.acceptMove(iel);  // lots of calls to distanceTables.update
+		  else
+		    valid_mover_list[iw]->els.rejectMove(iel);  // just sets activePtcl to -1
+		}
+	    } else {
+	      anon_mover->els.multi_acceptRejectMoveKokkos(valid_P_list, isAccepted, iel);
 	    }
 	  } // iel
 	}   // substeps
 	
-#pragma omp parallel for
 	// LNS -- need to get rid of openmp
-	for (int iw = 0; iw < nmovers; iw++)
-        {
-	  mover_list[iw]->els.donePbyP();   // just sets activePtcl to -1
-	  // evaluate Kinetic Energy
-	}
-
 	if (useRef) {
-	  anon_mover_ref.wavefunction.multi_evaluateGL(WF_list, P_list);   // look at what is needed here
+	  for (int iw = 0; iw < nmovers; iw++)
+	    {
+	      mover_list[iw]->els.donePbyP();   // just sets activePtcl to -1
+	      // evaluate Kinetic Energy
+	    }
 	} else {
-	  anon_mover.wavefunction.multi_evaluateGL(WF_list, P_list);   // look at what is needed here
+	  anon_mover->els.multi_DonePbyP(P_list);
 	}
-	
+	  
+        if (useRef) {
+	  anon_mover_ref->wavefunction.multi_evaluateGL(WF_list, P_list);   // look at what is needed here
+	} else {
+	  anon_mover->wavefunction.multi_evaluateGL(WF_list, P_list);   // look at what is needed here
+	}
 	Timers[Timer_Diffusion]->stop();
 	
 	// Compute NLPP energy using integral over spherical points
@@ -686,7 +693,7 @@ int main(int argc, char** argv)
 		  // that does update some stuff, but can probably just figure out what is needed to get R for jastrow ratios and
 		  // make sure that it ends up in a kernel
 		  Timers[Timer_Value]->start();
-		  spo.evaluate_v(els.R[jel]);  // call shouldn't depend on other calls, just positions
+		  spo.evaluate_v(els.activePos);  // call shouldn't depend on other calls, just positions
 		  wavefunction.ratio(els, jel);  // note that the particleset isn't even used here for the spo part
 		                                 // it does come in for the jastrows though
 		  Timers[Timer_Value]->stop();

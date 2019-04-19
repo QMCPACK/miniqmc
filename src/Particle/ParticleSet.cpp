@@ -631,7 +631,52 @@ void ParticleSet::acceptMove(Index_t iat)
 
 void ParticleSet::rejectMove(Index_t iat) { activePtcl = -1; }
 
+void ParticleSet::multi_acceptRejectMoveKokkos(std::vector<ParticleSet*>& psets, 
+					       std::vector<bool>& isAccepted, int iel) {
+  Kokkos::View<psets[0]::pskType*> allParticleSetData("apsd", pses.size());
+  auto apsdMirror = Kokkos::create_mirror_view(allParticleSetData);
+  for (int i = 0; i < psets.size(); i++) {
+    apsdMirror(i) = psets->psk;
+  }
+  Kokkos::deep_copy(allParticleSetData, apsdMirror);
+  Kokkos::View<bool*> deviceIsAccepted("devIsAccepted", isAccepted.size());
+  auto devIsAcceptedMirror = Kokkos::create_mirror_view(deviceIsAccepted);
+  for (int i = 0; i < isAccepted.size(); i++) {
+    devIsAcceptedMirror(i) = isAccepted[i];
+  }
+  Kokkos::deep_copy(deviceIsAccepted, devIsAcceptedMirror);
+
+  int locIel = iel;
+  Kokkos::parallel_for("ptclsetMultiAcceptReject", psets.size(),
+		       KOKKOS_LAMBDA(const int& i) {
+			 auto& psd = allParticleSetData(i);
+			 if (deviceIsAccepted(i)) {
+			   psd.LikeUpdate(iel);
+			   psd.UnlikeUpdate(iel);
+			   for (int dim = 0; dim < 3; dim++) {
+			     psd.R(iel,dim) = psd.activePos(dim);
+			     psd.RsoA(iel,dim) = psd.activePos(dim);
+			   }
+			 }
+			 psd.activePtcl = -1;
+		       });
+}
+
+
 void ParticleSet::donePbyP(bool skipSK) { activePtcl = -1; }
+
+void ParticleSet::multi_donePbyP(std::vector<ParticleSet*>& psets, bool skipSK) {
+  Kokkos::View<psets[0]::pskType*> allParticleSetData("apsd", pses.size());
+  auto apsdMirror = Kokkos::create_mirror_view(allParticleSetData);
+  for (int i = 0; i < psets.size(); i++) {
+    apsdMirror(i) = psets->psk;
+  }
+  Kokkos::deep_copy(allParticleSetData, apsdMirror);
+  Kokkos::parallel_for("ptclsetMultiAcceptReject", psets.size(),
+		       KOKKOS_LAMBDA(const int& i) {
+			 allParticleSetData(i).activePtcl = -1;
+		       });
+}
 
 void ParticleSet::loadWalker(Walker_t& awalker, bool pbyp)
 {

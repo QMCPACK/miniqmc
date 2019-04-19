@@ -244,6 +244,9 @@ public:
    */
   void rejectMove(Index_t iat);
 
+  void multi_acceptRejectMoveKokkos(std::vector<ParticleSet*>& psets, 
+				    std::vector<bool>& isAccepted, int iel);
+
   void clearDistanceTables();
 
   void convert2Unit(ParticlePos_t& pout);
@@ -264,6 +267,8 @@ public:
    *@param skip SK update if skipSK is true
    */
   void donePbyP(bool skipSK = false);
+
+  void multi_DonePbyP(std::vector<ParticleSet*>& psets, bool skipSK = false);
 
   inline void setTwist(SingleParticlePos_t& t) { myTwist = t; }
   inline SingleParticlePos_t getTwist() const { return myTwist; }

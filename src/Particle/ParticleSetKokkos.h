@@ -173,7 +173,7 @@ public:
 
   KOKKOS_INLINE_FUNCTION
   UnlikeDTComputeDistances(RealType x0, RealType y0, RealType z0, int first, int last, int flip_ind = 0) {
-    DTComputeDistances(x0, y0, z0, OriginR, UnlikeDTTemp_r, UnlikeDTTemp_dr, first, last, flep_ind);
+    DTComputeDistances(x0, y0, z0, OriginR, UnlikeDTTemp_r, UnlikeDTTemp_dr, first, last, flip_ind);
   }
 
   KOKKOS_INLINE_FUNCTION
@@ -286,7 +286,7 @@ public:
 
   KOKKOS_INLINE_FUNCTION
   void LikeMoveOnSphere(RealType x0, RealType y0, RealType z0) {
-    LikeComputeDistances(x0, y0, z0, 0, LikeDTDistances.extent(0), activePtcl(0));
+    LikeDTComputeDistances(x0, y0, z0, 0, LikeDTDistances.extent(0), activePtcl(0));
   }
 
   KOKKOS_INLINE_FUNCTION
@@ -296,7 +296,7 @@ public:
 
   KOKKOS_INLINE_FUNCTION
   void UnlikeMoveOnSphere(RealType x0, RealType y0, RealType z0) {
-    UnlikeComputeDistances(x0, y0, z0, 0, UnlikeDTDistances.extent(0));
+    UnlikeDTComputeDistances(x0, y0, z0, 0, UnlikeDTDistances.extent(0));
   }
 
   KOKKOS_INLINE_FUNCTION

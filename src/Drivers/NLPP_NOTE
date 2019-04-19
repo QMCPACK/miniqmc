@@ -1,0 +1,24 @@
+What is NLPP section really doing?
+1. for each walker randomize a sphere (ecp.randomize(rOnSphere))
+   A.  Note that prior to this an array of nknots 3D points is created to hold output (rOnSphere)
+2. Then grab the electron-ion distance table for each walker
+3. Now do a loop over electrons for each walker
+   A.  get distances for this electron (distance from that electron to each ion) from distance table
+   B.  get displacements for each electron to each ion (vector displacement from ion to electron) from distance table
+   C.  For every ion, check if the distance to that ion is less than Rmax
+      i.  If so, loop over knots
+         a. make a position for each knot that is deltar(dist[iat] * rOnSphere - displ[iat]) 
+	 b. do makeMoveOnSphere(jel, deltar) -- sets activePtcl and activePos, then 
+            -- See ParticleSetKokkos UnlikeMoveOnSphere and LikeMoveOnSphere
+	    -- note, this just sets UnlikeDTTemp_r and UnlikeDTTemp_dr
+         c. Then does spo.evaluate_v(els.activePos); (code says els.R[jel] but I think it is wrong)
+         d. Then wavefunction.ratio(els, jel)
+	      -- det->ratio(P, jel)  
+                  ..  does necessary operation without looking at actual position (eventually would use
+                      results from spo.evaluate_v)
+                  ..  note we have a multiEvalRatio that can do this on N different wavefunctions at once
+              -- for each jastrow: jatrow->ratio(P, jel)   
+                 (basically just evaluating the functor over and over for the new position)
+                  ..  for oneBody basically set UpdateMode and 
+                      call computeU with Temp_r then return exp(V[iat]-result)
+                  ..  for twoBody, same thing but with other distance table
