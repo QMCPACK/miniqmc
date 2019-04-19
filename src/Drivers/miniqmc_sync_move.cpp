@@ -164,6 +164,7 @@ void print_help()
   app_summary() << "  -m  meshfactor                     default: 1.0"           << '\n';
   app_summary() << "  -n  number of MC steps             default: 5"             << '\n';
   app_summary() << "  -N  number of MC substeps          default: 1"             << '\n';
+  app_summary() << "  -P  not running pseudo potential   default: off"           << '\n';
   app_summary() << "  -r  set the acceptance ratio.      default: 0.5"           << '\n';
   app_summary() << "  -s  set the random seed.           default: 11"            << '\n';
   app_summary() << "  -t  timer level: coarse or fine    default: fine"          << '\n';
@@ -206,6 +207,7 @@ int main(int argc, char** argv)
   RealType accept  = 0.5;
   bool useRef   = false;
   bool enableJ3 = false;
+  bool run_pseudo = true;
 
   PrimeNumberSet<uint32_t> myPrimes;
 
@@ -220,7 +222,7 @@ int main(int argc, char** argv)
   int opt;
   while (optind < argc)
   {
-    if ((opt = getopt(argc, argv, "bhjvVa:B:c:g:m:n:N:r:s:t:w:x:")) != -1)
+    if ((opt = getopt(argc, argv, "bhjPvVa:B:c:g:m:n:N:r:s:t:w:x:")) != -1)
     {
       switch (opt)
       {
@@ -259,6 +261,9 @@ int main(int argc, char** argv)
         break;
       case 'N':
         nsubsteps = atoi(optarg);
+        break;
+      case 'P':
+        run_pseudo = false;
         break;
       case 'r':
         accept = atof(optarg);
@@ -500,6 +505,8 @@ int main(int argc, char** argv)
 
       Timers[Timer_Diffusion]->stop();
 
+      if(!run_pseudo) continue;
+
       // Compute NLPP energy using integral over spherical points
       // Ye: I have not found a strategy for NLPP
       Timers[Timer_ECP]->start();
@@ -557,8 +564,9 @@ int main(int argc, char** argv)
          << (nmovers * comm.size() * std::pow(double(nels),3) / Timers[Timer_Total]->get_total()) << std::endl;
     cout << "Diffusion throughput ( N_walkers * N_elec^3 / Diffusion time ) = "
          << (nmovers * comm.size() * std::pow(double(nels),3) / Timers[Timer_Diffusion]->get_total()) << std::endl;
-    cout << "Pseudopotential throughput ( N_walkers * N_elec^2 / Pseudopotential time ) = "
-         << (nmovers * comm.size() * std::pow(double(nels),2) / Timers[Timer_ECP]->get_total()) << std::endl;
+    if(run_pseudo)
+      cout << "Pseudopotential throughput ( N_walkers * N_elec^2 / Pseudopotential time ) = "
+           << (nmovers * comm.size() * std::pow(double(nels),2) / Timers[Timer_ECP]->get_total()) << std::endl;
     cout << endl;
 
     XMLDocument doc;
