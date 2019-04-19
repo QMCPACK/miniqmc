@@ -384,11 +384,8 @@ int main(int argc, char** argv)
     Mover* thiswalker = new Mover(myPrimes[iw], ions);
     mover_list[iw]    = thiswalker;
 
-    // create a spo view in each Mover
-    thiswalker->spo = build_SPOSet_view(useRef, spo_main, 1, 0);
-
     // create wavefunction per mover
-    build_WaveFunction(useRef, thiswalker->wavefunction, ions, thiswalker->els, thiswalker->rng, enableJ3);
+    build_WaveFunction(useRef, spo_main, thiswalker->wavefunction, ions, thiswalker->els, thiswalker->rng, enableJ3);
 
     // initial computing
     thiswalker->els.update();
@@ -424,14 +421,12 @@ int main(int argc, char** argv)
       FairDivideLow(mover_list.size(), nbatches, batch, first, last);
       const std::vector<Mover*> Sub_list(extract_sub_list(mover_list, first, last));
       const std::vector<ParticleSet*> P_list(extract_els_list(Sub_list));
-      const std::vector<SPOSet*> spo_list(extract_spo_list(Sub_list));
       const std::vector<WaveFunction*> WF_list(extract_wf_list(Sub_list));
       const Mover& anon_mover = *Sub_list[0];
 
       int nw_this_batch = last - first;
       int nw_this_batch_3 = nw_this_batch * 3;
 
-      std::vector<PosType> pos_list(nw_this_batch);
       std::vector<GradType> grad_now(nw_this_batch);
       std::vector<GradType> grad_new(nw_this_batch);
       std::vector<ValueType> ratios(nw_this_batch);
@@ -463,10 +458,6 @@ int main(int argc, char** argv)
           // Compute gradient at the trial position
           Timers[Timer_ratioGrad]->start();
           anon_mover.wavefunction.flex_ratioGrad(WF_list, P_list, iel, ratios, grad_new);
-
-          for (int iw = 0; iw < nw_this_batch; iw++)
-            pos_list[iw] = Sub_list[iw]->els.R[iel];
-          anon_mover.spo->multi_evaluate_vgh(spo_list, pos_list);
           Timers[Timer_ratioGrad]->stop();
 
           // Accept/reject the trial move
@@ -507,7 +498,6 @@ int main(int argc, char** argv)
       for (int iw = first; iw < last; iw++)
       {
         auto& els          = mover_list[iw]->els;
-        auto& spo          = *mover_list[iw]->spo;
         auto& wavefunction = mover_list[iw]->wavefunction;
         auto& ecp          = mover_list[iw]->nlpp;
 
@@ -528,7 +518,6 @@ int main(int argc, char** argv)
                 els.makeMove(jel, deltar);
 
                 Timers[Timer_Value]->start();
-                spo.evaluate_v(els.R[jel]);
                 wavefunction.ratio(els, jel);
                 Timers[Timer_Value]->stop();
 

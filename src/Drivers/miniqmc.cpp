@@ -379,11 +379,8 @@ int main(int argc, char** argv)
     Mover* thiswalker = new Mover(myPrimes[ip], ions);
     mover_list[iw]    = thiswalker;
 
-    // create a spo view in each Mover
-    thiswalker->spo = build_SPOSet_view(useRef, spo_main, team_size, member_id);
-
     // create wavefunction per mover
-    build_WaveFunction(useRef, thiswalker->wavefunction, ions, thiswalker->els, thiswalker->rng, enableJ3);
+    build_WaveFunction(useRef, spo_main, thiswalker->wavefunction, ions, thiswalker->els, thiswalker->rng, enableJ3);
 
     // initial computing
     thiswalker->els.update();
@@ -402,7 +399,6 @@ int main(int argc, char** argv)
   for (int iw = 0; iw < nmovers; iw++)
   {
     auto& els          = mover_list[iw]->els;
-    auto& spo          = *mover_list[iw]->spo;
     auto& random_th    = mover_list[iw]->rng;
     auto& wavefunction = mover_list[iw]->wavefunction;
     auto& ecp          = mover_list[iw]->nlpp;
@@ -434,12 +430,8 @@ int main(int argc, char** argv)
 
           // Compute gradient at the trial position
           Timers[Timer_ratioGrad]->start();
-
           PosType grad_new;
           wavefunction.ratioGrad(els, iel, grad_new);
-
-          spo.evaluate_vgh(els.R[iel]);
-
           Timers[Timer_ratioGrad]->stop();
 
           // Accept/reject the trial move
@@ -486,7 +478,6 @@ int main(int argc, char** argv)
               els.makeMove(jel, deltar);
 
               Timers[Timer_Value]->start();
-              spo.evaluate_v(els.R[jel]);
               wavefunction.ratio(els, jel);
               Timers[Timer_Value]->stop();
 

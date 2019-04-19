@@ -26,6 +26,7 @@
 #include <Utilities/RandomGenerator.h>
 #include <Utilities/NewTimer.h>
 #include <Particle/ParticleSet.h>
+#include <QMCWaveFunctions/SPOSet_builder.h>
 #include <QMCWaveFunctions/WaveFunctionComponent.h>
 
 namespace qmcplusplus
@@ -40,9 +41,12 @@ class WaveFunction
   using posT     = TinyVector<valT, OHMMS_DIM>;
 
 private:
-  std::vector<WaveFunctionComponent*> Jastrows;
+  /// single particle orbitals
+  SPOSet* spo;
   WaveFunctionComponent* Det_up;
   WaveFunctionComponent* Det_dn;
+  /// Jastrow factors
+  std::vector<WaveFunctionComponent*> Jastrows;
   valT LogValue;
 
   bool FirstTime, Is_built;
@@ -52,15 +56,7 @@ private:
   TimerList_t jastrow_timers;
 
 public:
-  WaveFunction()
-      : FirstTime(true),
-        Is_built(false),
-        nelup(0),
-        ei_TableID(1),
-        Det_up(nullptr),
-        Det_dn(nullptr),
-        LogValue(0.0)
-  {}
+  WaveFunction();
   ~WaveFunction();
 
   /// operates on a single walker
@@ -99,11 +95,13 @@ public:
 
   // friends
   friend void build_WaveFunction(bool useRef,
+                                 const SPOSet* spo_main,
                                  WaveFunction& WF,
                                  ParticleSet& ions,
                                  ParticleSet& els,
                                  const RandomGenerator<QMCTraits::RealType>& RNG,
                                  bool enableJ3);
+  friend const std::vector<SPOSet*> extract_spo_list(const std::vector<WaveFunction*>& WF_list);
   friend const std::vector<WaveFunctionComponent*>
       extract_up_list(const std::vector<WaveFunction*>& WF_list);
   friend const std::vector<WaveFunctionComponent*>
@@ -113,12 +111,14 @@ public:
 };
 
 void build_WaveFunction(bool useRef,
+                        const SPOSet* spo_main,
                         WaveFunction& WF,
                         ParticleSet& ions,
                         ParticleSet& els,
                         const RandomGenerator<QMCTraits::RealType>& RNG,
                         bool enableJ3);
 
+const std::vector<SPOSet*> extract_spo_list(const std::vector<WaveFunction*>& WF_list);
 const std::vector<WaveFunctionComponent*> extract_up_list(const std::vector<WaveFunction*>& WF_list);
 const std::vector<WaveFunctionComponent*> extract_dn_list(const std::vector<WaveFunction*>& WF_list);
 const std::vector<WaveFunctionComponent*>

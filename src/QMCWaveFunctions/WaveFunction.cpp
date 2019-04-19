@@ -41,6 +41,7 @@ TimerNameLevelList_t<WaveFunctionTimers> WaveFunctionTimerNames =
 
 
 void build_WaveFunction(bool useRef,
+                        const SPOSet* spo_main,
                         WaveFunction& WF,
                         ParticleSet& ions,
                         ParticleSet& els,
@@ -55,6 +56,9 @@ void build_WaveFunction(bool useRef,
     app_log() << "The wavefunction was built before!" << std::endl;
     return;
   }
+
+  // create a spo view
+  WF.spo = build_SPOSet_view(useRef, spo_main, 1, 0);
 
   const int nelup = els.getTotalNum() / 2;
 
@@ -138,6 +142,17 @@ void build_WaveFunction(bool useRef,
   WF.Is_built = true;
 }
 
+WaveFunction::WaveFunction()
+      : FirstTime(true),
+        Is_built(false),
+        nelup(0),
+        ei_TableID(1),
+        spo(nullptr),
+        Det_up(nullptr),
+        Det_dn(nullptr),
+        LogValue(0.0)
+  {}
+
 WaveFunction::~WaveFunction()
 {
   if (Is_built)
@@ -191,6 +206,8 @@ WaveFunction::posT WaveFunction::evalGrad(ParticleSet& P, int iat)
 
 WaveFunction::valT WaveFunction::ratioGrad(ParticleSet& P, int iat, posT& grad)
 {
+  spo->evaluate_vgh(P.R[iat]);
+
   timers[Timer_Det]->start();
   grad       = valT(0);
   valT ratio = (iat < nelup ? Det_up->ratioGrad(P, iat, grad) : Det_dn->ratioGrad(P, iat, grad));
@@ -207,6 +224,8 @@ WaveFunction::valT WaveFunction::ratioGrad(ParticleSet& P, int iat, posT& grad)
 
 WaveFunction::valT WaveFunction::ratio(ParticleSet& P, int iat)
 {
+  spo->evaluate_v(P.R[iat]);
+
   timers[Timer_Det]->start();
   valT ratio = (iat < nelup ? Det_up->ratio(P, iat) : Det_dn->ratio(P, iat));
   timers[Timer_Det]->stop();
@@ -352,6 +371,12 @@ void WaveFunction::flex_ratioGrad(const std::vector<WaveFunction*>& WF_list,
 {
   if (P_list.size() > 1)
   {
+    std::vector<posT> pos_list(P_list.size());
+    for (int iw = 0; iw < P_list.size(); iw++)
+      pos_list[iw] = P_list[iw]->R[iat];
+    auto spo_list(extract_spo_list(WF_list));
+    spo->multi_evaluate_vgh(spo_list, pos_list);
+
     timers[Timer_Det]->start();
     std::vector<valT> ratios_det(P_list.size());
     for (int iw = 0; iw < P_list.size(); iw++)
@@ -451,6 +476,14 @@ void WaveFunction::flex_evaluateGL(const std::vector<WaveFunction*>& WF_list,
   }
   else if(P_list.size()==1)
     WF_list[0]->evaluateGL(*P_list[0]);
+}
+
+const std::vector<SPOSet*> extract_spo_list(const std::vector<WaveFunction*>& WF_list)
+{
+  std::vector<SPOSet*> spo_list;
+  for (auto it = WF_list.begin(); it != WF_list.end(); it++)
+    spo_list.push_back((*it)->spo);
+  return spo_list;
 }
 
 const std::vector<WaveFunctionComponent*> extract_up_list(const std::vector<WaveFunction*>& WF_list)

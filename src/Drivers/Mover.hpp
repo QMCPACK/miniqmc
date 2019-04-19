@@ -51,24 +51,15 @@ struct Mover
   RandomGenerator<RealType> rng;
   /// electrons
   ParticleSet els;
-  /// single particle orbitals
-  SPOSet* spo;
   /// wavefunction container
   WaveFunction wavefunction;
   /// non-local pseudo-potentials
   NonLocalPP<RealType> nlpp;
 
   /// constructor
-  Mover(const uint32_t myPrime, const ParticleSet& ions) : spo(nullptr), rng(myPrime), nlpp(rng)
+  Mover(const uint32_t myPrime, const ParticleSet& ions) : rng(myPrime), nlpp(rng)
   {
     build_els(els, ions, rng);
-  }
-
-  /// destructor
-  ~Mover()
-  {
-    if (spo != nullptr)
-      delete spo;
   }
 };
 
@@ -113,14 +104,6 @@ const std::vector<ParticleSet*> extract_els_list(const std::vector<Mover*>& move
   for (auto it = mover_list.begin(); it != mover_list.end(); it++)
     els_list.push_back(&(*it)->els);
   return els_list;
-}
-
-const std::vector<SPOSet*> extract_spo_list(const std::vector<Mover*>& mover_list)
-{
-  std::vector<SPOSet*> spo_list;
-  for (auto it = mover_list.begin(); it != mover_list.end(); it++)
-    spo_list.push_back((*it)->spo);
-  return spo_list;
 }
 
 const std::vector<WaveFunction*> extract_wf_list(const std::vector<Mover*>& mover_list)
