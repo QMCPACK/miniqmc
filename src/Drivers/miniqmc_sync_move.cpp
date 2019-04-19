@@ -150,14 +150,14 @@ void print_help()
 {
   // clang-format off
   app_summary() << "usage:" << '\n';
-  app_summary() << "  miniqmc   [-bhjvV] [-g \"n0 n1 n2\"] [-m meshfactor]"      << '\n';
+  app_summary() << "  miniqmc   [-bhjPvV] [-g \"n0 n1 n2\"] [-m meshfactor]"     << '\n';
   app_summary() << "            [-n steps] [-N substeps] [-x rmax]"              << '\n';
   app_summary() << "            [-r AcceptanceRatio] [-s seed] [-w walkers]"     << '\n';
-  app_summary() << "            [-a tile_size] [-t timer_level]"                 << '\n';
+  app_summary() << "            [-a tile_size] [-t timer_level] [-B nw_b]"       << '\n';
   app_summary() << "options:"                                                    << '\n';
   app_summary() << "  -a  size of each spline tile       default: num of orbs"   << '\n';
   app_summary() << "  -b  use reference implementations  default: off"           << '\n';
-  app_summary() << "  -B  number of walkers per batch    default: 1"           << '\n';
+  app_summary() << "  -B  number of walkers per batch    default: 1"             << '\n';
   app_summary() << "  -g  set the 3D tiling.             default: 1 1 1"         << '\n';
   app_summary() << "  -h  print help and exit"                                   << '\n';
   app_summary() << "  -j  enable three body Jastrow      default: off"           << '\n';
