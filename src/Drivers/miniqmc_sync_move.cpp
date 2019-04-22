@@ -643,7 +643,6 @@ int main(int argc, char** argv)
 	  } // iel
 	}   // substeps
 	
-	// LNS -- need to get rid of openmp
 	if (useRef) {
 	  for (int iw = 0; iw < nmovers; iw++)
 	    {
@@ -700,6 +699,13 @@ int main(int argc, char** argv)
 	    }
 	  }
 	} else { // not the reference implementation
+	  // want to make list of pairs on the device, so need some sort of flexible size container.  Kokkos::vector?
+	  // a. maybe make a first quick kernel that does nothing but count how many pairs there will be
+	  // b. then come back and make space for everything with views on the host
+	  // c. then run a kernel to populate the views on the host, maybe also continuing on to actually do the work...
+
+	  
+
 	  // strategy.  
 	  // 1. Have a loop that makes a list for each walker of all electron-ion pairs that are active
 	  //    a. hope that the number of such pairs is basically equal for all walkers

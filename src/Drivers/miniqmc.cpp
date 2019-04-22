@@ -456,7 +456,7 @@ int main(int argc, char** argv)
             PosType grad_new;
             wavefunction.ratioGrad(els, iel, grad_new);
 
-            spo.evaluate_vgh(els.R[iel]);
+            spo.evaluate_vgh(els.activePos);
 
             Timers[Timer_ratioGrad]->stop();
 
@@ -504,7 +504,7 @@ int main(int argc, char** argv)
                 els.makeMoveOnSphere(jel, deltar);
 
                 Timers[Timer_Value]->start();
-                spo.evaluate_v(els.R[jel]);
+                spo.evaluate_v(els.activePos);
                 wavefunction.ratio(els, jel);
                 Timers[Timer_Value]->stop();
 

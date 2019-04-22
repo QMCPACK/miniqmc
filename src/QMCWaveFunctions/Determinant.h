@@ -45,7 +45,6 @@ namespace qmcplusplus
 
 
 template<class linAlgHelperType, typename ValueType>
-
 ValueType InvertWithLog(DiracDeterminantKokkos& ddk, LinAlgHelperType& lah, ValueType& phase) {
   ValueType locLogDet(0.0);
   lah.getrf(ddk.psiM);
@@ -219,7 +218,7 @@ void doDiracDeterminantMultiEvaluateLog<Kokkos::CudaSpace>(ddkType addk, vectorT
 #endif
 
 template<typename addkType, typename vectorType, typename resVecType>
-void doDiracDeterminantMultiEvalRatio(ddkType addk, vectorType& wfcv, resVecType& ratios) {
+void doDiracDeterminantMultiEvalRatio(ddkType addk, vectorType& wfcv, resVecType& ratios, int iel) {
   using ValueType = resVecType::data_type;
   const int numEls = static_cast<DiracDeterminant*>(wfcv[0])->ddk.psiV.extent(0);
   const int numWalkers = addk.extent(0);
@@ -245,7 +244,7 @@ void doDiracDeterminantMultiEvalRatio(ddkType addk, vectorType& wfcv, resVecType
 			 ValueType sumOver = 0.0;
 			 Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(member, numEls),
 						 [=] (const int& i, ValueType& innersum) {
-						   const idx = addk(walkerNum).FirstIndex(0);
+						   const idx = iel - addk(walkerNum).FirstIndex(0);
 						   innersum += addk(walkerNum).psiV(i) * addk(walkerNum).psiMinv(idx,i); 
 						 }, sumOver);
 			 Kokkos::single(Kokkos::PerTeam(member), [=]() {
@@ -640,7 +639,7 @@ struct DiracDeterminant : public WaveFunctionComponent
     
     Kokkos::View<valT*> tempResults("tempResults", ratios.size());
 
-    doDiracDeterminantMultiEvalRatio(addk, WFC_list, tempResults);
+    doDiracDeterminantMultiEvalRatio(addk, WFC_list, tempResults, iat);
     
     auto tempResultsMirror = Kokkos::create_mirror_view(tempResults);
     Kokkos::deep_copy(tempResultsMirror, tempResults);
