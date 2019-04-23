@@ -666,10 +666,10 @@ int main(int argc, char** argv)
 	if (useRef) {
 	  for (int iw = 0; iw < nmovers; iw++)
 	  {
-	    auto& els          = mover_list[iw]->els;
-	    auto& spo          = *mover_list[iw]->spo;
-	    auto& wavefunction = mover_list[iw]->wavefunction;
-	    auto& ecp          = mover_list[iw]->nlpp;
+	    auto& els          = mover_list_ref[iw]->els;
+	    auto& spo          = *mover_list_ref[iw]->spo;
+	    auto& wavefunction = mover_list_ref[iw]->wavefunction;
+	    auto& ecp          = mover_list_ref[iw]->nlpp;
 	    
 	    ParticlePos_t rOnSphere(nknots);
 	    ecp.randomize(rOnSphere); // pick random sphere
@@ -703,17 +703,100 @@ int main(int argc, char** argv)
 	  // a. maybe make a first quick kernel that does nothing but count how many pairs there will be
 	  // b. then come back and make space for everything with views on the host
 	  // c. then run a kernel to populate the views on the host, maybe also continuing on to actually do the work...
+	  Kokkos::View<valid_P_list[0]::pskType*> allParticleSetData("apsd", P_list.size());
+	  auto apsdMirror = Kokkos::create_mirror_view(allParticleSetData);
+	  for (int i = 0; i < P_list.size(); i++) {
+	    apsdMirror(i) = P_list[i]->psk;
+	  }
+	  Kokkos::deep_copy(allParticleSetData, apsdMirror);
+	  Kokkos::View<int*> EiPairs("activeEiPairs", nmovers);
 
+	  double locRmax = Rmax;
+	  Kokkos::TeamPolicy<> pol(nmovers, 1, 32);
+	  Kokkos::parallel_for("FindNumEiPairs", policy,
+			       KOKKOS_LAMBDA(Kokkos::TeamPolicy<>::member_type member) {
+				 int walkerNum = member.league_rank();
+				 auto& psetRef = apsd(walkerNum);
+				 int locSum;
+				 Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(member, psetRef.R.extent(0)),
+							 [=](const int& elNum, int& pairSum) {
+							   for (int atnum = 0; atnum < psetRef.UnlikeDTDistances.extent(1); atnum++) {
+							     if (psetRef.UnlikeDTDistances(elNum, atnum) < locRmax) {
+							       pairSum++;
+							     }
+							   }
+							 }, locSum);
+				 Kokkos::Single( Kokkos::PerTeam(member), [=]() {
+				     EiPairs(walkerNum) += locSum;
+				   });
+			       });
+	  auto EiPairsMirror = Kokkos::create_mirror_view(EiPairs);
+	  Kokkos::deep_copy(EiPairsMirror, EiPairs);
+	  int maxSize = 0;
+	  for (int i = 0; i < EiPairsMirror.extent(0); i++) {
+	    if (EiPairsMirror(i) > maxSize) {
+	      maxSize = EiPairsMirror(i);
+	    }
+	  }
 	  
+	  Kokkos::View<int**[2]> EiLists("EiLists", nmovers, maxSize);
+	  Kokkos::parallel_for("SetupEiLists", nmovers
+			       KOKKOS_LAMBDA(const int& walkerNum) {
+				 for (int i = 0; i < maxSize; i++) {
+				   EiLists(walkerNum,i,0) = -1;
+				 }
+				 auto& psetRef = apsd(walkerNum);
+				 int idx = 0;
+				 for (int elNum = 0; elNum < psetRef.R.extent(0); elNum++) {
+				   for (int atNum = 0; atNum < psetRef.UnlikeDTDistances.extent(1); atNum++) {
+				     if (psetRef.UnlikeDTDistances(elNum, atNum) < locRmax) {
+				       EiLists(walkerNum,idx,0) = elNum;
+				       EiLists(walkerNum,idx,1) = atNum;
+				       idx++;
+				     }
+				   }
+				 }
+			       });
+	  
+	  Kokkos::View<double**[3]> rOnSphere("rOnSphere", nmovers, nknots);
+	  auto rOnSphereMirror = Kokkos::create_mirror_view(rOnSphere);
+	  for(int walkerNum = 0; walkerNum < nmovers; walkerNum++) {
+	    auto ecp = mover_list[walkerNum]->nlpp;
+	    ParticlePos_t rOnSphere(nknots);
+	    ecp.randomize(rOnSphere);
+	    for (int knot = 0; knot < nknots; knot++) {
+	      for (int dim = 0; dim < 3; dim++) {
+		rOnSphereMirror(walkerNum,knot,dim) = rOnSphere[knot][dim];
+	      }
+	    }
+	  }
+	  Kokkos::deep_copy(rOnSphere, rOnSphereMirror);
 
-	  // strategy.  
-	  // 1. Have a loop that makes a list for each walker of all electron-ion pairs that are active
-	  //    a. hope that the number of such pairs is basically equal for all walkers
-	  // 2. make a parallel loop where for every walker we are doing all knots for a given e-i pair at once
-	  //    a. will need to separate out data so that we are handing activeParticle, activePos, temp_r and temp_dr
-          //       to the wavefunction components.  Also see what is needed for a general spo.evaluate_v that is not
-          //       just one move per walker
-          // 3. Could eventually think about having a general batch size where it was not just one e-i pair per walker
+	  // should now be set up to do our big parallel loop
+	  // need to make a place to store the new temp_r (one per knot, per walker)
+	  Kokkos::View<double***> bigLikeTempR("bigLikeTempR", nmovers, nknots, nels);
+	  Kokkos::View<double***> bigUnlikeTempR("bigUnlikeTempR", nmovers, nknots, nions);
+	  Kokkos::View<double**[3]> bigElPos("bigElPos", nmovers, nknots);
+	  // problem is that there is a flow.  Cannot store all at once.  Would like to avoid so
+	  // many calls (for instance three per pair), but since cannot follow wavefunction
+	  // vtable on device, will have to at least have it make its own calls
+	  vector<ValueType> ratios(nmovers*nknots, 0.0);
+	  Kokkos::View<double***> tempPsiV("tempPsiV", nmovers, nknots, nels);
+	  for (int eiPair = 0; eiPair < maxSize; eiPair++) {
+	    anon_mover->els.updateTempPosAndRs(eiPair, allParticleSetData, EiLists, rOnSphere, bigElPos, bigLikeTempR, bigUnlikeTempR);
+	    // eventually would need to pass in the actual positions so that calls to evaluate_vs would go
+	    // to the right location.  For now, just need distances for jastrows and number of the particles
+	    // for the determinant.  May need to hand in lists of wavefunctions
+	    anon_mover->wavefunction.multi_ratio(eiPair, WF_list, tempPsiV, bigLikeTempR, bigUnlikeTempR, EiLists, ratios); // see if this is enough
+	    // note, for a given eiPair, all evaluations for a single mover will be for the same electron
+	    // but not all movers will be working on the same electron necessarily
+
+	    //////LNS LNS LNS Need to write this function
+	    spo.evaluate_vs(eiPair, EiLists, bigElPos); // also perhaps hand in result views to store the output
+
+
+
+	  }	    
 	}    
 
 

@@ -270,6 +270,57 @@ public:
 
   void multi_DonePbyP(std::vector<ParticleSet*>& psets, bool skipSK = false);
 
+  template<typename allPsdType, typename EiListType, typename rOnSphereType,
+           typename bigElPosType, typename tempRType>
+    
+  void updateTempPosAndRs(int eiPair, allPsdType& allParticleSetData,
+			  EiListType& EiLists, rOnSphereType& rOnSphere, bigElPosType& bigElPos,
+			  tempRType& bigLikeTempR, tempRType& bigUnlikeTempR) {
+    int eiPair_ = eiPair;
+    auto& allParticleSetData_ = allParticleSetData;
+    auto& EiLists_ = EiLists;
+    auto& rOnSphere_ = rOnSphere;
+    auto& bigElPos_ = bigElPos;
+    auto& bigLikeTempR_ = bigLikeTempR;
+    auto& bigUnlikeTempR_ = bigUnlikeTempR;
+    
+    const int numMovers = allParticleSetData_.extent(0);
+    const int numKnots = rOnSphere_.extent(0);
+    Kokkos::TeamPolicy<> pol(numMovers, 1, 32);
+    Kokkos::parallel_for("updateTempPosAndRs", pol,
+			 KOKKOS_LAMBDA(TeamPolicy<>::member_type member) {
+			   const int walkerNum = member.league(rank);
+			   auto& psetRef = allParticleSetData_(walkerNum);
+			   const int eNum = EiLists_(walkerNum, eiPair, 0);
+			   const int atNum = EiLists_(walkerNum, eiPair, 1);
+			   if (eNum > -1) {
+			     Kokkos::parallel_for(Kokkos::ThreadVectorRange(member, numKnots),
+						  [=](const int& knotNum) {
+						    // handles bigElPos
+						    for (int dim = 0; dim < 3; dim++) {
+						      bigElPos_(walkerNum, knotNum, dim) = psetRef.UnlikeDTDistances(eNum,atNum) *
+							rOnSphere_(walkerNum,knotNum,dim) - psetRef.UnlikeDTDisplacements(eNum,atNum,dim);
+						    }
+						    // do bigLikeTempR
+						    auto likeTempRSubview = Kokkos::subview(bigLikeTempR_,walkerNum,knotNum,Kokkos::All());
+						    auto unlikeTempRSubview = Kokkos::subview(bigUnlikeTempR_,walkerNum,knotNum,Kokkos::All());
+						    psetRef.DTComputeDistances(bigElPos(walkerNum,knotNum,0),	   
+									       bigElPos(walkerNum,knotNum,1),	   
+									       bigElPos(walkerNum,knotNum,2),	   
+									       psetRef.RsoA,			   
+									       likeTempRSubview,		   
+									       0, likeTempRSubview.extent(), eNum);
+						    psetRef.DTComputeDistances(bigElPos(walkerNum,knotNum,0),	   
+						    			       bigElPos(walkerNum,knotNum,1),	   
+									       bigElPos(walkerNum,knotNum,2),	   
+									       psetRef.OriginR,			   
+						    			       likeTempRSubview,		   
+    									       0, likeTempRSubview.extent());
+						  });
+			   }
+			 });
+  }
+						    
   inline void setTwist(SingleParticlePos_t& t) { myTwist = t; }
   inline SingleParticlePos_t getTwist() const { return myTwist; }
 
@@ -320,7 +371,7 @@ public:
 
   /// return the last index of a group i
   inline int last(int igroup) const { return SubPtcl[igroup + 1]; }
-
+  
 protected:
   /** map to handle distance tables
    *

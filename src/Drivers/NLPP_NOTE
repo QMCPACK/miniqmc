@@ -17,7 +17,7 @@ What is NLPP section really doing?
                   ..  does necessary operation without looking at actual position (eventually would use
                       results from spo.evaluate_v)
                   ..  note we have a multiEvalRatio that can do this on N different wavefunctions at once
-              -- for each jastrow: jatrow->ratio(P, jel)   
+              -- for each jastrow: jastrow->ratio(P, jel)   
                  (basically just evaluating the functor over and over for the new position)
                   ..  for oneBody basically set UpdateMode and 
                       call computeU with Temp_r then return exp(V[iat]-result)

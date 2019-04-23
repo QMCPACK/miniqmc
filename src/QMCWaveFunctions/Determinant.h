@@ -218,7 +218,7 @@ void doDiracDeterminantMultiEvaluateLog<Kokkos::CudaSpace>(ddkType addk, vectorT
 #endif
 
 template<typename addkType, typename vectorType, typename resVecType>
-void doDiracDeterminantMultiEvalRatio(ddkType addk, vectorType& wfcv, resVecType& ratios, int iel) {
+void doDiracDeterminantMultiEvalRatio(addkType addk, vectorType& wfcv, resVecType& ratios, int iel) {
   using ValueType = resVecType::data_type;
   const int numEls = static_cast<DiracDeterminant*>(wfcv[0])->ddk.psiV.extent(0);
   const int numWalkers = addk.extent(0);
@@ -253,6 +253,52 @@ void doDiracDeterminantMultiEvalRatio(ddkType addk, vectorType& wfcv, resVecType
 		       });
 }
 
+template<typename addkType, typename awType, typename eiListType, typename psiVType, typename ratiosType, typename rngType>
+void doDiracDeterminantMultiEvalRatio(int pairNum, addkType& addk, awType& activeWalkers, eiListType& eiList, psiVType& psiVScratch, ratiosType& ratios, rngType& rng) {
+  using ValueType = psiVType::data_type;
+  const int numEls = psiVScratch.extent(2);
+  const int numKnots = psiVScratch.extent(1);
+  const int numWalkers = activeWalkers.extent(0);
+  constexpr double shift(0.5);
+  
+  // this is where we should be filling it from spo at the particular location
+  auto psiVScratchMirror = Kokkos::create_mirror_view(psiVScratch);
+  for(int iw = 0; iw < numWalkers; iw++) {
+    for (int knot = 0; knot < numKnots; knot++) {
+      for (int el = 0; el < numEls; el++) {
+	psiVScratchMirror(iw,knot,iel) = rng() - shift;
+      }
+    }
+  }
+  Kokkos::deep_copy(psiVScratch, psiVScratchMirror);
+
+  Kokkos::View<ValueType**> results("ratios", numWalkers, numKnots);
+
+  // note, there should be some scope for caching as psiMinv does not depend on knotNum
+  using BarePolicy = Kokkos::TeamPolicy<>;
+  BarePolicy pol(numWalkers, Kokkos::AUTO, 32);
+  Kokkos::parallel_for("dd-evalRatio-general", pol,
+		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
+			 const int walkerNum = activeWalkers(member.league_rank());
+			 const int bandIdx = eiList(walkerNum, pairNum, 0) - addk(walkerNum).FirstIndex(0);
+			 Kokkos::parallel_for("loopOverKnots", Kokkos::TeamThreadRange(member, numKnots),
+					      [=] (const int& knotNum) {
+						Kokkos::parallel_reduce("loopOverEls", Kokkos::ThreadVectorRange(member, numEls),
+									[=] (const int& i, ValueType& innersum) {
+									  innersum += psiVScratchMirror(walkerNum,knotNum,i) *
+									    addk(walkerNum).psiMinv(bandIdx,i);
+									}, results(walkerNum, knotNum));
+					      });
+		       });
+
+  auto resultsMirror = Kokkos::create_mirror_view(results);
+  Kokkos::deep_copy(resultsMirror, results);
+  for (int i = 0; i < resultsMirror.extent(0); i++) {
+    for (int j = 0; j < resultsMirror.extent(1); j++) {
+      ratios[i*numKnots+j] = resultsMirror(i,j);
+    }
+  }
+}
 
 template<typename memory_space, typename addkType, typename vectorType>
 void doDiracDeterminantMultiAccept(addkType& addk, vectorType& WFC_list, int iel) {
@@ -452,7 +498,7 @@ template<typename addkType, typename vectorType>
 void populateCollectiveView(addkType addk, vectorType& WFC_list) {
   auto adkdMirror = Kokkos::create_mirror_view(addk);
   for (int i = 0; i < WFC_list.size(); i++) {
-    addkMirror(i) = static_cast<DiracDeterminant*>(WFC_list[i])->ddk);
+    addkMirror(i) = static_cast<DiracDeterminant*>(WFC_list[i])->ddk;
   }
   Kokkos::deep_copy(addk, addkMirror);
 }
@@ -464,7 +510,7 @@ template<typename addkType, typename vectorType>
   int idx = 0;
   for (int i = 0; i < WFC_list.size(); i++) {
     if (isAccepted[i]) {
-      addkMirror(idx) = static_cast<DiracDeterminant*>(WFC_list[i].ddk);
+      addkMirror(idx) = static_cast<DiracDeterminant*>(WFC_list[i])->ddk;
       idx++;
     }
   }

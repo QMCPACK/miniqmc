@@ -166,6 +166,45 @@ public:
     }
   }
 
+  // intended to be called by LikeDTComputeDistances and UnlikeDtComputeDistances
+  // I'm just too chicken to make it private for now
+  KOKKOS_INLINE_FUNCTION
+  DTComputeDistances(RealType x0, RealType y0, RealType z0,
+		     Kokkos::View<RealType*[dim]> locR
+		     Kokkos::View<RealType*> temp_r,
+		     int first, int last, int flip_ind = 0) {
+    constexpr RealType minusone(-1);
+    constexpr RealType one(1);
+    for (int iat = first; iat < last; ++iat)
+    {
+      const RealType flip    = iat < flip_ind ? one : minusone;
+      const RealType displ_0 = (locR(iat,0) - x0) * flip;
+      const RealType displ_1 = (locR(iat,1) - y0) * flip;
+      const RealType displ_2 = (locR(iat,2) - z0) * flip;
+
+      const RealType ar_0 = -std::floor(displ_0 * DT_G(0,0) + displ_1 * DT_G(1,0) + displ_2 * DT_G(2,0));
+      const RealType ar_1 = -std::floor(displ_0 * DT_G(0,1) + displ_1 * DT_G(1,1) + displ_2 * DT_G(2,1));
+      const RealType ar_2 = -std::floor(displ_0 * DT_G(0,2) + displ_1 * DT_G(1,2) + displ_2 * DT_G(2,2));
+      
+      const RealType delx = displ_0 + ar_0 * DT_R(0,0) + ar_1 * DT_R(1,0) + ar_2 * DT_R(2,0);
+      const RealType dely = displ_1 + ar_0 * DT_R(0,1) + ar_1 * DT_R(1,1) + ar_2 * DT_R(2,1);
+      const RealType delz = displ_2 + ar_0 * DT_R(0,2) + ar_1 * DT_R(1,2) + ar_2 * DT_R(2,2);
+      
+      RealType rmin = delx * delx + dely * dely + delz * delz;
+
+      for (int c = 1; c < 8; ++c)
+      {
+	const RealType x  = delx + corners(c,0);
+	const RealType y  = dely + corners(c,1);
+	const RealType z  = delz + corners(c,2);
+	const RealType r2 = x * x + y * y + z * z;
+	rmin       = (r2 < rmin) ? r2 : rmin;
+      }
+      temp_r(iat) = std::sqrt(rmin);
+    }
+  }
+
+  
   KOKKOS_INLINE_FUNCTION
   LikeDTComputeDistances(RealType x0, RealType y0, RealType z0, int first, int last, int flip_ind = 0) {
     DTComputeDistances(x0, y0, z0, RSoA, LikeDTTemp_r, LikeDTTemp_dr, first, last, flip_ind);
