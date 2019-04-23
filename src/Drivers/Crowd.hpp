@@ -2,7 +2,7 @@
 // This file is distributed under the University of Illinois/NCSA Open Source
 // License.  See LICENSE file in top directory for details.
 //
-// Copyright (c) 2018 QMCPACK developers.
+// Copyright (c) 2019 QMCPACK developers.
 //
 // File developed by:
 // Peter Doak, doakpw@ornl.gov, Oak Ridge National Lab
@@ -29,36 +29,12 @@
 #include "Input/pseudo.hpp"
 #include "Utilities/RandomGenerator.h"
 #include "Utilities/PrimeNumberSet.h"
+#include "Utilities/DereferenceIterators.hpp"
 #include "Drivers/CrowdBuffers.hpp"
 #include "Memory/DeviceBuffers.hpp"
 
 namespace qmcplusplus
 {
-/** exercise for the reader
- *  works for std::algorithms
- *  But not with standard iterator loop syntax
- */
-template<class BaseIterator>
-class DereferenceIterator : public BaseIterator
-{
-public:
-  using value_type = typename BaseIterator::value_type::element_type;
-  using pointer    = value_type*;
-  using reference  = value_type&;
-
-  DereferenceIterator(const BaseIterator& other) : BaseIterator(other) {}
-
-  reference operator*() const { return *(this->BaseIterator::operator*()); }
-  pointer operator->() const { return this->BaseIterator::operator*().get(); }
-  // reference operator++() const {return *(this->BaseIterator::operator++()); }
-  reference operator[](size_t n) const { return *(this->BaseIterator::operator[](n)); }
-};
-
-template<typename Iterator>
-DereferenceIterator<Iterator> dereference_iterator(Iterator t)
-{
-  return DereferenceIterator<Iterator>(t);
-}
 
 enum CrowdTimers
 {
@@ -67,11 +43,14 @@ enum CrowdTimers
 };
 
 
-/** runs a packsize of walkers with device specializations that handle that packsize efficiently
- *  Crowd owns walker indexed arrays of all the result objects does calculations on them.
- *  Should degrade to running individual evaluates for ref implementations.
+/** runs a packsize of walkers with device specializations
+ *  Crowd owns walker indexed arrays of all the result objects, does calculations on them.
+ *  Should degrade to running individual evaluates using single evaluations.
+ *  Ideally Wavefunction and others should be reworked to be stateless and simply
+ *  operate on the data of a single walker. At the moment Crowd owns the batched evaluations,
+ *  why?  For some/many devices how you want to do the evaluation is going to be in the crowd's hands.
+ *  However they should be organized into functional classes
  */
-
 template<Devices DT>
 class Crowd
 {
@@ -83,9 +62,10 @@ class Crowd
    *  these are called. For better thread system flexibility these are probably going to change.
    */
 
-  /** At the moment each wavefunction takes an keeps state on:
+  /** At the moment each wavefunction takes and keeps state on:
    *  Whether it should be a reference implementation (this is clumsy)
-   *  whether it includes J3,
+   *  whether it includes J3, in needs to demonstrate how wavefunction could 
+   *  instead contain a dag.
    *  its related Ion particleset, a random generator, and
    *  device_buffers_ (which could be shared).
    */

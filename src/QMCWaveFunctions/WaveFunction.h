@@ -53,6 +53,7 @@ public:
   using posT     = TinyVector<valT, OHMMS_DIM>;
 
 protected:
+  /** this shouldn't be pointers and it should be able to express that some Jastrows can be called in parallel. */
   std::vector<WaveFunctionComponent*> Jastrows;
   WaveFunctionComponent* Det_up;
   WaveFunctionComponent* Det_dn;
@@ -120,18 +121,11 @@ public:
                                  ParticleSet& els,
                                  const RandomGenerator<QMCTraits::RealType>& RNG,
                                  bool enableJ3);
-  friend const std::vector<WaveFunctionComponent*> extract_up_list(const std::vector<WaveFunction*>& WF_list);
-  friend const std::vector<WaveFunctionComponent*> extract_dn_list(const std::vector<WaveFunction*>& WF_list);
-  friend const std::vector<WaveFunctionComponent*> extract_jas_list(const std::vector<WaveFunction*>& WF_list,
-                                                                    int jas_id);
 
   template<Devices D>
   friend class WaveFunctionBuilder;
 };
 
-const std::vector<WaveFunctionComponent*> extract_up_list(const std::vector<WaveFunction*>& WF_list);
-const std::vector<WaveFunctionComponent*> extract_dn_list(const std::vector<WaveFunction*>& WF_list);
-const std::vector<WaveFunctionComponent*> extract_jas_list(const std::vector<WaveFunction*>& WF_list, int jas_id);
 
 } // namespace qmcplusplus
 
