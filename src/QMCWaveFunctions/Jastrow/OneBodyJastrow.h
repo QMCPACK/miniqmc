@@ -33,7 +33,7 @@ void doOneBodyJastrowMultiEvaluateGL(aobjdType aobjd, apsdType apsd, bool fromsc
   Kokkos::parallel_for("obj-evalGL-waker-loop", pol,
 		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
 			 int walkerNum = member.league_rank(); 
-			 aobjd(walkerNum)->evaluateGL(apsd(walkerNum), fromscratch);
+			 aobjd(walkerNum).evaluateGL(apsd(walkerNum), fromscratch);
 		       });
 }
 
@@ -45,7 +45,7 @@ template<typename aobjdType, typename apsdType>
   Kokkos::parallel_for("obj-acceptRestoreMove-waker-loop", pol,
 		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
 			 int walkerNum = member.league_rank(); 
-			 aobjd(walkerNum)->acceptMove(apsd(walkerNum), iat);
+			 aobjd(walkerNum).acceptMove(apsd(walkerNum), iat);
 		       });
 }
 
@@ -60,7 +60,7 @@ void doOneBodyJastrowMultiRatioGrad(aobjdType aobjd, apsdType apsd, int iat,
 		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
 			 int walkerNum = member.league_rank();
 			 auto gv = Kokkos::subview(gradNowView,walkerNum,Kokkos::ALL());
-			 ratiosView(walkerNum) = aobjd(walkerNum)->ratioGrad(apsd(walkerNum), iat, gv);
+			 ratiosView(walkerNum) = aobjd(walkerNum).ratioGrad(apsd(walkerNum), iat, gv);
 		       });
 }
 			 
@@ -73,7 +73,7 @@ void doOneBodyJastrowMultiEvalGrad(aobjdType aobjd, int iat, Kokkos::View<valT**
 		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
 			 int walkerNum = member.league_rank();
 			 for (int idim = 0; idim < gradNowView.extent(1); idim++) {
-			   gradNowView(walkerNum,idim) = aobjd(walkerNum)->Grad(iat,idim);
+			   gradNowView(walkerNum,idim) = aobjd(walkerNum).Grad(iat,idim);
 			 }
 		       });
  }
@@ -94,8 +94,8 @@ void doOneBodyJastrowMultiEvalRatio(int pairNum, eiListType& eiList, apskType& a
 			 int walkerIndex = member.league_rank();
 			 int walkerNum = activeWalkerIdx(walkerIndex);
 			 auto* psk = apsk(walkerNum);
-			 auto* jd = allOneBodyJastrowData(walkerIndex);
-			 jd->updateMode(0) = 0;
+			 auto& jd = allOneBodyJastrowData(walkerIndex);
+			 jd.updateMode(0) = 0;
 
 			 Kokkos::parallel_for("obj-ratio-loop",
 					      Kokkos::ThreadVectorRange(member, numKnots),
@@ -251,7 +251,7 @@ struct OneBodyJastrow : public WaveFunctionComponent
     Kokkos::deep_copy(jasData.updateMode, updateModeMirror);
     
     // these things are just zero on the CPU, so don't have to set their values
-    jasData.curGad         = Kokkos::View<valT[OHMMS_DIM]>("curGrad");
+    jasData.curGrad        = Kokkos::View<valT[OHMMS_DIM]>("curGrad");
     jasData.Grad           = Kokkos::View<valT*[OHMMS_DIM]>("Grad", Nelec);
     jasData.curLap         = Kokkos::View<valT[1]>("curLap");
     jasData.Lap            = Kokkos::View<valT*>("Lap", Nelec);
@@ -385,7 +385,7 @@ struct OneBodyJastrow : public WaveFunctionComponent
     populateCollectiveViews(allOneBodyJastrowData, allParticleSetData, WFC_list, P_list);
 
     // need to make a view to hold all of the output LogValues
-    Kokkos::View<ParticleSet::ParticleValue_t*> tempValues("tempValues", P_list.size());
+    Kokkos::View<valT*> tempValues("tempValues", P_list.size());
 
     // need to write this function
     doOneBodyJastrowMultiEvaluateLog(allOneBodyJastrowData, allParticleSetData, tempValues);
@@ -530,13 +530,12 @@ struct OneBodyJastrow : public WaveFunctionComponent
     Kokkos::View<ParticleSet::pskType*> allParticleSetData("apsd", P_list.size());
     populateCollectiveViews(allOneBodyJastrowData, allParticleSetData, WFC_list, P_list);
 
-    // need to write this function
     doOneBodyJastrowMultiEvaluateGL(allOneBodyJastrowData, allParticleSetData, fromscratch);
 
     // know that we will need LogValue to up updated after this, possibly other things in ParticleSet!!!
     for (int i = 0; i < WFC_list.size(); i++) {
-      auto LogValueMirror = Kokkos::create_mirror_view(static_cast<OneBodyJastrow*>(WFC_list[i])->OneBodyJastrowData.LogValue);
-      Kokkos::deep_copy(LogValueMirror, static_cast<OneBodyJastrow*>(WFC_list[i])->OneBodyJastrowData.LogValue);
+      auto LogValueMirror = Kokkos::create_mirror_view(static_cast<OneBodyJastrow*>(WFC_list[i])->jasData.LogValue);
+      Kokkos::deep_copy(LogValueMirror, static_cast<OneBodyJastrow*>(WFC_list[i])->jasData.LogValue);
       LogValue = LogValueMirror(0);
     }
   }
