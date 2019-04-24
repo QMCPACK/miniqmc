@@ -16,7 +16,7 @@
 #include "Utilities/Configuration.h"
 #include "QMCWaveFunctions/WaveFunctionComponent.h"
 #include "Particle/DistanceTableData.h"
-#include "TwoBodyJatrowKokkos.h"
+#include "QMCWaveFunctions/Jastrow/TwoBodyJastrowKokkos.h"
 #include <Utilities/SIMD/allocator.hpp>
 #include <Utilities/SIMD/algorithm.hpp>
 #include <numeric>
@@ -79,7 +79,7 @@ void doTwoBodyJastrowMultiRatioGrad(atbjdType atbjd, apsdType apsd, int iat,
   Kokkos::parallel_for("tbj-evalRatioGrad-walker-loop", pol,
 		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
 			 int walkerNum = member.league_rank();
-			 auto gv = Kokkos::subview(gradNowView,walkerNum,Kokkos::All());
+			 auto gv = Kokkos::subview(gradNowView,walkerNum,Kokkos::ALL());
 			 ratiosView(walkerNum) = atbjd(walkerNum)->ratioGrad(apsd(walkerNum), iat, gv);
 		       });
 }
@@ -103,9 +103,11 @@ template<typename eiListType, typename apskType, typename atbjdType, typename te
   typename walkerIdType, typename devRatioType>
 void doTwoBodyJastrowMultiEvalRatio(int pairNum, eiListType& eiList, apskType& apsk,
 				    atbjdType& allTwoBodyJastrowData,
-				    typeRType& likeTempR, walkerIdType& activeWalkerIdx,
+				    tempRType& likeTempR, walkerIdType& activeWalkerIdx,
 				    devRatioType& devRatios) {
-  const int numWalkers = allTwoBodyJastrowData.extent(0);
+  const int numWalkers = likeTempR.extent(0);
+  const int numKnots = likeTempR.extent(1);
+
   using BarePolicy = Kokkos::TeamPolicy<>;
   BarePolicy pol(numWalkers, Kokkos::AUTO, 32);
   
@@ -120,7 +122,7 @@ void doTwoBodyJastrowMultiEvalRatio(int pairNum, eiListType& eiList, apskType& a
 			 Kokkos::parallel_for("tbj-ratio-loop",
 					      Kokkos::ThreadVectorRange(member, numKnots),
 					      [=](const int& knotNum) {
-						auto singleDists = Kokkos::subview(likeTempR, walkerNum, knotNum, Kokkos::All);
+						auto singleDists = Kokkos::subview(likeTempR, walkerNum, knotNum, Kokkos::ALL);
 						int iel = eiList(walkerNum, pairNum, 0);
 						auto val = jd->computeU(psk, iel, singleDists);
 						devRatios(walkerNum, numKnots) = std::exp(jd.Uat(iel) - val);
@@ -281,6 +283,7 @@ struct TwoBodyJastrow : public WaveFunctionComponent
       valT s                  = valT();
 
       for (int jat = 0; jat < N; ++jat)
+
         s += du[jat] * dX[jat];
       grad[idim] = s;
     }
@@ -290,7 +293,7 @@ struct TwoBodyJastrow : public WaveFunctionComponent
 
 
   /////////// Helpers to populate collective data structures
-  template<typename atbjdType, typename apsdType, typename vectorType, typename vectorType2>
+  template<typename atbjType, typename apsdType, typename vectorType, typename vectorType2>
   void populateCollectiveViews(atbjType atbjd, apsdType apsd, 
 			       vectorType& WFC_list, vectorType2& P_list) {
     auto atbjdMirror = Kokkos::create_mirror_view(atbjd);
@@ -304,7 +307,7 @@ struct TwoBodyJastrow : public WaveFunctionComponent
     Kokkos::deep_copy(apsd, apsdMirror);
   }
 
-  template<typename atbjdType, typename apsdType, typename vectorType, typename vectorType2>
+  template<typename atbjType, typename apsdType, typename vectorType, typename vectorType2>
   void populateCollectiveViews(atbjType atbjd, apsdType apsd, vectorType& WFC_list, 
 			       vectorType2& P_list, std::vector<bool>& isAccepted) {
     auto atbjdMirror = Kokkos::create_mirror_view(atbjd);
@@ -346,13 +349,13 @@ struct TwoBodyJastrow : public WaveFunctionComponent
 				       const std::vector<bool>& isAccepted,
 				       int iat);
 
-  void multi_evalRatio(int pairNum, Kokkos::View<int**[2]>& eiList,
-		       const std::vector<WaveFunctionComponent*>& WFC_list,
-		       Kokkos::View<ParticleSetKokkos<RealType, ValueType, 3>*>& apsk,
-		       Kokkos::View<double***>& likeTempR,
-		       Kokkos::View<double***>& unlikeTempR,
-		       Kokkos::View<int*>& activeWalkerIdx,
-		       std::vector<ValueType>& ratios);
+  virtual void multi_evalRatio(int pairNum, Kokkos::View<int**[2]>& eiList,
+			       const std::vector<WaveFunctionComponent*>& WFC_list,
+			       Kokkos::View<ParticleSetKokkos<RealType, ValueType, 3>*>& apsk,
+			       Kokkos::View<double***>& likeTempR,
+			       Kokkos::View<double***>& unlikeTempR,
+			       Kokkos::View<int*>& activeWalkerIdx,
+			       std::vector<ValueType>& ratios);
   
   virtual void multi_evaluateGL(const std::vector<WaveFunctionComponent*>& WFC_list,
 				const std::vector<ParticleSet*>& P_list,
@@ -442,13 +445,13 @@ void TwoBodyJastrow<FT>::initializeJastrowKokkos() {
   updateModeMirror(0)     = 3;
   Kokkos::deep_copy(jasData.updateMode, updateModeMirror);
 
-  jasData.cur_Uat         = Kokkos::View<ValT[1]>("cur_Uat");
+  jasData.cur_Uat         = Kokkos::View<valT[1]>("cur_Uat");
   auto cur_UatMirror      = Kokkos::create_mirror_view(jasData.cur_Uat);
-  jasData.Uat             = Kokkos::View<ValT*>("Uat", N);
+  jasData.Uat             = Kokkos::View<valT*>("Uat", N);
   auto UatMirror          = Kokkos::create_mirror_view(jasData.Uat);
-  jasData.dUat            = Kokkos::View<ValT*[OHMMS_DIM]>("dUat", N);
+  jasData.dUat            = Kokkos::View<valT*[OHMMS_DIM]>("dUat", N);
   auto dUatMirror         = Kokkos::create_mirror_view(jasData.dUat);
-  jasData.d2Uat           = Kokkos::View<ValT*>("d2Uat", N);
+  jasData.d2Uat           = Kokkos::View<valT*>("d2Uat", N);
   auto d2UatMirror        = Kokkos::create_mirror_view(jasData.d2Uat);
 
   cur_UatMirror(0)        = cur_Uat;
@@ -483,7 +486,7 @@ void TwoBodyJastrow<FT>::initializeJastrowKokkos() {
 			  0.0,  1.5, -2.0,  0.0,
 			  0.0, -1.5,  1.0,  0.5,
 			  0.0,  0.5,  0.0,  0.0);
-  TinyVector<ValT,16>  d2A(0.0, 0.0, -1.0,  1.0,
+  TinyVector<valT,16>  d2A(0.0, 0.0, -1.0,  1.0,
 			   0.0, 0.0,  3.0, -2.0,
 			   0.0, 0.0, -3.0,  1.0,
 			   0.0, 0.0,  1.0,  0.0);
@@ -607,27 +610,7 @@ void TwoBodyJastrow<FT>::addFunc(int ia, int ib, FT* j)
       F[ia * NumGroups + ib] = *j;
       int groupIndex = ia*NumGroups + ib;
       auto crMirror = Kokkos::create_mirror_view(jasData.cutoff_radius);
-      auto drinvMirror = Kokkos::create_mirror_view(jasData.cutoff_radius);
-      Kokkos::deep_copy(crMirror, jasData.cutoff_radius);
-      Kokkos::deep_copy(drinvMirror, jasData.DeltaRInv);
-      crMirror(groupIndex) = j->cutoff_radius;
-      drinvMirror(groupIndex) = j->DeltaRInv;
-      Kokkos::deep_copy(jasData.cutoff_radius, crMirror);
-      Kokkos::deep_copy(jasData.DeltaRInv, drinvMirror);
-      
-      auto bigScMirror   = Kokkos::create_mirror_view(jasData.SplineCoefs);
-      auto smallScMirror = Kokkos::create_mirror_view(j->SplineCoefs);
-      Kokkos::deep_copy(smallScMirror, j->SplineCoefs);
-      Kokkos::deep_copy(bigScMirror,   jasData.SplineCoefs);
-      for (int i = 0; i < j->SplineCoefs.extent(0); i++) {
-	bigScMirror(groupIndex, i) = smallScMirror(i);
-      }
-      Kokkos::deep_copy(jasData.SplineCoefs, bigScMirror);
-
-      F[ib * NumGroups + ia] = *j;
-      groupIndex = ib * NumGroups + ia;
-      auto crMirror = Kokkos::create_mirror_view(jasData.cutoff_radius);
-      auto drinvMirror = Kokkos::create_mirror_view(jasData.cutoff_radius);
+      auto drinvMirror = Kokkos::create_mirror_view(jasData.DeltaRInv);
       Kokkos::deep_copy(crMirror, jasData.cutoff_radius);
       Kokkos::deep_copy(drinvMirror, jasData.DeltaRInv);
       crMirror(groupIndex) = j->cutoff_radius;
@@ -868,7 +851,7 @@ void TwoBodyJastrow<FT>::multi_evaluateLog(const std::vector<WaveFunctionCompone
 					   ParticleSet::ParticleValue_t& values) {
   // make a view of all of the TwoBodyJastrowData and relevantParticleSetData
   Kokkos::View<jasDataType*> allTwoBodyJastrowData("atbjd", WFC_list.size()); 
-  Kokkos::View<P_list[0]::pskType*> allParticleSetData("apsd", P_list.size());
+  Kokkos::View<ParticleSet::pskType*> allParticleSetData("apsd", P_list.size());
   populateCollectiveViews(allTwoBodyJastrowData, allParticleSetData, WFC_list, P_list);
   
   // need to make a view to hold all of the output LogValues
@@ -892,7 +875,7 @@ void TwoBodyJastrow<FT>::multi_evalGrad(const std::vector<WaveFunctionComponent*
 					int iat, std::vector<posT>& grad_now) {
   // make a view of all of the TwoBodyJastrowData and relevantParticleSetData
   Kokkos::View<jasDataType*> allTwoBodyJastrowData("atbjd", WFC_list.size()); 
-  Kokkos::View<P_list[0]::pskType*> allParticleSetData("apsd", P_list.size());
+  Kokkos::View<ParticleSet::pskType*> allParticleSetData("apsd", P_list.size());
   populateCollectiveViews(allTwoBodyJastrowData, allParticleSetData, WFC_list, P_list);
   
   // need to make a view to hold all of the output LogValues
@@ -919,7 +902,7 @@ void TwoBodyJastrow<FT>::multi_ratioGrad(const std::vector<WaveFunctionComponent
 					 std::vector<posT>& grad_new) {
   // make a view of all of the TwoBodyJastrowData and relevantParticleSetData
   Kokkos::View<jasDataType*> allTwoBodyJastrowData("atbjd", WFC_list.size()); 
-  Kokkos::View<P_list[0]::pskType*> allParticleSetData("apsd", P_list.size());
+  Kokkos::View<ParticleSet::pskType*> allParticleSetData("apsd", P_list.size());
   populateCollectiveViews(allTwoBodyJastrowData, allParticleSetData, WFC_list, P_list);
   
   // need to make a view to hold all of the output LogValues
@@ -944,13 +927,13 @@ void TwoBodyJastrow<FT>::multi_ratioGrad(const std::vector<WaveFunctionComponent
 }
 
 template<typename FT>
-void multi_evalRatio(int pairNum, Kokkos::View<int**[2]>& eiList,
-		     const std::vector<WaveFunctionComponent*>& WFC_list,
-		     Kokkos::View<ParticleSetKokkos<RealType, ValueType, 3>*>& apsk,
-		     Kokkos::View<double***>& likeTempR,
-		     Kokkos::View<double***>& unlikeTempR,
-		     Kokkos::View<int*>& activeWalkerIdx,
-		     std::vector<ValueType>& ratios) {
+void TwoBodyJastrow<FT>::multi_evalRatio(int pairNum, Kokkos::View<int**[2]>& eiList,
+					 const std::vector<WaveFunctionComponent*>& WFC_list,
+					 Kokkos::View<ParticleSetKokkos<RealType, ValueType, 3>*>& apsk,
+					 Kokkos::View<double***>& likeTempR,
+					 Kokkos::View<double***>& unlikeTempR,
+					 Kokkos::View<int*>& activeWalkerIdx,
+					 std::vector<ValueType>& ratios) {
   const int numActiveWalkers = activeWalkerIdx.extent(0);
   const int numKnots = likeTempR.extent(1);
   
@@ -994,7 +977,7 @@ void TwoBodyJastrow<FT>::multi_acceptRestoreMove(const std::vector<WaveFunctionC
   
   // make a view of all of the TwoBodyJastrowData and relevantParticleSetData
   Kokkos::View<jasDataType*> allTwoBodyJastrowData("atbjd", numAccepted); 
-  Kokkos::View<P_list[0]::pskType*> allParticleSetData("apsd", numAccepted);
+  Kokkos::View<ParticleSet::pskType*> allParticleSetData("apsd", numAccepted);
   populateCollectiveViews(allTwoBodyJastrowData, allParticleSetData, WFC_list, P_list, isAccepted);
   
   // need to write this function
@@ -1008,10 +991,10 @@ void TwoBodyJastrow<FT>::multi_evaluateGL(const std::vector<WaveFunctionComponen
 					  const std::vector<ParticleSet*>& P_list,
 					  const std::vector<ParticleSet::ParticleGradient_t*>& G_list,
 					  const std::vector<ParticleSet::ParticleLaplacian_t*>& L_list,
-					  bool fromscratch = false) {
+					  bool fromscratch) {
   // make a view of all of the TwoBodyJastrowData and relevantParticleSetData
   Kokkos::View<jasDataType*> allTwoBodyJastrowData("atbjd", WFC_list.size()); 
-  Kokkos::View<P_list[0]::pskType*> allParticleSetData("apsd", P_list.size());
+  Kokkos::View<ParticleSet::pskType*> allParticleSetData("apsd", P_list.size());
   populateCollectiveViews(allTwoBodyJastrowData, allParticleSetData, WFC_list, P_list);
   
   // need to write this function

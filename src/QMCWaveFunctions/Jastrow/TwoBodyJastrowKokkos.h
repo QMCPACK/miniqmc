@@ -17,7 +17,7 @@ public:
   Kokkos::View<int[1]> updateMode; // zero for ORB_PBYP_RATIO, one for ORB_PBYP_ALL,
                                    // two for ORB_PBYP_PARTIAL, three for ORB_WALKER
 
-  Kokkos::View<valT[1] cur_Uat; // temporary
+  Kokkos::View<valT[1]> cur_Uat; // temporary
   Kokkos::View<valT*> Uat; // nelec
   Kokkos::View<valT*[dim], Kokkos::LayoutLeft> dUat; // nelec
   Kokkos::View<valT*> d2Uat; // nelec
@@ -76,15 +76,15 @@ public:
   template<typename pskType>
   KOKKOS_INLINE_FUNCTION
   void acceptMove(pskType* psk, int iel) {
-    computeU3(P, iel, psk->LikeDTDistances, old_u, old_du, old_d2u);
-    if (UpdateMode == 0)
+    computeU3(psk, iel, psk->LikeDTDistances, old_u, old_du, old_d2u);
+    if (updateMode(0) == 0)
     { // ratio-only during the move; need to compute derivatives
-      computeU3(P, iel, psk->LikeDTTemp_r, cur_u, cur_du, cur_d2u);
+      computeU3(psk, iel, psk->LikeDTTemp_r, cur_u, cur_du, cur_d2u);
     }
 
     valT cur_d2Uat(0);
     auto new_dr = psk->LikeDTTemp_dr;
-    auto old_dr = Kokkos::subview(psk->LikeDTDisplacements,iel,Kokkos::All(), Kokkos::All());
+    auto old_dr = Kokkos::subview(psk->LikeDTDisplacements,iel,Kokkos::ALL(), Kokkos::ALL());
     constexpr valT lapfac = OHMMS_DIM - RealType(1);
 
     for (int jel = 0; jel < Nelec(0); jel++)
@@ -105,7 +105,7 @@ public:
       {
 	const valT newg     = cur_du(jel) * new_dr(jel,idim);
 	const valT dg       = newg - old_du(jel) * old_dr(jel,idim);
-	duAt(iel,idim)     -= dg;
+	dUat(iel,idim)     -= dg;
 	cur_g              += newg;
       }
       cur_dUat(idim) = cur_g;
@@ -123,7 +123,7 @@ public:
   KOKKOS_INLINE_FUNCTION
   valT ratio(pskType* psk, int iel) {
     // only ratio, ready to compute it again
-    UpdateMode(0) = 0; // ORB_PBYP_RATIO
+    updateMode(0) = 0; // ORB_PBYP_RATIO
     cur_Uat(0) = computeU(psk, iel, psk->LikeDTTemp_r);
     return std::exp(Uat(iel) - cur_Uat(0));
   }
@@ -131,7 +131,7 @@ public:
   template<typename pskType, typename gradType>
   KOKKOS_INLINE_FUNCTION
   valT ratioGrad(pskType* psk, int iel, gradType inG) {
-    UpdateMode(0) = 2; // ORB_PBYP_PARTIAL
+    updateMode(0) = 2; // ORB_PBYP_PARTIAL
     
     computeU3(psk, iel, psk->LikeDTTemp_r, cur_u, cur_du, cur_d2u);
     cur_Uat(0) = 0.0;
@@ -141,7 +141,7 @@ public:
     valT DiffVal = Uat(iel) - cur_Uat(0);
 
     Kokkos::Array<valT,3> tempG;
-    accumulateG(cur_du, Kokkos::subview(psk->LikeDTDisplacements, iel, Kokkos::All(), Kokkos::All()), tempG);
+    accumulateG(cur_du, Kokkos::subview(psk->LikeDTDisplacements, iel, Kokkos::ALL(), Kokkos::ALL()), tempG);
     for (int i = 0; i < dim; i++) {
       inG(i) += tempG(i);
     }
@@ -161,13 +161,13 @@ public:
   // helpers
   ////////////////////////////////////////////////////////////////////
   template<typename displType, typename gType>
+  KOKKOS_INLINE_FUNCTION
   void accumulateG(Kokkos::View<valT*> du, displType displ, gType grad) {
     for (int idim = 0; idim < dim; idim++) {
       grad(idim) = 0.0;
       for (int jat = 0; jat < Nelec(0); jat++) {
 	grad(idim) += du(jat) * displ(jat,idim);
       }
-      grad(idim) = s;
     }
   }
 
@@ -178,7 +178,7 @@ public:
       recompute(psk);
     }
     LogValue(0) = valT(0);
-    for (int iel = 0; iel < N; ++iel)
+    for (int iel = 0; iel < Nelec(0); ++iel)
     {
       for (int d = 0; d < dim; d++) {
 	psk->G(iel,d) += dUat(iel,d);
@@ -200,11 +200,11 @@ public:
       const int igt = ig * NumGroups(0);
       for (int iel = psk->first(ig), last = psk->last(ig); iel < last; ++iel)
       {
-	computeU3(P, iat, Kokkos::subview(psk->LikeDTDistances, iel, Kokkos::All()),
+	computeU3(psk, iel, Kokkos::subview(psk->LikeDTDistances, iel, Kokkos::ALL()),
 		  cur_u, cur_du, cur_d2u, true);
 	Uat(iel) = 0.0;
 	for (int j = 0; j < iel; j++) {
-	  U(iel) += cur_u(j);
+	  Uat(iel) += cur_u(j);
 	}
 
 	Kokkos::Array<RealType,3> grad;
@@ -247,7 +247,7 @@ public:
     for (int jg = 0; jg < NumGroups(0); jg++) {
       const int istart = psk->first(jg);
       const int iend = psk->last(jg);
-      curUat += FevaluateV(iel, start, end, dist);
+      curUat += FevaluateV(iel, istart, iend, dist);
     }
     return curUat;
   }
@@ -282,10 +282,10 @@ public:
     if (r >= cutoff_radius(gid))
       return 0.0;
     r *= DeltaRInv(gid);
-    real_type ipart, t;
+    RealType ipart, t;
     t     = std::modf(r, &ipart);
     int i = (int)ipart;
-    real_type tp[4];
+    RealType tp[4];
     tp[0] = t * t * t;
     tp[1] = t * t;
     tp[2] = t;
@@ -303,9 +303,9 @@ public:
   KOKKOS_INLINE_FUNCTION
   void Fevaluate(int gid, int iel, RealType r) {
     if (r >= cutoff_radius(gid)) {
-      U(iel) = 0.0;
-      dU(iel) = 0.0;
-      d2U(iel) = 0.0;
+      Uat(iel) = 0.0;
+      dUat(iel) = 0.0;
+      d2Uat(iel) = 0.0;
     }
     r *= DeltaRInv(gid);
     const int i = (int)r;
@@ -317,17 +317,17 @@ public:
     tp[2] = t;
     tp[3] = 1.0;
 
-    d2U(iel) = DeltaRInv(gid) * DeltaRInv(gid) *
+    d2Uat(iel) = DeltaRInv(gid) * DeltaRInv(gid) *
       (SplineCoefs(gid,i+0)*(d2A( 0)*tp[0] + d2A( 1)*tp[1] + d2A( 2)*tp[2] + d2A( 3)*tp[3])+
        SplineCoefs(gid,i+1)*(d2A( 4)*tp[0] + d2A( 5)*tp[1] + d2A( 6)*tp[2] + d2A( 7)*tp[3])+
        SplineCoefs(gid,i+2)*(d2A( 8)*tp[0] + d2A( 9)*tp[1] + d2A(10)*tp[2] + d2A(11)*tp[3])+
        SplineCoefs(gid,i+3)*(d2A(12)*tp[0] + d2A(13)*tp[1] + d2A(14)*tp[2] + d2A(15)*tp[3]));
-    dU(iel) = DeltaRInv(gid) *
+    dUat(iel) = DeltaRInv(gid) *
       (SplineCoefs(gid,i+0)*(dA( 0)*tp[0] + dA( 1)*tp[1] + dA( 2)*tp[2] + dA( 3)*tp[3])+
        SplineCoefs(gid,i+1)*(dA( 4)*tp[0] + dA( 5)*tp[1] + dA( 6)*tp[2] + dA( 7)*tp[3])+
        SplineCoefs(gid,i+2)*(dA( 8)*tp[0] + dA( 9)*tp[1] + dA(10)*tp[2] + dA(11)*tp[3])+
        SplineCoefs(gid,i+3)*(dA(12)*tp[0] + dA(13)*tp[1] + dA(14)*tp[2] + dA(15)*tp[3]));
-    U(iel) =
+    Uat(iel) =
       (SplineCoefs(gid,i+0)*(A( 0)*tp[0] + A( 1)*tp[1] + A( 2)*tp[2] + A( 3)*tp[3])+
        SplineCoefs(gid,i+1)*(A( 4)*tp[0] + A( 5)*tp[1] + A( 6)*tp[2] + A( 7)*tp[3])+
        SplineCoefs(gid,i+2)*(A( 8)*tp[0] + A( 9)*tp[1] + A(10)*tp[2] + A(11)*tp[3])+
@@ -342,9 +342,9 @@ public:
     int iLimit = end - start;
     
     for (int jel = 0; jel < iLimit; jel++) {
-      Realtype r = dist(jel+start);
+      RealType r = dist(jel+start);
       if (r < cutoff_radius && start + jel != iel) {
-	DistArrayCompressed(iCount) = r;
+	DistCompressed(iCount) = r;
 	iCount++;
       }
     }
@@ -352,7 +352,7 @@ public:
     RealType d = 0.0;
     for (int jel = 0; jel < iCount; jel++)
     {
-      RealType r = distArrayCompressed(jel);
+      RealType r = DistCompressed(jel);
       r *= DeltaRInv(gid);
       int i         = (int)r;
       RealType t   = r - RealType(i);
@@ -380,17 +380,17 @@ public:
     int iLimit = end - start;
 
     for (int jel = 0; jel < iLimit; jel++) {
-      Realtype r = dist(jel+start);
+      RealType r = dist(jel+start);
       if (r < cutoff_radius(gid) && start + jel != iel) {
 	DistIndices(iCount) = jel+start;
-	DistArrayCompressed(iCount) = r;
+	DistCompressed(iCount) = r;
 	iCount++;
       }
     }
     
     for (int j = 0; j < iCount; j++) {
-      const RealType r = DistArrayCompressed(j)*DeltaRInv(gid);
-      const RealType rinv = cOne / DistArrayCompressed(j);
+      const RealType r = DistCompressed(j)*DeltaRInv(gid);
+      const RealType rinv = cOne / DistCompressed(j);
       const int iScatter   = DistIndices(j);
       const int iGather    = (int) r;
 
@@ -404,19 +404,19 @@ public:
       const RealType sCoef2 = SplineCoefs(gid, iGather+2);
       const RealType sCoef3 = SplineCoefs(gid, iGather+3);
 
-      d2U(iScatter) = dSquareDeltaRinv *
+      d2u(iScatter) = dSquareDeltaRinv *
 	(sCoef0*( d2A( 2)*tp2 + d2A( 3))+
 	 sCoef1*( d2A( 6)*tp2 + d2A( 7))+
 	 sCoef2*( d2A(10)*tp2 + d2A(11))+
 	 sCoef3*( d2A(14)*tp2 + d2A(15)));
       
-      dU(iScatter) = DeltaRInv * rinv *
+      du(iScatter) = DeltaRInv * rinv *
 	(sCoef0*( dA( 1)*tp1 + dA( 2)*tp2 + dA( 3))+
 	 sCoef1*( dA( 5)*tp1 + dA( 6)*tp2 + dA( 7))+
 	 sCoef2*( dA( 9)*tp1 + dA(10)*tp2 + dA(11))+
 	 sCoef3*( dA(13)*tp1 + dA(14)*tp2 + dA(15)));
       
-      U(iScatter) = (sCoef0*(A( 0)*tp0 + A( 1)*tp1 + A( 2)*tp2 + A( 3))+
+      u(iScatter) = (sCoef0*(A( 0)*tp0 + A( 1)*tp1 + A( 2)*tp2 + A( 3))+
 		     sCoef1*(A( 4)*tp0 + A( 5)*tp1 + A( 6)*tp2 + A( 7))+
 		     sCoef2*(A( 8)*tp0 + A( 9)*tp1 + A(10)*tp2 + A(11))+
 		     sCoef3*(A(12)*tp0 + A(13)*tp1 + A(14)*tp2 + A(15)));
