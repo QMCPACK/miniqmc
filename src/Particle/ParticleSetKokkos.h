@@ -25,8 +25,8 @@ public:
   Kokkos::View<RealType*[dim],Kokkos::LayoutLeft>         RSoA; // dims by nparticles  (particles dimension is fast one)
   Kokkos::View<ValueType*[dim],Kokkos::LayoutLeft>        G; // nparticles by dims to hold (possibly complex) gradients
   Kokkos::View<ValueType*>                                L; // nparticles long to hold (possibly complex) laplacians
-  Kokkos::View<Bool[1]>                                   UseBoundBox; // single boolean value
-  Kokkos::View<Bool[1]>                                   IsGrouped; // single boolean value
+  Kokkos::View<bool[1]>                                   UseBoundBox; // single boolean value
+  Kokkos::View<bool[1]>                                   IsGrouped; // single boolean value
   Kokkos::View<int[1]>                                    activePtcl; // index pointing to the active particle for single particle moves
   Kokkos::View<RealType[dim]>                             activePos; // position of the active particle
   // See if SpeciesSet becomes necessary
@@ -43,7 +43,7 @@ public:
   Kokkos::View<RealType[dim][dim]>                      DT_G; // [dim][dim]
   Kokkos::View<RealType[dim][dim]>                      DT_R; // [dim][dim]
   Kokkos::View<RealType[8][dim],Kokkos::LayoutLeft>     corners; // [8][dim]
-  Kokkos::View<int[dim]>                                BoxBConds
+  Kokkos::View<int[dim]>                                BoxBConds;
   
   Kokkos::View<RealType**>                              LikeDTDistances; // [nparticles][nparticles]
   Kokkos::View<RealType**[dim]>                         LikeDTDisplacements; // [nparticles][nparticles][dim]
@@ -84,7 +84,7 @@ public:
     DT_R = rhs.DT_R;
     BoxBConds = rhs.BoxBConds;
     corners = rhs.corners;
-    LikeDTDDistances = rhs.LikeDTDDistances;
+    LikeDTDistances = rhs.LikeDTDistances;
     LikeDTDisplacements = rhs.LikeDTDisplacements;
     LikeDTTemp_r = rhs.LikeDTTemp_r;
     LikeDTTemp_dr = rhs.LikeDTTemp_dr;
@@ -124,11 +124,11 @@ public:
   // intended to be called by LikeDTComputeDistances and UnlikeDtComputeDistances
   // I'm just too chicken to make it private for now
   KOKKOS_INLINE_FUNCTION
-  DTComputeDistances(RealType x0, RealType y0, RealType z0,
-		     Kokkos::View<RealType*[dim]> locR
-		     Kokkos::View<RealType*> temp_r,
-		     Kokkos::View<RealType*> temp_dr,
-		     int first, int last, int flip_ind = 0) {
+  void DTComputeDistances(RealType x0, RealType y0, RealType z0,
+			  Kokkos::View<RealType*[dim]> locR,
+			  Kokkos::View<RealType*> temp_r,
+			  Kokkos::View<RealType*> temp_dr,
+			  int first, int last, int flip_ind = 0) {
     constexpr RealType minusone(-1);
     constexpr RealType one(1);
     for (int iat = first; iat < last; ++iat)
@@ -169,10 +169,10 @@ public:
   // intended to be called by LikeDTComputeDistances and UnlikeDtComputeDistances
   // I'm just too chicken to make it private for now
   KOKKOS_INLINE_FUNCTION
-  DTComputeDistances(RealType x0, RealType y0, RealType z0,
-		     Kokkos::View<RealType*[dim]> locR
-		     Kokkos::View<RealType*> temp_r,
-		     int first, int last, int flip_ind = 0) {
+  void DTComputeDistances(RealType x0, RealType y0, RealType z0,
+			  Kokkos::View<RealType*[dim]> locR,
+			  Kokkos::View<RealType*> temp_r,
+			  int first, int last, int flip_ind = 0) {
     constexpr RealType minusone(-1);
     constexpr RealType one(1);
     for (int iat = first; iat < last; ++iat)
@@ -206,13 +206,13 @@ public:
 
   
   KOKKOS_INLINE_FUNCTION
-  LikeDTComputeDistances(RealType x0, RealType y0, RealType z0, int first, int last, int flip_ind = 0) {
+  void LikeDTComputeDistances(RealType x0, RealType y0, RealType z0, int first, int last, int flip_ind = 0) {
     DTComputeDistances(x0, y0, z0, RSoA, LikeDTTemp_r, LikeDTTemp_dr, first, last, flip_ind);
   }
 
   KOKKOS_INLINE_FUNCTION
-  UnlikeDTComputeDistances(RealType x0, RealType y0, RealType z0, int first, int last, int flip_ind = 0) {
-    DTComputeDistances(x0, y0, z0, OriginR, UnlikeDTTemp_r, UnlikeDTTemp_dr, first, last, flip_ind);
+  void UnlikeDTComputeDistances(RealType x0, RealType y0, RealType z0, int first, int last, int flip_ind = 0) {
+    DTComputeDistances(x0, y0, z0, originR, UnlikeDTTemp_r, UnlikeDTTemp_dr, first, last, flip_ind);
   }
 
   KOKKOS_INLINE_FUNCTION
@@ -244,16 +244,16 @@ public:
     outX = inX * DT_G(0,0) + inY * DT_G(1,0) + inZ * DT_G(2,0);
     outY = inX * DT_G(0,1) + inY * DT_G(1,1) + inZ * DT_G(2,1);
     outZ = inX * DT_G(0,2) + inY * DT_G(1,2) + inZ * DT_G(2,2);
-    if (-std::numeric_limits<T1>::epsilon() < outX && outX < 0)
-        outX = T1(0.0);
+    if (-std::numeric_limits<RealType>::epsilon() < outX && outX < 0)
+        outX = RealType(0.0);
       else
         outX -= std::floor(outX);
-    if (-std::numeric_limits<T1>::epsilon() < outY && outY < 0)
-        outY = T1(0.0);
+    if (-std::numeric_limits<RealType>::epsilon() < outY && outY < 0)
+        outY = RealType(0.0);
       else
         outY -= std::floor(outY);
-    if (-std::numeric_limits<T1>::epsilon() < outZ && outZ < 0)
-        outZ = T1(0.0);
+    if (-std::numeric_limits<RealType>::epsilon() < outZ && outZ < 0)
+        outZ = RealType(0.0);
       else
         outZ -= std::floor(outZ);
   }
@@ -275,11 +275,11 @@ public:
   
   KOKKOS_INLINE_FUNCTION
   void LikeEvaluate() {
-    constexpr RealType BigR = std::numeric_limits<T>::max();
+    constexpr RealType BigR = std::numeric_limits<RealType>::max();
     for (int iat = 0; iat < LikeDTDistances.extent(1); ++iat)
     {
       auto distancesSubview = Kokkos::subview(LikeDTDistances,Kokkos::ALL(),iat);
-      auto displacementsSubview = Kokkos::subview(LikeDTDisplacements,Kokkos::ALL(),iat,Kokkos::All());
+      auto displacementsSubview = Kokkos::subview(LikeDTDisplacements,Kokkos::ALL(),iat,Kokkos::ALL());
       DTComputeDistances(R(iat,0), R(iat,1), R(iat,2), RSoA,
 			 distancesSubview, displacementsSubview,
 			 0, LikeDTDistances.extent(1), iat);
@@ -289,8 +289,9 @@ public:
 
   KOKKOS_INLINE_FUNCTION
   void LikeEvaluate(int jat) {
+    constexpr RealType BigR = std::numeric_limits<RealType>::max();
     auto distancesSubview = Kokkos::subview(LikeDTDistances,Kokkos::ALL(),jat);
-    auto displacementsSubview = Kokkos::subview(LikeDTDisplacements,Kokkos::ALL(),jat,Kokkos::All());
+    auto displacementsSubview = Kokkos::subview(LikeDTDisplacements,Kokkos::ALL(),jat,Kokkos::ALL());
     DTComputeDistances(R(jat,0), R(jat,1), R(jat,2), RSoA,
 		       distancesSubview, displacementsSubview,
 		       0, LikeDTDistances.extent(1), jat);
@@ -301,8 +302,8 @@ public:
   void UnlikeEvaluate() {
     for (int iat = 0; iat < UnlikeDTDistances.extent(1); ++iat) {
       auto distancesSubview = Kokkos::subview(UnlikeDTDistances,Kokkos::ALL(),iat);
-      auto displacementsSubview = Kokkos::subview(UnlikeDTDisplacements,Kokkos::ALL(),iat,Kokkos::All());
-      DTComputeDistances(R(iat,0), R(iat,1), R(iat,2), OriginR,
+      auto displacementsSubview = Kokkos::subview(UnlikeDTDisplacements,Kokkos::ALL(),iat,Kokkos::ALL());
+      DTComputeDistances(R(iat,0), R(iat,1), R(iat,2), originR,
 			 distancesSubview, displacementsSubview,
 			 0, UnlikeDTDistances.extent(0));
     }
@@ -311,11 +312,10 @@ public:
   KOKKOS_INLINE_FUNCTION
   void UnlikeEvaluate(int jat) {
     auto distancesSubview = Kokkos::subview(UnlikeDTDistances(Kokkos::ALL(),jat));
-    auto displacementsSubview = Kokkos::subview(UnlikeDTDisplacements,Kokkos::ALL(),jat,Kokkos::All());
-      DTComputeDistances(R(jat,0), R(jat,1), R(jat,2), OriginR,
+    auto displacementsSubview = Kokkos::subview(UnlikeDTDisplacements,Kokkos::ALL(),jat,Kokkos::ALL());
+      DTComputeDistances(R(jat,0), R(jat,1), R(jat,2), originR,
 			 distancesSubview, displacementsSubview,
 			 0, UnlikeDTDistances.extent(0));
-    }
   }
 
   KOKKOS_INLINE_FUNCTION
