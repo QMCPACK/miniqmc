@@ -123,11 +123,11 @@ public:
 
   // intended to be called by LikeDTComputeDistances and UnlikeDtComputeDistances
   // I'm just too chicken to make it private for now
+  template<typename locRType, typename tempRType, typename tempDRType>
   KOKKOS_INLINE_FUNCTION
   void DTComputeDistances(RealType x0, RealType y0, RealType z0,
-			  Kokkos::View<RealType*[dim]> locR,
-			  Kokkos::View<RealType*> temp_r,
-			  Kokkos::View<RealType*> temp_dr,
+			  locRType& locR, tempRType& temp_r,
+			  tempDRType& temp_dr,
 			  int first, int last, int flip_ind = 0) {
     constexpr RealType minusone(-1);
     constexpr RealType one(1);
@@ -311,7 +311,7 @@ public:
 
   KOKKOS_INLINE_FUNCTION
   void UnlikeEvaluate(int jat) {
-    auto distancesSubview = Kokkos::subview(UnlikeDTDistances(Kokkos::ALL(),jat));
+    auto distancesSubview = Kokkos::subview(UnlikeDTDistances,Kokkos::ALL(),jat);
     auto displacementsSubview = Kokkos::subview(UnlikeDTDisplacements,Kokkos::ALL(),jat,Kokkos::ALL());
       DTComputeDistances(R(jat,0), R(jat,1), R(jat,2), originR,
 			 distancesSubview, displacementsSubview,

@@ -228,6 +228,9 @@ public:
    */
   bool makeMoveAndCheck(Index_t iat, const SingleParticlePos_t& displ);
 
+
+  void multi_makeMoveAndCheckKokkos(std::vector<ParticleSet*>& P_list, Kokkos::View<RealType*[3]>& dr,
+				    int iel, std::vector<int> isValid);
   /** move a particle
    * @param iat the index of the particle to be moved
    * @param displ random displacement of the iat-th particle
@@ -268,11 +271,11 @@ public:
    */
   void donePbyP(bool skipSK = false);
 
-  void multi_DonePbyP(std::vector<ParticleSet*>& psets, bool skipSK = false);
+  void multi_donePbyP(std::vector<ParticleSet*>& psets, bool skipSK = false);
+
 
   template<typename allPsdType, typename EiListType, typename rOnSphereType,
-           typename bigElPosType, typename tempRType>
-    
+           typename bigElPosType, typename tempRType>    
   void updateTempPosAndRs(int eiPair, allPsdType& allParticleSetData,
 			  EiListType& EiLists, rOnSphereType& rOnSphere, bigElPosType& bigElPos,
 			  tempRType& bigLikeTempR, tempRType& bigUnlikeTempR) {
@@ -288,8 +291,8 @@ public:
     const int numKnots = rOnSphere_.extent(0);
     Kokkos::TeamPolicy<> pol(numMovers, 1, 32);
     Kokkos::parallel_for("updateTempPosAndRs", pol,
-			 KOKKOS_LAMBDA(TeamPolicy<>::member_type member) {
-			   const int walkerNum = member.league(rank);
+			 KOKKOS_LAMBDA(Kokkos::TeamPolicy<>::member_type member) {
+			   const int walkerNum = member.league_rank();
 			   auto& psetRef = allParticleSetData_(walkerNum);
 			   const int eNum = EiLists_(walkerNum, eiPair, 0);
 			   const int atNum = EiLists_(walkerNum, eiPair, 1);
@@ -302,8 +305,8 @@ public:
 							rOnSphere_(walkerNum,knotNum,dim) - psetRef.UnlikeDTDisplacements(eNum,atNum,dim);
 						    }
 						    // do bigLikeTempR
-						    auto likeTempRSubview = Kokkos::subview(bigLikeTempR_,walkerNum,knotNum,Kokkos::All());
-						    auto unlikeTempRSubview = Kokkos::subview(bigUnlikeTempR_,walkerNum,knotNum,Kokkos::All());
+						    auto likeTempRSubview = Kokkos::subview(bigLikeTempR_,walkerNum,knotNum,Kokkos::ALL());
+						    auto unlikeTempRSubview = Kokkos::subview(bigUnlikeTempR_,walkerNum,knotNum,Kokkos::ALL());
 						    psetRef.DTComputeDistances(bigElPos(walkerNum,knotNum,0),	   
 									       bigElPos(walkerNum,knotNum,1),	   
 									       bigElPos(walkerNum,knotNum,2),	   
