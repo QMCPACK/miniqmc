@@ -9,8 +9,6 @@ namespace qmcplusplus
 template<typename RealType, int dim>
 class OneBodyJastrowKokkos {
 public:
-  using RealType == RealType;
-  
   Kokkos::View<RealType[1]> LogValue; // one element
   Kokkos::View<int[1]> Nelec; // one element
   Kokkos::View<int[1]> Nions; // one element
@@ -78,12 +76,12 @@ public:
   void acceptMove(pskType* psk, int iat) {
     if (updateMode(0) == 0) {
       computeU3(psk, psk->UnlikeDTTemp_r);
-      curLap(0) = accumulateGL(P->UnlikeDTTemp_r, curGrad);
+      curLap(0) = accumulateGL(psk->UnlikeDTTemp_r, curGrad);
     }
 
     LogValue(0) += Vat(iat) - curAt(0);
     Vat(iat) = curAt(0);
-    for (int i = 0; i < dims; i++) {
+    for (int i = 0; i < dim; i++) {
       Grad(iat,i) = curGrad(i);
     }
     Lap(iat) = curLap(0);
@@ -103,7 +101,7 @@ public:
   RealType ratioGrad(pskType* psk, int iat, gradType inG) {
     updateMode(0) = 2;
     computeU3(psk, psk->UnlikeDTTemp_r);
-    curLap(0) = accumulateGL(P->UnlikeDTTemp_r, curGrad);
+    curLap(0) = accumulateGL(psk->UnlikeDTTemp_r, curGrad);
     curAt(0) = 0.0;
     for (int i = 0; i < Nions(0); i++) {
       curAt(0) += U(i);
@@ -134,7 +132,7 @@ public:
       for (int d = 0; d < dim; d++) {
 	psk->G(iel,d) += Grad(iel,d);
       }
-      psk->L(iel) -= L(iel);
+      psk->L(iel) -= Lap(iel);
       LogValue(0) -= Vat(iel);
     }
   }
@@ -144,13 +142,13 @@ public:
   KOKKOS_INLINE_FUNCTION
   void recompute(pskType* psk) {
     for (int iel = 0; iel < Nelec(0); iel++) {
-      computeU3(psk, Kokkos::subview(psk->UnlikeDTDistances,iel,Kokkos::All()));
+      computeU3(psk, Kokkos::subview(psk->UnlikeDTDistances,iel,Kokkos::ALL()));
       Vat(iel) = 0.0;
       for (int iat = 0; iat < Nions(0); iat++) {
 	Vat(iel) += U(iat);
       }
-      Lap(iel) = accumulateGL(Kokkos::subview(psk->UnlikeDTDisplacements,iel,Kokkos::All(),Kokkos::All()),
-			      Kokkos::subview(Grad, iel, Kokkos::All()));
+      Lap(iel) = accumulateGL(Kokkos::subview(psk->UnlikeDTDisplacements,iel,Kokkos::ALL(),Kokkos::ALL()),
+			      Kokkos::subview(Grad, iel, Kokkos::ALL()));
     }
   }
 
@@ -202,10 +200,10 @@ public:
     if (r >= cutoff_radius(gid))
       return 0.0;
     r *= DeltaRInv(gid);
-    real_type ipart, t;
+    RealType ipart, t;
     t     = std::modf(r, &ipart);
     int i = (int)ipart;
-    real_type tp[4];
+    RealType tp[4];
     tp[0] = t * t * t;
     tp[1] = t * t;
     tp[2] = t;
@@ -262,9 +260,9 @@ public:
     int iLimit = end - start;
     
     for (int jat = 0; jat < iLimit; jat++) {
-      Realtype r = dist(jat+start);
+      RealType r = dist(jat+start);
       if (r < cutoff_radius(gid)) {
-	DistArrayCompressed(iCount) = r;
+	DistCompressed(iCount) = r;
 	iCount++;
       }
     }
@@ -272,7 +270,7 @@ public:
     RealType d = 0.0;
     for (int jat = 0; jat < iCount; jat++)
     {
-      RealType r = distArrayCompressed(jat);
+      RealType r = DistCompressed(jat);
       r *= DeltaRInv(gid);
       int i         = (int)r;
       RealType t   = r - RealType(i);
@@ -301,17 +299,17 @@ public:
     int iLimit = end - start;
     
     for (int jat = 0; jat < iLimit; jat++) {
-      Realtype r = dist(jat+start);
+      RealType r = dist(jat+start);
       if (r < cutoff_radius(gid)) {
 	DistIndices(iCount) = jat+start;
-	DistArrayCompressed(iCount) = r;
+	DistCompressed(iCount) = r;
 	iCount++;
       }
     }
 
     for (int j = 0; j < iCount; j++) {
-      const RealType r = DistArrayCompressed(j)*DeltaRInv(gid);
-      const RealType rinv = cOne / DistArrayCompressed(j);
+      const RealType r = DistCompressed(j)*DeltaRInv(gid);
+      const RealType rinv = cOne / DistCompressed(j);
       const int iScatter   = DistIndices(j);
       const int iGather    = (int) r;
 
@@ -351,7 +349,7 @@ public:
     constexpr RealType lapfac = dim - RealType(1);
     
     for (int jat = 0; jat < Nions(0); jat++) {
-      lap += d2U(jat) + lapfac * du(jat);
+      lap += d2U(jat) + lapfac * dU(jat);
     }
     for (int idim = 0; idim < dim; idim++) {
       RealType s(0.0);

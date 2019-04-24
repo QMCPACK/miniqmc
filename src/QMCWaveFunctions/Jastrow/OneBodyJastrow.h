@@ -59,7 +59,7 @@ void doOneBodyJastrowMultiRatioGrad(aobjdType aobjd, apsdType apsd, int iat,
   Kokkos::parallel_for("obj-evalRatioGrad-walker-loop", pol,
 		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
 			 int walkerNum = member.league_rank();
-			 auto gv = Kokkos::subview(gradNowView,walkerNum,Kokkos::All());
+			 auto gv = Kokkos::subview(gradNowView,walkerNum,Kokkos::ALL());
 			 ratiosView(walkerNum) = aobjd(walkerNum)->ratioGrad(apsd(walkerNum), iat, gv);
 		       });
 }
@@ -82,9 +82,10 @@ template<typename eiListType, typename apskType, typename aobjdType, typename te
   typename walkerIdType, typename devRatioType>
 void doOneBodyJastrowMultiEvalRatio(int pairNum, eiListType& eiList, apskType& apsk,
 				    aobjdType& allOneBodyJastrowData,
-				    typeRType& unlikeTempR, walkerIdType& activeWalkerIdx,
+				    tempRType& unlikeTempR, walkerIdType& activeWalkerIdx,
 				    devRatioType& devRatios) {
-  const int numWalkers = allOneBodyJastrowData.extent(0);
+  const int numWalkers = unlikeTempR.extent(0);
+  const int numKnots = unlikeTempR.extent(1);
   using BarePolicy = Kokkos::TeamPolicy<>;
   BarePolicy pol(numWalkers, Kokkos::AUTO, 32);
   
@@ -99,7 +100,7 @@ void doOneBodyJastrowMultiEvalRatio(int pairNum, eiListType& eiList, apskType& a
 			 Kokkos::parallel_for("obj-ratio-loop",
 					      Kokkos::ThreadVectorRange(member, numKnots),
 					      [=](const int& knotNum) {
-						auto singleDists = Kokkos::subview(unlikeTempR, walkerNum, knotNum, Kokkos::All);
+						auto singleDists = Kokkos::subview(unlikeTempR, walkerNum, knotNum, Kokkos::ALL);
 						auto val = jd->computeU(psk, singleDists);
 						int iat = eiList(walkerNum, pairNum, 1);
 						devRatios(walkerNum, numKnots) = std::exp(jd.V(iat) - val);
@@ -126,7 +127,7 @@ void doOneBodyJastrowMultiEvaluateLog(aobjdType aobjd, apsdType apsd, Kokkos::Vi
 template<class FT>
 struct OneBodyJastrow : public WaveFunctionComponent
 {
-  using jasDataType = OneBodyJastrowKokkos<FT::real_type, OHMMS_DIM>;
+  using jasDataType = OneBodyJastrowKokkos<typename FT::real_type, OHMMS_DIM>;
   jasDataType jasData;
   bool splCoefsNotAllocated;
 
@@ -226,7 +227,7 @@ struct OneBodyJastrow : public WaveFunctionComponent
     initializeJastrowKokkos();
   }
 
-  void initializeJastrowData() {
+  void initializeJastrowKokkos() {
     jasData.LogValue       = Kokkos::View<valT[1]>("LogValue");
 
     jasData.Nelec          = Kokkos::View<int[1]>("Nelec");
@@ -273,7 +274,7 @@ struct OneBodyJastrow : public WaveFunctionComponent
 			    0.0,  1.5, -2.0,  0.0,
 			    0.0, -1.5,  1.0,  0.5,
 			    0.0,  0.5,  0.0,  0.0);
-    TinyVector<ValT,16>  d2A(0.0, 0.0, -1.0,  1.0,
+    TinyVector<valT,16>  d2A(0.0, 0.0, -1.0,  1.0,
 			     0.0, 0.0,  3.0, -2.0,
 			     0.0, 0.0, -3.0,  1.0,
 			     0.0, 0.0,  1.0,  0.0);
@@ -338,7 +339,7 @@ struct OneBodyJastrow : public WaveFunctionComponent
 
 
   /////////// Helpers to populate collective data structures
-  template<aobjdType, apsdType, vectorType, vectorType2>
+  template<typename aobjType, typename apsdType, typename vectorType, typename vectorType2>
   void populateCollectiveViews(aobjType aobjd, apsdType apsd, vectorType& WFC_list, vectorType2& P_list) {
     auto aobjdMirror = Kokkos::create_mirror_view(aobjd);
     auto apsdMirror = Kokkos::create_mirror_view(apsd);
@@ -351,7 +352,7 @@ struct OneBodyJastrow : public WaveFunctionComponent
     Kokkos::deep_copy(apsd, apsdMirror);
   }
 
-  template<aobjdType, apsdType, vectorType, vectorType2>
+  template<typename aobjType, typename apsdType, typename vectorType, typename vectorType2>
   void populateCollectiveViews(aobjType aobjd, apsdType apsd, vectorType& WFC_list, vectorType2& P_list, std::vector<bool>& isAccepted) {
     auto aobjdMirror = Kokkos::create_mirror_view(aobjd);
     auto apsdMirror = Kokkos::create_mirror_view(apsd);
@@ -380,7 +381,7 @@ struct OneBodyJastrow : public WaveFunctionComponent
     
     // make a view of all of the OneBodyJastrowData and relevantParticleSetData
     Kokkos::View<jasDataType*> allOneBodyJastrowData("aobjd", WFC_list.size()); 
-    Kokkos::View<P_list[0]::pskType*> allParticleSetData("apsd", P_list.size());
+    Kokkos::View<ParticleSet::pskType*> allParticleSetData("apsd", P_list.size());
     populateCollectiveViews(allOneBodyJastrowData, allParticleSetData, WFC_list, P_list);
 
     // need to make a view to hold all of the output LogValues
@@ -405,7 +406,7 @@ struct OneBodyJastrow : public WaveFunctionComponent
 
     // make a view of all of the OneBodyJastrowData and relevantParticleSetData
     Kokkos::View<jasDataType*> allOneBodyJastrowData("aobjd", WFC_list.size()); 
-    Kokkos::View<P_list[0]::pskType*> allParticleSetData("apsd", P_list.size());
+    Kokkos::View<ParticleSet::pskType*> allParticleSetData("apsd", P_list.size());
     populateCollectiveViews(allOneBodyJastrowData, allParticleSetData, WFC_list, P_list);
     
     // need to make a view to hold all of the output LogValues
@@ -434,7 +435,7 @@ struct OneBodyJastrow : public WaveFunctionComponent
 
     // make a view of all of the OneBodyJastrowData and relevantParticleSetData
     Kokkos::View<jasDataType*> allOneBodyJastrowData("aobjd", WFC_list.size()); 
-    Kokkos::View<P_list[0]::pskType*> allParticleSetData("apsd", P_list.size());
+    Kokkos::View<ParticleSet::pskType*> allParticleSetData("apsd", P_list.size());
     populateCollectiveViews(allOneBodyJastrowData, allParticleSetData, WFC_list, P_list);
     
     // need to make a view to hold all of the output LogValues
@@ -471,7 +472,7 @@ struct OneBodyJastrow : public WaveFunctionComponent
     
     // make a view of all of the OneBodyJastrowData and relevantParticleSetData
     Kokkos::View<jasDataType*> allOneBodyJastrowData("aobjd", numAccepted); 
-    Kokkos::View<P_list[0]::pskType*> allParticleSetData("apsd", numAccepted);
+    Kokkos::View<ParticleSet::pskType*> allParticleSetData("apsd", numAccepted);
     populateCollectiveViews(allOneBodyJastrowData, allParticleSetData, WFC_list, P_list, isAccepted);
     
     // need to write this function
@@ -526,7 +527,7 @@ struct OneBodyJastrow : public WaveFunctionComponent
     
     // make a view of all of the OneBodyJastrowData and relevantParticleSetData
     Kokkos::View<jasDataType*> allOneBodyJastrowData("aobjd", WFC_list.size()); 
-    Kokkos::View<P_list[0]::pskType*> allParticleSetData("apsd", P_list.size());
+    Kokkos::View<ParticleSet::pskType*> allParticleSetData("apsd", P_list.size());
     populateCollectiveViews(allOneBodyJastrowData, allParticleSetData, WFC_list, P_list);
 
     // need to write this function
