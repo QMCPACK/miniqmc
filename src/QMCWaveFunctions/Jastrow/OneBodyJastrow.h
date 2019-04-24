@@ -93,7 +93,7 @@ void doOneBodyJastrowMultiEvalRatio(int pairNum, eiListType& eiList, apskType& a
 		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
 			 int walkerIndex = member.league_rank();
 			 int walkerNum = activeWalkerIdx(walkerIndex);
-			 auto* psk = apsk(walkerNum);
+			 auto& psk = apsk(walkerNum);
 			 auto& jd = allOneBodyJastrowData(walkerIndex);
 			 jd.updateMode(0) = 0;
 
@@ -101,7 +101,7 @@ void doOneBodyJastrowMultiEvalRatio(int pairNum, eiListType& eiList, apskType& a
 					      Kokkos::ThreadVectorRange(member, numKnots),
 					      [=](const int& knotNum) {
 						auto singleDists = Kokkos::subview(unlikeTempR, walkerNum, knotNum, Kokkos::ALL);
-						auto val = jd->computeU(psk, singleDists);
+						auto val = jd.computeU(psk, singleDists);
 						int iat = eiList(walkerNum, pairNum, 1);
 						devRatios(walkerNum, numKnots) = std::exp(jd.V(iat) - val);
 					      });
@@ -117,7 +117,7 @@ void doOneBodyJastrowMultiEvaluateLog(aobjdType aobjd, apsdType apsd, Kokkos::Vi
   Kokkos::parallel_for("obj-evalLog-waker-loop", pol,
 		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
 			 int walkerNum = member.league_rank(); 
-			 values(walkerNum) = aobjd(walkerNum)->evaluateLog(apsd(walkerNum));
+			 values(walkerNum) = aobjd(walkerNum).evaluateLog(apsd(walkerNum));
 		       });
 }
   
@@ -324,7 +324,7 @@ struct OneBodyJastrow : public WaveFunctionComponent
     //if necessary set up SplineCoefs view on device and then copy data it
     if (splCoefsNotAllocated) {
       splCoefsNotAllocated = false;
-      jasData.SplineCoefs   = Kokkos::View<valT*>("SplineCoefficients", NumGroups, afunc->SplineCoefs.extent(0));
+      jasData.SplineCoefs   = Kokkos::View<valT**>("SplineCoefficients", NumGroups, afunc->SplineCoefs.extent(0));
     }
     auto bigScMirror   = Kokkos::create_mirror_view(jasData.SplineCoefs);
     auto smallScMirror = Kokkos::create_mirror_view(afunc->SplineCoefs);
@@ -353,7 +353,7 @@ struct OneBodyJastrow : public WaveFunctionComponent
   }
 
   template<typename aobjType, typename apsdType, typename vectorType, typename vectorType2>
-  void populateCollectiveViews(aobjType aobjd, apsdType apsd, vectorType& WFC_list, vectorType2& P_list, std::vector<bool>& isAccepted) {
+  void populateCollectiveViews(aobjType aobjd, apsdType apsd, vectorType& WFC_list, vectorType2& P_list, const std::vector<bool>& isAccepted) {
     auto aobjdMirror = Kokkos::create_mirror_view(aobjd);
     auto apsdMirror = Kokkos::create_mirror_view(apsd);
 

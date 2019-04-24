@@ -51,7 +51,7 @@ void doTwoBodyJastrowMultiEvaluateGL(atbjdType atbjd, apsdType apsd, bool fromsc
   Kokkos::parallel_for("tbj-evalGL-waker-loop", pol,
 		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
 			 int walkerNum = member.league_rank(); 
-			 atbjd(walkerNum)->evaluateGL(apsd(walkerNum), fromscratch);
+			 atbjd(walkerNum).evaluateGL(apsd(walkerNum), fromscratch);
 		       });
 }
 
@@ -63,7 +63,7 @@ template<typename atbjdType, typename apsdType>
   Kokkos::parallel_for("tbj-acceptRestoreMove-waker-loop", pol,
 		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
 			 int walkerNum = member.league_rank(); 
-			 atbjd(walkerNum)->acceptMove(apsd(walkerNum), iat);
+			 atbjd(walkerNum).acceptMove(apsd(walkerNum), iat);
 		       });
 }
 
@@ -80,7 +80,7 @@ void doTwoBodyJastrowMultiRatioGrad(atbjdType atbjd, apsdType apsd, int iat,
 		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
 			 int walkerNum = member.league_rank();
 			 auto gv = Kokkos::subview(gradNowView,walkerNum,Kokkos::ALL());
-			 ratiosView(walkerNum) = atbjd(walkerNum)->ratioGrad(apsd(walkerNum), iat, gv);
+			 ratiosView(walkerNum) = atbjd(walkerNum).ratioGrad(apsd(walkerNum), iat, gv);
 		       });
 }
 			 
@@ -93,7 +93,7 @@ void doTwoBodyJastrowMultiEvalGrad(atbjdType atbjd, int iat, Kokkos::View<valT**
 		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
 			 int walkerNum = member.league_rank();
 			 for (int idim = 0; idim < gradNowView.extent(1); idim++) {
-			   gradNowView(walkerNum,idim) = atbjd(walkerNum)->cur_dUat(iat,idim);
+			   gradNowView(walkerNum,idim) = atbjd(walkerNum).dUat(iat,idim);
 			 }
 		       });
  }
@@ -115,16 +115,16 @@ void doTwoBodyJastrowMultiEvalRatio(int pairNum, eiListType& eiList, apskType& a
 		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
 			 int walkerIndex = member.league_rank();
 			 int walkerNum = activeWalkerIdx(walkerIndex);
-			 auto* psk = apsk(walkerNum);
-			 auto* jd = allTwoBodyJastrowData(walkerIndex);
-			 jd->updateMode(0) = 0;
+			 auto& psk = apsk(walkerNum);
+			 auto& jd = allTwoBodyJastrowData(walkerIndex);
+			 jd.updateMode(0) = 0;
 
 			 Kokkos::parallel_for("tbj-ratio-loop",
 					      Kokkos::ThreadVectorRange(member, numKnots),
 					      [=](const int& knotNum) {
 						auto singleDists = Kokkos::subview(likeTempR, walkerNum, knotNum, Kokkos::ALL);
 						int iel = eiList(walkerNum, pairNum, 0);
-						auto val = jd->computeU(psk, iel, singleDists);
+						auto val = jd.computeU(psk, iel, singleDists);
 						devRatios(walkerNum, numKnots) = std::exp(jd.Uat(iel) - val);
 					      });
 		       });
@@ -140,7 +140,7 @@ void doTwoBodyJastrowMultiEvaluateLog(atbjdType atbjd, apsdType apsd, Kokkos::Vi
   Kokkos::parallel_for("tbj-evalLog-waker-loop", pol,
 		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
 			 int walkerNum = member.league_rank(); 
-			 values(walkerNum) = atbjd(walkerNum)->evaluateLog(apsd(walkerNum));
+			 values(walkerNum) = atbjd(walkerNum).evaluateLog(apsd(walkerNum));
 		       });
 }
 
@@ -309,7 +309,7 @@ struct TwoBodyJastrow : public WaveFunctionComponent
 
   template<typename atbjType, typename apsdType, typename vectorType, typename vectorType2>
   void populateCollectiveViews(atbjType atbjd, apsdType apsd, vectorType& WFC_list, 
-			       vectorType2& P_list, std::vector<bool>& isAccepted) {
+			       vectorType2& P_list, const std::vector<bool>& isAccepted) {
     auto atbjdMirror = Kokkos::create_mirror_view(atbjd);
     auto apsdMirror = Kokkos::create_mirror_view(apsd);
     
@@ -449,7 +449,7 @@ void TwoBodyJastrow<FT>::initializeJastrowKokkos() {
   auto cur_UatMirror      = Kokkos::create_mirror_view(jasData.cur_Uat);
   jasData.Uat             = Kokkos::View<valT*>("Uat", N);
   auto UatMirror          = Kokkos::create_mirror_view(jasData.Uat);
-  jasData.dUat            = Kokkos::View<valT*[OHMMS_DIM]>("dUat", N);
+  jasData.dUat            = Kokkos::View<valT*[OHMMS_DIM], Kokkos::LayoutLeft>("dUat", N);
   auto dUatMirror         = Kokkos::create_mirror_view(jasData.dUat);
   jasData.d2Uat           = Kokkos::View<valT*>("d2Uat", N);
   auto d2UatMirror        = Kokkos::create_mirror_view(jasData.d2Uat);
@@ -522,7 +522,7 @@ void TwoBodyJastrow<FT>::addFunc(int ia, int ib, FT* j)
 {
   if (splCoefsNotAllocated) {
     splCoefsNotAllocated = false;
-    jasData.SplineCoefs   = Kokkos::View<valT*>("SplineCoefficients", NumGroups, j->SplineCoefs.extent(0));
+    jasData.SplineCoefs   = Kokkos::View<valT**>("SplineCoefficients", NumGroups, j->SplineCoefs.extent(0));
   }
 
   if (ia == ib)
@@ -855,7 +855,7 @@ void TwoBodyJastrow<FT>::multi_evaluateLog(const std::vector<WaveFunctionCompone
   populateCollectiveViews(allTwoBodyJastrowData, allParticleSetData, WFC_list, P_list);
   
   // need to make a view to hold all of the output LogValues
-  Kokkos::View<ParticleSet::ParticleValue_t*> tempValues("tempValues", P_list.size());
+  Kokkos::View<ValueType*> tempValues("tempValues", P_list.size());
   
   // need to write this function
   doTwoBodyJastrowMultiEvaluateLog(allTwoBodyJastrowData, allParticleSetData, tempValues);
@@ -1002,8 +1002,8 @@ void TwoBodyJastrow<FT>::multi_evaluateGL(const std::vector<WaveFunctionComponen
   
   // know that we will need LogValue to up updated after this, possibly other things in ParticleSet!!!
   for (int i = 0; i < WFC_list.size(); i++) {
-    auto LogValueMirror = Kokkos::create_mirror_view(static_cast<TwoBodyJastrow*>(WFC_list[i])->TwoBodyJastrowData.LogValue);
-    Kokkos::deep_copy(LogValueMirror, static_cast<TwoBodyJastrow*>(WFC_list[i])->TwoBodyJastrowData.LogValue);
+    auto LogValueMirror = Kokkos::create_mirror_view(static_cast<TwoBodyJastrow*>(WFC_list[i])->jasData.LogValue);
+    Kokkos::deep_copy(LogValueMirror, static_cast<TwoBodyJastrow*>(WFC_list[i])->jasData.LogValue);
     LogValue = LogValueMirror(0);
   }
 }

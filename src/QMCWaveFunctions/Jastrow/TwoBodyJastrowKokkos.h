@@ -75,16 +75,16 @@ public:
 
   template<typename pskType>
   KOKKOS_INLINE_FUNCTION
-  void acceptMove(pskType* psk, int iel) {
-    computeU3(psk, iel, psk->LikeDTDistances, old_u, old_du, old_d2u);
+  void acceptMove(pskType& psk, int iel) {
+    computeU3(psk, iel, psk.LikeDTDistances, old_u, old_du, old_d2u);
     if (updateMode(0) == 0)
     { // ratio-only during the move; need to compute derivatives
-      computeU3(psk, iel, psk->LikeDTTemp_r, cur_u, cur_du, cur_d2u);
+      computeU3(psk, iel, psk.LikeDTTemp_r, cur_u, cur_du, cur_d2u);
     }
 
     valT cur_d2Uat(0);
-    auto new_dr = psk->LikeDTTemp_dr;
-    auto old_dr = Kokkos::subview(psk->LikeDTDisplacements,iel,Kokkos::ALL(), Kokkos::ALL());
+    auto new_dr = psk.LikeDTTemp_dr;
+    auto old_dr = Kokkos::subview(psk.LikeDTDisplacements,iel,Kokkos::ALL(), Kokkos::ALL());
     constexpr valT lapfac = OHMMS_DIM - RealType(1);
 
     for (int jel = 0; jel < Nelec(0); jel++)
@@ -121,19 +121,19 @@ public:
 
   template<typename pskType>
   KOKKOS_INLINE_FUNCTION
-  valT ratio(pskType* psk, int iel) {
+  valT ratio(pskType& psk, int iel) {
     // only ratio, ready to compute it again
     updateMode(0) = 0; // ORB_PBYP_RATIO
-    cur_Uat(0) = computeU(psk, iel, psk->LikeDTTemp_r);
+    cur_Uat(0) = computeU(psk, iel, psk.LikeDTTemp_r);
     return std::exp(Uat(iel) - cur_Uat(0));
   }
 
   template<typename pskType, typename gradType>
   KOKKOS_INLINE_FUNCTION
-  valT ratioGrad(pskType* psk, int iel, gradType inG) {
+  valT ratioGrad(pskType& psk, int iel, gradType inG) {
     updateMode(0) = 2; // ORB_PBYP_PARTIAL
     
-    computeU3(psk, iel, psk->LikeDTTemp_r, cur_u, cur_du, cur_d2u);
+    computeU3(psk, iel, psk.LikeDTTemp_r, cur_u, cur_du, cur_d2u);
     cur_Uat(0) = 0.0;
     for (int i = 0; i < Nelec(0); i++) {
       cur_Uat(0) += cur_u(i);
@@ -141,7 +141,7 @@ public:
     valT DiffVal = Uat(iel) - cur_Uat(0);
 
     Kokkos::Array<valT,3> tempG;
-    accumulateG(cur_du, Kokkos::subview(psk->LikeDTDisplacements, iel, Kokkos::ALL(), Kokkos::ALL()), tempG);
+    accumulateG(cur_du, Kokkos::subview(psk.LikeDTDisplacements, iel, Kokkos::ALL(), Kokkos::ALL()), tempG);
     for (int i = 0; i < dim; i++) {
       inG(i) += tempG(i);
     }
@@ -150,7 +150,7 @@ public:
       
   template<typename pskType>
   KOKKOS_INLINE_FUNCTION
-  valT evaluateLog(pskType* psk) {
+  valT evaluateLog(pskType& psk) {
     evaluateGL(psk, true);
     return LogValue(0);
   }
@@ -173,7 +173,7 @@ public:
 
   template<typename pskType>
   KOKKOS_INLINE_FUNCTION
-  void evaluateGL(pskType* psk, bool fromscratch = false) {
+  void evaluateGL(pskType& psk, bool fromscratch = false) {
     if (fromscratch) {
       recompute(psk);
     }
@@ -181,9 +181,9 @@ public:
     for (int iel = 0; iel < Nelec(0); ++iel)
     {
       for (int d = 0; d < dim; d++) {
-	psk->G(iel,d) += dUat(iel,d);
+	psk.G(iel,d) += dUat(iel,d);
       }
-      psk->L(iel) += d2Uat(iel);
+      psk.L(iel) += d2Uat(iel);
       LogValue(0) += Uat(iel);
     }
 
@@ -194,13 +194,13 @@ public:
 
   template<typename pskType>
   KOKKOS_INLINE_FUNCTION
-  void recompute(pskType* psk) {
+  void recompute(pskType& psk) {
     for (int ig = 0; ig < NumGroups(0); ++ig)
     {
       const int igt = ig * NumGroups(0);
-      for (int iel = psk->first(ig), last = psk->last(ig); iel < last; ++iel)
+      for (int iel = psk.first(ig), last = psk.last(ig); iel < last; ++iel)
       {
-	computeU3(psk, iel, Kokkos::subview(psk->LikeDTDistances, iel, Kokkos::ALL()),
+	computeU3(psk, iel, Kokkos::subview(psk.LikeDTDistances, iel, Kokkos::ALL()),
 		  cur_u, cur_du, cur_d2u, true);
 	Uat(iel) = 0.0;
 	for (int j = 0; j < iel; j++) {
@@ -217,7 +217,7 @@ public:
 	{
 	  valT s                  = valT();
 	  for (int jel = 0; jel < iel; ++jel)
-	    s += cur_du(jel) * psk->LikeDTDisplacements(iel,jel,idim);
+	    s += cur_du(jel) * psk.LikeDTDisplacements(iel,jel,idim);
 	  grad(idim) = s;
 	}
 	for(int idim = 0; idim < dim; idim++) {
@@ -233,7 +233,7 @@ public:
 	for (int idim = 0; idim < dim; ++idim)
 	{
 	  for (int jel = 0; jel < iel; jel++)
-	    dUat(jel,idim) -= cur_du(jel) * psk->LikeDTDisplacements(iel,jel,idim); 
+	    dUat(jel,idim) -= cur_du(jel) * psk.LikeDTDisplacements(iel,jel,idim); 
 	}
       }
     }
@@ -241,12 +241,12 @@ public:
 
   template<typename pskType, typename distViewType>
   KOKKOS_INLINE_FUNCTION
-  valT computeU(pskType* psk, int iel, distViewType dist) {
+  valT computeU(pskType& psk, int iel, distViewType dist) {
     valT curUat(0);
-    const int igt = psk->GroupID(iel) * NumGroups(0);
+    const int igt = psk.GroupID(iel) * NumGroups(0);
     for (int jg = 0; jg < NumGroups(0); jg++) {
-      const int istart = psk->first(jg);
-      const int iend = psk->last(jg);
+      const int istart = psk.first(jg);
+      const int iend = psk.last(jg);
       curUat += FevaluateV(iel, istart, iend, dist);
     }
     return curUat;
@@ -254,7 +254,7 @@ public:
 
   template<typename pskType, typename distViewType>
   KOKKOS_INLINE_FUNCTION
-  void computeU3(pskType* psk, int iel, distViewType dist, 
+  void computeU3(pskType& psk, int iel, distViewType dist, 
 		 Kokkos::View<valT*> u, Kokkos::View<valT*> du, 
 		 Kokkos::View<valT*> d2u, bool triangle) {
     const int jelmax = triangle ? iel : Nelec(0);
@@ -265,10 +265,10 @@ public:
       du(i) = czero;
       d2u(i) = czero;
     }
-    const int igt = psk->GroupID(iel) * NumGroups(0);
+    const int igt = psk.GroupID(iel) * NumGroups(0);
     for (int jg = 0; jg < NumGroups(0); jg++) {
-      const int istart = psk->first(jg);
-      const int iend   = std::min(jelmax, psk->last(jg));
+      const int istart = psk.first(jg);
+      const int iend   = std::min(jelmax, psk.last(jg));
       FevaluateVGL(igt+jg, iel, istart, iend, dist, u, du, d2u);
     }
   }
