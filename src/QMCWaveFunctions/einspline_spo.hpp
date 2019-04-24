@@ -128,27 +128,28 @@ struct einspline_spo : public SPOSet
   }    
 
   template<typename apsdType>
-  inline void multi_evaluate_v(Kokkos::View<double**[3]>& all_pos, Kokkos::View<ValueType***> allPsiV, aspdType& apsd) {
+  inline void multi_evaluate_v(Kokkos::View<double**[3]>& all_pos, Kokkos::View<ValueType***> allPsiV, apsdType& apsd) {
     // need to do to_unit_floor for all positions then pass to spline.multi_evaluate_v
     auto& tmpAllPos = all_pos;
     auto& tmpapsd = apsd;
     auto& tmpallPsiV = allPsiV;
-    Kokkos::View<**[3]> allPosToUnitFloor("allPosToUnitFloor", all_pos.extent(0),all_pos.extent(1));
-    Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<2,Kokkos::Iterate::Left>({0,0}, {all_pos.extent(0), all_pos.extent(1)}),
+    Kokkos::View<double**[3]> allPosToUnitFloor("allPosToUnitFloor", all_pos.extent(0),all_pos.extent(1));
+    Kokkos::parallel_for("positionsToFloorLoop", 
+			 Kokkos::MDRangePolicy<Kokkos::Rank<2,Kokkos::Iterate::Left> >({0,0}, {tmpAllPos.extent(0), tmpAllPos.extent(1)}),
 			 KOKKOS_LAMBDA(const int& walkerNum, const int& knotNum) {
 			   apsd(walkerNum).toUnit_floor(tmpAllPos(walkerNum, knotNum, 0),
 							tmpAllPos(walkerNum, knotNum, 1),
 							tmpAllPos(walkerNum, knotNum, 2),
 							allPosToUnitFloor(walkerNum, knotNum, 0),
 							allPosToUnitFloor(walkerNum, knotNum, 1),
-							allPosToUnitFloor(walkerNum, knotNum, 2))
+							allPosToUnitFloor(walkerNum, knotNum, 2));
 			     });
     spline.multi_evaluate_v2d(allPosToUnitFloor, tmpallPsiV);
   }			     			     
   
   inline void multi_evaluate_v(std::vector<PosType>& pos_list, std::vector<vContainer_type>& vals) {
     Kokkos::View<vContainer_type*> allPsi("allPsi", vals.size());
-    auto allPsiMirror = Kokkos::create_host_mirror(allPsi);
+    auto allPsiMirror = Kokkos::create_mirror_view(allPsi);
     for (int i = 0; i < vals.size(); i++) {
       allPsiMirror(i) = vals[i];
     }
@@ -156,7 +157,7 @@ struct einspline_spo : public SPOSet
 
     // do this in soa spirit
     Kokkos::View<double*[3],Kokkos::LayoutLeft> allPos("allPos", pos_list.size());
-    auto allPosMirror = Kokkos::create_host_mirror(allPos);
+    auto allPosMirror = Kokkos::create_mirror_view(allPos);
     for (int i = 0; i < pos_list.size(); i++) {
       auto u = Lattice.toUnit_floor(pos_list[i]);
       allPosMirror(i,0) = u[0];
@@ -194,9 +195,9 @@ struct einspline_spo : public SPOSet
     Kokkos::View<vContainer_type*> allPsi("allPsi", vals.size());
     Kokkos::View<gContainer_type*> allGrad("allGrad", grads.size());
     Kokkos::View<hContainer_type*> allHess("allHess", hesss.size());
-    auto allPsiMirror = Kokkos::create_host_mirror(allPsi);
-    auto allGradMirror = Kokkos::create_host_mirror(allGrad);
-    auto allHessMirror = Kokkos::create_host_mirror(allHess);
+    auto allPsiMirror = Kokkos::create_mirror_view(allPsi);
+    auto allGradMirror = Kokkos::create_mirror_view(allGrad);
+    auto allHessMirror = Kokkos::create_mirror_view(allHess);
     
     for (int i = 0; i < vals.size(); i++) {
       allPsiMirror(i) = vals[i];
@@ -214,7 +215,7 @@ struct einspline_spo : public SPOSet
 				 std::vector<gContainer_type>& grads, std::vector<hContainer_type>& hesss) {
     // do this in soa spirit
     Kokkos::View<double*[3],Kokkos::LayoutLeft> allPos("allPos", pos_list.size());
-    auto allPosMirror = Kokkos::create_host_mirror(allPos);
+    auto allPosMirror = Kokkos::create_mirror_view(allPos);
     for (int i = 0; i < pos_list.size(); i++) {
       auto u = Lattice.toUnit_floor(pos_list[i]);
       allPosMirror(i,0) = u[0];

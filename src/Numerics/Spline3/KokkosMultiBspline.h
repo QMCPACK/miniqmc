@@ -18,12 +18,12 @@ void doEval_v(p x, p y, p z, valType& vals, coefType& coefs,
 	      Kokkos::View<double[3]>& gridStarts, Kokkos::View<double[3]>& delta_invs,
 	      Kokkos::View<p[16]>& A44, int blockSize = 32);
 
-template<typename multiPosType, typename valType, typename coefType>
+template<typename p, typename multiPosType, typename valType, typename coefType>
 void doMultiEval_v(multiPosType& pos, valType& vals, coefType& coefs,
 		   Kokkos::View<double[3]>& gridStarts, Kokkos::View<double[3]>& delta_invs,
 		   Kokkos::View<p[16]>& A44, int blockSize = 32);
 
-template<typename multiPosType, typename valType, typename coefType>
+template<typename p, typename multiPosType, typename valType, typename coefType>
 void doMultiEval_v2d(multiPosType& pos, valType& vals, coefType& coefs,
 		     Kokkos::View<double[3]>& gridStarts, Kokkos::View<double[3]>& delta_invs,
 		     Kokkos::View<p[16]>& A44, int blockSize = 32);
@@ -35,7 +35,7 @@ void doEval_vgh(p x, p y, p z, valType& vals, gradType& grad,
 		Kokkos::View<p[16]>& A44, Kokkos::View<p[16]>& dA44,
 		Kokkos::View<p[16]>& d2A44, int blockSize = 32);
 
-template<typename multiPosType, typename valType, typename gradType, typename hessType,typename coefType>
+template<typename p, typename multiPosType, typename valType, typename gradType, typename hessType,typename coefType>
 void doMultiEval_vgh(multiPosType& pos, valType& vals, gradType& grad,
 		     hessType& hess, coefType& coefs,
 		     Kokkos::View<double[3]>& gridStarts, Kokkos::View<double[3]>& delta_invs,
@@ -420,10 +420,10 @@ void doEval_v(p x, p y, p z, valType& vals, coefType& coefs,
     });      
 }
 
-template<typename multiPosType, typename valType, typename coefType>
+template<typename p, typename multiPosType, typename valType, typename coefType>
 void doMultiEval_v2d(multiPosType& pos, valType& vals, coefType& coefs,
 		     Kokkos::View<double[3]>& gridStarts, Kokkos::View<double[3]>& delta_invs,
-		     Kokkos::View<p[16]>& A44, int blockSize = 32) {
+		     Kokkos::View<p[16]>& A44, int blockSize) {
   int numWalkers = pos.extent(0);
   int numKnots = pos.extent(1);
   int numBlocks = coefs.extent(3) / blockSize;
@@ -446,7 +446,7 @@ void doMultiEval_v2d(multiPosType& pos, valType& vals, coefType& coefs,
 			   [&](int blockNum) {
 			     const int start = blockSize * blockNum;
 			     int end = start + blockSize;
-			     if (end > coef.extent(3)) {
+			     if (end > coefs.extent(3)) {
 			       end = coefs.extent(3);
 			     }
 			     const int num_splines = end-start;
@@ -483,10 +483,10 @@ void doMultiEval_v2d(multiPosType& pos, valType& vals, coefType& coefs,
 }
 
  
-template<typename multiPosType, typename valType, typename coefType>
+template<typename p, typename multiPosType, typename valType, typename coefType>
 void doMultiEval_v(multiPosType& pos, valType& vals, coefType& coefs,
 		   Kokkos::View<double[3]>& gridStarts, Kokkos::View<double[3]>& delta_invs,
-		   Kokkos::View<p[16]>& A44, int blockSize = 32) {
+		   Kokkos::View<p[16]>& A44, int blockSize) {
   int numWalkers = pos.extent(0);
   int numBlocks = coefs.extent(3) / blockSize;
   if (coefs.extent(3) % blockSize != 0) {
@@ -507,7 +507,7 @@ void doMultiEval_v(multiPosType& pos, valType& vals, coefType& coefs,
 			   [&](int blockNum) {
 			     const int start = blockSize * blockNum;
 			     int end = start + blockSize;
-			     if (end > coef.extent(3)) {
+			     if (end > coefs.extent(3)) {
 			       end = coefs.extent(3);
 			     }
 			     const int num_splines = end-start;
@@ -658,12 +658,12 @@ void doEval_vgh(p x, p y, p z, valType& vals, gradType& grad,
 }
  
 
-template<typename multiPosType, typename valType, typename gradType, typename hessType,typename coefType>
+template<typename p, typename multiPosType, typename valType, typename gradType, typename hessType,typename coefType>
 void doMultiEval_vgh(multiPosType& pos, valType& vals, gradType& grad,
 		     hessType& hess, coefType& coefs,
 		     Kokkos::View<double[3]>& gridStarts, Kokkos::View<double[3]>& delta_invs,
 		     Kokkos::View<p[16]>& A44, Kokkos::View<p[16]>& dA44,
-		     Kokkos::View<p[16]>& d2A44, int blockSize = 32) {
+		     Kokkos::View<p[16]>& d2A44, int blockSize) {
   
   int numWalkers = pos.extent(0);
   int numBlocks = coefs.extent(3) / blockSize;
@@ -685,7 +685,7 @@ void doMultiEval_vgh(multiPosType& pos, valType& vals, gradType& grad,
 			   [&](int blockNum) {
 			     const int start = blockSize * blockNum;
 			     int end = start + blockSize;
-			     if (end > coef.extent(3)) {
+			     if (end > coefs.extent(3)) {
 			       end = coefs.extent(3);
 			     }
 			     const int num_splines = end-start;
@@ -788,9 +788,6 @@ void doMultiEval_vgh(multiPosType& pos, valType& vals, gradType& grad,
     });
 }
 			       
-
-      
-
    
 };    
 
