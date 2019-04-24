@@ -49,8 +49,6 @@ template<typename aobjdType, typename apsdType>
 		       });
 }
 
-
-
 template<typename aobjdType, typename apsdType, typename valT>
 void doOneBodyJastrowMultiRatioGrad(aobjdType aobjd, apsdType apsd, int iat, 
 				    Kokkos::View<valT**> gradNowView,
@@ -80,7 +78,36 @@ void doOneBodyJastrowMultiEvalGrad(aobjdType aobjd, int iat, Kokkos::View<valT**
 		       });
  }
 
+template<typename eiListType, typename apskType, typename aobjdType, typename tempRType,
+  typename walkerIdType, typename devRatioType>
+void doOneBodyJastrowMultiEvalRatio(int pairNum, eiListType& eiList, apskType& apsk,
+				    aobjdType& allOneBodyJastrowData,
+				    typeRType& unlikeTempR, walkerIdType& activeWalkerIdx,
+				    devRatioType& devRatios) {
+  const int numWalkers = allOneBodyJastrowData.extent(0);
+  using BarePolicy = Kokkos::TeamPolicy<>;
+  BarePolicy pol(numWalkers, Kokkos::AUTO, 32);
   
+  Kokkos::parallel_for("obj-multi-ratio", pol,
+		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
+			 int walkerIndex = member.league_rank();
+			 int walkerNum = activeWalkerIdx(walkerIndex);
+			 auto* psk = apsk(walkerNum);
+			 auto* jd = allOneBodyJastrowData(walkerIndex);
+			 jd->updateMode(0) = 0;
+
+			 Kokkos::parallel_for("obj-ratio-loop",
+					      Kokkos::ThreadVectorRange(member, numKnots),
+					      [=](const int& knotNum) {
+						auto singleDists = Kokkos::subview(unlikeTempR, walkerNum, knotNum, Kokkos::All);
+						auto val = jd->computeU(psk, singleDists);
+						int iat = eiList(walkerNum, pairNum);
+						devRatios(walkerNum, numKnots) = std::exp(jd.V(iat) - val);
+					      });
+		       });
+
+}
+ 
 template<typename aobjdType, typename apsdType, typename valT>
 void doOneBodyJastrowMultiEvaluateLog(aobjdType aobjd, apsdType apsd, Kokkos::View<valT*> values) {
   const int numWalkers = aobjd.extent(0);
@@ -453,9 +480,9 @@ struct OneBodyJastrow : public WaveFunctionComponent
     // be careful on this one, looks like it is being done for side effects.  Should see what needs to go back!!!
   }
 
-
   virtual void multi_evalRatio(int pairNum, Kokkos::View<int**[2]>& eiList,
 			       const std::vector<WaveFunctionComponent*>& WFC_list,
+			       Kokkos::View<ParticleSetKokkos<RealType, ValueType, 3>*>& apsk,
 			       Kokkos::View<double***>& likeTempR,
 			       Kokkos::View<double***>& unlikeTempR,
 			       Kokkos::View<int*>& activeWalkerIdx,
@@ -476,14 +503,14 @@ struct OneBodyJastrow : public WaveFunctionComponent
 
     Kokkos::View<ValueType**> devRatios("objDevRatios", numActiveWalkers, numKnots);
 
-    /// LNS NEED TO WRITE THIS FUNCTION!!!
-    doOneBodyJastrowMultiEvalRatio(pairNum, eiList, allOneBodyJastrowData, unlikeTempR, activeWalkerIdx, devRatios);
+    doOneBodyJastrowMultiEvalRatio(pairNum, eiList, apsk, allOneBodyJastrowData, unlikeTempR, activeWalkerIdx, devRatios);
 
     auto devRatiosMirror = Kokkos::create_mirror_view(devRatios);
     Kokkos::deep_copy(devRatiosMirror, devRatios);
     for (int i = 0; i < devRatiosMirror.extent(0); i++) {
+      const int walkerIndex = activeWalkerIdxMirror(i);
       for (int j = 0; j < devRatiosMirror.extent(1); j++) {
-	ratios[i*numKnots+j] = devRatiosMirror(i,j);
+	ratios[walkerIndex*numKnots+j] = devRatiosMirror(i,j);
       }
     }
   }

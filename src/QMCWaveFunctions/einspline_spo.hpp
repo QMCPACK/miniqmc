@@ -127,6 +127,25 @@ struct einspline_spo : public SPOSet
     spline.evaluate_v(u[0], u[1], u[2], inPsi);
   }    
 
+  template<typename apsdType>
+  inline void multi_evaluate_v(Kokkos::View<double**[3]>& all_pos, Kokkos::View<ValueType***> allPsiV, aspdType& apsd) {
+    // need to do to_unit_floor for all positions then pass to spline.multi_evaluate_v
+    auto& tmpAllPos = all_pos;
+    auto& tmpapsd = apsd;
+    auto& tmpallPsiV = allPsiV;
+    Kokkos::View<**[3]> allPosToUnitFloor("allPosToUnitFloor", all_pos.extent(0),all_pos.extent(1));
+    Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<2,Kokkos::Iterate::Left>({0,0}, {all_pos.extent(0), all_pos.extent(1)}),
+			 KOKKOS_LAMBDA(const int& walkerNum, const int& knotNum) {
+			   apsd(walkerNum).toUnit_floor(tmpAllPos(walkerNum, knotNum, 0),
+							tmpAllPos(walkerNum, knotNum, 1),
+							tmpAllPos(walkerNum, knotNum, 2),
+							allPosToUnitFloor(walkerNum, knotNum, 0),
+							allPosToUnitFloor(walkerNum, knotNum, 1),
+							allPosToUnitFloor(walkerNum, knotNum, 2))
+			     });
+    spline.multi_evaluate_v2d(allPosToUnitFloor, tmpallPsiV);
+  }			     			     
+  
   inline void multi_evaluate_v(std::vector<PosType>& pos_list, std::vector<vContainer_type>& vals) {
     Kokkos::View<vContainer_type*> allPsi("allPsi", vals.size());
     auto allPsiMirror = Kokkos::create_host_mirror(allPsi);
@@ -203,7 +222,7 @@ struct einspline_spo : public SPOSet
       allPosMirror(i,2) = u[2];
     }
     Kokkos::deep_copy(allPos, allPosMirror);
-    multi_evaluate_vgh(allPos, vasl, grads, hesss);
+    multi_evaluate_vgh(allPos, vals, grads, hesss);
   }
 
 

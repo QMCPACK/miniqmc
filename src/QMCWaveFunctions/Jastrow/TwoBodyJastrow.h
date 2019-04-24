@@ -98,7 +98,38 @@ void doTwoBodyJastrowMultiEvalGrad(atbjdType atbjd, int iat, Kokkos::View<valT**
 		       });
  }
 
+
+template<typename eiListType, typename apskType, typename atbjdType, typename tempRType,
+  typename walkerIdType, typename devRatioType>
+void doTwoBodyJastrowMultiEvalRatio(int pairNum, eiListType& eiList, apskType& apsk,
+				    atbjdType& allTwoBodyJastrowData,
+				    typeRType& likeTempR, walkerIdType& activeWalkerIdx,
+				    devRatioType& devRatios) {
+  const int numWalkers = allTwoBodyJastrowData.extent(0);
+  using BarePolicy = Kokkos::TeamPolicy<>;
+  BarePolicy pol(numWalkers, Kokkos::AUTO, 32);
   
+  Kokkos::parallel_for("tbj-multi-ratio", pol,
+		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
+			 int walkerIndex = member.league_rank();
+			 int walkerNum = activeWalkerIdx(walkerIndex);
+			 auto* psk = apsk(walkerNum);
+			 auto* jd = allTwoBodyJastrowData(walkerIndex);
+			 jd->updateMode(0) = 0;
+
+			 Kokkos::parallel_for("tbj-ratio-loop",
+					      Kokkos::ThreadVectorRange(member, numKnots),
+					      [=](const int& knotNum) {
+						auto singleDists = Kokkos::subview(likeTempR, walkerNum, knotNum, Kokkos::All);
+						int iel = eiList(walkerNum, pairNum, 0);
+						auto val = jd->computeU(psk, iel, singleDists);
+						devRatios(walkerNum, numKnots) = std::exp(jd.Uat(iel) - val);
+					      });
+		       });
+
+}
+
+ 
 template<typename atbjdType, typename apsdType, typename valT>
 void doTwoBodyJastrowMultiEvaluateLog(atbjdType atbjd, apsdType apsd, Kokkos::View<valT*> values) {
   const int numWalkers = atbjd.extent(0);
@@ -315,6 +346,14 @@ struct TwoBodyJastrow : public WaveFunctionComponent
 				       const std::vector<bool>& isAccepted,
 				       int iat);
 
+  void multi_evalRatio(int pairNum, Kokkos::View<int**[2]>& eiList,
+		       const std::vector<WaveFunctionComponent*>& WFC_list,
+		       Kokkos::View<ParticleSetKokkos<RealType, ValueType, 3>*>& apsk,
+		       Kokkos::View<double***>& likeTempR,
+		       Kokkos::View<double***>& unlikeTempR,
+		       Kokkos::View<int*>& activeWalkerIdx,
+		       std::vector<ValueType>& ratios);
+  
   virtual void multi_evaluateGL(const std::vector<WaveFunctionComponent*>& WFC_list,
 				const std::vector<ParticleSet*>& P_list,
 				const std::vector<ParticleSet::ParticleGradient_t*>& G_list,
@@ -903,6 +942,44 @@ void TwoBodyJastrow<FT>::multi_ratioGrad(const std::vector<WaveFunctionComponent
     }
   }
 }
+
+template<typename FT>
+void multi_evalRatio(int pairNum, Kokkos::View<int**[2]>& eiList,
+		     const std::vector<WaveFunctionComponent*>& WFC_list,
+		     Kokkos::View<ParticleSetKokkos<RealType, ValueType, 3>*>& apsk,
+		     Kokkos::View<double***>& likeTempR,
+		     Kokkos::View<double***>& unlikeTempR,
+		     Kokkos::View<int*>& activeWalkerIdx,
+		     std::vector<ValueType>& ratios) {
+  const int numActiveWalkers = activeWalkerIdx.extent(0);
+  const int numKnots = likeTempR.extent(1);
+  
+  auto activeWalkerIdxMirror = Kokkos::create_mirror_view(activeWalkerIdx);
+  Kokkos::deep_copy(activeWalkerIdxMirror, activeWalkerIdx);
+  
+  Kokkos::View<jasDataType*> allTwoBodyJastrowData("atbjd", activeWalkerIdx.extent(0));
+  auto atbjdMirror = Kokkos::create_mirror_view(allTwoBodyJastrowData);
+  for (int i = 0; i < numActiveWalkers; i++) {
+    const int walkerIdx = activeWalkerIdxMirror(i);
+    atbjdMirror(i) = static_cast<TwoBodyJastrow*>(WFC_list[walkerIdx])->jasData;
+  }
+  Kokkos::deep_copy(allTwoBodyJastrowData, atbjdMirror);
+  
+  Kokkos::View<ValueType**> devRatios("tbjDevRatios", numActiveWalkers, numKnots);
+  
+  doTwoBodyJastrowMultiEvalRatio(pairNum, eiList, apsk, allTwoBodyJastrowData, likeTempR, activeWalkerIdx, devRatios);
+  
+  auto devRatiosMirror = Kokkos::create_mirror_view(devRatios);
+  Kokkos::deep_copy(devRatiosMirror, devRatios);
+  for (int i = 0; i < devRatiosMirror.extent(0); i++) {
+    const int walkerIndex = activeWalkerIdxMirror(i);
+    for (int j = 0; j < devRatiosMirror.extent(1); j++) {
+      ratios[walkerIndex*numKnots+j] = devRatiosMirror(i,j);
+    }
+  }
+}
+
+
 
 template<typename FT>
 void TwoBodyJastrow<FT>::multi_acceptRestoreMove(const std::vector<WaveFunctionComponent*>& WFC_list,

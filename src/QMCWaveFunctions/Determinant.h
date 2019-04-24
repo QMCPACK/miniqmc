@@ -260,8 +260,9 @@ void doDiracDeterminantMultiEvalRatio(int pairNum, addkType& addk, awType& activ
   const int numKnots = psiVScratch.extent(1);
   const int numWalkers = activeWalkers.extent(0);
   constexpr double shift(0.5);
-  
-  // this is where we should be filling it from spo at the particular location
+
+  // currently expecting psiVScratch to have been filled by a previous call to spo.multi_evaluate_v
+  /*
   auto psiVScratchMirror = Kokkos::create_mirror_view(psiVScratch);
   for(int iw = 0; iw < numWalkers; iw++) {
     for (int knot = 0; knot < numKnots; knot++) {
@@ -271,6 +272,7 @@ void doDiracDeterminantMultiEvalRatio(int pairNum, addkType& addk, awType& activ
     }
   }
   Kokkos::deep_copy(psiVScratch, psiVScratchMirror);
+  */
 
   Kokkos::View<ValueType**> results("ratios", numWalkers, numKnots);
 

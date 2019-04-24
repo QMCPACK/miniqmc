@@ -23,6 +23,11 @@ void doMultiEval_v(multiPosType& pos, valType& vals, coefType& coefs,
 		   Kokkos::View<double[3]>& gridStarts, Kokkos::View<double[3]>& delta_invs,
 		   Kokkos::View<p[16]>& A44, int blockSize = 32);
 
+template<typename multiPosType, typename valType, typename coefType>
+void doMultiEval_v2d(multiPosType& pos, valType& vals, coefType& coefs,
+		     Kokkos::View<double[3]>& gridStarts, Kokkos::View<double[3]>& delta_invs,
+		     Kokkos::View<p[16]>& A44, int blockSize = 32);
+
 template<typename p, typename valType, typename gradType, typename hessType,typename coefType>
 void doEval_vgh(p x, p y, p z, valType& vals, gradType& grad,
 		hessType& hess, coefType& coefs,
@@ -251,6 +256,13 @@ struct multi_UBspline<p, blocksize, 3> : public multi_UBspline_base<p,3> {
     doMultiEval_v(pos, vals, coef, this->gridStarts, this->delta_invs, A44, blocksize);
   }
 
+  // the 2d here refers to the dimensionality of pos and vals
+  // instead of just n positions and values, we have nwalkers x nknots
+  template<typename multiPosType, typename multiValType>
+  void multi_evaluate_v2d(multiPosType& pos, multiValType& vals) {
+    doMultiEval_v2d(pos, vals, coef, this->gridStarts, this->delta_invs, A44, blocksize);
+  }
+
   template<typename valType, typename gradType, typename hessType>
   void evaluate_vgh(p x, p y, p z, valType& vals, gradType& grad,
 		    hessType& hess) {
@@ -408,6 +420,69 @@ void doEval_v(p x, p y, p z, valType& vals, coefType& coefs,
     });      
 }
 
+template<typename multiPosType, typename valType, typename coefType>
+void doMultiEval_v2d(multiPosType& pos, valType& vals, coefType& coefs,
+		     Kokkos::View<double[3]>& gridStarts, Kokkos::View<double[3]>& delta_invs,
+		     Kokkos::View<p[16]>& A44, int blockSize = 32) {
+  int numWalkers = pos.extent(0);
+  int numKnots = pos.extent(1);
+  int numBlocks = coefs.extent(3) / blockSize;
+  if (coefs.extent(3) % blockSize != 0) {
+    numBlocks++;
+  }
+  Kokkos::TeamPolicy<> policy(numWalkers*numKnots,Kokkos::AUTO,32);
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(Kokkos::TeamPolicy<>::member_type member) {
+      const int walkerNum = member.league_rank() / numKnots;
+      const int knotNum = member.league_rank() % numBlocks;
+      
+      // wrap this so only a single thread per league does this
+      Kokkos::single(Kokkos::PerTeam(member), [&]() {	  
+	  for(int i = 0; i < 3; i++) {
+	    pos(walkerNum, knotNum,i) -= gridStarts(i);
+	  }
+	});
+
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(member, 0, numBlocks),
+			   [&](int blockNum) {
+			     const int start = blockSize * blockNum;
+			     int end = start + blockSize;
+			     if (end > coef.extent(3)) {
+			       end = coefs.extent(3);
+			     }
+			     const int num_splines = end-start;
+			   
+			     Kokkos::Array<p,3> ts;
+			     Kokkos::Array<int,3> is;
+			     for (int i = 0; i < 3; i++) {
+			       get(pos(walkerNum,knotNum,i) * delta_invs(i), ts[i], is[i], coefs.extent(i)-1);
+			     }
+			     Kokkos::Array<p,4> a,b,c;
+			     compute_prefactors(a, ts[0], A44);
+			     compute_prefactors(b, ts[1], A44);
+			     compute_prefactors(c, ts[2], A44);
+			     
+			     Kokkos::parallel_for(Kokkos::ThreadVectorRange(member, num_splines),
+						  [&](const int& i) { vals(walkerNum,knotNum,start+i) = p(); });
+
+			     for (int i = 0; i < 4; i++) {
+			       for (int j = 0; j < 4; j++) {
+				 const p pre00 = a[i] * b[j];
+				 Kokkos::parallel_for(Kokkos::ThreadVectorRange(member, num_splines), 
+						      [&](const int& n) {
+							const int sponum = start+n;
+							vals(walkerNum,knotNum,sponum) += pre00 * 
+							  (c[0] * coefs(is[0]+i,is[1]+j,is[2],sponum) +
+							   c[1] * coefs(is[0]+i,is[1]+j,is[2]+1,sponum) +
+							   c[2] * coefs(is[0]+i,is[1]+j,is[2]+2,sponum) +
+							   c[3] * coefs(is[0]+i,is[1]+j,is[2]+3,sponum));
+						      });
+			       }
+			     }
+			   });
+    });
+}
+
+ 
 template<typename multiPosType, typename valType, typename coefType>
 void doMultiEval_v(multiPosType& pos, valType& vals, coefType& coefs,
 		   Kokkos::View<double[3]>& gridStarts, Kokkos::View<double[3]>& delta_invs,

@@ -781,18 +781,22 @@ int main(int argc, char** argv)
 	  // many calls (for instance three per pair), but since cannot follow wavefunction
 	  // vtable on device, will have to at least have it make its own calls
 	  vector<ValueType> ratios(nmovers*nknots, 0.0);
-	  Kokkos::View<double***> tempPsiV("tempPsiV", nmovers, nknots, nels);
+	  Kokkos::View<ValueType***> tempPsiV("tempPsiV", nmovers, nknots, nels);
 	  for (int eiPair = 0; eiPair < maxSize; eiPair++) {
-	    anon_mover->els.updateTempPosAndRs(eiPair, allParticleSetData, EiLists, rOnSphere, bigElPos, bigLikeTempR, bigUnlikeTempR);
+	    anon_mover->els.updateTempPosAndRs(eiPair, allParticleSetData, EiLists,
+					       rOnSphere, bigElPos, bigLikeTempR, bigUnlikeTempR);
+	    // actually putting the values calculated by evaluate_vs into tempPsiV
+	    spo.evaluate_vs(bigElPos, tempPsiV, allParticleSetData); // also perhaps hand in result views to store the output
+
 	    // eventually would need to pass in the actual positions so that calls to evaluate_vs would go
 	    // to the right location.  For now, just need distances for jastrows and number of the particles
-	    // for the determinant.  May need to hand in lists of wavefunctions
-	    anon_mover->wavefunction.multi_ratio(eiPair, WF_list, tempPsiV, bigLikeTempR, bigUnlikeTempR, EiLists, ratios); // see if this is enough
+	    // for the determinant.  
 	    // note, for a given eiPair, all evaluations for a single mover will be for the same electron
 	    // but not all movers will be working on the same electron necessarily
+	    anon_mover->wavefunction.multi_ratio(eiPair, WF_list, allParticleSetData,
+						 tempPsiV, bigLikeTempR, bigUnlikeTempR,
+						 EiLists, ratios); // see if this is enough
 
-	    //////LNS LNS LNS Need to write this function
-	    spo.evaluate_vs(eiPair, EiLists, bigElPos); // also perhaps hand in result views to store the output
 
 
 
