@@ -128,7 +128,7 @@ const std::vector<WaveFunctionComponent*> extract_dn_list(const std::vector<Wave
 const std::vector<WaveFunctionComponent*>
     extract_jas_list(const std::vector<WaveFunction*>& WF_list, int jas_id);
 
-template<typename psiVType, typename likeTempRType, typename unlikeTempRType, typename eiListType>
+ template<typename aobjdType, typename psiVType, typename likeTempRType, typename unlikeTempRType, typename eiListType>
 void WaveFunction::multi_ratio(int pairNum, const std::vector<WaveFunction*>& WF_list, psiVType& tempPsiV,
 			       likeTempRType& likeTempRs, unlikeTempRType& unlikeTempRs, eiListType& eiList,
 			       std::vector<valT>& ratios) {

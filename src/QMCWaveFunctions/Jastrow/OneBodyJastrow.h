@@ -101,7 +101,7 @@ void doOneBodyJastrowMultiEvalRatio(int pairNum, eiListType& eiList, apskType& a
 					      [=](const int& knotNum) {
 						auto singleDists = Kokkos::subview(unlikeTempR, walkerNum, knotNum, Kokkos::All);
 						auto val = jd->computeU(psk, singleDists);
-						int iat = eiList(walkerNum, pairNum);
+						int iat = eiList(walkerNum, pairNum, 1);
 						devRatios(walkerNum, numKnots) = std::exp(jd.V(iat) - val);
 					      });
 		       });
