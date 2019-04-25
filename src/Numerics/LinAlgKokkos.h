@@ -24,7 +24,7 @@
 #include "cublas_v2.h"
 #include "cusolverDn.h"
 #endif
-#include "numerics/KokkosViewHelpers.h"
+#include "Numerics/KokkosViewHelpers.h"
 
 #define dgetrf dgetrf_
 #define sgetrf sgetrf_

@@ -43,22 +43,339 @@
 namespace qmcplusplus
 {
 
+struct DiracDeterminantKokkos;
+struct DiracDeterminant;
 
 template<class linAlgHelperType, typename ValueType>
-ValueType InvertWithLog(DiracDeterminantKokkos& ddk, LinAlgHelperType& lah, ValueType& phase) {
+ValueType InvertWithLog(DiracDeterminantKokkos& ddk, linAlgHelperType& lah, ValueType& phase);
+
+template<class linAlgHelperType, typename ValueType>
+void updateRow(DiracDeterminantKokkos& ddk, linAlgHelperType& lah, int rowchanged, ValueType c_ratio_in);
+
+template<typename memorySpace, typename addkType, typename vectorType, typename resVecType>
+void doDiracDeterminantMultiEvaluateLog(addkType& addk, vectorType& wfcv, resVecType& results);
+
+#ifdef KOKKOS_ENABLE_CUDA
+// this is specialized to when the Views live on the GPU in CudaSpace 
+template<typename addkType, typename vectorType, typename resVecType>
+void doDiracDeterminantMultiEvaluateLog<Kokkos::CudaSpace>(ddkType addk, vectorType& wfcv, resVecType& results);
+#endif
+
+template<typename addkType, typename vectorType, typename resVecType>
+void doDiracDeterminantMultiEvalRatio(addkType addk, vectorType& wfcv, resVecType& ratios, int iel);
+
+template<typename addkType, typename awType, typename eiListType, typename psiVType, typename ratiosType>
+void doDiracDeterminantMultiEvalRatio(int pairNum, addkType& addk, awType& activeWalkers, eiListType& eiList, 
+				      psiVType& psiVScratch, ratiosType& ratios);
+
+template<typename memory_space, typename addkType, typename vectorType>
+void doDiracDeterminantMultiAccept(addkType& addk, vectorType& WFC_list, int iel);
+
+#ifdef KOKKOS_ENABLE_CUDA
+// this is specialized to when the Views live on the GPU in CudaSpace 
+template<typename addkType, typename vectorType>
+void doDiracDeterminantMultiAccept<Kokkos::CudaSpace>(ddkType addk, vectorType& wfcv, int iel);
+#endif
+
+template<typename addkType, typename vectorType>
+void populateCollectiveView(addkType addk, vectorType& WFC_list);
+
+template<typename addkType, typename vectorType>
+void populateCollectiveView(addkType addk, vectorType& WFC_list, std::vector<bool>& isAccepted);
+
+
+
+struct DiracDeterminantKokkos : public QMCTraits
+{
+  using MatType = Kokkos::View<ValueType**, Kokkos::LayoutRight>;
+  using DoubleMatType = Kokkos::View<double**, Kokkos::LayoutRight>;
+
+  Kokkos::View<ValueType[1]> LogValue;
+  Kokkos::View<ValueType[1]> curRatio;
+  Kokkos::View<int[1]> FirstIndex;
+
+  // inverse matrix to be updated
+  MatType psiMinv;
+  // storage for the row update 
+  Kokkos::View<ValueType*> psiV;
+  // temporary storage for row update
+  Kokkos::View<ValueType*> tempRowVec;
+  Kokkos::View<ValueType*> rcopy;
+  // internal storage to perform inversion correctly
+  MatType psiM;
+  // temporary workspace for inversion
+  MatType psiMsave;
+  // temporary workspace for getrf
+  Kokkos::View<ValueType*> getRfWorkSpace;
+  Kokkos::View<ValueType**> getRiWorkSpace;
+  // pivot array
+  Kokkos::View<int*> piv;
+  
+  KOKKOS_INLINE_FUNCTION
+  DiracDeterminantKokkos() { ; }
+
+  KOKKOS_INLINE_FUNCTION
+  DiracDeterminantKokkos* operator=(const DiracDeterminantKokkos& rhs) {
+    LogValue = rhs.LogValue;
+    curRatio = rhs.curRatio;
+    FirstIndex = rhs.FirstIndex;
+    psiMinv = rhs.psiMinv;
+    psiV = rhs.psiV;
+    tempRowVec = rhs.tempRowVec;
+    rcopy = rhs.rcopy;
+    psiMsave = rhs.psiMsave;
+    getRfWorkSpace = rhs.getRfWorkSpace;
+    getRiWorkSpace = rhs.getRiWorkSpace;
+    piv = rhs.piv;
+    return this;
+  }
+
+  DiracDeterminantKokkos(const DiracDeterminantKokkos&) = default;
+  // need to add in checkMatrix(), evaluateLog(psk*), evalGrad(psk*, iat),
+  //                ratioGrad(psk*, iat, gradType), evaluateGL(psk*, G, L, fromscratch)
+  //                recompute(), ratio(psk*, iel), acceptMove(psk*, iel)
+};
+
+struct DiracDeterminant : public WaveFunctionComponent
+{
+  DiracDeterminant(int nels, const RandomGenerator<RealType>& RNG, int First = 0) 
+    : FirstIndex(First), myRandom(RNG)
+  {
+    ddk.LogValue       = Kokkos::View<ValueType[1]>("LogValue");
+    ddk.curRatio       = Kokkos::View<ValueType[1]>("curRatio");
+    ddk.FirstIndex     = Kokkos::View<int[1]>("FirstIndex");
+    ddk.psiMinv        = DiracDeterminantKokkos::MatType("psiMinv",nels,nels);
+    ddk.psiM           = DiracDeterminantKokkos::MatType("psiM",nels,nels);
+    ddk.psiMsave       = DiracDeterminantKokkos::MatType("psiMsave",nels,nels);
+    ddk.psiV           = Kokkos::View<ValueType*>("psiV",nels);
+    ddk.tempRowVec     = Kokkos::View<ValueType*>("tempRowVec", nels);
+    ddk.rcopy          = Kokkos::View<ValueType*>("rcopy", nels);
+#ifdef KOKKOS_ENABLE_CUDA
+    int getRfBufSize = getrf_gpu_buffer_size(nels, nels, ddk.psiM.data(), nels, lah);
+    ddk.getRfWorkSpace = Kokkos::View<ValueType*>("getrfws", getRfBufSize);
+#endif
+    ddk.getRiWorkSpace = DiracDeterminantKokkos::MatType("getriws", nels, nels);
+    ddk.piv            = Kokkos::View<int*>("piv", nels);
+    
+    auto FirstIndexMirror = Kokkos::create_mirror_view(ddk.FirstIndex);
+    FirstIndexMirror(0) = FirstIndex;
+    Kokkos::deep_copy(ddk.FirstIndex, FirstIndexMirror);
+    
+    // basically we are generating uniform random number for
+    // each entry of psiMsave in the interval [-0.5, 0.5]
+    constexpr double shift(0.5);
+
+    // change this to match data ordering of DeterminantRef
+    // recall that psiMsave has as its fast index the leftmost index
+    // however int the c style matrix in DeterminantRef 
+    auto psiMsaveMirror = Kokkos::create_mirror_view(ddk.psiMsave);
+    auto psiMMirror = Kokkos::create_mirror_view(ddk.psiM);
+    for (int i = 0; i < nels; i++) {
+      for (int j = 0; j < nels; j++) {
+	psiMsaveMirror(i,j) = myRandom.rand()-shift;
+	psiMMirror(j,i) = psiMsaveMirror(i,j);
+      }
+    }
+    Kokkos::deep_copy(ddk.psiMsave, psiMsaveMirror);
+    Kokkos::deep_copy(ddk.psiM, psiMMirror);
+
+    RealType phase;
+    LogValue = InvertWithLog(ddk, lah, phase);
+    elementWiseCopy(ddk.psiMinv, ddk.psiM);
+  }
+
+  void checkMatrix()
+  {
+    DiracDeterminantKokkos::MatType psiMRealType("psiM_RealType", ddk.psiM.extent(0), ddk.psiM.extent(0));
+    elementWiseCopy(psiMRealType, ddk.psiM);
+    checkIdentity(ddk.psiMsave, psiMRealType, "Psi_0 * psiM(T)", lah);
+    checkIdentity(ddk.psiMsave, ddk.psiMinv, "Psi_0 * psiMinv(T)", lah);
+    checkDiff(psiMRealType, ddk.psiMinv, "psiM - psiMinv(T)");
+  }
+
+  RealType evaluateLog(ParticleSet& P,
+		       ParticleSet::ParticleGradient_t& G,
+		       ParticleSet::ParticleLaplacian_t& L)
+  {
+    recompute();
+    return 0.0;
+  }
+
+  GradType evalGrad(ParticleSet& P, int iat) { return GradType(); }
+  ValueType ratioGrad(ParticleSet& P, int iat, GradType& grad) { return ratio(P, iat); }
+  void evaluateGL(ParticleSet& P,
+                  ParticleSet::ParticleGradient_t& G,
+                  ParticleSet::ParticleLaplacian_t& L,
+                  bool fromscratch = false) {}
+
+  inline void recompute()
+  {
+    //elementWiseCopy(psiM, psiMsave); // needs to be transposed!
+    elementWiseCopyTrans(ddk.psiM, ddk.psiMsave); // needs to be transposed!
+    lah.invertMatrix(ddk.psiM);
+    elementWiseCopy(ddk.psiMinv, ddk.psiM);
+  }
+
+  // in real application, inside here it would actually evaluate spos at the new
+  // position and stick them in psiV
+  inline ValueType ratio(ParticleSet& P, int iel)
+  {
+    const int nels = ddk.psiV.extent(0);
+    constexpr double shift(0.5);
+    //constexpr double czero(0);
+
+    auto psiVMirror = Kokkos::create_mirror_view(ddk.psiV);
+    for (int j = 0; j < nels; ++j) {
+      psiVMirror(j) = myRandom() - shift;
+    }
+    Kokkos::deep_copy(ddk.psiV, psiVMirror);
+    // in main line previous version this looked like:
+    // curRatio = inner_product_n(psiV.data(), psiMinv[iel - FirstIndex], nels, czero);
+    // same issues with indexing
+    curRatio = lah.updateRatio(ddk.psiV, ddk.psiMinv, iel-FirstIndex);
+    return curRatio;
+  }
+  inline void acceptMove(ParticleSet& P, int iel) {
+    Kokkos::Profiling::pushRegion("Determinant::acceptMove");
+    const int nels = ddk.psiV.extent(0);
+    
+    Kokkos::Profiling::pushRegion("Determinant::acceptMove::updateRow");
+    updateRow(ddk, lah, iel-FirstIndex, curRatio);
+    Kokkos::Profiling::popRegion();
+    // in main line previous version this looked like:
+    //std::copy_n(psiV.data(), nels, psiMsave[iel - FirstIndex]);
+    // note 1: copy_n copies data from psiV to psiMsave
+    //
+    // note 2: the single argument call to psiMsave[] returned a pointer to
+    // the iel-FirstIndex ROW of the underlying data structure, so
+    // the operation was like (psiMsave.data() + (iel-FirstIndex)*D2)
+    // note that then to iterate through the data it was going sequentially
+    Kokkos::Profiling::pushRegion("Determinant::acceptMove::copyBack");
+    lah.copyBack(ddk.psiMsave, ddk.psiV, iel-FirstIndex);
+
+    Kokkos::Profiling::popRegion();
+    Kokkos::Profiling::popRegion();
+  }
+
+  // accessor functions for checking
+  inline double operator()(int i) const {
+    // not sure what this was for, seems odd to 
+    //Kokkos::deep_copy(psiMinv, psiMinv_host);
+    int x = i / ddk.psiMinv.extent(0);
+    int y = i % ddk.psiMinv.extent(0);
+    auto dev_subview = subview(ddk.psiMinv, x, y);
+    auto dev_subview_host = Kokkos::create_mirror_view(dev_subview);
+    Kokkos::deep_copy(dev_subview_host, dev_subview);
+    return dev_subview_host(0,0);
+  }
+  inline int size() const { return ddk.psiMinv.extent(0)*ddk.psiMinv.extent(1); }
+
+  //// collective functions
+  virtual void multi_evaluateLog(const std::vector<WaveFunctionComponent*>& WFC_list,
+                                 const std::vector<ParticleSet*>& P_list,
+                                 const std::vector<ParticleSet::ParticleGradient_t*>& G_list,
+                                 const std::vector<ParticleSet::ParticleLaplacian_t*>& L_list,
+                                 ParticleSet::ParticleValue_t& values) {
+
+    Kokkos::View<DiracDeterminantKokkos*> addk("addk", WFC_list.size());
+    populateCollectiveView(addk, WFC_list);
+    
+    // would just do it inline, but need to template on the memory space
+    doDiracDeterminantMultiEvaluateLog<DiracDeterminantKokkos::MatType::memory_space>(addk, WFC_list, values);    
+  }
+
+  // miniapp does nothing here, just return 0
+  virtual void multi_evalGrad(const std::vector<WaveFunctionComponent*>& WFC_list,
+			      const std::vector<ParticleSet*>& P_list,
+                              int iat,
+			      std::vector<PosType>& grad_now) {
+    for (int i = 0; i < grad_now.size(); i++) {
+      grad_now[i] = PosType();
+    }
+  }
+  
+  // do a loop over all walkers, stick ratio in ratios, do nothing to grad_new
+  virtual void multi_ratioGrad(const std::vector<WaveFunctionComponent*>& WFC_list,
+			       const std::vector<ParticleSet*>& P_list,
+			       int iat,
+			       std::vector<ValueType>& ratios,
+			       std::vector<PosType>& grad_new) {
+    Kokkos::View<DiracDeterminantKokkos*> addk("addk", WFC_list.size());
+    populateCollectiveView(addk, WFC_list);
+    
+    Kokkos::View<ValueType*> tempResults("tempResults", ratios.size());
+
+    doDiracDeterminantMultiEvalRatio(addk, WFC_list, tempResults, iat);
+    
+    auto tempResultsMirror = Kokkos::create_mirror_view(tempResults);
+    Kokkos::deep_copy(tempResultsMirror, tempResults);
+    for (int i = 0; i < ratios.size(); i++) {
+      ratios[i] = tempResultsMirror(i);
+    }
+  }
+
+  virtual void multi_acceptRestoreMove(const std::vector<WaveFunctionComponent*>& WFC_list,
+				       const std::vector<ParticleSet*>& P_list,
+				       const std::vector<bool>& isAccepted,
+				       int iat) {
+    std::vector<WaveFunctionComponent*> activeWFC_list;
+    for (int i = 0; i < WFC_list.size(); i++) {
+      if (isAccepted[i]) {
+	activeWFC_list.push_back(WFC_list[i]);
+      }
+    }
+
+    Kokkos::View<DiracDeterminantKokkos*> addk("addk", activeWFC_list.size());
+    populateCollectiveView(addk, activeWFC_list);
+	
+    doDiracDeterminantMultiAccept<DiracDeterminantKokkos::MatType::memory_space>(addk, activeWFC_list, iat);
+  }
+    
+  virtual void multi_evaluateGL(const std::vector<WaveFunctionComponent*>& WFC_list,
+				const std::vector<ParticleSet*>& P_list,
+				const std::vector<ParticleSet::ParticleGradient_t*>& G_list,
+				const std::vector<ParticleSet::ParticleLaplacian_t*>& L_list,
+				bool fromscratch = false) {
+    // code in miniapp does NOTHING here
+  }
+
+  
+
+  
+  DiracDeterminantKokkos ddk;
+  /// Helper class to handle linear algebra
+  /// Holds for instance space for pivots and workspace
+  linalgHelper<ValueType, DiracDeterminantKokkos::MatType::array_layout, DiracDeterminantKokkos::MatType::memory_space> lah;
+
+  /// initial particle index
+  const int FirstIndex;
+  /// current ratio
+  double curRatio;
+  /// log|det|
+  double LogValue;
+  /// random number generator for testing
+  RandomGenerator<RealType> myRandom;
+private:
+
+};
+
+
+
+template<class linAlgHelperType, typename ValueType>
+ValueType InvertWithLog(DiracDeterminantKokkos& ddk, linAlgHelperType& lah, ValueType& phase) {
   ValueType locLogDet(0.0);
   lah.getrf(ddk.psiM);
   auto locPiv = lah.getPivot(); // note, this is in device memory
   int sign_det = 1;
 
-  Kokkos::parallel_reduce(view.extent(0), KOKKOS_LAMBDA ( int ii, int& cur_sign) {
+  Kokkos::parallel_reduce(ddk.psiM.extent(0), KOKKOS_LAMBDA ( int i, int& cur_sign) {
       cur_sign = (locPiv(i) == i+1) ? 1 : -1;
       cur_sign *= (ddk.psiM(i,i) > 0) ? 1 : -1;
     }, Kokkos::Prod<int>(sign_det));
 
-  Kokkos::parallel_reduce(view.extent(0), KOKKOS_LAMBDA (int ii, ValueType& v) {
+  Kokkos::parallel_reduce(ddk.psiM.extent(0), KOKKOS_LAMBDA (int i, ValueType& v) {
       v += std::log(std::abs(ddk.psiM(i,i)));
-    }, logdet);
+    }, locLogDet);
   lah.getri(ddk.psiM);
   phase = (sign_det > 0) ? 0.0 : M_PI;
   //auto logValMirror = Kokkos::create_mirror_view(ddk.LogValue);
@@ -68,11 +385,11 @@ ValueType InvertWithLog(DiracDeterminantKokkos& ddk, LinAlgHelperType& lah, Valu
 }
 
 template<class linAlgHelperType, typename ValueType>
-void updateRow(DiracDeterminantKokkos& ddk, LinAlgHelperType& lah, int rowchanged, ValueType c_ratio_in) {
+void updateRow(DiracDeterminantKokkos& ddk, linAlgHelperType& lah, int rowchanged, ValueType c_ratio_in) {
   constexpr ValueType cone(1.0);
   constexpr ValueType czero(0.0);
   ValueType c_ratio = cone / c_ratio_in;
-  Kokkos::Profiling::PushRegion("updateRow::gemvTrans");
+  Kokkos::Profiling::pushRegion("updateRow::gemvTrans");
   lah.gemvTrans(ddk.psiMinv, ddk.psiV, ddk.tempRowVec, c_ratio, czero);
   Kokkos::Profiling::popRegion();
 
@@ -95,7 +412,7 @@ void updateRow(DiracDeterminantKokkos& ddk, LinAlgHelperType& lah, int rowchange
 }
 
 template<typename memorySpace, typename addkType, typename vectorType, typename resVecType>
-void doDiracDeterminantMultiEvaluateLog(ddkType addk, vectorType& wfcv, resVecType& results) {
+void doDiracDeterminantMultiEvaluateLog(addkType& addk, vectorType& wfcv, resVecType& results) {
   // for each element in addk,
   //      1. copy transpose of psiMsave to psiM
   //      2. invert psiM
@@ -103,7 +420,7 @@ void doDiracDeterminantMultiEvaluateLog(ddkType addk, vectorType& wfcv, resVecTy
 
   // 1. copy transpose of psiMsave to psiM for all walkers
   const int numWalkers = addk.extent(0);
-  const int numEls = static_cast<DiracDeterminant*>(wfcv[i])->ddk.psiV.extent(0);
+  const int numEls = static_cast<DiracDeterminant*>(wfcv[0])->ddk.psiV.extent(0);
   Kokkos::parallel_for("elementWiseCopyTransAllPsiM",
 		       Kokkos::MDRangePolicy<Kokkos::Rank<3,Kokkos::Iterate::Left> >({0,0,0}, {numWalkers, numEls, numEls}),
 		       KOKKOS_LAMBDA(const int& i0, const int& i1, const int& i2) {
@@ -143,7 +460,7 @@ void doDiracDeterminantMultiEvaluateLog<Kokkos::CudaSpace>(ddkType addk, vectorT
   //      2. invert psiM
   //      3. copy psiM to psiMinv
 
-  using ValueType = static_cast<DiracDeterminant*>(wfcv[0])->ddk.psiM::data_type;
+  using ValueType = DiracDeterminantKokkos::MatType::value_type;
   const int numWalkers = addk.extent(0);
   const int numEls = static_cast<DiracDeterminant*>(wfcv[0])->ddk.psiV.extent(0);
   
@@ -219,7 +536,7 @@ void doDiracDeterminantMultiEvaluateLog<Kokkos::CudaSpace>(ddkType addk, vectorT
 
 template<typename addkType, typename vectorType, typename resVecType>
 void doDiracDeterminantMultiEvalRatio(addkType addk, vectorType& wfcv, resVecType& ratios, int iel) {
-  using ValueType = resVecType::data_type;
+  using ValueType = typename resVecType::value_type;
   const int numEls = static_cast<DiracDeterminant*>(wfcv[0])->ddk.psiV.extent(0);
   const int numWalkers = addk.extent(0);
   constexpr double shift(0.5);
@@ -228,10 +545,10 @@ void doDiracDeterminantMultiEvalRatio(addkType addk, vectorType& wfcv, resVecTyp
   // could avoid the data transfer that way.  This is OK, because the real code would
   // be calling evaluateV on the sposet and that would happen on the device as well.
   for (int i = 0; i < numWalkers; i++) {
-    auto& psiV = static_cast<DiracDeterminant*>(WFC_list[i])->ddk.psiV;
-    auto psiVMirror = Kokkos::make_mirror_view(psiV);
+    auto& psiV = static_cast<DiracDeterminant*>(wfcv[i])->ddk.psiV;
+    auto psiVMirror = Kokkos::create_mirror_view(psiV);
     for (int j = 0; j < numEls; j++) {
-      psiVMirror(j) = static_cast<DiracDeterminant*>(WFC_list[0]).myRandom() - shift;
+      psiVMirror(j) = static_cast<DiracDeterminant*>(wfcv[0])->myRandom() - shift;
     }
     Kokkos::deep_copy(psiV, psiVMirror);
   }
@@ -244,7 +561,7 @@ void doDiracDeterminantMultiEvalRatio(addkType addk, vectorType& wfcv, resVecTyp
 			 ValueType sumOver = 0.0;
 			 Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(member, numEls),
 						 [=] (const int& i, ValueType& innersum) {
-						   const idx = iel - addk(walkerNum).FirstIndex(0);
+						   const int idx = iel - addk(walkerNum).FirstIndex(0);
 						   innersum += addk(walkerNum).psiV(i) * addk(walkerNum).psiMinv(idx,i); 
 						 }, sumOver);
 			 Kokkos::single(Kokkos::PerTeam(member), [=]() {
@@ -253,9 +570,9 @@ void doDiracDeterminantMultiEvalRatio(addkType addk, vectorType& wfcv, resVecTyp
 		       });
 }
 
-template<typename addkType, typename awType, typename eiListType, typename psiVType, typename ratiosType, typename rngType>
-void doDiracDeterminantMultiEvalRatio(int pairNum, addkType& addk, awType& activeWalkers, eiListType& eiList, psiVType& psiVScratch, ratiosType& ratios, rngType& rng) {
-  using ValueType = psiVType::data_type;
+template<typename addkType, typename awType, typename eiListType, typename psiVType, typename ratiosType>
+void doDiracDeterminantMultiEvalRatio(int pairNum, addkType& addk, awType& activeWalkers, eiListType& eiList, psiVType& psiVScratch, ratiosType& ratios) {
+  using ValueType = typename psiVType::data_type;
   const int numEls = psiVScratch.extent(2);
   const int numKnots = psiVScratch.extent(1);
   const int numWalkers = activeWalkers.extent(0);
@@ -287,7 +604,7 @@ void doDiracDeterminantMultiEvalRatio(int pairNum, addkType& addk, awType& activ
 					      [=] (const int& knotNum) {
 						Kokkos::parallel_reduce("loopOverEls", Kokkos::ThreadVectorRange(member, numEls),
 									[=] (const int& i, ValueType& innersum) {
-									  innersum += psiVScratchMirror(walkerNum,knotNum,i) *
+									  innersum += psiVScratch(walkerNum,knotNum,i) *
 									    addk(walkerNum).psiMinv(bandIdx,i);
 									}, results(walkerNum, knotNum));
 					      });
@@ -306,14 +623,14 @@ template<typename memory_space, typename addkType, typename vectorType>
 void doDiracDeterminantMultiAccept(addkType& addk, vectorType& WFC_list, int iel) {
   // for every walker, need to do updateRow followed by copyBack
   int numWalkers = WFC_list.size();
-  int numEls = static_cast<DiracDeterminant*>(WFC_list[0])->psiV.extent(0);
-  using ValueType = static_cast<DiracDeterminant*>(wfcv[0])->ddk.psiM::data_type;
-  int rowChanged = iel-static_cast<DiracDeterminant*>(WFC_list[0]).FirstIndex;
+  int numEls = static_cast<DiracDeterminant*>(WFC_list[0])->ddk.psiV.extent(0);
+  using ValueType = DiracDeterminantKokkos::MatType::value_type;
+  int rowChanged = iel-static_cast<DiracDeterminant*>(WFC_list[0])->FirstIndex;
   constexpr ValueType cone(1.0);
   constexpr ValueType czero(0.0);
 
   // 1. gemvTrans
-  Kokkos::Profiling::PushRegion("updateRow::gemvTrans");
+  Kokkos::Profiling::pushRegion("updateRow::gemvTrans");
   for (int i = 0; i < numWalkers; i++) {
     DiracDeterminant* ddp = static_cast<DiracDeterminant*>(WFC_list[i]);
     DiracDeterminantKokkos& ddk = ddp->ddk;
@@ -325,13 +642,13 @@ void doDiracDeterminantMultiAccept(addkType& addk, vectorType& WFC_list, int iel
   // 2. poke one element on the device for each walker
   Kokkos::Profiling::pushRegion("updateRow::pokeSingleValue");
   Kokkos::View<ValueType*> poke("poke", numWalkers);
-  auto pokeView = Kokkos:create_mirror_view(poke);
+  auto pokeView = Kokkos::create_mirror_view(poke);
   for (int i = 0; i < numWalkers; i++) {
-    DiracDeterminant* ddp = static_cast<DiracDeterminant>(WFC_list[i]);
+    DiracDeterminant* ddp = static_cast<DiracDeterminant*>(WFC_list[i]);
     pokeView(i) = cone - cone / ddp->curRatio;
   }
   Kokkos::deep_copy(poke, pokeView);
-  Kokkos::parallel_for(numWalkers, Kokkos_LAMBDA(int i) {
+  Kokkos::parallel_for(numWalkers, KOKKOS_LAMBDA(int i) {
       addk(i).tempRowVec(rowChanged) = poke(i);
     });
   Kokkos::Profiling::popRegion();
@@ -348,7 +665,7 @@ void doDiracDeterminantMultiAccept(addkType& addk, vectorType& WFC_list, int iel
   Kokkos::Profiling::pushRegion("updateRow::ger");
   for (int i = 0; i < numWalkers; i++) {
     DiracDeterminant* ddp = static_cast<DiracDeterminant*>(WFC_list[i]);
-    ddp->lah.ger(ddp->ddk.psiMinv, ddp->ddk.rcopy, ddk->ddk.tempRowVec, -cone);
+    ddp->lah.ger(ddp->ddk.psiMinv, ddp->ddk.rcopy, ddp->ddk.tempRowVec, -cone);
   }
   Kokkos::Profiling::popRegion();
 
@@ -367,9 +684,9 @@ template<typename addkType, typename vectorType>
 void doDiracDeterminantMultiAccept<Kokkos::CudaSpace>(ddkType addk, vectorType& wfcv, int iel) {
   // for every walker, need to do updateRow followed by copyBack
   int numWalkers = WFC_list.size();
-  int numEls = static_cast<DiracDeterminant*>(WFC_list[0])->psiV.extent(0);
-  using ValueType = static_cast<DiracDeterminant*>(wfcv[0])->ddk.psiM::data_type;
-  int rowChanged = iel-static_cast<DiracDeterminant*>(WFC_list[0]).FirstIndex;
+  int numEls = static_cast<DiracDeterminant*>(WFC_list[0])->ddk.psiV.extent(0);
+  using ValueType = DiracDeterminantKokkos::MatType::value_type;
+  int rowChanged = iel-static_cast<DiracDeterminant*>(WFC_list[0])->FirstIndex;
 
   cudaStream_t *streams = (cudaStream_t *) malloc(addk.extent(0)*sizeof(cudaStream_t));
   for (int i = 0; i < numWalkers; i++) {
@@ -377,7 +694,7 @@ void doDiracDeterminantMultiAccept<Kokkos::CudaSpace>(ddkType addk, vectorType& 
   }
 
   // 1. gemvTrans
-  Kokkos::Profiling::PushRegion("updateRow::gemvTrans");
+  Kokkos::Profiling::pushRegion("updateRow::gemvTrans");
   for (int i = 0; i < numWalkers; i++) {
     DiracDeterminant* ddp = static_cast<DiracDeterminant*>(WFC_list[i]);
     auto& lahref = ddp->lah;
@@ -393,7 +710,7 @@ void doDiracDeterminantMultiAccept<Kokkos::CudaSpace>(ddkType addk, vectorType& 
   // 2. poke one element on the device for each walker
   Kokkos::Profiling::pushRegion("updateRow::pokeSingleValue");
   Kokkos::View<ValueType*> poke("poke", numWalkers);
-  auto pokeView = Kokkos:create_mirror_view(poke);
+  auto pokeView = Kokkos::create_mirror_view(poke);
   for (int i = 0; i < numWalkers; i++) {
     DiracDeterminant* ddp = static_cast<DiracDeterminant>(WFC_list[i]);
     pokeView(i) = cone - cone / ddp->curRatio;
@@ -428,77 +745,11 @@ void doDiracDeterminantMultiAccept<Kokkos::CudaSpace>(ddkType addk, vectorType& 
 #endif
  
  
-// this design is problematic because I cannot call cublas from inside of a device function
-// probably will have to abandon this and fold it back into the earlier version, but perhaps I
-// can keep the scalar values on the device (in views).  Then I would keep the structure of the 
-// code as it is and just add functionality to the linalgHelper to work in a particular stream and
-// also to be able to set cublas to expect the scalar arguments to be in the device memory
-
-// can actually still keep this.  The point is that I can have a method in DiracDeterminantKokkos
-// that takes a view full of DiracDeterminantKokkos and then I can operate on them directly.
-
-// also, I can use the embedded linalghelpers to do the low level work, but I will certainly need
-// to template these functions over the memory space.
- 
-
-// need to reorganize in two ways
-// 1.  push data out into plain class that can live on the device
-//      also add needed functionality inline here for convenience
-struct DiracDeterminantKokkos : public QMCTraits
-{
-  using MatType = Kokkos::View<ValueType**, Kokkos::LayoutRight>;
-  using DoubleMatType = Kokkos::View<double**, Kokkos::LayoutRight>;
-
-  Kokkos::View<ValueType[1]> LogValue;
-  Kokkos::View<ValueType[1]> curRatio;
-  Kokkos::View<int[1]> FirstIndex;
-
-  // inverse matrix to be updated
-  MatType psiMinv;
-  // storage for the row update 
-  Kokkos::View<ValueType*> psiV;
-  // temporary storage for row update
-  Kokkos::View<ValueType*> tempRowVec;
-  Kokkos::View<ValueType*> rcopy;
-  // internal storage to perform inversion correctly
-  MatType psiM;
-  // temporary workspace for inversion
-  MatType psiMsave;
-  // temporary workspace for getrf
-  Kokkos::View<ValueType*> getRfWorkSpace;
-  Kokkos::View<ValueType**> getRiWorkSpace;
-  // pivot array
-  Kokkos::View<int*> piv;
-  
-  KOKKOS_INLINE_FUNCTION
-  DiracDeterminantKokkos() { ; }
-
-  KOKKOS_INLINE_FUNCTION
-  DiracDeterminantKokkos* operator=(const DiracDeterminantKokkos& rhs) {
-    LogValue = rhs.LogValue;
-    curRatio = rhs.curRatio;
-    FirstIndex = rhs.FirstIndex;
-    psiMinv = rhs.psiMinv;
-    psiV = rhs.psiV;
-    tempRowVec = rhs.tempRowVec;
-    rcopy = rhs.rcopy;
-    psiMsave = rhs.psiMsave;
-    getRfWorkSpace = rhs.getRfWorkSpace;
-    getRiWorkSpace = rhs.getRiWorkSpace;
-    piv = rhs.piv;
-    return this;
-  }
-
-  DiracDeterminantKokkos(const DiracDeterminantKokkos&) = default;
-  // need to add in checkMatrix(), evaluateLog(psk*), evalGrad(psk*, iat),
-  //                ratioGrad(psk*, iat, gradType), evaluateGL(psk*, G, L, fromscratch)
-  //                recompute(), ratio(psk*, iel), acceptMove(psk*, iel)
-};
 
 
 template<typename addkType, typename vectorType>
 void populateCollectiveView(addkType addk, vectorType& WFC_list) {
-  auto adkdMirror = Kokkos::create_mirror_view(addk);
+  auto addkMirror = Kokkos::create_mirror_view(addk);
   for (int i = 0; i < WFC_list.size(); i++) {
     addkMirror(i) = static_cast<DiracDeterminant*>(WFC_list[i])->ddk;
   }
@@ -506,7 +757,7 @@ void populateCollectiveView(addkType addk, vectorType& WFC_list) {
 }
 
 template<typename addkType, typename vectorType>
-  void populateCollectiveView(addkType addk, vectorType& WFC_list, std::vector<bool>& isAccepted) {
+void populateCollectiveView(addkType addk, vectorType& WFC_list, std::vector<bool>& isAccepted) {
   auto addkMirror = Kokkos::create_mirror_view(addk);
 
   int idx = 0;
@@ -520,226 +771,6 @@ template<typename addkType, typename vectorType>
 }
   
 
-struct DiracDeterminant : public WaveFunctionComponent
-{
-  DiracDeterminant(int nels, const RandomGenerator<RealType>& RNG, int First = 0) 
-    : FirstIndex(First), myRandom(RNG)
-  {
-    ddk.LogValue       = Kokkos::View<ValueType[1]>("LogValue");
-    ddk.curRatio       = Kokkos::View<ValueType[1]>("curRatio");
-    ddk.FirstIndex     = Kokkos::View<int[1]>("FirstIndex");
-    ddk.psiMinv        = DiracDeterminantKokkos::MatType("psiMinv",nels,nels);
-    ddk.psiM           = DiracDeterminantKokkos::MatType("psiM",nels,nels);
-    ddk.psiMsave       = DiracDeterminantKokkos::MatType("psiMsave",nels,nels);
-    ddk.psiV           = Kokkos::View<ValueType*>("psiV",nels);
-    ddk.tempRowVec     = Kokkos::View<ValueType*>("tempRowVec", nels);
-    ddk.rcopy          = Kokkos::View<ValueType*>("rcopy", nels);
-    int getRfBufSize = getrf_gpu_buffer_size(nels, nels, ddk.psiM.data(), nels, lah);
-    ddk.getRfWorkSpace = Kokkos::View<ValueType*>("getrfws", getRfBufSize);
-    ddk.getRiWorkSpace = DiracDeterminantKokkos::MatType("getriws", nels, nels);
-    ddk.piv            = Kokkos::View<int*>("piv", nels);
-    
-    FirstIndexMirror = Kokkos::create_mirror_view(ddk.FirstIndex);
-    FirstIndexMirror(0) = FirstIndex;
-    Kokkos::deep_copy(ddk.FirstIndex, FirstIndexMirror);
-    
-    // basically we are generating uniform random number for
-    // each entry of psiMsave in the interval [-0.5, 0.5]
-    constexpr double shift(0.5);
-
-    // change this to match data ordering of DeterminantRef
-    // recall that psiMsave has as its fast index the leftmost index
-    // however int the c style matrix in DeterminantRef 
-    auto psiMsaveMirror = Kokkos::create_mirror_view(psiMsave);
-    auto psiMMirror = Kokkos::create_mirror_view(psiM);
-    for (int i = 0; i < nels; i++) {
-      for (int j = 0; j < nels; j++) {
-	psiMsaveMirror(i,j) = myRandom.rand()-shift;
-	psiMMirror(j,i) = psiMsaveMirror(i,j);
-      }
-    }
-    Kokkos::deep_copy(psiMsave, psiMsaveMirror);
-    Kokkos::deep_copy(psiM, psiMMirror);
-
-    RealType phase;
-    LogValue = InvertWithLog(ddk, lah, phase);
-    elementWiseCopy(psiMinv, psiM);
-  }
-
-  void checkMatrix()
-  {
-    DiradDeterminantBase::MatType psiMRealType("psiM_RealType", ddk.psiM.extent(0), ddk.psiM.extent(0));
-    elementWiseCopy(psiMRealType, ddk.psiM);
-    checkIdentity(ddk.psiMsave, psiMRealType, "Psi_0 * psiM(T)", lah);
-    checkIdentity(ddk.psiMsave, ddk.psiMinv, "Psi_0 * psiMinv(T)", lah);
-    checkDiff(psiMRealType, ddk.psiMinv, "psiM - psiMinv(T)");
-  }
-
-  RealType evaluateLog(ParticleSet& P,
-		       ParticleSet::ParticleGradient_t& G,
-		       ParticleSet::ParticleLaplacian_t& L)
-  {
-    recompute();
-    return 0.0;
-  }
-
-  GradType evalGrad(ParticleSet& P, int iat) { return GradType(); }
-  ValueType ratioGrad(ParticleSet& P, int iat, GradType& grad) { return ratio(P, iat); }
-  void evaluateGL(ParticleSet& P,
-                  ParticleSet::ParticleGradient_t& G,
-                  ParticleSet::ParticleLaplacian_t& L,
-                  bool fromscratch = false) {}
-
-  inline void recompute()
-  {
-    //elementWiseCopy(psiM, psiMsave); // needs to be transposed!
-    elementWiseCopyTrans(ddk.psiM, ddk.psiMsave); // needs to be transposed!
-    lah.invertMatrix(ddk.psiM);
-    elementWiseCopy(ddk.psiMinv, ddk.psiM);
-  }
-
-  // in real application, inside here it would actually evaluate spos at the new
-  // position and stick them in psiV
-  inline ValueType ratio(ParticleSet& P, int iel)
-  {
-    const int nels = ddk.psiV.extent(0);
-    constexpr double shift(0.5);
-    //constexpr double czero(0);
-
-    auto psiVMirror = Kokkos::create_mirror_view(psiV);
-    for (int j = 0; j < nels; ++j) {
-      psiVMirror(j) = myRandom() - shift;
-    }
-    Kokkos::deep_copy(ddk.psiV, psiVMirror);
-    // in main line previous version this looked like:
-    // curRatio = inner_product_n(psiV.data(), psiMinv[iel - FirstIndex], nels, czero);
-    // same issues with indexing
-    curRatio = lah.updateRatio(ddk.psiV, ddk.psiMinv, iel-FirstIndex);
-    return curRatio;
-  }
-  inline void acceptMove(ParticleSet& P, int iel) {
-    Kokkos::Profiling::pushRegion("Determinant::acceptMove");
-    const int nels = ddk.psiV.extent(0);
-    
-    Kokkos::Profiling::pushRegion("Determinant::acceptMove::updateRow");
-    updateRow(ddk.psiMinv, ddk.psiV, iel-FirstIndex, curRatio, lah);
-    Kokkos::Profiling::popRegion();
-    // in main line previous version this looked like:
-    //std::copy_n(psiV.data(), nels, psiMsave[iel - FirstIndex]);
-    // note 1: copy_n copies data from psiV to psiMsave
-    //
-    // note 2: the single argument call to psiMsave[] returned a pointer to
-    // the iel-FirstIndex ROW of the underlying data structure, so
-    // the operation was like (psiMsave.data() + (iel-FirstIndex)*D2)
-    // note that then to iterate through the data it was going sequentially
-    Kokkos::Profiling::pushRegion("Determinant::acceptMove::copyBack");
-    lah.copyBack(ddk.psiMsave, ddk.psiV, iel-FirstIndex);
-
-    Kokkos::Profiling::popRegion();
-    Kokkos::Profiling::popRegion();
-  }
-
-  // accessor functions for checking
-  inline double operator()(int i) const {
-    // not sure what this was for, seems odd to 
-    //Kokkos::deep_copy(psiMinv, psiMinv_host);
-    int x = i / ddk.psiMinv_host.extent(0);
-    int y = i % ddki.psiMinv_host.extent(0);
-    auto dev_subview = subview(ddk.psiMinv, x, y);
-    auto dev_subview_host = Kokkos::create_mirror_view(dev_subview);
-    Kokkos::deep_copy(dev_subview_host, dev_subview);
-    return dev_subview_host(0,0);
-  }
-  inline int size() const { return psiMinv.extent(0)*psiMinv.extent(1); }
-
-  //// collective functions
-  virtual void multi_evaluateLog(const std::vector<WaveFunctionComponent*>& WFC_list,
-                                 const std::vector<ParticleSet*>& P_list,
-                                 const std::vector<ParticleSet::ParticleGradient_t*>& G_list,
-                                 const std::vector<ParticleSet::ParticleLaplacian_t*>& L_list,
-                                 ParticleSet::ParticleValue_t& values) {
-
-    Kokkos::View<DiracDeterminantKokkos*> addk("addk", WFC_list.size());
-    populateCollectiveView(addk, WFC_list);
-    
-    // would just do it inline, but need to template on the memory space
-    doDiracDeterminantMultiEvaluateLog<DiracDeterminantKokkos::MatType::memory_space>(ddk, WFC_list, values);    
-  }
-
-  // miniapp does nothing here, just return 0
-  virtual void multi_evalGrad(const std::vector<WaveFunctionComponent*>& WFC_list,
-			      const std::vector<ParticleSet*>& P_list,
-                              int iat,
-			      std::vector<posT>& grad_now) {
-    for (int i = 0; i < grad_now.size(); i++) {
-      grad_now(i) = posT();
-    }
-  }
-  
-  // do a loop over all walkers, stick ratio in ratios, do nothing to grad_new
-  virtual void multi_ratioGrad(const std::vector<WaveFunctionComponent*>& WFC_list,
-			       const std::vector<ParticleSet*>& P_list,
-			       int iat,
-			       std::vector<valT>& ratios,
-			       std::vector<posT>& grad_new) {
-    Kokkos::View<DiracDeterminantKokkos*> addk("addk", WFC_list.size());
-    populateCollectiveView(addk, WFC_list);
-    
-    Kokkos::View<valT*> tempResults("tempResults", ratios.size());
-
-    doDiracDeterminantMultiEvalRatio(addk, WFC_list, tempResults, iat);
-    
-    auto tempResultsMirror = Kokkos::create_mirror_view(tempResults);
-    Kokkos::deep_copy(tempResultsMirror, tempResults);
-    for (int i = 0; i < ratios.size(); i++) {
-      ratios[i] = tempResultsMirror(i);
-    }
-  }
-
-  virtual void multi_acceptRestoreMove(const std::vector<WaveFunctionComponent*>& WFC_list,
-				       const std::vector<ParticleSet*>& P_list,
-				       const std::vector<bool>& isAccepted,
-				       int iat) {
-    std::vector<WaveFunctionComponent*> activeWFC_list;
-    for (int i = 0; i < WFC_list.size(); i++) {
-      if (isAccepted(i)) {
-	activeWFC_list.push_back(WFC_list(i));
-      }
-    }
-
-    Kokkos::View<DiracDeterminantKokkos*> addk("addk", activeWFC_list.size());
-    populateCollectiveView(addk, activeWFC_list);
-	
-    doDiracDeterminantMultiAccept<DiracDeterminantKokkos::MatType::memory_space>(addk, activeWFC_list, iat);
-  }
-    
-  virtual void multi_evaluateGL(const std::vector<WaveFunctionComponent*>& WFC_list,
-				const std::vector<ParticleSet*>& P_list,
-				const std::vector<ParticleSet::ParticleGradient_t*>& G_list,
-				const std::vector<ParticleSet::ParticleLaplacian_t*>& L_list,
-				bool fromscratch = false) {
-    // code in miniapp does NOTHING here
-  }
-
-  
-
-  
-  DiracDeterminantKokkos ddk;
-  /// Helper class to handle linear algebra
-  /// Holds for instance space for pivots and workspace
-  linalgHelper<ValueType, DiracDeterminantKokkos::MatType::array_layout, DiracDeterminantKokkos::MatType::memory_space> lah;
-
-  /// initial particle index
-  const int FirstIndex;
-  /// current ratio
-  double curRatio;
-  /// log|det|
-  double LogValue;
-  /// random number generator for testing
-  RandomGenerator<RealType> myRandom;
-private:
-
-};
 } // namespace qmcplusplus
 
 
