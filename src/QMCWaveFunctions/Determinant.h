@@ -115,20 +115,7 @@ struct DiracDeterminantKokkos : public QMCTraits
   DiracDeterminantKokkos() { ; }
 
   KOKKOS_INLINE_FUNCTION
-  DiracDeterminantKokkos* operator=(const DiracDeterminantKokkos& rhs) {
-    LogValue = rhs.LogValue;
-    curRatio = rhs.curRatio;
-    FirstIndex = rhs.FirstIndex;
-    psiMinv = rhs.psiMinv;
-    psiV = rhs.psiV;
-    tempRowVec = rhs.tempRowVec;
-    rcopy = rhs.rcopy;
-    psiMsave = rhs.psiMsave;
-    getRfWorkSpace = rhs.getRfWorkSpace;
-    getRiWorkSpace = rhs.getRiWorkSpace;
-    piv = rhs.piv;
-    return this;
-  }
+  DiracDeterminantKokkos& operator=(const DiracDeterminantKokkos& rhs) = default;
 
   DiracDeterminantKokkos(const DiracDeterminantKokkos&) = default;
   // need to add in checkMatrix(), evaluateLog(psk*), evalGrad(psk*, iat),
@@ -276,12 +263,18 @@ struct DiracDeterminant : public WaveFunctionComponent
                                  const std::vector<ParticleSet::ParticleGradient_t*>& G_list,
                                  const std::vector<ParticleSet::ParticleLaplacian_t*>& L_list,
                                  ParticleSet::ParticleValue_t& values) {
-
-    Kokkos::View<DiracDeterminantKokkos*> addk("addk", WFC_list.size());
-    populateCollectiveView(addk, WFC_list);
-    
-    // would just do it inline, but need to template on the memory space
-    doDiracDeterminantMultiEvaluateLog<DiracDeterminantKokkos::MatType::memory_space>(addk, WFC_list, values);    
+    if (WFC_list.size() > 0) {
+      
+      //std::cout << "in DiracDeterminant::multi_evaluateLog" << std::endl;
+      Kokkos::View<DiracDeterminantKokkos*> addk("addk", WFC_list.size());
+      populateCollectiveView(addk, WFC_list);
+      //std::cout << "finished making collective views" << std::endl;
+      
+      //std::cout << "about to do diracDeterminantMultiEvaluateLog" << std::endl;
+      // would just do it inline, but need to template on the memory space
+      doDiracDeterminantMultiEvaluateLog<DiracDeterminantKokkos::MatType::memory_space>(addk, WFC_list, values);    
+      //std::cout << "finished diracDeterminantMultiEvaluateLog" << std::endl;
+    }
   }
 
   // miniapp does nothing here, just return 0
@@ -300,17 +293,19 @@ struct DiracDeterminant : public WaveFunctionComponent
 			       int iat,
 			       std::vector<ValueType>& ratios,
 			       std::vector<PosType>& grad_new) {
-    Kokkos::View<DiracDeterminantKokkos*> addk("addk", WFC_list.size());
-    populateCollectiveView(addk, WFC_list);
-    
-    Kokkos::View<ValueType*> tempResults("tempResults", ratios.size());
 
-    doDiracDeterminantMultiEvalRatio(addk, WFC_list, tempResults, iat);
-    
-    auto tempResultsMirror = Kokkos::create_mirror_view(tempResults);
-    Kokkos::deep_copy(tempResultsMirror, tempResults);
-    for (int i = 0; i < ratios.size(); i++) {
-      ratios[i] = tempResultsMirror(i);
+    if (WFC_list.size() > 0) {
+      Kokkos::View<DiracDeterminantKokkos*> addk("addk", WFC_list.size());
+      populateCollectiveView(addk, WFC_list);
+      
+      Kokkos::View<ValueType*> tempResults("tempResults", ratios.size());
+      doDiracDeterminantMultiEvalRatio(addk, WFC_list, tempResults, iat);
+      
+      auto tempResultsMirror = Kokkos::create_mirror_view(tempResults);
+      Kokkos::deep_copy(tempResultsMirror, tempResults);
+      for (int i = 0; i < ratios.size(); i++) {
+	ratios[i] = tempResultsMirror(i);
+      }
     }
   }
 
@@ -324,11 +319,13 @@ struct DiracDeterminant : public WaveFunctionComponent
 	activeWFC_list.push_back(WFC_list[i]);
       }
     }
-
-    Kokkos::View<DiracDeterminantKokkos*> addk("addk", activeWFC_list.size());
-    populateCollectiveView(addk, activeWFC_list);
-	
-    doDiracDeterminantMultiAccept<DiracDeterminantKokkos::MatType::memory_space>(addk, activeWFC_list, iat);
+    if (activeWFC_list.size() > 0) {
+      
+      Kokkos::View<DiracDeterminantKokkos*> addk("addk", activeWFC_list.size());
+      populateCollectiveView(addk, activeWFC_list);
+      
+      doDiracDeterminantMultiAccept<DiracDeterminantKokkos::MatType::memory_space>(addk, activeWFC_list, iat);
+    }
   }
     
   virtual void multi_evaluateGL(const std::vector<WaveFunctionComponent*>& WFC_list,
@@ -417,10 +414,14 @@ void doDiracDeterminantMultiEvaluateLog(addkType& addk, vectorType& wfcv, resVec
   //      1. copy transpose of psiMsave to psiM
   //      2. invert psiM
   //      3. copy psiM to psiMinv
-
+  
+  //std::cout << "in part 1" << std::endl;
   // 1. copy transpose of psiMsave to psiM for all walkers
   const int numWalkers = addk.extent(0);
   const int numEls = static_cast<DiracDeterminant*>(wfcv[0])->ddk.psiV.extent(0);
+  //std::cout << "  numWalkers = " << numWalkers << ", numEls = " << numEls << std::endl;
+  //std::cout << "  for walker 0, dimensions of psiM are: " << addk(0).psiM.extent(0) << " x " << addk(0).psiM.extent(1) << std::endl;
+  //std::cout << "  for walker 0, dimensions of psiMsave are: " << addk(0).psiMsave.extent(0) << " x " << addk(0).psiMsave.extent(1) << std::endl;
   Kokkos::parallel_for("elementWiseCopyTransAllPsiM",
 		       Kokkos::MDRangePolicy<Kokkos::Rank<3,Kokkos::Iterate::Left> >({0,0,0}, {numWalkers, numEls, numEls}),
 		       KOKKOS_LAMBDA(const int& i0, const int& i1, const int& i2) {
@@ -428,6 +429,7 @@ void doDiracDeterminantMultiEvaluateLog(addkType& addk, vectorType& wfcv, resVec
 		       });
   Kokkos::fence();
 
+  //std::cout << "in part 2" << std::endl;
   // 2. invert psiM.  This will loop over the walkers and invert each psiM.  Need to switch to a batched version of this
   // simplest thing would be to assume mkl and then have this be a kokkos parallel_for, inside of which you would call
   // mkl_set_num_threads_local before doing the linear algebra calls (wouldn't be able to use lah because couldn't follow the
@@ -437,6 +439,7 @@ void doDiracDeterminantMultiEvaluateLog(addkType& addk, vectorType& wfcv, resVec
     static_cast<DiracDeterminant*>(wfcv[i])->lah.invertMatrix(toInv);
   }
 
+  //std::cout << "in part 3" << std::endl;
   // 3. copy psiM to psiMinv
   Kokkos::parallel_for("elementWiseCopyAllPsiM",
 		       Kokkos::MDRangePolicy<Kokkos::Rank<3,Kokkos::Iterate::Left> >({0,0,0}, {numWalkers, numEls, numEls}),
@@ -536,14 +539,20 @@ void doDiracDeterminantMultiEvaluateLog<Kokkos::CudaSpace>(ddkType addk, vectorT
 
 template<typename addkType, typename vectorType, typename resVecType>
 void doDiracDeterminantMultiEvalRatio(addkType addk, vectorType& wfcv, resVecType& ratios, int iel) {
+  //std::cout << "    in doDiracDeterminantMultiEvalRatio" << std::endl;
   using ValueType = typename resVecType::value_type;
-  const int numEls = static_cast<DiracDeterminant*>(wfcv[0])->ddk.psiV.extent(0);
+  //std::cout << "      using statement on ValueType is OK" << std::endl;
   const int numWalkers = addk.extent(0);
+  //std::cout << "      setting the number of walkers from addk is OK" << std::endl;
+  const int numEls = static_cast<DiracDeterminant*>(wfcv[0])->ddk.psiV.extent(0);
+  //std::cout << "      grabbing number of electrons from vector or WaveFunctionComponent* is OK" << std::endl;
+
   constexpr double shift(0.5);
 
   // could do this in parallel, but the random number stream wouldn't be the same.
   // could avoid the data transfer that way.  This is OK, because the real code would
   // be calling evaluateV on the sposet and that would happen on the device as well.
+  //std::cout << "    about to put random numbers into psiV" << std::endl;
   for (int i = 0; i < numWalkers; i++) {
     auto& psiV = static_cast<DiracDeterminant*>(wfcv[i])->ddk.psiV;
     auto psiVMirror = Kokkos::create_mirror_view(psiV);
@@ -552,6 +561,8 @@ void doDiracDeterminantMultiEvalRatio(addkType addk, vectorType& wfcv, resVecTyp
     }
     Kokkos::deep_copy(psiV, psiVMirror);
   }
+  //std::cout << "      finished putting random numbers into psiV" << std::endl;
+
 
   using BarePolicy = Kokkos::TeamPolicy<>;
   BarePolicy pol(numWalkers, 1, 32);

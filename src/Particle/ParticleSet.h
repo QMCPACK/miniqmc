@@ -230,7 +230,7 @@ public:
 
 
   void multi_makeMoveAndCheckKokkos(std::vector<ParticleSet*>& P_list, Kokkos::View<RealType*[3]>& dr,
-				    int iel, std::vector<int> isValid);
+				    int iel, std::vector<int>& isValid);
   /** move a particle
    * @param iat the index of the particle to be moved
    * @param displ random displacement of the iat-th particle

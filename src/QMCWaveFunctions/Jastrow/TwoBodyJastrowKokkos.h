@@ -45,31 +45,7 @@ public:
   // operator=
   // see if we can just say = default but keep the KOKKOS_INLINE_FUNCTION label
   KOKKOS_INLINE_FUNCTION
-  TwoBodyJastrowKokkos* operator=(const TwoBodyJastrowKokkos& rhs) {  
-    LogValue = rhs.LogValue;
-    Nelec = rhs.Nelec;
-    NumGroups = rhs.NumGroups;
-    first = rhs.first;
-    last = rhs.last;
-    updateMode = rhs.updateMode;
-    Uat = rhs.Uat;
-    dUat = rhs.dUat;
-    d2Uat = rhs.d2Uat;
-    cur_u = rhs.cur_u;
-    cur_du = rhs.cur_du;
-    cur_d2u = rhs.cur_d2u;
-    old_u = rhs.old_u;
-    old_du = rhs.old_du;
-    old_d2u = rhs.old_d2u;
-    DistCompressed = rhs.DistCompressed;
-    DistIndices = rhs.DistIndices;
-    cutoff_radius = rhs.cutoff_radius;
-    DeltaRInv = rhs.DeltaRInv;
-    SplineCoefs = rhs.SplineCoefs;
-    A = rhs.A;
-    dA = rhs.dA;
-    d2A = rhs.d2A;
-  }
+  TwoBodyJastrowKokkos& operator=(const TwoBodyJastrowKokkos& rhs) = default;
 
   TwoBodyJastrowKokkos(const TwoBodyJastrowKokkos&) = default;
 

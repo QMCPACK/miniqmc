@@ -537,7 +537,7 @@ bool ParticleSet::makeMoveAndCheck(Index_t iat, const SingleParticlePos_t& displ
 }
 
 void ParticleSet::multi_makeMoveAndCheckKokkos(std::vector<ParticleSet*>& P_list, Kokkos::View<RealType*[3]>& dr,
-					       int iel, std::vector<int> isValid)
+					       int iel, std::vector<int>& isValid)
 {
   ScopedTimer local_timer(timers[Timer_makeMove]);
   Kokkos::View<ParticleSet::pskType*> allParticleSetData("apsd", P_list.size());
@@ -585,6 +585,7 @@ void ParticleSet::multi_makeMoveAndCheckKokkos(std::vector<ParticleSet*>& P_list
   auto devIsValidMirror = Kokkos::create_mirror_view(devIsValid);
   Kokkos::deep_copy(devIsValidMirror, devIsValid);
   for (int i = 0; i < isValid.size(); i++) {
+    //std::cout << "copying elements to isValid, for i = " << i << ", value is = " << devIsValidMirror(i) << std::endl;
     isValid[i] = devIsValidMirror(i);
   }  
 }

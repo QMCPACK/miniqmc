@@ -379,24 +379,25 @@ struct OneBodyJastrow : public WaveFunctionComponent
                                  const std::vector<ParticleSet::ParticleGradient_t*>& G_list,
                                  const std::vector<ParticleSet::ParticleLaplacian_t*>& L_list,
                                  ParticleSet::ParticleValue_t& values) {
-    
-    // make a view of all of the OneBodyJastrowData and relevantParticleSetData
-    Kokkos::View<jasDataType*> allOneBodyJastrowData("aobjd", WFC_list.size()); 
-    Kokkos::View<ParticleSet::pskType*> allParticleSetData("apsd", P_list.size());
-    populateCollectiveViews(allOneBodyJastrowData, allParticleSetData, WFC_list, P_list);
-
-    // need to make a view to hold all of the output LogValues
-    Kokkos::View<valT*> tempValues("tempValues", P_list.size());
-
-    // need to write this function
-    doOneBodyJastrowMultiEvaluateLog(allOneBodyJastrowData, allParticleSetData, tempValues);
-
-    // copy the results out to values
-    auto tempValMirror = Kokkos::create_mirror_view(tempValues);
-    Kokkos::deep_copy(tempValMirror, tempValues);
-    
-    for (int i = 0; i < P_list.size(); i++) {
-      values[i] = tempValMirror(i);
+    if (WFC_list.size() > 0) {
+      // make a view of all of the OneBodyJastrowData and relevantParticleSetData
+      Kokkos::View<jasDataType*> allOneBodyJastrowData("aobjd", WFC_list.size()); 
+      Kokkos::View<ParticleSet::pskType*> allParticleSetData("apsd", P_list.size());
+      populateCollectiveViews(allOneBodyJastrowData, allParticleSetData, WFC_list, P_list);
+      
+      // need to make a view to hold all of the output LogValues
+      Kokkos::View<valT*> tempValues("tempValues", P_list.size());
+      
+      // need to write this function
+      doOneBodyJastrowMultiEvaluateLog(allOneBodyJastrowData, allParticleSetData, tempValues);
+      
+      // copy the results out to values
+      auto tempValMirror = Kokkos::create_mirror_view(tempValues);
+      Kokkos::deep_copy(tempValMirror, tempValues);
+      
+      for (int i = 0; i < P_list.size(); i++) {
+	values[i] = tempValMirror(i);
+      }
     }
   }
 

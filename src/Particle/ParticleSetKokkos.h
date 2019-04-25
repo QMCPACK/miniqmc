@@ -67,32 +67,7 @@ public:
   ParticleSetKokkos() { ; }
 
   KOKKOS_INLINE_FUNCTION
-  ParticleSetKokkos* operator=(const ParticleSetKokkos& rhs) {
-    ID = rhs.ID;
-    IndirectID = rhs.IndirectID;
-    GroupID = rhs.GroupID;
-    SubPtcl = rhs.SubPtcl;
-    R = rhs.R;
-    RSoA = rhs.RSoA;
-    G = rhs.G;
-    L = rhs.L;
-    UseBoundBox = rhs.UseBoundBox;
-    IsGrouped = rhs.IsGrouped;
-    activePtcl = rhs.activePtcl;
-    activePos = rhs.activePos;
-    DT_G = rhs.DT_G;
-    DT_R = rhs.DT_R;
-    BoxBConds = rhs.BoxBConds;
-    corners = rhs.corners;
-    LikeDTDistances = rhs.LikeDTDistances;
-    LikeDTDisplacements = rhs.LikeDTDisplacements;
-    LikeDTTemp_r = rhs.LikeDTTemp_r;
-    LikeDTTemp_dr = rhs.LikeDTTemp_dr;
-    originR = rhs.originR;
-    numIonGroups = rhs.numIonGroups;
-    ionGroupID = rhs.ionGroupID;
-    ionSubPtcl = rhs.ionSubPtcl;
-  }
+  ParticleSetKokkos& operator=(const ParticleSetKokkos& rhs) = default;
 
   ParticleSetKokkos(const ParticleSetKokkos&) = default;
 

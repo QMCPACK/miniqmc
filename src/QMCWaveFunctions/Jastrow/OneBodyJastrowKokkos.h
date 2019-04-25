@@ -43,31 +43,8 @@ public:
   // operator=
   // see if we can just say = default but keep the KOKKOS_INLINE_FUNCTION label
   KOKKOS_INLINE_FUNCTION
-  OneBodyJastrowKokkos* operator=(const OneBodyJastrowKokkos& rhs) {  
-    LogValue = rhs.LogValue;
-    Nelec = rhs.Nelec;
-    Nions = rhs.Nions;
-    NumGroups = rhs.NumGroups;
-    updateMode = rhs.updateMode;
-    curGrad = rhs.curGrad;
-    curLap = rhs.curLap;
-    curAt = rhs.curAt;
-    Grad = rhs.Grad;
-    Lap = rhs.Lap;
-    Vat = rhs.Vat;
-    U = rhs.U;
-    dU = rhs.dU;
-    d2U = rhs.d2U;
-    DistCompressed = rhs.DistCompressed;
-    DistIndices = rhs.DistIndices;
-    cutoff_radius = rhs.cutoff_radius;
-    DeltaRInv = rhs.DeltaRInv;
-    SplineCoefs = rhs.SplineCoefs;
-    A = rhs.A;
-    dA = rhs.dA;
-    d2A = rhs.d2A;
-    return this;
-  }
+  OneBodyJastrowKokkos& operator=(const OneBodyJastrowKokkos& rhs) = default;
+
   OneBodyJastrowKokkos(const OneBodyJastrowKokkos&) = default;
   
   // 
@@ -127,7 +104,6 @@ public:
     if (fromscratch) {
       recompute(psk);
     }
-
     for (size_t iel = 0; iel < Nelec(0); iel++) {
       for (int d = 0; d < dim; d++) {
 	psk.G(iel,d) += Grad(iel,d);
@@ -153,7 +129,6 @@ public:
       Lap(iel) = accumulateGL(subview1, subview2);
     }
   }
-
 
   template<typename pskType, typename distViewType>
   KOKKOS_INLINE_FUNCTION
@@ -299,7 +274,7 @@ public:
 
     int iCount = 0;
     int iLimit = end - start;
-    
+
     for (int jat = 0; jat < iLimit; jat++) {
       RealType r = dist(jat+start);
       if (r < cutoff_radius(gid)) {

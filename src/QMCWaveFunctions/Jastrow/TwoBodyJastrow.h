@@ -521,7 +521,7 @@ void TwoBodyJastrow<FT>::addFunc(int ia, int ib, FT* j)
 {
   if (splCoefsNotAllocated) {
     splCoefsNotAllocated = false;
-    jasData.SplineCoefs   = Kokkos::View<valT**>("SplineCoefficients", NumGroups, j->SplineCoefs.extent(0));
+    jasData.SplineCoefs   = Kokkos::View<valT**>("SplineCoefficients", NumGroups*NumGroups, j->SplineCoefs.extent(0));
   }
 
   if (ia == ib)
@@ -531,24 +531,24 @@ void TwoBodyJastrow<FT>::addFunc(int ia, int ib, FT* j)
       int ij = 0;
       for (int ig = 0; ig < NumGroups; ++ig)
         for (int jg = 0; jg < NumGroups; ++jg, ++ij) {
-            F[ij] = *j;
-	    auto crMirror = Kokkos::create_mirror_view(jasData.cutoff_radius);
-	    auto drinvMirror = Kokkos::create_mirror_view(jasData.cutoff_radius);
-	    Kokkos::deep_copy(crMirror, jasData.cutoff_radius);
-	    Kokkos::deep_copy(drinvMirror, jasData.DeltaRInv);
-	    crMirror(ij) = j->cutoff_radius;
-	    drinvMirror(ij) = j->DeltaRInv;
-	    Kokkos::deep_copy(jasData.cutoff_radius, crMirror);
-	    Kokkos::deep_copy(jasData.DeltaRInv, drinvMirror);
-
-	    auto bigScMirror   = Kokkos::create_mirror_view(jasData.SplineCoefs);
-	    auto smallScMirror = Kokkos::create_mirror_view(j->SplineCoefs);
-	    Kokkos::deep_copy(smallScMirror, j->SplineCoefs);
-	    Kokkos::deep_copy(bigScMirror,   jasData.SplineCoefs);
-	    for (int i = 0; i < j->SplineCoefs.extent(0); i++) {
-	      bigScMirror(ij, i) = smallScMirror(i);
-	    }
-	    Kokkos::deep_copy(jasData.SplineCoefs, bigScMirror);
+	  F[ij] = *j;
+	  auto crMirror = Kokkos::create_mirror_view(jasData.cutoff_radius);
+	  auto drinvMirror = Kokkos::create_mirror_view(jasData.cutoff_radius);
+	  Kokkos::deep_copy(crMirror, jasData.cutoff_radius);
+	  Kokkos::deep_copy(drinvMirror, jasData.DeltaRInv);
+	  crMirror(ij) = j->cutoff_radius;
+	  drinvMirror(ij) = j->DeltaRInv;
+	  Kokkos::deep_copy(jasData.cutoff_radius, crMirror);
+	  Kokkos::deep_copy(jasData.DeltaRInv, drinvMirror);
+	  
+	  auto bigScMirror   = Kokkos::create_mirror_view(jasData.SplineCoefs);
+	  auto smallScMirror = Kokkos::create_mirror_view(j->SplineCoefs);
+	  Kokkos::deep_copy(smallScMirror, j->SplineCoefs);
+	  Kokkos::deep_copy(bigScMirror,   jasData.SplineCoefs);
+	  for (int i = 0; i < j->SplineCoefs.extent(0); i++) {
+	    bigScMirror(ij, i) = smallScMirror(i);
+	  }
+	  Kokkos::deep_copy(jasData.SplineCoefs, bigScMirror);
 	}
     }
     else {
