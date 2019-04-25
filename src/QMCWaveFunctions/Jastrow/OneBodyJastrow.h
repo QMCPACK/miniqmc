@@ -94,16 +94,17 @@ void doOneBodyJastrowMultiEvalRatio(int pairNum, eiListType& eiList, apskType& a
 			 int walkerIndex = member.league_rank();
 			 int walkerNum = activeWalkerIdx(walkerIndex);
 			 auto& psk = apsk(walkerNum);
-			 auto& jd = allOneBodyJastrowData(walkerIndex);
-			 jd.updateMode(0) = 0;
+			 //ParticleSetKokkos& psk = apsk(walkerNum);
+			 //auto& jd = allOneBodyJastrowData(walkerIndex);
+			 
+			 allOneBodyJastrowData(walkerIndex).updateMode(0) = 0;
 
-			 Kokkos::parallel_for("obj-ratio-loop",
-					      Kokkos::ThreadVectorRange(member, numKnots),
+			 Kokkos::parallel_for(Kokkos::ThreadVectorRange(member, numKnots),
 					      [=](const int& knotNum) {
 						auto singleDists = Kokkos::subview(unlikeTempR, walkerNum, knotNum, Kokkos::ALL);
-						auto val = jd.computeU(psk, singleDists);
+						auto val = allOneBodyJastrowData(walkerIndex).computeU(psk, singleDists);
 						int iat = eiList(walkerNum, pairNum, 1);
-						devRatios(walkerNum, numKnots) = std::exp(jd.V(iat) - val);
+						devRatios(walkerNum, numKnots) = std::exp(allOneBodyJastrowData(walkerIndex).Vat(iat) - val);
 					      });
 		       });
 

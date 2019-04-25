@@ -228,7 +228,9 @@ struct WaveFunctionComponent : public QMCTraits
 			       Kokkos::View<double***>& likeTempR,
 			       Kokkos::View<double***>& unlikeTempR,
 			       Kokkos::View<int*>& activeWalkerIdx,
-			       std::vector<ValueType>& ratios);
+			       std::vector<ValueType>& ratios) {
+
+  };
   
   virtual void multi_evaluateGL(const std::vector<WaveFunctionComponent*>& WFC_list,
                                 const std::vector<ParticleSet*>& P_list,

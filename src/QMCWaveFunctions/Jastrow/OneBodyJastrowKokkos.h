@@ -92,7 +92,7 @@ public:
   RealType ratio(pskType& psk, int iat) {
     updateMode(0) = 0;
     curAt(0) = computeU(psk, psk.UnlikeDTTemp_r);
-    return std::exp(Vat(iat) - curAt);
+    return std::exp(Vat(iat) - curAt(0));
   }
 
   // could later expand this to take a policy member and do hierarchical parallelism
@@ -109,7 +109,7 @@ public:
     for (int i = 0; i < dim; i++) {
       inG(i) = curGrad(i);
     }
-    return std::exp(Vat[iat] - curAt);
+    return std::exp(Vat(iat) - curAt(0));
   }
 
   // could later expand this to take a policy member and do hierarchical parallelism
@@ -147,8 +147,10 @@ public:
       for (int iat = 0; iat < Nions(0); iat++) {
 	Vat(iel) += U(iat);
       }
-      Lap(iel) = accumulateGL(Kokkos::subview(psk.UnlikeDTDisplacements,iel,Kokkos::ALL(),Kokkos::ALL()),
-			      Kokkos::subview(Grad, iel, Kokkos::ALL()));
+      auto subview1 = Kokkos::subview(psk.UnlikeDTDisplacements,iel,Kokkos::ALL(),Kokkos::ALL());
+      auto subview2 = Kokkos::subview(Grad, iel, Kokkos::ALL());
+
+      Lap(iel) = accumulateGL(subview1, subview2);
     }
   }
 
@@ -329,7 +331,7 @@ public:
 	 sCoef2*( d2A(10)*tp2 + d2A(11))+
 	 sCoef3*( d2A(14)*tp2 + d2A(15)));
       
-      dU(iScatter) = DeltaRInv * rinv *
+      dU(iScatter) = DeltaRInv(gid) * rinv *
 	(sCoef0*( dA( 1)*tp1 + dA( 2)*tp2 + dA( 3))+
 	 sCoef1*( dA( 5)*tp1 + dA( 6)*tp2 + dA( 7))+
 	 sCoef2*( dA( 9)*tp1 + dA(10)*tp2 + dA(11))+

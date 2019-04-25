@@ -116,16 +116,15 @@ void doTwoBodyJastrowMultiEvalRatio(int pairNum, eiListType& eiList, apskType& a
 			 int walkerIndex = member.league_rank();
 			 int walkerNum = activeWalkerIdx(walkerIndex);
 			 auto& psk = apsk(walkerNum);
-			 auto& jd = allTwoBodyJastrowData(walkerIndex);
-			 jd.updateMode(0) = 0;
+			 //auto& jd = allTwoBodyJastrowData(walkerIndex);
+			 allTwoBodyJastrowData(walkerIndex).updateMode(0) = 0;
 
-			 Kokkos::parallel_for("tbj-ratio-loop",
-					      Kokkos::ThreadVectorRange(member, numKnots),
+			 Kokkos::parallel_for(Kokkos::ThreadVectorRange(member, numKnots),
 					      [=](const int& knotNum) {
 						auto singleDists = Kokkos::subview(likeTempR, walkerNum, knotNum, Kokkos::ALL);
 						int iel = eiList(walkerNum, pairNum, 0);
-						auto val = jd.computeU(psk, iel, singleDists);
-						devRatios(walkerNum, numKnots) = std::exp(jd.Uat(iel) - val);
+						auto val = allTwoBodyJastrowData(walkerIndex).computeU(psk, iel, singleDists);
+						devRatios(walkerNum, numKnots) = std::exp(allTwoBodyJastrowData(walkerIndex).Uat(iel) - val);
 					      });
 		       });
 

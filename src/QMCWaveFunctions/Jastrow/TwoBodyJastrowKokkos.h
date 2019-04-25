@@ -76,7 +76,7 @@ public:
   template<typename pskType>
   KOKKOS_INLINE_FUNCTION
   void acceptMove(pskType& psk, int iel) {
-    computeU3(psk, iel, psk.LikeDTDistances, old_u, old_du, old_d2u);
+    computeU3(psk, iel, Kokkos::subview(psk.LikeDTDistances, iel, Kokkos::ALL()), old_u, old_du, old_d2u);
     if (updateMode(0) == 0)
     { // ratio-only during the move; need to compute derivatives
       computeU3(psk, iel, psk.LikeDTTemp_r, cur_u, cur_du, cur_d2u);
@@ -100,7 +100,7 @@ public:
     Kokkos::Array<valT,3> cur_dUat;
     for (int idim = 0; idim < dim; ++idim)
     {
-      valT cur_g  = cur_dUat(idim);
+      valT cur_g  = cur_dUat[idim];
       for (int jel = 0; jel < Nelec(0); jel++)
       {
 	const valT newg     = cur_du(jel) * new_dr(jel,idim);
@@ -108,13 +108,13 @@ public:
 	dUat(iel,idim)     -= dg;
 	cur_g              += newg;
       }
-      cur_dUat(idim) = cur_g;
+      cur_dUat[idim] = cur_g;
     }
 
     LogValue(0) += Uat(iel) - cur_Uat(0);
     Uat(iel)     = cur_Uat(0);
     for (int idim = 0; idim < dim; idim++) {
-      dUat(iel,idim)  = cur_dUat(iel,idim);
+      dUat(iel,idim)  = cur_dUat[idim];
     }
     d2Uat(iel) = cur_d2Uat;
   }
@@ -143,7 +143,7 @@ public:
     Kokkos::Array<valT,3> tempG;
     accumulateG(cur_du, Kokkos::subview(psk.LikeDTDisplacements, iel, Kokkos::ALL(), Kokkos::ALL()), tempG);
     for (int i = 0; i < dim; i++) {
-      inG(i) += tempG(i);
+      inG(i) += tempG[i];
     }
     return std::exp(DiffVal);
   }
@@ -164,9 +164,9 @@ public:
   KOKKOS_INLINE_FUNCTION
   void accumulateG(Kokkos::View<valT*> du, displType displ, gType grad) {
     for (int idim = 0; idim < dim; idim++) {
-      grad(idim) = 0.0;
+      grad[idim] = 0.0;
       for (int jat = 0; jat < Nelec(0); jat++) {
-	grad(idim) += du(jat) * displ(jat,idim);
+	grad[idim] += du(jat) * displ(jat,idim);
       }
     }
   }
@@ -218,10 +218,10 @@ public:
 	  valT s                  = valT();
 	  for (int jel = 0; jel < iel; ++jel)
 	    s += cur_du(jel) * psk.LikeDTDisplacements(iel,jel,idim);
-	  grad(idim) = s;
+	  grad[idim] = s;
 	}
 	for(int idim = 0; idim < dim; idim++) {
-	  dUat(iel,idim)  = grad(idim);
+	  dUat(iel,idim)  = grad[idim];
 	}
 	d2Uat(iel) = -lap;
 	// add the contribution from the upper triangle
@@ -247,7 +247,7 @@ public:
     for (int jg = 0; jg < NumGroups(0); jg++) {
       const int istart = psk.first(jg);
       const int iend = psk.last(jg);
-      curUat += FevaluateV(iel, istart, iend, dist);
+      curUat += FevaluateV(jg, iel, istart, iend, dist);
     }
     return curUat;
   }
@@ -256,7 +256,7 @@ public:
   KOKKOS_INLINE_FUNCTION
   void computeU3(pskType& psk, int iel, distViewType dist, 
 		 Kokkos::View<valT*> u, Kokkos::View<valT*> du, 
-		 Kokkos::View<valT*> d2u, bool triangle) {
+		 Kokkos::View<valT*> d2u, bool triangle = false) {
     const int jelmax = triangle ? iel : Nelec(0);
     constexpr valT czero(0);
     
@@ -337,13 +337,13 @@ public:
 
   template<typename distViewType>
   KOKKOS_INLINE_FUNCTION
-  void FevaluateV(int gid, int iel, int start, int end, distViewType dist) {
+  RealType FevaluateV(int gid, int iel, int start, int end, distViewType dist) {
     int iCount = 0;
     int iLimit = end - start;
     
     for (int jel = 0; jel < iLimit; jel++) {
       RealType r = dist(jel+start);
-      if (r < cutoff_radius && start + jel != iel) {
+      if (r < cutoff_radius(0) && start + jel != iel) {
 	DistCompressed(iCount) = r;
 	iCount++;
       }
@@ -410,7 +410,7 @@ public:
 	 sCoef2*( d2A(10)*tp2 + d2A(11))+
 	 sCoef3*( d2A(14)*tp2 + d2A(15)));
       
-      du(iScatter) = DeltaRInv * rinv *
+      du(iScatter) = DeltaRInv(gid) * rinv *
 	(sCoef0*( dA( 1)*tp1 + dA( 2)*tp2 + dA( 3))+
 	 sCoef1*( dA( 5)*tp1 + dA( 6)*tp2 + dA( 7))+
 	 sCoef2*( dA( 9)*tp1 + dA(10)*tp2 + dA(11))+
