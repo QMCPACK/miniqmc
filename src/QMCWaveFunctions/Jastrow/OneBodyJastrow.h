@@ -434,29 +434,31 @@ struct OneBodyJastrow : public WaveFunctionComponent
 			       int iat,
 			       std::vector<valT>& ratios,
 			       std::vector<posT>& grad_new) {
+    if (WFC_list.size() > 0) {
 
-    // make a view of all of the OneBodyJastrowData and relevantParticleSetData
-    Kokkos::View<jasDataType*> allOneBodyJastrowData("aobjd", WFC_list.size()); 
-    Kokkos::View<ParticleSet::pskType*> allParticleSetData("apsd", P_list.size());
-    populateCollectiveViews(allOneBodyJastrowData, allParticleSetData, WFC_list, P_list);
-    
-    // need to make a view to hold all of the output LogValues
-    Kokkos::View<double**> grad_new_view("tempValues", P_list.size(), OHMMS_DIM);
-    Kokkos::View<double*> ratios_view("ratios", P_list.size());
-    
-    // need to write this function
-    doOneBodyJastrowMultiRatioGrad(allOneBodyJastrowData, allParticleSetData, iat, grad_new_view, ratios_view);
-
-    // copy the results out to values
-    auto grad_new_view_mirror = Kokkos::create_mirror_view(grad_new_view);
-    Kokkos::deep_copy(grad_new_view_mirror, grad_new_view);
-    auto ratios_view_mirror = Kokkos::create_mirror_view(ratios_view);
-    Kokkos::deep_copy(ratios_view_mirror, ratios_view);
-    
-    for (int i = 0; i < P_list.size(); i++) {
-      ratios[i] = ratios_view_mirror(i);
-      for (int j = 0; j < OHMMS_DIM; j++) {
-	grad_new[i][j] += grad_new_view_mirror(i,j);
+      // make a view of all of the OneBodyJastrowData and relevantParticleSetData
+      Kokkos::View<jasDataType*> allOneBodyJastrowData("aobjd", WFC_list.size()); 
+      Kokkos::View<ParticleSet::pskType*> allParticleSetData("apsd", P_list.size());
+      populateCollectiveViews(allOneBodyJastrowData, allParticleSetData, WFC_list, P_list);
+      
+      // need to make a view to hold all of the output LogValues
+      Kokkos::View<double**> grad_new_view("tempValues", P_list.size(), OHMMS_DIM);
+      Kokkos::View<double*> ratios_view("ratios", P_list.size());
+      
+      // need to write this function
+      doOneBodyJastrowMultiRatioGrad(allOneBodyJastrowData, allParticleSetData, iat, grad_new_view, ratios_view);
+      
+      // copy the results out to values
+      auto grad_new_view_mirror = Kokkos::create_mirror_view(grad_new_view);
+      Kokkos::deep_copy(grad_new_view_mirror, grad_new_view);
+      auto ratios_view_mirror = Kokkos::create_mirror_view(ratios_view);
+      Kokkos::deep_copy(ratios_view_mirror, ratios_view);
+      
+      for (int i = 0; i < P_list.size(); i++) {
+	ratios[i] = ratios_view_mirror(i);
+	for (int j = 0; j < OHMMS_DIM; j++) {
+	  grad_new[i][j] += grad_new_view_mirror(i,j);
+	}
       }
     }
   }
@@ -471,15 +473,16 @@ struct OneBodyJastrow : public WaveFunctionComponent
 	numAccepted++;
       }
     }
-    
-    // make a view of all of the OneBodyJastrowData and relevantParticleSetData
-    Kokkos::View<jasDataType*> allOneBodyJastrowData("aobjd", numAccepted); 
-    Kokkos::View<ParticleSet::pskType*> allParticleSetData("apsd", numAccepted);
-    populateCollectiveViews(allOneBodyJastrowData, allParticleSetData, WFC_list, P_list, isAccepted);
-    
-    // need to write this function
-    doOneBodyJastrowMultiAcceptRestoreMove(allOneBodyJastrowData, allParticleSetData, iat);
-    
+    if (numAccepted > 0) {
+
+      // make a view of all of the OneBodyJastrowData and relevantParticleSetData
+      Kokkos::View<jasDataType*> allOneBodyJastrowData("aobjd", numAccepted); 
+      Kokkos::View<ParticleSet::pskType*> allParticleSetData("apsd", numAccepted);
+      populateCollectiveViews(allOneBodyJastrowData, allParticleSetData, WFC_list, P_list, isAccepted);
+      
+      // need to write this function
+      doOneBodyJastrowMultiAcceptRestoreMove(allOneBodyJastrowData, allParticleSetData, iat);
+    }
     // be careful on this one, looks like it is being done for side effects.  Should see what needs to go back!!!
   }
 
