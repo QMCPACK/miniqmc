@@ -27,6 +27,7 @@
 #include <Utilities/NewTimer.h>
 #include <Particle/ParticleSet.h>
 #include <QMCWaveFunctions/WaveFunctionComponent.h>
+#include <QMCWaveFunctions/Determinant.h>
 
 namespace qmcplusplus
 {
@@ -87,7 +88,7 @@ public:
 
   template<typename psiVType, typename likeTempRType, typename unlikeTempRType, typename eiListType>
   void multi_ratio(int pairNum, const std::vector<WaveFunction*>& WF_list, psiVType& tempPsiV,
-		   likeTempRType& likeTempRs, unlikeTempRType& unlikeTempRs, eiListType& eiList, std::vector<ValT>& ratios); 
+		   likeTempRType& likeTempRs, unlikeTempRType& unlikeTempRs, eiListType& eiList, std::vector<valT>& ratios); 
 
   void multi_acceptrestoreMove(const std::vector<WaveFunction*>& WF_list,
                                const std::vector<ParticleSet*>& P_list,
@@ -128,11 +129,11 @@ const std::vector<WaveFunctionComponent*> extract_dn_list(const std::vector<Wave
 const std::vector<WaveFunctionComponent*>
     extract_jas_list(const std::vector<WaveFunction*>& WF_list, int jas_id);
 
- template<typename aobjdType, typename psiVType, typename likeTempRType, typename unlikeTempRType, typename eiListType>
+template<typename psiVType, typename likeTempRType, typename unlikeTempRType, typename eiListType>
 void WaveFunction::multi_ratio(int pairNum, const std::vector<WaveFunction*>& WF_list, psiVType& tempPsiV,
 			       likeTempRType& likeTempRs, unlikeTempRType& unlikeTempRs, eiListType& eiList,
 			       std::vector<valT>& ratios) {
-  timers[Timer_Det]->start();
+  // timers[Timer_Det]->start();
   int numWalkers = eiList.extent(0);
   int numKnots = tempPsiV.extent(1);
   std::vector<valT> ratios_det(numWalkers*numKnots);
@@ -141,10 +142,10 @@ void WaveFunction::multi_ratio(int pairNum, const std::vector<WaveFunction*>& WF
   }
   
   // complication here in that we are not always looking at the same electron from walker to walker
-  auto EiListMirror = Kokkos::create_mirror_view(EiList);
-  Kokkos::deep_copy(EiListMirror, EiList);
+  auto EiListMirror = Kokkos::create_mirror_view(eiList);
+  Kokkos::deep_copy(EiListMirror, eiList);
 
-  vector<int> packedIndex;
+  std::vector<int> packedIndex;
   for (int iw = 0; iw < numWalkers; iw++) {
     const int elNum = EiListMirror(iw,pairNum,0);
     if (elNum > 0) {
@@ -160,22 +161,22 @@ void WaveFunction::multi_ratio(int pairNum, const std::vector<WaveFunction*>& WF
   for (int i = 0; i< packedIndex.size(); i++) {
     const int awi = packedIndex[i];
     activeWalkerIndexMirror(i) = awi;
-    if (EiListsMirror(awi,pairNum,0) < nelup) {
-      addkMirror(i) = static_cast<DiracDeterminant*>(WF_list[awi]->upDet)->ddk;
+    if (EiListMirror(awi,pairNum,0) < nelup) {
+      addkMirror(i) = static_cast<DiracDeterminant*>(WF_list[awi]->Det_up)->ddk;
     } else {
-      addkMirror(i) = static_cast<DiracDeterminant*>(WF_list[awi]->downDet)->ddk;
+      addkMirror(i) = static_cast<DiracDeterminant*>(WF_list[awi]->Det_dn)->ddk;
     }
   }
   Kokkos::deep_copy(activeWalkerIndex, activeWalkerIndexMirror);
   Kokkos::deep_copy(addk, addkMirror);
   // will do this for one set of pairs for every walker if available
   // note, ratios_set holds all the values, so need to index accordingly
-  doDiracDeterminantMultiEvalRatio(pairNum, addk, activeWalkerIndex, eiList, tempPsiV, ratios_det, static_cast<DiracDeterminant*>(WF_list[0]->myRandom);
+  doDiracDeterminantMultiEvalRatio(pairNum, addk, activeWalkerIndex, eiList, tempPsiV, ratios_det);
 
   for (int i = 0; i < numWalkers*numKnots; i++) {
     ratios[i] = ratios_det[i];
   }
-  timers[Timer_Det]->stop();
+				   //timers[Timer_Det]->stop();
 
   for (size_t i = 0; i < Jastrows.size(); i++)
   {
