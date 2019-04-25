@@ -707,16 +707,16 @@ void doMultiEval_vgh(multiPosType& pos, valType& vals, gradType& grad,
 			     Kokkos::parallel_for(Kokkos::ThreadVectorRange(member, num_splines), 
 						  [&](const int& i) {
 						    const int spl = start + i;
-						    vals(walkerNum, spl) = p();
-						    grad(walkerNum, spl, 0) = p();
-						    grad(walkerNum, spl, 1) = p();
-						    grad(walkerNum, spl, 2) = p();
-						    hess(walkerNum, spl, 0) = p();
-						    hess(walkerNum, spl, 1) = p();
-						    hess(walkerNum, spl, 2) = p();
-						    hess(walkerNum, spl, 3) = p();
-						    hess(walkerNum, spl, 4) = p();
-						    hess(walkerNum, spl, 5) = p();
+						    vals(walkerNum)(spl) = p();
+						    grad(walkerNum)(spl, 0) = p();
+						    grad(walkerNum)(spl, 1) = p();
+						    grad(walkerNum)(spl, 2) = p();
+						    hess(walkerNum)(spl, 0) = p();
+						    hess(walkerNum)(spl, 1) = p();
+						    hess(walkerNum)(spl, 2) = p();
+						    hess(walkerNum)(spl, 3) = p();
+						    hess(walkerNum)(spl, 4) = p();
+						    hess(walkerNum)(spl, 5) = p();
 						  });
 
 			     // could explore using scratch pad memory again, all of the pre?? elements
@@ -749,16 +749,16 @@ void doMultiEval_vgh(multiPosType& pos, valType& vals, gradType& grad,
 							               d2c[2] * coefs(is[0]+i, is[1]+j, is[2]+2, sponum) +
 							               d2c[3] * coefs(is[0]+i, is[1]+j, is[2]+3, sponum);
 							
-							hess(walkerNum,sponum,0) += pre20 * sum0;
-							hess(walkerNum,sponum,1) += pre11 * sum0;
-							hess(walkerNum,sponum,2) += pre10 * sum1;
-							hess(walkerNum,sponum,3) += pre02 * sum0;
-							hess(walkerNum,sponum,4) += pre01 * sum1;
-							hess(walkerNum,sponum,5) += pre00 * sum2;
-							grad(walkerNum,sponum,0) += pre10 * sum0;
-							grad(walkerNum,sponum,1) += pre01 * sum0;
-							grad(walkerNum,sponum,2) += pre00 * sum1;
-							vals(walkerNum,sponum) += pre00 * sum0;
+							hess(walkerNum)(sponum,0) += pre20 * sum0;
+							hess(walkerNum)(sponum,1) += pre11 * sum0;
+							hess(walkerNum)(sponum,2) += pre10 * sum1;
+							hess(walkerNum)(sponum,3) += pre02 * sum0;
+							hess(walkerNum)(sponum,4) += pre01 * sum1;
+							hess(walkerNum)(sponum,5) += pre00 * sum2;
+							grad(walkerNum)(sponum,0) += pre10 * sum0;
+							grad(walkerNum)(sponum,1) += pre01 * sum0;
+							grad(walkerNum)(sponum,2) += pre00 * sum1;
+							vals(walkerNum)(sponum) += pre00 * sum0;
 						      });
 			       }
 			     }
@@ -774,15 +774,15 @@ void doMultiEval_vgh(multiPosType& pos, valType& vals, gradType& grad,
 			     Kokkos::parallel_for(Kokkos::ThreadVectorRange(member, num_splines), 
 						  [&](const int& n) {
 						    const int sponum = start+n;
-						    grad(walkerNum,sponum,0) *= delta_invs(0);
-						    grad(walkerNum,sponum,1) *= delta_invs(1);
-						    grad(walkerNum,sponum,2) *= delta_invs(2);
-						    hess(walkerNum,sponum,0) *= dxx;
-						    hess(walkerNum,sponum,1) *= dyy;
-						    hess(walkerNum,sponum,2) *= dzz;
-						    hess(walkerNum,sponum,3) *= dxy;
-						    hess(walkerNum,sponum,4) *= dxz;
-						    hess(walkerNum,sponum,5) *= dyz;
+						    grad(walkerNum)(sponum,0) *= delta_invs(0);
+						    grad(walkerNum)(sponum,1) *= delta_invs(1);
+						    grad(walkerNum)(sponum,2) *= delta_invs(2);
+						    hess(walkerNum)(sponum,0) *= dxx;
+						    hess(walkerNum)(sponum,1) *= dyy;
+						    hess(walkerNum)(sponum,2) *= dzz;
+						    hess(walkerNum)(sponum,3) *= dxy;
+						    hess(walkerNum)(sponum,4) *= dxz;
+						    hess(walkerNum)(sponum,5) *= dyz;
 						  });
 			   });
     });

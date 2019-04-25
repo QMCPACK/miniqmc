@@ -190,7 +190,7 @@ struct einspline_spo : public SPOSet
 
   
 
-  inline void multi_evaluate_vgh(Kokkos::View<RealType*[3],Kokkos::LayoutLeft>& pos_list, std::vector<vContainer_type>& vals, 
+  inline void multi_evaluate_vgh(Kokkos::View<double*[3],Kokkos::LayoutLeft>& pos_list, std::vector<vContainer_type>& vals, 
 				 std::vector<gContainer_type>& grads, std::vector<hContainer_type>& hesss) {
     Kokkos::View<vContainer_type*> allPsi("allPsi", vals.size());
     Kokkos::View<gContainer_type*> allGrad("allGrad", grads.size());

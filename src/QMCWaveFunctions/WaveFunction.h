@@ -86,8 +86,8 @@ public:
                        std::vector<valT>& ratio_list,
                        std::vector<posT>& grad_new) const;
 
-  template<typename psiVType, typename likeTempRType, typename unlikeTempRType, typename eiListType>
-  void multi_ratio(int pairNum, const std::vector<WaveFunction*>& WF_list, psiVType& tempPsiV,
+  template<typename apsdType, typename psiVType, typename likeTempRType, typename unlikeTempRType, typename eiListType>
+  void multi_ratio(int pairNum, const std::vector<WaveFunction*>& WF_list, apsdType& apsd, psiVType& tempPsiV,
 		   likeTempRType& likeTempRs, unlikeTempRType& unlikeTempRs, eiListType& eiList, std::vector<valT>& ratios); 
 
   void multi_acceptrestoreMove(const std::vector<WaveFunction*>& WF_list,
@@ -129,8 +129,8 @@ const std::vector<WaveFunctionComponent*> extract_dn_list(const std::vector<Wave
 const std::vector<WaveFunctionComponent*>
     extract_jas_list(const std::vector<WaveFunction*>& WF_list, int jas_id);
 
-template<typename psiVType, typename likeTempRType, typename unlikeTempRType, typename eiListType>
-void WaveFunction::multi_ratio(int pairNum, const std::vector<WaveFunction*>& WF_list, psiVType& tempPsiV,
+template<typename apsdType, typename psiVType, typename likeTempRType, typename unlikeTempRType, typename eiListType>
+void WaveFunction::multi_ratio(int pairNum, const std::vector<WaveFunction*>& WF_list, apsdType& apsd, psiVType& tempPsiV,
 			       likeTempRType& likeTempRs, unlikeTempRType& unlikeTempRs, eiListType& eiList,
 			       std::vector<valT>& ratios) {
   // timers[Timer_Det]->start();
@@ -186,7 +186,7 @@ void WaveFunction::multi_ratio(int pairNum, const std::vector<WaveFunction*>& WF
     for (int j = 0; j < packedIndex.size(); j++) {
       jas_list.push_back(WF_list[packedIndex[j]]->Jastrows[i]);
     }
-    Jastrows[i]->multi_evalRatio(pairNum, eiList, jas_list, likeTempRs, unlikeTempRs, activeWalkerIndex, ratios_jas); // handing in both because we don't know what type each is...
+    Jastrows[i]->multi_evalRatio(pairNum, eiList, jas_list, apsd, likeTempRs, unlikeTempRs, activeWalkerIndex, ratios_jas); // handing in both because we don't know what type each is...
 
     for (int idx = 0; idx < numWalkers*numKnots; idx++)
       ratios[idx] *= ratios_jas[idx];

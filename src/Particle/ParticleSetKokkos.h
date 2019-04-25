@@ -170,7 +170,7 @@ public:
   // I'm just too chicken to make it private for now
   KOKKOS_INLINE_FUNCTION
   void DTComputeDistances(RealType x0, RealType y0, RealType z0,
-			  Kokkos::View<RealType*[dim]> locR,
+			  Kokkos::View<RealType*[dim],Kokkos::LayoutLeft> locR,
 			  Kokkos::View<RealType*> temp_r,
 			  int first, int last, int flip_ind = 0) {
     constexpr RealType minusone(-1);

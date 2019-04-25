@@ -73,8 +73,8 @@ struct Mover_ref
 };
 
 template<class T, typename TBOOL>
-const std::vector<T*>
-    filtered_list(const std::vector<T*>& input_list, const std::vector<TBOOL>& chosen)
+std::vector<T*>
+    filtered_list_ref(const std::vector<T*>& input_list, const std::vector<TBOOL>& chosen)
 {
   std::vector<T*> final_list;
   for (int iw = 0; iw < input_list.size(); iw++)
@@ -83,7 +83,7 @@ const std::vector<T*>
   return final_list;
 }
 
-const std::vector<ParticleSet*> extract_els_list(const std::vector<Mover_ref*>& mover_list)
+std::vector<ParticleSet*> extract_els_list_ref(const std::vector<Mover_ref*>& mover_list)
 {
   std::vector<ParticleSet*> els_list;
   for (auto it = mover_list.begin(); it != mover_list.end(); it++)
@@ -91,7 +91,7 @@ const std::vector<ParticleSet*> extract_els_list(const std::vector<Mover_ref*>& 
   return els_list;
 }
 
-const std::vector<SPOSet*> extract_spo_list(const std::vector<Mover_ref*>& mover_list)
+std::vector<SPOSet*> extract_spo_list_ref(const std::vector<Mover_ref*>& mover_list)
 {
   std::vector<SPOSet*> spo_list;
   for (auto it = mover_list.begin(); it != mover_list.end(); it++)
@@ -99,7 +99,7 @@ const std::vector<SPOSet*> extract_spo_list(const std::vector<Mover_ref*>& mover
   return spo_list;
 }
 
-const std::vector<WaveFunction*> extract_wf_list(const std::vector<Mover_ref*>& mover_list)
+std::vector<WaveFunction*> extract_wf_list_ref(const std::vector<Mover_ref*>& mover_list)
 {
   std::vector<WaveFunction*> wf_list;
   for (auto it = mover_list.begin(); it != mover_list.end(); it++)

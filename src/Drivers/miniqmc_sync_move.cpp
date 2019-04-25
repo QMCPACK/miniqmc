@@ -116,6 +116,7 @@
 #include <QMCWaveFunctions/SPOSet_builder.h>
 #include <QMCWaveFunctions/WaveFunction.h>
 #include <Drivers/Mover.hpp>
+#include <Drivers/Mover_ref.hpp>
 #include <getopt.h>
 
 using namespace std;
@@ -323,7 +324,7 @@ int main(int argc, char** argv)
     // use this pointer if I'm doing reference, but acutal spo if not
     SPOSet* spo_main;
     using spo_type = einspline_spo<OHMMS_PRECISION, 32>;
-    using mover_type = mover<OHMMS_PRECISION, 32>;
+    using mover_type = Mover<OHMMS_PRECISION, 32>;
     spo_type spo;
 
     int nTiles = 1;
@@ -403,7 +404,7 @@ int main(int argc, char** argv)
 	Mover_ref* thiswalker = new Mover_ref(myPrimes[ip], ions);
 	mover_list_ref[iw]    = thiswalker;
       } else {
-	mover_type* thiswalker = new mover_type(myPrimes[i], ions, spo);
+	mover_type* thiswalker = new mover_type(myPrimes[iw], ions, spo);
 	mover_list[iw]    = thiswalker;
       }
 	
@@ -430,14 +431,14 @@ int main(int argc, char** argv)
       //            note that by now, the electron-ion distance table is present in els
       if (useRef == false)
       {
-	mover_list[iw]->els.PushDataToParticleSetKokkos();
+	mover_list[iw]->els.pushDataToParticleSetKokkos();
       }
     }
     
     { // initial computing
       if (useRef) {
-	const std::vector<ParticleSet*> P_list(extract_els_list(mover_list_ref));
-	const std::vector<WaveFunction*> WF_list(extract_wf_list(mover_list_ref));
+	const std::vector<ParticleSet*> P_list(extract_els_list_ref(mover_list_ref));
+	const std::vector<WaveFunction*> WF_list(extract_wf_list_ref(mover_list_ref));
 	mover_list_ref[0]->wavefunction.multi_evaluateLog(WF_list, P_list);
       } else {
 	const std::vector<ParticleSet*> P_list(extract_els_list(mover_list));
@@ -492,14 +493,14 @@ int main(int argc, char** argv)
 	std::vector<ParticleSet*> P_list;
 	std::vector<WaveFunction*> WF_list;
 	if (useRef) {
-	  P_list(extract_els_list(mover_list_ref));
-	  WF_list(extract_wf_list(mover_list_ref));
+	  P_list = extract_els_list_ref(mover_list_ref);
+	  WF_list = extract_wf_list_ref(mover_list_ref);
 	} else {
 	  P_list = extract_els_list(mover_list);
 	  WF_list = extract_wf_list(mover_list);
 	}
 
-	Mover* anon_mover_ref;
+	Mover_ref* anon_mover_ref;
 	mover_type* anon_mover;
 	if (useRef) {
 	  anon_mover_ref = mover_list_ref[0];
@@ -558,16 +559,15 @@ int main(int argc, char** argv)
 	    std::vector<WaveFunction*> valid_WF_list;
 	    std::vector<bool> isAccepted;	    
 	    if (useRef) {
-	      const std::vector<Mover*> valid_mover_list(filtered_list(mover_list_ref, isValid));
+	      const std::vector<Mover_ref*> valid_mover_list(filtered_list_ref(mover_list_ref, isValid));
 	      isAccepted.resize(valid_mover_list.size());
-	      valid_P_list = extract_els_list(valid_mover_list);
-	      valid_spo_list = extract_spo_list(valid_mover_list);
-	      valid_WF_list = extract_wf_list(valid_mover_list);
+	      valid_P_list = extract_els_list_ref(valid_mover_list);
+	      valid_spo_list = extract_spo_list_ref(valid_mover_list);
+	      valid_WF_list = extract_wf_list_ref(valid_mover_list);
 	    } else {
 	      const std::vector<mover_type*> valid_mover_list(filtered_list(mover_list, isValid));
 	      isAccepted.resize(valid_mover_list.size());
 	      valid_P_list = extract_els_list(valid_mover_list);
-	      valid_spo_list = extract_spo_list(valid_mover_list);
 	      valid_WF_list = extract_wf_list(valid_mover_list);
 	    }
 	    
@@ -581,11 +581,11 @@ int main(int argc, char** argv)
 
 	    if (useRef) {
 	      for (int iw = 0; iw < valid_P_list.size(); iw++)
-		pos_list[iw] = valid_P_list[iw].R[iel];
-	      anon_mover_ref.spo->multi_evaluate_vgh(valid_spo_list, pos_list); 
+		pos_list[iw] = valid_P_list[iw]->R[iel];
+	      anon_mover_ref->spo->multi_evaluate_vgh(valid_spo_list, pos_list); 
 	    } else {
 	      Kokkos::View<double*[3],Kokkos::LayoutLeft> pos_list("positions", valid_P_list.size());
-	      Kokkos::View<valid_P_list[0]::pskType*> allParticleSetData("apsd", valid_P_list.size());
+	      Kokkos::View<ParticleSet::pskType*> allParticleSetData("apsd", valid_P_list.size());
 	      auto apsdMirror = Kokkos::create_mirror_view(allParticleSetData);
 	      for (int i = 0; i < valid_P_list.size(); i++) {
 		apsdMirror(i) = valid_P_list[i]->psk;
@@ -606,7 +606,7 @@ int main(int argc, char** argv)
 	      const std::vector<mover_type*> valid_mover_list(filtered_list(mover_list, isValid));
 	      auto vals = extract_spo_psi_list(valid_mover_list);
 	      auto grads = extract_spo_grad_list(valid_mover_list);
-	      auto hesss = extract_spo_grad_list(valid_mover_list);
+	      auto hesss = extract_spo_hess_list(valid_mover_list);
 	      spo.multi_evaluate_vgh(pos_list, vals, grads, hesss);
 	    }
 	    Timers[Timer_ratioGrad]->stop();
@@ -629,7 +629,7 @@ int main(int argc, char** argv)
 	    
 	    // Update position
 	    if (useRef) {
-	      const std::vector<Mover*> valid_mover_list(filtered_list(mover_list_ref, isValid));
+	      const std::vector<Mover_ref*> valid_mover_list(filtered_list(mover_list_ref, isValid));
 	      for (int iw = 0; iw < valid_mover_list.size(); iw++)
 		{
 		  if (isAccepted[iw]) // MC
@@ -650,7 +650,7 @@ int main(int argc, char** argv)
 	      // evaluate Kinetic Energy
 	    }
 	} else {
-	  anon_mover->els.multi_DonePbyP(P_list);
+	  anon_mover->els.multi_donePbyP(P_list);
 	}
 	  
         if (useRef) {
@@ -703,7 +703,7 @@ int main(int argc, char** argv)
 	  // a. maybe make a first quick kernel that does nothing but count how many pairs there will be
 	  // b. then come back and make space for everything with views on the host
 	  // c. then run a kernel to populate the views on the host, maybe also continuing on to actually do the work...
-	  Kokkos::View<valid_P_list[0]::pskType*> allParticleSetData("apsd", P_list.size());
+	  Kokkos::View<ParticleSet::pskType*> allParticleSetData("apsd", P_list.size());
 	  auto apsdMirror = Kokkos::create_mirror_view(allParticleSetData);
 	  for (int i = 0; i < P_list.size(); i++) {
 	    apsdMirror(i) = P_list[i]->psk;
@@ -713,20 +713,19 @@ int main(int argc, char** argv)
 
 	  double locRmax = Rmax;
 	  Kokkos::TeamPolicy<> pol(nmovers, 1, 32);
-	  Kokkos::parallel_for("FindNumEiPairs", policy,
+	  Kokkos::parallel_for("FindNumEiPairs", pol,
 			       KOKKOS_LAMBDA(Kokkos::TeamPolicy<>::member_type member) {
 				 int walkerNum = member.league_rank();
-				 auto& psetRef = apsd(walkerNum);
 				 int locSum;
-				 Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(member, psetRef.R.extent(0)),
+				 Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(member, allParticleSetData(walkerNum).R.extent(0)),
 							 [=](const int& elNum, int& pairSum) {
-							   for (int atnum = 0; atnum < psetRef.UnlikeDTDistances.extent(1); atnum++) {
-							     if (psetRef.UnlikeDTDistances(elNum, atnum) < locRmax) {
+							   for (int atnum = 0; atnum < allParticleSetData(walkerNum).UnlikeDTDistances.extent(1); atnum++) {
+							     if (allParticleSetData(walkerNum).UnlikeDTDistances(elNum, atnum) < locRmax) {
 							       pairSum++;
 							     }
 							   }
 							 }, locSum);
-				 Kokkos::Single( Kokkos::PerTeam(member), [=]() {
+				 Kokkos::single( Kokkos::PerTeam(member), [=]() {
 				     EiPairs(walkerNum) += locSum;
 				   });
 			       });
@@ -740,16 +739,15 @@ int main(int argc, char** argv)
 	  }
 	  
 	  Kokkos::View<int**[2]> EiLists("EiLists", nmovers, maxSize);
-	  Kokkos::parallel_for("SetupEiLists", nmovers
+	  Kokkos::parallel_for("SetupEiLists", nmovers,
 			       KOKKOS_LAMBDA(const int& walkerNum) {
 				 for (int i = 0; i < maxSize; i++) {
 				   EiLists(walkerNum,i,0) = -1;
 				 }
-				 auto& psetRef = apsd(walkerNum);
 				 int idx = 0;
-				 for (int elNum = 0; elNum < psetRef.R.extent(0); elNum++) {
-				   for (int atNum = 0; atNum < psetRef.UnlikeDTDistances.extent(1); atNum++) {
-				     if (psetRef.UnlikeDTDistances(elNum, atNum) < locRmax) {
+				 for (int elNum = 0; elNum < allParticleSetData(walkerNum).R.extent(0); elNum++) {
+				   for (int atNum = 0; atNum < allParticleSetData(walkerNum).UnlikeDTDistances.extent(1); atNum++) {
+				     if (allParticleSetData(walkerNum).UnlikeDTDistances(elNum, atNum) < locRmax) {
 				       EiLists(walkerNum,idx,0) = elNum;
 				       EiLists(walkerNum,idx,1) = atNum;
 				       idx++;
@@ -786,7 +784,7 @@ int main(int argc, char** argv)
 	    anon_mover->els.updateTempPosAndRs(eiPair, allParticleSetData, EiLists,
 					       rOnSphere, bigElPos, bigLikeTempR, bigUnlikeTempR);
 	    // actually putting the values calculated by evaluate_vs into tempPsiV
-	    spo.evaluate_vs(bigElPos, tempPsiV, allParticleSetData); // also perhaps hand in result views to store the output
+	    spo.multi_evaluate_v(bigElPos, tempPsiV, allParticleSetData); // also perhaps hand in result views to store the output
 
 	    // eventually would need to pass in the actual positions so that calls to evaluate_vs would go
 	    // to the right location.  For now, just need distances for jastrows and number of the particles

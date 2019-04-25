@@ -572,7 +572,7 @@ void doDiracDeterminantMultiEvalRatio(addkType addk, vectorType& wfcv, resVecTyp
 
 template<typename addkType, typename awType, typename eiListType, typename psiVType, typename ratiosType>
 void doDiracDeterminantMultiEvalRatio(int pairNum, addkType& addk, awType& activeWalkers, eiListType& eiList, psiVType& psiVScratch, ratiosType& ratios) {
-  using ValueType = typename psiVType::data_type;
+  using ValueType = typename psiVType::value_type;
   const int numEls = psiVScratch.extent(2);
   const int numKnots = psiVScratch.extent(1);
   const int numWalkers = activeWalkers.extent(0);
@@ -600,9 +600,9 @@ void doDiracDeterminantMultiEvalRatio(int pairNum, addkType& addk, awType& activ
 		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
 			 const int walkerNum = activeWalkers(member.league_rank());
 			 const int bandIdx = eiList(walkerNum, pairNum, 0) - addk(walkerNum).FirstIndex(0);
-			 Kokkos::parallel_for("loopOverKnots", Kokkos::TeamThreadRange(member, numKnots),
+			 Kokkos::parallel_for(Kokkos::TeamThreadRange(member, numKnots),
 					      [=] (const int& knotNum) {
-						Kokkos::parallel_reduce("loopOverEls", Kokkos::ThreadVectorRange(member, numEls),
+						Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(member, numEls),
 									[=] (const int& i, ValueType& innersum) {
 									  innersum += psiVScratch(walkerNum,knotNum,i) *
 									    addk(walkerNum).psiMinv(bandIdx,i);

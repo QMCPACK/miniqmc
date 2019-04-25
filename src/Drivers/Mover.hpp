@@ -29,7 +29,7 @@
 #include <QMCWaveFunctions/WaveFunction.h>
 #include <Particle/ParticleSet_builder.hpp>
 #include <Input/pseudo.hpp>
-#include "QMCWaveFunction/einspline_spo.hpp"
+#include "QMCWaveFunctions/einspline_spo.hpp"
 
 namespace qmcplusplus
 {
@@ -65,16 +65,16 @@ struct Mover
   NonLocalPP<RealType> nlpp;
 
   ///
-  using vContainer_type = einspine_spo<T,blocksize>::vContainer_type;
-  using gContainer_type = einspine_spo<T,blocksize>::gContainer_type;
-  using hContainer_type = einspine_spo<T,blocksize>::hContainer_type;
+  using vContainer_type = typename einspline_spo<T,blockSize>::vContainer_type;
+  using gContainer_type = typename einspline_spo<T,blockSize>::gContainer_type;
+  using hContainer_type = typename einspline_spo<T,blockSize>::hContainer_type;
 
   vContainer_type spo_psi;
   gContainer_type spo_grad;
   hContainer_type spo_hess;
   
   /// constructor
-  template<spotype>
+  template<typename spotype>
   Mover(const uint32_t myPrime, const ParticleSet& ions, const spotype& spo) : rng(myPrime), nlpp(rng)
   {
     build_els(els, ions, rng);
@@ -88,7 +88,7 @@ struct Mover
 };
 
 template<class T, typename TBOOL>
-const std::vector<T*> filtered_list(const std::vector<T*>& input_list, const std::vector<TBOOL>& chosen)
+std::vector<T*> filtered_list(const std::vector<T*>& input_list, const std::vector<TBOOL>& chosen)
 {
   std::vector<T*> final_list;
   for (int iw = 0; iw < input_list.size(); iw++)
@@ -97,8 +97,8 @@ const std::vector<T*> filtered_list(const std::vector<T*>& input_list, const std
   return final_list;
 }
 
-template<moverType>
-const std::vector<ParticleSet*> extract_els_list(const std::vector<moverType*>& mover_list)
+template<typename moverType>
+std::vector<ParticleSet*> extract_els_list(const std::vector<moverType*>& mover_list)
 {
   std::vector<ParticleSet*> els_list;
   for (auto it = mover_list.begin(); it != mover_list.end(); it++)
@@ -106,44 +106,35 @@ const std::vector<ParticleSet*> extract_els_list(const std::vector<moverType*>& 
   return els_list;
 }
 
-tempalte<moverType>
-const std::vector<ParticleSet*> extract_els_list(const std::vector<moverType*>& mover_list)
+template<typename moverType>
+std::vector<typename moverType::vContainer_type> extract_spo_psi_list(const std::vector<moverType*>& mover_list)
 {
-  std::vector<ParticleSet*> els_list;
-  for (auto it = mover_list.begin(); it != mover_list.end(); it++)
-    els_list.push_back(&(*it)->els);
-  return els_list;
-}
-
-template<moverType>
-const std::vector<moverType::vContainer_type> extract_spo_psi_list(const std::vector<moverType*>& mover_list)
-{
-  std::vector<moverType::vContainer_type> vals;
+  std::vector<typename moverType::vContainer_type> vals;
   for (auto it = mover_list.begin(); it != mover_list.end(); it++)
     vals.push_back((*it)->spo_psi);
   return vals;
 }
 
-template<moverType>
-const std::vector<moverType::vContainer_type> extract_spo_grad_list(const std::vector<moverType*>& mover_list)
+template<typename moverType>
+std::vector<typename moverType::gContainer_type> extract_spo_grad_list(const std::vector<moverType*>& mover_list)
 {
-  std::vector<moverType::vContainer_type> grads;
+  std::vector<typename moverType::gContainer_type> grads;
   for (auto it = mover_list.begin(); it != mover_list.end(); it++)
     grads.push_back((*it)->spo_grad);
   return grads;
 }
 
-template<moverType>
-const std::vector<moverType::vContainer_type> extract_spo_psi_list(const std::vector<moverType*>& mover_list)
+template<typename moverType>
+std::vector<typename moverType::hContainer_type> extract_spo_hess_list(const std::vector<moverType*>& mover_list)
 {
-  std::vector<moverType::vContainer_type> hesss;
+  std::vector<typename moverType::hContainer_type> hesss;
   for (auto it = mover_list.begin(); it != mover_list.end(); it++)
     hesss.push_back((*it)->spo_hess);
   return hesss;
 }
   
-template<moverType>
-const std::vector<WaveFunction*> extract_wf_list(const std::vector<moverType*>& mover_list)
+template<typename moverType>
+std::vector<WaveFunction*> extract_wf_list(const std::vector<moverType*>& mover_list)
 {
   std::vector<WaveFunction*> wf_list;
   for (auto it = mover_list.begin(); it != mover_list.end(); it++)
