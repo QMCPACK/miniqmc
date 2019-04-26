@@ -808,9 +808,9 @@ int main(int argc, char** argv)
 				 }
 			       });
 	  auto EiListsMirror = Kokkos::create_mirror_view(EiLists);
-	  std::cout << "About to spit out eiPairs" << std::endl;
-	  std::cout << "  number of electrons: " << apsdMirror(0).R.extent(0) << std::endl;
-	  std::cout << "  number of ions: " << apsdMirror(0).originR.extent(0) << std::endl;
+	  //std::cout << "About to spit out eiPairs" << std::endl;
+	  //std::cout << "  number of electrons: " << apsdMirror(0).R.extent(0) << std::endl;
+	  //std::cout << "  number of ions: " << apsdMirror(0).originR.extent(0) << std::endl;
 	  for (int i = 0; i < EiListsMirror.extent(1); i++) {
 	    //std::cout << "  pair " << i << " elNum = " << EiListsMirror(0,i,0) << " ionNum = " << EiListsMirror(0,i,1) << std::endl;
 	  }
@@ -845,11 +845,12 @@ int main(int argc, char** argv)
 
 	  std::cout << "About to start loop over eiPairs.  There are " << maxSize << " of them" << std::endl;
 	  for (int eiPair = 0; eiPair < maxSize; eiPair++) {
-	    std::cout << "Starting pair " << eiPair << " pairs = ";
-	    for (int i = 0; i < nmovers; i++) {
-	      std::cout << "( " << EiListsMirror(i,eiPair,0) << ", " << EiListsMirror(i,eiPair,1) << " )  ";
-	    }
-	    std::cout << std::endl;
+	    
+	    //std::cout << "Starting pair " << eiPair << " pairs = ";
+	    //for (int i = 0; i < nmovers; i++) {
+	    //  std::cout << "( " << EiListsMirror(i,eiPair,0) << ", " << EiListsMirror(i,eiPair,1) << " )  ";
+	    //}
+	    //std::cout << std::endl;
 	    
 	    //std::cout << "  About to do updateTempPosAndRs" << std::endl;
 	    anon_mover->els.updateTempPosAndRs(eiPair, allParticleSetData, EiLists,
