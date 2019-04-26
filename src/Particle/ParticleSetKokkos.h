@@ -52,8 +52,8 @@ public:
 
   Kokkos::View<RealType**>                              UnlikeDTDistances; // [nparticles][ntargets]
   Kokkos::View<RealType**[dim]>                         UnlikeDTDisplacements; // [nparticles][ntargets][dim]
-  Kokkos::View<RealType*>                               UnlikeDTTemp_r; // [nparticles]
-  Kokkos::View<RealType*[dim],Kokkos::LayoutLeft>       UnlikeDTTemp_dr; // [nparticles][dim]
+  Kokkos::View<RealType*>                               UnlikeDTTemp_r; // [ntargets]
+  Kokkos::View<RealType*[dim],Kokkos::LayoutLeft>       UnlikeDTTemp_dr; // [ntargets][dim]
 
   Kokkos::View<RealType*[dim],Kokkos::LayoutLeft>       originR; // [ntargets][dim]  // locations of all the particles in the source set
   // will probably need to include a groups array for the ions as well
@@ -92,8 +92,11 @@ public:
     activePos(0) = R(i,0);
     activePos(1) = R(i,1);
     activePos(2) = R(i,2);
+    //std::cout << "doing setActivePtcl for particle " << i << std::endl;
     LikeEvaluate(i);
+    //std::cout << "  finished LikeEvaluate" << std::endl;
     UnlikeEvaluate(i);
+    //std::cout << "  finished UnlikeEvaluate" << std::endl;
   }
 
   // intended to be called by LikeDTComputeDistances and UnlikeDtComputeDistances
@@ -288,9 +291,10 @@ public:
   void UnlikeEvaluate(int jat) {
     auto distancesSubview = Kokkos::subview(UnlikeDTDistances,Kokkos::ALL(),jat);
     auto displacementsSubview = Kokkos::subview(UnlikeDTDisplacements,Kokkos::ALL(),jat,Kokkos::ALL());
-      DTComputeDistances(R(jat,0), R(jat,1), R(jat,2), originR,
-			 distancesSubview, displacementsSubview,
-			 0, UnlikeDTDistances.extent(0));
+    //std::cout << "in UnlikeEvaluate, about to call DTComputeDistances" << std::endl;
+    DTComputeDistances(R(jat,0), R(jat,1), R(jat,2), originR,
+		       distancesSubview, displacementsSubview,
+		       0, UnlikeDTDistances.extent(1));
   }
 
   KOKKOS_INLINE_FUNCTION
@@ -310,15 +314,15 @@ public:
 
   KOKKOS_INLINE_FUNCTION
   void UnlikeMoveOnSphere(RealType x0, RealType y0, RealType z0) {
-    UnlikeDTComputeDistances(x0, y0, z0, 0, UnlikeDTDistances.extent(0));
+    UnlikeDTComputeDistances(x0, y0, z0, 0, UnlikeDTDistances.extent(1));
   }
 
   KOKKOS_INLINE_FUNCTION
   void LikeUpdate(int iat) {
     for (int i = 0; i < LikeDTTemp_r.extent(0); i++) {
-      LikeDTDistances(i,iat) = LikeDTTemp_r(i);
+      LikeDTDistances(iat,i) = LikeDTTemp_r(i);
       for (int j = 0; j < dim; j++) {
-	LikeDTDisplacements(i,iat,j) = LikeDTTemp_dr(i,j);
+	LikeDTDisplacements(iat,i,j) = LikeDTTemp_dr(i,j);
       }
     }
   }
@@ -326,9 +330,9 @@ public:
   KOKKOS_INLINE_FUNCTION
   void UnlikeUpdate(int iat) {
     for (int i = 0; i < UnlikeDTTemp_r.extent(0); i++) {
-      UnlikeDTDistances(i,iat) = UnlikeDTTemp_r(i);
+      UnlikeDTDistances(iat,i) = UnlikeDTTemp_r(i);
       for (int j = 0; j < dim; j++) {
-	UnlikeDTDisplacements(i,iat,j) = UnlikeDTTemp_dr(i,j);
+	UnlikeDTDisplacements(iat,i,j) = UnlikeDTTemp_dr(i,j);
       }
     }
   }

@@ -399,7 +399,7 @@ int main(int argc, char** argv)
       const int ip        = omp_get_thread_num();
       const int member_id = ip % team_size;
 
-      cout << "About to make movers" << endl;
+      //cout << "About to make movers" << endl;
       // create and initialize movers
       if (useRef) {      
 	Mover_ref* thiswalker = new Mover_ref(myPrimes[ip], ions);
@@ -409,45 +409,49 @@ int main(int argc, char** argv)
 	mover_list[iw]    = thiswalker;
       }
 	
-      cout << "finished making movers" << endl;
-      cout << "about to put spo in reference" << endl;
+      //cout << "finished making movers" << endl;
+      //cout << "about to put spo in reference" << endl;
       // create a spo view in each Mover
       if (useRef) {
 	mover_list_ref[iw]->spo = build_SPOSet_view(useRef, spo_main, team_size, member_id);
       }
-      cout << "finished putting spo in reference" << endl;
+      //cout << "finished putting spo in reference" << endl;
       
-      cout << "about to do build_WaveFunction" << endl;
+      //cout << "about to do build_WaveFunction" << endl;
       // create wavefunction per mover
       if (useRef) {
 	build_WaveFunction(useRef, mover_list_ref[iw]->wavefunction, ions, mover_list_ref[iw]->els, mover_list_ref[iw]->rng, enableJ3);
       } else {
 	build_WaveFunction(useRef, mover_list[iw]->wavefunction, ions, mover_list[iw]->els, mover_list[iw]->rng, enableJ3);
       }
-      cout << "finished doing build_wavefunction" << endl;
+      //cout << "finished doing build_wavefunction" << endl;
       
-      cout << "about to do els.update()" << endl;
+      //cout << "about to do els.update()" << endl;
       // initial computing
       if (useRef) {
 	mover_list_ref[iw]->els.update(); // basically goes through the distance tables and calls evaluate from the current particleset
       } else {
 	mover_list[iw]->els.update();
       }
-      cout << "finished doing els.update()" << endl;
+      //cout << "finished doing els.update()" << endl;
 
-      cout << "about to push particleSet data to kokkos" << endl;
+      //cout << "about to push particleSet data to kokkos" << endl;
       // LNS new -- push necessary contents of els particleset up to the device
       //            note that by now, the electron-ion distance table is present in els
       if (useRef == false)
       {
 	mover_list[iw]->els.pushDataToParticleSetKokkos();
       }
-      cout << "finished puhsing particleSet data to kokkos" << endl;
+      //cout << "finished puhsing particleSet data to kokkos" << endl;
     }
+
+    cout << "getting some info from els" << endl;
+    cout << "number of electrons:  " << mover_list[0]->els.psk.R.extent(0) << endl;
+    cout << "number of ions:  " << mover_list[0]->els.psk.originR.extent(0) << endl;
     cout << "finished initialization section" << endl;
     
     { // initial computing
-      cout << "about to do multi_evaluateLog" << endl;
+      //cout << "about to do multi_evaluateLog" << endl;
       if (useRef) {
 	const std::vector<ParticleSet*> P_list(extract_els_list_ref(mover_list_ref));
 	const std::vector<WaveFunction*> WF_list(extract_wf_list_ref(mover_list_ref));
@@ -457,7 +461,7 @@ int main(int argc, char** argv)
 	const std::vector<WaveFunction*> WF_list(extract_wf_list(mover_list));
 	mover_list[0]->wavefunction.multi_evaluateLog(WF_list, P_list);
       }
-      cout << "finished multi_evaluateLog" << endl;
+      //cout << "finished multi_evaluateLog" << endl;
     }
     Timers[Timer_Init]->stop();
     
@@ -532,17 +536,17 @@ int main(int argc, char** argv)
 	  std::cout << "starting substep " << l << std::endl;
 	  for (int iel = 0; iel < nels; ++iel)
 	  {
-	    std::cout << "starting work on electron " << iel << std::endl;
+	    //std::cout << "starting work on electron " << iel << std::endl;
 	    // Operate on electron with index iel
-	    std::cout << "  about to do setActive" << std::endl;
+	    //std::cout << "  about to do setActive" << std::endl;
 	    if (useRef) {
 	      for (int iw = 0; iw < nmovers; iw++)
 		mover_list_ref[iw]->els.setActive(iel); // watch out for this, does a bunch of evaluates on distanceTables
 	    } else {
 	      anon_mover->els.multi_setActiveKokkos(P_list,iel); // note this is only doing this on the device, not the host
 	    }
-	    std::cout << "    finished setActive" << std::endl;
-	    std::cout << "  about to do multi_evalGrad" << std::endl;
+	    //std::cout << "    finished setActive" << std::endl;
+	    //std::cout << "  about to do multi_evalGrad" << std::endl;
 	    // Compute gradient at the current position
 	    Timers[Timer_evalGrad]->start();
 	    if (useRef) {
@@ -551,7 +555,7 @@ int main(int argc, char** argv)
 	      anon_mover->wavefunction.multi_evalGrad(WF_list, P_list, iel, grad_now);
 	    }
 	    Timers[Timer_evalGrad]->stop();
-	    std::cout << "    finished multi_evalGrad" << std::endl;
+	    //std::cout << "    finished multi_evalGrad" << std::endl;
 	    
 	    // Construct trial move
 	    if (useRef) {
@@ -562,7 +566,7 @@ int main(int argc, char** argv)
 	      mover_list[0]->rng.generate_normal(&delta[0][0], nmovers3);
 	    }
 	      
-	    std::cout << "  about to do makeMoveAndCheck" << std::endl;
+	    //std::cout << "  about to do makeMoveAndCheck" << std::endl;
 	    if (useRef) {
 	      for (int iw = 0; iw < nmovers; iw++) {
 		  PosType dr  = sqrttau * delta[iw];
@@ -579,7 +583,7 @@ int main(int argc, char** argv)
 	      Kokkos::deep_copy(dr, drMirror);
 	      anon_mover->els.multi_makeMoveAndCheckKokkos(P_list, dr, iel, isValid);
 	    }
-	    std::cout << "    finished makeMoveAndCheck" << std::endl;
+	    //std::cout << "    finished makeMoveAndCheck" << std::endl;
 
 	    std::vector<ParticleSet*> valid_P_list;
 	    std::vector<SPOSet*> valid_spo_list;
@@ -600,7 +604,7 @@ int main(int argc, char** argv)
 	      valid_WF_list = extract_wf_list(valid_mover_list);
 	    }
 	    
-	    std::cout << "  about to do multi_ratioGrad" << std::endl;
+	    //std::cout << "  about to do multi_ratioGrad" << std::endl;
 	    // Compute gradient at the trial position
 	    Timers[Timer_ratioGrad]->start();
 	    if (useRef) {
@@ -610,9 +614,9 @@ int main(int argc, char** argv)
 		anon_mover->wavefunction.multi_ratioGrad(valid_WF_list, valid_P_list, iel, ratios, grad_new);
 	      }
 	    }
-	    std::cout << "    finished doing multi_ratioGrad" << std::endl;
+	    //std::cout << "    finished doing multi_ratioGrad" << std::endl;
 	    
-	    std::cout << "  about to do multi_evaluate_vgh" << std::endl;
+	    //std::cout << "  about to do multi_evaluate_vgh" << std::endl;
 	    if (useRef) {
 	      for (int iw = 0; iw < valid_P_list.size(); iw++)
 		pos_list[iw] = valid_P_list[iw]->R[iel];
@@ -647,7 +651,7 @@ int main(int argc, char** argv)
 	      }
 	    }
 	    Timers[Timer_ratioGrad]->stop();
-	    std::cout << "    finished multi_evaluate_vgh" << std::endl;
+	    //std::cout << "    finished multi_evaluate_vgh" << std::endl;
 
 	    // Accept/reject the trial move
 	    for (int iw = 0; iw < isAccepted.size(); iw++)
@@ -658,17 +662,17 @@ int main(int argc, char** argv)
 	    
 	    Timers[Timer_Update]->start();
 	    // update WF storage
-	    std::cout << "  about to do multi_acceptrestoreMove" << std::endl;
+	    //std::cout << "  about to do multi_acceptrestoreMove" << std::endl;
 	    if (useRef) {
 	      anon_mover_ref->wavefunction.multi_acceptrestoreMove(valid_WF_list, valid_P_list, isAccepted, iel);
 	    } else {
 	      anon_mover->wavefunction.multi_acceptrestoreMove(valid_WF_list, valid_P_list, isAccepted, iel);
 	    }
-	    std::cout << "    finished multi_acceptrestoreMove" << std::endl;
+	    //std::cout << "    finished multi_acceptrestoreMove" << std::endl;
 	    Timers[Timer_Update]->stop();
 	    
 	    // Update position
-	    std::cout << "  accepting and rejecting moves" << std::endl;
+	    //std::cout << "  accepting and rejecting moves" << std::endl;
 	    if (useRef) {
 	      const std::vector<Mover_ref*> valid_mover_list(filtered_list(mover_list_ref, isValid));
 	      for (int iw = 0; iw < valid_mover_list.size(); iw++)
@@ -681,13 +685,13 @@ int main(int argc, char** argv)
 	    } else {
 	      anon_mover->els.multi_acceptRejectMoveKokkos(valid_P_list, isAccepted, iel);
 	    }
-	    std::cout << "    finishing accept and reject moves" << std::endl << std::endl;
+	    //std::cout << "    finishing accept and reject moves" << std::endl << std::endl;
 	  } // iel
-	  std::cout << "finished loop over electrons (this substep is over)" << std::endl;
+	  //std::cout << "finished loop over electrons (this substep is over)" << std::endl;
 	}   // substeps
 	std::cout << "finished substeps" << std::endl << std::endl;
 	
-	std::cout << "Calling donePbyP" << std::endl;
+	//std::cout << "Calling donePbyP" << std::endl;
 	if (useRef) {
 	  for (int iw = 0; iw < nmovers; iw++)
 	    {
@@ -697,15 +701,15 @@ int main(int argc, char** argv)
 	} else {
 	  anon_mover->els.multi_donePbyP(P_list);
 	}
-	std::cout << "  finshed donePbyP" << std::endl;
+	//std::cout << "  finshed donePbyP" << std::endl;
 	  
-	std::cout << "About to do multi_evaluateGL" << std::endl;
+	//std::cout << "About to do multi_evaluateGL" << std::endl;
         if (useRef) {
 	  anon_mover_ref->wavefunction.multi_evaluateGL(WF_list, P_list);   // look at what is needed here
 	} else {
 	  anon_mover->wavefunction.multi_evaluateGL(WF_list, P_list);   // look at what is needed here
 	}
-	std::cout << "  finished multi_evaluateGL" << std::endl;
+	//std::cout << "  finished multi_evaluateGL" << std::endl;
 	Timers[Timer_Diffusion]->stop();
 	
 	// Compute NLPP energy using integral over spherical points
@@ -748,15 +752,12 @@ int main(int argc, char** argv)
 	    }
 	  }
 	} else { // not the reference implementation
-	  // want to make list of pairs on the device, so need some sort of flexible size container.  Kokkos::vector?
-	  // a. maybe make a first quick kernel that does nothing but count how many pairs there will be
-	  // b. then come back and make space for everything with views on the host
-	  // c. then run a kernel to populate the views on the host, maybe also continuing on to actually do the work...
 	  Kokkos::View<ParticleSet::pskType*> allParticleSetData("apsd", P_list.size());
 	  auto apsdMirror = Kokkos::create_mirror_view(allParticleSetData);
 	  for (int i = 0; i < P_list.size(); i++) {
 	    apsdMirror(i) = P_list[i]->psk;
 	  }
+	  //std::cout << "About to set up activeEiPairs" << std::endl;
 	  Kokkos::deep_copy(allParticleSetData, apsdMirror);
 	  Kokkos::View<int*> EiPairs("activeEiPairs", nmovers);
 
@@ -786,7 +787,9 @@ int main(int argc, char** argv)
 	      maxSize = EiPairsMirror(i);
 	    }
 	  }
-	  
+	  //std::cout << "  finished setting up activeEiPairs" << std::endl;
+
+	  //std::cout << "About to set up EiLists" << std::endl;
 	  Kokkos::View<int**[2]> EiLists("EiLists", nmovers, maxSize);
 	  Kokkos::parallel_for("SetupEiLists", nmovers,
 			       KOKKOS_LAMBDA(const int& walkerNum) {
@@ -804,7 +807,16 @@ int main(int argc, char** argv)
 				   }
 				 }
 			       });
-	  
+	  auto EiListsMirror = Kokkos::create_mirror_view(EiLists);
+	  std::cout << "About to spit out eiPairs" << std::endl;
+	  std::cout << "  number of electrons: " << apsdMirror(0).R.extent(0) << std::endl;
+	  std::cout << "  number of ions: " << apsdMirror(0).originR.extent(0) << std::endl;
+	  for (int i = 0; i < EiListsMirror.extent(1); i++) {
+	    //std::cout << "  pair " << i << " elNum = " << EiListsMirror(0,i,0) << " ionNum = " << EiListsMirror(0,i,1) << std::endl;
+	  }
+	  //std::cout << "  finished setting up EiLists" << std::endl;
+
+	  //std::cout << "Setting up rOnSphere" << std::endl;
 	  Kokkos::View<double**[3]> rOnSphere("rOnSphere", nmovers, nknots);
 	  auto rOnSphereMirror = Kokkos::create_mirror_view(rOnSphere);
 	  for(int walkerNum = 0; walkerNum < nmovers; walkerNum++) {
@@ -818,6 +830,7 @@ int main(int argc, char** argv)
 	    }
 	  }
 	  Kokkos::deep_copy(rOnSphere, rOnSphereMirror);
+	  //std::cout << "  finished setting up rOnSphere" << std::endl;
 
 	  // should now be set up to do our big parallel loop
 	  // need to make a place to store the new temp_r (one per knot, per walker)
@@ -829,10 +842,20 @@ int main(int argc, char** argv)
 	  // vtable on device, will have to at least have it make its own calls
 	  vector<ValueType> ratios(nmovers*nknots, 0.0);
 	  Kokkos::View<ValueType***> tempPsiV("tempPsiV", nmovers, nknots, nels);
+
+	  std::cout << "About to start loop over eiPairs.  There are " << maxSize << " of them" << std::endl;
 	  for (int eiPair = 0; eiPair < maxSize; eiPair++) {
+	    std::cout << "Starting pair " << eiPair << " pairs = ";
+	    for (int i = 0; i < nmovers; i++) {
+	      std::cout << "( " << EiListsMirror(i,eiPair,0) << ", " << EiListsMirror(i,eiPair,1) << " )  ";
+	    }
+	    std::cout << std::endl;
+	    
+	    //std::cout << "  About to do updateTempPosAndRs" << std::endl;
 	    anon_mover->els.updateTempPosAndRs(eiPair, allParticleSetData, EiLists,
 					       rOnSphere, bigElPos, bigLikeTempR, bigUnlikeTempR);
 	    // actually putting the values calculated by evaluate_vs into tempPsiV
+	    //std::cout << "  About to start multi_evaluate_v" << std::endl;
 	    spo.multi_evaluate_v(bigElPos, tempPsiV, allParticleSetData); // also perhaps hand in result views to store the output
 
 	    // eventually would need to pass in the actual positions so that calls to evaluate_vs would go
@@ -840,6 +863,7 @@ int main(int argc, char** argv)
 	    // for the determinant.  
 	    // note, for a given eiPair, all evaluations for a single mover will be for the same electron
 	    // but not all movers will be working on the same electron necessarily
+	    //std::cout << "  About to do wavefunction.multi_ratio" << std::endl;
 	    anon_mover->wavefunction.multi_ratio(eiPair, WF_list, allParticleSetData,
 						 tempPsiV, bigLikeTempR, bigUnlikeTempR,
 						 EiLists, ratios); // see if this is enough

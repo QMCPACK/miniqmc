@@ -105,7 +105,7 @@ void doTwoBodyJastrowMultiEvalRatio(int pairNum, eiListType& eiList, apskType& a
 				    atbjdType& allTwoBodyJastrowData,
 				    tempRType& likeTempR, walkerIdType& activeWalkerIdx,
 				    devRatioType& devRatios) {
-  const int numWalkers = likeTempR.extent(0);
+  const int numWalkers = activeWalkerIdx.extent(0);
   const int numKnots = likeTempR.extent(1);
 
   using BarePolicy = Kokkos::TeamPolicy<>;
@@ -124,7 +124,7 @@ void doTwoBodyJastrowMultiEvalRatio(int pairNum, eiListType& eiList, apskType& a
 						auto singleDists = Kokkos::subview(likeTempR, walkerNum, knotNum, Kokkos::ALL);
 						int iel = eiList(walkerNum, pairNum, 0);
 						auto val = allTwoBodyJastrowData(walkerIndex).computeU(psk, iel, singleDists);
-						devRatios(walkerNum, numKnots) = std::exp(allTwoBodyJastrowData(walkerIndex).Uat(iel) - val);
+						devRatios(walkerIndex, numKnots) = std::exp(allTwoBodyJastrowData(walkerIndex).Uat(iel) - val);
 					      });
 		       });
 
@@ -508,8 +508,8 @@ void TwoBodyJastrow<FT>::initializeJastrowKokkos() {
   Kokkos::deep_copy(jasData.d2A, d2Amirror);
 
   // also set up and allocate memory for cutoff_radius, DeltaRInv
-  jasData.cutoff_radius   = Kokkos::View<valT*>("Cutoff_Radii", NumGroups);
-  jasData.DeltaRInv       = Kokkos::View<valT*>("DeltaRInv", NumGroups);
+  jasData.cutoff_radius   = Kokkos::View<valT*>("Cutoff_Radii", NumGroups*NumGroups);
+  jasData.DeltaRInv       = Kokkos::View<valT*>("DeltaRInv", NumGroups*NumGroups);
   
   // unfortunately have to defer setting up SplineCoefs because we don't yet know
   // how many elements are in SplineCoefs on the cpu
@@ -942,7 +942,8 @@ void TwoBodyJastrow<FT>::multi_evalRatio(int pairNum, Kokkos::View<int**[2]>& ei
   Kokkos::View<jasDataType*> allTwoBodyJastrowData("atbjd", activeWalkerIdx.extent(0));
   auto atbjdMirror = Kokkos::create_mirror_view(allTwoBodyJastrowData);
   for (int i = 0; i < numActiveWalkers; i++) {
-    const int walkerIdx = activeWalkerIdxMirror(i);
+    //const int walkerIdx = activeWalkerIdxMirror(i);
+    const int walkerIdx = i;
     atbjdMirror(i) = static_cast<TwoBodyJastrow*>(WFC_list[walkerIdx])->jasData;
   }
   Kokkos::deep_copy(allTwoBodyJastrowData, atbjdMirror);

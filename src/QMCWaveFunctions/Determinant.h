@@ -584,7 +584,6 @@ void doDiracDeterminantMultiEvalRatio(addkType addk, vectorType& wfcv, resVecTyp
 template<typename addkType, typename awType, typename eiListType, typename psiVType, typename ratiosType>
 void doDiracDeterminantMultiEvalRatio(int pairNum, addkType& addk, awType& activeWalkers, eiListType& eiList, psiVType& psiVScratch, ratiosType& ratios) {
   using ValueType = typename psiVType::value_type;
-  const int numEls = psiVScratch.extent(2);
   const int numKnots = psiVScratch.extent(1);
   const int numWalkers = activeWalkers.extent(0);
   constexpr double shift(0.5);
@@ -608,16 +607,20 @@ void doDiracDeterminantMultiEvalRatio(int pairNum, addkType& addk, awType& activ
   using BarePolicy = Kokkos::TeamPolicy<>;
   BarePolicy pol(numWalkers, Kokkos::AUTO, 32);
   Kokkos::parallel_for("dd-evalRatio-general", pol,
-		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
+ 		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
 			 const int walkerNum = activeWalkers(member.league_rank());
-			 const int bandIdx = eiList(walkerNum, pairNum, 0) - addk(walkerNum).FirstIndex(0);
+			 const int bareIndex = member.league_rank();
+			 const int FirstIndexInDD = addk(bareIndex).FirstIndex(0);
+			 const int bandIdx = eiList(walkerNum, pairNum, 0) - FirstIndexInDD;
+			 const int numElsInDD = addk(bareIndex).psiMinv.extent(0);
+
 			 Kokkos::parallel_for(Kokkos::TeamThreadRange(member, numKnots),
 					      [=] (const int& knotNum) {
-						Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(member, numEls),
+						Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(member, numElsInDD),
 									[=] (const int& i, ValueType& innersum) {
-									  innersum += psiVScratch(walkerNum,knotNum,i) *
-									    addk(walkerNum).psiMinv(bandIdx,i);
-									}, results(walkerNum, knotNum));
+									  innersum += psiVScratch(walkerNum,knotNum,i+FirstIndexInDD) *
+									    addk(bareIndex).psiMinv(bandIdx,i);
+									}, results(bareIndex, knotNum));
 					      });
 		       });
 

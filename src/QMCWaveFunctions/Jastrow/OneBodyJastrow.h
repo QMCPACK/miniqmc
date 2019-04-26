@@ -84,7 +84,7 @@ void doOneBodyJastrowMultiEvalRatio(int pairNum, eiListType& eiList, apskType& a
 				    aobjdType& allOneBodyJastrowData,
 				    tempRType& unlikeTempR, walkerIdType& activeWalkerIdx,
 				    devRatioType& devRatios) {
-  const int numWalkers = unlikeTempR.extent(0);
+  const int numWalkers = activeWalkerIdx.extent(0);
   const int numKnots = unlikeTempR.extent(1);
   using BarePolicy = Kokkos::TeamPolicy<>;
   BarePolicy pol(numWalkers, Kokkos::AUTO, 32);
@@ -104,7 +104,7 @@ void doOneBodyJastrowMultiEvalRatio(int pairNum, eiListType& eiList, apskType& a
 						auto singleDists = Kokkos::subview(unlikeTempR, walkerNum, knotNum, Kokkos::ALL);
 						auto val = allOneBodyJastrowData(walkerIndex).computeU(psk, singleDists);
 						int iat = eiList(walkerNum, pairNum, 1);
-						devRatios(walkerNum, numKnots) = std::exp(allOneBodyJastrowData(walkerIndex).Vat(iat) - val);
+						devRatios(walkerIndex, numKnots) = std::exp(allOneBodyJastrowData(walkerIndex).Vat(iat) - val);
 					      });
 		       });
 
@@ -502,7 +502,8 @@ struct OneBodyJastrow : public WaveFunctionComponent
     Kokkos::View<jasDataType*> allOneBodyJastrowData("aobjd", activeWalkerIdx.extent(0));
     auto aobjdMirror = Kokkos::create_mirror_view(allOneBodyJastrowData);
     for (int i = 0; i < numActiveWalkers; i++) {
-      const int walkerIdx = activeWalkerIdxMirror(i);
+      //const int walkerIdx = activeWalkerIdxMirror(i);
+      const int walkerIdx = i;
       aobjdMirror(i) = static_cast<OneBodyJastrow*>(WFC_list[walkerIdx])->jasData;
     }
     Kokkos::deep_copy(allOneBodyJastrowData, aobjdMirror);

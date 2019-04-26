@@ -152,6 +152,8 @@ void WaveFunction::multi_ratio(int pairNum, const std::vector<WaveFunction*>& WF
       packedIndex.push_back(iw);
     }
   }
+
+    
   Kokkos::View<int*> activeWalkerIndex("activeWalkerIndex", packedIndex.size());
   auto activeWalkerIndexMirror = Kokkos::create_mirror_view(activeWalkerIndex);
 

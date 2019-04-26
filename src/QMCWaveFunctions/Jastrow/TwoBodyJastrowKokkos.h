@@ -32,9 +32,9 @@ public:
   // should eventually add indirection so we can have different kinds of 
   // functors.  For the time being, we are even forcing them all to have
   // the same number of coefficients
-  Kokkos::View<RealType*> cutoff_radius; // numGroups elements
-  Kokkos::View<RealType*> DeltaRInv; // numGroups elements
-  Kokkos::View<RealType**> SplineCoefs; // NumGroups x SplineCoefs
+  Kokkos::View<RealType*> cutoff_radius; // numGroups*numGroups elements
+  Kokkos::View<RealType*> DeltaRInv; // numGroups*numGroups elements
+  Kokkos::View<RealType**> SplineCoefs; // NumGroups*NumGroups x SplineCoefs
   Kokkos::View<RealType[16]> A, dA, d2A; // all 16 elements long, used for functor eval
 
   // default constructor

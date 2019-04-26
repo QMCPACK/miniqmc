@@ -102,14 +102,17 @@ ParticleSet::ParticleSet(const ParticleSet& p)
 ParticleSet::~ParticleSet() { clearDistanceTables(); }
 
 void ParticleSet::pushDataToParticleSetKokkos() {
-  psk.ID           = Kokkos::View<int*>("ID", TotalNum);
-  psk.IndirectID   = Kokkos::View<int*>("IndirectID", TotalNum);
-  psk.GroupID      = Kokkos::View<int*>("GroupID", TotalNum);
+  const int numElec = TotalNum;
+  const int numIons = DistTables[1]->centers();
+
+  psk.ID           = Kokkos::View<int*>("ID", numElec);
+  psk.IndirectID   = Kokkos::View<int*>("IndirectID", numElec);
+  psk.GroupID      = Kokkos::View<int*>("GroupID", numElec);
   psk.SubPtcl      = Kokkos::View<int*>("SubPtcl", SubPtcl.size());
-  psk.R            = Kokkos::View<RealType*[DIM],Kokkos::LayoutRight>("R", TotalNum);
-  psk.RSoA         = Kokkos::View<RealType*[DIM],Kokkos::LayoutLeft>("RSoA", TotalNum);
-  psk.G            = Kokkos::View<ValueType*[DIM],Kokkos::LayoutLeft>("G", TotalNum);
-  psk.L            = Kokkos::View<ValueType*>("L", TotalNum);
+  psk.R            = Kokkos::View<RealType*[DIM],Kokkos::LayoutRight>("R", numElec);
+  psk.RSoA         = Kokkos::View<RealType*[DIM],Kokkos::LayoutLeft>("RSoA", numElec);
+  psk.G            = Kokkos::View<ValueType*[DIM],Kokkos::LayoutLeft>("G", numElec);
+  psk.L            = Kokkos::View<ValueType*>("L", numElec);
   psk.UseBoundBox  = Kokkos::View<bool[1]>("UseBoundBox");
   psk.IsGrouped    = Kokkos::View<bool[1]>("IsGrouped");
   psk.activePtcl   = Kokkos::View<int[1]>("activePtcl");
@@ -120,17 +123,17 @@ void ParticleSet::pushDataToParticleSetKokkos() {
   psk.DT_R                  = Kokkos::View<RealType[DIM][DIM]>("DT_R"); //real lattice vectors (from Lattice.a)
   psk.BoxBConds             = Kokkos::View<int[DIM]>("BoxBConds");
   psk.corners               = Kokkos::View<RealType[8][DIM],Kokkos::LayoutLeft>("corners");
-  psk.LikeDTDistances       = Kokkos::View<RealType**>("LikeDTDistances", TotalNum, TotalNum);
-  psk.LikeDTDisplacements   = Kokkos::View<RealType**[DIM]>("LikeDTDisplacements", TotalNum, TotalNum);
-  psk.LikeDTTemp_r          = Kokkos::View<RealType*>("LikeDTTemp_r", TotalNum);
-  psk.LikeDTTemp_dr         = Kokkos::View<RealType*[DIM],Kokkos::LayoutLeft>("LikeDTTemp_dr", TotalNum);
-  psk.UnlikeDTDistances     = Kokkos::View<RealType**>("UnlikeDTDistances", TotalNum, DistTables[1]->targets());
-  psk.UnlikeDTDisplacements = Kokkos::View<RealType**[DIM]>("UnlikeDTDisplacements", TotalNum, DistTables[1]->targets());
-  psk.UnlikeDTTemp_r        = Kokkos::View<RealType*>("UnlikeDTTemp_r", TotalNum);
-  psk.UnlikeDTTemp_dr       = Kokkos::View<RealType*[DIM],Kokkos::LayoutLeft>("UnlikeDTTemp_dr", TotalNum);
-  psk.originR               = Kokkos::View<RealType*[DIM],Kokkos::LayoutLeft>("OriginR", DistTables[1]->targets());
+  psk.LikeDTDistances       = Kokkos::View<RealType**>("LikeDTDistances", numElec, numElec);
+  psk.LikeDTDisplacements   = Kokkos::View<RealType**[DIM]>("LikeDTDisplacements", numElec, numElec);
+  psk.LikeDTTemp_r          = Kokkos::View<RealType*>("LikeDTTemp_r", numElec);
+  psk.LikeDTTemp_dr         = Kokkos::View<RealType*[DIM],Kokkos::LayoutLeft>("LikeDTTemp_dr", numElec);
+  psk.UnlikeDTDistances     = Kokkos::View<RealType**>("UnlikeDTDistances", numElec, numIons);
+  psk.UnlikeDTDisplacements = Kokkos::View<RealType**[DIM]>("UnlikeDTDisplacements", numElec, numIons);
+  psk.UnlikeDTTemp_r        = Kokkos::View<RealType*>("UnlikeDTTemp_r", numIons);
+  psk.UnlikeDTTemp_dr       = Kokkos::View<RealType*[DIM],Kokkos::LayoutLeft>("UnlikeDTTemp_dr", numElec);
+  psk.originR               = Kokkos::View<RealType*[DIM],Kokkos::LayoutLeft>("OriginR", numIons);
   psk.numIonGroups          = Kokkos::View<int[1]>("numIonGroups");
-  psk.ionGroupID            = Kokkos::View<int*>("ionGroupID", DistTables[1]->targets());
+  psk.ionGroupID            = Kokkos::View<int*>("ionGroupID", numIons);
   psk.ionSubPtcl            = Kokkos::View<int*>("ionSubPtcl", DistTables[1]->Origin->SubPtcl.size());
   
   auto IDMirror                    = Kokkos::create_mirror_view(psk.ID);
@@ -162,8 +165,6 @@ void ParticleSet::pushDataToParticleSetKokkos() {
   auto ionGroupIDMirror            = Kokkos::create_mirror_view(psk.ionGroupID);
   auto ionSubPtclMirror            = Kokkos::create_mirror_view(psk.ionSubPtcl);
 
-
-
   
   UseBoundBoxMirror(0) = UseBoundBox;
   IsGroupedMirror(0)   = IsGrouped;
@@ -176,7 +177,7 @@ void ParticleSet::pushDataToParticleSetKokkos() {
     SubPtclMirror(i) = SubPtcl[i];
   }
   
-  for (int i = 0; i < TotalNum; i++) {
+  for (int i = 0; i < numElec; i++) {
     IDMirror(i)            = ID[i];
     IndirectIDMirror(i)    = IndirectID[i];
     GroupIDMirror(i)       = GroupID[i];
@@ -213,8 +214,8 @@ void ParticleSet::pushDataToParticleSetKokkos() {
   }
 
 
-  for (int i = 0; i < TotalNum; i++) {
-    for (int j = 0; j < TotalNum; j++) {
+  for (int i = 0; i < numElec; i++) {
+    for (int j = 0; j < numElec; j++) {
       LikeDTDistancesMirror(i,j) = DistTables[0]->Distances[i][j];
       for (int d = 0; d < DIM; d++) { 
 	LikeDTDisplacementsMirror(i,j,d) = DistTables[0]->Displacements[i][j][d];
@@ -226,20 +227,20 @@ void ParticleSet::pushDataToParticleSetKokkos() {
     }
   }
 
-  for (int i = 0; i < TotalNum; i++) {
-    for (int j = 0; j < DistTables[1]->targets(); j++) {
+  for (int j = 0; j < numIons; j++) {
+    for (int i = 0; i < numElec; i++) {
       UnlikeDTDistancesMirror(i,j) = DistTables[1]->Distances[i][j];
       for (int d = 0; d < DIM; d++) { 
 	UnlikeDTDisplacementsMirror(i,j,d) = DistTables[1]->Displacements[i][j][d];
       }
     }
-    UnlikeDTTemp_rMirror(i) = DistTables[1]->Temp_r[i];
+    UnlikeDTTemp_rMirror(j) = DistTables[1]->Temp_r[j];
     for (int d = 0; d < DIM; d++) {
-      UnlikeDTTemp_drMirror(i,d) = DistTables[1]->Temp_dr[i][d];
+      UnlikeDTTemp_drMirror(j,d) = DistTables[1]->Temp_dr[j][d];
     }
   }
 
-  for (int i = 0; i < DistTables[1]->targets(); i++) {
+  for (int i = 0; i < numIons; i++) {
     ionGroupIDMirror(i) = DistTables[1]->Origin->GroupID[i];
     for (int d = 0; d < DIM; d++) {
       originRMirror(i,d) = DistTables[1]->Origin->RSoA[i][d];
@@ -637,6 +638,7 @@ void ParticleSet::rejectMove(Index_t iat) { activePtcl = -1; }
 
 void ParticleSet::multi_acceptRejectMoveKokkos(std::vector<ParticleSet*>& psets, 
 					       std::vector<bool>& isAccepted, int iel) {
+  //std::cout << "psets.size() = " << psets.size() << std::endl;
   Kokkos::View<ParticleSet::pskType*> allParticleSetData("apsd", psets.size());
   auto apsdMirror = Kokkos::create_mirror_view(allParticleSetData);
   for (int i = 0; i < psets.size(); i++) {
@@ -651,19 +653,23 @@ void ParticleSet::multi_acceptRejectMoveKokkos(std::vector<ParticleSet*>& psets,
   Kokkos::deep_copy(deviceIsAccepted, devIsAcceptedMirror);
 
   int locIel = iel;
+  //std::cout << " about to start parallel_for" << std::endl;
   Kokkos::parallel_for("ptclsetMultiAcceptReject", psets.size(),
 		       KOKKOS_LAMBDA(const int& i) {
 			 auto& psd = allParticleSetData(i);
 			 if (deviceIsAccepted(i)) {
-			   psd.LikeUpdate(iel);
-			   psd.UnlikeUpdate(iel);
+			   psd.LikeUpdate(locIel);
+			   psd.UnlikeUpdate(locIel);
+			   //std::cout << "finished psd.UnlikeUpdate" << std::endl;
 			   for (int dim = 0; dim < 3; dim++) {
-			     psd.R(iel,dim) = psd.activePos(dim);
-			     psd.RSoA(iel,dim) = psd.activePos(dim);
+			     psd.R(locIel,dim) = psd.activePos(dim);
+			     psd.RSoA(locIel,dim) = psd.activePos(dim);
 			   }
 			 }
 			 psd.activePtcl(0) = -1;
+			 //std::cout << "at end of loop" << std::endl;
 		       });
+  
 }
 
 
