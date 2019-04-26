@@ -445,9 +445,11 @@ int main(int argc, char** argv)
       //cout << "finished puhsing particleSet data to kokkos" << endl;
     }
 
-    cout << "getting some info from els" << endl;
-    cout << "number of electrons:  " << mover_list[0]->els.psk.R.extent(0) << endl;
-    cout << "number of ions:  " << mover_list[0]->els.psk.originR.extent(0) << endl;
+    if (!useRef) {
+      cout << "getting some info from els" << endl;
+      cout << "number of electrons:  " << mover_list[0]->els.psk.R.extent(0) << endl;
+      cout << "number of ions:  " << mover_list[0]->els.psk.originR.extent(0) << endl;
+    }
     cout << "finished initialization section" << endl;
     
     { // initial computing
@@ -695,7 +697,7 @@ int main(int argc, char** argv)
 	if (useRef) {
 	  for (int iw = 0; iw < nmovers; iw++)
 	    {
-	      mover_list[iw]->els.donePbyP();   // just sets activePtcl to -1
+	      mover_list_ref[iw]->els.donePbyP();   // just sets activePtcl to -1
 	      // evaluate Kinetic Energy
 	    }
 	} else {
