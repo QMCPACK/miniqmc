@@ -395,22 +395,22 @@ int main(int argc, char** argv)
   // this is the number of quadrature points for the non-local PP
   const int nknots(mover_list[0]->nlpp.size());
 
-  #pragma omp parallel for
-  for (int iw = 0; iw < nmovers; iw++)
+  int my_accepted = 0;
+  for (int mc = 0; mc < nsteps; ++mc)
   {
-    auto& els          = mover_list[iw]->els;
-    auto& random_th    = mover_list[iw]->rng;
-    auto& wavefunction = mover_list[iw]->wavefunction;
-    auto& ecp          = mover_list[iw]->nlpp;
-
-    ParticlePos_t delta(nels);
-    ParticlePos_t rOnSphere(nknots);
-
-    aligned_vector<RealType> ur(nels);
-
-    int my_accepted = 0;
-    for (int mc = 0; mc < nsteps; ++mc)
+    #pragma omp parallel for reduction(+:my_accepted)
+    for (int iw = 0; iw < nmovers; iw++)
     {
+      auto& els          = mover_list[iw]->els;
+      auto& random_th    = mover_list[iw]->rng;
+      auto& wavefunction = mover_list[iw]->wavefunction;
+      auto& ecp          = mover_list[iw]->nlpp;
+
+      ParticlePos_t delta(nels);
+      ParticlePos_t rOnSphere(nknots);
+
+      aligned_vector<RealType> ur(nels);
+
       Timers[Timer_Diffusion]->start();
       for (int l = 0; l < nsubsteps; ++l) // drift-and-diffusion
       {
@@ -486,9 +486,9 @@ int main(int argc, char** argv)
       }
       Timers[Timer_ECP]->stop();
 
-    } // nsteps
+    } // end of mover loop
 
-  } // end of mover loop
+  } // nsteps
   Timers[Timer_Total]->stop();
 
   // free all movers
