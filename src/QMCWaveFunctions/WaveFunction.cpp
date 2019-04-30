@@ -383,6 +383,7 @@ void WaveFunction::multi_ratioGrad(const std::vector<WaveFunction*>& WF_list,
     
     for (size_t i = 0; i < Jastrows.size(); i++)
       {
+	std::cout << "    doing multi_ratioGrad for Jastrow " << i << std::endl;
 	jastrow_timers[i]->start();
 	std::vector<valT> ratios_jas(P_list.size());
 	std::vector<WaveFunctionComponent*> jas_list(extract_jas_list(WF_list, i));

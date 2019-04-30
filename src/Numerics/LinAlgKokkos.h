@@ -565,10 +565,10 @@ public:
 private:
   int status;
   Kokkos::View<int*> piv;
-  Kokkos::View<int*> info;
   viewType outView;
 
 public:
+  Kokkos::View<int*> info;
   cublasHandle_t cublas_handle;
   cusolverDnHandle_t cusolver_handle;
 

@@ -222,15 +222,17 @@ public:
     outX = inX * DT_G(0,0) + inY * DT_G(1,0) + inZ * DT_G(2,0);
     outY = inX * DT_G(0,1) + inY * DT_G(1,1) + inZ * DT_G(2,1);
     outZ = inX * DT_G(0,2) + inY * DT_G(1,2) + inZ * DT_G(2,2);
-    if (-std::numeric_limits<RealType>::epsilon() < outX && outX < 0)
+    //LNS HACK  (should use std::numeric_limits<RealType::epsilon> but it is a host function
+    //          instead just using 1e-8 and should come back to it later
+    if (-1e-10 < outX && outX < 0)
         outX = RealType(0.0);
       else
         outX -= std::floor(outX);
-    if (-std::numeric_limits<RealType>::epsilon() < outY && outY < 0)
+    if (-1e-10 < outY && outY < 0)
         outY = RealType(0.0);
       else
         outY -= std::floor(outY);
-    if (-std::numeric_limits<RealType>::epsilon() < outZ && outZ < 0)
+    if (-1e-10 < outZ && outZ < 0)
         outZ = RealType(0.0);
       else
         outZ -= std::floor(outZ);
@@ -260,7 +262,7 @@ public:
       auto displacementsSubview = Kokkos::subview(LikeDTDisplacements,Kokkos::ALL(),iat,Kokkos::ALL());
       DTComputeDistances(R(iat,0), R(iat,1), R(iat,2), RSoA,
 			 distancesSubview, displacementsSubview,
-			 0, LikeDTDistances.extent(1), iat);
+			 0, RSoA.extent(0), iat);
       LikeDTDistances(iat,iat) = BigR;
     }
   }
@@ -272,7 +274,7 @@ public:
     auto displacementsSubview = Kokkos::subview(LikeDTDisplacements,Kokkos::ALL(),jat,Kokkos::ALL());
     DTComputeDistances(R(jat,0), R(jat,1), R(jat,2), RSoA,
 		       distancesSubview, displacementsSubview,
-		       0, LikeDTDistances.extent(1), jat);
+		       0, RSoA.extent(0), jat);
     LikeDTDistances(jat,jat) = BigR;
   }
 
@@ -283,7 +285,7 @@ public:
       auto displacementsSubview = Kokkos::subview(UnlikeDTDisplacements,Kokkos::ALL(),iat,Kokkos::ALL());
       DTComputeDistances(R(iat,0), R(iat,1), R(iat,2), originR,
 			 distancesSubview, displacementsSubview,
-			 0, UnlikeDTDistances.extent(0));
+			 0, originR.extent(0));
     }
   }
 
@@ -294,7 +296,7 @@ public:
     //std::cout << "in UnlikeEvaluate, about to call DTComputeDistances" << std::endl;
     DTComputeDistances(R(jat,0), R(jat,1), R(jat,2), originR,
 		       distancesSubview, displacementsSubview,
-		       0, UnlikeDTDistances.extent(1));
+		       0, originR.extent(0));
   }
 
   KOKKOS_INLINE_FUNCTION

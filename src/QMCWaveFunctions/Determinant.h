@@ -1,4 +1,4 @@
-////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
 // This file is distributed under the University of Illinois/NCSA Open Source
 // License.  See LICENSE file in top directory for details.
 //
@@ -52,13 +52,17 @@ ValueType InvertWithLog(DiracDeterminantKokkos& ddk, linAlgHelperType& lah, Valu
 template<class linAlgHelperType, typename ValueType>
 void updateRow(DiracDeterminantKokkos& ddk, linAlgHelperType& lah, int rowchanged, ValueType c_ratio_in);
 
-template<typename memorySpace, typename addkType, typename vectorType, typename resVecType>
+template<typename addkType, typename vectorType, typename resVecType>
 void doDiracDeterminantMultiEvaluateLog(addkType& addk, vectorType& wfcv, resVecType& results);
 
-#ifdef KOKKOS_ENABLE_CUDA
-// this is specialized to when the Views live on the GPU in CudaSpace 
 template<typename addkType, typename vectorType, typename resVecType>
-void doDiracDeterminantMultiEvaluateLog<Kokkos::CudaSpace>(ddkType addk, vectorType& wfcv, resVecType& results);
+void doDiracDeterminantMultiEvaluateLog(addkType& addk, vectorType& wfcv, resVecType& results, const Kokkos::HostSpace&);
+
+#ifdef KOKKOS_ENABLE_CUDA
+template<typename addkType, typename vectorType, typename resVecType>
+void doDiracDeterminantMultiEvaluateLog(addkType& addk, vectorType& wfcv, resVecType& results, const Kokkos::CudaSpace&);
+template<typename addkType, typename vectorType, typename resVecType>
+void doDiracDeterminantMultiEvaluateLog(addkType& addk, vectorType& wfcv, resVecType& results, const Kokkos::CudaUVMSpace&);
 #endif
 
 template<typename addkType, typename vectorType, typename resVecType>
@@ -68,13 +72,16 @@ template<typename addkType, typename awType, typename eiListType, typename psiVT
 void doDiracDeterminantMultiEvalRatio(int pairNum, addkType& addk, awType& activeWalkers, eiListType& eiList, 
 				      psiVType& psiVScratch, ratiosType& ratios);
 
-template<typename memory_space, typename addkType, typename vectorType>
+template<typename addkType, typename vectorType>
 void doDiracDeterminantMultiAccept(addkType& addk, vectorType& WFC_list, int iel);
+template<typename addkType, typename vectorType>
+void doDiracDeterminantMultiAccept(addkType& addk, vectorType& WFC_list, int iel, const Kokkos::HostSpace&);
 
 #ifdef KOKKOS_ENABLE_CUDA
-// this is specialized to when the Views live on the GPU in CudaSpace 
 template<typename addkType, typename vectorType>
-void doDiracDeterminantMultiAccept<Kokkos::CudaSpace>(ddkType addk, vectorType& wfcv, int iel);
+void doDiracDeterminantMultiAccept(addkType& addk, vectorType& WFC_list, int iel, const Kokkos::CudaSpace&);
+template<typename addkType, typename vectorType>
+void doDiracDeterminantMultiAccept(addkType& addk, vectorType& WFC_list, int iel, const Kokkos::CudaUVMSpace&);
 #endif
 
 template<typename addkType, typename vectorType>
@@ -138,10 +145,11 @@ struct DiracDeterminant : public WaveFunctionComponent
     ddk.tempRowVec     = Kokkos::View<ValueType*>("tempRowVec", nels);
     ddk.rcopy          = Kokkos::View<ValueType*>("rcopy", nels);
 #ifdef KOKKOS_ENABLE_CUDA
-    int getRfBufSize = getrf_gpu_buffer_size(nels, nels, ddk.psiM.data(), nels, lah);
+    int getRfBufSize = getrf_gpu_buffer_size(nels, nels, ddk.psiM.data(), nels, lah.cusolver_handle);
+    std::cout << "in constructing DiracDeterminant, getRfBufSize = " << getRfBufSize << std::endl;
     ddk.getRfWorkSpace = Kokkos::View<ValueType*>("getrfws", getRfBufSize);
 #endif
-    ddk.getRiWorkSpace = DiracDeterminantKokkos::MatType("getriws", nels, nels);
+    ddk.getRiWorkSpace = Kokkos::View<ValueType**>("getriws", nels, nels);
     ddk.piv            = Kokkos::View<int*>("piv", nels);
     
     auto FirstIndexMirror = Kokkos::create_mirror_view(ddk.FirstIndex);
@@ -272,7 +280,7 @@ struct DiracDeterminant : public WaveFunctionComponent
       
       //std::cout << "about to do diracDeterminantMultiEvaluateLog" << std::endl;
       // would just do it inline, but need to template on the memory space
-      doDiracDeterminantMultiEvaluateLog<DiracDeterminantKokkos::MatType::memory_space>(addk, WFC_list, values);    
+      doDiracDeterminantMultiEvaluateLog(addk, WFC_list, values);    
       //std::cout << "finished diracDeterminantMultiEvaluateLog" << std::endl;
     }
   }
@@ -293,7 +301,7 @@ struct DiracDeterminant : public WaveFunctionComponent
 			       int iat,
 			       std::vector<ValueType>& ratios,
 			       std::vector<PosType>& grad_new) {
-
+    std::cout << "      in DiracDeterminant multi_ratioGrad" << std::endl;
     if (WFC_list.size() > 0) {
       Kokkos::View<DiracDeterminantKokkos*> addk("addk", WFC_list.size());
       populateCollectiveView(addk, WFC_list);
@@ -307,6 +315,7 @@ struct DiracDeterminant : public WaveFunctionComponent
 	ratios[i] = tempResultsMirror(i);
       }
     }
+    std::cout << "      finished DiracDeterminant multi_ratioGrad" << std::endl;
   }
 
   virtual void multi_acceptRestoreMove(const std::vector<WaveFunctionComponent*>& WFC_list,
@@ -324,7 +333,7 @@ struct DiracDeterminant : public WaveFunctionComponent
       Kokkos::View<DiracDeterminantKokkos*> addk("addk", activeWFC_list.size());
       populateCollectiveView(addk, activeWFC_list);
       
-      doDiracDeterminantMultiAccept<DiracDeterminantKokkos::MatType::memory_space>(addk, activeWFC_list, iat);
+      doDiracDeterminantMultiAccept(addk, activeWFC_list, iat);
     }
   }
     
@@ -408,8 +417,14 @@ void updateRow(DiracDeterminantKokkos& ddk, linAlgHelperType& lah, int rowchange
   Kokkos::Profiling::popRegion();
 }
 
-template<typename memorySpace, typename addkType, typename vectorType, typename resVecType>
+template<typename addkType, typename vectorType, typename resVecType>
 void doDiracDeterminantMultiEvaluateLog(addkType& addk, vectorType& wfcv, resVecType& results) {
+  doDiracDeterminantMultiEvaluateLog(addk, wfcv, results, typename addkType::memory_space());
+}
+
+
+template<typename addkType, typename vectorType, typename resVecType>
+void doDiracDeterminantMultiEvaluateLog(addkType& addk, vectorType& wfcv, resVecType& results, const Kokkos::HostSpace& ms) {
   // for each element in addk,
   //      1. copy transpose of psiMsave to psiM
   //      2. invert psiM
@@ -455,9 +470,9 @@ void doDiracDeterminantMultiEvaluateLog(addkType& addk, vectorType& wfcv, resVec
 
 
 #ifdef KOKKOS_ENABLE_CUDA
-// this is specialized to when the Views live on the GPU in CudaSpace 
+
 template<typename addkType, typename vectorType, typename resVecType>
-void doDiracDeterminantMultiEvaluateLog<Kokkos::CudaSpace>(ddkType addk, vectorType& wfcv, resVecType& results) {
+void dddMELGPU(addkType& addk, vectorType& wfcv, resVecType& results) {
   // for each element in addk,
   //      1. copy transpose of psiMsave to psiM
   //      2. invert psiM
@@ -485,35 +500,32 @@ void doDiracDeterminantMultiEvaluateLog<Kokkos::CudaSpace>(ddkType addk, vectorT
   Kokkos::parallel_for("makeIntoIdentity",
 		       Kokkos::MDRangePolicy<Kokkos::Rank<2,Kokkos::Iterate::Left> >({0,0},{numWalkers,numEls}),
 		       KOKKOS_LAMBDA(const int& i0, const int& i1) {
-			 addk(i0).getRiWorkspace(i1,i1) = 1.0;
+			 addk(i0).getRiWorkSpace(i1,i1) = 1.0;
 		       });
   Kokkos::fence();
-    
 
   cudaStream_t *streams = (cudaStream_t *) malloc(addk.extent(0)*sizeof(cudaStream_t));
   for (int i = 0; i < numWalkers; i++) {
     cudaStreamCreate(&streams[i]);
   }
   
+  cudaDeviceSynchronize();
   // unfortunately, need to access these through the vector anyway, cannot do addk(i).psiM on host!
   for (int i = 0; i < numWalkers; i++) {
     auto& lahref = static_cast<DiracDeterminant*>(wfcv[i])->lah;
-    cusolverDNSetStream(lahref.cusolver_handle, streams[i]);
+    cusolverDnSetStream(lahref.cusolver_handle, streams[i]);
     auto& psiM = static_cast<DiracDeterminant*>(wfcv[i])->ddk.psiM;
  
     auto& getRfWs = static_cast<DiracDeterminant*>(wfcv[i])->ddk.getRfWorkSpace;
     auto& getRiWs = static_cast<DiracDeterminant*>(wfcv[i])->ddk.getRiWorkSpace;
     auto& piv = static_cast<DiracDeterminant*>(wfcv[i])->ddk.piv;
 
-    int info;
-    getrf_gpu_impl(psiM.extent(0), psiM.extent(1),
-		   lahref.pointerConverter(psiM.data()), psiM.extent(0),
+    getrf_gpu_impl(static_cast<int>(psiM.extent(0)), static_cast<int>(psiM.extent(1)),
+		   lahref.pointerConverter(psiM.data()), static_cast<int>(psiM.extent(0)),
 		   lahref.pointerConverter(getRfWs.data()),
-		   piv.data(), info, lahref.cusolver_handle);
-    getri_gpu_impl(psiM.extent(0), lahref.pointerConverter(psiM.data()), piv.data,
-		   lahref.pointerConverter(getRiWs.data()), info, lahref.cusolver_handle);
-    // Results are sitting in getRiWs now!!!
-    
+		   piv.data(), lahref.info.data(), lahref.cusolver_handle);
+    getri_gpu_impl(static_cast<int>(psiM.extent(0)), lahref.pointerConverter(psiM.data()), piv.data(),
+		   lahref.pointerConverter(getRiWs.data()), lahref.info.data(), lahref.cusolver_handle);
   }
   cudaDeviceSynchronize();
   Kokkos::fence();  
@@ -524,7 +536,7 @@ void doDiracDeterminantMultiEvaluateLog<Kokkos::CudaSpace>(ddkType addk, vectorT
 
   // 3. copy getRiWs to psiM and to psiMinv
   Kokkos::parallel_for("elementWiseCopyAllPsiM",
-		       Kokkos::MDRangePolicy<Kokkos::Rank<3,Kokkos::Iterate::Left> >({0,0,0}, {addk.extent(0), addk(0).psiM.extent(0), addk(0).PsiM.extent(1)}),
+		       Kokkos::MDRangePolicy<Kokkos::Rank<3,Kokkos::Iterate::Left> >({0,0,0}, {addk.extent(0), addk(0).psiM.extent(0), addk(0).psiM.extent(1)}),
 		       KOKKOS_LAMBDA(const int& i0, const int& i1, const int& i2) {
 			 addk(i0).psiM(i1,i2) = addk(i0).getRiWorkSpace(i1,i2);
 			 addk(i0).psiMinv(i1, i2) = addk(i0).getRiWorkSpace(i1,i2);
@@ -535,6 +547,17 @@ void doDiracDeterminantMultiEvaluateLog<Kokkos::CudaSpace>(ddkType addk, vectorT
     results[i] = 0.0;
   }
 }
+
+template<typename addkType, typename vectorType, typename resVecType>
+void doDiracDeterminantMultiEvaluateLog(addkType& addk, vectorType& wfcv, resVecType& results, const Kokkos::CudaSpace& ms) {
+  dddMELGPU(addk, wfcv, results);
+}
+
+template<typename addkType, typename vectorType, typename resVecType>
+void doDiracDeterminantMultiEvaluateLog(addkType& addk, vectorType& wfcv, resVecType& results, const Kokkos::CudaUVMSpace& ms) {
+  dddMELGPU(addk, wfcv, results);
+}
+
 #endif
 
 template<typename addkType, typename vectorType, typename resVecType>
@@ -586,10 +609,10 @@ void doDiracDeterminantMultiEvalRatio(int pairNum, addkType& addk, awType& activ
   using ValueType = typename psiVType::value_type;
   const int numKnots = psiVScratch.extent(1);
   const int numWalkers = activeWalkers.extent(0);
-  constexpr double shift(0.5);
 
   // currently expecting psiVScratch to have been filled by a previous call to spo.multi_evaluate_v
   /*
+  constexpr double shift(0.5);
   auto psiVScratchMirror = Kokkos::create_mirror_view(psiVScratch);
   for(int iw = 0; iw < numWalkers; iw++) {
     for (int knot = 0; knot < numKnots; knot++) {
@@ -633,8 +656,14 @@ void doDiracDeterminantMultiEvalRatio(int pairNum, addkType& addk, awType& activ
   }
 }
 
-template<typename memory_space, typename addkType, typename vectorType>
+template<typename addkType, typename vectorType>
 void doDiracDeterminantMultiAccept(addkType& addk, vectorType& WFC_list, int iel) {
+  doDiracDeterminantMultiAccept(addk, WFC_list, iel, typename addkType::memory_space());
+}
+
+
+template<typename addkType, typename vectorType>
+void doDiracDeterminantMultiAccept(addkType& addk, vectorType& WFC_list, int iel, const Kokkos::HostSpace& ms) {
   // for every walker, need to do updateRow followed by copyBack
   int numWalkers = WFC_list.size();
   int numEls = static_cast<DiracDeterminant*>(WFC_list[0])->ddk.psiV.extent(0);
@@ -695,12 +724,14 @@ void doDiracDeterminantMultiAccept(addkType& addk, vectorType& WFC_list, int iel
 #ifdef KOKKOS_ENABLE_CUDA
 // this is specialized to when the Views live on the GPU in CudaSpace 
 template<typename addkType, typename vectorType>
-void doDiracDeterminantMultiAccept<Kokkos::CudaSpace>(ddkType addk, vectorType& wfcv, int iel) {
+void dddMAGPU(addkType& addk, vectorType& wfcv, int iel) {
   // for every walker, need to do updateRow followed by copyBack
-  int numWalkers = WFC_list.size();
-  int numEls = static_cast<DiracDeterminant*>(WFC_list[0])->ddk.psiV.extent(0);
+  int numWalkers = wfcv.size();
+  int numEls = static_cast<DiracDeterminant*>(wfcv[0])->ddk.psiV.extent(0);
   using ValueType = DiracDeterminantKokkos::MatType::value_type;
-  int rowChanged = iel-static_cast<DiracDeterminant*>(WFC_list[0])->FirstIndex;
+  int rowChanged = iel-static_cast<DiracDeterminant*>(wfcv[0])->FirstIndex;
+  constexpr ValueType cone(1.0);
+  constexpr ValueType czero(0.0);
 
   cudaStream_t *streams = (cudaStream_t *) malloc(addk.extent(0)*sizeof(cudaStream_t));
   for (int i = 0; i < numWalkers; i++) {
@@ -710,7 +741,7 @@ void doDiracDeterminantMultiAccept<Kokkos::CudaSpace>(ddkType addk, vectorType& 
   // 1. gemvTrans
   Kokkos::Profiling::pushRegion("updateRow::gemvTrans");
   for (int i = 0; i < numWalkers; i++) {
-    DiracDeterminant* ddp = static_cast<DiracDeterminant*>(WFC_list[i]);
+    DiracDeterminant* ddp = static_cast<DiracDeterminant*>(wfcv[i]);
     auto& lahref = ddp->lah;
     cublasSetStream(lahref.cublas_handle, streams[i]);
 
@@ -726,11 +757,11 @@ void doDiracDeterminantMultiAccept<Kokkos::CudaSpace>(ddkType addk, vectorType& 
   Kokkos::View<ValueType*> poke("poke", numWalkers);
   auto pokeView = Kokkos::create_mirror_view(poke);
   for (int i = 0; i < numWalkers; i++) {
-    DiracDeterminant* ddp = static_cast<DiracDeterminant>(WFC_list[i]);
+    DiracDeterminant* ddp = static_cast<DiracDeterminant*>(wfcv[i]);
     pokeView(i) = cone - cone / ddp->curRatio;
   }
   Kokkos::deep_copy(poke, pokeView);
-  Kokkos::parallel_for(numWalkers, Kokkos_LAMBDA(int i) {
+  Kokkos::parallel_for(numWalkers, KOKKOS_LAMBDA(int i) {
       addk(i).tempRowVec(rowChanged) = poke(i);
     });
   Kokkos::Profiling::popRegion();
@@ -746,15 +777,24 @@ void doDiracDeterminantMultiAccept<Kokkos::CudaSpace>(ddkType addk, vectorType& 
   // 4. do ger for each walker  
   Kokkos::Profiling::pushRegion("updateRow::ger");
   for (int i = 0; i < numWalkers; i++) {
-    DiracDeterminant* ddp = static_cast<DiracDeterminant*>(WFC_list[i]);
+    DiracDeterminant* ddp = static_cast<DiracDeterminant*>(wfcv[i]);
     cublasSetStream(ddp->lah.cublas_handle, streams[i]);
-    ddp->lah.ger(ddp->ddk.psiMinv, ddp->ddk.rcopy, ddk->ddk.tempRowVec, -cone);
+    ddp->lah.ger(ddp->ddk.psiMinv, ddp->ddk.rcopy, ddp->ddk.tempRowVec, -cone);
   }
   cudaDeviceSynchronize();
   Kokkos::Profiling::popRegion();
   for (int i =0; i < numWalkers; i++) {
     cudaStreamDestroy(streams[i]);
   }
+}
+
+template<typename addkType, typename vectorType>
+void doDiracDeterminantMultiAccept(addkType& addk, vectorType& wfcv, int iel, const Kokkos::CudaSpace& ms) {
+  dddMAGPU(addk, wfcv, iel);
+}
+template<typename addkType, typename vectorType>
+void doDiracDeterminantMultiAccept(addkType& addk, vectorType& wfcv, int iel, const Kokkos::CudaUVMSpace& ms) {
+  dddMAGPU(addk, wfcv, iel);
 }
 #endif
  

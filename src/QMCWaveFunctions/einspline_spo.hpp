@@ -137,14 +137,28 @@ struct einspline_spo : public SPOSet
     Kokkos::parallel_for("positionsToFloorLoop", 
 			 Kokkos::MDRangePolicy<Kokkos::Rank<2,Kokkos::Iterate::Left> >({0,0}, {tmpAllPos.extent(0), tmpAllPos.extent(1)}),
 			 KOKKOS_LAMBDA(const int& walkerNum, const int& knotNum) {
+			   double tempx;
+			   double tempy;
+			   double tempz;
+
+			   /*
 			   apsd(walkerNum).toUnit_floor(tmpAllPos(walkerNum, knotNum, 0),
 							tmpAllPos(walkerNum, knotNum, 1),
 							tmpAllPos(walkerNum, knotNum, 2),
 							allPosToUnitFloor(walkerNum, knotNum, 0),
 							allPosToUnitFloor(walkerNum, knotNum, 1),
 							allPosToUnitFloor(walkerNum, knotNum, 2));
-			     });
-    spline.multi_evaluate_v2d(allPosToUnitFloor, tmpallPsiV);
+			   */
+			   apsd(walkerNum).toUnit_floor(tmpAllPos(walkerNum, knotNum, 0),
+							tmpAllPos(walkerNum, knotNum, 1),
+							tmpAllPos(walkerNum, knotNum, 2),
+							tempx, tempy, tempz);
+			   tmpAllPos(walkerNum, knotNum, 0) = tempx;
+			   tmpAllPos(walkerNum, knotNum, 1) = tempy;
+			   tmpAllPos(walkerNum, knotNum, 2) = tempz;
+			 });
+    //spline.multi_evaluate_v2d(allPosToUnitFloor, tmpallPsiV);
+    spline.multi_evaluate_v2d(tmpAllPos, tmpallPsiV);
   }			     			     
   
   inline void multi_evaluate_v(std::vector<PosType>& pos_list, std::vector<vContainer_type>& vals) {

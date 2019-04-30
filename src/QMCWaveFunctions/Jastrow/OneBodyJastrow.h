@@ -55,7 +55,8 @@ void doOneBodyJastrowMultiRatioGrad(aobjdType aobjd, apsdType apsd, int iat,
 				    Kokkos::View<valT*> ratiosView) {
   const int numWalkers = aobjd.extent(0);
   using BarePolicy = Kokkos::TeamPolicy<>;
-  BarePolicy pol(numWalkers, 1, 32);
+  BarePolicy pol(numWalkers, 1, 1);
+  std::cout <<"     in doOneBodyJastrowMultiRatioGrad with iat = " << iat << std::endl;
   Kokkos::parallel_for("obj-evalRatioGrad-walker-loop", pol,
 		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
 			 int walkerNum = member.league_rank();
@@ -434,26 +435,32 @@ struct OneBodyJastrow : public WaveFunctionComponent
 			       int iat,
 			       std::vector<valT>& ratios,
 			       std::vector<posT>& grad_new) {
+    std::cout << "      starting J1 multi_ratioGrad" << std::endl;
     if (WFC_list.size() > 0) {
 
       // make a view of all of the OneBodyJastrowData and relevantParticleSetData
       Kokkos::View<jasDataType*> allOneBodyJastrowData("aobjd", WFC_list.size()); 
       Kokkos::View<ParticleSet::pskType*> allParticleSetData("apsd", P_list.size());
       populateCollectiveViews(allOneBodyJastrowData, allParticleSetData, WFC_list, P_list);
-      
+      std::cout << "       finished populating collective views" << std::endl;
+
       // need to make a view to hold all of the output LogValues
       Kokkos::View<double**> grad_new_view("tempValues", P_list.size(), OHMMS_DIM);
       Kokkos::View<double*> ratios_view("ratios", P_list.size());
       
       // need to write this function
+      std::cout << "       starting doOneBJMultiRatioGrad" << std::endl;
       doOneBodyJastrowMultiRatioGrad(allOneBodyJastrowData, allParticleSetData, iat, grad_new_view, ratios_view);
-      
+      Kokkos::fence();
+      std::cout << "       finishing doOneBJMultiRatioGrad" << std::endl;      
+
       // copy the results out to values
       auto grad_new_view_mirror = Kokkos::create_mirror_view(grad_new_view);
       Kokkos::deep_copy(grad_new_view_mirror, grad_new_view);
       auto ratios_view_mirror = Kokkos::create_mirror_view(ratios_view);
       Kokkos::deep_copy(ratios_view_mirror, ratios_view);
-      
+      std::cout << "       finished copying grad and ratios out" << std::endl;
+
       for (int i = 0; i < P_list.size(); i++) {
 	ratios[i] = ratios_view_mirror(i);
 	for (int j = 0; j < OHMMS_DIM; j++) {
@@ -461,6 +468,8 @@ struct OneBodyJastrow : public WaveFunctionComponent
 	}
       }
     }
+    std::cout << "      finishing J1 multi_ratioGrad" << std::endl;
+
   }
 
   virtual void multi_acceptRestoreMove(const std::vector<WaveFunctionComponent*>& WFC_list,

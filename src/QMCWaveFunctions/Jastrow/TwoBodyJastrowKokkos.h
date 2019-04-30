@@ -244,7 +244,10 @@ public:
     const int igt = psk.GroupID(iel) * NumGroups(0);
     for (int jg = 0; jg < NumGroups(0); jg++) {
       const int istart = psk.first(jg);
-      const int iend   = std::min(jelmax, psk.last(jg));
+      int iend = jelmax;
+      if (psk.last(jg) < jelmax) {
+	iend = psk.last(jg);
+      }
       FevaluateVGL(igt+jg, iel, istart, iend, dist, u, du, d2u);
     }
   }

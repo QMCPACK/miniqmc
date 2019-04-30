@@ -433,14 +433,15 @@ void doMultiEval_v2d(multiPosType& pos, valType& vals, coefType& coefs,
   Kokkos::TeamPolicy<> policy(numWalkers*numKnots,Kokkos::AUTO,32);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(Kokkos::TeamPolicy<>::member_type member) {
       const int walkerNum = member.league_rank() / numKnots;
-      const int knotNum = member.league_rank() % numBlocks;
+      const int knotNum = member.league_rank() % numKnots;
       
       // wrap this so only a single thread per league does this
-      Kokkos::single(Kokkos::PerTeam(member), [&]() {	  
+      Kokkos::single(Kokkos::PerTeam(member), [&]() {	 
 	  for(int i = 0; i < 3; i++) {
 	    pos(walkerNum, knotNum,i) -= gridStarts(i);
 	  }
 	});
+      member.team_barrier();
 
       Kokkos::parallel_for(Kokkos::TeamThreadRange(member, 0, numBlocks),
 			   [&](int blockNum) {
@@ -670,7 +671,7 @@ void doMultiEval_vgh(multiPosType& pos, valType& vals, gradType& grad,
   if (coefs.extent(3) % blockSize != 0) {
     numBlocks++;
   }
-  Kokkos::TeamPolicy<> policy(numWalkers,numBlocks,32);
+  Kokkos::TeamPolicy<> policy(numWalkers,Kokkos::AUTO,32);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(Kokkos::TeamPolicy<>::member_type member) {
       const int walkerNum = member.league_rank();
 

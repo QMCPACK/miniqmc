@@ -215,6 +215,20 @@ public:
   void setActive(int iat);
 
   void multi_setActiveKokkos(std::vector<ParticleSet*>& P_list, int iel);
+
+  template<typename apskType>
+  void multi_setActiveKokkos(apskType& apsk, int iel) {
+    int locIel = iel;
+    auto& allParticleSetData = apsk;
+    // probably an issue in the evaluate functions
+    // think about instead of using a subview, just passing on the 
+    // value that should go to the second index of the Distances and Displacements
+    Kokkos::parallel_for("setActive", allParticleSetData.extent(0),
+			 KOKKOS_LAMBDA(const int& i) {
+			   allParticleSetData(i).setActivePtcl(locIel);
+			 });
+  }
+
   /** return the position of the active partice
    *
    * activePtcl=-1 is used to flag non-physical moves
