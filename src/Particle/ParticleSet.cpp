@@ -497,6 +497,7 @@ void ParticleSet::multi_setActiveKokkos(std::vector<ParticleSet*>& P_list, int i
 		       });
 }
 
+
 /** move a particle iat
  * @param iat the index of the particle to be moved
  * @param displ the displacement of the iath-particle position
