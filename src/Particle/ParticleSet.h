@@ -294,14 +294,14 @@ public:
 			  EiListType& EiLists, rOnSphereType& rOnSphere, bigElPosType& bigElPos,
 			  tempRType& bigLikeTempR, tempRType& bigUnlikeTempR) {
     int eiPair_ = eiPair;
-    std::cout <<" about to make local references" << std::endl;
+    //std::cout <<" about to make local references" << std::endl;
     auto& allParticleSetData_ = allParticleSetData;
     auto& EiLists_ = EiLists;
     auto& rOnSphere_ = rOnSphere;
     auto& bigElPos_ = bigElPos;
     auto& bigLikeTempR_ = bigLikeTempR;
     auto& bigUnlikeTempR_ = bigUnlikeTempR;
-    std::cout << " finished making local references" << std::endl;
+    //std::cout << " finished making local references" << std::endl;
 
     const int numMovers = allParticleSetData_.extent(0);
     const int numKnots = rOnSphere_.extent(0);

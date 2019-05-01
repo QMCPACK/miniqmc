@@ -474,14 +474,14 @@ int main(int argc, char** argv)
 	  {
 
 	    Kokkos::fence();
-	    std::cout << "about to start multi_setActiveKokkos" << std::endl;
+	    //std::cout << "about to start multi_setActiveKokkos" << std::endl;
 	    // Operate on electron with index iel
 	    //anon_mover->els.multi_setActiveKokkos(P_list,iel); 
 	    anon_mover->els.multi_setActiveKokkos(allParticleSetData,iel);
 
 	    // Compute gradient at the current position
 	    Kokkos::fence();
-	    std::cout << "about to start multi_evalGrad" << std::endl;
+	    //std::cout << "about to start multi_evalGrad" << std::endl;
 	    Timers[Timer_evalGrad]->start();
 	    anon_mover->wavefunction.multi_evalGrad(WF_list, P_list, iel, grad_now);
 	    Timers[Timer_evalGrad]->stop();
@@ -498,7 +498,7 @@ int main(int argc, char** argv)
 	      }
 	    }
 	    Kokkos::deep_copy(dr, drMirror);
-	    std::cout << "about to start makeMoveAndCheckKokkos" << std::endl;
+	    //std::cout << "about to start makeMoveAndCheckKokkos" << std::endl;
 	    Kokkos::fence();
 	    anon_mover->els.multi_makeMoveAndCheckKokkos(P_list, dr, iel, isValid);
 
@@ -514,10 +514,10 @@ int main(int argc, char** argv)
 	    valid_WF_list = extract_wf_list(valid_mover_list);
 		    
 	    Kokkos::fence();
-	    std::cout <<"about to do gradient (multi_evaluate_vgh and multi_ratioGrad)" << std::endl;
+	    //std::cout <<"about to do gradient (multi_evaluate_vgh and multi_ratioGrad)" << std::endl;
 	    // Compute gradient at the trial position
 	    Timers[Timer_ratioGrad]->start();
-	    std::cout << "  valid_WF_list.size() = " << valid_WF_list.size() << std::endl;
+	    //std::cout << "  valid_WF_list.size() = " << valid_WF_list.size() << std::endl;
 	    if (valid_WF_list.size() > 0) {
 	      Kokkos::View<double*[3],Kokkos::LayoutLeft> pos_list("positions", valid_P_list.size());
 	      Kokkos::View<ParticleSet::pskType*> allParticleSetData("apsd", valid_P_list.size());
@@ -526,7 +526,7 @@ int main(int argc, char** argv)
 		apsdMirror(i) = valid_P_list[i]->psk;
 	      }
 	      Kokkos::deep_copy(allParticleSetData, apsdMirror);
-	      std::cout << "  copied particleSetData onto GPU" << std::endl;
+	      //std::cout << "  copied particleSetData onto GPU" << std::endl;
 	      Kokkos::parallel_for("populatePositions", valid_P_list.size(),
 				   KOKKOS_LAMBDA(const int& i) {
 				     double x, y, z;
@@ -539,18 +539,18 @@ int main(int argc, char** argv)
 				     pos_list(i,1) = y;
 				     pos_list(i,2) = z;
 				   });
-	      std::cout << "  ran kernel to set pos_list" << std::endl;
+	      //std::cout << "  ran kernel to set pos_list" << std::endl;
 	      const std::vector<mover_type*> valid_mover_list(filtered_list(mover_list, isValid));
 	      auto vals = extract_spo_psi_list(valid_mover_list);
 	      auto grads = extract_spo_grad_list(valid_mover_list);
 	      auto hesss = extract_spo_hess_list(valid_mover_list);
 	      spo.multi_evaluate_vgh(pos_list, vals, grads, hesss);
-	      std::cout << "  did evaluate_vgh" << std::endl;
+	      //std::cout << "  did evaluate_vgh" << std::endl;
 	      
 	      // this is the point where we should have already set psiV and be passing it in
 	      anon_mover->wavefunction.multi_ratioGrad(valid_WF_list, valid_P_list, iel, ratios, grad_new);
 	      Kokkos::fence();
-	      std::cout << "  did multi_ratioGrad" << std::endl;
+	      //std::cout << "  did multi_ratioGrad" << std::endl;
 
 	    }
 	    Timers[Timer_ratioGrad]->stop();
@@ -563,14 +563,14 @@ int main(int argc, char** argv)
 		isAccepted[iw] = false;
 	    
 	    Kokkos::fence();
-	    std::cout << "about to do acceptrestoreMove" << std::endl;
+	    //std::cout << "about to do acceptrestoreMove" << std::endl;
 	    Timers[Timer_Update]->start();
 	    // update WF storage
 	    anon_mover->wavefunction.multi_acceptrestoreMove(valid_WF_list, valid_P_list, isAccepted, iel);
 	    Timers[Timer_Update]->stop();
 	    
 	    Kokkos::fence();
-	    std::cout << "about to do acceptRejectMoveKokkos" << std::endl;
+	    //std::cout << "about to do acceptRejectMoveKokkos" << std::endl;
 	    // Update position
 	    anon_mover->els.multi_acceptRejectMoveKokkos(valid_P_list, isAccepted, iel);
 	  } // iel
@@ -672,10 +672,10 @@ int main(int argc, char** argv)
 	Kokkos::View<ValueType***> tempPsiV("tempPsiV", nmovers, nknots, nels);
 
 	
-	std::cout << "About to start loop over eiPairs.  There are " << maxSize << " of them" << std::endl;
+	//std::cout << "About to start loop over eiPairs.  There are " << maxSize << " of them" << std::endl;
 	for (int eiPair = 0; eiPair < maxSize; eiPair++) {
 	  	  
-	  std::cout << "  About to do updateTempPosAndRs" << std::endl;
+	  //std::cout << "  About to do updateTempPosAndRs" << std::endl;
 	  anon_mover->els.updateTempPosAndRs(eiPair, allParticleSetData, EiLists,
 					     rOnSphere, bigElPos, bigLikeTempR, bigUnlikeTempR);
 	  Timers[Timer_Value]->start();
@@ -683,12 +683,12 @@ int main(int argc, char** argv)
 	  Kokkos::fence();
 
 	  // actually putting the values calculated by evaluate_vs into tempPsiV
-	  std::cout << "  About to start multi_evaluate_v" << std::endl;
+	  //std::cout << "  About to start multi_evaluate_v" << std::endl;
 	  spo.multi_evaluate_v(bigElPos, tempPsiV, allParticleSetData); // also perhaps hand in result views to store the output
 	  
 	  // note, for a given eiPair, all evaluations for a single mover will be for the same electron
 	  // but not all movers will be working on the same electron necessarily
-	  std::cout << "  About to do wavefunction.multi_ratio" << std::endl;
+	  //std::cout << "  About to do wavefunction.multi_ratio" << std::endl;
 
 	  anon_mover->wavefunction.multi_ratio(eiPair, WF_list, allParticleSetData,
 					       tempPsiV, bigLikeTempR, bigUnlikeTempR,

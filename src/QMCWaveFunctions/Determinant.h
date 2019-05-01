@@ -110,7 +110,7 @@ struct DiracDeterminant : public WaveFunctionComponent
     ddk.rcopy          = Kokkos::View<ValueType*>("rcopy", nels);
 #ifdef KOKKOS_ENABLE_CUDA
     int getRfBufSize = getrf_gpu_buffer_size(nels, nels, ddk.psiM.data(), nels, lah.cusolver_handle);
-    std::cout << "in constructing DiracDeterminant, getRfBufSize = " << getRfBufSize << std::endl;
+    //std::cout << "in constructing DiracDeterminant, getRfBufSize = " << getRfBufSize << std::endl;
     ddk.getRfWorkSpace = Kokkos::View<ValueType*>("getrfws", getRfBufSize);
 #endif
     ddk.getRiWorkSpace = Kokkos::View<ValueType**>("getriws", nels, nels);
@@ -268,7 +268,7 @@ struct DiracDeterminant : public WaveFunctionComponent
 			       int iat,
 			       std::vector<ValueType>& ratios,
 			       std::vector<PosType>& grad_new) {
-    std::cout << "      in DiracDeterminant multi_ratioGrad" << std::endl;
+    //std::cout << "      in DiracDeterminant multi_ratioGrad" << std::endl;
     if (WFC_list.size() > 0) {
       Kokkos::View<DiracDeterminantKokkos*> addk("addk", WFC_list.size());
       populateCollectiveView(addk, WFC_list);
@@ -282,7 +282,7 @@ struct DiracDeterminant : public WaveFunctionComponent
 	ratios[i] = tempResultsMirror(i);
       }
     }
-    std::cout << "      finished DiracDeterminant multi_ratioGrad" << std::endl;
+    //std::cout << "      finished DiracDeterminant multi_ratioGrad" << std::endl;
   }
 
   virtual void multi_acceptRestoreMove(const std::vector<WaveFunctionComponent*>& WFC_list,

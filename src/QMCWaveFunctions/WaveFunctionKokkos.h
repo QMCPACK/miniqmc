@@ -24,7 +24,7 @@ namespace qmcplusplus
 {
   /** Holds the collective views for the determinants and jastrows for a population
       of walkers */
-  class WaveFunction;
+class WaveFunction;
 
 
 class WaveFunctionKokkos : public QMCTraits

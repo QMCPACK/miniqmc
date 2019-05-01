@@ -150,12 +150,12 @@ void WaveFunction::multi_ratio(int pairNum, const std::vector<WaveFunction*>& WF
   
   auto& tmpEiList = eiList;
   // complication here in that we are not always looking at the same electron from walker to walker
-  std::cout << "about to make EiListMirror" << std::endl;
-  std::cout << "dimensionality of eiList = " << tmpEiList.extent(0) << ", " << tmpEiList.extent(1) << ", " << tmpEiList.extent(2) << std::endl;
+  //std::cout << "about to make EiListMirror" << std::endl;
+  //std::cout << "dimensionality of eiList = " << tmpEiList.extent(0) << ", " << tmpEiList.extent(1) << ", " << tmpEiList.extent(2) << std::endl;
   typename eiListType::HostMirror EiListMirror = Kokkos::create_mirror_view(tmpEiList);
-  std::cout << "mirror view created, about to do deep_copy" << std::endl;
+  //std::cout << "mirror view created, about to do deep_copy" << std::endl;
   Kokkos::deep_copy(EiListMirror, tmpEiList);
-  std::cout << "finished setting up EiListMirror" << std::endl;
+  //std::cout << "finished setting up EiListMirror" << std::endl;
 
   std::vector<int> packedIndex;
   for (int iw = 0; iw < numWalkers; iw++) {
@@ -165,7 +165,7 @@ void WaveFunction::multi_ratio(int pairNum, const std::vector<WaveFunction*>& WF
     }
   }
 
-  std::cout << "about to make activeWalkerIndex view" << std::endl;
+  //std::cout << "about to make activeWalkerIndex view" << std::endl;
   Kokkos::View<int*> activeWalkerIndex("activeWalkerIndex", packedIndex.size());
   auto activeWalkerIndexMirror = Kokkos::create_mirror_view(activeWalkerIndex);
 
@@ -185,7 +185,7 @@ void WaveFunction::multi_ratio(int pairNum, const std::vector<WaveFunction*>& WF
   Kokkos::deep_copy(addk, addkMirror);
   // will do this for one set of pairs for every walker if available
   // note, ratios_set holds all the values, so need to index accordingly
-  std::cout << "in multi_ratio, about to call do DiracDeterminantMultiEvalRatio" << std::endl;
+  //std::cout << "in multi_ratio, about to call do DiracDeterminantMultiEvalRatio" << std::endl;
   doDiracDeterminantMultiEvalRatio(pairNum, addk, activeWalkerIndex, eiList, tempPsiV, ratios_det);
 
   for (int i = 0; i < numWalkers*numKnots; i++) {
@@ -201,7 +201,7 @@ void WaveFunction::multi_ratio(int pairNum, const std::vector<WaveFunction*>& WF
     for (int j = 0; j < packedIndex.size(); j++) {
       jas_list.push_back(WF_list[packedIndex[j]]->Jastrows[i]);
     }
-    std::cout << "in multi_ratio, about to call Jastrow[i]->multi_evalRatio for i = " << i << std::endl;
+    //std::cout << "in multi_ratio, about to call Jastrow[i]->multi_evalRatio for i = " << i << std::endl;
     Jastrows[i]->multi_evalRatio(pairNum, eiList, jas_list, apsd, likeTempRs, unlikeTempRs, activeWalkerIndex, ratios_jas); // handing in both because we don't know what type each is...
 
     for (int idx = 0; idx < numWalkers*numKnots; idx++)
