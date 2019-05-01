@@ -84,28 +84,67 @@ public:
   int ionLast(int group) const { return ionSubPtcl(group+1); }
 
 
-// called only on the device!
-// may turn out we don't really need activePos, just get values from R directly
   KOKKOS_INLINE_FUNCTION
-    void setActivePtcl(int i) {
+  void setActivePtcl(int i) {
     activePtcl(0) = i;
     activePos(0) = R(i,0);
     activePos(1) = R(i,1);
     activePos(2) = R(i,2);
-    //std::cout << "doing setActivePtcl for particle " << i << std::endl;
     LikeEvaluate(i);
-    //std::cout << "  finished LikeEvaluate" << std::endl;
     UnlikeEvaluate(i);
-    //std::cout << "  finished UnlikeEvaluate" << std::endl;
   }
 
   // intended to be called by LikeDTComputeDistances and UnlikeDtComputeDistances
   // I'm just too chicken to make it private for now
-  template<typename locRType, typename tempRType, typename tempDRType>
+  //  template<typename locRType, typename tempRType, typename tempDRType>
   KOKKOS_INLINE_FUNCTION
   void DTComputeDistances(RealType x0, RealType y0, RealType z0,
-			  locRType& locR, tempRType& temp_r,
-			  tempDRType& temp_dr,
+			  Kokkos::View<RealType*[dim],Kokkos::LayoutLeft> locR,
+			  Kokkos::View<RealType**>& temp_r,
+			  Kokkos::View<RealType**[dim]>& temp_dr, int elIndex,
+			  int first, int last, int flip_ind = 0) {
+    constexpr RealType minusone(-1);
+    constexpr RealType one(1);
+    for (int iat = first; iat < last; ++iat)
+    {
+      const RealType flip    = iat < flip_ind ? one : minusone;
+      const RealType displ_0 = (locR(iat,0) - x0) * flip;
+      const RealType displ_1 = (locR(iat,1) - y0) * flip;
+      const RealType displ_2 = (locR(iat,2) - z0) * flip;
+
+      const RealType ar_0 = -std::floor(displ_0 * DT_G(0,0) + displ_1 * DT_G(1,0) + displ_2 * DT_G(2,0));
+      const RealType ar_1 = -std::floor(displ_0 * DT_G(0,1) + displ_1 * DT_G(1,1) + displ_2 * DT_G(2,1));
+      const RealType ar_2 = -std::floor(displ_0 * DT_G(0,2) + displ_1 * DT_G(1,2) + displ_2 * DT_G(2,2));
+      
+      const RealType delx = displ_0 + ar_0 * DT_R(0,0) + ar_1 * DT_R(1,0) + ar_2 * DT_R(2,0);
+      const RealType dely = displ_1 + ar_0 * DT_R(0,1) + ar_1 * DT_R(1,1) + ar_2 * DT_R(2,1);
+      const RealType delz = displ_2 + ar_0 * DT_R(0,2) + ar_1 * DT_R(1,2) + ar_2 * DT_R(2,2);
+      
+      RealType rmin = delx * delx + dely * dely + delz * delz;
+      int ic = 0;
+
+      for (int c = 1; c < 8; ++c)
+      {
+	const RealType x  = delx + corners(c,0);
+	const RealType y  = dely + corners(c,1);
+	const RealType z  = delz + corners(c,2);
+	const RealType r2 = x * x + y * y + z * z;
+	ic         = (r2 < rmin) ? c : ic;
+	rmin       = (r2 < rmin) ? r2 : rmin;
+      }
+     
+      temp_r(elIndex, iat) = std::sqrt(rmin);
+      temp_dr(elIndex, iat,0) = flip * (delx + corners(ic,0));
+      temp_dr(elIndex, iat,1) = flip * (dely + corners(ic,1));
+      temp_dr(elIndex, iat,2) = flip * (delz + corners(ic,2));
+    }
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  void DTComputeDistances(RealType x0, RealType y0, RealType z0,
+			  Kokkos::View<RealType*[dim],Kokkos::LayoutLeft> locR,
+			  Kokkos::View<RealType*>& temp_r,
+			  Kokkos::View<RealType*[dim],Kokkos::LayoutLeft>& temp_dr,
 			  int first, int last, int flip_ind = 0) {
     constexpr RealType minusone(-1);
     constexpr RealType one(1);
@@ -144,12 +183,11 @@ public:
     }
   }
 
-  // intended to be called by LikeDTComputeDistances and UnlikeDtComputeDistances
-  // I'm just too chicken to make it private for now
+
   KOKKOS_INLINE_FUNCTION
   void DTComputeDistances(RealType x0, RealType y0, RealType z0,
 			  Kokkos::View<RealType*[dim],Kokkos::LayoutLeft> locR,
-			  Kokkos::View<RealType*> temp_r,
+			  Kokkos::View<RealType***> temp_r, int tempRWalkNum, int tempRKnotNum,
 			  int first, int last, int flip_ind = 0) {
     constexpr RealType minusone(-1);
     constexpr RealType one(1);
@@ -178,7 +216,7 @@ public:
 	const RealType r2 = x * x + y * y + z * z;
 	rmin       = (r2 < rmin) ? r2 : rmin;
       }
-      temp_r(iat) = std::sqrt(rmin);
+      temp_r(tempRWalkNum, tempRKnotNum, iat) = std::sqrt(rmin);
     }
   }
 
@@ -258,10 +296,8 @@ public:
     constexpr RealType BigR = std::numeric_limits<RealType>::max();
     for (int iat = 0; iat < LikeDTDistances.extent(1); ++iat)
     {
-      auto distancesSubview = Kokkos::subview(LikeDTDistances,iat,Kokkos::ALL());
-      auto displacementsSubview = Kokkos::subview(LikeDTDisplacements,iat,Kokkos::ALL(),Kokkos::ALL());
       DTComputeDistances(R(iat,0), R(iat,1), R(iat,2), RSoA,
-			 distancesSubview, displacementsSubview,
+			 LikeDTDistances, LikeDTDisplacements, iat,
 			 0, RSoA.extent(0), iat);
       LikeDTDistances(iat,iat) = BigR;
     }
@@ -270,10 +306,8 @@ public:
   KOKKOS_INLINE_FUNCTION
   void LikeEvaluate(int jat) {
     constexpr RealType BigR = std::numeric_limits<RealType>::max();
-    auto distancesSubview = Kokkos::subview(LikeDTDistances,jat,Kokkos::ALL());
-    auto displacementsSubview = Kokkos::subview(LikeDTDisplacements,jat,Kokkos::ALL(),Kokkos::ALL());
     DTComputeDistances(R(jat,0), R(jat,1), R(jat,2), RSoA,
-		       distancesSubview, displacementsSubview,
+		       LikeDTDistances, LikeDTDisplacements, jat,
 		       0, RSoA.extent(0), jat);
     LikeDTDistances(jat,jat) = BigR;
   }
@@ -281,21 +315,16 @@ public:
   KOKKOS_INLINE_FUNCTION
   void UnlikeEvaluate() {
     for (int iat = 0; iat < UnlikeDTDistances.extent(1); ++iat) {
-      auto distancesSubview = Kokkos::subview(UnlikeDTDistances,iat,Kokkos::ALL());
-      auto displacementsSubview = Kokkos::subview(UnlikeDTDisplacements,iat,Kokkos::ALL(),Kokkos::ALL());
       DTComputeDistances(R(iat,0), R(iat,1), R(iat,2), originR,
-			 distancesSubview, displacementsSubview,
+			 UnlikeDTDistances, UnlikeDTDisplacements, iat,
 			 0, originR.extent(0));
     }
   }
 
   KOKKOS_INLINE_FUNCTION
   void UnlikeEvaluate(int jat) {
-    auto distancesSubview = Kokkos::subview(UnlikeDTDistances,jat,Kokkos::ALL());
-    auto displacementsSubview = Kokkos::subview(UnlikeDTDisplacements,jat,Kokkos::ALL(),Kokkos::ALL());
-    //std::cout << "in UnlikeEvaluate, about to call DTComputeDistances" << std::endl;
     DTComputeDistances(R(jat,0), R(jat,1), R(jat,2), originR,
-		       distancesSubview, displacementsSubview,
+		       UnlikeDTDistances, UnlikeDTDisplacements, jat,
 		       0, originR.extent(0));
   }
 

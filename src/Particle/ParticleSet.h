@@ -319,21 +319,20 @@ public:
 						      bigElPos_(walkerNum, knotNum, dim) = allParticleSetData_(walkerNum).UnlikeDTDistances(eNum,atNum) *
 							rOnSphere_(walkerNum,knotNum,dim) - allParticleSetData_(walkerNum).UnlikeDTDisplacements(eNum,atNum,dim);
 						    }
-						    // do bigLikeTempR
-						    auto likeTempRSubview = Kokkos::subview(bigLikeTempR_,walkerNum,knotNum,Kokkos::ALL());
-						    auto unlikeTempRSubview = Kokkos::subview(bigUnlikeTempR_,walkerNum,knotNum,Kokkos::ALL());
 						    allParticleSetData_(walkerNum).DTComputeDistances(bigElPos(walkerNum,knotNum,0),	   
 												      bigElPos(walkerNum,knotNum,1),	   
 												      bigElPos(walkerNum,knotNum,2),	   
 												      allParticleSetData_(walkerNum).RSoA,			   
-												      likeTempRSubview,		   
-												      0, likeTempRSubview.extent(0), eNum);
+												      bigLikeTempR_, walkerNum, knotNum, 		   
+												      0, bigLikeTempR_.extent(2), eNum);
+
 						    allParticleSetData_(walkerNum).DTComputeDistances(bigElPos(walkerNum,knotNum,0),	   
 												      bigElPos(walkerNum,knotNum,1),	   
 												      bigElPos(walkerNum,knotNum,2),	   
 												      allParticleSetData_(walkerNum).originR,			   
-												      unlikeTempRSubview,		   
-												      0, unlikeTempRSubview.extent(0));
+												      bigUnlikeTempR_, walkerNum, knotNum, 		   
+												      0, bigUnlikeTempR_.extent(2), eNum);
+
 						  });
 			   }
 			 });
