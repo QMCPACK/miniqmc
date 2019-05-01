@@ -46,13 +46,14 @@ if (PYCICLE_COMPILER_TYPE MATCHES "gcc")
   set(PYCICLE_COMPILER_SETUP "
     #
     spack load gcc/egooyqw
+    spack load cmake/q76ndqk
     spack load git@2.12.1
     spack load fftw/kpdartc
     spack load cmake/q76ndqk
     spack load mpich/6zgajlw
     spack load hdf5/4gmsnjn
     module load cuda/9.2
-    module load magma/ndhxaft
+    spack load load magma/ndhxaft
     #
     # use openmpi compiler wrappers to make MPI use easy
     export CC=mpicc
@@ -108,7 +109,7 @@ string(CONCAT CTEST_BUILD_OPTIONS ${CTEST_BUILD_OPTIONS}
 set(PYCICLE_JOB_SCRIPT_TEMPLATE "#!/bin/bash
 #PBS -S /bin/bash
 #PBS -m be
-#PBS -N DCA-${PYCICLE_PR}-${PYCICLE_BUILD_STAMP}
+#PBS -N miniqmc-${PYCICLE_PR}-${PYCICLE_BUILD_STAMP}
 #PBS -l nodes=1:ppn=36:gpu_p100
 #PBS -l walltime=02:00:00
 #PBS -q	gpu_p100

@@ -9,5 +9,5 @@ set(CTEST_NIGHTLY_START_TIME "00:00:00 GMT")
 
 set(CTEST_DROP_METHOD "https")
 set(CTEST_DROP_SITE "cdash-minimal.ornl.gov")
-set(CTEST_DROP_LOCATION "cdash/submit.php?project=MINIQMC")
+set(CTEST_DROP_LOCATION "/cdash/submit.php?project=MINIQMC")
 set(CTEST_DROP_SITE_CDASH TRUE)
