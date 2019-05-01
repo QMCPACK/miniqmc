@@ -17,6 +17,7 @@
 #include <Utilities/SIMD/algorithm.hpp>
 #include <numeric>
 #include "OneBodyJastrowKokkos.h"
+#include "QMCWaveFunctions/WaveFunctionKokkos.h"
 
 /*!
  * @file OneBodyJastrow.h
@@ -401,6 +402,27 @@ struct OneBodyJastrow : public WaveFunctionComponent
       }
     }
   }
+  
+  virtual void multi_evaluateLog(const std::vector<WaveFunctionComponent*>& WFC_list,
+				 WaveFunctionKokkos& wfc,
+				 Kokkos::View<ParticleSet::pskType*>& psk,
+				 ParticleSet::ParticleValue_t& values) {
+    // need to make a view to hold all of the output LogValues
+    Kokkos::View<valT*> tempValues("tempValues", WFC_list.size());
+
+    // need to write this function
+    doOneBodyJastrowMultiEvaluateLog(wfc.oneBodyJastrows, psk, tempValues);
+      
+    // copy the results out to values
+    auto tempValMirror = Kokkos::create_mirror_view(tempValues);
+    Kokkos::deep_copy(tempValMirror, tempValues);
+    
+    for (int i = 0; i < WFC_list.size(); i++) {
+      values[i] = tempValMirror(i);
+    }
+  }
+   
+
 
   virtual void multi_evalGrad(const std::vector<WaveFunctionComponent*>& WFC_list,
 			      const std::vector<ParticleSet*>& P_list,

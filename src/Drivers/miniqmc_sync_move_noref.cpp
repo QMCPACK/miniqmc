@@ -115,6 +115,7 @@
 #include <QMCWaveFunctions/SPOSet.h>
 #include <QMCWaveFunctions/SPOSet_builder.h>
 #include <QMCWaveFunctions/WaveFunction.h>
+#include <QMCWaveFunctions/WaveFunctionKokkos.h>
 #include <Drivers/Mover.hpp>
 #include <getopt.h>
 
@@ -378,16 +379,31 @@ int main(int argc, char** argv)
       mover_list[iw]->els.pushDataToParticleSetKokkos();
     }
 
-    cout << "getting some info from els" << endl;
-    cout << "number of electrons:  " << mover_list[0]->els.psk.R.extent(0) << endl;
-    cout << "number of ions:  " << mover_list[0]->els.psk.originR.extent(0) << endl;
+    cout << "making collective views" << endl;
+    const std::vector<ParticleSet*> P_list(extract_els_list(mover_list));
+    Kokkos::View<ParticleSet::pskType*> allParticleSetData("apsd", P_list.size());
+    auto apsdMirror = Kokkos::create_mirror_view(allParticleSetData);
+    for (int i = 0; i < P_list.size(); i++) {
+      apsdMirror(i) = P_list[i]->psk;
+    }
+    Kokkos::deep_copy(allParticleSetData, apsdMirror);
+
+    std::vector<WaveFunction*> WF_list(extract_wf_list(mover_list));
+    WaveFunctionKokkos wfKokkos(WF_list);
+
+    mover_type* anon_mover;
+    anon_mover = mover_list[0];
     cout << "finished initialization section" << endl;
+
     
     { // initial computing
       //cout << "about to do multi_evaluateLog" << endl;
+      /*
       const std::vector<ParticleSet*> P_list(extract_els_list(mover_list));
       const std::vector<WaveFunction*> WF_list(extract_wf_list(mover_list));
       mover_list[0]->wavefunction.multi_evaluateLog(WF_list, P_list);
+      */
+      anon_mover->wavefunction.multi_evaluateLog(WF_list, wfKokkos, allParticleSetData);
       //cout << "finished multi_evaluateLog" << endl;
     }
     Timers[Timer_Init]->stop();
@@ -406,9 +422,6 @@ int main(int argc, char** argv)
     // For DMC, tau is small and should result in an acceptance ratio of 99%
     const RealType tau = 2.0;  
     RealType sqrttau = std::sqrt(tau);
-
-
-
     
     // synchronous walker moves
     {
@@ -434,13 +447,11 @@ int main(int argc, char** argv)
 
       // another big question is whether to keep these always static and then just
       // index into them.  Maybe best to delay some of this until the timing looks good
-      const std::vector<ParticleSet*> P_list(extract_els_list(mover_list));
-      Kokkos::View<ParticleSet::pskType*> allParticleSetData("apsd", P_list.size());
-      auto apsdMirror = Kokkos::create_mirror_view(allParticleSetData);
-      for (int i = 0; i < P_list.size(); i++) {
-	apsdMirror(i) = P_list[i]->psk;
-      }
-      Kokkos::deep_copy(allParticleSetData, apsdMirror);
+      
+      
+
+
+
 
 
       for (int mc = 0; mc < nsteps; ++mc)
@@ -575,15 +586,6 @@ int main(int argc, char** argv)
 	// Compute NLPP energy using integral over spherical points
 	Timers[Timer_ECP]->start();
 
-	/*
-	Kokkos::View<ParticleSet::pskType*> allParticleSetData("apsd", P_list.size());
-	auto apsdMirror = Kokkos::create_mirror_view(allParticleSetData);
-	for (int i = 0; i < P_list.size(); i++) {
-	  apsdMirror(i) = P_list[i]->psk;
-	}
-	//std::cout << "About to set up activeEiPairs" << std::endl;
-	Kokkos::deep_copy(allParticleSetData, apsdMirror);
-	*/
 	Kokkos::View<int*> EiPairs("activeEiPairs", nmovers);
 	
 	double locRmax = Rmax;
@@ -679,14 +681,6 @@ int main(int argc, char** argv)
 	  Timers[Timer_Value]->start();
 
 	  Kokkos::fence();
-	  std::cout << "    seeing if we can do a host mirror of EiLists" << std::endl;
-	  auto EiListsMirror = Kokkos::create_mirror_view(EiLists);
-	  std::cout << "    mirror created, trying to deep copy" << std::endl;
-	  Kokkos::deep_copy(EiListsMirror, EiLists);
-	  std::cout << "    deep_copy successful, first value is: " << EiListsMirror(0,0,0) << std::endl;
-
-
-
 
 	  // actually putting the values calculated by evaluate_vs into tempPsiV
 	  std::cout << "  About to start multi_evaluate_v" << std::endl;

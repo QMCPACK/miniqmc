@@ -28,6 +28,7 @@
 #include <Particle/ParticleSet.h>
 #include <QMCWaveFunctions/WaveFunctionComponent.h>
 #include <QMCWaveFunctions/Determinant.h>
+#include <QMCWaveFunctions/WaveFunctionKokkos.h>
 
 namespace qmcplusplus
 {
@@ -76,6 +77,12 @@ public:
   /// operates on multiple walkers
   void multi_evaluateLog(const std::vector<WaveFunction*>& WF_list,
                          const std::vector<ParticleSet*>& P_list) const;
+
+  
+  void multi_evaluateLog(const std::vector<WaveFunction*>& WF_list,
+			 WaveFunctionKokkos& wfc,
+			 Kokkos::View<ParticleSet::pskType*>& psk) const;
+
   void multi_evalGrad(const std::vector<WaveFunction*>& WF_list,
                       const std::vector<ParticleSet*>& P_list,
                       int iat,

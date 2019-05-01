@@ -28,6 +28,7 @@
 #include "Utilities/Configuration.h"
 #include "Particle/ParticleSet.h"
 #include "Particle/DistanceTableData.h"
+#include "QMCWaveFunctions/WaveFunctionKokkos.h"
 
 /**@file WaveFunctionComponent.h
  *@brief Declaration of WaveFunctionComponent
@@ -181,6 +182,14 @@ struct WaveFunctionComponent : public QMCTraits
       values[iw] = WFC_list[iw]->evaluateLog(*P_list[iw], *G_list[iw], *L_list[iw]);
   };
 
+  virtual void multi_evaluateLog(const std::vector<WaveFunctionComponent*>& WFC_list,
+				 WaveFunctionKokkos& wfc,
+				 Kokkos::View<ParticleSet::pskType*>& psk,
+				 ParticleSet::ParticleValue_t& values) {
+    //
+  };
+
+
   virtual void multi_evalGrad(const std::vector<WaveFunctionComponent*>& WFC_list,
                               const std::vector<ParticleSet*>& P_list,
                               int iat,
@@ -229,7 +238,7 @@ struct WaveFunctionComponent : public QMCTraits
 			       Kokkos::View<double***>& unlikeTempR,
 			       Kokkos::View<int*>& activeWalkerIdx,
 			       std::vector<ValueType>& ratios) {
-
+    // TODO
   };
   
   virtual void multi_evaluateGL(const std::vector<WaveFunctionComponent*>& WFC_list,

@@ -14,6 +14,7 @@
 #ifndef QMCPLUSPLUS_TWOBODYJASTROW_H
 #define QMCPLUSPLUS_TWOBODYJASTROW_H
 #include "Utilities/Configuration.h"
+#include "QMCWaveFunctions/WaveFunctionKokkos.h"
 #include "QMCWaveFunctions/WaveFunctionComponent.h"
 #include "Particle/DistanceTableData.h"
 #include "QMCWaveFunctions/Jastrow/TwoBodyJastrowKokkos.h"
@@ -333,6 +334,11 @@ struct TwoBodyJastrow : public WaveFunctionComponent
                                  const std::vector<ParticleSet::ParticleGradient_t*>& G_list,
                                  const std::vector<ParticleSet::ParticleLaplacian_t*>& L_list,
                                  ParticleSet::ParticleValue_t& values);
+
+  virtual void multi_evaluateLog(const std::vector<WaveFunctionComponent*>& WFC_list,
+				 WaveFunctionKokkos& wfc,
+				 Kokkos::View<ParticleSet::pskType*>& psk,
+				 ParticleSet::ParticleValue_t& values);
 
   virtual void multi_evalGrad(const std::vector<WaveFunctionComponent*>& WFC_list,
 			      const std::vector<ParticleSet*>& P_list,
@@ -868,6 +874,27 @@ void TwoBodyJastrow<FT>::multi_evaluateLog(const std::vector<WaveFunctionCompone
   }
 }
 
+template<typename FT>
+void TwoBodyJastrow<FT>::multi_evaluateLog(const std::vector<WaveFunctionComponent*>& WFC_list,
+					   WaveFunctionKokkos& wfc,
+					   Kokkos::View<ParticleSet::pskType*>& psk,
+					   ParticleSet::ParticleValue_t& values) {
+  
+  // need to make a view to hold all of the output LogValues
+  Kokkos::View<ValueType*> tempValues("tempValues", WFC_list.size());
+
+  // need to write this function
+  doTwoBodyJastrowMultiEvaluateLog(wfc.twoBodyJastrows, psk, tempValues);
+
+  // copy the results out to values
+  auto tempValMirror = Kokkos::create_mirror_view(tempValues);
+  Kokkos::deep_copy(tempValMirror, tempValues);
+  
+  for (int i = 0; i < WFC_list.size(); i++) {
+    values[i] = tempValMirror(i);
+  }
+}
+ 
 template<typename FT>
 void TwoBodyJastrow<FT>::multi_evalGrad(const std::vector<WaveFunctionComponent*>& WFC_list,
 					const std::vector<ParticleSet*>& P_list,

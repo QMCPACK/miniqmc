@@ -267,34 +267,34 @@ void WaveFunction::evaluateGL(ParticleSet& P)
   }
 }
 
+//void WaveFunction::multi_evaluateLog(const std::vector<WaveFunction*>& WF_list,
+//                                   const std::vector<ParticleSet*>& P_list) const
 void WaveFunction::multi_evaluateLog(const std::vector<WaveFunction*>& WF_list,
-                                     const std::vector<ParticleSet*>& P_list) const
+				     WaveFunctionKokkos& wfc,
+				     Kokkos::View<ParticleSet::pskType*>& psk) const
 {
+  const int numItems = WF_list.size();
   if (WF_list[0]->FirstTime)
   {
     constexpr valT czero(0);
-    const std::vector<ParticleSet::ParticleGradient_t*> G_list(extract_G_list(P_list));
-    const std::vector<ParticleSet::ParticleLaplacian_t*> L_list(extract_L_list(P_list));
-    ParticleSet::ParticleValue_t LogValues(P_list.size());
+    ParticleSet::ParticleValue_t LogValues(numItems);
 
-    if (WF_list.size() > 0) {
-
-      for (int iw = 0; iw < P_list.size(); iw++)
-	{
-	  *G_list[iw] = czero;
-	  *L_list[iw] = czero;
-	}
+    if (numItems > 0) {
       //std::cout << "in multi_evaluateLog" << std::endl;
       // det up/dn
       
       //std::cout << "about to do part for determinants" << std::endl;
       std::vector<WaveFunctionComponent*> up_list(extract_up_list(WF_list));
-      Det_up->multi_evaluateLog(up_list, P_list, G_list, L_list, LogValues);
-      for (int iw = 0; iw < P_list.size(); iw++)
+      doDiracDeterminantMultiEvaluateLog(wfc.upDets, up_list, LogValues);
+      //Det_up->multi_evaluateLog(up_list, wfc, psk, LogValues);
+      //Det_up->multi_evaluateLog(up_list, P_list, G_list, L_list, LogValues);
+      for (int iw = 0; iw < numItems; iw++)
 	WF_list[iw]->LogValue = LogValues[iw];
       std::vector<WaveFunctionComponent*> dn_list(extract_dn_list(WF_list));
-      Det_dn->multi_evaluateLog(dn_list, P_list, G_list, L_list, LogValues);
-      for (int iw = 0; iw < P_list.size(); iw++)
+      doDiracDeterminantMultiEvaluateLog(wfc.downDets, dn_list, LogValues);
+      //Det_dn->multi_evaluateLog(dn_list, wfc, psk, LogValues);
+      //Det_dn->multi_evaluateLog(dn_list, P_list, G_list, L_list, LogValues);
+      for (int iw = 0; iw < numItems; iw++)
 	WF_list[iw]->LogValue += LogValues[iw];
       // Jastrow factors
       
@@ -305,12 +305,13 @@ void WaveFunction::multi_evaluateLog(const std::vector<WaveFunction*>& WF_list,
 	{
 	  //std::cout << "  working on jastrow: " << i << std::endl;
 	  std::vector<WaveFunctionComponent*> jas_list(extract_jas_list(WF_list, i));
-	  Jastrows[i]->multi_evaluateLog(jas_list, P_list, G_list, L_list, LogValues);
-	  for (int iw = 0; iw < P_list.size(); iw++)
+	  Jastrows[i]->multi_evaluateLog(jas_list, wfc, psk, LogValues);
+	  //Jastrows[i]->multi_evaluateLog(jas_list, P_list, G_list, L_list, LogValues);
+	  for (int iw = 0; iw < numItems; iw++)
 	    WF_list[iw]->LogValue += LogValues[iw];
 	}
       //std::cout << "finished with jastrows" << std::endl;
-      for (int iw = 0; iw < P_list.size(); iw++)
+      for (int iw = 0; iw < numItems; iw++)
 	WF_list[iw]->FirstTime = false;
     }
   }

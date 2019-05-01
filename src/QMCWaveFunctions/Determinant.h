@@ -37,7 +37,8 @@
 
 #include "QMCWaveFunctions/WaveFunctionComponent.h"
 #include "Numerics/LinAlgKokkos.h"
-//#include "Utilities/RandomGenerator.h"
+#include "QMCWaveFunctions/DeterminantKokkos.h"
+#include "Utilities/RandomGenerator.h"
 
 
 namespace qmcplusplus
@@ -92,43 +93,6 @@ void populateCollectiveView(addkType addk, vectorType& WFC_list, std::vector<boo
 
 
 
-struct DiracDeterminantKokkos : public QMCTraits
-{
-  using MatType = Kokkos::View<ValueType**, Kokkos::LayoutRight>;
-  using DoubleMatType = Kokkos::View<double**, Kokkos::LayoutRight>;
-
-  Kokkos::View<ValueType[1]> LogValue;
-  Kokkos::View<ValueType[1]> curRatio;
-  Kokkos::View<int[1]> FirstIndex;
-
-  // inverse matrix to be updated
-  MatType psiMinv;
-  // storage for the row update 
-  Kokkos::View<ValueType*> psiV;
-  // temporary storage for row update
-  Kokkos::View<ValueType*> tempRowVec;
-  Kokkos::View<ValueType*> rcopy;
-  // internal storage to perform inversion correctly
-  MatType psiM;
-  // temporary workspace for inversion
-  MatType psiMsave;
-  // temporary workspace for getrf
-  Kokkos::View<ValueType*> getRfWorkSpace;
-  Kokkos::View<ValueType**> getRiWorkSpace;
-  // pivot array
-  Kokkos::View<int*> piv;
-  
-  KOKKOS_INLINE_FUNCTION
-  DiracDeterminantKokkos() { ; }
-
-  KOKKOS_INLINE_FUNCTION
-  DiracDeterminantKokkos& operator=(const DiracDeterminantKokkos& rhs) = default;
-
-  DiracDeterminantKokkos(const DiracDeterminantKokkos&) = default;
-  // need to add in checkMatrix(), evaluateLog(psk*), evalGrad(psk*, iat),
-  //                ratioGrad(psk*, iat, gradType), evaluateGL(psk*, G, L, fromscratch)
-  //                recompute(), ratio(psk*, iel), acceptMove(psk*, iel)
-};
 
 struct DiracDeterminant : public WaveFunctionComponent
 {
@@ -266,11 +230,13 @@ struct DiracDeterminant : public WaveFunctionComponent
   inline int size() const { return ddk.psiMinv.extent(0)*ddk.psiMinv.extent(1); }
 
   //// collective functions
+  
   virtual void multi_evaluateLog(const std::vector<WaveFunctionComponent*>& WFC_list,
                                  const std::vector<ParticleSet*>& P_list,
                                  const std::vector<ParticleSet::ParticleGradient_t*>& G_list,
                                  const std::vector<ParticleSet::ParticleLaplacian_t*>& L_list,
                                  ParticleSet::ParticleValue_t& values) {
+ 
     if (WFC_list.size() > 0) {
       
       //std::cout << "in DiracDeterminant::multi_evaluateLog" << std::endl;
@@ -280,6 +246,7 @@ struct DiracDeterminant : public WaveFunctionComponent
       
       //std::cout << "about to do diracDeterminantMultiEvaluateLog" << std::endl;
       // would just do it inline, but need to template on the memory space
+      // need to choose here either the up or down determinants from wfc
       doDiracDeterminantMultiEvaluateLog(addk, WFC_list, values);    
       //std::cout << "finished diracDeterminantMultiEvaluateLog" << std::endl;
     }
