@@ -35,12 +35,12 @@ if (PYCICLE_COMPILER_TYPE MATCHES "gcc")
   #
   set(CFLAGS           "-fPIC -march=native -mtune=native -ffast-math")
   set(CXXFLAGS         "-fPIC -march=native -mtune=native -ffast-math")
-  set(LDFLAGS          "-L/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/gcc/5.3.0/centos7.2_gcc4.8.5/lib64 -Wl,-rpath,/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/gcc/5.3.0/centos7.2_gcc4.8.5/lib64")
+  set(CUDA_DIR         "/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/cuda/9.2/centos7.2_binary")
+  set(LDFLAGS          "-L/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/gcc/5.3.0/centos7.2_gcc4.8.5/lib64 -Wl,-rpath,/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/gcc/5.3.0/centos7.2_gcc4.8.5/lib64 -L${CUDA_DIR}/lib64 -Wl,-rpath,${CUDA_DIR}/lib64")
   set(LDCXXFLAGS       "${LDFLAGS}")
   set(FFTW_DIR         "/software/user_tools/centos-7.2.1511/cades-cnms/spack/opt/spack/linux-centos7-x86_64/gcc-6.5.0/fftw-3.3.8-kpdartcqxfk2kdsbcfdtwin75s24z5uu")
   set(HDF5_DIR         "/software/user_tools/centos-7.2.1511/cades-cnms/spack/opt/spack/linux-centos7-x86_64/gcc-6.5.0/hdf5-1.10.4-4gmsnjn7fozngnc3gwckwnoi2dq53yon")
   #set by module load cuda/9.2
-  #set(CUDA_DIR         "/software/user_tools/centos-7.2.1511/cades-cnms/spack/opt/spack/linux-centos7-x86_64/gcc-5.3.0/cuda-8.0.61-pz7ileloxiwrc7kvi4htvwo5p7t3ugvv")
   set(MAGMA_DIR        "/software/user_tools/centos-7.2.1511/cades-cnms/spack/opt/spack/linux-centos7-x86_64/gcc-6.5.0/magma-2.4.0-ndhxaftye4ji5bckhwjv23f5rhvrebai")
   # multiline string
   set(PYCICLE_COMPILER_SETUP "
@@ -58,6 +58,7 @@ if (PYCICLE_COMPILER_TYPE MATCHES "gcc")
     # use openmpi compiler wrappers to make MPI use easy
     export CC=mpicc
     export CXX=mpic++
+    export CUDA_DIR=\"${CUDA_DIR}\"
     #
     #export CFLAGS=\"${CFLAGS}\"
     #export CXXFLAGS=\"${CXXFLAGS}\"
