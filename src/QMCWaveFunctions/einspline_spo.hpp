@@ -133,7 +133,7 @@ struct einspline_spo : public SPOSet
     auto& tmpAllPos = all_pos;
     auto& tmpapsd = apsd;
     auto& tmpallPsiV = allPsiV;
-    Kokkos::View<double**[3]> allPosToUnitFloor("allPosToUnitFloor", all_pos.extent(0),all_pos.extent(1));
+    //Kokkos::View<double**[3]> allPosToUnitFloor("allPosToUnitFloor", all_pos.extent(0),all_pos.extent(1));
     Kokkos::parallel_for("positionsToFloorLoop", 
 			 Kokkos::MDRangePolicy<Kokkos::Rank<2,Kokkos::Iterate::Left> >({0,0}, {tmpAllPos.extent(0), tmpAllPos.extent(1)}),
 			 KOKKOS_LAMBDA(const int& walkerNum, const int& knotNum) {

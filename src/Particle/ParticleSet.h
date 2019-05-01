@@ -294,21 +294,23 @@ public:
 			  EiListType& EiLists, rOnSphereType& rOnSphere, bigElPosType& bigElPos,
 			  tempRType& bigLikeTempR, tempRType& bigUnlikeTempR) {
     int eiPair_ = eiPair;
-    auto allParticleSetData_ = allParticleSetData;
-    auto EiLists_ = EiLists;
-    auto rOnSphere_ = rOnSphere;
-    auto bigElPos_ = bigElPos;
-    auto bigLikeTempR_ = bigLikeTempR;
-    auto bigUnlikeTempR_ = bigUnlikeTempR;
-    
+    std::cout <<" about to make local references" << std::endl;
+    auto& allParticleSetData_ = allParticleSetData;
+    auto& EiLists_ = EiLists;
+    auto& rOnSphere_ = rOnSphere;
+    auto& bigElPos_ = bigElPos;
+    auto& bigLikeTempR_ = bigLikeTempR;
+    auto& bigUnlikeTempR_ = bigUnlikeTempR;
+    std::cout << " finished making local references" << std::endl;
+
     const int numMovers = allParticleSetData_.extent(0);
     const int numKnots = rOnSphere_.extent(0);
     Kokkos::TeamPolicy<> pol(numMovers, 1, 32);
     Kokkos::parallel_for("updateTempPosAndRs", pol,
 			 KOKKOS_LAMBDA(Kokkos::TeamPolicy<>::member_type member) {
 			   const int walkerNum = member.league_rank();
-			   const int eNum = EiLists_(walkerNum, eiPair, 0);
-			   const int atNum = EiLists_(walkerNum, eiPair, 1);
+			   const int eNum = EiLists_(walkerNum, eiPair_, 0);
+			   const int atNum = EiLists_(walkerNum, eiPair_, 1);
 			   if (eNum > -1) {
 			     Kokkos::parallel_for(Kokkos::ThreadVectorRange(member, numKnots),
 						  [=](const int& knotNum) {

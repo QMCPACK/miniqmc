@@ -495,7 +495,7 @@ struct OneBodyJastrow : public WaveFunctionComponent
     // be careful on this one, looks like it is being done for side effects.  Should see what needs to go back!!!
   }
 
-  virtual void multi_evalRatio(int pairNum, Kokkos::View<int**[2]>& eiList,
+  virtual void multi_evalRatio(int pairNum, Kokkos::View<int***>& eiList,
 			       const std::vector<WaveFunctionComponent*>& WFC_list,
 			       Kokkos::View<ParticleSetKokkos<RealType, ValueType, 3>*>& apsk,
 			       Kokkos::View<double***>& likeTempR,

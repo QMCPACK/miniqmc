@@ -258,8 +258,8 @@ public:
     constexpr RealType BigR = std::numeric_limits<RealType>::max();
     for (int iat = 0; iat < LikeDTDistances.extent(1); ++iat)
     {
-      auto distancesSubview = Kokkos::subview(LikeDTDistances,Kokkos::ALL(),iat);
-      auto displacementsSubview = Kokkos::subview(LikeDTDisplacements,Kokkos::ALL(),iat,Kokkos::ALL());
+      auto distancesSubview = Kokkos::subview(LikeDTDistances,iat,Kokkos::ALL());
+      auto displacementsSubview = Kokkos::subview(LikeDTDisplacements,iat,Kokkos::ALL(),Kokkos::ALL());
       DTComputeDistances(R(iat,0), R(iat,1), R(iat,2), RSoA,
 			 distancesSubview, displacementsSubview,
 			 0, RSoA.extent(0), iat);
@@ -270,8 +270,8 @@ public:
   KOKKOS_INLINE_FUNCTION
   void LikeEvaluate(int jat) {
     constexpr RealType BigR = std::numeric_limits<RealType>::max();
-    auto distancesSubview = Kokkos::subview(LikeDTDistances,Kokkos::ALL(),jat);
-    auto displacementsSubview = Kokkos::subview(LikeDTDisplacements,Kokkos::ALL(),jat,Kokkos::ALL());
+    auto distancesSubview = Kokkos::subview(LikeDTDistances,jat,Kokkos::ALL());
+    auto displacementsSubview = Kokkos::subview(LikeDTDisplacements,jat,Kokkos::ALL(),Kokkos::ALL());
     DTComputeDistances(R(jat,0), R(jat,1), R(jat,2), RSoA,
 		       distancesSubview, displacementsSubview,
 		       0, RSoA.extent(0), jat);
@@ -281,8 +281,8 @@ public:
   KOKKOS_INLINE_FUNCTION
   void UnlikeEvaluate() {
     for (int iat = 0; iat < UnlikeDTDistances.extent(1); ++iat) {
-      auto distancesSubview = Kokkos::subview(UnlikeDTDistances,Kokkos::ALL(),iat);
-      auto displacementsSubview = Kokkos::subview(UnlikeDTDisplacements,Kokkos::ALL(),iat,Kokkos::ALL());
+      auto distancesSubview = Kokkos::subview(UnlikeDTDistances,iat,Kokkos::ALL());
+      auto displacementsSubview = Kokkos::subview(UnlikeDTDisplacements,iat,Kokkos::ALL(),Kokkos::ALL());
       DTComputeDistances(R(iat,0), R(iat,1), R(iat,2), originR,
 			 distancesSubview, displacementsSubview,
 			 0, originR.extent(0));
@@ -291,8 +291,8 @@ public:
 
   KOKKOS_INLINE_FUNCTION
   void UnlikeEvaluate(int jat) {
-    auto distancesSubview = Kokkos::subview(UnlikeDTDistances,Kokkos::ALL(),jat);
-    auto displacementsSubview = Kokkos::subview(UnlikeDTDisplacements,Kokkos::ALL(),jat,Kokkos::ALL());
+    auto distancesSubview = Kokkos::subview(UnlikeDTDistances,jat,Kokkos::ALL());
+    auto displacementsSubview = Kokkos::subview(UnlikeDTDisplacements,jat,Kokkos::ALL(),Kokkos::ALL());
     //std::cout << "in UnlikeEvaluate, about to call DTComputeDistances" << std::endl;
     DTComputeDistances(R(jat,0), R(jat,1), R(jat,2), originR,
 		       distancesSubview, displacementsSubview,

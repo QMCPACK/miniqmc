@@ -348,7 +348,7 @@ struct TwoBodyJastrow : public WaveFunctionComponent
 				       const std::vector<bool>& isAccepted,
 				       int iat);
 
-  virtual void multi_evalRatio(int pairNum, Kokkos::View<int**[2]>& eiList,
+  virtual void multi_evalRatio(int pairNum, Kokkos::View<int***>& eiList,
 			       const std::vector<WaveFunctionComponent*>& WFC_list,
 			       Kokkos::View<ParticleSetKokkos<RealType, ValueType, 3>*>& apsk,
 			       Kokkos::View<double***>& likeTempR,
@@ -926,7 +926,7 @@ void TwoBodyJastrow<FT>::multi_ratioGrad(const std::vector<WaveFunctionComponent
 }
 
 template<typename FT>
-void TwoBodyJastrow<FT>::multi_evalRatio(int pairNum, Kokkos::View<int**[2]>& eiList,
+void TwoBodyJastrow<FT>::multi_evalRatio(int pairNum, Kokkos::View<int***>& eiList,
 					 const std::vector<WaveFunctionComponent*>& WFC_list,
 					 Kokkos::View<ParticleSetKokkos<RealType, ValueType, 3>*>& apsk,
 					 Kokkos::View<double***>& likeTempR,
