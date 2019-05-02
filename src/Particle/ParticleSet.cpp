@@ -538,22 +538,15 @@ bool ParticleSet::makeMoveAndCheck(Index_t iat, const SingleParticlePos_t& displ
   }
 }
 
-void ParticleSet::multi_makeMoveAndCheckKokkos(std::vector<ParticleSet*>& P_list, Kokkos::View<RealType*[3]>& dr,
-					       int iel, std::vector<int>& isValid)
+void ParticleSet::multi_makeMoveAndCheckKokkos(Kokkos::View<ParticleSet::pskType*>& allParticleSetData, 
+					       Kokkos::View<RealType*[3]>& dr,
+					       int iel, Kokkos::View<int*>& isValidList)
 {
   ScopedTimer local_timer(timers[Timer_makeMove]);
-  Kokkos::View<ParticleSet::pskType*> allParticleSetData("apsd", P_list.size());
-  auto apsdMirror = Kokkos::create_mirror_view(allParticleSetData);
-  for (int i = 0; i < P_list.size(); i++) {
-    apsdMirror(i) = P_list[i]->psk;
-  }
   int locIel = iel;
   auto& locDr = dr;
 
-  Kokkos::deep_copy(allParticleSetData, apsdMirror);
-  Kokkos::View<int*> devIsValid("devIsValid", P_list.size());
-
-  Kokkos::parallel_for("makeMoveAndCheck", P_list.size(),
+  Kokkos::parallel_for("makeMoveAndCheck", allParticleSetData.extent(0),
 		       KOKKOS_LAMBDA(const int& i) {
 			 auto& pset = allParticleSetData(i);
 			 pset.activePtcl(0) = locIel;
@@ -567,29 +560,23 @@ void ParticleSet::multi_makeMoveAndCheckKokkos(std::vector<ParticleSet*>& P_list
 			   pset.toUnit(locDr(i,0), locDr(i,1), locDr(i,2), x, y, z);
 			   if (pset.outOfBound(x,y,z)) {
 			     pset.activePtcl(0) = -1;
-			     devIsValid(i) = 0;
+			     isValidList(i) = 0;
 			   } else {
 			     pset.toUnit(pset.activePos(0), pset.activePos(1), pset.activePos(2), x, y, z);
 			     if (pset.isValid(x,y,z)) {
 			       pset.LikeMove(pset.activePos(0), pset.activePos(1), pset.activePos(2));
 			       pset.UnlikeMove(pset.activePos(0), pset.activePos(1), pset.activePos(2));
-			       devIsValid(i) = 1;
+			       isValidList(i) = 1;
 			     } else {
-			       devIsValid(i) = 0;
+			       isValidList(i) = 0;
 			     }
 			   }
 			 } else {
 			   pset.LikeMove(pset.activePos(0), pset.activePos(1), pset.activePos(2));
 			   pset.UnlikeMove(pset.activePos(0), pset.activePos(1), pset.activePos(2));
-			   devIsValid(i) = 1;
+			   isValidList(i) = 1;
 			 }
 		       });
-  auto devIsValidMirror = Kokkos::create_mirror_view(devIsValid);
-  Kokkos::deep_copy(devIsValidMirror, devIsValid);
-  for (int i = 0; i < isValid.size(); i++) {
-    //std::cout << "copying elements to isValid, for i = " << i << ", value is = " << devIsValidMirror(i) << std::endl;
-    isValid[i] = devIsValidMirror(i);
-  }  
 }
 
 /** move the iat-th particle by displ
@@ -636,6 +623,35 @@ void ParticleSet::acceptMove(Index_t iat)
 }
 
 void ParticleSet::rejectMove(Index_t iat) { activePtcl = -1; }
+
+void ParticleSet::multi_acceptRejectMoveKokkos(Kokkos::View<ParticleSet::pskType*>& psk,
+					       Kokkos::View<int*> isAcceptedMap,
+					       int numAccepted, int iel) {
+  int locIel = iel;
+  Kokkos::parallel_for("ptclsetMultiAcceptReject", numAccepted,
+		       KOKKOS_LAMBDA(const int& idx) {
+			 const int i = isAcceptedMap(idx);
+			 auto& psd = psk(i);
+			 if (deviceIsAccepted(i)) {
+			   psd.LikeUpdate(locIel);
+			   psd.UnlikeUpdate(locIel);
+			   //std::cout << "finished psd.UnlikeUpdate" << std::endl;
+			   for (int dim = 0; dim < 3; dim++) {
+			     psd.R(locIel,dim) = psd.activePos(dim);
+			     psd.RSoA(locIel,dim) = psd.activePos(dim);
+			   }
+			 }
+			 //std::cout << "at end of loop" << std::endl;
+		       });
+  Kokkos::parallel_for(psk.extent(0),
+		       KOKKOS_LAMBDA(const int& i) {
+			 psk(i).activePtcl(0) = -1;
+		       });
+
+  
+}
+
+
 
 void ParticleSet::multi_acceptRejectMoveKokkos(std::vector<ParticleSet*>& psets, 
 					       std::vector<bool>& isAccepted, int iel) {

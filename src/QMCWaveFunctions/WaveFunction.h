@@ -87,11 +87,27 @@ public:
                       const std::vector<ParticleSet*>& P_list,
                       int iat,
                       std::vector<posT>& grad_now) const;
+
+  void multi_evalGrad(const std::vector<WaveFunction*>& WF_list,
+                      WaveFunctionKokkos& wfc,
+		      Kokkos::View<ParticleSet::pskType*>& psk,
+                      int iat,
+                      std::vector<posT>& grad_now) const;
   void multi_ratioGrad(const std::vector<WaveFunction*>& WF_list,
                        const std::vector<ParticleSet*>& P_list,
                        int iat,
                        std::vector<valT>& ratio_list,
                        std::vector<posT>& grad_new) const;
+  template<typename valsType, typename isValidMapMirrorType>
+  void multi_ratioGrad(const std::vector<WaveFunction*>& WF_list,
+		       WaveFunctionKokkos wfc,
+		       Kokkos::View<ParticleSet::pskType*>& psk,
+		       valsType& psiVs,
+		       Kokkos::View<int*>& isValidMap, 
+		       isValidMapMirrorType& isValidMapMirror, int numValid,
+		       int iel, std::vector<valT>& ratio_list,
+		       std::vector<posT>& grad_new) const;
+
 
   template<typename apsdType, typename psiVType, typename likeTempRType, typename unlikeTempRType, typename eiListType>
   void multi_ratio(int pairNum, const std::vector<WaveFunction*>& WF_list, apsdType& apsd, psiVType& tempPsiV,
@@ -101,6 +117,13 @@ public:
                                const std::vector<ParticleSet*>& P_list,
                                const std::vector<bool>& isAccepted,
                                int iat) const;
+
+  void multi_acceptrestoreMove(const std::vector<WaveFunction*>& WF_list,
+			       WaveFunctionKokkos& wfc,
+			       Kokkos::View<ParticleSet::pskType*>& psk,
+			       Kokkos::View<int*>& isAcceptedMap,
+			       int numAccepted, int iel) const {
+
   void multi_evaluateGL(const std::vector<WaveFunction*>& WF_list,
                         const std::vector<ParticleSet*>& P_list) const;
 
@@ -211,6 +234,55 @@ void WaveFunction::multi_ratio(int pairNum, const std::vector<WaveFunction*>& WF
 }
 
 
+template<typename valsType, typename isValidMapMirrorType >
+void WaveFunction::multi_ratioGrad(const std::vector<WaveFunction*>& WF_list,
+				   WaveFunctionKokkos wfc,
+				   Kokkos::View<ParticleSet::pskType*>& psk,
+				   valsType& psiVs,
+				   Kokkos::View<int*>& isValidMap, 
+				   isValidMapMirrorType& isValidMapMirror, int numValid,
+				   int iel, std::vector<valT>& ratio_list,
+				   std::vector<posT>& grad_new) const {
+  timers[Timer_Det]->start();
+  if (numValid > 0) {
+    std::vector<valT> ratios_det(numValid);
+    for (int iw = 0; iw < grad_new.size(); iw++)
+      grad_new[iw] = posT(0);
+    
+    Kokkos::View<valT*> tempResults("tempResults", numValid);
+    if (iel > nelup) {
+      std::vector<WaveFunctionComponent*> up_list(extract_up_list(WF_list));
+      //Det_up->multi_ratioGrad(up_list, P_list, iat, ratios_det, grad_new);
+      doDiracDeterminantMultiEvalRatio(wfc.upDets, up_list, psiVs, tempResults, isValidMap, numValid, iel);
+    } else {
+      std::vector<WaveFunctionComponent*> dn_list(extract_dn_list(WF_list));
+      //Det_up->multi_ratioGrad(up_list, P_list, iat, ratios_det, grad_new);
+      doDiracDeterminantMultiEvalRatio(wfc.downDets, dn_list, psiVs, tempResults, isValidMap, numValid, iel);
+    }
+    auto tempResultsMirror = Kokkos::create_mirror_view(tempResults);
+    Kokkos::deep_copy(tempResultsMirror, tempResults);
+    for (int i = 0; i < ratios_det.size(); i++) {
+      ratios_det[i] = tempResultsMirror(i);
+    }
+    for (int iw = 0; iw < numValid; iw++) {
+      ratios_list[isValidMapMirror(iw)] = ratios_det[iw];
+    }
+    timers[Timer_Det]->stop();
+
+    for (size_t i = 0; i < Jastrows.size(); i++)
+    {
+      //std::cout << "    doing multi_ratioGrad for Jastrow " << i << std::endl;                                              
+      jastrow_timers[i]->start();
+      std::vector<valT> ratios_jas(numValid);
+      std::vector<WaveFunctionComponent*> jas_list(extract_jas_list(WF_list, i));
+      //Jastrows[i]->multi_ratioGrad(jas_list, P_list, iat, ratios_jas, grad_new);
+      Jastrows[i]->multi_ratioGrad(jas_list, wfc, psk, iel, isValidMap, numValid, ratios_jas, grad_new);
+      for (int iw = 0; iw < numValid; iw++)
+	ratios_list[isValidMapMirror(iw)] *= ratios_jas[iw];
+      jastrow_timers[i]->stop();
+    }
+  }
+}
 
  
 } // namespace qmcplusplus

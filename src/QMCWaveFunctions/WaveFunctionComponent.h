@@ -200,6 +200,16 @@ struct WaveFunctionComponent : public QMCTraits
       grad_now[iw] = WFC_list[iw]->evalGrad(*P_list[iw], iat);
   };
 
+  virtual void multi_evalGrad(const std::vector<WaveFunctionComponent*>& WFC_list,
+			      WaveFunctionKokkos& wfc,
+			      Kokkos::View<ParticleSet::pskType*> psk,
+			      int iat,
+			      std::vector<PosType>& grad_now)
+  {
+    //
+  };
+
+
   virtual void multi_ratioGrad(const std::vector<WaveFunctionComponent*>& WFC_list,
                                const std::vector<ParticleSet*>& P_list,
                                int iat,
@@ -211,6 +221,17 @@ struct WaveFunctionComponent : public QMCTraits
       ratios[iw] = WFC_list[iw]->ratioGrad(*P_list[iw], iat, grad_new[iw]);
   };
 
+  virtual void multi_ratioGrad(const std::vector<WaveFunctionComponent*>& WFC_list,
+			       WaveFunctionKokkos& wfc,
+			       Kokkos::View<ParticleSet::pskType*> psk,
+			       int iel,
+			       Kokkos::View<int*>& isValidMap, int numValid,
+			       std::vector<ValueType>& ratios,
+			       std::vector<PosType>& grad_new)
+  {
+    //
+  };
+			       
   virtual void multi_acceptrestoreMove(const std::vector<WaveFunctionComponent*>& WFC_list,
                                        const std::vector<ParticleSet*>& P_list,
                                        const std::vector<bool>& isAccepted,
@@ -223,6 +244,16 @@ struct WaveFunctionComponent : public QMCTraits
         WFC_list[iw]->acceptMove(*P_list[iw], iat);
     }
   };
+
+  virtual void multi_acceptrestoreMove(const std::vector<WaveFunctionComponent*>& WFC_list,
+				       WaveFunctionKokkos& wfc,
+				       Kokkos::View<ParticleSet::pskType*> psk,
+				       Kokkos::View<int*>& isAcceptedMap, int numAccepted, int iel)
+  {
+    //
+  };
+
+
 
   virtual void multi_ratio(const std::vector<WaveFunctionComponent*>& WFC_list,
                            const std::vector<ParticleSet*>& P_list,

@@ -203,45 +203,13 @@ struct einspline_spo : public SPOSet
   // if that is not the case, probably need a rethink
 
   
-
-  inline void multi_evaluate_vgh(Kokkos::View<double*[3],Kokkos::LayoutLeft>& pos_list, std::vector<vContainer_type>& vals, 
-				 std::vector<gContainer_type>& grads, std::vector<hContainer_type>& hesss) {
-    Kokkos::View<vContainer_type*> allPsi("allPsi", vals.size());
-    Kokkos::View<gContainer_type*> allGrad("allGrad", grads.size());
-    Kokkos::View<hContainer_type*> allHess("allHess", hesss.size());
-    auto allPsiMirror = Kokkos::create_mirror_view(allPsi);
-    auto allGradMirror = Kokkos::create_mirror_view(allGrad);
-    auto allHessMirror = Kokkos::create_mirror_view(allHess);
-    
-    for (int i = 0; i < vals.size(); i++) {
-      allPsiMirror(i) = vals[i];
-      allGradMirror(i) = grads[i];
-      allHessMirror(i) = hesss[i];
-    }
-    Kokkos::deep_copy(allPsi, allPsiMirror);
-    Kokkos::deep_copy(allGrad, allGradMirror);
-    Kokkos::deep_copy(allHess, allHessMirror);
-
-    spline.multi_evaluate_vgh(pos_list, allPsi, allGrad, allHess);
+  inline void multi_evaluate_vgh(Kokkos::View<double*[3],Kokkos::LayoutLeft>& pos_list,
+				 Kokkos::View<vContainer_type*>& allPsi,
+				 Kokkos::View<gContainer_type*>& allGrad,
+				 Kokkos::View<hContainer_type*>& allHess,
+				 Kokkos::View<int*>& isValidMap, int numValid) {
+    spline.multi_evaluate_vgh(pos_list, allPsi, allGrad, allHess, isValidMap, numValid);
   }
-
-  inline void multi_evaluate_vgh(std::vector<PosType>& pos_list, std::vector<vContainer_type>& vals, 
-				 std::vector<gContainer_type>& grads, std::vector<hContainer_type>& hesss) {
-    // do this in soa spirit
-    Kokkos::View<double*[3],Kokkos::LayoutLeft> allPos("allPos", pos_list.size());
-    auto allPosMirror = Kokkos::create_mirror_view(allPos);
-    for (int i = 0; i < pos_list.size(); i++) {
-      auto u = Lattice.toUnit_floor(pos_list[i]);
-      allPosMirror(i,0) = u[0];
-      allPosMirror(i,1) = u[1];
-      allPosMirror(i,2) = u[2];
-    }
-    Kokkos::deep_copy(allPos, allPosMirror);
-    multi_evaluate_vgh(allPos, vals, grads, hesss);
-  }
-
-
-
 
 
   

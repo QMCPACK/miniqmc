@@ -243,8 +243,9 @@ public:
   bool makeMoveAndCheck(Index_t iat, const SingleParticlePos_t& displ);
 
 
-  void multi_makeMoveAndCheckKokkos(std::vector<ParticleSet*>& P_list, Kokkos::View<RealType*[3]>& dr,
-				    int iel, std::vector<int>& isValid);
+  void multi_makeMoveAndCheckKokkos(Kokkos::View<ParticleSet::pskType*>& psk, 
+				    Kokkos::View<RealType*[3]>& dr,
+				    int iel, Kokkos::View<int*>& isValidList);
   /** move a particle
    * @param iat the index of the particle to be moved
    * @param displ random displacement of the iat-th particle
@@ -263,6 +264,10 @@ public:
 
   void multi_acceptRejectMoveKokkos(std::vector<ParticleSet*>& psets, 
 				    std::vector<bool>& isAccepted, int iel);
+
+  void multi_acceptRejectMoveKokkos(Kokkos::View<ParticleSet::pskType*>& psk,
+				    Kokkos::View<int*> isAcceptedMap,
+				    int numAccepted, int iel);
 
   void clearDistanceTables();
 

@@ -380,7 +380,7 @@ int main(int argc, char** argv)
     }
 
     cout << "making collective views" << endl;
-    const std::vector<ParticleSet*> P_list(extract_els_list(mover_list));
+    std::vector<ParticleSet*> P_list(extract_els_list(mover_list));
     Kokkos::View<ParticleSet::pskType*> allParticleSetData("apsd", P_list.size());
     auto apsdMirror = Kokkos::create_mirror_view(allParticleSetData);
     for (int i = 0; i < P_list.size(); i++) {
@@ -391,18 +391,47 @@ int main(int argc, char** argv)
     std::vector<WaveFunction*> WF_list(extract_wf_list(mover_list));
     WaveFunctionKokkos wfKokkos(WF_list);
 
+    Kokkos::View<RealType*[3]> dr("dr", nmovers);
+    auto drMirror = Kokkos::create_mirror_view(dr);
+
+    Kokkos::View<int*> isValidList("isValid", nmovers);
+    auto isValidListMirror = Kokkos::create_mirror_view(isValidList);
+    Kokkos::View<int*> isValidMap("isValidMap", nmovers); // first isValid elements are integer indices to 
+                                                          // elements in the general mover lists
+    auto isValidMapMirror = Kokkos::create_mirror_view(isValidMap);
+    Kokkos::View<int*> isAcceptedMap("isAcceptedMap", nmovers); // first isValid elements are integer indices to 
+                                                          // elements in the general mover lists
+    auto isAcceptedMapMirror = Kokkos::create_mirror_view(isAcceptedMap);
+
+    Kokkos::View<double*[3],Kokkos::LayoutLeft> pos_list("positions", nmovers);
+
+    auto vals = extract_spo_psi_list(mover_list);
+    auto grads = extract_spo_grad_list(mover_list);
+    auto hesss = extract_spo_hess_list(mover_list);
+
+    Kokkos::View<typename spo_type::vContainer_type*> allPsi("allPsi", nmovers);
+    Kokkos::View<typename spo_type::gContainer_type*> allGrad("allGrad", nmovers);
+    Kokkos::View<typename spo_type::hContainer_type*> allHess("allHess", nmovers);
+    auto allPsiMirror = Kokkos::create_mirror_view(allPsi);
+    auto allGradMirror = Kokkos::create_mirror_view(allGrad);
+    auto allHessMirror = Kokkos::create_mirror_view(allHess);
+
+    for (int i = 0; i < nmovers; i++) {
+      allPsiMirror(i) = vals[i];
+      allGradMirror(i) = grads[i];
+      allHessMirror(i) = hesss[i];
+    }
+    Kokkos::deep_copy(allPsi, allPsiMirror);
+    Kokkos::deep_copy(allGrad, allGradMirror);
+    Kokkos::deep_copy(allHess, allHessMirror);
+
+
     mover_type* anon_mover;
     anon_mover = mover_list[0];
     cout << "finished initialization section" << endl;
 
-    
     { // initial computing
       //cout << "about to do multi_evaluateLog" << endl;
-      /*
-      const std::vector<ParticleSet*> P_list(extract_els_list(mover_list));
-      const std::vector<WaveFunction*> WF_list(extract_wf_list(mover_list));
-      mover_list[0]->wavefunction.multi_evaluateLog(WF_list, P_list);
-      */
       anon_mover->wavefunction.multi_evaluateLog(WF_list, wfKokkos, allParticleSetData);
       //cout << "finished multi_evaluateLog" << endl;
     }
@@ -432,37 +461,13 @@ int main(int argc, char** argv)
       std::vector<ValueType> ratios(nmovers);
       aligned_vector<RealType> ur(nmovers);
       /// masks for movers with valid moves
-      std::vector<int> isValid(nmovers);
-
-      // LNS: Note that we are assembling lists of vector<ParticleSet*> or other 
-      //      things like it way too often because interoperability with the 
-      //      reference version discourages making data whose types don't make
-      //      sense to the reference.  Could come up with a design that avoids
-      //      this and saves a lot of pointless deep copying of pointers to the device
-      //      If you did this, would also likely re-plumb the wavefunction_multi method
-      //      so that perhaps things like J1 and J2 could avoid this as well
-
-      // could also consider views of DiracDeterminantKokkos for up and down,
-      // oneBodyJastrowKokkos and twoBodyJastrowKokkos,  spoPsi, spoGrad, spoHess
-
-      // another big question is whether to keep these always static and then just
-      // index into them.  Maybe best to delay some of this until the timing looks good
-      
-      
-
-
-
-
+      //std::vector<int> isValid(nmovers);
 
       for (int mc = 0; mc < nsteps; ++mc)
       {
 	std::cout << "starting step " << mc << std::endl;
 	Timers[Timer_Diffusion]->start();
 
-	std::vector<ParticleSet*> P_list;
-	std::vector<WaveFunction*> WF_list;
-	P_list = extract_els_list(mover_list);
-	WF_list = extract_wf_list(mover_list);
 	
 	mover_type* anon_mover;
 	anon_mover = mover_list[0];
@@ -472,7 +477,6 @@ int main(int argc, char** argv)
 	  std::cout << "starting substep " << l << std::endl;
 	  for (int iel = 0; iel < nels; ++iel)
 	  {
-
 	    Kokkos::fence();
 	    //std::cout << "about to start multi_setActiveKokkos" << std::endl;
 	    // Operate on electron with index iel
@@ -483,15 +487,14 @@ int main(int argc, char** argv)
 	    Kokkos::fence();
 	    //std::cout << "about to start multi_evalGrad" << std::endl;
 	    Timers[Timer_evalGrad]->start();
-	    anon_mover->wavefunction.multi_evalGrad(WF_list, P_list, iel, grad_now);
+	    //anon_mover->wavefunction.multi_evalGrad(WF_list, P_list, iel, grad_now);
+	    anon_mover->wavefunction.multi_evalGrad(WF_list, wfKokkos, allParticleSetData, iel, grad_now);
 	    Timers[Timer_evalGrad]->stop();
 	    
 	    // Construct trial move
 	    mover_list[0]->rng.generate_uniform(ur.data(), nmovers);
 	    mover_list[0]->rng.generate_normal(&delta[0][0], nmovers3);
 
-	    Kokkos::View<RealType*[3]> dr("dr", nmovers);
-	    auto drMirror = Kokkos::create_mirror_view(dr);
 	    for (int iw = 0; iw < nmovers; iw++) {
 	      for (int d = 0; d < 3; d++) {
 		drMirror(iw,d) = sqrttau * delta[iw][d];
@@ -500,84 +503,80 @@ int main(int argc, char** argv)
 	    Kokkos::deep_copy(dr, drMirror);
 	    //std::cout << "about to start makeMoveAndCheckKokkos" << std::endl;
 	    Kokkos::fence();
-	    anon_mover->els.multi_makeMoveAndCheckKokkos(P_list, dr, iel, isValid);
+	    //anon_mover->els.multi_makeMoveAndCheckKokkos(P_list, dr, iel, isValid);
+	    anon_mover->els.multi_makeMoveAndCheckKokkos(allParticleSetData, dr, iel, isValidList);
 
-	    // these could easily be made into views to pass to routines
-	    std::vector<ParticleSet*> valid_P_list;
-	    std::vector<SPOSet*> valid_spo_list;
-	    std::vector<WaveFunction*> valid_WF_list;
-	    std::vector<bool> isAccepted;	    
-	    
-	    std::vector<mover_type*> valid_mover_list(filtered_list(mover_list, isValid));
-	    isAccepted.resize(valid_mover_list.size());
-	    valid_P_list = extract_els_list(valid_mover_list);
-	    valid_WF_list = extract_wf_list(valid_mover_list);
-		    
+	    int numValid = 0;
+	    Kokkos::deep_copy(isValidListMirror, isValidList);
+	    for (int i = 0; i < nmovers; i++) {
+	      if (isValidListMirror(i) == 1) {
+		isValidMapMirror(numValid) = i;
+		numValid++;
+	      }
+	    }
+	    Kokkos::deep_copy(isValidMap, isValidMapMirror);
+
 	    Kokkos::fence();
 	    //std::cout <<"about to do gradient (multi_evaluate_vgh and multi_ratioGrad)" << std::endl;
 	    // Compute gradient at the trial position
 	    Timers[Timer_ratioGrad]->start();
 	    //std::cout << "  valid_WF_list.size() = " << valid_WF_list.size() << std::endl;
 	    if (valid_WF_list.size() > 0) {
-	      Kokkos::View<double*[3],Kokkos::LayoutLeft> pos_list("positions", valid_P_list.size());
-	      Kokkos::View<ParticleSet::pskType*> allParticleSetData("apsd", valid_P_list.size());
-	      auto apsdMirror = Kokkos::create_mirror_view(allParticleSetData);
-	      for (int i = 0; i < valid_P_list.size(); i++) {
-		apsdMirror(i) = valid_P_list[i]->psk;
-	      }
-	      Kokkos::deep_copy(allParticleSetData, apsdMirror);
 	      //std::cout << "  copied particleSetData onto GPU" << std::endl;
-	      Kokkos::parallel_for("populatePositions", valid_P_list.size(),
-				   KOKKOS_LAMBDA(const int& i) {
-				     double x, y, z;
-				       
+	      Kokkos::parallel_for("populatePositions", numValid,
+				   KOKKOS_LAMBDA(const int& idx) {
+				     const int i = isValidMap(idx);
 				     allParticleSetData(i).toUnit_floor(allParticleSetData(i).R(iel,0),
 									allParticleSetData(i).R(iel,1),
 									allParticleSetData(i).R(iel,2),
-									x,y,z);
-				     pos_list(i,0) = x;
-				     pos_list(i,1) = y;
-				     pos_list(i,2) = z;
+									pos_list(i,0), pos_list(i,1),
+									pos_list(i,2));
 				   });
+	      Kokkos::fence();
 	      //std::cout << "  ran kernel to set pos_list" << std::endl;
-	      const std::vector<mover_type*> valid_mover_list(filtered_list(mover_list, isValid));
-	      auto vals = extract_spo_psi_list(valid_mover_list);
-	      auto grads = extract_spo_grad_list(valid_mover_list);
-	      auto hesss = extract_spo_hess_list(valid_mover_list);
-	      spo.multi_evaluate_vgh(pos_list, vals, grads, hesss);
+	      spo.multi_evaluate_vgh(pos_list, vals, grads, hesss, isValidMap, numValid);
 	      //std::cout << "  did evaluate_vgh" << std::endl;
 	      
-	      // this is the point where we should have already set psiV and be passing it in
-	      anon_mover->wavefunction.multi_ratioGrad(valid_WF_list, valid_P_list, iel, ratios, grad_new);
+	      // note at this point, vals(walkerNum)(particlenum) is the value of the psiV
+	      //anon_mover->wavefunction.multi_ratioGrad(valid_WF_list, valid_P_list, iel, ratios, grad_new);
+	      anon_mover->wavefunction.multi_ratioGrad(WF_list, wfKokkos, allParticleSetData, vals,
+						       isValidMap, isValidMapMirror, numValid,
+						       iel, ratios, grad_new);
 	      Kokkos::fence();
 	      //std::cout << "  did multi_ratioGrad" << std::endl;
 
 	    }
 	    Timers[Timer_ratioGrad]->stop();
 
-	    // Accept/reject the trial move
-	    for (int iw = 0; iw < isAccepted.size(); iw++)
-	      if (ur[iw] < accept)
-		isAccepted[iw] = true;
-	      else
-		isAccepted[iw] = false;
-	    
+	    int numAccepted = 0;
+	    for (int i = 0; i < numValid; i++) {
+	      int walkerIdx = isValidMapMirror(i);
+	      if (ur[walkerIdx] < accept) {
+		isAcceptedMapMirror(numAccepted) = walkerIdx;
+		numAccepted++;
+	      }
+	    }
+	    Kokkos::deep_copy(isAcceptedMap, isAcceptedMapMirror);	    
 	    Kokkos::fence();
 	    //std::cout << "about to do acceptrestoreMove" << std::endl;
 	    Timers[Timer_Update]->start();
 	    // update WF storage
-	    anon_mover->wavefunction.multi_acceptrestoreMove(valid_WF_list, valid_P_list, isAccepted, iel);
+	    //anon_mover->wavefunction.multi_acceptrestoreMove(valid_WF_list, valid_P_list, isAccepted, iel);
+	    anon_mover->wavefunction.multi_acceptrestoreMove(WF_list, wfKokkos, allParticleSetData, 
+							     isAcceptedMap, numAccepted, iel);
 	    Timers[Timer_Update]->stop();
 	    
 	    Kokkos::fence();
 	    //std::cout << "about to do acceptRejectMoveKokkos" << std::endl;
 	    // Update position
-	    anon_mover->els.multi_acceptRejectMoveKokkos(valid_P_list, isAccepted, iel);
+	    //anon_mover->els.multi_acceptRejectMoveKokkos(valid_P_list, isAccepted, iel);
+	    anon_mover->els.multi_acceptRejectMoveKokkos(allParticleSetData, isAcceptedMap, numAccepted, iel);
 	  } // iel
 	  Kokkos::fence();
 	  std::cout << "finished loop over electrons" << std::endl;
 	}   // substeps
 	std::cout << "finished substeps" << std::endl << std::endl;
+	
 	
 	anon_mover->els.multi_donePbyP(P_list);
 	anon_mover->wavefunction.multi_evaluateGL(WF_list, P_list); 

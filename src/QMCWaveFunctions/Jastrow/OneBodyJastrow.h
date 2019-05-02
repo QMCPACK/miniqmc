@@ -39,6 +39,21 @@ void doOneBodyJastrowMultiEvaluateGL(aobjdType aobjd, apsdType apsd, bool fromsc
 }
 
 template<typename aobjdType, typename apsdType>
+  void doOneBodyJastrowMultiAcceptRestoreMove(aobjdType aobjd, apsdType apsd,Kokkos::View<int*>& isAcceptedMap,
+					      int numAccepted,int iat) {
+  const int numWalkers = numAccepted;
+  using BarePolicy = Kokkos::TeamPolicy<>;
+  BarePolicy pol(numWalkers, 1, 32);
+  Kokkos::parallel_for("obj-acceptRestoreMove-waker-loop", pol,
+		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
+			 int walkerIdx = member.league_rank(); 
+			 const int walkerNum = isAcceptedMap(walkerIdx);
+			 aobjd(walkerNum).acceptMove(apsd(walkerNum), iat);
+		       });
+}
+
+
+template<typename aobjdType, typename apsdType>
   void doOneBodyJastrowMultiAcceptRestoreMove(aobjdType aobjd, apsdType apsd, int iat) {
   const int numWalkers = aobjd.extent(0);
   using BarePolicy = Kokkos::TeamPolicy<>;
@@ -49,6 +64,24 @@ template<typename aobjdType, typename apsdType>
 			 aobjd(walkerNum).acceptMove(apsd(walkerNum), iat);
 		       });
 }
+
+template<typename aobjdType, typename apsdType, typename valT>
+void doOneBodyJastrowMultiRatioGrad(aobjdType& aobjd, apsdType& apsd, Kokkos::View<int*>& isValidMap,
+			       int numValid, int iel, Kokkos::View<valT**> gradNowView,
+			       Kokkos::View<valT*> ratiosView) {
+  const int numWalkers = numValid;
+  using BarePolicy = Kokkos::TeamPolicy<>;
+  BarePolicy pol(numWalkers, 1, 1);
+  Kokkos::parallel_for("obj-evalRatioGrad-walker-loop", pol,
+		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
+			 int walkerIdx = member.league_rank();
+			 int walkerNum = isValidMap(walkerIdx);
+			 auto gv = Kokkos::subview(gradNowView,walkerIdx,Kokkos::ALL());
+			 ratiosView(walkerIdx) = aobjd(walkerNum).ratioGrad(apsd(walkerNum), iel, gv);
+		       });
+}
+
+
 
 template<typename aobjdType, typename apsdType, typename valT>
 void doOneBodyJastrowMultiRatioGrad(aobjdType aobjd, apsdType apsd, int iat, 
@@ -423,7 +456,6 @@ struct OneBodyJastrow : public WaveFunctionComponent
   }
    
 
-
   virtual void multi_evalGrad(const std::vector<WaveFunctionComponent*>& WFC_list,
 			      const std::vector<ParticleSet*>& P_list,
                               int iat,
@@ -450,6 +482,60 @@ struct OneBodyJastrow : public WaveFunctionComponent
       }
     }
   }
+
+  virtual void multi_evalGrad(const std::vector<WaveFunctionComponent*>& WFC_list,
+                              WaveFunctionKokkos& wfc,
+                              Kokkos::View<ParticleSet::pskType*> psk,
+                              int iat,
+                              std::vector<PosType>& grad_now) {
+    const int numItems = WFC_list.size();
+    Kokkos::View<double**> grad_now_view("tempValues", numItems, OHMMS_DIM);
+    doOneBodyJastrowMultiEvalGrad(wfc.oneBodyJastrows, iat, grad_now_view);
+    // copy the results out to values
+    auto grad_now_view_mirror = Kokkos::create_mirror_view(grad_now_view);
+    Kokkos::deep_copy(grad_now_view_mirror, grad_now_view);
+    
+    for (int i = 0; i < numItems; i++) {
+      for (int j = 0; j < OHMMS_DIM; j++) {
+	grad_now[i][j] = grad_now_view_mirror(i,j);
+      }
+    }
+  }
+
+  virtual void multi_ratioGrad(const std::vector<WaveFunctionComponent*>& WFC_list,
+                               WaveFunctionKokkos& wfc,
+                               Kokkos::View<ParticleSet::pskType*> psk,
+                               int iel,
+			       Kokkos::View<int*>& isValidMap, int numValid,
+			       std::vector<ValueType>& ratios,
+                               std::vector<PosType>& grad_new) {
+    if (numValid > 0) {
+      // make views to hold output
+      Kokkos::View<double**> grad_new_view("tempValues", numValid, OHMMS_DIM);
+      Kokkos::View<double*> ratios_view("ratios", numValid);
+    
+      doOneBodyJastrowMultiRatioGrad(wfc.oneBodyJastrows, psk, isValidMap, numValid, iel, grad_new_view, ratios_view);
+      Kokkos::fence();
+      
+      // copy the results out to values
+      auto grad_new_view_mirror = Kokkos::create_mirror_view(grad_new_view);
+      Kokkos::deep_copy(grad_new_view_mirror, grad_new_view);
+      auto ratios_view_mirror = Kokkos::create_mirror_view(ratios_view);
+      Kokkos::deep_copy(ratios_view_mirror, ratios_view);
+      //std::cout << "       finished copying grad and ratios out" << std::endl;
+
+      for (int i = 0; i < numValid; i++) {
+	ratios[i] = ratios_view_mirror(i);
+	for (int j = 0; j < OHMMS_DIM; j++) {
+	  grad_new[i][j] += grad_new_view_mirror(i,j);
+	}
+      }
+    }
+    //std::cout << "      finishing J1 multi_ratioGrad" << std::endl;
+
+  }
+      
+
 
   
   virtual void multi_ratioGrad(const std::vector<WaveFunctionComponent*>& WFC_list,
@@ -493,6 +579,15 @@ struct OneBodyJastrow : public WaveFunctionComponent
     //std::cout << "      finishing J1 multi_ratioGrad" << std::endl;
 
   }
+
+
+  virtual void multi_acceptrestoreMove(const std::vector<WaveFunctionComponent*>& WFC_list,
+				       WaveFunctionKokkos& wfc,
+				       Kokkos::View<ParticleSet::pskType*> psk,
+				       Kokkos::View<int*>& isAcceptedMap, int numAccepted, int iel) {
+    doOneBodyJastrowMultiAcceptRestoreMove(wfc.twoBodyJastrows, psk, isAcceptedMap, numAccepted, iel);
+  }
+
 
   virtual void multi_acceptRestoreMove(const std::vector<WaveFunctionComponent*>& WFC_list,
 				       const std::vector<ParticleSet*>& P_list,
