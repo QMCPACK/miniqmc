@@ -34,6 +34,11 @@ namespace qmcplusplus
 {
 /** A minimal TrialWavefunction
  */
+enum WaveFunctionTimers
+{
+  Timer_Det,
+  Timer_GL,
+};
 
 class WaveFunction
 {
@@ -122,7 +127,7 @@ public:
 			       WaveFunctionKokkos& wfc,
 			       Kokkos::View<ParticleSet::pskType*>& psk,
 			       Kokkos::View<int*>& isAcceptedMap,
-			       int numAccepted, int iel) const {
+			       int numAccepted, int iel) const;
 
   void multi_evaluateGL(const std::vector<WaveFunction*>& WF_list,
                         const std::vector<ParticleSet*>& P_list) const;
@@ -163,7 +168,7 @@ template<typename apsdType, typename psiVType, typename likeTempRType, typename 
 void WaveFunction::multi_ratio(int pairNum, const std::vector<WaveFunction*>& WF_list, apsdType& apsd, psiVType& tempPsiV,
 			       likeTempRType& likeTempRs, unlikeTempRType& unlikeTempRs, eiListType& eiList,
 			       std::vector<valT>& ratios) {
-  // timers[Timer_Det]->start();
+  timers[Timer_Det]->start();
   int numWalkers = eiList.extent(0);
   int numKnots = tempPsiV.extent(1);
   std::vector<valT> ratios_det(numWalkers*numKnots);
@@ -214,7 +219,7 @@ void WaveFunction::multi_ratio(int pairNum, const std::vector<WaveFunction*>& WF
   for (int i = 0; i < numWalkers*numKnots; i++) {
     ratios[i] = ratios_det[i];
   }
-				   //timers[Timer_Det]->stop();
+  timers[Timer_Det]->stop();
 
   for (size_t i = 0; i < Jastrows.size(); i++)
   {
@@ -243,18 +248,20 @@ void WaveFunction::multi_ratioGrad(const std::vector<WaveFunction*>& WF_list,
 				   isValidMapMirrorType& isValidMapMirror, int numValid,
 				   int iel, std::vector<valT>& ratio_list,
 				   std::vector<posT>& grad_new) const {
-  timers[Timer_Det]->start();
   if (numValid > 0) {
+    timers[Timer_Det]->start();
     std::vector<valT> ratios_det(numValid);
     for (int iw = 0; iw < grad_new.size(); iw++)
       grad_new[iw] = posT(0);
     
     Kokkos::View<valT*> tempResults("tempResults", numValid);
-    if (iel > nelup) {
+    if (iel < nelup) {
+      //std::cout << "in multi_ratioGrad, using up determinant, iel = " << iel << std::endl;
       std::vector<WaveFunctionComponent*> up_list(extract_up_list(WF_list));
       //Det_up->multi_ratioGrad(up_list, P_list, iat, ratios_det, grad_new);
       doDiracDeterminantMultiEvalRatio(wfc.upDets, up_list, psiVs, tempResults, isValidMap, numValid, iel);
     } else {
+      //std::cout << "in multi_ratioGrad, using down determinant, iel = " << iel << std::endl;
       std::vector<WaveFunctionComponent*> dn_list(extract_dn_list(WF_list));
       //Det_up->multi_ratioGrad(up_list, P_list, iat, ratios_det, grad_new);
       doDiracDeterminantMultiEvalRatio(wfc.downDets, dn_list, psiVs, tempResults, isValidMap, numValid, iel);
@@ -265,20 +272,20 @@ void WaveFunction::multi_ratioGrad(const std::vector<WaveFunction*>& WF_list,
       ratios_det[i] = tempResultsMirror(i);
     }
     for (int iw = 0; iw < numValid; iw++) {
-      ratios_list[isValidMapMirror(iw)] = ratios_det[iw];
+      ratio_list[isValidMapMirror(iw)] = ratios_det[iw];
     }
     timers[Timer_Det]->stop();
 
     for (size_t i = 0; i < Jastrows.size(); i++)
     {
-      //std::cout << "    doing multi_ratioGrad for Jastrow " << i << std::endl;                                              
+      //std::cout << "    doing multi_ratioGrad for Jastrow " << i << std::endl;
       jastrow_timers[i]->start();
       std::vector<valT> ratios_jas(numValid);
       std::vector<WaveFunctionComponent*> jas_list(extract_jas_list(WF_list, i));
       //Jastrows[i]->multi_ratioGrad(jas_list, P_list, iat, ratios_jas, grad_new);
       Jastrows[i]->multi_ratioGrad(jas_list, wfc, psk, iel, isValidMap, numValid, ratios_jas, grad_new);
       for (int iw = 0; iw < numValid; iw++)
-	ratios_list[isValidMapMirror(iw)] *= ratios_jas[iw];
+	ratio_list[isValidMapMirror(iw)] *= ratios_jas[iw];
       jastrow_timers[i]->stop();
     }
   }

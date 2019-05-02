@@ -632,14 +632,12 @@ void ParticleSet::multi_acceptRejectMoveKokkos(Kokkos::View<ParticleSet::pskType
 		       KOKKOS_LAMBDA(const int& idx) {
 			 const int i = isAcceptedMap(idx);
 			 auto& psd = psk(i);
-			 if (deviceIsAccepted(i)) {
-			   psd.LikeUpdate(locIel);
-			   psd.UnlikeUpdate(locIel);
-			   //std::cout << "finished psd.UnlikeUpdate" << std::endl;
-			   for (int dim = 0; dim < 3; dim++) {
-			     psd.R(locIel,dim) = psd.activePos(dim);
-			     psd.RSoA(locIel,dim) = psd.activePos(dim);
-			   }
+			 psd.LikeUpdate(locIel);
+			 psd.UnlikeUpdate(locIel);
+			 //std::cout << "finished psd.UnlikeUpdate" << std::endl;
+			 for (int dim = 0; dim < 3; dim++) {
+			   psd.R(locIel,dim) = psd.activePos(dim);
+			   psd.RSoA(locIel,dim) = psd.activePos(dim);
 			 }
 			 //std::cout << "at end of loop" << std::endl;
 		       });

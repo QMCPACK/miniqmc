@@ -31,11 +31,14 @@
 
 namespace qmcplusplus
 {
+
+  /*
 enum WaveFunctionTimers
 {
   Timer_Det,
   Timer_GL,
 };
+  */
 
 TimerNameLevelList_t<WaveFunctionTimers> WaveFunctionTimerNames =
     {{Timer_Det, "Determinant", timer_level_fine}, {Timer_GL, "Kinetic Energy", timer_level_coarse}};
@@ -323,10 +326,10 @@ void WaveFunction::multi_evalGrad(const std::vector<WaveFunction*>& WF_list,
 				  int iat,
 				  std::vector<posT>& grad_now) const
 {
-  timers[Timer_Det]->start();
 
   const int numItems = WF_list.size();
   if (numItems > 0) {
+    timers[Timer_Det]->start();
     std::vector<posT> grad_now_det(numItems);
     if (iat < nelup)
       {
@@ -344,7 +347,7 @@ void WaveFunction::multi_evalGrad(const std::vector<WaveFunction*>& WF_list,
       grad_now[iw] = grad_now_det[iw];
     timers[Timer_Det]->stop();
     
-    for (size_t i = 0; i < numItems; i++)
+    for (size_t i = 0; i < Jastrows.size(); i++)
       {
 	jastrow_timers[i]->start();
 	std::vector<posT> grad_now_jas(numItems);
@@ -365,8 +368,9 @@ void WaveFunction::multi_ratioGrad(const std::vector<WaveFunction*>& WF_list,
                                    std::vector<valT>& ratios,
                                    std::vector<posT>& grad_new) const
 {
-  timers[Timer_Det]->start();
   if (WF_list.size() > 0) {
+    timers[Timer_Det]->start();
+
     std::vector<valT> ratios_det(P_list.size());
     for (int iw = 0; iw < P_list.size(); iw++)
       grad_new[iw] = posT(0);
@@ -407,8 +411,8 @@ void WaveFunction::multi_acceptrestoreMove(const std::vector<WaveFunction*>& WF_
 					   Kokkos::View<ParticleSet::pskType*>& psk,					     
 					   Kokkos::View<int*>& isAcceptedMap,
 					   int numAccepted, int iel) const {
-  timers[Timer_Det]->start();
   if (numAccepted > 0) {
+    timers[Timer_Det]->start();
     if (iel < nelup)
       {
 	std::vector<WaveFunctionComponent*> up_list(extract_up_list(WF_list));
@@ -436,8 +440,9 @@ void WaveFunction::multi_acceptrestoreMove(const std::vector<WaveFunction*>& WF_
                                            const std::vector<bool>& isAccepted,
                                            int iat) const
 {
-  timers[Timer_Det]->start();
   if (WF_list.size() > 0) {
+    timers[Timer_Det]->start();
+
     if (iat < nelup)
       {
 	std::vector<WaveFunctionComponent*> up_list(extract_up_list(WF_list));

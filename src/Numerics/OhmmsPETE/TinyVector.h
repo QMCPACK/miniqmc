@@ -58,7 +58,7 @@ struct TinyVector
   T X[Size];
 
   // Default Constructor initializes to zero.
-  KOKKOS_INLINE_FUNCTION TinyVector()
+   TinyVector()
   {
     OTAssign<TinyVector<T, D>, T, OpAssign>::apply(*this, T(0), OpAssign());
   }
@@ -66,41 +66,41 @@ struct TinyVector
   // A noninitializing ctor.
   class DontInitialize
   {};
-  KOKKOS_INLINE_FUNCTION TinyVector(DontInitialize) {}
+   TinyVector(DontInitialize) {}
 
   // Copy Constructor
-  KOKKOS_INLINE_FUNCTION TinyVector(const TinyVector& rhs)
+   TinyVector(const TinyVector& rhs)
   {
     OTAssign<TinyVector<T, D>, TinyVector<T, D>, OpAssign>::apply(*this, rhs, OpAssign());
   }
 
   // Templated TinyVector constructor.
   template<class T1, unsigned D1>
-  KOKKOS_INLINE_FUNCTION TinyVector(const TinyVector<T1, D1>& rhs)
+   TinyVector(const TinyVector<T1, D1>& rhs)
   {
     for (unsigned d = 0; d < D; ++d)
       X[d] = (d < D1) ? rhs[d] : T1(0);
   }
 
   // Constructor from a single T
-  KOKKOS_INLINE_FUNCTION TinyVector(const T& x00)
+   TinyVector(const T& x00)
   {
     OTAssign<TinyVector<T, D>, T, OpAssign>::apply(*this, x00, OpAssign());
   }
 
   // Constructors for fixed dimension
-  KOKKOS_INLINE_FUNCTION TinyVector(const T& x00, const T& x01)
+   TinyVector(const T& x00, const T& x01)
   {
     X[0] = x00;
     X[1] = x01;
   }
-  KOKKOS_INLINE_FUNCTION TinyVector(const T& x00, const T& x01, const T& x02)
+   TinyVector(const T& x00, const T& x01, const T& x02)
   {
     X[0] = x00;
     X[1] = x01;
     X[2] = x02;
   }
-  KOKKOS_INLINE_FUNCTION TinyVector(const T& x00, const T& x01, const T& x02, const T& x03)
+   TinyVector(const T& x00, const T& x01, const T& x02, const T& x03)
   {
     X[0] = x00;
     X[1] = x01;
@@ -108,7 +108,7 @@ struct TinyVector
     X[3] = x03;
   }
 
-  KOKKOS_INLINE_FUNCTION TinyVector(const T& x00,
+   TinyVector(const T& x00,
                                     const T& x01,
                                     const T& x02,
                                     const T& x03,
@@ -143,7 +143,7 @@ struct TinyVector
     X[15] = x33;
   }
 
-  KOKKOS_INLINE_FUNCTION TinyVector(const T* restrict base, int offset)
+   TinyVector(const T* restrict base, int offset)
   {
 #pragma unroll
     for (int i = 0; i < D; ++i)
@@ -153,51 +153,51 @@ struct TinyVector
   // Destructor
   ~TinyVector() {}
 
-  KOKKOS_INLINE_FUNCTION int size() const { return D; }
+   int size() const { return D; }
 
-  KOKKOS_INLINE_FUNCTION int byteSize() const { return D * sizeof(T); }
+   int byteSize() const { return D * sizeof(T); }
 
-  KOKKOS_INLINE_FUNCTION TinyVector& operator=(const TinyVector& rhs)
+   TinyVector& operator=(const TinyVector& rhs)
   {
     OTAssign<TinyVector<T, D>, TinyVector<T, D>, OpAssign>::apply(*this, rhs, OpAssign());
     return *this;
   }
 
   template<class T1>
-  KOKKOS_INLINE_FUNCTION TinyVector<T, D>& operator=(const TinyVector<T1, D>& rhs)
+   TinyVector<T, D>& operator=(const TinyVector<T1, D>& rhs)
   {
     OTAssign<TinyVector<T, D>, TinyVector<T1, D>, OpAssign>::apply(*this, rhs, OpAssign());
     return *this;
   }
 
-  KOKKOS_INLINE_FUNCTION TinyVector<T, D>& operator=(const T& rhs)
+   TinyVector<T, D>& operator=(const T& rhs)
   {
     OTAssign<TinyVector<T, D>, T, OpAssign>::apply(*this, rhs, OpAssign());
     return *this;
   }
 
   // Get and Set Operations
-  KOKKOS_INLINE_FUNCTION Type_t& operator[](unsigned int i) { return X[i]; }
-  KOKKOS_INLINE_FUNCTION Type_t operator[](unsigned int i) const { return X[i]; }
-  KOKKOS_INLINE_FUNCTION Type_t& operator()(unsigned int i) { return X[i]; }
-  KOKKOS_INLINE_FUNCTION Type_t operator()(unsigned int i) const { return X[i]; }
+   Type_t& operator[](unsigned int i) { return X[i]; }
+   Type_t operator[](unsigned int i) const { return X[i]; }
+   Type_t& operator()(unsigned int i) { return X[i]; }
+   Type_t operator()(unsigned int i) const { return X[i]; }
 
-  KOKKOS_INLINE_FUNCTION Type_t* data() { return X; }
-  KOKKOS_INLINE_FUNCTION const Type_t* data() const { return X; }
-  KOKKOS_INLINE_FUNCTION Type_t* begin() { return X; }
-  KOKKOS_INLINE_FUNCTION const Type_t* begin() const { return X; }
-  KOKKOS_INLINE_FUNCTION Type_t* end() { return X + D; }
-  KOKKOS_INLINE_FUNCTION const Type_t* end() const { return X + D; }
+   Type_t* data() { return X; }
+   const Type_t* data() const { return X; }
+   Type_t* begin() { return X; }
+   const Type_t* begin() const { return X; }
+   Type_t* end() { return X + D; }
+   const Type_t* end() const { return X + D; }
 
   template<class Msg>
-  KOKKOS_INLINE_FUNCTION Msg& putMessage(Msg& m)
+   Msg& putMessage(Msg& m)
   {
     m.Pack(X, Size);
     return m;
   }
 
   template<class Msg>
-  KOKKOS_INLINE_FUNCTION Msg& getMessage(Msg& m)
+   Msg& getMessage(Msg& m)
   {
     m.Unpack(X, Size);
     return m;
@@ -219,7 +219,7 @@ OHMMS_META_BINARY_OPERATORS(TinyVector, operator/, OpDivide)
 // dot product
 //----------------------------------------------------------------------
 template<class T1, class T2, unsigned D>
-KOKKOS_INLINE_FUNCTION typename BinaryReturn<T1, T2, OpMultiply>::Type_t
+ typename BinaryReturn<T1, T2, OpMultiply>::Type_t
     dot(const TinyVector<T1, D>& lhs, const TinyVector<T2, D>& rhs)
 {
   return OTDot<TinyVector<T1, D>, TinyVector<T2, D>>::apply(lhs, rhs);
@@ -230,7 +230,7 @@ KOKKOS_INLINE_FUNCTION typename BinaryReturn<T1, T2, OpMultiply>::Type_t
 //----------------------------------------------------------------------
 
 template<class T1, class T2, unsigned D>
-KOKKOS_INLINE_FUNCTION TinyVector<typename BinaryReturn<T1, T2, OpMultiply>::Type_t, D>
+ TinyVector<typename BinaryReturn<T1, T2, OpMultiply>::Type_t, D>
     cross(const TinyVector<T1, D>& lhs, const TinyVector<T2, D>& rhs)
 {
   return OTCross<TinyVector<T1, D>, TinyVector<T2, D>>::apply(lhs, rhs);
@@ -241,14 +241,14 @@ KOKKOS_INLINE_FUNCTION TinyVector<typename BinaryReturn<T1, T2, OpMultiply>::Typ
 //----------------------------------------------------------------------
 
 template<class T1, class T2, unsigned D>
-KOKKOS_INLINE_FUNCTION Tensor<typename BinaryReturn<T1, T2, OpMultiply>::Type_t, D>
+ Tensor<typename BinaryReturn<T1, T2, OpMultiply>::Type_t, D>
     outerProduct(const TinyVector<T1, D>& lhs, const TinyVector<T2, D>& rhs)
 {
   return OuterProduct<TinyVector<T1, D>, TinyVector<T2, D>>::apply(lhs, rhs);
 }
 
 template<class T1, unsigned D>
-KOKKOS_INLINE_FUNCTION TinyVector<Tensor<T1, D>, D>
+ TinyVector<Tensor<T1, D>, D>
     outerdot(const TinyVector<T1, D>& lhs, const TinyVector<T1, D>& mhs, const TinyVector<T1, D>& rhs)
 {
   TinyVector<Tensor<T1, D>, D> ret;
@@ -259,7 +259,7 @@ KOKKOS_INLINE_FUNCTION TinyVector<Tensor<T1, D>, D>
 }
 
 template<class T1, class T2, class T3, unsigned D>
-KOKKOS_INLINE_FUNCTION TinyVector<Tensor<typename BinaryReturn<T1, T2, OpMultiply>::Type_t, D>, D>
+ TinyVector<Tensor<typename BinaryReturn<T1, T2, OpMultiply>::Type_t, D>, D>
     symouterdot(const TinyVector<T1, D>& lhs, const TinyVector<T2, D>& mhs, const TinyVector<T3, D>& rhs)
 {
   TinyVector<Tensor<typename BinaryReturn<T1, T2, OpMultiply>::Type_t, D>, D> ret;
@@ -286,7 +286,7 @@ struct printTinyVector
 template<class T, unsigned D>
 struct printTinyVector<TinyVector<T, D>>
 {
-  KOKKOS_INLINE_FUNCTION static void print(std::ostream& os, const TinyVector<T, D>& r)
+   static void print(std::ostream& os, const TinyVector<T, D>& r)
   {
     for (int d = 0; d < D; d++)
       os << std::setw(18) << std::setprecision(10) << r[d];
@@ -297,7 +297,7 @@ struct printTinyVector<TinyVector<T, D>>
 template<class T>
 struct printTinyVector<TinyVector<T, 2>>
 {
-  KOKKOS_INLINE_FUNCTION static void print(std::ostream& os, const TinyVector<T, 2>& r)
+   static void print(std::ostream& os, const TinyVector<T, 2>& r)
   {
     os << std::setw(18) << std::setprecision(10) << r[0] << std::setw(18) << std::setprecision(10)
        << r[1];
@@ -308,7 +308,7 @@ struct printTinyVector<TinyVector<T, 2>>
 template<class T>
 struct printTinyVector<TinyVector<T, 3>>
 {
-  KOKKOS_INLINE_FUNCTION static void print(std::ostream& os, const TinyVector<T, 3>& r)
+   static void print(std::ostream& os, const TinyVector<T, 3>& r)
   {
     os << std::setw(18) << std::setprecision(10) << r[0] << std::setw(18) << std::setprecision(10)
        << r[1] << std::setw(18) << std::setprecision(10) << r[2];

@@ -379,6 +379,14 @@ int main(int argc, char** argv)
       mover_list[iw]->els.pushDataToParticleSetKokkos();
     }
 
+
+    const int nions    = ions.getTotalNum();
+    const int nels     = mover_list[0]->els.getTotalNum();
+    const int nmovers3 = 3 * nmovers;    
+    // this is the number of qudrature points for the non-local PP
+    const int nknots = mover_list[0]->nlpp.size();
+    std::cout << "number of knots used in evaluating the NLPP = " << nknots  << std::endl;
+
     cout << "making collective views" << endl;
     std::vector<ParticleSet*> P_list(extract_els_list(mover_list));
     Kokkos::View<ParticleSet::pskType*> allParticleSetData("apsd", P_list.size());
@@ -425,6 +433,17 @@ int main(int argc, char** argv)
     Kokkos::deep_copy(allGrad, allGradMirror);
     Kokkos::deep_copy(allHess, allHessMirror);
 
+    // stuff for the nlpp
+    Kokkos::View<int*> EiPairs("activeEiPairs", nmovers);
+    auto EiPairsMirror = Kokkos::create_mirror_view(EiPairs);
+    Kokkos::View<double**[3]> rOnSphere("rOnSphere", nmovers, nknots);
+    auto rOnSphereMirror = Kokkos::create_mirror_view(rOnSphere);
+    // need to make a place to store the new temp_r (one per knot, per walker)
+    Kokkos::View<double***> bigLikeTempR("bigLikeTempR", nmovers, nknots, nels);
+    Kokkos::View<double***> bigUnlikeTempR("bigUnlikeTempR", nmovers, nknots, nions);
+    Kokkos::View<double**[3]> bigElPos("bigElPos", nmovers, nknots);
+    Kokkos::View<ValueType***> tempPsiV("tempPsiV", nmovers, nknots, nels);
+
 
     mover_type* anon_mover;
     anon_mover = mover_list[0];
@@ -437,14 +456,7 @@ int main(int argc, char** argv)
     }
     Timers[Timer_Init]->stop();
     
-    const int nions    = ions.getTotalNum();
-    int nels;
-    nels = mover_list[0]->els.getTotalNum();
 
-    const int nmovers3 = 3 * nmovers;
-    
-    // this is the number of qudrature points for the non-local PP
-    int nknots = mover_list[0]->nlpp.size();
     
     // For VMC, tau is large and should result in an acceptance ratio of roughly
     // 50%
@@ -455,7 +467,6 @@ int main(int argc, char** argv)
     // synchronous walker moves
     {
       std::vector<PosType> delta(nmovers);
-      std::vector<PosType> pos_list(nmovers);
       std::vector<GradType> grad_now(nmovers);
       std::vector<GradType> grad_new(nmovers);
       std::vector<ValueType> ratios(nmovers);
@@ -520,26 +531,24 @@ int main(int argc, char** argv)
 	    //std::cout <<"about to do gradient (multi_evaluate_vgh and multi_ratioGrad)" << std::endl;
 	    // Compute gradient at the trial position
 	    Timers[Timer_ratioGrad]->start();
-	    //std::cout << "  valid_WF_list.size() = " << valid_WF_list.size() << std::endl;
-	    if (valid_WF_list.size() > 0) {
-	      //std::cout << "  copied particleSetData onto GPU" << std::endl;
+	    if (numValid > 0) {
 	      Kokkos::parallel_for("populatePositions", numValid,
 				   KOKKOS_LAMBDA(const int& idx) {
 				     const int i = isValidMap(idx);
 				     allParticleSetData(i).toUnit_floor(allParticleSetData(i).R(iel,0),
 									allParticleSetData(i).R(iel,1),
 									allParticleSetData(i).R(iel,2),
-									pos_list(i,0), pos_list(i,1),
+									pos_list(i,0),pos_list(i,1),
 									pos_list(i,2));
 				   });
 	      Kokkos::fence();
 	      //std::cout << "  ran kernel to set pos_list" << std::endl;
-	      spo.multi_evaluate_vgh(pos_list, vals, grads, hesss, isValidMap, numValid);
+	      spo.multi_evaluate_vgh(pos_list, allPsi, allGrad, allHess, isValidMap, numValid);
 	      //std::cout << "  did evaluate_vgh" << std::endl;
 	      
-	      // note at this point, vals(walkerNum)(particlenum) is the value of the psiV
+	      // note at this point, allPsi(walkerNum)(particlenum) is the value of the psiV
 	      //anon_mover->wavefunction.multi_ratioGrad(valid_WF_list, valid_P_list, iel, ratios, grad_new);
-	      anon_mover->wavefunction.multi_ratioGrad(WF_list, wfKokkos, allParticleSetData, vals,
+	      anon_mover->wavefunction.multi_ratioGrad(WF_list, wfKokkos, allParticleSetData, allPsi,
 						       isValidMap, isValidMapMirror, numValid,
 						       iel, ratios, grad_new);
 	      Kokkos::fence();
@@ -559,12 +568,12 @@ int main(int argc, char** argv)
 	    Kokkos::deep_copy(isAcceptedMap, isAcceptedMapMirror);	    
 	    Kokkos::fence();
 	    //std::cout << "about to do acceptrestoreMove" << std::endl;
-	    Timers[Timer_Update]->start();
+	    //Timers[Timer_Update]->start();
 	    // update WF storage
 	    //anon_mover->wavefunction.multi_acceptrestoreMove(valid_WF_list, valid_P_list, isAccepted, iel);
 	    anon_mover->wavefunction.multi_acceptrestoreMove(WF_list, wfKokkos, allParticleSetData, 
 							     isAcceptedMap, numAccepted, iel);
-	    Timers[Timer_Update]->stop();
+	    //Timers[Timer_Update]->stop();
 	    
 	    Kokkos::fence();
 	    //std::cout << "about to do acceptRejectMoveKokkos" << std::endl;
@@ -577,22 +586,20 @@ int main(int argc, char** argv)
 	}   // substeps
 	std::cout << "finished substeps" << std::endl << std::endl;
 	
-	
+	//////// LNS, could probably fix these up to use collective views instead of vectors
 	anon_mover->els.multi_donePbyP(P_list);
 	anon_mover->wavefunction.multi_evaluateGL(WF_list, P_list); 
 	Timers[Timer_Diffusion]->stop();
 	
 	// Compute NLPP energy using integral over spherical points
 	Timers[Timer_ECP]->start();
-
-	Kokkos::View<int*> EiPairs("activeEiPairs", nmovers);
 	
 	double locRmax = Rmax;
 	Kokkos::TeamPolicy<> pol(nmovers, 1, 32);
 	Kokkos::parallel_for("FindNumEiPairs", pol,
 			     KOKKOS_LAMBDA(Kokkos::TeamPolicy<>::member_type member) {
 			       int walkerNum = member.league_rank();
-			       int locSum;
+			       int locSum = 0;
 			       Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(member, allParticleSetData(walkerNum).R.extent(0)),
 						       [=](const int& elNum, int& pairSum) {
 							 for (int atnum = 0; atnum < allParticleSetData(walkerNum).UnlikeDTDistances.extent(1); atnum++) {
@@ -602,10 +609,9 @@ int main(int argc, char** argv)
 							 }
 						       }, locSum);
 			       Kokkos::single( Kokkos::PerTeam(member), [=]() {
-				   EiPairs(walkerNum) += locSum;
+				   EiPairs(walkerNum) = locSum;
 				 });
 			     });
-	auto EiPairsMirror = Kokkos::create_mirror_view(EiPairs);
 	Kokkos::deep_copy(EiPairsMirror, EiPairs);
 	int maxSize = 0;
 	for (int i = 0; i < EiPairsMirror.extent(0); i++) {
@@ -633,19 +639,9 @@ int main(int argc, char** argv)
 				 }
 			       }
 			     });
-	
-	//auto EiListsMirror = Kokkos::create_mirror_view(EiLists);
-	//std::cout << "About to spit out eiPairs" << std::endl;
-	//std::cout << "  number of electrons: " << apsdMirror(0).R.extent(0) << std::endl;
-	//std::cout << "  number of ions: " << apsdMirror(0).originR.extent(0) << std::endl;
-	//for (int i = 0; i < EiListsMirror.extent(1); i++) {
-	  //std::cout << "  pair " << i << " elNum = " << EiListsMirror(0,i,0) << " ionNum = " << EiListsMirror(0,i,1) << std::endl;
-	//}
 	//std::cout << "  finished setting up EiLists" << std::endl;
 	
 	//std::cout << "Setting up rOnSphere" << std::endl;
-	Kokkos::View<double**[3]> rOnSphere("rOnSphere", nmovers, nknots);
-	auto rOnSphereMirror = Kokkos::create_mirror_view(rOnSphere);
 	for(int walkerNum = 0; walkerNum < nmovers; walkerNum++) {
 	  auto ecp = mover_list[walkerNum]->nlpp;
 	  ParticlePos_t rOnSphere(nknots);
@@ -660,18 +656,9 @@ int main(int argc, char** argv)
 	//std::cout << "  finished setting up rOnSphere" << std::endl;
 	
 	// should now be set up to do our big parallel loop
-	// need to make a place to store the new temp_r (one per knot, per walker)
-	Kokkos::View<double***> bigLikeTempR("bigLikeTempR", nmovers, nknots, nels);
-	Kokkos::View<double***> bigUnlikeTempR("bigUnlikeTempR", nmovers, nknots, nions);
-	Kokkos::View<double**[3]> bigElPos("bigElPos", nmovers, nknots);
-	// problem is that there is a flow.  Cannot store all at once.  Would like to avoid so
-	// many calls (for instance three per pair), but since cannot follow wavefunction
-	// vtable on device, will have to at least have it make its own calls
 	vector<ValueType> ratios(nmovers*nknots, 0.0);
-	Kokkos::View<ValueType***> tempPsiV("tempPsiV", nmovers, nknots, nels);
-
-	
-	//std::cout << "About to start loop over eiPairs.  There are " << maxSize << " of them" << std::endl;
+       
+	std::cout << "About to start loop over eiPairs.  There are " << maxSize << " of them" << std::endl;
 	for (int eiPair = 0; eiPair < maxSize; eiPair++) {
 	  	  
 	  //std::cout << "  About to do updateTempPosAndRs" << std::endl;

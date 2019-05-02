@@ -57,7 +57,7 @@ void doTwoBodyJastrowMultiEvaluateGL(atbjdType atbjd, apsdType apsd, bool fromsc
 }
 
 template<typename atbjdType, typename apsdType>
-  void doTwoBodyJastrowMultiAcceptRestoreMove(atbjdType atbjd, apsdType apsd, Kokkos::View<int*>& isAccptedMap,
+  void doTwoBodyJastrowMultiAcceptRestoreMove(atbjdType atbjd, apsdType apsd, Kokkos::View<int*>& isAcceptedMap,
 					      int numAccepted, int iat) {
   const int numWalkers = numAccepted;
   using BarePolicy = Kokkos::TeamPolicy<>;

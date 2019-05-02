@@ -309,7 +309,7 @@ public:
     //std::cout << " finished making local references" << std::endl;
 
     const int numMovers = allParticleSetData_.extent(0);
-    const int numKnots = rOnSphere_.extent(0);
+    const int numKnots = rOnSphere_.extent(1);
     Kokkos::TeamPolicy<> pol(numMovers, 1, 32);
     Kokkos::parallel_for("updateTempPosAndRs", pol,
 			 KOKKOS_LAMBDA(Kokkos::TeamPolicy<>::member_type member) {

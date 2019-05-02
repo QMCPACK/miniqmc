@@ -272,7 +272,7 @@ struct multi_UBspline<p, blocksize, 3> : public multi_UBspline_base<p,3> {
   template<typename multiPosType, typename multiValType, typename multiGradType, typename multiHessType>
   void multi_evaluate_vgh(multiPosType& pos, multiValType& multiVals,
 			  multiGradType& multiGrad, multiHessType& multiHess,
-			  Kokos::View<int*>& isValidMap, int numValid) {
+			  Kokkos::View<int*>& isValidMap, int numValid) {
     doMultiEval_vgh(pos, multiVals, multiGrad, multiHess, isValidMap, numValid, 
 		    coef, this->gridStarts, this->delta_invs, A44, dA44, d2A44, blocksize);
   }

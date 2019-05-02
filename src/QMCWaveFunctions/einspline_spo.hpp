@@ -130,6 +130,7 @@ struct einspline_spo : public SPOSet
   template<typename apsdType>
   inline void multi_evaluate_v(Kokkos::View<double**[3]>& all_pos, Kokkos::View<ValueType***> allPsiV, apsdType& apsd) {
     // need to do to_unit_floor for all positions then pass to spline.multi_evaluate_v
+    ScopedTimer local_timer(timer);
     auto& tmpAllPos = all_pos;
     auto& tmpapsd = apsd;
     auto& tmpallPsiV = allPsiV;
@@ -149,10 +150,10 @@ struct einspline_spo : public SPOSet
 							allPosToUnitFloor(walkerNum, knotNum, 1),
 							allPosToUnitFloor(walkerNum, knotNum, 2));
 			   */
-			   apsd(walkerNum).toUnit_floor(tmpAllPos(walkerNum, knotNum, 0),
-							tmpAllPos(walkerNum, knotNum, 1),
-							tmpAllPos(walkerNum, knotNum, 2),
-							tempx, tempy, tempz);
+			   tmpapsd(walkerNum).toUnit_floor(tmpAllPos(walkerNum, knotNum, 0),
+							   tmpAllPos(walkerNum, knotNum, 1),
+							   tmpAllPos(walkerNum, knotNum, 2),
+							   tempx, tempy, tempz);
 			   tmpAllPos(walkerNum, knotNum, 0) = tempx;
 			   tmpAllPos(walkerNum, knotNum, 1) = tempy;
 			   tmpAllPos(walkerNum, knotNum, 2) = tempz;
@@ -162,6 +163,7 @@ struct einspline_spo : public SPOSet
   }			     			     
   
   inline void multi_evaluate_v(std::vector<PosType>& pos_list, std::vector<vContainer_type>& vals) {
+    ScopedTimer local_timer(timer);
     Kokkos::View<vContainer_type*> allPsi("allPsi", vals.size());
     auto allPsiMirror = Kokkos::create_mirror_view(allPsi);
     for (int i = 0; i < vals.size(); i++) {
@@ -208,6 +210,7 @@ struct einspline_spo : public SPOSet
 				 Kokkos::View<gContainer_type*>& allGrad,
 				 Kokkos::View<hContainer_type*>& allHess,
 				 Kokkos::View<int*>& isValidMap, int numValid) {
+    ScopedTimer local_timer(timer);
     spline.multi_evaluate_vgh(pos_list, allPsi, allGrad, allHess, isValidMap, numValid);
   }
 

@@ -146,6 +146,7 @@ struct DiracDeterminant : public WaveFunctionComponent
     
     auto FirstIndexMirror = Kokkos::create_mirror_view(ddk.FirstIndex);
     FirstIndexMirror(0) = FirstIndex;
+    //std::cout << "constructing determinant, firstIndex = " << FirstIndex << std::endl;
     Kokkos::deep_copy(ddk.FirstIndex, FirstIndexMirror);
     
     // basically we are generating uniform random number for
@@ -411,7 +412,7 @@ void updateRow(DiracDeterminantKokkos& ddk, linAlgHelperType& lah, int rowchange
   Kokkos::Profiling::pushRegion("updateRow::pokeSingleValue");
   auto devElem = subview(ddk.tempRowVec, rowchanged);
   auto devElem_mirror = Kokkos::create_mirror_view(devElem);
-  devElem_mirror(0) = cone - c_ratio;
+  devElem_mirror() = cone - c_ratio;
   Kokkos::deep_copy(devElem, devElem_mirror);
   Kokkos::Profiling::popRegion();
 
@@ -572,28 +573,30 @@ template<typename addkType, typename vectorType, typename psiVsType, typename te
 void doDiracDeterminantMultiEvalRatio(addkType& addk, vectorType& wfcv, psiVsType& psiVs,
 				      tempResType ratios, Kokkos::View<int*>& isValidMap,
 				      int numValid, int iel) {
-  using ValueType = typename resVecType::value_type;
+  using ValueType = typename tempResType::value_type;
   const int numWalkers = numValid;
   const int numEls = static_cast<DiracDeterminant*>(wfcv[0])->ddk.psiV.extent(0);
 
   // put values into psiV vectors
   Kokkos::parallel_for("dd-mevalRatio-fill-psiVs",
-		       Kokkos::MDRangePolicy<Kokkos::Rank<2,Kokkos::Iterate::Left> >({0,0},{numWalkers,numEls})
+		       Kokkos::MDRangePolicy<Kokkos::Rank<2,Kokkos::Iterate::Left> >({0,0},{numWalkers,numEls}),
 		       KOKKOS_LAMBDA(const int& walkIdx, const int& elNum) {
 			 const int walkNum = isValidMap(walkIdx);
 			 addk(walkNum).psiV(elNum) = psiVs(walkNum)(elNum);
 		       });
 
   using BarePolicy = Kokkos::TeamPolicy<>;
-  BarePolicy pol(numWalkers, 1, 32);
+  BarePolicy pol(numValid, 1, 32);
   Kokkos::parallel_for("dd-evalRatio-walker-loop", pol,
 		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
 			 int walkerIdx = member.league_rank();
-			 int walkerNum = isValidMap(walkIdx);
+			 int walkerNum = isValidMap(walkerIdx);
+			 const int idx = iel - addk(walkerNum).FirstIndex(0);
+			 //std::cout << "walkerIdx = " << walkerIdx << ", walkerNum = " << walkerNum << ", idx = " << idx << std::endl;
+
 			 ValueType sumOver = 0.0;
 			 Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(member, numEls),
 						 [=] (const int& i, ValueType& innersum) {
-						   const int idx = iel - addk(walkerNum).FirstIndex(0);
 						   innersum += addk(walkerNum).psiV(i) * addk(walkerNum).psiMinv(idx,i); 
 						 }, sumOver);
 			 Kokkos::single(Kokkos::PerTeam(member), [=]() {
@@ -720,7 +723,7 @@ void doDiracDeterminantMultiAccept(addkType& addk, vectorType& WFC_list,
   constexpr ValueType czero(0.0);
 
   auto isAcceptedMapMirror = Kokkos::create_mirror_view(isAcceptedMap);
-  Kokkos::deep_copy(isAcceptedMapMirror, is AcceptedMap);
+  Kokkos::deep_copy(isAcceptedMapMirror, isAcceptedMap);
 
   // 1. gemvTrans
   Kokkos::Profiling::pushRegion("updateRow::gemvTrans");
@@ -762,7 +765,7 @@ void doDiracDeterminantMultiAccept(addkType& addk, vectorType& WFC_list,
   Kokkos::Profiling::pushRegion("updateRow::ger");
   for (int i = 0; i < numAccepted; i++) {
     const int walkerNum = isAcceptedMapMirror(i);
-    DiracDeterminant* ddp = static_cast<DiracDeterminant*>(WFC_list[isAcceptedMapMirror]);
+    DiracDeterminant* ddp = static_cast<DiracDeterminant*>(WFC_list[walkerNum]);
     ddp->lah.ger(ddp->ddk.psiMinv, ddp->ddk.rcopy, ddp->ddk.tempRowVec, -cone);
   }
   Kokkos::Profiling::popRegion();
@@ -790,6 +793,9 @@ void dddMAGPU(addkType& addk, vectorType& wfcv,
   int rowChanged = iel-static_cast<DiracDeterminant*>(wfcv[0])->FirstIndex;
   constexpr ValueType cone(1.0);
   constexpr ValueType czero(0.0);
+
+  auto isAcceptedMapMirror = Kokkos::create_mirror_view(isAcceptedMap);
+  Kokkos::deep_copy(isAcceptedMapMirror, isAcceptedMap);
 
   cudaStream_t *streams = (cudaStream_t *) malloc(addk.extent(0)*sizeof(cudaStream_t));
   for (int i = 0; i < numAccepted; i++) {
@@ -855,14 +861,14 @@ template<typename addkType, typename vectorType>
 void doDiracDeterminantMultiAccept(addkType& addk, vectorType& WFC_list, 
 				   Kokkos::View<int*>& isAcceptedMap,
 				   int numAccepted, int iel, const Kokkos::CudaSpace& ms) {
-  ddMAGPU(addk, WFC_list, isAcceptedMap, numAccepted, iel);
+  dddMAGPU(addk, WFC_list, isAcceptedMap, numAccepted, iel);
 }
 
 template<typename addkType, typename vectorType>
 void doDiracDeterminantMultiAccept(addkType& addk, vectorType& WFC_list, 
 				   Kokkos::View<int*>& isAcceptedMap,
 				   int numAccepted, int iel, const Kokkos::CudaUVMSpace& ms) {
-  ddMAGPU(addk, WFC_list, isAcceptedMap, numAccepted, iel);
+  dddMAGPU(addk, WFC_list, isAcceptedMap, numAccepted, iel);
 }
 
 #endif

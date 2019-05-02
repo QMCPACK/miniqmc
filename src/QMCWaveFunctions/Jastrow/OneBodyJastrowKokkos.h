@@ -53,7 +53,7 @@ public:
   void acceptMove(pskType& psk, int iat) {
     if (updateMode(0) == 0) {
       computeU3(psk, psk.UnlikeDTTemp_r);
-      curLap(0) = accumulateGL(psk.UnlikeDTTemp_r, curGrad);
+      curLap(0) = accumulateGL(psk.UnlikeDTTemp_dr, curGrad);
     }
 
     LogValue(0) += Vat(iat) - curAt(0);
@@ -78,7 +78,7 @@ public:
   RealType ratioGrad(pskType& psk, int iat, gradType inG) {
     updateMode(0) = 2;
     computeU3(psk, psk.UnlikeDTTemp_r);
-    curLap(0) = accumulateGL(psk.UnlikeDTTemp_r, curGrad);
+    curLap(0) = accumulateGL(psk.UnlikeDTTemp_dr, curGrad);
     curAt(0) = 0.0;
     for (int i = 0; i < Nions(0); i++) {
       curAt(0) += U(i);
