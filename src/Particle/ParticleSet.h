@@ -223,9 +223,12 @@ public:
     // probably an issue in the evaluate functions
     // think about instead of using a subview, just passing on the 
     // value that should go to the second index of the Distances and Displacements
-    Kokkos::parallel_for("setActive", allParticleSetData.extent(0),
-			 KOKKOS_LAMBDA(const int& i) {
-			   allParticleSetData(i).setActivePtcl(locIel);
+    using BarePolicy = Kokkos::TeamPolicy<>;
+    BarePolicy pol(allParticleSetData.extent(0), Kokkos::AUTO, 32);
+    Kokkos::parallel_for("ps-setActive", pol,
+			 KOKKOS_LAMBDA(BarePolicy::member_type member) {
+			   const int i = member.league_rank();
+			   allParticleSetData(i).setActivePtcl(member, locIel);
 			 });
   }
 
@@ -310,28 +313,28 @@ public:
 
     const int numMovers = allParticleSetData_.extent(0);
     const int numKnots = rOnSphere_.extent(1);
-    Kokkos::TeamPolicy<> pol(numMovers, 1, 32);
-    Kokkos::parallel_for("updateTempPosAndRs", pol,
+    Kokkos::TeamPolicy<> pol(numMovers, Kokkos::AUTO, 32);
+    Kokkos::parallel_for("ps-updateTempPosAndRs", pol,
 			 KOKKOS_LAMBDA(Kokkos::TeamPolicy<>::member_type member) {
 			   const int walkerNum = member.league_rank();
 			   const int eNum = EiLists_(walkerNum, eiPair_, 0);
 			   const int atNum = EiLists_(walkerNum, eiPair_, 1);
 			   if (eNum > -1) {
-			     Kokkos::parallel_for(Kokkos::ThreadVectorRange(member, numKnots),
+			     Kokkos::parallel_for(Kokkos::TeamThreadRange(member, numKnots),
 						  [=](const int& knotNum) {
 						    // handles bigElPos
 						    for (int dim = 0; dim < 3; dim++) {
 						      bigElPos_(walkerNum, knotNum, dim) = allParticleSetData_(walkerNum).UnlikeDTDistances(eNum,atNum) *
 							rOnSphere_(walkerNum,knotNum,dim) - allParticleSetData_(walkerNum).UnlikeDTDisplacements(eNum,atNum,dim);
 						    }
-						    allParticleSetData_(walkerNum).DTComputeDistances(bigElPos(walkerNum,knotNum,0),	   
+						    allParticleSetData_(walkerNum).DTComputeDistances(member, bigElPos(walkerNum,knotNum,0),	   
 												      bigElPos(walkerNum,knotNum,1),	   
 												      bigElPos(walkerNum,knotNum,2),	   
 												      allParticleSetData_(walkerNum).RSoA,			   
 												      bigLikeTempR_, walkerNum, knotNum, 		   
 												      0, bigLikeTempR_.extent(2), eNum);
 
-						    allParticleSetData_(walkerNum).DTComputeDistances(bigElPos(walkerNum,knotNum,0),	   
+						    allParticleSetData_(walkerNum).DTComputeDistances(member, bigElPos(walkerNum,knotNum,0),	   
 												      bigElPos(walkerNum,knotNum,1),	   
 												      bigElPos(walkerNum,knotNum,2),	   
 												      allParticleSetData_(walkerNum).originR,			   

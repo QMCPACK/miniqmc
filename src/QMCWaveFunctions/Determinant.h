@@ -383,12 +383,12 @@ ValueType InvertWithLog(DiracDeterminantKokkos& ddk, linAlgHelperType& lah, Valu
   auto locPiv = lah.getPivot(); // note, this is in device memory
   int sign_det = 1;
 
-  Kokkos::parallel_reduce(ddk.psiM.extent(0), KOKKOS_LAMBDA ( int i, int& cur_sign) {
+  Kokkos::parallel_reduce("dd-invertWithLog1", ddk.psiM.extent(0), KOKKOS_LAMBDA ( int i, int& cur_sign) {
       cur_sign = (locPiv(i) == i+1) ? 1 : -1;
       cur_sign *= (ddk.psiM(i,i) > 0) ? 1 : -1;
     }, Kokkos::Prod<int>(sign_det));
 
-  Kokkos::parallel_reduce(ddk.psiM.extent(0), KOKKOS_LAMBDA (int i, ValueType& v) {
+  Kokkos::parallel_reduce("dd-invertWithLog2", ddk.psiM.extent(0), KOKKOS_LAMBDA (int i, ValueType& v) {
       v += std::log(std::abs(ddk.psiM(i,i)));
     }, locLogDet);
   lah.getri(ddk.psiM);
@@ -446,7 +446,7 @@ void doDiracDeterminantMultiEvaluateLog(addkType& addk, vectorType& wfcv, resVec
   //std::cout << "  numWalkers = " << numWalkers << ", numEls = " << numEls << std::endl;
   //std::cout << "  for walker 0, dimensions of psiM are: " << addk(0).psiM.extent(0) << " x " << addk(0).psiM.extent(1) << std::endl;
   //std::cout << "  for walker 0, dimensions of psiMsave are: " << addk(0).psiMsave.extent(0) << " x " << addk(0).psiMsave.extent(1) << std::endl;
-  Kokkos::parallel_for("elementWiseCopyTransAllPsiM",
+  Kokkos::parallel_for("dd-elementWiseCopyTransAllPsiM",
 		       Kokkos::MDRangePolicy<Kokkos::Rank<3,Kokkos::Iterate::Left> >({0,0,0}, {numWalkers, numEls, numEls}),
 		       KOKKOS_LAMBDA(const int& i0, const int& i1, const int& i2) {
 			 addk(i0).psiM(i1, i2) = addk(i0).psiMsave(i2,i1);
@@ -465,7 +465,7 @@ void doDiracDeterminantMultiEvaluateLog(addkType& addk, vectorType& wfcv, resVec
 
   //std::cout << "in part 3" << std::endl;
   // 3. copy psiM to psiMinv
-  Kokkos::parallel_for("elementWiseCopyAllPsiM",
+  Kokkos::parallel_for("dd-elementWiseCopyAllPsiM",
 		       Kokkos::MDRangePolicy<Kokkos::Rank<3,Kokkos::Iterate::Left> >({0,0,0}, {numWalkers, numEls, numEls}),
 		       KOKKOS_LAMBDA(const int& i0, const int& i1, const int& i2) {
 			 addk(i0).psiMinv(i1, i2) = addk(i0).psiM(i1,i2);
@@ -492,7 +492,7 @@ void dddMELGPU(addkType& addk, vectorType& wfcv, resVecType& results) {
   const int numEls = static_cast<DiracDeterminant*>(wfcv[0])->ddk.psiV.extent(0);
   
   // 1. copy transpose of psiMsave to psiM for all walkers and also zero out temp matrices
-  Kokkos::parallel_for("elementWiseCopyTransAllPsiM",
+  Kokkos::parallel_for("dd-elementWiseCopyTransAllPsiM",
 		       Kokkos::MDRangePolicy<Kokkos::Rank<3,Kokkos::Iterate::Left> >({0,0,0}, {numWalkers, numEls, numEls}),
 		       KOKKOS_LAMBDA(const int& i0, const int& i1, const int& i2) {
 			 addk(i0).psiM(i1, i2) = addk(i0).psiMsave(i2,i1);
@@ -506,7 +506,7 @@ void dddMELGPU(addkType& addk, vectorType& wfcv, resVecType& results) {
   // mkl_set_num_threads_local before doing the linear algebra calls
 
   // set up temp spaces ahead of calls
-  Kokkos::parallel_for("makeIntoIdentity",
+  Kokkos::parallel_for("dd-makeIntoIdentity",
 		       Kokkos::MDRangePolicy<Kokkos::Rank<2,Kokkos::Iterate::Left> >({0,0},{numWalkers,numEls}),
 		       KOKKOS_LAMBDA(const int& i0, const int& i1) {
 			 addk(i0).getRiWorkSpace(i1,i1) = 1.0;
@@ -544,7 +544,7 @@ void dddMELGPU(addkType& addk, vectorType& wfcv, resVecType& results) {
   }
 
   // 3. copy getRiWs to psiM and to psiMinv
-  Kokkos::parallel_for("elementWiseCopyAllPsiM",
+  Kokkos::parallel_for("dd-elementWiseCopyAllPsiM",
 		       Kokkos::MDRangePolicy<Kokkos::Rank<3,Kokkos::Iterate::Left> >({0,0,0}, {addk.extent(0), addk(0).psiM.extent(0), addk(0).psiM.extent(1)}),
 		       KOKKOS_LAMBDA(const int& i0, const int& i1, const int& i2) {
 			 addk(i0).psiM(i1,i2) = addk(i0).getRiWorkSpace(i1,i2);
@@ -746,14 +746,14 @@ void doDiracDeterminantMultiAccept(addkType& addk, vectorType& WFC_list,
     pokeMirror(i) = cone - cone / ddp->curRatio;
   }
   Kokkos::deep_copy(poke, pokeMirror);
-  Kokkos::parallel_for("poking-values", numAccepted, KOKKOS_LAMBDA(int i) {
+  Kokkos::parallel_for("dd-poking-values", numAccepted, KOKKOS_LAMBDA(int i) {
       const int walkerNum = isAcceptedMap(i);
       addk(walkerNum).tempRowVec(rowChanged) = poke(i);
     });
   Kokkos::Profiling::popRegion();
 
   // 3. copyChangedRow for each walker 
-  Kokkos::Profiling::pushRegion("updateRow::populateRcopy");
+  Kokkos::Profiling::pushRegion("dd-updateRow::populateRcopy");
   Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<2,Kokkos::Iterate::Left> >({0,0},{numAccepted,numEls}),
 		       KOKKOS_LAMBDA(const int& i0, const int& i1) {
 			 const int walkerNum = isAcceptedMap(i0);
@@ -772,7 +772,7 @@ void doDiracDeterminantMultiAccept(addkType& addk, vectorType& WFC_list,
 
   // 5. copy the result back from psiV to the right row of psiMsave
   Kokkos::Profiling::pushRegion("copyBack");
-  Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<2,Kokkos::Iterate::Left> >({0,0},{numAccepted,numEls}),
+  Kokkos::parallel_for("dd-copyBack", Kokkos::MDRangePolicy<Kokkos::Rank<2,Kokkos::Iterate::Left> >({0,0},{numAccepted,numEls}),
 		       KOKKOS_LAMBDA(const int& i0, const int& i1) {
 			 const int walkerNum = isAcceptedMap(i0);
 			 addk(walkerNum).psiMsave(rowChanged,i1) = addk(walkerNum).psiV(i1);
@@ -827,7 +827,7 @@ void dddMAGPU(addkType& addk, vectorType& wfcv,
     pokeView(i) = cone - cone / ddp->curRatio;
   }
   Kokkos::deep_copy(poke, pokeView);
-  Kokkos::parallel_for(numWalkers, KOKKOS_LAMBDA(int i) {
+  Kokkos::parallel_for("dd-pokeElement", numWalkers, KOKKOS_LAMBDA(int i) {
       const int walkerNum = isAcceptedMap(i);
       addk(walkerNum).tempRowVec(rowChanged) = poke(i);
     });
@@ -835,7 +835,7 @@ void dddMAGPU(addkType& addk, vectorType& wfcv,
 
   // 3. copyChangedRow for each walker 
   Kokkos::Profiling::pushRegion("updateRow::populateRcopy");
-  Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<2,Kokkos::Iterate::Left> >({0,0},{numAccepted,numEls}),
+  Kokkos::parallel_for("dd-populateRcopy", Kokkos::MDRangePolicy<Kokkos::Rank<2,Kokkos::Iterate::Left> >({0,0},{numAccepted,numEls}),
 		       KOKKOS_LAMBDA(const int& i0, const int& i1) {
 			 const int walkerNum = isAcceptedMap(i0);
 			 addk(walkerNum).rcopy(i1) = addk(walkerNum).psiMinv(rowChanged,i1);
@@ -913,14 +913,14 @@ void doDiracDeterminantMultiAccept(addkType& addk, vectorType& WFC_list, int iel
     pokeView(i) = cone - cone / ddp->curRatio;
   }
   Kokkos::deep_copy(poke, pokeView);
-  Kokkos::parallel_for(numWalkers, KOKKOS_LAMBDA(int i) {
+  Kokkos::parallel_for("dd-pokeElement", numWalkers, KOKKOS_LAMBDA(int i) {
       addk(i).tempRowVec(rowChanged) = poke(i);
     });
   Kokkos::Profiling::popRegion();
 
   // 3. copyChangedRow for each walker 
   Kokkos::Profiling::pushRegion("updateRow::populateRcopy");
-  Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<2,Kokkos::Iterate::Left> >({0,0},{numWalkers,numEls}),
+  Kokkos::parallel_for("dd-populateRcopy", Kokkos::MDRangePolicy<Kokkos::Rank<2,Kokkos::Iterate::Left> >({0,0},{numWalkers,numEls}),
 		       KOKKOS_LAMBDA(const int& i0, const int& i1) {
 			 addk(i0).rcopy(i1) = addk(i0).psiMinv(rowChanged,i1);
 		       });
@@ -936,7 +936,7 @@ void doDiracDeterminantMultiAccept(addkType& addk, vectorType& WFC_list, int iel
 
   // 5. copy the result back from psiV to the right row of psiMsave
   Kokkos::Profiling::pushRegion("copyBack");
-  Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<2,Kokkos::Iterate::Left> >({0,0},{numWalkers,numEls}),
+  Kokkos::parallel_for("dd-copyback", Kokkos::MDRangePolicy<Kokkos::Rank<2,Kokkos::Iterate::Left> >({0,0},{numWalkers,numEls}),
 		       KOKKOS_LAMBDA(const int& i0, const int& i1) {
 			 addk(i0).psiMsave(rowChanged,i1) = addk(i0).psiV(i1);
 		       });
@@ -983,14 +983,14 @@ void dddMAGPU(addkType& addk, vectorType& wfcv, int iel) {
     pokeView(i) = cone - cone / ddp->curRatio;
   }
   Kokkos::deep_copy(poke, pokeView);
-  Kokkos::parallel_for(numWalkers, KOKKOS_LAMBDA(int i) {
+  Kokkos::parallel_for("dd-pokeSingleValue", numWalkers, KOKKOS_LAMBDA(int i) {
       addk(i).tempRowVec(rowChanged) = poke(i);
     });
   Kokkos::Profiling::popRegion();
 
   // 3. copyChangedRow for each walker 
   Kokkos::Profiling::pushRegion("updateRow::populateRcopy");
-  Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<2,Kokkos::Iterate::Left> >({0,0},{numWalkers,numEls}),
+  Kokkos::parallel_for("dd-populateRcopy", Kokkos::MDRangePolicy<Kokkos::Rank<2,Kokkos::Iterate::Left> >({0,0},{numWalkers,numEls}),
 		       KOKKOS_LAMBDA(const int& i0, const int& i1) {
 			 addk(i0).rcopy(i1) = addk(i0).psiMinv(rowChanged,i1);
 		       });

@@ -497,11 +497,11 @@ public:
 
   void copyChangedRow(int rowchanged, viewType pinv, arrType rcopy) {
     if (rcopy.extent(0) > arrPolicySerialThreshold) {
-      Kokkos::parallel_for(arrPolicyParallel_t(0, rcopy.extent(0)), KOKKOS_LAMBDA(int i) {
+      Kokkos::parallel_for("lah-copyChangedRow1", arrPolicyParallel_t(0, rcopy.extent(0)), KOKKOS_LAMBDA(int i) {
 	  rcopy(i) = pinv(rowchanged,i);
 	});
     } else {
-      Kokkos::parallel_for(arrPolicySerial_t(0, rcopy.extent(0)), KOKKOS_LAMBDA(int i) {
+      Kokkos::parallel_for("lah-copyChangedRow2", arrPolicySerial_t(0, rcopy.extent(0)), KOKKOS_LAMBDA(int i) {
 	  rcopy(i) = pinv(rowchanged,i);
 	});
     }
@@ -515,11 +515,11 @@ public:
     valueType curRatio_ = 0.0;
     int firstIndex_ = firstIndex;
     if (psiV_.extent(0) > arrPolicySerialThreshold) {
-      Kokkos::parallel_reduce(arrPolicyParallel_t(0, psiV_.extent(0)), KOKKOS_LAMBDA(int i, valueType& update) {
+      Kokkos::parallel_reduce("lah-updateRatio1", arrPolicyParallel_t(0, psiV_.extent(0)), KOKKOS_LAMBDA(int i, valueType& update) {
 	  update += psiV_(i) * psiMinv_(firstIndex_,i);
 	}, curRatio_);
     } else {
-      Kokkos::parallel_reduce(arrPolicySerial_t(0, psiV_.extent(0)), KOKKOS_LAMBDA(int i, valueType& update) {
+      Kokkos::parallel_reduce("lah-updateRatio2", arrPolicySerial_t(0, psiV_.extent(0)), KOKKOS_LAMBDA(int i, valueType& update) {
 	  update += psiV_(i) * psiMinv_(firstIndex_,i);
 	}, curRatio_);
     }
@@ -533,11 +533,11 @@ public:
     arrType psiV_ = psiV;
     int firstIndex_ = firstIndex;
     if (psiV_.extent(0) > arrPolicySerialThreshold) {
-      Kokkos::parallel_for(arrPolicyParallel_t(0, psiV_.extent(0)), KOKKOS_LAMBDA(int i) {
+      Kokkos::parallel_for("lah-copyBack1", arrPolicyParallel_t(0, psiV_.extent(0)), KOKKOS_LAMBDA(int i) {
 	  psiMsave_(firstIndex_, i) = psiV_(i);
 	});
     } else {
-      Kokkos::parallel_for(arrPolicySerial_t(0, psiV_.extent(0)), KOKKOS_LAMBDA(int i) {
+      Kokkos::parallel_for("lah-copyBack2", arrPolicySerial_t(0, psiV_.extent(0)), KOKKOS_LAMBDA(int i) {
 	  psiMsave_(firstIndex_, i) = psiV_(i);
 	});
     }
@@ -612,7 +612,7 @@ public:
     int n = view.extent(0);
     // make identity matrix for right hand side
     viewType outView("outputView", n, n);
-    Kokkos::parallel_for(n, KOKKOS_LAMBDA(int i) {
+    Kokkos::parallel_for("lah-getRi-makeDiagonal", n, KOKKOS_LAMBDA(int i) {
       outView(i,i) = 1.0;
       });
     getri_gpu_impl(n, pointerConverter(view.data()), piv.data(), pointerConverter(outView.data()), info.data(), cusolver_handle);
@@ -693,7 +693,7 @@ public:
   void copyChangedRow(int rowchanged, viewType pinv, arrType rcopy) {
     viewType pinv_ = pinv;
     arrType rcopy_ = rcopy;
-    Kokkos::parallel_for(rcopy_.extent(0), KOKKOS_LAMBDA(int i) {
+    Kokkos::parallel_for("lah-copyChangedRow", rcopy_.extent(0), KOKKOS_LAMBDA(int i) {
 	rcopy_(i) = pinv_(rowchanged,i);
       });
     Kokkos::fence();
@@ -704,7 +704,7 @@ public:
     doubleViewType psiMinv_ = psiMinv;
     valueType curRatio_ = 0.0;
     int firstIndex_ = firstIndex;
-    Kokkos::parallel_reduce( psiV_.extent_int(0), KOKKOS_LAMBDA (int i, valueType& update) {
+    Kokkos::parallel_reduce("lah-updateRatio", psiV_.extent_int(0), KOKKOS_LAMBDA (int i, valueType& update) {
 	update += psiV_(i) * psiMinv_(firstIndex_,i);
     }, curRatio_);
     return curRatio_;
@@ -714,7 +714,7 @@ public:
     doubleViewType psiMsave_ = psiMsave;
     arrType psiV_ = psiV;
     int firstIndex_ = firstIndex;
-    Kokkos::parallel_for( psiV_.extent_int(0), KOKKOS_LAMBDA (int i) {
+    Kokkos::parallel_for("lah-copyBack", psiV_.extent_int(0), KOKKOS_LAMBDA (int i) {
     	psiMsave_(firstIndex_, i) = psiV_(i);
       });
     Kokkos::fence();
@@ -758,7 +758,7 @@ void checkDiff(viewType1 a, viewType2 b, const std::string& tag) {
   vt error = 0.0;
   const int dim0 = a.extent(0);
   const int dim1 = a.extent(1);
-  Kokkos::parallel_reduce(dim0*dim1, KOKKOS_LAMBDA (int ii, vt& update) {
+  Kokkos::parallel_reduce("lah-checkDiff", dim0*dim1, KOKKOS_LAMBDA (int ii, vt& update) {
       int i = ii / dim0;
       int j = ii % dim0;
       update += abs(a(i,j) -b(i,j));

@@ -491,9 +491,13 @@ void ParticleSet::multi_setActiveKokkos(std::vector<ParticleSet*>& P_list, int i
   }
   int locIel = iel;
   Kokkos::deep_copy(allParticleSetData, apsdMirror);
-  Kokkos::parallel_for("setActive", P_list.size(),
-		       KOKKOS_LAMBDA(const int& i) {
-			 allParticleSetData(i).setActivePtcl(locIel);
+
+  using BarePolicy = Kokkos::TeamPolicy<>;
+  BarePolicy pol(P_list.size(), Kokkos::AUTO, 32);
+  Kokkos::parallel_for("ps-setActive", pol,
+		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
+			 const int i = member.league_rank();
+			 allParticleSetData(i).setActivePtcl(member, locIel);
 		       });
 }
 
@@ -546,8 +550,11 @@ void ParticleSet::multi_makeMoveAndCheckKokkos(Kokkos::View<ParticleSet::pskType
   int locIel = iel;
   auto& locDr = dr;
 
-  Kokkos::parallel_for("makeMoveAndCheck", allParticleSetData.extent(0),
-		       KOKKOS_LAMBDA(const int& i) {
+  using BarePolicy = Kokkos::TeamPolicy<>;
+  BarePolicy pol(allParticleSetData.extent(0), Kokkos::AUTO, 32);
+  Kokkos::parallel_for("ps-makeMoveAndCheck", pol,
+		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
+			 const int i = member.league_rank();
 			 auto& pset = allParticleSetData(i);
 			 pset.activePtcl(0) = locIel;
 			 for (int d = 0; d < 3; d++) { 
@@ -564,16 +571,16 @@ void ParticleSet::multi_makeMoveAndCheckKokkos(Kokkos::View<ParticleSet::pskType
 			   } else {
 			     pset.toUnit(pset.activePos(0), pset.activePos(1), pset.activePos(2), x, y, z);
 			     if (pset.isValid(x,y,z)) {
-			       pset.LikeMove(pset.activePos(0), pset.activePos(1), pset.activePos(2));
-			       pset.UnlikeMove(pset.activePos(0), pset.activePos(1), pset.activePos(2));
+			       pset.LikeMove(member, pset.activePos(0), pset.activePos(1), pset.activePos(2));
+			       pset.UnlikeMove(member, pset.activePos(0), pset.activePos(1), pset.activePos(2));
 			       isValidList(i) = 1;
 			     } else {
 			       isValidList(i) = 0;
 			     }
 			   }
 			 } else {
-			   pset.LikeMove(pset.activePos(0), pset.activePos(1), pset.activePos(2));
-			   pset.UnlikeMove(pset.activePos(0), pset.activePos(1), pset.activePos(2));
+			   pset.LikeMove(member, pset.activePos(0), pset.activePos(1), pset.activePos(2));
+			   pset.UnlikeMove(member, pset.activePos(0), pset.activePos(1), pset.activePos(2));
 			   isValidList(i) = 1;
 			 }
 		       });
@@ -628,8 +635,11 @@ void ParticleSet::multi_acceptRejectMoveKokkos(Kokkos::View<ParticleSet::pskType
 					       Kokkos::View<int*> isAcceptedMap,
 					       int numAccepted, int iel) {
   int locIel = iel;
-  Kokkos::parallel_for("ptclsetMultiAcceptReject", numAccepted,
-		       KOKKOS_LAMBDA(const int& idx) {
+  using BarePolicy = Kokkos::TeamPolicy<>;
+  BarePolicy pol(numAccepted, 1, 1);
+  Kokkos::parallel_for("ps-multi_acceptRejectMove", pol,
+		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
+			 const int idx = member.league_rank();
 			 const int i = isAcceptedMap(idx);
 			 auto& psd = psk(i);
 			 psd.LikeUpdate(locIel);
@@ -641,7 +651,8 @@ void ParticleSet::multi_acceptRejectMoveKokkos(Kokkos::View<ParticleSet::pskType
 			 }
 			 //std::cout << "at end of loop" << std::endl;
 		       });
-  Kokkos::parallel_for(psk.extent(0),
+  Kokkos::parallel_for(",ps-multi_acceptRejectMove2",
+		       psk.extent(0),
 		       KOKKOS_LAMBDA(const int& i) {
 			 psk(i).activePtcl(0) = -1;
 		       });
@@ -669,8 +680,12 @@ void ParticleSet::multi_acceptRejectMoveKokkos(std::vector<ParticleSet*>& psets,
 
   int locIel = iel;
   //std::cout << " about to start parallel_for" << std::endl;
-  Kokkos::parallel_for("ptclsetMultiAcceptReject", psets.size(),
-		       KOKKOS_LAMBDA(const int& i) {
+
+  using BarePolicy = Kokkos::TeamPolicy<>;
+  BarePolicy pol(psets.size(), 1, 1);
+  Kokkos::parallel_for("ps-multi_acceptRejectMove", pol,
+		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
+			 const int i = member.league_rank();
 			 auto& psd = allParticleSetData(i);
 			 if (deviceIsAccepted(i)) {
 			   psd.LikeUpdate(locIel);
@@ -697,7 +712,7 @@ void ParticleSet::multi_donePbyP(std::vector<ParticleSet*>& psets, bool skipSK) 
     apsdMirror(i) = psets[i]->psk;
   }
   Kokkos::deep_copy(allParticleSetData, apsdMirror);
-  Kokkos::parallel_for("ptclsetMultiAcceptReject", psets.size(),
+  Kokkos::parallel_for("ps-multi_donePbyP", psets.size(),
 		       KOKKOS_LAMBDA(const int& i) {
 			 allParticleSetData(i).activePtcl(0) = -1;
 		       });

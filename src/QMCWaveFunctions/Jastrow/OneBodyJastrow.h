@@ -509,18 +509,24 @@ struct OneBodyJastrow : public WaveFunctionComponent
 			       Kokkos::View<int*>& isValidMap, int numValid,
 			       std::vector<ValueType>& ratios,
                                std::vector<PosType>& grad_new) {
+    Kokkos::Profiling::pushRegion("obj-multi_ratioGrad");
     if (numValid > 0) {
       // make views to hold output
+      Kokkos::Profiling::pushRegion("obj-multi_ratioGrad::initAllocs");
       Kokkos::View<double**> grad_new_view("tempValues", numValid, OHMMS_DIM);
+      auto grad_new_view_mirror = Kokkos::create_mirror_view(grad_new_view);
       Kokkos::View<double*> ratios_view("ratios", numValid);
-    
+      auto ratios_view_mirror = Kokkos::create_mirror_view(ratios_view);
+      Kokkos::Profiling::popRegion();
+
+      Kokkos::Profiling::pushRegion("obj-multi_ratioGrad::kernel");
       doOneBodyJastrowMultiRatioGrad(wfc.oneBodyJastrows, psk, isValidMap, numValid, iel, grad_new_view, ratios_view);
       Kokkos::fence();
-      
+      Kokkos::Profiling::popRegion();
+
+      Kokkos::Profiling::pushRegion("obj-multi_ratioGrad::copyOut");
       // copy the results out to values
-      auto grad_new_view_mirror = Kokkos::create_mirror_view(grad_new_view);
       Kokkos::deep_copy(grad_new_view_mirror, grad_new_view);
-      auto ratios_view_mirror = Kokkos::create_mirror_view(ratios_view);
       Kokkos::deep_copy(ratios_view_mirror, ratios_view);
       //std::cout << "       finished copying grad and ratios out" << std::endl;
 
@@ -530,7 +536,9 @@ struct OneBodyJastrow : public WaveFunctionComponent
 	  grad_new[i][j] += grad_new_view_mirror(i,j);
 	}
       }
+    Kokkos::Profiling::popRegion();
     }
+    Kokkos::Profiling::popRegion();
     //std::cout << "      finishing J1 multi_ratioGrad" << std::endl;
 
   }
