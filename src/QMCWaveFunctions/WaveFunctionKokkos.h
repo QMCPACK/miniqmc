@@ -39,6 +39,12 @@ public:
   Kokkos::View<objType*> oneBodyJastrows;
   Kokkos::View<tbjType*> twoBodyJastrows;
 
+  // add in some helpers to avoid allocating so much
+  Kokkos::View<ValueType**> grad_view;
+  Kokkos::View<ValueType**>::HostMirror grad_view_mirror;
+  Kokkos::View<ValueType*> ratios_view;
+  Kokkos::View<ValueType*>::HostMirror ratios_view_mirror;
+
  public:
 
   WaveFunctionKokkos(const std::vector<WaveFunction*>& WF_list);

@@ -34,34 +34,35 @@ void doOneBodyJastrowMultiEvaluateGL(aobjdType aobjd, apsdType apsd, bool fromsc
   Kokkos::parallel_for("obj-evalGL-waker-loop", pol,
 		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
 			 int walkerNum = member.league_rank(); 
-			 aobjd(walkerNum).evaluateGL(apsd(walkerNum), fromscratch);
+			 aobjd(walkerNum).evaluateGL(member, apsd(walkerNum), fromscratch);
 		       });
 }
 
 template<typename aobjdType, typename apsdType>
-  void doOneBodyJastrowMultiAcceptRestoreMove(aobjdType aobjd, apsdType apsd,Kokkos::View<int*>& isAcceptedMap,
-					      int numAccepted,int iat) {
+void doOneBodyJastrowMultiAcceptRestoreMove(aobjdType aobjd, apsdType apsd,
+					    Kokkos::View<int*>& isAcceptedMap,
+					    int numAccepted,int iat) {
   const int numWalkers = numAccepted;
   using BarePolicy = Kokkos::TeamPolicy<>;
-  BarePolicy pol(numWalkers, 1, 32);
+  BarePolicy pol(numAccepted, 1, 32);
   Kokkos::parallel_for("obj-acceptRestoreMove-waker-loop", pol,
 		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
 			 int walkerIdx = member.league_rank(); 
-			 const int walkerNum = isAcceptedMap(walkerIdx);
-			 aobjd(walkerNum).acceptMove(apsd(walkerNum), iat);
+			 int walkerNum = isAcceptedMap(walkerIdx);
+			 aobjd(walkerNum).acceptMove(member, apsd(walkerNum), iat);
 		       });
 }
 
 
 template<typename aobjdType, typename apsdType>
-  void doOneBodyJastrowMultiAcceptRestoreMove(aobjdType aobjd, apsdType apsd, int iat) {
+void doOneBodyJastrowMultiAcceptRestoreMove(aobjdType aobjd, apsdType apsd, int iat) {
   const int numWalkers = aobjd.extent(0);
   using BarePolicy = Kokkos::TeamPolicy<>;
   BarePolicy pol(numWalkers, 1, 32);
   Kokkos::parallel_for("obj-acceptRestoreMove-waker-loop", pol,
 		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
 			 int walkerNum = member.league_rank(); 
-			 aobjd(walkerNum).acceptMove(apsd(walkerNum), iat);
+			 aobjd(walkerNum).acceptMove(member, apsd(walkerNum), iat);
 		       });
 }
 
@@ -71,13 +72,13 @@ void doOneBodyJastrowMultiRatioGrad(aobjdType& aobjd, apsdType& apsd, Kokkos::Vi
 			       Kokkos::View<valT*> ratiosView) {
   const int numWalkers = numValid;
   using BarePolicy = Kokkos::TeamPolicy<>;
-  BarePolicy pol(numWalkers, 1, 1);
+  BarePolicy pol(numWalkers, 1, 32);
   Kokkos::parallel_for("obj-evalRatioGrad-walker-loop", pol,
 		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
 			 int walkerIdx = member.league_rank();
 			 int walkerNum = isValidMap(walkerIdx);
 			 auto gv = Kokkos::subview(gradNowView,walkerIdx,Kokkos::ALL());
-			 ratiosView(walkerIdx) = aobjd(walkerNum).ratioGrad(apsd(walkerNum), iel, gv);
+			 ratiosView(walkerIdx) = aobjd(walkerNum).ratioGrad(member, apsd(walkerNum), iel, gv);
 		       });
 }
 
@@ -89,13 +90,13 @@ void doOneBodyJastrowMultiRatioGrad(aobjdType aobjd, apsdType apsd, int iat,
 				    Kokkos::View<valT*> ratiosView) {
   const int numWalkers = aobjd.extent(0);
   using BarePolicy = Kokkos::TeamPolicy<>;
-  BarePolicy pol(numWalkers, 1, 1);
+  BarePolicy pol(numWalkers, 1, 32);
   //std::cout <<"     in doOneBodyJastrowMultiRatioGrad with iat = " << iat << std::endl;
   Kokkos::parallel_for("obj-evalRatioGrad-walker-loop", pol,
 		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
 			 int walkerNum = member.league_rank();
 			 auto gv = Kokkos::subview(gradNowView,walkerNum,Kokkos::ALL());
-			 ratiosView(walkerNum) = aobjd(walkerNum).ratioGrad(apsd(walkerNum), iat, gv);
+			 ratiosView(walkerNum) = aobjd(walkerNum).ratioGrad(member, apsd(walkerNum), iat, gv);
 		       });
 }
 			 
@@ -103,7 +104,7 @@ template<typename aobjdType, typename valT>
 void doOneBodyJastrowMultiEvalGrad(aobjdType aobjd, int iat, Kokkos::View<valT**> gradNowView) {
   const int numWalkers = aobjd.extent(0);
   using BarePolicy = Kokkos::TeamPolicy<>;
-  BarePolicy pol(numWalkers, 1, 32);
+  BarePolicy pol(numWalkers, 1, 1);
   Kokkos::parallel_for("obj-evalGrad-walker-loop", pol,
 		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
 			 int walkerNum = member.league_rank();
@@ -134,10 +135,10 @@ void doOneBodyJastrowMultiEvalRatio(int pairNum, eiListType& eiList, apskType& a
 			 
 			 allOneBodyJastrowData(walkerIndex).updateMode(0) = 0;
 
-			 Kokkos::parallel_for(Kokkos::ThreadVectorRange(member, numKnots),
+			 Kokkos::parallel_for(Kokkos::TeamThreadRange(member, numKnots),
 					      [=](const int& knotNum) {
 						auto singleDists = Kokkos::subview(unlikeTempR, walkerNum, knotNum, Kokkos::ALL);
-						auto val = allOneBodyJastrowData(walkerIndex).computeU(psk, singleDists);
+						auto val = allOneBodyJastrowData(walkerIndex).computeU(member, psk, singleDists);
 						int iat = eiList(walkerNum, pairNum, 1);
 						devRatios(walkerIndex, numKnots) = std::exp(allOneBodyJastrowData(walkerIndex).Vat(iat) - val);
 					      });
@@ -153,7 +154,7 @@ void doOneBodyJastrowMultiEvaluateLog(aobjdType aobjd, apsdType apsd, Kokkos::Vi
   Kokkos::parallel_for("obj-evalLog-waker-loop", pol,
 		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
 			 int walkerNum = member.league_rank(); 
-			 values(walkerNum) = aobjd(walkerNum).evaluateLog(apsd(walkerNum));
+			 values(walkerNum) = aobjd(walkerNum).evaluateLog(member, apsd(walkerNum));
 		       });
 }
   
@@ -489,15 +490,13 @@ struct OneBodyJastrow : public WaveFunctionComponent
                               int iat,
                               std::vector<PosType>& grad_now) {
     const int numItems = WFC_list.size();
-    Kokkos::View<double**> grad_now_view("tempValues", numItems, OHMMS_DIM);
-    doOneBodyJastrowMultiEvalGrad(wfc.oneBodyJastrows, iat, grad_now_view);
-    // copy the results out to values
-    auto grad_now_view_mirror = Kokkos::create_mirror_view(grad_now_view);
-    Kokkos::deep_copy(grad_now_view_mirror, grad_now_view);
+    doOneBodyJastrowMultiEvalGrad(wfc.oneBodyJastrows, iat, wfc.grad_view);
+
+    Kokkos::deep_copy(wfc.grad_view_mirror, wfc.grad_view);
     
     for (int i = 0; i < numItems; i++) {
       for (int j = 0; j < OHMMS_DIM; j++) {
-	grad_now[i][j] = grad_now_view_mirror(i,j);
+	grad_now[i][j] = wfc.grad_view_mirror(i,j);
       }
     }
   }
@@ -511,29 +510,22 @@ struct OneBodyJastrow : public WaveFunctionComponent
                                std::vector<PosType>& grad_new) {
     Kokkos::Profiling::pushRegion("obj-multi_ratioGrad");
     if (numValid > 0) {
-      // make views to hold output
-      Kokkos::Profiling::pushRegion("obj-multi_ratioGrad::initAllocs");
-      Kokkos::View<double**> grad_new_view("tempValues", numValid, OHMMS_DIM);
-      auto grad_new_view_mirror = Kokkos::create_mirror_view(grad_new_view);
-      Kokkos::View<double*> ratios_view("ratios", numValid);
-      auto ratios_view_mirror = Kokkos::create_mirror_view(ratios_view);
-      Kokkos::Profiling::popRegion();
-
       Kokkos::Profiling::pushRegion("obj-multi_ratioGrad::kernel");
-      doOneBodyJastrowMultiRatioGrad(wfc.oneBodyJastrows, psk, isValidMap, numValid, iel, grad_new_view, ratios_view);
+      doOneBodyJastrowMultiRatioGrad(wfc.oneBodyJastrows, psk, isValidMap, numValid, iel, 
+				     wfc.grad_view, wfc.ratios_view);
       Kokkos::fence();
       Kokkos::Profiling::popRegion();
 
       Kokkos::Profiling::pushRegion("obj-multi_ratioGrad::copyOut");
       // copy the results out to values
-      Kokkos::deep_copy(grad_new_view_mirror, grad_new_view);
-      Kokkos::deep_copy(ratios_view_mirror, ratios_view);
+      Kokkos::deep_copy(wfc.grad_view_mirror, wfc.grad_view);
+      Kokkos::deep_copy(wfc.ratios_view_mirror, wfc.ratios_view);
       //std::cout << "       finished copying grad and ratios out" << std::endl;
 
       for (int i = 0; i < numValid; i++) {
-	ratios[i] = ratios_view_mirror(i);
+	ratios[i] = wfc.ratios_view_mirror(i);
 	for (int j = 0; j < OHMMS_DIM; j++) {
-	  grad_new[i][j] += grad_new_view_mirror(i,j);
+	  grad_new[i][j] += wfc.grad_view_mirror(i,j);
 	}
       }
     Kokkos::Profiling::popRegion();
@@ -593,7 +585,7 @@ struct OneBodyJastrow : public WaveFunctionComponent
 				       WaveFunctionKokkos& wfc,
 				       Kokkos::View<ParticleSet::pskType*> psk,
 				       Kokkos::View<int*>& isAcceptedMap, int numAccepted, int iel) {
-    doOneBodyJastrowMultiAcceptRestoreMove(wfc.twoBodyJastrows, psk, isAcceptedMap, numAccepted, iel);
+    doOneBodyJastrowMultiAcceptRestoreMove(wfc.oneBodyJastrows, psk, isAcceptedMap, numAccepted, iel);
   }
 
 

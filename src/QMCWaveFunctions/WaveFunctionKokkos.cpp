@@ -59,6 +59,11 @@ WaveFunctionKokkos::WaveFunctionKokkos(const std::vector<WaveFunction*>& WF_list
   Kokkos::deep_copy(downDets, downDetMirror);
   Kokkos::deep_copy(oneBodyJastrows, objMirror);
   Kokkos::deep_copy(twoBodyJastrows, tbjMirror);
+
+  grad_view = Kokkos::View<ValueType**>("scratchGradView", upDetVector.size(), OHMMS_DIM);
+  grad_view_mirror = Kokkos::create_mirror_view(grad_view);
+  ratios_view = Kokkos::View<ValueType*>("scratchRatiosView", upDetVector.size());
+  ratios_view_mirror = Kokkos::create_mirror_view(ratios_view);
 }
 
 };
