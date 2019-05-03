@@ -97,6 +97,57 @@ public:
     d2Uat(iel) = cur_d2Uat;
   }
 
+  template<typename pskType>
+  void acceptMove(Kokkos::DefaultExecutionSpace pol, pskType& psk, int iel) {
+    computeU3(pol, psk, iel, Kokkos::subview(psk.LikeDTDistances, iel, Kokkos::ALL()), old_u, old_du, old_d2u);
+    //
+    if (updateMode(0) == 0)
+    { // ratio-only during the move; need to compute derivatives
+      computeU3(pol, psk, iel, psk.LikeDTTemp_r, cur_u, cur_du, cur_d2u);
+    }
+
+    valT cur_d2Uat(0);
+    auto new_dr = psk.LikeDTTemp_dr;
+    auto old_dr = Kokkos::subview(psk.LikeDTDisplacements,iel,Kokkos::ALL(), Kokkos::ALL());
+    constexpr valT lapfac = OHMMS_DIM - RealType(1);
+
+    auto me = *this;
+    // Number of electrons Reduction
+    auto result = Kokkos::subview(me.d2Uat,iel);
+
+    Kokkos::parallel_reduce(Kokkos::RangePolicy<>(pol,0,Nelec(0)),
+        KOKKOS_LAMBDA (const int& jel, valT& cursum) {
+            const valT du   = me.cur_u(jel) - me.old_u(jel);
+            const valT newl = me.cur_d2u(jel) + lapfac * me.cur_du(jel);
+            const valT dl   = me.old_d2u(jel) + lapfac * me.old_du(jel) - newl;
+            me.Uat(jel) += du;
+            me.d2Uat(jel) += dl;
+            cursum -= newl;
+          },result);
+    Kokkos::fence();
+
+    Kokkos::Array<valT,3> cur_dUat;
+    for(int idim = 0; idim<dim; idim++) {
+         auto result2 = Kokkos::subview(me.dUat,iel,idim);
+         valT cur_g  = cur_dUat[idim];
+         // Number of Electrons Reduction
+         Kokkos::parallel_reduce(Kokkos::RangePolicy<>(pol,0,Nelec(0)),
+             KOKKOS_LAMBDA (const int& jel, valT& cursum) {
+           const valT newg     = me.cur_du(jel) * new_dr(jel,idim);
+           const valT dg       = newg - me.old_du(jel) * old_dr(jel,idim);
+           Kokkos::atomic_add(&(me.dUat(iel,idim)),-dg);
+           cursum              += newg;
+         },result2);
+         Kokkos::fence();
+         //cur_dUat[idim] = cur_g;
+       }
+
+    Kokkos::parallel_for(1,KOKKOS_LAMBDA (const int) {
+      me.LogValue(0) += me.Uat(iel) - me.cur_Uat(0);
+      me.Uat(iel)     = me.cur_Uat(0);
+    });
+  }
+
   template<typename policyType, typename pskType>
   KOKKOS_INLINE_FUNCTION
   valT ratio(policyType& pol, pskType& psk, int iel) {
@@ -284,6 +335,30 @@ public:
 			 }
   }
 
+  template<typename pskType, typename distViewType>
+  void computeU3(Kokkos::DefaultExecutionSpace& pol, pskType& psk, int iel, distViewType dist,
+     Kokkos::View<valT*> u, Kokkos::View<valT*> du,
+     Kokkos::View<valT*> d2u, bool triangle = false) {
+    const int jelmax = triangle ? iel : Nelec(0);
+    constexpr valT czero(0);
+
+    Kokkos::parallel_for(Kokkos::RangePolicy<>(pol,0,jelmax),
+       KOKKOS_LAMBDA (const int& i) {
+         u(i) = czero;
+         du(i) = czero;
+         d2u(i) = czero;
+       });
+
+    const int igt = psk.GroupID(iel) * NumGroups(0);
+    for(int jg = 0; jg<NumGroups(0); jg++)   {
+         const int istart = psk.first(jg);
+         int iend = jelmax;
+         if (psk.last(jg) < jelmax) {
+           iend = psk.last(jg);
+         }
+         FevaluateVGL(pol, igt+jg, iel, istart, iend, dist, u, du, d2u);
+       }
+  }
 
 
 
@@ -444,6 +519,68 @@ public:
 					  sCoef2*(A( 8)*tp0 + A( 9)*tp1 + A(10)*tp2 + A(11))+
 					  sCoef3*(A(12)*tp0 + A(13)*tp1 + A(14)*tp2 + A(15)));
 			 });
+  }
+
+  template<typename distViewType>
+  void FevaluateVGL(Kokkos::DefaultExecutionSpace& pol, int gid, int iel, int start, int end, distViewType dist,
+        Kokkos::View<valT*> u, Kokkos::View<valT*> du, Kokkos::View<valT*> d2u) {
+    RealType dSquareDeltaRinv = DeltaRInv(gid) * DeltaRInv(gid);
+    constexpr RealType cOne(1);
+
+    int iCount = 0;
+    int iLimit = end - start;
+    //Kokkos::fence();
+    auto me = *this;
+    //printf("%i %i %i %i %i %s %s %p\n",gid,iel,start,dist.extent(0),cutoff_radius.extent(0),dist.label().c_str(),cutoff_radius.label().c_str(),cutoff_radius.data());
+
+
+    Kokkos::parallel_scan("FevaluateVGL::par_scan",Kokkos::RangePolicy<>(0,iLimit),
+        KOKKOS_LAMBDA(const int jel, int& mycount, bool final) {
+
+      RealType r = dist(jel+start);
+      if (r < me.cutoff_radius(gid) && start + jel != iel) {
+        if(final) {
+          me.DistIndices(mycount) = jel+start;
+          me.DistCompressed(mycount) = r;
+        }
+        mycount++;
+      }
+    },iCount);
+
+    Kokkos::parallel_for("FevaluateVGL::par_for",Kokkos::RangePolicy<>(pol, 0,iCount),
+        KOKKOS_LAMBDA  (const int& j) {
+         const RealType r = me.DistCompressed(j)*me.DeltaRInv(gid);
+         const RealType rinv = cOne / me.DistCompressed(j);
+         const int iScatter   = me.DistIndices(j);
+         const int iGather    = (int) r;
+
+         const RealType t = r - RealType(iGather);
+         const RealType tp0 = t*t*t;
+         const RealType tp1 = t*t;
+         const RealType tp2 = t;
+
+         const RealType sCoef0 = me.SplineCoefs(gid, iGather+0);
+         const RealType sCoef1 = me.SplineCoefs(gid, iGather+1);
+         const RealType sCoef2 = me.SplineCoefs(gid, iGather+2);
+         const RealType sCoef3 = me.SplineCoefs(gid, iGather+3);
+
+         d2u(iScatter) = dSquareDeltaRinv *
+           (sCoef0*( me.d2A( 2)*tp2 + me.d2A( 3))+
+            sCoef1*( me.d2A( 6)*tp2 + me.d2A( 7))+
+            sCoef2*( me.d2A(10)*tp2 + me.d2A(11))+
+            sCoef3*( me.d2A(14)*tp2 + me.d2A(15)));
+
+         du(iScatter) = me.DeltaRInv(gid) * rinv *
+           (sCoef0*( me.dA( 1)*tp1 + me.dA( 2)*tp2 + me.dA( 3))+
+            sCoef1*( me.dA( 5)*tp1 + me.dA( 6)*tp2 + me.dA( 7))+
+            sCoef2*( me.dA( 9)*tp1 + me.dA(10)*tp2 + me.dA(11))+
+            sCoef3*( me.dA(13)*tp1 + me.dA(14)*tp2 + me.dA(15)));
+
+         u(iScatter) = (sCoef0*(me.A( 0)*tp0 + me.A( 1)*tp1 + me.A( 2)*tp2 + me.A( 3))+
+            sCoef1*(me.A( 4)*tp0 + me.A( 5)*tp1 + me.A( 6)*tp2 + me.A( 7))+
+            sCoef2*(me.A( 8)*tp0 + me.A( 9)*tp1 + me.A(10)*tp2 + me.A(11))+
+            sCoef3*(me.A(12)*tp0 + me.A(13)*tp1 + me.A(14)*tp2 + me.A(15)));
+       });
   }
 
 };

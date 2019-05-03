@@ -61,20 +61,32 @@ template<typename atbjdType, typename apsdType>
 					      Kokkos::View<int*>& isAcceptedMap,
 					      int numAccepted, int iat) {
   const int numWalkers = numAccepted;
-  using BarePolicy = Kokkos::TeamPolicy<>;
-  BarePolicy pol(numWalkers, 1, 32);
-  Kokkos::parallel_for("tbj-acceptRestoreMove-waker-loop", pol,
-		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
-			 int walkerIdx = member.league_rank(); 
-			 const int walkerNum = isAcceptedMap(walkerIdx);
-			 atbjd(walkerNum).acceptMove(member, apsd(walkerNum), iat);
-		       });
+  Kokkos::Profiling::pushRegion("doTwoBodyJastrowMultiAcceptRestoreMove");
+  if (numWalkers>16) {
+    using BarePolicy = Kokkos::TeamPolicy<>;
+    BarePolicy pol(numWalkers, 16, 32);
+    Kokkos::parallel_for("tbj-acceptRestoreMove-waker-loop", pol,
+                         KOKKOS_LAMBDA(BarePolicy::member_type member) {
+      int walkerIdx = member.league_rank();
+		  const int walkerNum = isAcceptedMap(walkerIdx);
+			atbjd(walkerNum).acceptMove(member, apsd(walkerNum), iat);
+		     });
+  } else {
+    for(int i = 0; i<numWalkers; i++) {
+      int walkerNum = isAcceptedMap(i);
+      typename atbjdType::value_type thing(atbjd(walkerNum));
+      typename apsdType::value_type otherThing(apsd(walkerNum));
+      thing.acceptMove(Kokkos::DefaultExecutionSpace(), otherThing, iat);
+    }
+  }
+  Kokkos::Profiling::popRegion();
 }
 
 
 template<typename atbjdType, typename apsdType>
   void doTwoBodyJastrowMultiAcceptRestoreMove(atbjdType atbjd, apsdType apsd, int iat) {
   const int numWalkers = atbjd.extent(0);
+  if(numWalkers>16) {
   using BarePolicy = Kokkos::TeamPolicy<>;
   BarePolicy pol(numWalkers, 16, 32);
   Kokkos::parallel_for("tbj-acceptRestoreMove-waker-loop", pol,
@@ -82,6 +94,13 @@ template<typename atbjdType, typename apsdType>
 			 int walkerNum = member.league_rank(); 
 			 atbjd(walkerNum).acceptMove(member, apsd(walkerNum), iat);
 		       });
+  } else {
+    for(int walkerNum = 0; walkerNum<numWalkers; walkerNum++) {
+      typename atbjdType::value_type thing(atbjd(walkerNum));
+      typename apsdType::value_type otherThing(apsd(walkerNum));
+      thing.acceptMove(Kokkos::DefaultExecutionSpace(), otherThing, iat);
+    }
+  }
 }
 
 
