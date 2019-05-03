@@ -445,14 +445,12 @@ struct OneBodyJastrow : public WaveFunctionComponent
     Kokkos::View<valT*> tempValues("tempValues", WFC_list.size());
 
     // need to write this function
-    doOneBodyJastrowMultiEvaluateLog(wfc.oneBodyJastrows, psk, tempValues);
+    doOneBodyJastrowMultiEvaluateLog(wfc.oneBodyJastrows, psk, wfc.ratios_view);
       
-    // copy the results out to values
-    auto tempValMirror = Kokkos::create_mirror_view(tempValues);
-    Kokkos::deep_copy(tempValMirror, tempValues);
+    Kokkos::deep_copy(wfc.ratios_view_mirror, wfc.ratios_view);
     
     for (int i = 0; i < WFC_list.size(); i++) {
-      values[i] = tempValMirror(i);
+      values[i] = wfc.ratios_view_mirror(i);
     }
   }
    
@@ -612,6 +610,7 @@ struct OneBodyJastrow : public WaveFunctionComponent
     // be careful on this one, looks like it is being done for side effects.  Should see what needs to go back!!!
   }
 
+  // still need to fix this one...
   virtual void multi_evalRatio(int pairNum, Kokkos::View<int***>& eiList,
 			       const std::vector<WaveFunctionComponent*>& WFC_list,
 			       Kokkos::View<ParticleSetKokkos<RealType, ValueType, 3>*>& apsk,
