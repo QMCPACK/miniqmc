@@ -254,7 +254,7 @@ struct DiracDeterminant : public WaveFunctionComponent
     auto dev_subview = subview(ddk.psiMinv, x, y);
     auto dev_subview_host = Kokkos::create_mirror_view(dev_subview);
     Kokkos::deep_copy(dev_subview_host, dev_subview);
-    return dev_subview_host(0,0);
+    return dev_subview_host();
   }
   inline int size() const { return ddk.psiMinv.extent(0)*ddk.psiMinv.extent(1); }
 
@@ -699,11 +699,11 @@ void doDiracDeterminantMultiEvalRatio(int pairNum, addkType& addk, awType& activ
   BarePolicy pol(numWalkers, Kokkos::AUTO, 32);
   Kokkos::parallel_for("dd-evalRatio-general", pol,
  		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
-			 const int walkerNum = activeWalkers(member.league_rank());
-			 const int bareIndex = member.league_rank();
-			 const int FirstIndexInDD = addk(bareIndex).FirstIndex(0);
-			 const int bandIdx = eiList(walkerNum, pairNum, 0) - FirstIndexInDD;
-			 const int numElsInDD = addk(bareIndex).psiMinv.extent(0);
+			 int walkerNum = activeWalkers(member.league_rank());
+			 int bareIndex = member.league_rank();
+			 int FirstIndexInDD = addk(bareIndex).FirstIndex(0);
+			 int bandIdx = eiList(walkerNum, pairNum, 0) - FirstIndexInDD;
+			 int numElsInDD = addk(bareIndex).psiMinv.extent(0);
 
 			 Kokkos::parallel_for(Kokkos::TeamThreadRange(member, numKnots),
 					      [=] (const int& knotNum) {

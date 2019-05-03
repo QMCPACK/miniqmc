@@ -63,7 +63,8 @@ public:
     auto old_dr = Kokkos::subview(psk.LikeDTDisplacements,iel,Kokkos::ALL(), Kokkos::ALL());
     constexpr valT lapfac = OHMMS_DIM - RealType(1);
 
-    Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(pol,Nelec(0)),
+    // Number of electrons Reduction
+    Kokkos::parallel_reduce(Kokkos::TeamVectorRange(pol,Nelec(0)),
 			    [&](const int& jel, valT& cursum) {
 			      const valT du   = cur_u(jel) - old_u(jel);
 			      const valT newl = cur_d2u(jel) + lapfac * cur_du(jel);
@@ -74,9 +75,10 @@ public:
 			    },cur_d2Uat);
 
     Kokkos::Array<valT,3> cur_dUat;
-    Kokkos::parallel_for(Kokkos::ThreadVectorRange(pol,dim),
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(pol,dim),
 			 [&](const int& idim) {
 			   valT cur_g  = cur_dUat[idim];
+			   // Number of Electrons Reduction
 			   for (int jel = 0; jel < Nelec(0); jel++)
 			   {
 			     const valT newg     = cur_du(jel) * new_dr(jel,idim);
@@ -159,37 +161,51 @@ public:
     if (fromscratch) {
       recompute(pol, psk);
     }
+    int iel = pol.league_rank()%Nelec(0);
     LogValue(0) = valT(0);
-    Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(pol,Nelec(0)),
+    Kokkos::single(Kokkos::PerTeam(pol),[&]() {
+      Kokkos::atomic_add(&LogValue(0),0.5*Uat(iel));
+      for (int d = 0; d < dim; d++) {
+        psk.G(iel,d) += dUat(iel,d);
+      }
+      psk.L(iel) += d2Uat(iel);
+    });
+    /*
+    Kokkos::parallel_reduce(Kokkos::TeamVectorRange(pol,Nelec(0)),
 			    [=](const int& iel, valT& locVal) {
 			      locVal += Uat(iel);
 			    },LogValue(0));
 
-    Kokkos::parallel_for(Kokkos::ThreadVectorRange(pol,Nelec(0)),
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(pol,Nelec(0)),
 			 [=](const int& iel) {
 			   for (int d = 0; d < dim; d++) {
 			     psk.G(iel,d) += dUat(iel,d);
 			   }
 			   psk.L(iel) += d2Uat(iel);
 			 });
-    constexpr valT mhalf(-0.5);
-    LogValue(0) = mhalf * LogValue(0);
+    */
   }
 
 
   template<typename policyType, typename pskType>
   KOKKOS_INLINE_FUNCTION
   void recompute(policyType& pol, pskType& psk) {
+    // 2
     for (int ig = 0; ig < NumGroups(0); ++ig)
     {
       const int igt = ig * NumGroups(0);
-      int last = psk.last(ig);
+      int count = psk.last(ig)-psk.first(ig);
       
-      Kokkos::parallel_for(Kokkos::TeamThreadRange(pol,last),
-			   [&](const int& i) {
-			     const int iel = psk.first(ig);
+      const int i = pol.league_rank()%Nelec(0);
+      // number of electrons/2
+
+      //Kokkos::parallel_for(Kokkos::TeamThreadRange(pol,last),
+			//   [&](const int& i) {
+      if(i<count) {
+			     const int iel = psk.first(ig)+i;
 			     computeU3(pol, psk, iel, Kokkos::subview(psk.LikeDTDistances, iel, Kokkos::ALL()),
 				       cur_u, cur_du, cur_d2u, true);
+			     Kokkos::single(Kokkos::PerTeam(pol),[&] (){
 			     Uat(iel) = 0.0;
 			     for (int j = 0; j < iel; j++) {
 			       Uat(iel) += cur_u(j);
@@ -223,7 +239,9 @@ public:
 			       for (int jel = 0; jel < iel; jel++)
 				 dUat(jel,idim) -= cur_du(jel) * psk.LikeDTDisplacements(iel,jel,idim); 
 			     }
-			   });
+			     });
+			     pol.team_barrier();
+			   }
     }
   }
 
@@ -248,7 +266,7 @@ public:
     const int jelmax = triangle ? iel : Nelec(0);
     constexpr valT czero(0);
     
-    Kokkos::parallel_for(Kokkos::ThreadVectorRange(pol,jelmax),
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(pol,jelmax),
 			 [&](const int& i) {
 			   u(i) = czero;
 			   du(i) = czero;
@@ -256,15 +274,14 @@ public:
 			 });
 
     const int igt = psk.GroupID(iel) * NumGroups(0);
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(pol, NumGroups(0)),
-			 [&](const int& jg) {
+		for(int jg = 0; jg<NumGroups(0); jg++)	 {
 			   const int istart = psk.first(jg);
 			   int iend = jelmax;
 			   if (psk.last(jg) < jelmax) {
 			     iend = psk.last(jg);
 			   }
 			   FevaluateVGL(pol, igt+jg, iel, istart, iend, dist, u, du, d2u);
-			 });
+			 }
   }
 
 
@@ -372,17 +389,28 @@ public:
     
     int iCount = 0;
     int iLimit = end - start;
-    
-    for (int jel = 0; jel < iLimit; jel++) {
+    if(pol.team_rank()==0) {
+    Kokkos::parallel_scan(Kokkos::ThreadVectorRange(pol,iLimit),
+        [&] (const int jel, int& mycount, bool final) {
       RealType r = dist(jel+start);
       if (r < cutoff_radius(gid) && start + jel != iel) {
-	DistIndices(iCount) = jel+start;
-	DistCompressed(iCount) = r;
-	iCount++;
+        if(final) {
+	        DistIndices(mycount) = jel+start;
+	        DistCompressed(mycount) = r;
+        }
+	      mycount++;
       }
+    });
     }
-    
-    Kokkos::parallel_for(Kokkos::ThreadVectorRange(pol, iCount),
+    Kokkos::parallel_reduce(Kokkos::TeamVectorRange(pol,iLimit),
+        [&] (const int jel, int& mycount) {
+      RealType r = dist(jel+start);
+      if (r < cutoff_radius(gid) && start + jel != iel) {
+        mycount++;
+      }
+    },iCount);
+    pol.team_barrier();
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(pol, iCount),
 			 [&](const int& j) {
 			   const RealType r = DistCompressed(j)*DeltaRInv(gid);
 			   const RealType rinv = cOne / DistCompressed(j);

@@ -487,6 +487,7 @@ int main(int argc, char** argv)
       /// masks for movers with valid moves
       //std::vector<int> isValid(nmovers);
 
+      Kokkos::Profiling::pushRegion("MCSteps");
       for (int mc = 0; mc < nsteps; ++mc)
       {
 	std::cout << "starting step " << mc << std::endl;
@@ -698,6 +699,7 @@ int main(int argc, char** argv)
 	Timers[Timer_ECP]->stop();
       } // nsteps
     }
+    Kokkos::Profiling::popRegion();
     Timers[Timer_Total]->stop();
     
     // free all movers

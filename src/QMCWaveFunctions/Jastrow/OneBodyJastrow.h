@@ -88,7 +88,7 @@ template<typename aobjdType, typename apsdType, typename valT>
 void doOneBodyJastrowMultiRatioGrad(aobjdType aobjd, apsdType apsd, int iat, 
 				    Kokkos::View<valT**> gradNowView,
 				    Kokkos::View<valT*> ratiosView) {
-  const int numWalkers = aobjd.extent(0);
+  int numWalkers = aobjd.extent(0);
   using BarePolicy = Kokkos::TeamPolicy<>;
   BarePolicy pol(numWalkers, 1, 32);
   //std::cout <<"     in doOneBodyJastrowMultiRatioGrad with iat = " << iat << std::endl;
@@ -102,7 +102,7 @@ void doOneBodyJastrowMultiRatioGrad(aobjdType aobjd, apsdType apsd, int iat,
 			 
 template<typename aobjdType, typename valT>
 void doOneBodyJastrowMultiEvalGrad(aobjdType aobjd, int iat, Kokkos::View<valT**> gradNowView) {
-  const int numWalkers = aobjd.extent(0);
+  int numWalkers = aobjd.extent(0);
   using BarePolicy = Kokkos::TeamPolicy<>;
   BarePolicy pol(numWalkers, 1, 1);
   Kokkos::parallel_for("obj-evalGrad-walker-loop", pol,
@@ -120,8 +120,8 @@ void doOneBodyJastrowMultiEvalRatio(int pairNum, eiListType& eiList, apskType& a
 				    aobjdType& allOneBodyJastrowData,
 				    tempRType& unlikeTempR, walkerIdType& activeWalkerIdx,
 				    devRatioType& devRatios) {
-  const int numWalkers = activeWalkerIdx.extent(0);
-  const int numKnots = unlikeTempR.extent(1);
+  int numWalkers = activeWalkerIdx.extent(0);
+  int numKnots = unlikeTempR.extent(1);
   using BarePolicy = Kokkos::TeamPolicy<>;
   BarePolicy pol(numWalkers, Kokkos::AUTO, 32);
   

@@ -636,14 +636,14 @@ void ParticleSet::multi_acceptRejectMoveKokkos(Kokkos::View<ParticleSet::pskType
 					       int numAccepted, int iel) {
   int locIel = iel;
   using BarePolicy = Kokkos::TeamPolicy<>;
-  BarePolicy pol(numAccepted, 1, 1);
+  BarePolicy pol(numAccepted, 32, 32);
   Kokkos::parallel_for("ps-multi_acceptRejectMove", pol,
-		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
+		       KOKKOS_LAMBDA(const BarePolicy::member_type& member) {
 			 const int idx = member.league_rank();
 			 const int i = isAcceptedMap(idx);
 			 auto& psd = psk(i);
-			 psd.LikeUpdate(locIel);
-			 psd.UnlikeUpdate(locIel);
+			 psd.LikeUpdate(member,locIel);
+			 psd.UnlikeUpdate(member,locIel);
 			 //std::cout << "finished psd.UnlikeUpdate" << std::endl;
 			 for (int dim = 0; dim < 3; dim++) {
 			   psd.R(locIel,dim) = psd.activePos(dim);

@@ -371,7 +371,7 @@ public:
     for (int i = 0; i < LikeDTTemp_r.extent(0); i++) {
       LikeDTDistances(iat,i) = LikeDTTemp_r(i);
       for (int j = 0; j < dim; j++) {
-	LikeDTDisplacements(iat,i,j) = LikeDTTemp_dr(i,j);
+  LikeDTDisplacements(iat,i,j) = LikeDTTemp_dr(i,j);
       }
     }
   }
@@ -381,11 +381,34 @@ public:
     for (int i = 0; i < UnlikeDTTemp_r.extent(0); i++) {
       UnlikeDTDistances(iat,i) = UnlikeDTTemp_r(i);
       for (int j = 0; j < dim; j++) {
-	UnlikeDTDisplacements(iat,i,j) = UnlikeDTTemp_dr(i,j);
+  UnlikeDTDisplacements(iat,i,j) = UnlikeDTTemp_dr(i,j);
       }
     }
   }
+
+  KOKKOS_INLINE_FUNCTION
+  void LikeUpdate(const Kokkos::TeamPolicy<>::member_type& member, int iat) {
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(member,0,LikeDTTemp_r.extent(0)),
+        [&] (const int i) {
+      LikeDTDistances(iat,i) = LikeDTTemp_r(i);
+      for (int j = 0; j < dim; j++) {
+	LikeDTDisplacements(iat,i,j) = LikeDTTemp_dr(i,j);
+      }
+    });
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  void UnlikeUpdate(const Kokkos::TeamPolicy<>::member_type& member, int iat) {
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(member,0,UnlikeDTTemp_r.extent(0)),
+        [&] (const int i) {
+      UnlikeDTDistances(iat,i) = UnlikeDTTemp_r(i);
+      for (int j = 0; j < dim; j++) {
+	      UnlikeDTDisplacements(iat,i,j) = UnlikeDTTemp_dr(i,j);
+      }
+    });
+  }
     
+
 };
 
   

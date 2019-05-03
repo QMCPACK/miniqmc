@@ -436,8 +436,8 @@ void doMultiEval_v2d(multiPosType& pos, valType& vals, coefType& coefs,
   Kokkos::TeamPolicy<> policy(numWalkers*numKnots,Kokkos::AUTO,32);
   Kokkos::parallel_for("KokkosMultiBspline-doMultiEval_v2d",
 		       policy, KOKKOS_LAMBDA(Kokkos::TeamPolicy<>::member_type member) {
-      const int walkerNum = member.league_rank() / numKnots;
-      const int knotNum = member.league_rank() % numKnots;
+      int walkerNum = member.league_rank() / numKnots;
+      int knotNum = member.league_rank() % numKnots;
       
       // wrap this so only a single thread per league does this
       Kokkos::single(Kokkos::PerTeam(member), [&]() {	 

@@ -76,7 +76,7 @@ template<typename atbjdType, typename apsdType>
   void doTwoBodyJastrowMultiAcceptRestoreMove(atbjdType atbjd, apsdType apsd, int iat) {
   const int numWalkers = atbjd.extent(0);
   using BarePolicy = Kokkos::TeamPolicy<>;
-  BarePolicy pol(numWalkers, 1, 32);
+  BarePolicy pol(numWalkers, 16, 32);
   Kokkos::parallel_for("tbj-acceptRestoreMove-waker-loop", pol,
 		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
 			 int walkerNum = member.league_rank(); 
@@ -118,7 +118,7 @@ void doTwoBodyJastrowMultiRatioGrad(atbjdType atbjd, apsdType apsd, int iat,
 			 
 template<typename atbjdType, typename valT>
 void doTwoBodyJastrowMultiEvalGrad(atbjdType atbjd, int iat, Kokkos::View<valT**> gradNowView) {
-  const int numWalkers = atbjd.extent(0);
+  int numWalkers = atbjd.extent(0);
   using BarePolicy = Kokkos::TeamPolicy<>;
   BarePolicy pol(numWalkers, 1, 32);
   Kokkos::parallel_for("tbj-evalGrad-walker-loop", pol,
@@ -137,8 +137,8 @@ void doTwoBodyJastrowMultiEvalRatio(int pairNum, eiListType& eiList, apskType& a
 				    atbjdType& allTwoBodyJastrowData,
 				    tempRType& likeTempR, walkerIdType& activeWalkerIdx,
 				    devRatioType& devRatios) {
-  const int numWalkers = activeWalkerIdx.extent(0);
-  const int numKnots = likeTempR.extent(1);
+  int numWalkers = activeWalkerIdx.extent(0);
+  int numKnots = likeTempR.extent(1);
 
   using BarePolicy = Kokkos::TeamPolicy<>;
   BarePolicy pol(numWalkers, Kokkos::AUTO, 32);
@@ -168,10 +168,13 @@ void doTwoBodyJastrowMultiEvaluateLog(atbjdType atbjd, apsdType apsd, Kokkos::Vi
   Kokkos::Profiling::pushRegion("2BJ-multiEvalLog");
   const int numWalkers = atbjd.extent(0);
   using BarePolicy = Kokkos::TeamPolicy<>;
-  BarePolicy pol(numWalkers, 1, 32);
+  const int numElectrons = atbjd(0).Nelec(0);
+
+
+  BarePolicy pol(numWalkers*numElectrons, 8, 32);
   Kokkos::parallel_for("tbj-evalLog-waker-loop", pol,
 		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
-			 int walkerNum = member.league_rank(); 
+			 int walkerNum = member.league_rank()/numElectrons;
 			 values(walkerNum) = atbjd(walkerNum).evaluateLog(member, apsd(walkerNum));
 		       });
   Kokkos::Profiling::popRegion();
@@ -575,6 +578,27 @@ void TwoBodyJastrow<FT>::initializeJastrowKokkos() {
 }
   
 template<typename FT>
+void TwoBodyJastrow<FT>::evaluateGL(ParticleSet& P,
+                                    ParticleSet::ParticleGradient_t& G,
+                                    ParticleSet::ParticleLaplacian_t& L,
+                                    bool fromscratch)
+{
+  if (fromscratch)
+    recompute(P);
+  LogValue = valT(0);
+  for (int iat = 0; iat < N; ++iat)
+  {
+    LogValue += Uat[iat];
+    G[iat] += dUat[iat];
+    L[iat] += d2Uat[iat];
+  }
+
+  constexpr valT mhalf(-0.5);
+  LogValue = mhalf * LogValue;
+}
+
+
+template<typename FT>
 void TwoBodyJastrow<FT>::addFunc(int ia, int ib, FT* j)
 {
   if (splCoefsNotAllocated) {
@@ -878,27 +902,6 @@ typename TwoBodyJastrow<FT>::RealType
   evaluateGL(P, G, L, true);
   return LogValue;
 }
-
-template<typename FT>
-void TwoBodyJastrow<FT>::evaluateGL(ParticleSet& P,
-                                    ParticleSet::ParticleGradient_t& G,
-                                    ParticleSet::ParticleLaplacian_t& L,
-                                    bool fromscratch)
-{
-  if (fromscratch)
-    recompute(P);
-  LogValue = valT(0);
-  for (int iat = 0; iat < N; ++iat)
-  {
-    LogValue += Uat[iat];
-    G[iat] += dUat[iat];
-    L[iat] += d2Uat[iat];
-  }
-
-  constexpr valT mhalf(-0.5);
-  LogValue = mhalf * LogValue;
-}
-
 
 template<typename FT>
 void TwoBodyJastrow<FT>::multi_evaluateLog(const std::vector<WaveFunctionComponent*>& WFC_list,
