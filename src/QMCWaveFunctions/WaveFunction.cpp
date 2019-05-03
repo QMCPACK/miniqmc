@@ -101,6 +101,7 @@ void build_WaveFunction(bool useRef,
   }
   else
   {
+    Kokkos::Profiling::pushRegion("building Wavefunction");
     using J1OrbType = OneBodyJastrow<BsplineFunctor<valT>>;
     using J2OrbType = TwoBodyJastrow<BsplineFunctor<valT>>;
     using J3OrbType = ThreeBodyJastrow<PolynomialFunctor3D>;
@@ -115,23 +116,29 @@ void build_WaveFunction(bool useRef,
 
     // determinant component
     WF.nelup  = nelup;
+    Kokkos::Profiling::pushRegion("creating determinants");
     WF.Det_up = new DetType(nelup, RNG, 0);
     //std::cout << "In construction of wavefunction, for up determinant" << std::endl;
     //std::cout << "psiV.extent(0) = " << static_cast<DetType*>(WF.Det_up)->ddk.psiV.extent(0) << std::endl;
     WF.Det_dn = new DetType(els.getTotalNum() - nelup, RNG, nelup);
     //std::cout << "In construction of wavefunction, for down determinant" << std::endl;
     //std::cout << "psiV.extent(0) = " << static_cast<DetType*>(WF.Det_dn)->ddk.psiV.extent(0) << std::endl;
+    Kokkos::Profiling::popRegion();
 
     // J1 component
+    Kokkos::Profiling::pushRegion("creating J1");
     J1OrbType* J1 = new J1OrbType(ions, els);
     buildJ1(*J1, els.Lattice.WignerSeitzRadius);
     WF.Jastrows.push_back(J1);
+    Kokkos::Profiling::popRegion();
 
     // J2 component
+    Kokkos::Profiling::pushRegion("creating J2");
     J2OrbType* J2 = new J2OrbType(els);
     buildJ2(*J2, els.Lattice.WignerSeitzRadius);
     //std::cout << "finished buildJ2" << std::endl;
     WF.Jastrows.push_back(J2);
+    Kokkos::Profiling::popRegion();
 
     // J3 component
     if (enableJ3)
@@ -140,6 +147,7 @@ void build_WaveFunction(bool useRef,
       buildJeeI(*J3, els.Lattice.WignerSeitzRadius);
       WF.Jastrows.push_back(J3);
     }
+    Kokkos::Profiling::popRegion();
   }
 
   WF.setupTimers();
@@ -276,6 +284,7 @@ void WaveFunction::multi_evaluateLog(const std::vector<WaveFunction*>& WF_list,
 				     WaveFunctionKokkos& wfc,
 				     Kokkos::View<ParticleSet::pskType*>& psk) const
 {
+  Kokkos::Profiling::pushRegion("multi_evaluateLog (initialization)");
   const int numItems = WF_list.size();
   if (WF_list[0]->FirstTime)
   {
@@ -318,6 +327,7 @@ void WaveFunction::multi_evaluateLog(const std::vector<WaveFunction*>& WF_list,
 	WF_list[iw]->FirstTime = false;
     }
   }
+  Kokkos::Profiling::popRegion();
 }
 
 void WaveFunction::multi_evalGrad(const std::vector<WaveFunction*>& WF_list,

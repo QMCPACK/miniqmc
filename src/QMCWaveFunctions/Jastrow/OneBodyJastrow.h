@@ -148,6 +148,7 @@ void doOneBodyJastrowMultiEvalRatio(int pairNum, eiListType& eiList, apskType& a
  
 template<typename aobjdType, typename apsdType, typename valT>
 void doOneBodyJastrowMultiEvaluateLog(aobjdType aobjd, apsdType apsd, Kokkos::View<valT*> values) {
+  Kokkos::Profiling::pushRegion("1BJ-multiEvalLog");
   const int numWalkers = aobjd.extent(0);
   using BarePolicy = Kokkos::TeamPolicy<>;
   BarePolicy pol(numWalkers, 1, 32);
@@ -156,6 +157,7 @@ void doOneBodyJastrowMultiEvaluateLog(aobjdType aobjd, apsdType apsd, Kokkos::Vi
 			 int walkerNum = member.league_rank(); 
 			 values(walkerNum) = aobjd(walkerNum).evaluateLog(member, apsd(walkerNum));
 		       });
+  Kokkos::Profiling::popRegion();
 }
   
 /** @ingroup WaveFunctionComponent
@@ -441,9 +443,6 @@ struct OneBodyJastrow : public WaveFunctionComponent
 				 WaveFunctionKokkos& wfc,
 				 Kokkos::View<ParticleSet::pskType*>& psk,
 				 ParticleSet::ParticleValue_t& values) {
-    // need to make a view to hold all of the output LogValues
-    Kokkos::View<valT*> tempValues("tempValues", WFC_list.size());
-
     // need to write this function
     doOneBodyJastrowMultiEvaluateLog(wfc.oneBodyJastrows, psk, wfc.ratios_view);
       
