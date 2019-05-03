@@ -57,7 +57,8 @@ void doTwoBodyJastrowMultiEvaluateGL(atbjdType atbjd, apsdType apsd, bool fromsc
 }
 
 template<typename atbjdType, typename apsdType>
-  void doTwoBodyJastrowMultiAcceptRestoreMove(atbjdType atbjd, apsdType apsd, Kokkos::View<int*>& isAcceptedMap,
+  void doTwoBodyJastrowMultiAcceptRestoreMove(atbjdType atbjd, apsdType apsd, 
+					      Kokkos::View<int*>& isAcceptedMap,
 					      int numAccepted, int iat) {
   const int numWalkers = numAccepted;
   using BarePolicy = Kokkos::TeamPolicy<>;
@@ -164,6 +165,7 @@ void doTwoBodyJastrowMultiEvalRatio(int pairNum, eiListType& eiList, apskType& a
  
 template<typename atbjdType, typename apsdType, typename valT>
 void doTwoBodyJastrowMultiEvaluateLog(atbjdType atbjd, apsdType apsd, Kokkos::View<valT*> values) {
+  Kokkos::Profiling::pushRegion("2BJ-multiEvalLog");
   const int numWalkers = atbjd.extent(0);
   using BarePolicy = Kokkos::TeamPolicy<>;
   BarePolicy pol(numWalkers, 1, 32);
@@ -172,6 +174,7 @@ void doTwoBodyJastrowMultiEvaluateLog(atbjdType atbjd, apsdType apsd, Kokkos::Vi
 			 int walkerNum = member.league_rank(); 
 			 values(walkerNum) = atbjd(walkerNum).evaluateLog(member, apsd(walkerNum));
 		       });
+  Kokkos::Profiling::popRegion();
 }
 
 

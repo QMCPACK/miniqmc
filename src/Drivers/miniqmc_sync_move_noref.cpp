@@ -368,18 +368,26 @@ int main(int argc, char** argv)
     Timers[Timer_Total]->start();
     
     Timers[Timer_Init]->start();
-   
+
+    Kokkos::Profiling::pushRegion("All Initialization");
+    Kokkos::Profiling::pushRegion("Build Wavefunctions");
     std::vector<mover_type*> mover_list(nmovers, nullptr);    
     for (int iw = 0; iw < nmovers; iw++)
     {
       mover_type* thiswalker = new mover_type(myPrimes[iw], ions, spo);
       mover_list[iw]    = thiswalker;
       build_WaveFunction(false, mover_list[iw]->wavefunction, ions, mover_list[iw]->els, mover_list[iw]->rng, enableJ3);
+      Kokkos::Profiling::pushRegion("els-update");
       mover_list[iw]->els.update();
+      Kokkos::Profiling::popRegion();
+      Kokkos::Profiling::pushRegion("particleSetToKokkos");
       mover_list[iw]->els.pushDataToParticleSetKokkos();
+      Kokkos::Profiling::popRegion();
     }
+    Kokkos::Profiling::popRegion();
 
-
+    
+    Kokkos::Profiling::pushRegion("Populate Collective Views");
     const int nions    = ions.getTotalNum();
     const int nels     = mover_list[0]->els.getTotalNum();
     const int nmovers3 = 3 * nmovers;    
@@ -443,18 +451,23 @@ int main(int argc, char** argv)
     Kokkos::View<double***> bigUnlikeTempR("bigUnlikeTempR", nmovers, nknots, nions);
     Kokkos::View<double**[3]> bigElPos("bigElPos", nmovers, nknots);
     Kokkos::View<ValueType***> tempPsiV("tempPsiV", nmovers, nknots, nels);
+    Kokkos::Profiling::popRegion();
 
+    
 
     mover_type* anon_mover;
     anon_mover = mover_list[0];
     cout << "finished initialization section" << endl;
 
+    Kokkos::Profiling::pushRegion("Doing MultiEvaluateLog");
     { // initial computing
       //cout << "about to do multi_evaluateLog" << endl;
       anon_mover->wavefunction.multi_evaluateLog(WF_list, wfKokkos, allParticleSetData);
       //cout << "finished multi_evaluateLog" << endl;
     }
     Timers[Timer_Init]->stop();
+    Kokkos::Profiling::popRegion();
+    Kokkos::Profiling::popRegion();
     
 
     
@@ -584,7 +597,7 @@ int main(int argc, char** argv)
 	  Kokkos::fence();
 	  std::cout << "finished loop over electrons" << std::endl;
 	}   // substeps
-	std::cout << "finished substeps" << std::endl << std::endl;
+	std::cout << "finished substeps" << std::endl;
 	
 	//////// LNS, could probably fix these up to use collective views instead of vectors
 	anon_mover->els.multi_donePbyP(P_list);
@@ -681,6 +694,7 @@ int main(int argc, char** argv)
 					       EiLists, ratios); // see if this is enough
 	  Timers[Timer_Value]->stop();
 	}	    
+	std::cout << std::endl;
 	Timers[Timer_ECP]->stop();
       } // nsteps
     }

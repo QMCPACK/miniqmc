@@ -59,33 +59,33 @@ public:
     }
 
     valT cur_d2Uat(0);
-    auto new_dr = psk.LikeDTTemp_dr;
+    auto& new_dr = psk.LikeDTTemp_dr;
     auto old_dr = Kokkos::subview(psk.LikeDTDisplacements,iel,Kokkos::ALL(), Kokkos::ALL());
     constexpr valT lapfac = OHMMS_DIM - RealType(1);
 
-    Kokkos::parallel_for(Kokkos::ThreadVectorRange(pol,Nelec(0)),
-			 [&](const int& jel) {
-			   const valT du   = cur_u(jel) - old_u(jel);
-			   const valT newl = cur_d2u(jel) + lapfac * cur_du(jel);
-			   const valT dl   = old_d2u(jel) + lapfac * old_du(jel) - newl;
-			   Uat(jel) += du;
-			   d2Uat(jel) += dl;
-			   cur_d2Uat -= newl;
-			 });
+    Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(pol,Nelec(0)),
+			    [&](const int& jel, valT& cursum) {
+			      const valT du   = cur_u(jel) - old_u(jel);
+			      const valT newl = cur_d2u(jel) + lapfac * cur_du(jel);
+			      const valT dl   = old_d2u(jel) + lapfac * old_du(jel) - newl;
+			      Uat(jel) += du;
+			      d2Uat(jel) += dl;
+			      cursum -= newl;
+			    },cur_d2Uat);
 
     Kokkos::Array<valT,3> cur_dUat;
-    for (int idim = 0; idim < dim; ++idim)
-    {
-      valT cur_g  = cur_dUat[idim];
-      for (int jel = 0; jel < Nelec(0); jel++)
-      {
-	const valT newg     = cur_du(jel) * new_dr(jel,idim);
-	const valT dg       = newg - old_du(jel) * old_dr(jel,idim);
-	dUat(iel,idim)     -= dg;
-	cur_g              += newg;
-      }
-      cur_dUat[idim] = cur_g;
-    }
+    Kokkos::parallel_for(Kokkos::ThreadVectorRange(pol,dim),
+			 [&](const int& idim) {
+			   valT cur_g  = cur_dUat[idim];
+			   for (int jel = 0; jel < Nelec(0); jel++)
+			   {
+			     const valT newg     = cur_du(jel) * new_dr(jel,idim);
+			     const valT dg       = newg - old_du(jel) * old_dr(jel,idim);
+			     dUat(iel,idim)     -= dg;
+			     cur_g              += newg;
+			   }
+			   cur_dUat[idim] = cur_g;
+			 });
 
     LogValue(0) += Uat(iel) - cur_Uat(0);
     Uat(iel)     = cur_Uat(0);
@@ -248,20 +248,23 @@ public:
     const int jelmax = triangle ? iel : Nelec(0);
     constexpr valT czero(0);
     
-    for (int i = 0; i < jelmax; i++) {
-      u(i) = czero;
-      du(i) = czero;
-      d2u(i) = czero;
-    }
+    Kokkos::parallel_for(Kokkos::ThreadVectorRange(pol,jelmax),
+			 [&](const int& i) {
+			   u(i) = czero;
+			   du(i) = czero;
+			   d2u(i) = czero;
+			 });
+
     const int igt = psk.GroupID(iel) * NumGroups(0);
-    for (int jg = 0; jg < NumGroups(0); jg++) {
-      const int istart = psk.first(jg);
-      int iend = jelmax;
-      if (psk.last(jg) < jelmax) {
-	iend = psk.last(jg);
-      }
-      FevaluateVGL(pol, igt+jg, iel, istart, iend, dist, u, du, d2u);
-    }
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(pol, NumGroups(0)),
+			 [&](const int& jg) {
+			   const int istart = psk.first(jg);
+			   int iend = jelmax;
+			   if (psk.last(jg) < jelmax) {
+			     iend = psk.last(jg);
+			   }
+			   FevaluateVGL(pol, igt+jg, iel, istart, iend, dist, u, du, d2u);
+			 });
   }
 
 

@@ -401,6 +401,7 @@ ValueType InvertWithLog(DiracDeterminantKokkos& ddk, linAlgHelperType& lah, Valu
 
 template<class linAlgHelperType, typename ValueType>
 void updateRow(DiracDeterminantKokkos& ddk, linAlgHelperType& lah, int rowchanged, ValueType c_ratio_in) {
+  Kokkos::Profiling::pushRegion("dd-updateRow");
   constexpr ValueType cone(1.0);
   constexpr ValueType czero(0.0);
   ValueType c_ratio = cone / c_ratio_in;
@@ -424,11 +425,14 @@ void updateRow(DiracDeterminantKokkos& ddk, linAlgHelperType& lah, int rowchange
   Kokkos::Profiling::pushRegion("updateRow::ger");
   lah.ger(ddk.psiMinv, ddk.rcopy, ddk.tempRowVec, -cone);
   Kokkos::Profiling::popRegion();
+  Kokkos::Profiling::popRegion();
 }
 
 template<typename addkType, typename vectorType, typename resVecType>
 void doDiracDeterminantMultiEvaluateLog(addkType& addk, vectorType& wfcv, resVecType& results) {
+  Kokkos::Profiling::pushRegion("dd-MultiEvalLog-Outer");
   doDiracDeterminantMultiEvaluateLog(addk, wfcv, results, typename addkType::memory_space());
+  Kokkos::Profiling::popRegion();
 }
 
 
@@ -441,6 +445,7 @@ void doDiracDeterminantMultiEvaluateLog(addkType& addk, vectorType& wfcv, resVec
   
   //std::cout << "in part 1" << std::endl;
   // 1. copy transpose of psiMsave to psiM for all walkers
+  Kokkos::Profiling::pushRegion("dd-MultiEvalLog-copyallin");
   const int numWalkers = addk.extent(0);
   const int numEls = static_cast<DiracDeterminant*>(wfcv[0])->ddk.psiV.extent(0);
   //std::cout << "  numWalkers = " << numWalkers << ", numEls = " << numEls << std::endl;
@@ -452,7 +457,9 @@ void doDiracDeterminantMultiEvaluateLog(addkType& addk, vectorType& wfcv, resVec
 			 addk(i0).psiM(i1, i2) = addk(i0).psiMsave(i2,i1);
 		       });
   Kokkos::fence();
+  Kokkos::Profiling::popRegion();
 
+  Kokkos::Profiling::pushRegion("dd-MultiEvalLog-invertMatrices");
   //std::cout << "in part 2" << std::endl;
   // 2. invert psiM.  This will loop over the walkers and invert each psiM.  Need to switch to a batched version of this
   // simplest thing would be to assume mkl and then have this be a kokkos parallel_for, inside of which you would call
@@ -462,15 +469,18 @@ void doDiracDeterminantMultiEvaluateLog(addkType& addk, vectorType& wfcv, resVec
     auto toInv = static_cast<DiracDeterminant*>(wfcv[i])->ddk.psiM;
     static_cast<DiracDeterminant*>(wfcv[i])->lah.invertMatrix(toInv);
   }
+  Kokkos::Profiling::popRegion();
 
   //std::cout << "in part 3" << std::endl;
   // 3. copy psiM to psiMinv
+  Kokkos::Profiling::pushRegion("dd-MultiEvalLog-copyback");
   Kokkos::parallel_for("dd-elementWiseCopyAllPsiM",
 		       Kokkos::MDRangePolicy<Kokkos::Rank<3,Kokkos::Iterate::Left> >({0,0,0}, {numWalkers, numEls, numEls}),
 		       KOKKOS_LAMBDA(const int& i0, const int& i1, const int& i2) {
 			 addk(i0).psiMinv(i1, i2) = addk(i0).psiM(i1,i2);
 		       });
   Kokkos::fence();
+  Kokkos::Profiling::popRegion();
 
   for (int i = 0; i < results.size(); i++) {
     results[i] = 0.0;
@@ -490,7 +500,8 @@ void dddMELGPU(addkType& addk, vectorType& wfcv, resVecType& results) {
   using ValueType = DiracDeterminantKokkos::MatType::value_type;
   const int numWalkers = addk.extent(0);
   const int numEls = static_cast<DiracDeterminant*>(wfcv[0])->ddk.psiV.extent(0);
-  
+
+  Kokkos::Profiling::pushRegion("dd-MultiEvalLog-copyallin");  
   // 1. copy transpose of psiMsave to psiM for all walkers and also zero out temp matrices
   Kokkos::parallel_for("dd-elementWiseCopyTransAllPsiM",
 		       Kokkos::MDRangePolicy<Kokkos::Rank<3,Kokkos::Iterate::Left> >({0,0,0}, {numWalkers, numEls, numEls}),
@@ -499,12 +510,13 @@ void dddMELGPU(addkType& addk, vectorType& wfcv, resVecType& results) {
 			 addk(i0).getRiWorkSpace(i1,i2) = 0.0;
 		       });
   Kokkos::fence();
-
+  Kokkos::Profiling::popRegion();
 
    // 2. invert psiM.  This will loop over the walkers and invert each psiM.  Need to switch to a batched version of this
   // simplest thing would be to assume mkl and then have this be a kokkos parallel_for, inside of which you would call
   // mkl_set_num_threads_local before doing the linear algebra calls
 
+  Kokkos::Profiling::pushRegion("dd-MultiEvalLog-makeIdentity");  
   // set up temp spaces ahead of calls
   Kokkos::parallel_for("dd-makeIntoIdentity",
 		       Kokkos::MDRangePolicy<Kokkos::Rank<2,Kokkos::Iterate::Left> >({0,0},{numWalkers,numEls}),
@@ -512,13 +524,17 @@ void dddMELGPU(addkType& addk, vectorType& wfcv, resVecType& results) {
 			 addk(i0).getRiWorkSpace(i1,i1) = 1.0;
 		       });
   Kokkos::fence();
+  Kokkos::Profiling::popRegion();
 
+  Kokkos::Profiling::pushRegion("dd-MultiEvalLog-makestreams");  
   cudaStream_t *streams = (cudaStream_t *) malloc(addk.extent(0)*sizeof(cudaStream_t));
   for (int i = 0; i < numWalkers; i++) {
     cudaStreamCreate(&streams[i]);
-  }
-  
+  }  
   cudaDeviceSynchronize();
+  Kokkos::Profiling::popRegion();
+
+  Kokkos::Profiling::pushRegion("dd-MultiEvalLog-doInverse");  
   // unfortunately, need to access these through the vector anyway, cannot do addk(i).psiM on host!
   for (int i = 0; i < numWalkers; i++) {
     auto& lahref = static_cast<DiracDeterminant*>(wfcv[i])->lah;
@@ -538,11 +554,15 @@ void dddMELGPU(addkType& addk, vectorType& wfcv, resVecType& results) {
   }
   cudaDeviceSynchronize();
   Kokkos::fence();  
+  Kokkos::Profiling::popRegion();
 
+  Kokkos::Profiling::pushRegion("dd-MultiEvalLog-destroystreams");  
   for (int i =0; i < numWalkers; i++) {
     cudaStreamDestroy(streams[i]);
   }
+  Kokkos::Profiling::popRegion();
 
+  Kokkos::Profiling::pushRegion("dd-MultiEvalLog-copyback");  
   // 3. copy getRiWs to psiM and to psiMinv
   Kokkos::parallel_for("dd-elementWiseCopyAllPsiM",
 		       Kokkos::MDRangePolicy<Kokkos::Rank<3,Kokkos::Iterate::Left> >({0,0,0}, {addk.extent(0), addk(0).psiM.extent(0), addk(0).psiM.extent(1)}),
@@ -551,6 +571,7 @@ void dddMELGPU(addkType& addk, vectorType& wfcv, resVecType& results) {
 			 addk(i0).psiMinv(i1, i2) = addk(i0).getRiWorkSpace(i1,i2);
 		       });
   Kokkos::fence();
+  Kokkos::Profiling::popRegion();
 
   for (int i = 0; i < results.size(); i++) {
     results[i] = 0.0;
@@ -714,6 +735,7 @@ template<typename addkType, typename vectorType>
 void doDiracDeterminantMultiAccept(addkType& addk, vectorType& WFC_list, 
 				   Kokkos::View<int*>& isAcceptedMap, int numAccepted,
 				   int iel, const Kokkos::HostSpace& ms) {
+  Kokkos::Profiling::pushRegion("dd-MultiAccept");
   // for every walker, need to do updateRow followed by copyBack
   int numWalkers = numAccepted;
   int numEls = static_cast<DiracDeterminant*>(WFC_list[0])->ddk.psiV.extent(0);
@@ -778,6 +800,7 @@ void doDiracDeterminantMultiAccept(addkType& addk, vectorType& WFC_list,
 			 addk(walkerNum).psiMsave(rowChanged,i1) = addk(walkerNum).psiV(i1);
 		       });
   Kokkos::Profiling::popRegion();
+  Kokkos::Profiling::popRegion();
 }
 
 #ifdef KOKKOS_ENABLE_CUDA
@@ -786,6 +809,7 @@ template<typename addkType, typename vectorType>
 void dddMAGPU(addkType& addk, vectorType& wfcv, 
 	      Kokkos::View<int*>& isAcceptedMap,
 	      int numAccepted, int iel) {
+  Kokkos::Profiling::pushRegion("dd-MultiAccept (GPU)");
   // for every walker, need to do updateRow followed by copyBack
   int numWalkers = numAccepted;
   int numEls = static_cast<DiracDeterminant*>(wfcv[0])->ddk.psiV.extent(0);
@@ -855,6 +879,7 @@ void dddMAGPU(addkType& addk, vectorType& wfcv,
   for (int i =0; i < numWalkers; i++) {
     cudaStreamDestroy(streams[i]);
   }
+  Kokkos::Profiling::popRegion();
 }
 
 template<typename addkType, typename vectorType>
@@ -886,6 +911,7 @@ void doDiracDeterminantMultiAccept(addkType& addk, vectorType& WFC_list, int iel
 
 template<typename addkType, typename vectorType>
 void doDiracDeterminantMultiAccept(addkType& addk, vectorType& WFC_list, int iel, const Kokkos::HostSpace& ms) {
+  Kokkos::Profiling::pushRegion("dd-MultiAccept");
   // for every walker, need to do updateRow followed by copyBack
   int numWalkers = WFC_list.size();
   int numEls = static_cast<DiracDeterminant*>(WFC_list[0])->ddk.psiV.extent(0);
@@ -941,12 +967,14 @@ void doDiracDeterminantMultiAccept(addkType& addk, vectorType& WFC_list, int iel
 			 addk(i0).psiMsave(rowChanged,i1) = addk(i0).psiV(i1);
 		       });
   Kokkos::Profiling::popRegion();
+  Kokkos::Profiling::popRegion();
 }
 
 #ifdef KOKKOS_ENABLE_CUDA
 // this is specialized to when the Views live on the GPU in CudaSpace 
 template<typename addkType, typename vectorType>
 void dddMAGPU(addkType& addk, vectorType& wfcv, int iel) {
+  Kokkos::Profiling::pushRegion("dd-MultiAccept (GPU)");
   // for every walker, need to do updateRow followed by copyBack
   int numWalkers = wfcv.size();
   int numEls = static_cast<DiracDeterminant*>(wfcv[0])->ddk.psiV.extent(0);
@@ -1008,6 +1036,7 @@ void dddMAGPU(addkType& addk, vectorType& wfcv, int iel) {
   for (int i =0; i < numWalkers; i++) {
     cudaStreamDestroy(streams[i]);
   }
+  Kokkos::Profiling::popRegion();
 }
 
 template<typename addkType, typename vectorType>
