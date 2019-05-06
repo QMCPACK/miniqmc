@@ -104,6 +104,7 @@ ParticleSet::~ParticleSet() { clearDistanceTables(); }
 void ParticleSet::pushDataToParticleSetKokkos() {
   const int numElec = TotalNum;
   const int numIons = DistTables[1]->centers();
+  Kokkos::Profiling::pushRegion("initializing views");
 
   psk.ID           = Kokkos::View<int*>("ID", numElec);
   psk.IndirectID   = Kokkos::View<int*>("IndirectID", numElec);
@@ -135,7 +136,9 @@ void ParticleSet::pushDataToParticleSetKokkos() {
   psk.numIonGroups          = Kokkos::View<int[1]>("numIonGroups");
   psk.ionGroupID            = Kokkos::View<int*>("ionGroupID", numIons);
   psk.ionSubPtcl            = Kokkos::View<int*>("ionSubPtcl", DistTables[1]->Origin->SubPtcl.size());
+  Kokkos::Profiling::popRegion();
   
+  Kokkos::Profiling::pushRegion("initializing mirrors");
   auto IDMirror                    = Kokkos::create_mirror_view(psk.ID);
   auto IndirectIDMirror            = Kokkos::create_mirror_view(psk.IndirectID); 
   auto GroupIDMirror               = Kokkos::create_mirror_view(psk.GroupID);
@@ -164,8 +167,9 @@ void ParticleSet::pushDataToParticleSetKokkos() {
   auto numIonGroupsMirror          = Kokkos::create_mirror_view(psk.numIonGroups);
   auto ionGroupIDMirror            = Kokkos::create_mirror_view(psk.ionGroupID);
   auto ionSubPtclMirror            = Kokkos::create_mirror_view(psk.ionSubPtcl);
-
+  Kokkos::Profiling::popRegion();
   
+  Kokkos::Profiling::pushRegion("copying data on host");
   UseBoundBoxMirror(0) = UseBoundBox;
   IsGroupedMirror(0)   = IsGrouped;
   activePtclMirror(0)  = activePtcl;
@@ -251,7 +255,9 @@ void ParticleSet::pushDataToParticleSetKokkos() {
   for (int i = 0; i < DistTables[1]->Origin->SubPtcl.size(); i++) {
     ionSubPtclMirror(i) = DistTables[1]->Origin->SubPtcl[i];
   }
-  
+  Kokkos::Profiling::popRegion();
+
+  Kokkos::Profiling::pushRegion("deep copying to device");  
   Kokkos::deep_copy(psk.ID, IDMirror);
   Kokkos::deep_copy(psk.IndirectID, IndirectIDMirror);
   Kokkos::deep_copy(psk.GroupID, GroupIDMirror);
@@ -280,6 +286,7 @@ void ParticleSet::pushDataToParticleSetKokkos() {
   Kokkos::deep_copy(psk.numIonGroups, numIonGroupsMirror);
   Kokkos::deep_copy(psk.ionGroupID, ionGroupIDMirror);
   Kokkos::deep_copy(psk.ionSubPtcl, ionSubPtclMirror);
+  Kokkos::Profiling::popRegion();
 }
 
   
