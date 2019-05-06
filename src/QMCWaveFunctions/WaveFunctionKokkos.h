@@ -26,14 +26,14 @@ namespace qmcplusplus
       of walkers */
 class WaveFunction;
 
-
+// no reason we couldn't add in some simple additional data like number of electrons
 class WaveFunctionKokkos : public QMCTraits
 {
 public:
   using objType = OneBodyJastrowKokkos<RealType, OHMMS_DIM>;
   using tbjType = TwoBodyJastrowKokkos<RealType, ValueType, OHMMS_DIM>;
 
- public:
+public:
   Kokkos::View<DiracDeterminantKokkos*> upDets;
   Kokkos::View<DiracDeterminantKokkos*> downDets;
   Kokkos::View<objType*> oneBodyJastrows;
@@ -45,8 +45,10 @@ public:
   Kokkos::View<ValueType*> ratios_view;
   Kokkos::View<ValueType*>::HostMirror ratios_view_mirror;
 
- public:
+  int numElectrons;
+  int numIons;
 
+ public:
   WaveFunctionKokkos(const std::vector<WaveFunction*>& WF_list);
 };
 

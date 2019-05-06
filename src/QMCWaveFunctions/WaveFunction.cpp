@@ -418,7 +418,7 @@ void WaveFunction::multi_ratioGrad(const std::vector<WaveFunction*>& WF_list,
 
 void WaveFunction::multi_acceptrestoreMove(const std::vector<WaveFunction*>& WF_list,
 					   WaveFunctionKokkos& wfc,
-					   Kokkos::View<ParticleSet::pskType*>& psk,					     
+					   Kokkos::View<ParticleSet::pskType*>& psk,
 					   Kokkos::View<int*>& isAcceptedMap,
 					   int numAccepted, int iel) const {
   if (numAccepted > 0) {

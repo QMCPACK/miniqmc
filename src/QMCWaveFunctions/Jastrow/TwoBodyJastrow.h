@@ -56,10 +56,12 @@ void doTwoBodyJastrowMultiEvaluateGL(atbjdType atbjd, apsdType apsd, bool fromsc
 		       });
 }
 
+// note.  this is the one that is currently being used
 template<typename atbjdType, typename apsdType>
-  void doTwoBodyJastrowMultiAcceptRestoreMove(atbjdType atbjd, apsdType apsd, 
-					      Kokkos::View<int*>& isAcceptedMap,
-					      int numAccepted, int iat) {
+void doTwoBodyJastrowMultiAcceptRestoreMove(atbjdType atbjd, apsdType apsd, 
+					    Kokkos::View<int*>& isAcceptedMap,
+					    int numAccepted, int iat, int numElectrons,
+					    int numIons) {
   const int numWalkers = numAccepted;
   Kokkos::Profiling::pushRegion("doTwoBodyJastrowMultiAcceptRestoreMove");
   if (numWalkers>16) {
@@ -67,17 +69,46 @@ template<typename atbjdType, typename apsdType>
     BarePolicy pol(numWalkers, 16, 32);
     Kokkos::parallel_for("tbj-acceptRestoreMove-waker-loop", pol,
                          KOKKOS_LAMBDA(BarePolicy::member_type member) {
-      int walkerIdx = member.league_rank();
-		  const int walkerNum = isAcceptedMap(walkerIdx);
-			atbjd(walkerNum).acceptMove(member, apsd(walkerNum), iat);
-		     });
+			   int walkerIdx = member.league_rank();
+			   const int walkerNum = isAcceptedMap(walkerIdx);
+			   atbjd(walkerNum).acceptMove(member, apsd(walkerNum), iat);
+			 });
   } else {
+    int numWalkers = numAccepted;
+    Kokkos::parallel_for("tbj-acceptRestore-first-part",
+			 Kokkos::RangePolicy<>(0,numWalkers*numElectrons),
+			 KOKKOS_LAMBDA(const int& idx) {
+			   const int walkerIdx = idx / numElectrons;
+			   const int walkerNum = isAcceptedMap(walkerIdx);
+			   const int workingElNum = idx % numElectrons;
+			   atbjd(walkerNum).acceptMove_part1(apsd(walkerNum), iat, workingElNum);
+			 });
+    Kokkos::parallel_for("tbj-acceptRestore-second-part",
+			 Kokkos::RangePolicy<>(0,numWalkers*numElectrons),
+			 KOKKOS_LAMBDA(const int& idx) {
+			   const int walkerIdx = idx / numElectrons;
+			   const int walkerNum = isAcceptedMap(walkerIdx);
+			   const int workingElNum = idx % numElectrons;
+			   atbjd(walkerNum).acceptMove_part2(apsd(walkerNum), iat, workingElNum);
+			 });
+    Kokkos::parallel_for("tbj-acceptRestore-third-part",
+			 Kokkos::RangePolicy<>(0,numWalkers),
+			 KOKKOS_LAMBDA(const int& idx) {
+			   const int walkerNum = isAcceptedMap(idx);
+			   atbjd(walkerNum).acceptMove_part3(iat);
+			 });
+			   
+    /*
     for(int i = 0; i<numWalkers; i++) {
+      // this is the entry point for the next issue
+      // I'm finding this annoying as it is requiring UVM to access memory 
+      // that I want to just stay on the GPU
       int walkerNum = isAcceptedMap(i);
       typename atbjdType::value_type thing(atbjd(walkerNum));
       typename apsdType::value_type otherThing(apsd(walkerNum));
       thing.acceptMove(Kokkos::DefaultExecutionSpace(), otherThing, iat);
     }
+    */
   }
   Kokkos::Profiling::popRegion();
 }
@@ -523,6 +554,9 @@ void TwoBodyJastrow<FT>::initializeJastrowKokkos() {
   auto updateModeMirror   = Kokkos::create_mirror_view(jasData.updateMode);
   updateModeMirror(0)     = 3;
   Kokkos::deep_copy(jasData.updateMode, updateModeMirror);
+
+  jasData.temporaryScratch = Kokkos::View<valT[1]>("temporaryScratch");
+  jasData.temporaryScratch = Kokkos::View<valT[OHMMS_DIM]>("temporaryScratchDim");
 
   jasData.cur_Uat         = Kokkos::View<valT[1]>("cur_Uat");
   auto cur_UatMirror      = Kokkos::create_mirror_view(jasData.cur_Uat);
@@ -1113,7 +1147,8 @@ void TwoBodyJastrow<FT>::multi_acceptrestoreMove(const std::vector<WaveFunctionC
 						 WaveFunctionKokkos& wfc,
 						 Kokkos::View<ParticleSet::pskType*> psk,
 						 Kokkos::View<int*>& isAcceptedMap, int numAccepted, int iel) {
-  doTwoBodyJastrowMultiAcceptRestoreMove(wfc.twoBodyJastrows, psk, isAcceptedMap, numAccepted, iel);
+  doTwoBodyJastrowMultiAcceptRestoreMove(wfc.twoBodyJastrows, psk, isAcceptedMap, numAccepted, 
+					 iel, wfc.numElectrons, wfc.numIons);
 }
 
 

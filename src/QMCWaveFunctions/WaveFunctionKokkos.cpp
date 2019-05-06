@@ -35,6 +35,10 @@ WaveFunctionKokkos::WaveFunctionKokkos(const std::vector<WaveFunction*>& WF_list
   // with something like dynamic cast somewhere.  
   const std::vector<WaveFunctionComponent*> oneBodyJastrowVector(extract_jas_list(WF_list, 0)); 
   const std::vector<WaveFunctionComponent*> twoBodyJastrowVector(extract_jas_list(WF_list, 1));
+
+  // set the values of numElectrons and numIons
+  numElectrons = static_cast<J1OrbType*>(oneBodyJastrowVector[0])->Nelec;
+  numIons = static_cast<J1OrbType*>(oneBodyJastrowVector[0])->Nions;
   
   upDets = Kokkos::View<DiracDeterminantKokkos*>("upDets", upDetVector.size());
   downDets = Kokkos::View<DiracDeterminantKokkos*>("downDets", downDetVector.size());

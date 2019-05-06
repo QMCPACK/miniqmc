@@ -16,6 +16,8 @@ public:
   Kokkos::View<int[2]> last; // one past ending index of each species
   Kokkos::View<int[1]> updateMode; // zero for ORB_PBYP_RATIO, one for ORB_PBYP_ALL,
                                    // two for ORB_PBYP_PARTIAL, three for ORB_WALKER
+  Kokkos::View<valT[1]> temporaryScratch; 
+  Kokkos::View<valT[dim]> temporaryScratchDim; 
 
   Kokkos::View<valT[1]> cur_Uat; // temporary
   Kokkos::View<valT*> Uat; // nelec
@@ -97,8 +99,65 @@ public:
     d2Uat(iel) = cur_d2Uat;
   }
 
+  // this does the two calls to computeU3
+  template<typename pskType>
+  KOKKOS_INLINE_FUNCTION
+  void acceptMove_part1(pskType& psk, int iel, int workingElNum) {
+    computeU3(psk, iel, Kokkos::subview(psk.LikeDTDistances, iel, Kokkos::ALL()), 
+	      old_u, old_du, old_d2u, workingElNum);
+    if (updateMode(0) == 0) {
+      computeU3(psk, iel, psk.LikeDTTemp_r, cur_u, cur_du, cur_d2u, workingElNum);
+    }
+    if (workintElNum == 0) {
+      temporaryScratch(0) = 0.0;
+      for (int i = 0; i < dim; i++) {
+	temporaryScratchDim(i) = cur_dUat(i);
+      }
+    }
+  }
+
+  // now everything is set-up from computeU3
+  // this is to be the main part of a reduction
+  template<typename pskType>
+  KOKKOS_INLINE_FUNCTION
+  void acceptMove_part2(pskType& psk, int iel, int workingElNum) {
+    valT lapfac = OHMMS_DIM - RealType(1);
+    const valT du   = cur_u(workingElNum) - old_u(workingElNum);
+    const valT newl = cur_d2u(workingElNum) + lapfac * cur_du(workingElNum);
+    const valT dl   = old_d2u(workingElNum) + lapfac * old_du(workingElNum) - newl;
+    Uat(workingElNum) += du;
+    d2Uat(workingElNum) += dl;
+    // the sum of -newl for all electrons goes into a temporary and then eventually into d2Uat(iel)
+    Kokkos::atomic_add(&temporaryScratch(0),-newl);
+
+    for (int d = 0; d < dim; d++) {
+      const valT newg = cur_du(workingElNum) * psk.LikeDTTemp_dr(workingElNum,d);
+      const valT dg   = newg - old_du(workingElNum) * psk.LikeDTDisplacements(iel,workingElNum,d);
+      Kokkos::atomic_add(&(dUat(iel,d)),-dg);
+      // eventually this is bound for d2Uat(iel,d)
+      Kokkos::atomic_add(&(temporaryScratchDim(d)),newg);
+    }
+  } 
+
+  KOKKOS_INLINE_FUNCTION
+  void acceptMove_part3(int iel) {
+    for (int d = 0; d < dim; d++) {
+      dUat(iel,d) = temporaryScratchDim(d);
+    }
+    LogValue(0) += Uat(iel) = cur_Uat(0);
+    Uat(iel) = cur_Uat(0);
+    d2Uat(iel) = temporaryScratch(0);
+  }
+
+  // so, every thing coming in will get an electron number and a walker number separately
+  // seem s like this should not be too bad for computeU3
+
+  // when passing into this, psk is now on the host via UVM
   template<typename pskType>
   void acceptMove(Kokkos::DefaultExecutionSpace pol, pskType& psk, int iel) {
+
+    // this is bad too.  I'm having to go throuh UVM for stuff like the psk.LikeDTDistances
+    // and also old_u etc.  At least these are just views, so the amount of data transferred is small
     computeU3(pol, psk, iel, Kokkos::subview(psk.LikeDTDistances, iel, Kokkos::ALL()), old_u, old_du, old_d2u);
     //
     if (updateMode(0) == 0)
@@ -107,14 +166,19 @@ public:
     }
 
     valT cur_d2Uat(0);
+    // again. more. UVM
     auto new_dr = psk.LikeDTTemp_dr;
     auto old_dr = Kokkos::subview(psk.LikeDTDisplacements,iel,Kokkos::ALL(), Kokkos::ALL());
     constexpr valT lapfac = OHMMS_DIM - RealType(1);
 
+    // need to do this because we're a member function.  Could probably fix by making bare functions
+    // and passing in the appropriate twoBodyJastrow as well
     auto me = *this;
-    // Number of electrons Reduction
-    auto result = Kokkos::subview(me.d2Uat,iel);
 
+    // Number of electrons Reduction
+    auto result = Kokkos::subview(me.d2Uat,iel); // result is now a view that has a single element
+
+    // very good thing about this is that we are doing a RangePolicy<> so we can get the whole device
     Kokkos::parallel_reduce(Kokkos::RangePolicy<>(pol,0,Nelec(0)),
         KOKKOS_LAMBDA (const int& jel, valT& cursum) {
             const valT du   = me.cur_u(jel) - me.old_u(jel);
@@ -128,20 +192,26 @@ public:
 
     Kokkos::Array<valT,3> cur_dUat;
     for(int idim = 0; idim<dim; idim++) {
-         auto result2 = Kokkos::subview(me.dUat,iel,idim);
-         valT cur_g  = cur_dUat[idim];
-         // Number of Electrons Reduction
-         Kokkos::parallel_reduce(Kokkos::RangePolicy<>(pol,0,Nelec(0)),
-             KOKKOS_LAMBDA (const int& jel, valT& cursum) {
-           const valT newg     = me.cur_du(jel) * new_dr(jel,idim);
-           const valT dg       = newg - me.old_du(jel) * old_dr(jel,idim);
-           Kokkos::atomic_add(&(me.dUat(iel,idim)),-dg);
-           cursum              += newg;
-         },result2);
-         Kokkos::fence();
-         //cur_dUat[idim] = cur_g;
-       }
 
+      // again putting place we reduce into into a 1d subview
+      // also getting another reduction out of the Kokkos::atomic_add
+      // probably better to think about a reduciton into a struct or something like that
+      auto result2 = Kokkos::subview(me.dUat,iel,idim);
+      valT cur_g  = cur_dUat[idim];
+      // Number of Electrons Reduction
+      Kokkos::parallel_reduce(Kokkos::RangePolicy<>(pol,0,Nelec(0)),
+			      KOKKOS_LAMBDA (const int& jel, valT& cursum) {
+				const valT newg     = me.cur_du(jel) * new_dr(jel,idim);
+				const valT dg       = newg - me.old_du(jel) * old_dr(jel,idim);
+				Kokkos::atomic_add(&(me.dUat(iel,idim)),-dg);
+				cursum              += newg;
+			      },result2);
+      Kokkos::fence();
+      //cur_dUat[idim] = cur_g;
+    }
+
+    // degenerate parallel for, just so this will execute on the device,
+    // even if it is slow
     Kokkos::parallel_for(1,KOKKOS_LAMBDA (const int) {
       me.LogValue(0) += me.Uat(iel) - me.cur_Uat(0);
       me.Uat(iel)     = me.cur_Uat(0);
@@ -325,20 +395,39 @@ public:
 			 });
 
     const int igt = psk.GroupID(iel) * NumGroups(0);
-		for(int jg = 0; jg<NumGroups(0); jg++)	 {
-			   const int istart = psk.first(jg);
-			   int iend = jelmax;
-			   if (psk.last(jg) < jelmax) {
-			     iend = psk.last(jg);
-			   }
-			   FevaluateVGL(pol, igt+jg, iel, istart, iend, dist, u, du, d2u);
-			 }
+    for(int jg = 0; jg<NumGroups(0); jg++) {
+      const int istart = psk.first(jg);
+      int iend = jelmax;
+      if (psk.last(jg) < jelmax) {
+	iend = psk.last(jg);
+      }
+      FevaluateVGL(pol, igt+jg, iel, istart, iend, dist, u, du, d2u);
+    }
   }
+  
+  // this is the newest one that is only doing work for a single workingElectron
+  template<typename pskType, typename distViewType>
+  KOKKOS_INLINE_FUNCTION
+  void computeU3(pskType& psk, int iel, distViewType dist,
+		   Kokkos::View<valT*> u, Kokkos::View<valT*> du,
+		   Kokkos::View<valT*> d2u, int workingElNum, bool triangle = false) {
+    const int jelmax = triangle ? iel : Nelec(0);
+    if (workingElNum < jelmax) {
+      u(workingElNum) = valT(0);
+      du(workingElNum) = valT(0);
+      d2u(workingElNum) = valT(0);
+    }
+    const int igt = psk.GroupID(iel) * NumGroups(0);
+    const int workingElGroup = psk.GroupID(workingElNum);
+    const int functorGroupID = igt+workingElGroup;
+    FevaluateVGL(functorGroupID, iel, dist, u, du, d2u, workingElNum);
+  }
+
 
   template<typename pskType, typename distViewType>
   void computeU3(Kokkos::DefaultExecutionSpace& pol, pskType& psk, int iel, distViewType dist,
-     Kokkos::View<valT*> u, Kokkos::View<valT*> du,
-     Kokkos::View<valT*> d2u, bool triangle = false) {
+		 Kokkos::View<valT*> u, Kokkos::View<valT*> du,
+		 Kokkos::View<valT*> d2u, bool triangle = false) {
     const int jelmax = triangle ? iel : Nelec(0);
     constexpr valT czero(0);
 
@@ -351,13 +440,13 @@ public:
 
     const int igt = psk.GroupID(iel) * NumGroups(0);
     for(int jg = 0; jg<NumGroups(0); jg++)   {
-         const int istart = psk.first(jg);
-         int iend = jelmax;
-         if (psk.last(jg) < jelmax) {
-           iend = psk.last(jg);
-         }
-         FevaluateVGL(pol, igt+jg, iel, istart, iend, dist, u, du, d2u);
-       }
+      const int istart = psk.first(jg);
+      int iend = jelmax;
+      if (psk.last(jg) < jelmax) {
+	iend = psk.last(jg);
+      }
+      FevaluateVGL(pol, igt+jg, iel, istart, iend, dist, u, du, d2u);
+    }
   }
 
 
@@ -454,7 +543,49 @@ public:
 			    },d);
     return d;
   }
-   
+  
+  template<typename distViewType>
+  KOKKOS_INLINE_FUNCTION
+  void FevaluateVGL(int gid, int iel, distViewType& dist, Kokkos::View<valT*>& u,
+		    Kokkos::View<valT*>& du, Kokkos::View<valT*> d2u, int workingElNum) {
+
+    if (dist(workingElNum) < cutoff_radius(gid) && workingElNum != iel) {
+      const RealType dSquareDeltaRinv = DeltaRInv(gid) * DeltaRInv(gid);
+      const RealType cOne(1);
+      const RealType r = dist(workingElNum) * DeltaRInv(gid);
+      const RealType rinv = cOne / dist(workingElNum);
+      const int iGather = (int) r;
+      
+      const RealType t = r - RealType(iGather);
+      const RealType tp0 = t*t*t;
+      const RealType tp1 = t*t;
+      const RealType tp2 = t;
+      
+      const RealType sCoef0 = SplineCoefs(gid, iGather+0);
+      const RealType sCoef1 = SplineCoefs(gid, iGather+1);
+      const RealType sCoef2 = SplineCoefs(gid, iGather+2);
+      const RealType sCoef3 = SplineCoefs(gid, iGather+3);
+
+      d2u(workingElnum) = dSquareDeltaRinv *
+	(sCoef0*( d2A( 2)*tp2 + d2A( 3))+
+	 sCoef1*( d2A( 6)*tp2 + d2A( 7))+
+	 sCoef2*( d2A(10)*tp2 + d2A(11))+
+	 sCoef3*( d2A(14)*tp2 + d2A(15)));
+      
+      du(workingElnum) = DeltaRInv(gid) * rinv *
+	(sCoef0*( dA( 1)*tp1 + dA( 2)*tp2 + dA( 3))+
+	 sCoef1*( dA( 5)*tp1 + dA( 6)*tp2 + dA( 7))+
+	 sCoef2*( dA( 9)*tp1 + dA(10)*tp2 + dA(11))+
+	 sCoef3*( dA(13)*tp1 + dA(14)*tp2 + dA(15)));
+      
+      u(workingElnum) = (sCoef0*(A( 0)*tp0 + A( 1)*tp1 + A( 2)*tp2 + A( 3))+
+			 sCoef1*(A( 4)*tp0 + A( 5)*tp1 + A( 6)*tp2 + A( 7))+
+			 sCoef2*(A( 8)*tp0 + A( 9)*tp1 + A(10)*tp2 + A(11))+
+			 sCoef3*(A(12)*tp0 + A(13)*tp1 + A(14)*tp2 + A(15)));
+    }
+  }
+  
+
   template<typename policyType, typename distViewType>
   KOKKOS_INLINE_FUNCTION
   void FevaluateVGL(policyType& pol, int gid, int iel, int start, int end, distViewType dist,
@@ -466,16 +597,16 @@ public:
     int iLimit = end - start;
     if(pol.team_rank()==0) {
     Kokkos::parallel_scan(Kokkos::ThreadVectorRange(pol,iLimit),
-        [&] (const int jel, int& mycount, bool final) {
-      RealType r = dist(jel+start);
-      if (r < cutoff_radius(gid) && start + jel != iel) {
-        if(final) {
-	        DistIndices(mycount) = jel+start;
-	        DistCompressed(mycount) = r;
-        }
-	      mycount++;
-      }
-    });
+			  [&] (const int jel, int& mycount, bool final) {
+			    RealType r = dist(jel+start);
+			    if (r < cutoff_radius(gid) && start + jel != iel) {
+			      if(final) {
+				DistIndices(mycount) = jel+start;
+				DistCompressed(mycount) = r;
+			      }
+			      mycount++;
+			    }
+			  });
     }
     Kokkos::parallel_reduce(Kokkos::TeamVectorRange(pol,iLimit),
         [&] (const int jel, int& mycount) {
