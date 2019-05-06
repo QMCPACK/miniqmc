@@ -228,6 +228,41 @@ public:
     return std::exp(Uat(iel) - cur_Uat(0));
   }
 
+  template<typename pskType>
+  KOKKOS_INLINE_FUNCTION
+  void ratioGrad_part1(pskType& psk, int iel, int workingElNum) {
+    updateMode(0) = 2;
+    computeU3(psk, iel, psk.LikeDTTemp_r, cur_u, cur_du, cur_d2u, workingElNum);
+    if (workingElNum == 0) {
+      cur_Uat(0) = 0.0;
+      for (int i = 0; i < dim; i++) {
+	temporaryScratchDim(i) = 0.0;
+      }
+    }
+  }
+
+  // do reduction for cur_Uat, probably better to use standard reduction
+  // but it is a bookkeping issue.  Maybe look later after timing
+  template<typename pskType>
+  KOKKOS_INLINE_FUNCTION
+  void ratioGrad_part2(pskType& psk, int iel, int workingElNum) {
+    Kokkos::atomic_add(&(cur_Uat(0)), cur_u(workingElNum));
+    for (int i = 0; i < dim; i++) {
+      Kokkos::atomic_add(&(temporaryScratchDim(i)), cur_du(workingElNum) * psk.LikeDTDisplacements(iel, workingElNum, i));
+    }
+  }
+
+  template<typename gradType>
+  KOKKOS_INLINE_FUNCTION
+  valT ratioGrad_part3(int iel, gradType& inG) {
+    valT DiffVal = Uat(iel) - cur_Uat(0);
+    for (int i = 0; i < dim; i++) {
+      inG(i) += temporaryScratchDim(i);
+    }
+    return std::exp(DiffVal);
+  }
+
+
   template<typename policyType, typename pskType, typename gradType>
   KOKKOS_INLINE_FUNCTION
   valT ratioGrad(policyType& pol, pskType& psk, int iel, gradType inG) {
@@ -380,6 +415,18 @@ public:
     return curUat;
   }
 
+  // this is the newest one
+  template<typename pskType, typename distViewType, typename devRatioType>
+  KOKKOS_INLINE_FUNCTION
+  void computeU(pskType& psk, int iel, distViewType dist, int workingElNum, devRatioType& devRatios, int walkerIndex, int knotNum) {
+    const int igt = psk.GroupID(iel) * NumGroups(0);
+    const int workingElGroup = psk.GroupID(workingElNum);
+    const int functorGroupID = igt+workingElGroup;
+    RealType val = FevaluateV(functorGroupID, iel, dist, workingElNum);
+    Kokkos::atomic_add(&(devRatios(walkerIndex, knotNum)), val);
+  }
+
+
   template<typename policyType, typename pskType, typename distViewType>
   KOKKOS_INLINE_FUNCTION
   void computeU3(policyType& pol, pskType& psk, int iel, distViewType dist, 
@@ -510,6 +557,27 @@ public:
        SplineCoefs(gid,i+3)*(A(12)*tp[0] + A(13)*tp[1] + A(14)*tp[2] + A(15)*tp[3]));
   }
 
+
+  template<typename distViewType>
+  KOKKOS_INLINE_FUNCTION
+  RealType FevaluateV(int gid, int iel, distViewType& dist, int workingElNum) {
+    RealType d = 0.0;
+    if (dist(workingElNum) < cutoff_radius(gid) && iel != workingElNum) {
+      const RealType r = dist(workingElNum) * DeltaRInv(gid);
+      const int i = (int)r;
+      const RealType t = r - RealType(i);
+      const RealType tp0 = t*t*t;
+      const RealType tp1 = t*t;
+      const RealType tp2 = t;
+      
+      const RealType d1 = SplineCoefs(gid,i + 0) * (A(0) * tp0 + A(1) * tp1 + A(2) * tp2 + A(3));
+      const RealType d2 = SplineCoefs(gid,i + 1) * (A(4) * tp0 + A(5) * tp1 + A(6) * tp2 + A(7));
+      const RealType d3 = SplineCoefs(gid,i + 2) * (A(8) * tp0 + A(9) * tp1 + A(10) * tp2 + A(11));
+      const RealType d4 = SplineCoefs(gid,i + 3) * (A(12) * tp0 + A(13) * tp1 + A(14) * tp2 + A(15));
+      d = d1+d2+d3+d4;
+    }
+    return d;
+  }
 
   template<typename policyType, typename distViewType>
   KOKKOS_INLINE_FUNCTION

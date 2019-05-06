@@ -135,20 +135,52 @@ template<typename atbjdType, typename apsdType>
 }
 
 
+// note, this is the one I am currently using
 template<typename atbjdType, typename apsdType, typename valT>
 void doTwoBodyJastrowMultiRatioGrad(atbjdType& atbjd, apsdType& apsd, Kokkos::View<int*>& isValidMap,
 				int numValid, int iel, Kokkos::View<valT**> gradNowView,
 				Kokkos::View<valT*> ratiosView) {
   const int numWalkers = numValid;
+  const int numElectrons = atbjd(0).Nelec(0); // note this is bad, relies on UVM, kill it
+  
+  Kokkos::Profiling::pushRegion("tbj-evalRatioGrad");
+  Kokkos::parallel_for("tbj-evalRatioGrad-part1",
+		       Kokkos::RangePolicy<>(0,numWalkers*numElectrons),
+		       KOKKOS_LAMBDA(const int &idx) {
+			 const int walkerIdx = idx / numElectrons;
+			 const int walkerNum = isValidMap(walkerIdx);
+			 const int workingElNum = idx % numElectrons;
+			 atbjd(walkerNum).ratioGrad_part1(apsd(walkerNum), iel, workingElNum);
+		       });
+  Kokkos::parallel_for("tbj-evalRatioGrad-part2",
+		       Kokkos::RangePolicy<>(0,numWalkers*numElectrons),
+		       KOKKOS_LAMBDA(const int &idx) {
+			 const int walkerIdx = idx / numElectrons;
+			 const int walkerNum = isValidMap(walkerIdx);
+			 const int workingElNum = idx % numElectrons;
+			 atbjd(walkerNum).ratioGrad_part2(apsd(walkerNum), iel, workingElNum);
+		       });
+  Kokkos::parallel_for("tbj-evalRatioGrad-part3",
+		       Kokkos::RangePolicy<>(0,numWalkers),
+		       KOKKOS_LAMBDA(const int &idx) {
+			 const int walkerIdx = idx;
+			 const int walkerNum = isValidMap(walkerIdx);
+			 auto gv = Kokkos::subview(gradNowView,walkerIdx,Kokkos::ALL());
+			 ratiosView(walkerIdx) = atbjd(walkerNum).ratioGrad_part3(iel, gv);
+		       });
+			 
+  Kokkos::Profiling::popRegion();
+  /*
   using BarePolicy = Kokkos::TeamPolicy<>;
   BarePolicy pol(numWalkers, 1, 32);
-  Kokkos::parallel_for("obj-evalRatioGrad-walker-loop", pol,
+  Kokkos::parallel_for("tbj-evalRatioGrad-walker-loop", pol,
 		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
 			 int walkerIdx = member.league_rank();
 			 int walkerNum = isValidMap(walkerIdx);
 			 auto gv = Kokkos::subview(gradNowView,walkerIdx,Kokkos::ALL());
 			 ratiosView(walkerIdx) = atbjd(walkerNum).ratioGrad(member, apsd(walkerNum), iel, gv);
 		       });
+  */
 }
 
 template<typename atbjdType, typename apsdType, typename valT>
@@ -189,7 +221,34 @@ void doTwoBodyJastrowMultiEvalRatio(int pairNum, eiListType& eiList, apskType& a
 				    devRatioType& devRatios) {
   int numWalkers = activeWalkerIdx.extent(0);
   int numKnots = likeTempR.extent(1);
+  const int numElectrons = allTwoBodyJastrowData(0).Nelec(0); // note this is bad, relies on UVM, kill it
 
+
+  Kokkos::parallel_for("tbj-multi-ratio", Kokkos::RangePolicy<>(0,numWalkers*numKnots*numElectrons),
+		       KOKKOS_LAMBDA(const int& idx) {
+			 const int walkerIdx = idx / numKnots / numElectrons;
+			 const int knotNum = (idx - walkerIdx * numKnots * numElectrons) / numElectrons;
+			 const int workingElecNum = (idx - walkerIdx * numKnots * numElectrons - knotNum * numElectrons);
+			 const int walkerNum = activeWalkerIdx(walkerIdx);
+			 auto& psk = apsk(walkerNum);
+			 allTwoBodyJastrowData(walkerIdx).updateMode(0) = 0;
+			 int iel = eiList(walkerNum, pairNum, 0);
+
+			 auto singleDists = Kokkos::subview(likeTempR, walkerNum, knotNum, Kokkos::ALL);
+			 allTwoBodyJastrowData(walkerIdx).computeU(psk, iel, singleDists, workingElecNum, devRatios, walkerIdx, knotNum);
+		       });
+  Kokkos::parallel_for("tbj-multi-ratio-cleanup", Kokkos::RangePolicy<>(0,numWalkers*numKnots),
+		       KOKKOS_LAMBDA(const int& idx) {
+			 const int walkerIdx = idx / numKnots;
+			 const int knotNum = idx % numKnots;
+			 const int walkerNum = activeWalkerIdx(walkerIdx);
+			 int iel = eiList(walkerNum, pairNum, 0);
+			 auto val = devRatios(walkerIdx, knotNum);
+			 devRatios(walkerIdx,knotNum) = std::exp(allTwoBodyJastrowData(walkerIdx).Uat(iel) - val);
+		       });
+			 
+
+  /*
   using BarePolicy = Kokkos::TeamPolicy<>;
   BarePolicy pol(numWalkers, Kokkos::AUTO, 32);
   
@@ -210,6 +269,7 @@ void doTwoBodyJastrowMultiEvalRatio(int pairNum, eiListType& eiList, apskType& a
 					      });
 		       });
 
+  */
 }
 
  
@@ -1114,6 +1174,8 @@ void TwoBodyJastrow<FT>::multi_evalRatio(int pairNum, Kokkos::View<int***>& eiLi
 					 Kokkos::View<double***>& unlikeTempR,
 					 Kokkos::View<int*>& activeWalkerIdx,
 					 std::vector<ValueType>& ratios) {
+  Kokkos::Profiling::pushRegion("tbj-multi_eval_ratio");
+  Kokkos::Profiling::pushRegion("tbj-multi_eval_ratio-preamble");
   const int numActiveWalkers = activeWalkerIdx.extent(0);
   const int numKnots = likeTempR.extent(1);
   
@@ -1131,8 +1193,12 @@ void TwoBodyJastrow<FT>::multi_evalRatio(int pairNum, Kokkos::View<int***>& eiLi
   
   Kokkos::View<ValueType**> devRatios("tbjDevRatios", numActiveWalkers, numKnots);
   
+  Kokkos::Profiling::popRegion();
+  Kokkos::Profiling::pushRegion("tbj-multi_eval_ratio-meat");
   doTwoBodyJastrowMultiEvalRatio(pairNum, eiList, apsk, allTwoBodyJastrowData, likeTempR, activeWalkerIdx, devRatios);
-  
+  Kokkos::Profiling::popRegion();  
+
+  Kokkos::Profiling::pushRegion("tbj-multi_eval_ratio-postlude");
   auto devRatiosMirror = Kokkos::create_mirror_view(devRatios);
   Kokkos::deep_copy(devRatiosMirror, devRatios);
   for (int i = 0; i < devRatiosMirror.extent(0); i++) {
@@ -1141,6 +1207,8 @@ void TwoBodyJastrow<FT>::multi_evalRatio(int pairNum, Kokkos::View<int***>& eiLi
       ratios[walkerIndex*numKnots+j] = devRatiosMirror(i,j);
     }
   }
+  Kokkos::Profiling::popRegion();
+  Kokkos::Profiling::popRegion();
 }
 template<typename FT>
 void TwoBodyJastrow<FT>::multi_acceptrestoreMove(const std::vector<WaveFunctionComponent*>& WFC_list,

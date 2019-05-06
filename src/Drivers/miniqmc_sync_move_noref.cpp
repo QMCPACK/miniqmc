@@ -680,8 +680,6 @@ int main(int argc, char** argv)
 					     rOnSphere, bigElPos, bigLikeTempR, bigUnlikeTempR);
 	  Timers[Timer_Value]->start();
 
-	  Kokkos::fence();
-
 	  // actually putting the values calculated by evaluate_vs into tempPsiV
 	  //std::cout << "  About to start multi_evaluate_v" << std::endl;
 	  spo.multi_evaluate_v(bigElPos, tempPsiV, allParticleSetData); // also perhaps hand in result views to store the output
