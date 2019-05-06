@@ -213,6 +213,7 @@ void doTwoBodyJastrowMultiEvalGrad(atbjdType atbjd, int iat, Kokkos::View<valT**
  }
 
 
+// note, this is the one we are using
 template<typename eiListType, typename apskType, typename atbjdType, typename tempRType,
   typename walkerIdType, typename devRatioType>
 void doTwoBodyJastrowMultiEvalRatio(int pairNum, eiListType& eiList, apskType& apsk,
@@ -223,15 +224,17 @@ void doTwoBodyJastrowMultiEvalRatio(int pairNum, eiListType& eiList, apskType& a
   int numKnots = likeTempR.extent(1);
   const int numElectrons = allTwoBodyJastrowData(0).Nelec(0); // note this is bad, relies on UVM, kill it
 
-
   Kokkos::parallel_for("tbj-multi-ratio", Kokkos::RangePolicy<>(0,numWalkers*numKnots*numElectrons),
 		       KOKKOS_LAMBDA(const int& idx) {
-			 const int walkerIdx = idx / numKnots / numElectrons;
-			 const int knotNum = (idx - walkerIdx * numKnots * numElectrons) / numElectrons;
-			 const int workingElecNum = (idx - walkerIdx * numKnots * numElectrons - knotNum * numElectrons);
+			 //const int walkerIdx = idx / numKnots / numElectrons;
+			 //const int knotNum = (idx - walkerIdx * numKnots * numElectrons) / numElectrons;
+			 //const int workingElecNum = (idx - walkerIdx * numKnots * numElectrons - knotNum * numElectrons);
+			 const int workingElecNum = idx / numWalkers / numKnots;
+			 const int knotNum = (idx - workingElecNum * numWalkers * numKnots) / numWalkers;
+			 const int walkerIdx = (idx - workingElecNum * numWalkers * numKnots - knotNum * numWalkers);
+			 
 			 const int walkerNum = activeWalkerIdx(walkerIdx);
 			 auto& psk = apsk(walkerNum);
-			 allTwoBodyJastrowData(walkerIdx).updateMode(0) = 0;
 			 int iel = eiList(walkerNum, pairNum, 0);
 
 			 auto singleDists = Kokkos::subview(likeTempR, walkerNum, knotNum, Kokkos::ALL);
@@ -242,6 +245,9 @@ void doTwoBodyJastrowMultiEvalRatio(int pairNum, eiListType& eiList, apskType& a
 			 const int walkerIdx = idx / numKnots;
 			 const int knotNum = idx % numKnots;
 			 const int walkerNum = activeWalkerIdx(walkerIdx);
+			 if (knotNum == 0) {
+			   allTwoBodyJastrowData(walkerIdx).updateMode(0) = 0;
+			 }
 			 int iel = eiList(walkerNum, pairNum, 0);
 			 auto val = devRatios(walkerIdx, knotNum);
 			 devRatios(walkerIdx,knotNum) = std::exp(allTwoBodyJastrowData(walkerIdx).Uat(iel) - val);
