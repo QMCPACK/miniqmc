@@ -108,10 +108,11 @@ public:
     if (updateMode(0) == 0) {
       computeU3(psk, iel, psk.LikeDTTemp_r, cur_u, cur_du, cur_d2u, workingElNum);
     }
-    if (workintElNum == 0) {
+    if (workingElNum == 0) {
       temporaryScratch(0) = 0.0;
       for (int i = 0; i < dim; i++) {
-	temporaryScratchDim(i) = cur_dUat(i);
+	//temporaryScratchDim(i) = cur_dUat(i);
+	temporaryScratchDim(i) = 0.0;
       }
     }
   }
@@ -566,19 +567,19 @@ public:
       const RealType sCoef2 = SplineCoefs(gid, iGather+2);
       const RealType sCoef3 = SplineCoefs(gid, iGather+3);
 
-      d2u(workingElnum) = dSquareDeltaRinv *
+      d2u(workingElNum) = dSquareDeltaRinv *
 	(sCoef0*( d2A( 2)*tp2 + d2A( 3))+
 	 sCoef1*( d2A( 6)*tp2 + d2A( 7))+
 	 sCoef2*( d2A(10)*tp2 + d2A(11))+
 	 sCoef3*( d2A(14)*tp2 + d2A(15)));
       
-      du(workingElnum) = DeltaRInv(gid) * rinv *
+      du(workingElNum) = DeltaRInv(gid) * rinv *
 	(sCoef0*( dA( 1)*tp1 + dA( 2)*tp2 + dA( 3))+
 	 sCoef1*( dA( 5)*tp1 + dA( 6)*tp2 + dA( 7))+
 	 sCoef2*( dA( 9)*tp1 + dA(10)*tp2 + dA(11))+
 	 sCoef3*( dA(13)*tp1 + dA(14)*tp2 + dA(15)));
       
-      u(workingElnum) = (sCoef0*(A( 0)*tp0 + A( 1)*tp1 + A( 2)*tp2 + A( 3))+
+      u(workingElNum) = (sCoef0*(A( 0)*tp0 + A( 1)*tp1 + A( 2)*tp2 + A( 3))+
 			 sCoef1*(A( 4)*tp0 + A( 5)*tp1 + A( 6)*tp2 + A( 7))+
 			 sCoef2*(A( 8)*tp0 + A( 9)*tp1 + A(10)*tp2 + A(11))+
 			 sCoef3*(A(12)*tp0 + A(13)*tp1 + A(14)*tp2 + A(15)));

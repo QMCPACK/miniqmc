@@ -556,7 +556,7 @@ void TwoBodyJastrow<FT>::initializeJastrowKokkos() {
   Kokkos::deep_copy(jasData.updateMode, updateModeMirror);
 
   jasData.temporaryScratch = Kokkos::View<valT[1]>("temporaryScratch");
-  jasData.temporaryScratch = Kokkos::View<valT[OHMMS_DIM]>("temporaryScratchDim");
+  jasData.temporaryScratchDim = Kokkos::View<valT[OHMMS_DIM]>("temporaryScratchDim");
 
   jasData.cur_Uat         = Kokkos::View<valT[1]>("cur_Uat");
   auto cur_UatMirror      = Kokkos::create_mirror_view(jasData.cur_Uat);
