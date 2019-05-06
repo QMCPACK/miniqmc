@@ -98,6 +98,8 @@ struct einspline_spo : public SPOSet
 	// note, this could be a different order than in the other code
 	myrandom.generate_uniform(&mydata[0], totalNumCoefs);
 	int idx = 0;
+	// this would need to be restored for check_spo, but for now speed things up
+	/*
 	for (int ix = 0; ix < locCoefData.extent(0); ix++) {
 	  for (int iy = 0; iy < locCoefData.extent(1); iy++) {
 	    for (int iz = 0; iz < locCoefData.extent(2); iz++) {
@@ -106,6 +108,18 @@ struct einspline_spo : public SPOSet
 	    }
 	  }
 	}
+	*/
+	for (int iz = 0; iz < locCoefData.extent(2); iz++) {
+	  for (int iy = 0; iy < locCoefData.extent(1); iy++) {
+	    for (int ix = 0; ix < locCoefData.extent(0); ix++) {
+	      locCoefData(ix,iy,iz) = mydata[idx];
+	      idx++;
+	    }
+	  }
+	}
+
+
+
 	spline.pushCoefToDevice(i);
       }
     }

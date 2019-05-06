@@ -218,19 +218,22 @@ void ParticleSet::pushDataToParticleSetKokkos() {
   }
 
 
-  for (int i = 0; i < numElec; i++) {
-    for (int j = 0; j < numElec; j++) {
+  Kokkos::Profiling::pushRegion("copying like distance table");
+  for (int j = 0; j < numElec; j++) {
+    for (int i = 0; i < numElec; i++) {
       LikeDTDistancesMirror(i,j) = DistTables[0]->Distances[i][j];
       for (int d = 0; d < DIM; d++) { 
 	LikeDTDisplacementsMirror(i,j,d) = DistTables[0]->Displacements[i][j][d];
       }
     }
-    LikeDTTemp_rMirror(i) = DistTables[0]->Temp_r[i];
+    LikeDTTemp_rMirror(j) = DistTables[0]->Temp_r[j];
     for (int d = 0; d < DIM; d++) {
-      LikeDTTemp_drMirror(i,d) = DistTables[0]->Temp_dr[i][d];
+      LikeDTTemp_drMirror(j,d) = DistTables[0]->Temp_dr[j][d];
     }
   }
+  Kokkos::Profiling::popRegion();
 
+  Kokkos::Profiling::pushRegion("copying unlike distance table");
   for (int j = 0; j < numIons; j++) {
     for (int i = 0; i < numElec; i++) {
       UnlikeDTDistancesMirror(i,j) = DistTables[1]->Distances[i][j];
@@ -243,6 +246,7 @@ void ParticleSet::pushDataToParticleSetKokkos() {
       UnlikeDTTemp_drMirror(j,d) = DistTables[1]->Temp_dr[j][d];
     }
   }
+  Kokkos::Profiling::popRegion();
 
   for (int i = 0; i < numIons; i++) {
     ionGroupIDMirror(i) = DistTables[1]->Origin->GroupID[i];
