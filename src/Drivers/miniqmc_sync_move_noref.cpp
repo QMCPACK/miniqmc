@@ -691,20 +691,20 @@ int main(int argc, char** argv)
        
 	std::cout << "About to start loop over eiPairs.  There are " << maxSize << " of them" << std::endl;
 	for (int eiPair = 0; eiPair < maxSize; eiPair++) {
-	  std::cout << "working on pair " << eiPair << std::endl;
+	  //std::cout << "working on pair " << eiPair << std::endl;
 	  	  
-	  std::cout << "  About to do updateTempPosAndRs" << std::endl;
+	  //std::cout << "  About to do updateTempPosAndRs" << std::endl;
 	  anon_mover->els.updateTempPosAndRs(eiPair, allParticleSetData, EiLists,
 					     rOnSphere, bigElPos, bigLikeTempR, bigUnlikeTempR);
 	  Timers[Timer_Value]->start();
 
 	  // actually putting the values calculated by evaluate_vs into tempPsiV
-	  std::cout << "  About to start multi_evaluate_v" << std::endl;
+	  //std::cout << "  About to start multi_evaluate_v" << std::endl;
 	  spo.multi_evaluate_v(bigElPos, tempPsiV, allParticleSetData); // also perhaps hand in result views to store the output
 	  
 	  // note, for a given eiPair, all evaluations for a single mover will be for the same electron
 	  // but not all movers will be working on the same electron necessarily
-	  std::cout << "  About to do wavefunction.multi_ratio" << std::endl;
+	  //std::cout << "  About to do wavefunction.multi_ratio" << std::endl;
 
 	  anon_mover->wavefunction.multi_ratio(eiPair, wfKokkos, allParticleSetData,
 					       tempPsiV, bigLikeTempR, bigUnlikeTempR,

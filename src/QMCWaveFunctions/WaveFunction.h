@@ -249,7 +249,6 @@ template<typename apsdType, typename psiVType, typename likeTempRType, typename 
 void WaveFunction::multi_ratio(int pairNum, WaveFunctionKokkos& wfc, apsdType& apsd, psiVType& tempPsiV,
 			       likeTempRType& likeTempRs, unlikeTempRType& unlikeTempRs, eiListType& eiList,
 			       std::vector<valT>& ratios) {
-  timers[Timer_Det]->start();
   int numWalkers = wfc.upDets.extent(0);
   int numKnots = tempPsiV.extent(1);
   std::vector<valT> ratios_det(numWalkers*numKnots, 1);
@@ -259,30 +258,39 @@ void WaveFunction::multi_ratio(int pairNum, WaveFunctionKokkos& wfc, apsdType& a
 
   auto tmpEiList = eiList;
   int numActive = 0;
-  auto tmpWfc = wfc;
+
+  auto upDets = wfc.upDets;
+  auto downDets = wfc.downDets;
+  auto activeDDs = wfc.activeDDs;
+  auto isActive = wfc.isActive;
+  auto activeMap = wfc.activeMap;
+
+  int locNelUp = this->nelup;
+
   Kokkos::parallel_reduce("set-up-worklist", Kokkos::RangePolicy<>(0, numWalkers),
-			  KOKKOS_LAMBDA(const int& i, int &locActive) {
+			  KOKKOS_LAMBDA(const int& i, int &locActive) {			    
 			    const int elNum = tmpEiList(i,pairNum,0);
 			    if (elNum >= 0) {
-			      tmpWfc.isActive(i) = 1;
-			      if (elNum < nelup) {
-				tmpWfc.activeDDs(i) = tmpWfc.upDets(i);
+			      isActive(i) = 1;
+			      if (elNum < locNelUp) {
+				activeDDs(i) = upDets(i);
 			      } else {
-				tmpWfc.activeDDs(i) = tmpWfc.downDets(i);
+				activeDDs(i) = downDets(i);
 			      }
 			      locActive++;
 			    } else {
-			      tmpWfc.isActive(i) = 0;
+			      isActive(i) = 0;
 			    }
 			  }, numActive);
 			   
   if (numActive > 0) {
+    timers[Timer_Det]->start();
     Kokkos::parallel_for("set-up-map", Kokkos::RangePolicy<>(0, 1),
 			 KOKKOS_LAMBDA(const int& i) {
 			   int idx = 0;
-			   for (int j = 0; j < wfc.upDets.extent(0); j++) {
-			     if (wfc.isActive(j) == 1) {
-			       wfc.activeMap(idx) = j;
+			   for (int j = 0; j < upDets.extent(0); j++) {
+			     if (isActive(j) == 1) {
+			       activeMap(idx) = j;
 			       idx++;
 			     }
 			   }
