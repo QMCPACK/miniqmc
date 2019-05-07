@@ -10,7 +10,8 @@ ENDFOREACH(p ${ESTEST})
 
 ADD_LIBRARY(miniwfs ../QMCWaveFunctions/WaveFunction.cpp ../QMCWaveFunctions/SPOSet_builder.cpp ../QMCWaveFunctions/WaveFunctionKokkos.cpp)
 
-SET(DRIVERS miniqmc miniqmc_sync_move miniqmc_sync_move_noref)
+#SET(DRIVERS miniqmc miniqmc_sync_move miniqmc_sync_move_noref)
+SET(DRIVERS miniqmc_sync_move_noref)
 
 FOREACH(p ${DRIVERS})
   ADD_EXECUTABLE( ${p}  ${p}.cpp)

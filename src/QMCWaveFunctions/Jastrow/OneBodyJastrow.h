@@ -181,10 +181,11 @@ void doOneBodyJastrowMultiEvaluateLog(aobjdType aobjd, apsdType apsd, Kokkos::Vi
   Kokkos::Profiling::pushRegion("1BJ-multiEvalLog");
   const int numWalkers = aobjd.extent(0);
   using BarePolicy = Kokkos::TeamPolicy<>;
-  BarePolicy pol(numWalkers, 1, 32);
+  const int numElectrons = aobjd(0).Nelec(0);
+  BarePolicy pol(numWalkers*numElectrons, 1, 32);
   Kokkos::parallel_for("obj-evalLog-waker-loop", pol,
 		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
-			 int walkerNum = member.league_rank(); 
+			 int walkerNum = member.league_rank()/numElectrons; 
 			 values(walkerNum) = aobjd(walkerNum).evaluateLog(member, apsd(walkerNum));
 		       });
   Kokkos::Profiling::popRegion();

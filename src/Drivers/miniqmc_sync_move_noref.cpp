@@ -365,7 +365,6 @@ int main(int argc, char** argv)
     app_summary() << "Using the new implementation for Jastrow, " << endl
 		  << "determinant update, einspline, and distance table" << endl;
     
-    Timers[Timer_Total]->start();
     
     Timers[Timer_Init]->start();
 
@@ -466,6 +465,7 @@ int main(int argc, char** argv)
     Timers[Timer_Init]->stop();
     Kokkos::Profiling::popRegion();
     Kokkos::Profiling::popRegion();
+    Timers[Timer_Total]->start();
     
 
     
@@ -580,12 +580,12 @@ int main(int argc, char** argv)
 	    Kokkos::deep_copy(isAcceptedMap, isAcceptedMapMirror);	    
 	    Kokkos::fence();
 	    //std::cout << "about to do acceptrestoreMove" << std::endl;
-	    //Timers[Timer_Update]->start();
+	    Timers[Timer_Update]->start();
 	    // update WF storage
 	    //anon_mover->wavefunction.multi_acceptrestoreMove(valid_WF_list, valid_P_list, isAccepted, iel);
 	    anon_mover->wavefunction.multi_acceptrestoreMove(WF_list, wfKokkos, allParticleSetData, 
 							     isAcceptedMap, numAccepted, iel);
-	    //Timers[Timer_Update]->stop();
+	    Timers[Timer_Update]->stop();
 	    
 	    Kokkos::fence();
 	    //std::cout << "about to do acceptRejectMoveKokkos" << std::endl;

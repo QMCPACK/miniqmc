@@ -313,36 +313,33 @@ public:
 
     const int numMovers = allParticleSetData_.extent(0);
     const int numKnots = rOnSphere_.extent(1);
-    Kokkos::TeamPolicy<> pol(numMovers, Kokkos::AUTO, 32);
+    Kokkos::TeamPolicy<> pol(numMovers*numKnots, 1, 32);
+
     Kokkos::parallel_for("ps-updateTempPosAndRs", pol,
 			 KOKKOS_LAMBDA(Kokkos::TeamPolicy<>::member_type member) {
-			   const int walkerNum = member.league_rank();
+			   const int walkerNum = member.league_rank() / numKnots;
+			   const int knotNum = member.league_rank() % numKnots;
 			   const int eNum = EiLists_(walkerNum, eiPair_, 0);
 			   const int atNum = EiLists_(walkerNum, eiPair_, 1);
 			   if (eNum > -1) {
-			     Kokkos::parallel_for(Kokkos::TeamThreadRange(member, numKnots),
-						  [=](const int& knotNum) {
-						    // handles bigElPos
-						    for (int dim = 0; dim < 3; dim++) {
-						      bigElPos_(walkerNum, knotNum, dim) = allParticleSetData_(walkerNum).UnlikeDTDistances(eNum,atNum) *
-							rOnSphere_(walkerNum,knotNum,dim) - allParticleSetData_(walkerNum).UnlikeDTDisplacements(eNum,atNum,dim);
-						    }
-						    allParticleSetData_(walkerNum).DTComputeDistances(member, bigElPos(walkerNum,knotNum,0),	   
-												      bigElPos(walkerNum,knotNum,1),	   
-												      bigElPos(walkerNum,knotNum,2),	   
-												      allParticleSetData_(walkerNum).RSoA,			   
-												      bigLikeTempR_, walkerNum, knotNum, 		   
-												      0, bigLikeTempR_.extent(2), eNum);
-
-						    allParticleSetData_(walkerNum).DTComputeDistances(member, bigElPos(walkerNum,knotNum,0),	   
-												      bigElPos(walkerNum,knotNum,1),	   
-												      bigElPos(walkerNum,knotNum,2),	   
-												      allParticleSetData_(walkerNum).originR,			   
-												      bigUnlikeTempR_, walkerNum, knotNum, 		   
-												      0, bigUnlikeTempR_.extent(2), eNum);
-
-						  });
-			   }
+			     for (int dim = 0; dim < 3; dim++) {
+			       bigElPos_(walkerNum, knotNum, dim) = allParticleSetData_(walkerNum).UnlikeDTDistances(eNum,atNum) *
+				 rOnSphere_(walkerNum,knotNum,dim) - allParticleSetData_(walkerNum).UnlikeDTDisplacements(eNum,atNum,dim);
+			     }
+			     allParticleSetData_(walkerNum).DTComputeDistances(member, bigElPos(walkerNum,knotNum,0),	   
+									       bigElPos(walkerNum,knotNum,1),	   
+									       bigElPos(walkerNum,knotNum,2),	   
+									       allParticleSetData_(walkerNum).RSoA,			   
+									       bigLikeTempR_, walkerNum, knotNum, 		   
+									       0, bigLikeTempR_.extent(2), eNum);
+			     
+			     allParticleSetData_(walkerNum).DTComputeDistances(member, bigElPos(walkerNum,knotNum,0),	   
+									       bigElPos(walkerNum,knotNum,1),	   
+									       bigElPos(walkerNum,knotNum,2),	   
+									       allParticleSetData_(walkerNum).originR,			   
+									       bigUnlikeTempR_, walkerNum, knotNum, 		   
+									       0, bigUnlikeTempR_.extent(2), eNum);
+			   }			     
 			 });
   }
 						    

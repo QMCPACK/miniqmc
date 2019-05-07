@@ -109,7 +109,17 @@ public:
     if (fromscratch) {
       recompute(pol, psk);
     }
-    
+    int iel = pol.league_rank()%Nelec(0);
+    LogValue(0) = RealType(0);
+    Kokkos::single(Kokkos::PerTeam(pol),[&]() {
+	Kokkos::atomic_add(&LogValue(0),0.5*Vat(iel));
+	for (int d = 0; d < dim; d++) {
+	  psk.G(iel,d) += Grad(iel,d);
+	}
+	psk.L(iel) -= Lap(iel);
+      });
+  /*
+
     Kokkos::parallel_for(Kokkos::ThreadVectorRange(pol,Nelec(0)),
 			 [&](int& iel) {
 			   for (int d = 0; d < dim; d++) {
@@ -118,24 +128,24 @@ public:
 			   psk.L(iel) -= Lap(iel);
 			   LogValue(0) -= Vat(iel);
 			 });
+  */
   }
 
   // could later expand this to take a policy member and do hierarchical parallelism
   template<typename policyType, typename pskType>
   KOKKOS_INLINE_FUNCTION
   void recompute(policyType& pol, pskType& psk) {
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(pol, Nelec(0)),
-			 [&](int& iel) {
-			   computeU3(pol, psk, Kokkos::subview(psk.UnlikeDTDistances,iel,Kokkos::ALL()));
-			   Vat(iel) = 0.0;
-			   for (int iat = 0; iat < Nions(0); iat++) {
-			     Vat(iel) += U(iat);
-			   }
-			   auto subview1 = Kokkos::subview(psk.UnlikeDTDisplacements,iel,Kokkos::ALL(),Kokkos::ALL());
-			   auto subview2 = Kokkos::subview(Grad, iel, Kokkos::ALL());
-			   
-			   Lap(iel) = accumulateGL(pol, subview1, subview2);
-			 });
+    int iel = pol.league_rank()%Nelec(0);
+
+    computeU3(pol, psk, Kokkos::subview(psk.UnlikeDTDistances,iel,Kokkos::ALL()));
+    Vat(iel) = 0.0;
+    for (int iat = 0; iat < Nions(0); iat++) {
+      Vat(iel) += U(iat);
+    }
+    auto subview1 = Kokkos::subview(psk.UnlikeDTDisplacements,iel,Kokkos::ALL(),Kokkos::ALL());
+    auto subview2 = Kokkos::subview(Grad, iel, Kokkos::ALL());
+    
+    Lap(iel) = accumulateGL(pol, subview1, subview2);
   }
 
   template<typename policyType, typename pskType, typename distViewType>
@@ -168,7 +178,7 @@ public:
 
   template<typename policyType, typename pskType, typename distViewType>
   KOKKOS_INLINE_FUNCTION
-    void computeU3(policyType& pol, pskType& psk, distViewType dist) {
+  void computeU3(policyType& pol, pskType& psk, distViewType dist) {
     if (psk.numIonGroups(0) > 0) {
       for (int iat = 0; iat < Nions(0); iat++) {
 	U(iat) = 0.0;
@@ -177,7 +187,7 @@ public:
       }
       for (int jg = 0; jg < psk.numIonGroups(0); jg++) {
 	FevaluateVGL(pol, jg, psk.ionFirst(jg), psk.ionLast(jg), dist); // note don't need check for self as
-	                                                            // this is always for unlike species
+ 	                                                                // this is always for unlike species
       }
     } else {
       Kokkos::parallel_for(Kokkos::TeamThreadRange(pol, Nions(0)),
