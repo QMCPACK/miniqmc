@@ -24,7 +24,7 @@ namespace qmcplusplus
 {
 
 
-WaveFunctionKokkos::WaveFunctionKokkos(const std::vector<WaveFunction*>& WF_list) {
+WaveFunctionKokkos::WaveFunctionKokkos(const std::vector<WaveFunction*>& WF_list, int numKnots) {
   using J1OrbType = OneBodyJastrow<BsplineFunctor<ValueType>>;
   using J2OrbType = TwoBodyJastrow<BsplineFunctor<ValueType>>;
 
@@ -42,14 +42,19 @@ WaveFunctionKokkos::WaveFunctionKokkos(const std::vector<WaveFunction*>& WF_list
   
   upDets = Kokkos::View<DiracDeterminantKokkos*>("upDets", upDetVector.size());
   downDets = Kokkos::View<DiracDeterminantKokkos*>("downDets", downDetVector.size());
+  activeDDs = Kokkos::View<DiracDeterminantKokkos*>("activeDDs", upDetVector.size());
   oneBodyJastrows = Kokkos::View<objType*>("objs", oneBodyJastrowVector.size());
   twoBodyJastrows = Kokkos::View<tbjType*>("tjbs", twoBodyJastrowVector.size());
-  
+  isActive = Kokkos::View<int*>("wfc::isActive", upDetVector.size());
+  activeMap = Kokkos::View<int*>("wfc::activeMap", upDetVector.size());
+
   // create mirrors
   auto upDetMirror = Kokkos::create_mirror_view(upDets);
   auto downDetMirror = Kokkos::create_mirror_view(downDets);
   auto objMirror = Kokkos::create_mirror_view(oneBodyJastrows);
   auto tbjMirror = Kokkos::create_mirror_view(twoBodyJastrows);
+  activeMapMirror = Kokkos::create_mirror_view(activeMap);
+
   
   // note, here I am assuming that all input vectors have the same size!
   for (int i = 0; i < upDetVector.size(); i++) {
@@ -68,6 +73,8 @@ WaveFunctionKokkos::WaveFunctionKokkos(const std::vector<WaveFunction*>& WF_list
   grad_view_mirror = Kokkos::create_mirror_view(grad_view);
   ratios_view = Kokkos::View<ValueType*>("scratchRatiosView", upDetVector.size());
   ratios_view_mirror = Kokkos::create_mirror_view(ratios_view);
+  knots_ratios_view = Kokkos::View<ValueType**>("scratchKnotsRatiosView", upDetVector.size(), numKnots);
+  knots_ratios_view_mirror = Kokkos::create_mirror_view(knots_ratios_view);
 }
 
 };

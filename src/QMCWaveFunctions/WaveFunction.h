@@ -114,8 +114,13 @@ public:
 		       std::vector<posT>& grad_new) const;
 
 
+  /*
   template<typename apsdType, typename psiVType, typename likeTempRType, typename unlikeTempRType, typename eiListType>
   void multi_ratio(int pairNum, const std::vector<WaveFunction*>& WF_list, apsdType& apsd, psiVType& tempPsiV,
+		   likeTempRType& likeTempRs, unlikeTempRType& unlikeTempRs, eiListType& eiList, std::vector<valT>& ratios); 
+  */
+  template<typename apsdType, typename psiVType, typename likeTempRType, typename unlikeTempRType, typename eiListType>
+  void multi_ratio(int pairNum, WaveFunctionKokkos& wfc, apsdType& apsd, psiVType& tempPsiV,
 		   likeTempRType& likeTempRs, unlikeTempRType& unlikeTempRs, eiListType& eiList, std::vector<valT>& ratios); 
 
   void multi_acceptrestoreMove(const std::vector<WaveFunction*>& WF_list,
@@ -164,6 +169,7 @@ const std::vector<WaveFunctionComponent*> extract_dn_list(const std::vector<Wave
 const std::vector<WaveFunctionComponent*>
     extract_jas_list(const std::vector<WaveFunction*>& WF_list, int jas_id);
 
+/*
 template<typename apsdType, typename psiVType, typename likeTempRType, typename unlikeTempRType, typename eiListType>
 void WaveFunction::multi_ratio(int pairNum, const std::vector<WaveFunction*>& WF_list, apsdType& apsd, psiVType& tempPsiV,
 			       likeTempRType& likeTempRs, unlikeTempRType& unlikeTempRs, eiListType& eiList,
@@ -235,6 +241,72 @@ void WaveFunction::multi_ratio(int pairNum, const std::vector<WaveFunction*>& WF
     for (int idx = 0; idx < numWalkers*numKnots; idx++)
       ratios[idx] *= ratios_jas[idx];
     jastrow_timers[i]->stop();
+  }
+}
+*/
+
+template<typename apsdType, typename psiVType, typename likeTempRType, typename unlikeTempRType, typename eiListType>
+void WaveFunction::multi_ratio(int pairNum, WaveFunctionKokkos& wfc, apsdType& apsd, psiVType& tempPsiV,
+			       likeTempRType& likeTempRs, unlikeTempRType& unlikeTempRs, eiListType& eiList,
+			       std::vector<valT>& ratios) {
+  timers[Timer_Det]->start();
+  int numWalkers = wfc.upDets.extent(0);
+  int numKnots = tempPsiV.extent(1);
+  std::vector<valT> ratios_det(numWalkers*numKnots, 1);
+  for (int iw = 0; iw < numWalkers*numKnots; iw++) {
+    ratios[iw] = valT(1.0);
+  }
+
+  auto tmpEiList = eiList;
+  int numActive = 0;
+  auto tmpWfc = wfc;
+  Kokkos::parallel_reduce("set-up-worklist", Kokkos::RangePolicy<>(0, numWalkers),
+			  KOKKOS_LAMBDA(const int& i, int &locActive) {
+			    const int elNum = tmpEiList(i,pairNum,0);
+			    if (elNum >= 0) {
+			      tmpWfc.isActive(i) = 1;
+			      if (elNum < nelup) {
+				tmpWfc.activeDDs(i) = tmpWfc.upDets(i);
+			      } else {
+				tmpWfc.activeDDs(i) = tmpWfc.downDets(i);
+			      }
+			      locActive++;
+			    } else {
+			      tmpWfc.isActive(i) = 0;
+			    }
+			  }, numActive);
+			   
+  if (numActive > 0) {
+    Kokkos::parallel_for("set-up-map", Kokkos::RangePolicy<>(0, 1),
+			 KOKKOS_LAMBDA(const int& i) {
+			   int idx = 0;
+			   for (int j = 0; j < wfc.upDets.extent(0); j++) {
+			     if (wfc.isActive(j) == 1) {
+			       wfc.activeMap(idx) = j;
+			       idx++;
+			     }
+			   }
+			 });
+    Kokkos::deep_copy(wfc.activeMapMirror, wfc.activeMap);
+
+    doDiracDeterminantMultiEvalRatio(pairNum, wfc, eiList, tempPsiV, ratios_det, numActive);
+
+    for (int i = 0; i < numWalkers*numKnots; i++) {
+      ratios[i] = ratios_det[i];
+    }
+    timers[Timer_Det]->stop();
+
+    for (size_t i = 0; i < Jastrows.size(); i++)
+    {
+      jastrow_timers[i]->start();
+      std::vector<valT> ratios_jas(numWalkers*numKnots, 1);
+      //std::cout << "in multi_ratio, about to call Jastrow[i]->multi_evalRatio for i = " << i << std::endl;
+      Jastrows[i]->multi_evalRatio(pairNum, eiList, wfc, apsd, likeTempRs, unlikeTempRs, ratios_jas, numActive); // handing in both because we don't know what type each is...
+
+      for (int idx = 0; idx < numWalkers*numKnots; idx++)
+	ratios[idx] *= ratios_jas[idx];
+      jastrow_timers[i]->stop();
+    }
   }
 }
 

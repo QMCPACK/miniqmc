@@ -115,28 +115,24 @@ void doOneBodyJastrowMultiEvalGrad(aobjdType aobjd, int iat, Kokkos::View<valT**
  }
 
 template<typename eiListType, typename apskType, typename aobjdType, typename tempRType,
-  typename walkerIdType, typename devRatioType>
+         typename devRatioType, typename activeMapType>
 void doOneBodyJastrowMultiEvalRatio(int pairNum, eiListType& eiList, apskType& apsk,
 				    aobjdType& allOneBodyJastrowData,
-				    tempRType& unlikeTempR, walkerIdType& activeWalkerIdx,
-				    devRatioType& devRatios) {
-  int numWalkers = activeWalkerIdx.extent(0);
+				    tempRType& unlikeTempR, devRatioType& devRatios, 
+				    activeMapType& activeMap, int numActive) {
+  int numWalkers = numActive;
   int numKnots = unlikeTempR.extent(1);
-  const int numElectrons = allOneBodyJastrowData(0).Nions(0); // note this is bad, relies on UVM, kill it
+  const int numIons = allOneBodyJastrowData(0).Nions(0); // note this is bad, relies on UVM, kill it
   
-  Kokkos::parallel_for("obj-multi-ratio", Kokkos::RangePolicy<>(0,numWalkers*numKnots*numElectrons),
+  Kokkos::parallel_for("obj-multi-ratio", Kokkos::RangePolicy<>(0,numWalkers*numKnots*numIons),
 		       KOKKOS_LAMBDA(const int& idx) {
-			 //const int walkerIdx = idx / numKnots / numElectrons;
-			 //const int knotNum = (idx - walkerIdx * numKnots * numElectrons) / numElectrons;
-			 //const int workingElecNum = (idx - walkerIdx * numKnots * numElectrons - knotNum * numElectrons);
 			 const int workingIonNum = idx / numWalkers / numKnots;
 			 const int knotNum = (idx - workingIonNum * numWalkers * numKnots) / numWalkers;
 			 const int walkerIdx = (idx - workingIonNum * numWalkers * numKnots - knotNum * numWalkers);
 			 
-			 const int walkerNum = activeWalkerIdx(walkerIdx);
+			 const int walkerNum = activeMap(walkerIdx);
 			 auto& psk = apsk(walkerNum);
 			 int iel = eiList(walkerNum, pairNum, 0);
-
 			 auto singleDists = Kokkos::subview(unlikeTempR, walkerNum, knotNum, Kokkos::ALL);
 			 allOneBodyJastrowData(walkerIdx).computeU(psk, iel, singleDists, workingIonNum, devRatios, walkerIdx, knotNum);
 		       });
@@ -144,7 +140,7 @@ void doOneBodyJastrowMultiEvalRatio(int pairNum, eiListType& eiList, apskType& a
 		       KOKKOS_LAMBDA(const int& idx) {
 			 const int walkerIdx = idx / numKnots;
 			 const int knotNum = idx % numKnots;
-			 const int walkerNum = activeWalkerIdx(walkerIdx);
+			 const int walkerNum = activeMap(walkerIdx);
 			 if (knotNum == 0) {
 			   allOneBodyJastrowData(walkerIdx).updateMode(0) = 0;
 			 }
@@ -643,39 +639,22 @@ struct OneBodyJastrow : public WaveFunctionComponent
     // be careful on this one, looks like it is being done for side effects.  Should see what needs to go back!!!
   }
 
-  // still need to fix this one...
   virtual void multi_evalRatio(int pairNum, Kokkos::View<int***>& eiList,
-			       const std::vector<WaveFunctionComponent*>& WFC_list,
+			       WaveFunctionKokkos& wfc,
 			       Kokkos::View<ParticleSetKokkos<RealType, ValueType, 3>*>& apsk,
 			       Kokkos::View<double***>& likeTempR,
 			       Kokkos::View<double***>& unlikeTempR,
-			       Kokkos::View<int*>& activeWalkerIdx,
-			       std::vector<ValueType>& ratios) {
-    const int numActiveWalkers = activeWalkerIdx.extent(0);
+			       std::vector<ValueType>& ratios, int numActive) {
     const int numKnots = likeTempR.extent(1);
     
-    auto activeWalkerIdxMirror = Kokkos::create_mirror_view(activeWalkerIdx);
-    Kokkos::deep_copy(activeWalkerIdxMirror, activeWalkerIdx);
-    
-    Kokkos::View<jasDataType*> allOneBodyJastrowData("aobjd", activeWalkerIdx.extent(0));
-    auto aobjdMirror = Kokkos::create_mirror_view(allOneBodyJastrowData);
-    for (int i = 0; i < numActiveWalkers; i++) {
-      //const int walkerIdx = activeWalkerIdxMirror(i);
-      const int walkerIdx = i;
-      aobjdMirror(i) = static_cast<OneBodyJastrow*>(WFC_list[walkerIdx])->jasData;
-    }
-    Kokkos::deep_copy(allOneBodyJastrowData, aobjdMirror);
+    doOneBodyJastrowMultiEvalRatio(pairNum, eiList, apsk, wfc.oneBodyJastrows, unlikeTempR, 
+				   wfc.knots_ratios_view, wfc.activeMap, numActive);
 
-    Kokkos::View<ValueType**> devRatios("objDevRatios", numActiveWalkers, numKnots);
-
-    doOneBodyJastrowMultiEvalRatio(pairNum, eiList, apsk, allOneBodyJastrowData, unlikeTempR, activeWalkerIdx, devRatios);
-
-    auto devRatiosMirror = Kokkos::create_mirror_view(devRatios);
-    Kokkos::deep_copy(devRatiosMirror, devRatios);
-    for (int i = 0; i < devRatiosMirror.extent(0); i++) {
-      const int walkerIndex = activeWalkerIdxMirror(i);
-      for (int j = 0; j < devRatiosMirror.extent(1); j++) {
-	ratios[walkerIndex*numKnots+j] = devRatiosMirror(i,j);
+    Kokkos::deep_copy(wfc.knots_ratios_view_mirror, wfc.knots_ratios_view);
+    for (int i = 0; i < numActive; i++) {
+      const int walkerNum = wfc.activeMapMirror(i);
+      for (int j = 0; j < wfc.knots_ratios_view_mirror.extent(1); j++) {
+	ratios[walkerNum*numKnots+j] = wfc.knots_ratios_view_mirror(i,j);
       }
     }
   }

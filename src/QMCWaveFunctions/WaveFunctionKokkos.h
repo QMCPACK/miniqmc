@@ -36,6 +36,7 @@ public:
 public:
   Kokkos::View<DiracDeterminantKokkos*> upDets;
   Kokkos::View<DiracDeterminantKokkos*> downDets;
+  Kokkos::View<DiracDeterminantKokkos*> activeDDs;
   Kokkos::View<objType*> oneBodyJastrows;
   Kokkos::View<tbjType*> twoBodyJastrows;
 
@@ -44,12 +45,18 @@ public:
   Kokkos::View<ValueType**>::HostMirror grad_view_mirror;
   Kokkos::View<ValueType*> ratios_view;
   Kokkos::View<ValueType*>::HostMirror ratios_view_mirror;
+  Kokkos::View<ValueType**> knots_ratios_view;
+  Kokkos::View<ValueType**>::HostMirror knots_ratios_view_mirror;
+
+  Kokkos::View<int*> isActive;
+  Kokkos::View<int*> activeMap;
+  Kokkos::View<int*>::HostMirror activeMapMirror;
 
   int numElectrons;
   int numIons;
 
  public:
-  WaveFunctionKokkos(const std::vector<WaveFunction*>& WF_list);
+  WaveFunctionKokkos(const std::vector<WaveFunction*>& WF_list, int numKnots);
 };
 
 }; // namespace

@@ -405,7 +405,7 @@ int main(int argc, char** argv)
     Kokkos::deep_copy(allParticleSetData, apsdMirror);
 
     std::vector<WaveFunction*> WF_list(extract_wf_list(mover_list));
-    WaveFunctionKokkos wfKokkos(WF_list);
+    WaveFunctionKokkos wfKokkos(WF_list, nknots);
 
     Kokkos::View<RealType*[3]> dr("dr", nmovers);
     auto drMirror = Kokkos::create_mirror_view(dr);
@@ -442,8 +442,6 @@ int main(int argc, char** argv)
     Kokkos::deep_copy(allHess, allHessMirror);
 
     // stuff for the nlpp
-    Kokkos::View<int*> EiPairs("activeEiPairs", nmovers);
-    auto EiPairsMirror = Kokkos::create_mirror_view(EiPairs);
     Kokkos::View<double**[3]> rOnSphere("rOnSphere", nmovers, nknots);
     auto rOnSphereMirror = Kokkos::create_mirror_view(rOnSphere);
     // need to make a place to store the new temp_r (one per knot, per walker)
@@ -609,34 +607,52 @@ int main(int argc, char** argv)
 	Timers[Timer_ECP]->start();
 	
 	double locRmax = Rmax;
-	Kokkos::TeamPolicy<> pol(nmovers, 1, 32);
-	Kokkos::parallel_for("FindNumEiPairs", pol,
-			     KOKKOS_LAMBDA(Kokkos::TeamPolicy<>::member_type member) {
-			       int walkerNum = member.league_rank();
-			       int locSum = 0;
-			       Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(member, allParticleSetData(walkerNum).R.extent(0)),
-						       [=](const int& elNum, int& pairSum) {
-							 for (int atnum = 0; atnum < allParticleSetData(walkerNum).UnlikeDTDistances.extent(1); atnum++) {
-							   if (allParticleSetData(walkerNum).UnlikeDTDistances(elNum, atnum) < locRmax) {
-							     pairSum++;
-							   }
-							 }
-						       }, locSum);
-			       Kokkos::single( Kokkos::PerTeam(member), [=]() {
-				   EiPairs(walkerNum) = locSum;
-				 });
-			     });
-	Kokkos::deep_copy(EiPairsMirror, EiPairs);
-	int maxSize = 0;
-	for (int i = 0; i < EiPairsMirror.extent(0); i++) {
-	  if (EiPairsMirror(i) > maxSize) {
-	    maxSize = EiPairsMirror(i);
+	vector<int> eiPairs(nmovers, 0);
+	for (int walkerNum = 0; walkerNum < nmovers; walkerNum++) {
+	  Kokkos::parallel_reduce("FindNumEiPairs", Kokkos::RangePolicy<>(0,nels*nions),
+				  KOKKOS_LAMBDA(const int& idx, int& pairSum) {
+				    const int elNum = idx / nions;
+				    const int ionNum = idx % nions;
+				    if (allParticleSetData(walkerNum).UnlikeDTDistances(elNum, ionNum) < locRmax) {
+				      pairSum++;
+				    }
+				  }, eiPairs[walkerNum]);
+	}
+
+	int maxSize = eiPairs[0];
+	for (int i = 1; i < eiPairs.size(); i++) {
+	  if (eiPairs[i] > maxSize) {
+	    maxSize = eiPairs[i];
 	  }
 	}
 	//std::cout << "  finished setting up activeEiPairs" << std::endl;
 	
 	//std::cout << "About to set up EiLists" << std::endl;
 	Kokkos::View<int***> EiLists("EiLists", nmovers, maxSize, 2);
+	Kokkos::parallel_for("initializeEiLists",Kokkos::RangePolicy<>(0,nmovers*maxSize),
+			     KOKKOS_LAMBDA(const int& i) {
+			       const int mNum = i / maxSize;
+			       const int pNum = i % maxSize;
+			       EiLists(mNum,pNum,0) = -1;
+			       EiLists(mNum,pNum,1) = -1;
+			     });
+	for (int walkerNum = 0; walkerNum < nmovers; walkerNum++) {
+	  Kokkos::parallel_scan("SetupEiLists", Kokkos::RangePolicy<>(0,nels*nions),
+				KOKKOS_LAMBDA(const int& i, int& idx, bool final) {
+				  const int elNum = i / nions;
+				  const int ionNum = i % nions;
+				  if (allParticleSetData(walkerNum).UnlikeDTDistances(elNum, ionNum) < locRmax) {
+				    if (final) {
+				      EiLists(walkerNum,idx,0) = elNum;
+				      EiLists(walkerNum,idx,1) = ionNum;
+				    } else {
+				      idx++;
+				    }
+				  }
+				});
+	}
+
+	/*
 	Kokkos::parallel_for("SetupEiLists", nmovers,
 			     KOKKOS_LAMBDA(const int& walkerNum) {
 			       for (int i = 0; i < maxSize; i++) {
@@ -653,6 +669,7 @@ int main(int argc, char** argv)
 				 }
 			       }
 			     });
+	*/
 	//std::cout << "  finished setting up EiLists" << std::endl;
 	
 	//std::cout << "Setting up rOnSphere" << std::endl;
@@ -674,23 +691,28 @@ int main(int argc, char** argv)
        
 	std::cout << "About to start loop over eiPairs.  There are " << maxSize << " of them" << std::endl;
 	for (int eiPair = 0; eiPair < maxSize; eiPair++) {
+	  std::cout << "working on pair " << eiPair << std::endl;
 	  	  
-	  //std::cout << "  About to do updateTempPosAndRs" << std::endl;
+	  std::cout << "  About to do updateTempPosAndRs" << std::endl;
 	  anon_mover->els.updateTempPosAndRs(eiPair, allParticleSetData, EiLists,
 					     rOnSphere, bigElPos, bigLikeTempR, bigUnlikeTempR);
 	  Timers[Timer_Value]->start();
 
 	  // actually putting the values calculated by evaluate_vs into tempPsiV
-	  //std::cout << "  About to start multi_evaluate_v" << std::endl;
+	  std::cout << "  About to start multi_evaluate_v" << std::endl;
 	  spo.multi_evaluate_v(bigElPos, tempPsiV, allParticleSetData); // also perhaps hand in result views to store the output
 	  
 	  // note, for a given eiPair, all evaluations for a single mover will be for the same electron
 	  // but not all movers will be working on the same electron necessarily
-	  //std::cout << "  About to do wavefunction.multi_ratio" << std::endl;
+	  std::cout << "  About to do wavefunction.multi_ratio" << std::endl;
 
-	  anon_mover->wavefunction.multi_ratio(eiPair, WF_list, allParticleSetData,
+	  anon_mover->wavefunction.multi_ratio(eiPair, wfKokkos, allParticleSetData,
 					       tempPsiV, bigLikeTempR, bigUnlikeTempR,
-					       EiLists, ratios); // see if this is enough
+					       EiLists, ratios);
+
+	  //anon_mover->wavefunction.multi_ratio(eiPair, WF_list, allParticleSetData,
+	  //				       tempPsiV, bigLikeTempR, bigUnlikeTempR,
+	  //					       EiLists, ratios); // see if this is enough
 	  Timers[Timer_Value]->stop();
 	}	    
 	std::cout << std::endl;

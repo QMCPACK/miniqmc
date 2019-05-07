@@ -38,6 +38,7 @@
 #include "QMCWaveFunctions/WaveFunctionComponent.h"
 #include "Numerics/LinAlgKokkos.h"
 #include "QMCWaveFunctions/DeterminantKokkos.h"
+#include "QMCWaveFunctions/WaveFunctionKokkos.h"
 #include "Utilities/RandomGenerator.h"
 
 
@@ -74,9 +75,10 @@ void doDiracDeterminantMultiEvalRatio(addkType& addk, vectorType& wfcv, psiVsTyp
 				      tempResType ratios, Kokkos::View<int*>& isValidMap,
 				      int numValid, int iel);
 
-template<typename addkType, typename awType, typename eiListType, typename psiVType, typename ratiosType>
-void doDiracDeterminantMultiEvalRatio(int pairNum, addkType& addk, awType& activeWalkers, eiListType& eiList, 
-				      psiVType& psiVScratch, ratiosType& ratios);
+// using this one, 
+template<typename eiListType, typename psiVType, typename ratiosType>
+void doDiracDeterminantMultiEvalRatio(int pairNum, WaveFunctionKokkos& wfc, eiListType& eiList, 
+				      psiVType& psiVScratch, ratiosType& ratios, int numActive);
 
 
 template<typename addkType, typename vectorType>
@@ -672,54 +674,36 @@ void doDiracDeterminantMultiEvalRatio(addkType addk, vectorType& wfcv, resVecTyp
 		       });
 }
 
-template<typename addkType, typename awType, typename eiListType, typename psiVType, typename ratiosType>
-void doDiracDeterminantMultiEvalRatio(int pairNum, addkType& addk, awType& activeWalkers, eiListType& eiList, psiVType& psiVScratch, ratiosType& ratios) {
+
+template<typename eiListType, typename psiVType, typename ratiosType>
+void doDiracDeterminantMultiEvalRatio(int pairNum, WaveFunctionKokkos& wfc, eiListType& eiList, 
+				      psiVType& psiVScratch, ratiosType& ratios, int numActive) {
   using ValueType = typename psiVType::value_type;
   const int numKnots = psiVScratch.extent(1);
-  const int numWalkers = activeWalkers.extent(0);
-
-  // currently expecting psiVScratch to have been filled by a previous call to spo.multi_evaluate_v
-  /*
-  constexpr double shift(0.5);
-  auto psiVScratchMirror = Kokkos::create_mirror_view(psiVScratch);
-  for(int iw = 0; iw < numWalkers; iw++) {
-    for (int knot = 0; knot < numKnots; knot++) {
-      for (int el = 0; el < numEls; el++) {
-	psiVScratchMirror(iw,knot,iel) = rng() - shift;
-      }
-    }
-  }
-  Kokkos::deep_copy(psiVScratch, psiVScratchMirror);
-  */
-
-  Kokkos::View<ValueType**> results("ratios", numWalkers, numKnots);
-
-  // note, there should be some scope for caching as psiMinv does not depend on knotNum
+  const int numWalkers = numActive;
+  
   using BarePolicy = Kokkos::TeamPolicy<>;
-  BarePolicy pol(numWalkers, Kokkos::AUTO, 32);
+  BarePolicy pol(numWalkers*numKnots, Kokkos::AUTO, 32);
   Kokkos::parallel_for("dd-evalRatio-general", pol,
- 		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
-			 int walkerNum = activeWalkers(member.league_rank());
-			 int bareIndex = member.league_rank();
-			 int FirstIndexInDD = addk(bareIndex).FirstIndex(0);
-			 int bandIdx = eiList(walkerNum, pairNum, 0) - FirstIndexInDD;
-			 int numElsInDD = addk(bareIndex).psiMinv.extent(0);
-
-			 Kokkos::parallel_for(Kokkos::TeamThreadRange(member, numKnots),
-					      [=] (const int& knotNum) {
-						Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(member, numElsInDD),
-									[=] (const int& i, ValueType& innersum) {
-									  innersum += psiVScratch(walkerNum,knotNum,i+FirstIndexInDD) *
-									    addk(bareIndex).psiMinv(bandIdx,i);
-									}, results(bareIndex, knotNum));
-					      });
+		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
+			 const int walkerIdx = member.league_rank() / numKnots;
+			 const int knotNum = member.league_rank() % numKnots;
+			 const int walkerNum = wfc.activeMap(walkerIdx);
+			 const int firstIndexInDD = wfc.activeDDs(walkerNum).FirstIndex(0);
+			 const int bandIdx = eiList(walkerNum, pairNum, 0) - firstIndexInDD;
+			 const int numElsInDD = wfc.activeDDs(walkerNum).psiMinv.extent(0);
+			 Kokkos::parallel_reduce(Kokkos::TeamVectorRange(member, numElsInDD),
+						 [=] (const int& i, ValueType& innersum) {
+						   innersum += psiVScratch(walkerNum,knotNum,i+firstIndexInDD) *
+						     wfc.activeDDs(walkerIdx).psiMinv(bandIdx,i);
+						 }, wfc.knots_ratios_view(walkerIdx, knotNum));
 		       });
 
-  auto resultsMirror = Kokkos::create_mirror_view(results);
-  Kokkos::deep_copy(resultsMirror, results);
-  for (int i = 0; i < resultsMirror.extent(0); i++) {
-    for (int j = 0; j < resultsMirror.extent(1); j++) {
-      ratios[i*numKnots+j] = resultsMirror(i,j);
+  Kokkos::deep_copy(wfc.knots_ratios_view_mirror, wfc.knots_ratios_view);
+  for (int i = 0; i < numWalkers; i++) {
+    const int walkerNum = wfc.activeMapMirror(i);
+    for (int j = 0; j < wfc.knots_ratios_view_mirror.extent(1); j++) {
+      ratios[walkerNum*numKnots+j] = wfc.knots_ratios_view_mirror(i,j);
     }
   }
 }
