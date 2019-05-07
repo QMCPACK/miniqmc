@@ -157,6 +157,15 @@ public:
     return curVat;
   }
 
+  // this is the newest one
+  template<typename pskType, typename distViewType, typename devRatioType>
+  KOKKOS_INLINE_FUNCTION
+  void computeU(pskType& psk, int iel, distViewType dist, int workingIonNum, devRatioType& devRatios, int walkerIndex, int knotNum) {
+    const int functorGroupID = psk.ionGroupID(workingIonNum);
+    RealType val = FevaluateV(functorGroupID, iel, dist, workingIonNum);
+    Kokkos::atomic_add(&(devRatios(walkerIndex, knotNum)), val);
+  }
+
   template<typename policyType, typename pskType, typename distViewType>
   KOKKOS_INLINE_FUNCTION
     void computeU3(policyType& pol, pskType& psk, distViewType dist) {
@@ -238,6 +247,27 @@ public:
        SplineCoefs(gid,i+3)*(A(12)*tp[0] + A(13)*tp[1] + A(14)*tp[2] + A(15)*tp[3]));
   }
 
+  template<typename distViewType>
+  KOKKOS_INLINE_FUNCTION
+  RealType FevaluateV(int gid, int iel, distViewType& dist, int workingIonNum) {
+    RealType d = 0.0;
+    if (dist(workingIonNum) < cutoff_radius(gid)) {
+      const RealType r = dist(workingIonNum) * DeltaRInv(gid);
+      const int i = (int)r;
+      const RealType t = r - RealType(i);
+      const RealType tp0 = t*t*t;
+      const RealType tp1 = t*t;
+      const RealType tp2 = t;
+      
+      const RealType d1 = SplineCoefs(gid,i + 0) * (A(0) * tp0 + A(1) * tp1 + A(2) * tp2 + A(3));
+      const RealType d2 = SplineCoefs(gid,i + 1) * (A(4) * tp0 + A(5) * tp1 + A(6) * tp2 + A(7));
+      const RealType d3 = SplineCoefs(gid,i + 2) * (A(8) * tp0 + A(9) * tp1 + A(10) * tp2 + A(11));
+      const RealType d4 = SplineCoefs(gid,i + 3) * (A(12) * tp0 + A(13) * tp1 + A(14) * tp2 + A(15));
+      d = d1+d2+d3+d4;
+    }
+    return d;
+  }
+
   template<typename policyType, typename distViewType>
   KOKKOS_INLINE_FUNCTION
   RealType FevaluateV(policyType& pol, int gid, int start, int end, distViewType dist) {
@@ -274,6 +304,7 @@ public:
   }
     
   
+
   // update U, dU and d2U for all atoms in a group starting at start and going to end
   template<typename policyType, typename distViewType>
   KOKKOS_INLINE_FUNCTION

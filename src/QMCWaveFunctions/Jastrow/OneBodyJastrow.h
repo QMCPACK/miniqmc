@@ -122,6 +122,40 @@ void doOneBodyJastrowMultiEvalRatio(int pairNum, eiListType& eiList, apskType& a
 				    devRatioType& devRatios) {
   int numWalkers = activeWalkerIdx.extent(0);
   int numKnots = unlikeTempR.extent(1);
+  const int numElectrons = allOneBodyJastrowData(0).Nions(0); // note this is bad, relies on UVM, kill it
+  
+  Kokkos::parallel_for("obj-multi-ratio", Kokkos::RangePolicy<>(0,numWalkers*numKnots*numElectrons),
+		       KOKKOS_LAMBDA(const int& idx) {
+			 //const int walkerIdx = idx / numKnots / numElectrons;
+			 //const int knotNum = (idx - walkerIdx * numKnots * numElectrons) / numElectrons;
+			 //const int workingElecNum = (idx - walkerIdx * numKnots * numElectrons - knotNum * numElectrons);
+			 const int workingIonNum = idx / numWalkers / numKnots;
+			 const int knotNum = (idx - workingIonNum * numWalkers * numKnots) / numWalkers;
+			 const int walkerIdx = (idx - workingIonNum * numWalkers * numKnots - knotNum * numWalkers);
+			 
+			 const int walkerNum = activeWalkerIdx(walkerIdx);
+			 auto& psk = apsk(walkerNum);
+			 int iel = eiList(walkerNum, pairNum, 0);
+
+			 auto singleDists = Kokkos::subview(unlikeTempR, walkerNum, knotNum, Kokkos::ALL);
+			 allOneBodyJastrowData(walkerIdx).computeU(psk, iel, singleDists, workingIonNum, devRatios, walkerIdx, knotNum);
+		       });
+  Kokkos::parallel_for("obj-multi-ratio-cleanup", Kokkos::RangePolicy<>(0,numWalkers*numKnots),
+		       KOKKOS_LAMBDA(const int& idx) {
+			 const int walkerIdx = idx / numKnots;
+			 const int knotNum = idx % numKnots;
+			 const int walkerNum = activeWalkerIdx(walkerIdx);
+			 if (knotNum == 0) {
+			   allOneBodyJastrowData(walkerIdx).updateMode(0) = 0;
+			 }
+			 int iel = eiList(walkerNum, pairNum, 0);
+			 auto val = devRatios(walkerIdx, knotNum);
+			 devRatios(walkerIdx,knotNum) = std::exp(allOneBodyJastrowData(walkerIdx).Vat(iel) - val);
+		       });
+
+
+
+  /*
   using BarePolicy = Kokkos::TeamPolicy<>;
   BarePolicy pol(numWalkers, Kokkos::AUTO, 32);
   
@@ -143,7 +177,7 @@ void doOneBodyJastrowMultiEvalRatio(int pairNum, eiListType& eiList, apskType& a
 						devRatios(walkerIndex, numKnots) = std::exp(allOneBodyJastrowData(walkerIndex).Vat(iat) - val);
 					      });
 		       });
-
+  */
 }
  
 template<typename aobjdType, typename apsdType, typename valT>
