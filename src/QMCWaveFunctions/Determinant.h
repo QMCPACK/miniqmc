@@ -529,10 +529,23 @@ void dddMELGPU(addkType& addk, vectorType& wfcv, resVecType& results) {
   Kokkos::Profiling::popRegion();
 
   Kokkos::Profiling::pushRegion("dd-MultiEvalLog-makestreams");  
-  cudaStream_t *streams = (cudaStream_t *) malloc(addk.extent(0)*sizeof(cudaStream_t));
-  for (int i = 0; i < numWalkers; i++) {
-    cudaStreamCreate(&streams[i]);
-  }  
+  
+  static std::vector<cudaStream_t> streams;
+  static int numAllocatedStreams = 0;
+  if (numAllocatedStreams < addk.extent(0)) {
+    for (int i = numAllocatedStreams; i < addk.extent(0); i++) {
+      cudaStream_t stream;
+      cudaStreamCreate(&stream);
+      streams.push_back(stream);
+    }
+    numAllocatedStreams = addk.extent(0);
+  }
+
+
+  //cudaStream_t *streams = (cudaStream_t *) malloc(addk.extent(0)*sizeof(cudaStream_t));
+  //for (int i = 0; i < numWalkers; i++) {
+  //  cudaStreamCreate(&streams[i]);
+  //}  
   cudaDeviceSynchronize();
   Kokkos::Profiling::popRegion();
 
@@ -559,9 +572,9 @@ void dddMELGPU(addkType& addk, vectorType& wfcv, resVecType& results) {
   Kokkos::Profiling::popRegion();
 
   Kokkos::Profiling::pushRegion("dd-MultiEvalLog-destroystreams");  
-  for (int i =0; i < numWalkers; i++) {
-    cudaStreamDestroy(streams[i]);
-  }
+  //for (int i =0; i < numWalkers; i++) {
+  //  cudaStreamDestroy(streams[i]);
+  // }
   Kokkos::Profiling::popRegion();
 
   Kokkos::Profiling::pushRegion("dd-MultiEvalLog-copyback");  
@@ -981,10 +994,22 @@ void dddMAGPU(addkType& addk, vectorType& wfcv, int iel) {
   constexpr ValueType cone(1.0);
   constexpr ValueType czero(0.0);
 
-  cudaStream_t *streams = (cudaStream_t *) malloc(addk.extent(0)*sizeof(cudaStream_t));
-  for (int i = 0; i < numWalkers; i++) {
-    cudaStreamCreate(&streams[i]);
+  static std::vector<cudaStream_t> streams;
+  static int numAllocatedStreams = 0;
+  if (numAllocatedStreams < addk.extent(0)) {
+    for (int i = numAllocatedStreams; i < addk.extent(0); i++) {
+      cudaStream_t stream;
+      cudaStreamCreate(&stream);
+      streams.push_back(stream);
+    }
+    numAllocatedStreams = addk.extent(0);
   }
+
+
+  //cudaStream_t *streams = (cudaStream_t *) malloc(addk.extent(0)*sizeof(cudaStream_t));
+  //for (int i = 0; i < numWalkers; i++) {
+  //  cudaStreamCreate(&streams[i]);
+  //}
 
   // 1. gemvTrans
   Kokkos::Profiling::pushRegion("updateRow::gemvTrans");
@@ -1031,9 +1056,9 @@ void dddMAGPU(addkType& addk, vectorType& wfcv, int iel) {
   }
   cudaDeviceSynchronize();
   Kokkos::Profiling::popRegion();
-  for (int i =0; i < numWalkers; i++) {
-    cudaStreamDestroy(streams[i]);
-  }
+  //for (int i =0; i < numWalkers; i++) {
+  //  cudaStreamDestroy(streams[i]);
+  //}
   Kokkos::Profiling::popRegion();
 }
 
