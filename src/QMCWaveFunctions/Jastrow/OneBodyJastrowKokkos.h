@@ -117,7 +117,7 @@ public:
     Kokkos::atomic_add(&(curLap(0)), d2U(workingIonNum) + lapfac * dU(workingIonNum));
     Kokkos::atomic_add(&(curAt(0)), U(workingIonNum));
     for (int i = 0; i < dim; i++) {
-      Kokkos::atomic_add(&(temporaryScratchDim(i)), dU(workingIonNum) * psk.UnlikeDTTemp_dr(workingIonNum,dim));
+      Kokkos::atomic_add(&(temporaryScratchDim(i)), dU(workingIonNum) * psk.UnlikeDTTemp_dr(workingIonNum,i));
     }
   }
 
@@ -280,32 +280,33 @@ public:
       U(iat) = 0.0;
       dU(iat) = 0.0;
       d2U(iat) = 0.0;
+    } else {
+      r *= DeltaRInv(gid);
+      const int i = (int)r;
+      const RealType t = r - RealType(i); 
+      
+      RealType tp[4];
+      tp[0] = t * t * t;
+      tp[1] = t * t;
+      tp[2] = t;
+      tp[3] = 1.0;
+      
+      d2U(iat) = DeltaRInv(gid) * DeltaRInv(gid) *
+	(SplineCoefs(gid,i+0)*(d2A( 0)*tp[0] + d2A( 1)*tp[1] + d2A( 2)*tp[2] + d2A( 3)*tp[3])+
+	 SplineCoefs(gid,i+1)*(d2A( 4)*tp[0] + d2A( 5)*tp[1] + d2A( 6)*tp[2] + d2A( 7)*tp[3])+
+	 SplineCoefs(gid,i+2)*(d2A( 8)*tp[0] + d2A( 9)*tp[1] + d2A(10)*tp[2] + d2A(11)*tp[3])+
+	 SplineCoefs(gid,i+3)*(d2A(12)*tp[0] + d2A(13)*tp[1] + d2A(14)*tp[2] + d2A(15)*tp[3]));
+      dU(iat) = DeltaRInv(gid) *
+	(SplineCoefs(gid,i+0)*(dA( 0)*tp[0] + dA( 1)*tp[1] + dA( 2)*tp[2] + dA( 3)*tp[3])+
+	 SplineCoefs(gid,i+1)*(dA( 4)*tp[0] + dA( 5)*tp[1] + dA( 6)*tp[2] + dA( 7)*tp[3])+
+	 SplineCoefs(gid,i+2)*(dA( 8)*tp[0] + dA( 9)*tp[1] + dA(10)*tp[2] + dA(11)*tp[3])+
+	 SplineCoefs(gid,i+3)*(dA(12)*tp[0] + dA(13)*tp[1] + dA(14)*tp[2] + dA(15)*tp[3]));
+      U(iat) =
+	(SplineCoefs(gid,i+0)*(A( 0)*tp[0] + A( 1)*tp[1] + A( 2)*tp[2] + A( 3)*tp[3])+
+	 SplineCoefs(gid,i+1)*(A( 4)*tp[0] + A( 5)*tp[1] + A( 6)*tp[2] + A( 7)*tp[3])+
+	 SplineCoefs(gid,i+2)*(A( 8)*tp[0] + A( 9)*tp[1] + A(10)*tp[2] + A(11)*tp[3])+
+	 SplineCoefs(gid,i+3)*(A(12)*tp[0] + A(13)*tp[1] + A(14)*tp[2] + A(15)*tp[3]));
     }
-    r *= DeltaRInv(gid);
-    const int i = (int)r;
-    const RealType t = r - RealType(i); 
-
-    RealType tp[4];
-    tp[0] = t * t * t;
-    tp[1] = t * t;
-    tp[2] = t;
-    tp[3] = 1.0;
-
-    d2U(iat) = DeltaRInv(gid) * DeltaRInv(gid) *
-      (SplineCoefs(gid,i+0)*(d2A( 0)*tp[0] + d2A( 1)*tp[1] + d2A( 2)*tp[2] + d2A( 3)*tp[3])+
-       SplineCoefs(gid,i+1)*(d2A( 4)*tp[0] + d2A( 5)*tp[1] + d2A( 6)*tp[2] + d2A( 7)*tp[3])+
-       SplineCoefs(gid,i+2)*(d2A( 8)*tp[0] + d2A( 9)*tp[1] + d2A(10)*tp[2] + d2A(11)*tp[3])+
-       SplineCoefs(gid,i+3)*(d2A(12)*tp[0] + d2A(13)*tp[1] + d2A(14)*tp[2] + d2A(15)*tp[3]));
-    dU(iat) = DeltaRInv(gid) *
-      (SplineCoefs(gid,i+0)*(dA( 0)*tp[0] + dA( 1)*tp[1] + dA( 2)*tp[2] + dA( 3)*tp[3])+
-       SplineCoefs(gid,i+1)*(dA( 4)*tp[0] + dA( 5)*tp[1] + dA( 6)*tp[2] + dA( 7)*tp[3])+
-       SplineCoefs(gid,i+2)*(dA( 8)*tp[0] + dA( 9)*tp[1] + dA(10)*tp[2] + dA(11)*tp[3])+
-       SplineCoefs(gid,i+3)*(dA(12)*tp[0] + dA(13)*tp[1] + dA(14)*tp[2] + dA(15)*tp[3]));
-    U(iat) =
-      (SplineCoefs(gid,i+0)*(A( 0)*tp[0] + A( 1)*tp[1] + A( 2)*tp[2] + A( 3)*tp[3])+
-       SplineCoefs(gid,i+1)*(A( 4)*tp[0] + A( 5)*tp[1] + A( 6)*tp[2] + A( 7)*tp[3])+
-       SplineCoefs(gid,i+2)*(A( 8)*tp[0] + A( 9)*tp[1] + A(10)*tp[2] + A(11)*tp[3])+
-       SplineCoefs(gid,i+3)*(A(12)*tp[0] + A(13)*tp[1] + A(14)*tp[2] + A(15)*tp[3]));
   }
 
   template<typename distViewType>
