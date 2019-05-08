@@ -554,7 +554,7 @@ struct OneBodyJastrow : public WaveFunctionComponent
     populateCollectiveViews(allOneBodyJastrowData, allParticleSetData, WFC_list, P_list);
     
     // need to make a view to hold all of the output LogValues
-    Kokkos::View<double**> grad_now_view("tempValues", P_list.size(), OHMMS_DIM);
+    Kokkos::View<RealType**> grad_now_view("tempValues", P_list.size(), OHMMS_DIM);
 
     // need to write this function
     doOneBodyJastrowMultiEvalGrad(allOneBodyJastrowData, iat, grad_now_view);
@@ -639,8 +639,8 @@ struct OneBodyJastrow : public WaveFunctionComponent
       //std::cout << "       finished populating collective views" << std::endl;
 
       // need to make a view to hold all of the output LogValues
-      Kokkos::View<double**> grad_new_view("tempValues", P_list.size(), OHMMS_DIM);
-      Kokkos::View<double*> ratios_view("ratios", P_list.size());
+      Kokkos::View<RealType**> grad_new_view("tempValues", P_list.size(), OHMMS_DIM);
+      Kokkos::View<RealType*> ratios_view("ratios", P_list.size());
       
       // need to write this function
       //std::cout << "       starting doOneBJMultiRatioGrad" << std::endl;
@@ -701,8 +701,8 @@ struct OneBodyJastrow : public WaveFunctionComponent
   virtual void multi_evalRatio(int pairNum, Kokkos::View<int***>& eiList,
 			       WaveFunctionKokkos& wfc,
 			       Kokkos::View<ParticleSetKokkos<RealType, ValueType, 3>*>& apsk,
-			       Kokkos::View<double***>& likeTempR,
-			       Kokkos::View<double***>& unlikeTempR,
+			       Kokkos::View<RealType***>& likeTempR,
+			       Kokkos::View<RealType***>& unlikeTempR,
 			       std::vector<ValueType>& ratios, int numActive) {
     const int numKnots = likeTempR.extent(1);
     

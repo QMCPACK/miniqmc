@@ -269,8 +269,8 @@ struct WaveFunctionComponent : public QMCTraits
   virtual void multi_evalRatio(int pairNum, Kokkos::View<int***>& eiList,
 			       WaveFunctionKokkos& wfc,
 			       Kokkos::View<ParticleSetKokkos<RealType, ValueType, 3>*>& apsk,
-			       Kokkos::View<double***>& likeTempR,
-			       Kokkos::View<double***>& unlikeTempR,
+			       Kokkos::View<RealType***>& likeTempR,
+			       Kokkos::View<RealType***>& unlikeTempR,
 			       std::vector<ValueType>& ratios, int numActive) {
     // TODO
   };

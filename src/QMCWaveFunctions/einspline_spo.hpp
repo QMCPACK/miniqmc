@@ -82,8 +82,8 @@ struct einspline_spo : public SPOSet
     nSplines         = num_splines;
     resize();
     std::vector<int> ng{nx, ny, nz};
-    std::vector<double> start(3,0);
-    std::vector<double> end(3,1);
+    std::vector<T> start(3,0);
+    std::vector<T> end(3,1);
 
     spline.initialize(ng, start, end, 0, nSplines);
     RandomGenerator<T> myrandom(11);
@@ -142,19 +142,19 @@ struct einspline_spo : public SPOSet
   }    
 
   template<typename apsdType>
-  inline void multi_evaluate_v(Kokkos::View<double**[3]>& all_pos, Kokkos::View<ValueType***> allPsiV, apsdType& apsd) {
+  inline void multi_evaluate_v(Kokkos::View<T**[3]>& all_pos, Kokkos::View<ValueType***> allPsiV, apsdType& apsd) {
     // need to do to_unit_floor for all positions then pass to spline.multi_evaluate_v
     ScopedTimer local_timer(timer);
     auto& tmpAllPos = all_pos;
     auto& tmpapsd = apsd;
     auto& tmpallPsiV = allPsiV;
-    //Kokkos::View<double**[3]> allPosToUnitFloor("allPosToUnitFloor", all_pos.extent(0),all_pos.extent(1));
+    //Kokkos::View<T**[3]> allPosToUnitFloor("allPosToUnitFloor", all_pos.extent(0),all_pos.extent(1));
     Kokkos::parallel_for("positionsToFloorLoop", 
 			 Kokkos::MDRangePolicy<Kokkos::Rank<2,Kokkos::Iterate::Left> >({0,0}, {tmpAllPos.extent(0), tmpAllPos.extent(1)}),
 			 KOKKOS_LAMBDA(const int& walkerNum, const int& knotNum) {
-			   double tempx;
-			   double tempy;
-			   double tempz;
+			   T tempx;
+			   T tempy;
+			   T tempz;
 
 			   /*
 			   apsd(walkerNum).toUnit_floor(tmpAllPos(walkerNum, knotNum, 0),
@@ -186,7 +186,7 @@ struct einspline_spo : public SPOSet
     Kokkos::deep_copy(allPsi, allPsiMirror);
 
     // do this in soa spirit
-    Kokkos::View<double*[3],Kokkos::LayoutLeft> allPos("allPos", pos_list.size());
+    Kokkos::View<T*[3],Kokkos::LayoutLeft> allPos("allPos", pos_list.size());
     auto allPosMirror = Kokkos::create_mirror_view(allPos);
     for (int i = 0; i < pos_list.size(); i++) {
       auto u = Lattice.toUnit_floor(pos_list[i]);
@@ -219,7 +219,7 @@ struct einspline_spo : public SPOSet
   // if that is not the case, probably need a rethink
 
   
-  inline void multi_evaluate_vgh(Kokkos::View<double*[3],Kokkos::LayoutLeft>& pos_list,
+  inline void multi_evaluate_vgh(Kokkos::View<T*[3],Kokkos::LayoutLeft>& pos_list,
 				 Kokkos::View<vContainer_type*>& allPsi,
 				 Kokkos::View<gContainer_type*>& allGrad,
 				 Kokkos::View<hContainer_type*>& allHess,

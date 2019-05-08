@@ -153,7 +153,7 @@ struct DiracDeterminant : public WaveFunctionComponent
     
     // basically we are generating uniform random number for
     // each entry of psiMsave in the interval [-0.5, 0.5]
-    constexpr double shift(0.5);
+    constexpr RealType shift(0.5);
 
     // change this to match data ordering of DeterminantRef
     // recall that psiMsave has as its fast index the leftmost index
@@ -211,8 +211,8 @@ struct DiracDeterminant : public WaveFunctionComponent
   inline ValueType ratio(ParticleSet& P, int iel)
   {
     const int nels = ddk.psiV.extent(0);
-    constexpr double shift(0.5);
-    //constexpr double czero(0);
+    constexpr RealType shift(0.5);
+    //constexpr RealType czero(0);
 
     auto psiVMirror = Kokkos::create_mirror_view(ddk.psiV);
     for (int j = 0; j < nels; ++j) {
@@ -248,7 +248,7 @@ struct DiracDeterminant : public WaveFunctionComponent
   }
 
   // accessor functions for checking
-  inline double operator()(int i) const {
+  inline RealType operator()(int i) const {
     // not sure what this was for, seems odd to 
     //Kokkos::deep_copy(psiMinv, psiMinv_host);
     int x = i / ddk.psiMinv.extent(0);
@@ -367,9 +367,9 @@ struct DiracDeterminant : public WaveFunctionComponent
   /// initial particle index
   const int FirstIndex;
   /// current ratio
-  double curRatio;
+  RealType curRatio;
   /// log|det|
-  double LogValue;
+  RealType LogValue;
   /// random number generator for testing
   RandomGenerator<RealType> myRandom;
 private:
@@ -653,7 +653,7 @@ void doDiracDeterminantMultiEvalRatio(addkType addk, vectorType& wfcv, resVecTyp
   const int numEls = static_cast<DiracDeterminant*>(wfcv[0])->ddk.psiV.extent(0);
   //std::cout << "      grabbing number of electrons from vector or WaveFunctionComponent* is OK" << std::endl;
 
-  constexpr double shift(0.5);
+  constexpr typename DiracDeterminantKokkos::RealType shift(0.5);
 
   // could do this in parallel, but the random number stream wouldn't be the same.
   // could avoid the data transfer that way.  This is OK, because the real code would

@@ -15,30 +15,30 @@ namespace qmcplusplus
 
 template<typename p, typename valType, typename coefType>
 void doEval_v(p x, p y, p z, valType& vals, coefType& coefs,
-	      Kokkos::View<double[3]>& gridStarts, Kokkos::View<double[3]>& delta_invs,
+	      Kokkos::View<p[3]>& gridStarts, Kokkos::View<p[3]>& delta_invs,
 	      Kokkos::View<p[16]>& A44, int blockSize = 32);
 
 template<typename p, typename multiPosType, typename valType, typename coefType>
 void doMultiEval_v(multiPosType& pos, valType& vals, coefType& coefs,
-		   Kokkos::View<double[3]>& gridStarts, Kokkos::View<double[3]>& delta_invs,
+		   Kokkos::View<p[3]>& gridStarts, Kokkos::View<p[3]>& delta_invs,
 		   Kokkos::View<p[16]>& A44, int blockSize = 32);
 
 template<typename p, typename multiPosType, typename valType, typename coefType>
 void doMultiEval_v2d(multiPosType& pos, valType& vals, coefType& coefs,
-		     Kokkos::View<double[3]>& gridStarts, Kokkos::View<double[3]>& delta_invs,
+		     Kokkos::View<p[3]>& gridStarts, Kokkos::View<p[3]>& delta_invs,
 		     Kokkos::View<p[16]>& A44, int blockSize = 32);
 
 template<typename p, typename valType, typename gradType, typename hessType,typename coefType>
 void doEval_vgh(p x, p y, p z, valType& vals, gradType& grad,
 		hessType& hess, coefType& coefs,
-		Kokkos::View<double[3]>& gridStarts, Kokkos::View<double[3]>& delta_invs,
+		Kokkos::View<p[3]>& gridStarts, Kokkos::View<p[3]>& delta_invs,
 		Kokkos::View<p[16]>& A44, Kokkos::View<p[16]>& dA44,
 		Kokkos::View<p[16]>& d2A44, int blockSize = 32);
 
 template<typename p, typename multiPosType, typename valType, typename gradType, typename hessType,typename coefType>
 void doMultiEval_vgh(multiPosType& pos, valType& vals, gradType& grad, 
 		     hessType& hess, Kokkos::View<int*>& isValidMap, int numValid, coefType& coefs,
-		     Kokkos::View<double[3]>& gridStarts, Kokkos::View<double[3]>& delta_invs,
+		     Kokkos::View<p[3]>& gridStarts, Kokkos::View<p[3]>& delta_invs,
 		     Kokkos::View<p[16]>& A44, Kokkos::View<p[16]>& dA44,
 		     Kokkos::View<p[16]>& d2A44, int blockSize = 32);
 
@@ -50,14 +50,14 @@ struct multi_UBspline_base {
   Kokkos::View<int[d]> right_bc_codes;
   Kokkos::View<p[d]> left_values;
   Kokkos::View<p[d]> right_values;
-  Kokkos::View<double[d]> gridStarts;
-  Kokkos::View<double[d]> gridEnds;
-  Kokkos::View<double[d]> deltas;
-  Kokkos::View<double[d]> delta_invs;
+  Kokkos::View<p[d]> gridStarts;
+  Kokkos::View<p[d]> gridEnds;
+  Kokkos::View<p[d]> deltas;
+  Kokkos::View<p[d]> delta_invs;
 
 protected:
-  void initialize_base(std::vector<double> start_locs,
-		       std::vector<double> end_locs,
+  void initialize_base(std::vector<p> start_locs,
+		       std::vector<p> end_locs,
 		       std::vector<int> num_pts,
 		       int boundary_condition_code) {
     assert(start_locs.size() == d);
@@ -67,10 +67,10 @@ protected:
     right_bc_codes = Kokkos::View<int[d]>("right_bc_codes");
     left_values = Kokkos::View<p[d]>("left_values");
     right_values = Kokkos::View<p[d]>("right_values");
-    gridStarts = Kokkos::View<double[d]>("gridStarts");
-    gridEnds = Kokkos::View<double[d]>("gridEnds");
-    deltas = Kokkos::View<double[d]>("deltas");
-    delta_invs = Kokkos::View<double[d]>("delta_invs");
+    gridStarts = Kokkos::View<p[d]>("gridStarts");
+    gridEnds = Kokkos::View<p[d]>("gridEnds");
+    deltas = Kokkos::View<p[d]>("deltas");
+    delta_invs = Kokkos::View<p[d]>("delta_invs");
     
     auto lbcMirror = Kokkos::create_mirror_view(left_bc_codes);
     auto rbcMirror = Kokkos::create_mirror_view(right_bc_codes);
@@ -93,7 +93,7 @@ protected:
       } else {
 	nx[i] = num_pts[i] + 2;
       }
-      double delta = (end_locs[i] - start_locs[i]) / static_cast<double>(nx[i]-3);
+      p delta = (end_locs[i] - start_locs[i]) / static_cast<p>(nx[i]-3);
       gdMirror(i) = delta;
       gdinvMirror(i) = 1.0 / delta;
     }
@@ -122,8 +122,8 @@ struct multi_UBspline<p, blocksize, 1> : public multi_UBspline_base<p,1> {
   single_coef_t single_coef;
   single_coef_mirror_t single_coef_mirror;
 
-  void initialize(std::vector<int>& dvec, std::vector<double>& start,
-		  std::vector<double>& end, int bcCode, int numSpo) {
+  void initialize(std::vector<int>& dvec, std::vector<p>& start,
+		  std::vector<p>& end, int bcCode, int numSpo) {
     this->initialize_base(start, end, dvec, 0);
     initializeCoefs(dvec, numSpo);
   }
@@ -171,8 +171,8 @@ struct multi_UBspline<p, blocksize, 2> : public multi_UBspline_base<p,2> {
   single_coef_t single_coef;
   single_coef_mirror_t single_coef_mirror;
 
-  void initialize(std::vector<int>& dvec, std::vector<double>& start,
-		  std::vector<double>& end, int bcCode, int numSpo) {
+  void initialize(std::vector<int>& dvec, std::vector<p>& start,
+		  std::vector<p>& end, int bcCode, int numSpo) {
     this->initialize_base(start, end, dvec, 0);
     initializeCoefs(dvec, numSpo);
   }
@@ -225,8 +225,8 @@ struct multi_UBspline<p, blocksize, 3> : public multi_UBspline_base<p,3> {
   Kokkos::View<p[16]> dA44;
   Kokkos::View<p[16]> d2A44;
 
-  void initialize(std::vector<int>& dvec, std::vector<double>& start,
-		  std::vector<double>& end, int bcCode, int numSpo) {
+  void initialize(std::vector<int>& dvec, std::vector<p>& start,
+		  std::vector<p>& end, int bcCode, int numSpo) {
     this->initialize_base(start, end, dvec, 0);
     initializeCoefs(dvec, numSpo);
   }
@@ -367,7 +367,7 @@ KOKKOS_INLINE_FUNCTION void get(T x, T& dx, int& ind, int ng) {
 
 template<typename p, typename valType, typename coefType>
 void doEval_v(p x, p y, p z, valType& vals, coefType& coefs,
-	      Kokkos::View<double[3]>& gridStarts, Kokkos::View<double[3]>& delta_invs,
+	      Kokkos::View<p[3]>& gridStarts, Kokkos::View<p[3]>& delta_invs,
 	      Kokkos::View<p[16]>& A44, int blockSize) {
   int numBlocks = coefs.extent(3) / blockSize;
   if (coefs.extent(3) % blockSize != 0) {
@@ -425,7 +425,7 @@ void doEval_v(p x, p y, p z, valType& vals, coefType& coefs,
 
 template<typename p, typename multiPosType, typename valType, typename coefType>
 void doMultiEval_v2d(multiPosType& pos, valType& vals, coefType& coefs,
-		     Kokkos::View<double[3]>& gridStarts, Kokkos::View<double[3]>& delta_invs,
+		     Kokkos::View<p[3]>& gridStarts, Kokkos::View<p[3]>& delta_invs,
 		     Kokkos::View<p[16]>& A44, int blockSize) {
   int numWalkers = pos.extent(0);
   int numKnots = pos.extent(1);
@@ -490,7 +490,7 @@ void doMultiEval_v2d(multiPosType& pos, valType& vals, coefType& coefs,
  
 template<typename p, typename multiPosType, typename valType, typename coefType>
 void doMultiEval_v(multiPosType& pos, valType& vals, coefType& coefs,
-		   Kokkos::View<double[3]>& gridStarts, Kokkos::View<double[3]>& delta_invs,
+		   Kokkos::View<p[3]>& gridStarts, Kokkos::View<p[3]>& delta_invs,
 		   Kokkos::View<p[16]>& A44, int blockSize) {
   int numWalkers = pos.extent(0);
   int numBlocks = coefs.extent(3) / blockSize;
@@ -552,7 +552,7 @@ void doMultiEval_v(multiPosType& pos, valType& vals, coefType& coefs,
 template<typename p, typename valType, typename gradType, typename hessType, typename coefType>
 void doEval_vgh(p x, p y, p z, valType& vals, gradType& grad,
 		hessType& hess, coefType& coefs,
-		Kokkos::View<double[3]>& gridStarts, Kokkos::View<double[3]>& delta_invs,
+		Kokkos::View<p[3]>& gridStarts, Kokkos::View<p[3]>& delta_invs,
 		Kokkos::View<p[16]>& A44, Kokkos::View<p[16]>& dA44,
 		Kokkos::View<p[16]>& d2A44, int blockSize) {
   int numBlocks = coefs.extent(3) / blockSize;
@@ -668,7 +668,7 @@ void doEval_vgh(p x, p y, p z, valType& vals, gradType& grad,
 template<typename p, typename multiPosType, typename valType, typename gradType, typename hessType,typename coefType>
 void doMultiEval_vgh(multiPosType& pos, valType& vals, gradType& grad,
 		     hessType& hess, Kokkos::View<int*>& isValidMap, int numValid, coefType& coefs,
-		     Kokkos::View<double[3]>& gridStarts, Kokkos::View<double[3]>& delta_invs,
+		     Kokkos::View<p[3]>& gridStarts, Kokkos::View<p[3]>& delta_invs,
 		     Kokkos::View<p[16]>& A44, Kokkos::View<p[16]>& dA44,
 		     Kokkos::View<p[16]>& d2A44, int blockSize) {
   
@@ -684,7 +684,7 @@ void doMultiEval_vgh(multiPosType& pos, valType& vals, gradType& grad,
       const int walkerNum = isValidMap(packedWalkerIdx);
       const int blockNum = member.league_rank() % numBlocks;
 
-      Kokkos::Array<double,3> locpos;
+      Kokkos::Array<p,3> locpos;
       for (int i = 0; i <3; i++) {
 	locpos[i] = pos(walkerNum, i) - gridStarts(i);
       }

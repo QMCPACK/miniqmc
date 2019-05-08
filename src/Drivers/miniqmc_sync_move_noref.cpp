@@ -419,7 +419,7 @@ int main(int argc, char** argv)
                                                           // elements in the general mover lists
     auto isAcceptedMapMirror = Kokkos::create_mirror_view(isAcceptedMap);
 
-    Kokkos::View<double*[3],Kokkos::LayoutLeft> pos_list("positions", nmovers);
+    Kokkos::View<RealType*[3],Kokkos::LayoutLeft> pos_list("positions", nmovers);
 
     auto vals = extract_spo_psi_list(mover_list);
     auto grads = extract_spo_grad_list(mover_list);
@@ -442,13 +442,13 @@ int main(int argc, char** argv)
     Kokkos::deep_copy(allHess, allHessMirror);
 
     // stuff for the nlpp
-    Kokkos::View<double**[3]> rOnSphere("rOnSphere", nmovers, nknots);
+    Kokkos::View<RealType**[3]> rOnSphere("rOnSphere", nmovers, nknots);
     auto rOnSphereMirror = Kokkos::create_mirror_view(rOnSphere);
     // need to make a place to store the new temp_r (one per knot, per walker)
-    Kokkos::View<double***> bigLikeTempR("bigLikeTempR", nmovers, nknots, nels);
-    Kokkos::View<double***> bigUnlikeTempR("bigUnlikeTempR", nmovers, nknots, nions);
-    Kokkos::View<double**[3]> bigElPos("bigElPos", nmovers, nknots);
-    Kokkos::View<ValueType***> tempPsiV("tempPsiV", nmovers, nknots, nels);
+    Kokkos::View<RealType***> bigLikeTempR("bigLikeTempR", nmovers, nknots, nels);
+    Kokkos::View<RealType***> bigUnlikeTempR("bigUnlikeTempR", nmovers, nknots, nions);
+    Kokkos::View<RealType**[3]> bigElPos("bigElPos", nmovers, nknots);
+    Kokkos::View<RealType***> tempPsiV("tempPsiV", nmovers, nknots, nels);
     Kokkos::Profiling::popRegion();
 
     

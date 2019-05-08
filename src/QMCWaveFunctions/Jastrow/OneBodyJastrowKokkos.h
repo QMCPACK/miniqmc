@@ -113,7 +113,7 @@ public:
   template<typename pskType>
   KOKKOS_INLINE_FUNCTION
   void ratioGrad_part2(pskType& psk, int workingIonNum) {
-    const double lapfac = dim - 1.0;
+    const RealType lapfac = dim - 1.0;
     Kokkos::atomic_add(&(curLap(0)), d2U(workingIonNum) + lapfac * dU(workingIonNum));
     Kokkos::atomic_add(&(curAt(0)), U(workingIonNum));
     for (int i = 0; i < dim; i++) {
@@ -151,7 +151,7 @@ public:
     int iel = pol.league_rank()%Nelec(0);
     LogValue(0) = RealType(0);
     Kokkos::single(Kokkos::PerTeam(pol),[&]() {
-	Kokkos::atomic_add(&LogValue(0),0.5*Vat(iel));
+	Kokkos::atomic_add(&LogValue(0),RealType(0.5)*Vat(iel));
 	for (int d = 0; d < dim; d++) {
 	  psk.G(iel,d) += Grad(iel,d);
 	}

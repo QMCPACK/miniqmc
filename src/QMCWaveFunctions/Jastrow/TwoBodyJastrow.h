@@ -40,7 +40,7 @@ namespace qmcplusplus
  * - support mixed precision: FT::real_type != OHMMS_PRECISION
  * - loops over the groups: elminated PairID
  * - support simd function
- * - double the loop counts
+ * - RealType the loop counts
  * - Memory use is O(N).
  */
 
@@ -638,8 +638,8 @@ struct TwoBodyJastrow : public WaveFunctionComponent
   virtual void multi_evalRatio(int pairNum, Kokkos::View<int***>& eiList,
 			       WaveFunctionKokkos& wfc,
 			       Kokkos::View<ParticleSetKokkos<RealType, ValueType, 3>*>& apsk,
-			       Kokkos::View<double***>& likeTempR,
-			       Kokkos::View<double***>& unlikeTempR,
+			       Kokkos::View<RealType***>& likeTempR,
+			       Kokkos::View<RealType***>& unlikeTempR,
 			       std::vector<ValueType>& ratios, int numActive);
   
   virtual void multi_evaluateGL(const std::vector<WaveFunctionComponent*>& WFC_list,
@@ -1186,7 +1186,7 @@ void TwoBodyJastrow<FT>::multi_evalGrad(const std::vector<WaveFunctionComponent*
   populateCollectiveViews(allTwoBodyJastrowData, allParticleSetData, WFC_list, P_list);
   
   // need to make a view to hold all of the output LogValues
-  Kokkos::View<double**> grad_now_view("tempValues", P_list.size(), OHMMS_DIM);
+  Kokkos::View<RealType**> grad_now_view("tempValues", P_list.size(), OHMMS_DIM);
   
   // need to write this function
   doTwoBodyJastrowMultiEvalGrad(allTwoBodyJastrowData, iat, grad_now_view);
@@ -1264,8 +1264,8 @@ void TwoBodyJastrow<FT>::multi_ratioGrad(const std::vector<WaveFunctionComponent
   populateCollectiveViews(allTwoBodyJastrowData, allParticleSetData, WFC_list, P_list);
   
   // need to make a view to hold all of the output LogValues
-  Kokkos::View<double**> grad_new_view("tempValues", P_list.size(), OHMMS_DIM);
-  Kokkos::View<double*> ratios_view("ratios", P_list.size());
+  Kokkos::View<RealType**> grad_new_view("tempValues", P_list.size(), OHMMS_DIM);
+  Kokkos::View<RealType*> ratios_view("ratios", P_list.size());
     
   // need to write this function
   doTwoBodyJastrowMultiRatioGrad(allTwoBodyJastrowData, allParticleSetData, iat, grad_new_view, ratios_view);
@@ -1290,8 +1290,8 @@ template<typename FT>
 void TwoBodyJastrow<FT>::multi_evalRatio(int pairNum, Kokkos::View<int***>& eiList,
 					 WaveFunctionKokkos& wfc,
 					 Kokkos::View<ParticleSetKokkos<RealType, ValueType, 3>*>& apsk,
-					 Kokkos::View<double***>& likeTempR,
-					 Kokkos::View<double***>& unlikeTempR,
+					 Kokkos::View<RealType***>& likeTempR,
+					 Kokkos::View<RealType***>& unlikeTempR,
 					 std::vector<ValueType>& ratios, int numActive) {
   Kokkos::Profiling::pushRegion("tbj-multi_eval_ratio");
   const int numKnots = likeTempR.extent(1);

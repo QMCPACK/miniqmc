@@ -9,7 +9,7 @@ namespace qmcplusplus
 template<typename RealType, typename valT, int dim>
 class TwoBodyJastrowKokkos{
 public:
-  Kokkos::View<valT[1]> LogValue;
+  Kokkos::View<RealType[1]> LogValue;
   Kokkos::View<int[1]> Nelec;
   Kokkos::View<int[1]> NumGroups;
   Kokkos::View<int[2]> first; // starting index of each species
@@ -319,9 +319,9 @@ public:
       recompute(pol, psk);
     }
     int iel = pol.league_rank()%Nelec(0);
-    LogValue(0) = valT(0);
+    LogValue(0) = RealType(0);
     Kokkos::single(Kokkos::PerTeam(pol),[&]() {
-      Kokkos::atomic_add(&LogValue(0),0.5*Uat(iel));
+	Kokkos::atomic_add(&LogValue(0),RealType(0.5)*Uat(iel));
       for (int d = 0; d < dim; d++) {
         psk.G(iel,d) += dUat(iel,d);
       }
