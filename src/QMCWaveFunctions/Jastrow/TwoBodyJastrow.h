@@ -21,7 +21,7 @@
 #include <Utilities/SIMD/allocator.hpp>
 #include <Utilities/SIMD/algorithm.hpp>
 #include <numeric>
-
+#include <Kokkos_Core.hpp>
 /*!
  * @file TwoBodyJastrow.h
  */
@@ -44,6 +44,7 @@ namespace qmcplusplus
  * - Memory use is O(N).
  */
 
+// this is something I could work on...
 template<typename atbjdType, typename apsdType>
 void doTwoBodyJastrowMultiEvaluateGL(atbjdType atbjd, apsdType apsd, bool fromscratch) {
   const int numWalkers = atbjd.extent(0);
@@ -64,7 +65,7 @@ void doTwoBodyJastrowMultiAcceptRestoreMove(atbjdType atbjd, apsdType apsd,
 					    int numIons) {
   const int numWalkers = numAccepted;
   Kokkos::Profiling::pushRegion("doTwoBodyJastrowMultiAcceptRestoreMove");
-  if (numWalkers>16) {
+  if (numWalkers>2048) { // not really wanting to go here, could make this configurable though
     using BarePolicy = Kokkos::TeamPolicy<>;
     BarePolicy pol(numWalkers, 16, 32);
     Kokkos::parallel_for("tbj-acceptRestoreMove-waker-loop", pol,
@@ -113,7 +114,44 @@ void doTwoBodyJastrowMultiAcceptRestoreMove(atbjdType atbjd, apsdType apsd,
   Kokkos::Profiling::popRegion();
 }
 
+template<typename atbjdType, typename apsdType>
+void doTwoBodyJastrowMultiAcceptRestoreMove(atbjdType atbjd, apsdType apsd, 
+					    Kokkos::View<int*>& isAcceptedMap,
+					    int numAccepted, int iat, int numElectrons,
+					    int numIons, const typename Kokkos::HostSpace&) {
+  const int numWalkers = atbjd.extent(0);
+  using BarePolicy = Kokkos::TeamPolicy<>;
+  BarePolicy pol(numWalkers, Kokkos::AUTO, 32);
+  Kokkos::parallel_for("tbj-acceptRestoreMove-waker-loop", pol,
+		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
+			 int walkerIdx = member.league_rank();
+			 const int walkerNum = isAcceptedMap(walkerIdx);
+			 atbjd(walkerNum).acceptMove(member, apsd(walkerNum), iat);
+		       });
+}
 
+#ifdef KOKKOS_ENABLE_CUDA
+template<typename atbjdType, typename apsdType>
+void doTwoBodyJastrowMultiAcceptRestoreMove(atbjdType atbjd, apsdType apsd, 
+					    Kokkos::View<int*>& isAcceptedMap,
+					    int numAccepted, int iat, int numElectrons,
+					    int numIons, const Kokkos::CudaSpace& ms) {
+  doTwoBodyJastrowMultiAcceptRestoreMove(atbjd, apsd, isAcceptedMap, numAccepted,
+					 iat, numElectrons, numIons);
+}
+
+template<typename atbjdType, typename apsdType>
+void doTwoBodyJastrowMultiAcceptRestoreMove(atbjdType atbjd, apsdType apsd, 
+					    Kokkos::View<int*>& isAcceptedMap,
+					    int numAccepted, int iat, int numElectrons,
+					    int numIons, const Kokkos::CudaUVMSpace& ms) {
+  doTwoBodyJastrowMultiAcceptRestoreMove(atbjd, apsd, isAcceptedMap, numAccepted,
+					 iat, numElectrons, numIons);
+}
+#endif
+//////////////////////////////////////
+ 
+/* 
 template<typename atbjdType, typename apsdType>
   void doTwoBodyJastrowMultiAcceptRestoreMove(atbjdType atbjd, apsdType apsd, int iat) {
   const int numWalkers = atbjd.extent(0);
@@ -133,13 +171,13 @@ template<typename atbjdType, typename apsdType>
     }
   }
 }
-
-
+*/
+ 
 // note, this is the one I am currently using
 template<typename atbjdType, typename apsdType, typename valT>
 void doTwoBodyJastrowMultiRatioGrad(atbjdType& atbjd, apsdType& apsd, Kokkos::View<int*>& isValidMap,
 				int numValid, int iel, Kokkos::View<valT**> gradNowView,
-				Kokkos::View<valT*> ratiosView) {
+				    Kokkos::View<valT*> ratiosView) {
   const int numWalkers = numValid;
   const int numElectrons = atbjd(0).Nelec(0); // note this is bad, relies on UVM, kill it
   
@@ -184,6 +222,41 @@ void doTwoBodyJastrowMultiRatioGrad(atbjdType& atbjd, apsdType& apsd, Kokkos::Vi
 }
 
 template<typename atbjdType, typename apsdType, typename valT>
+void doTwoBodyJastrowMultiRatioGrad(atbjdType& atbjd, apsdType& apsd, Kokkos::View<int*>& isValidMap,
+				    int numValid, int iel, Kokkos::View<valT**> gradNowView,
+				    Kokkos::View<valT*> ratiosView, const Kokkos::HostSpace& ) {
+  const int numWalkers = atbjd.extent(0);
+  using BarePolicy = Kokkos::TeamPolicy<>;
+  BarePolicy pol(numWalkers, Kokkos::AUTO, 32);
+  Kokkos::parallel_for("tbj-evalRatioGrad-walker-loop", pol,
+		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
+			 int walkerIdx = member.league_rank();
+			 int walkerNum = isValidMap(walkerIdx);
+			 auto gv = Kokkos::subview(gradNowView,walkerIdx,Kokkos::ALL());
+			 ratiosView(walkerIdx) = atbjd(walkerNum).ratioGrad(member, apsd(walkerNum), iel, gv);
+		       });
+}
+
+#ifdef KOKKOS_ENABLE_CUDA
+template<typename atbjdType, typename apsdType, typename valT>
+void doTwoBodyJastrowMultiRatioGrad(atbjdType& atbjd, apsdType& apsd, Kokkos::View<int*>& isValidMap,
+				    int numValid, int iel, Kokkos::View<valT**> gradNowView,
+				    Kokkos::View<valT*> ratiosView, const Kokkos::CudaSpace& ms) {
+  doTwoBodyJastrowMultiRatioGrad(atbjd, apsd, isValidMap, numValid, iel, gradNowView, ratiosView);
+}
+
+template<typename atbjdType, typename apsdType, typename valT>
+void doTwoBodyJastrowMultiRatioGrad(atbjdType& atbjd, apsdType& apsd, Kokkos::View<int*>& isValidMap,
+				    int numValid, int iel, Kokkos::View<valT**> gradNowView,
+				    Kokkos::View<valT*> ratiosView, const Kokkos::CudaUVMSpace& ms) {
+  doTwoBodyJastrowMultiRatioGrad(atbjd, apsd, isValidMap, numValid, iel, gradNowView, ratiosView);
+}
+#endif
+ 
+//////////////////////////////////
+ 
+/* 
+template<typename atbjdType, typename apsdType, typename valT>
 void doTwoBodyJastrowMultiRatioGrad(atbjdType atbjd, apsdType apsd, int iat, 
 				    Kokkos::View<valT**> gradNowView,
 				    Kokkos::View<valT*> ratiosView) {
@@ -197,7 +270,7 @@ void doTwoBodyJastrowMultiRatioGrad(atbjdType atbjd, apsdType apsd, int iat,
 			 ratiosView(walkerNum) = atbjd(walkerNum).ratioGrad(member, apsd(walkerNum), iat, gv);
 		       });
 }
-			 
+*/			 
 template<typename atbjdType, typename valT>
 void doTwoBodyJastrowMultiEvalGrad(atbjdType atbjd, int iat, Kokkos::View<valT**> gradNowView) {
   int numWalkers = atbjd.extent(0);
@@ -211,7 +284,6 @@ void doTwoBodyJastrowMultiEvalGrad(atbjdType atbjd, int iat, Kokkos::View<valT**
 			 }
 		       });
  }
-
 
 // note, this is the one we are using
 template<typename eiListType, typename apskType, typename atbjdType, typename tempRType,
@@ -249,20 +321,28 @@ void doTwoBodyJastrowMultiEvalRatio(int pairNum, eiListType& eiList, apskType& a
 			 auto val = devRatios(walkerIdx, knotNum);
 			 devRatios(walkerIdx,knotNum) = std::exp(allTwoBodyJastrowData(walkerIdx).Uat(iel) - val);
 		       });
-			 
+}			 
 
-  /*
+ 
+template<typename eiListType, typename apskType, typename atbjdType, typename tempRType,
+         typename devRatioType, typename activeMapType>
+void doTwoBodyJastrowMultiEvalRatio(int pairNum, eiListType& eiList, apskType& apsk,
+				    atbjdType& allTwoBodyJastrowData,
+				    tempRType& likeTempR, devRatioType& devRatios,
+				    activeMapType& activeMap, int numActive, const Kokkos::HostSpace&) {
+  const int numWalkers = apsk.extent(0);
+  const int numKnots = devRatios.extent(1);
   using BarePolicy = Kokkos::TeamPolicy<>;
   BarePolicy pol(numWalkers, Kokkos::AUTO, 32);
   
   Kokkos::parallel_for("tbj-multi-ratio", pol,
 		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
 			 int walkerIndex = member.league_rank();
-			 int walkerNum = activeWalkerIdx(walkerIndex);
+			 int walkerNum = activeMap(walkerIndex);
 			 auto& psk = apsk(walkerNum);
 			 //auto& jd = allTwoBodyJastrowData(walkerIndex);
 			 allTwoBodyJastrowData(walkerIndex).updateMode(0) = 0;
-
+			 
 			 Kokkos::parallel_for(Kokkos::TeamThreadRange(member, numKnots),
 					      [=](const int& knotNum) {
 						auto singleDists = Kokkos::subview(likeTempR, walkerNum, knotNum, Kokkos::ALL);
@@ -271,11 +351,34 @@ void doTwoBodyJastrowMultiEvalRatio(int pairNum, eiListType& eiList, apskType& a
 						devRatios(walkerIndex, numKnots) = std::exp(allTwoBodyJastrowData(walkerIndex).Uat(iel) - val);
 					      });
 		       });
-
-  */
 }
 
+#ifdef KOKKOS_ENABLE_CUDA
+template<typename eiListType, typename apskType, typename atbjdType, typename tempRType,
+         typename devRatioType, typename activeMapType>
+void doTwoBodyJastrowMultiEvalRatio(int pairNum, eiListType& eiList, apskType& apsk,
+				    atbjdType& allTwoBodyJastrowData,
+				    tempRType& likeTempR, devRatioType& devRatios,
+				    activeMapType& activeMap, int numActive, const Kokkos::CudaSpace& ms) {
+  doTwoBodyJastrowMultiEvalRatio(pairNum, eiList, apsk, allTwoBodyJastrowData,
+				 likeTempR, devRatios, activeMap, numActive);
+}
+
+template<typename eiListType, typename apskType, typename atbjdType, typename tempRType,
+         typename devRatioType, typename activeMapType>
+void doTwoBodyJastrowMultiEvalRatio(int pairNum, eiListType& eiList, apskType& apsk,
+				    atbjdType& allTwoBodyJastrowData,
+				    tempRType& likeTempR, devRatioType& devRatios,
+				    activeMapType& activeMap, int numActive, const Kokkos::CudaUVMSpace& ms) {
+  doTwoBodyJastrowMultiEvalRatio(pairNum, eiList, apsk, allTwoBodyJastrowData,
+				 likeTempR, devRatios, activeMap, numActive);
+}
+#endif
+//////////////////////////////////
  
+// could potentially restore this for OpenMP, but note that
+// on the back end would need to restore the previous backside implementation
+// that does not expect a single electron per member
 template<typename atbjdType, typename apsdType, typename valT>
 void doTwoBodyJastrowMultiEvaluateLog(atbjdType atbjd, apsdType apsd, Kokkos::View<valT*> values) {
   Kokkos::Profiling::pushRegion("2BJ-multiEvalLog");
@@ -478,20 +581,24 @@ struct TwoBodyJastrow : public WaveFunctionComponent
   // note that G_list and L_list feel redundant, they are just elements of P_list
   // if we wanted to be really kind though, we could copy them back out so this would
   // be where the host could see the results of the calcualtion easily
+  /*
   virtual void multi_evaluateLog(const std::vector<WaveFunctionComponent*>& WFC_list,
                                  const std::vector<ParticleSet*>& P_list,
                                  const std::vector<ParticleSet::ParticleGradient_t*>& G_list,
                                  const std::vector<ParticleSet::ParticleLaplacian_t*>& L_list,
                                  ParticleSet::ParticleValue_t& values);
+  */
 
   virtual void multi_evaluateLog(const std::vector<WaveFunctionComponent*>& WFC_list,
 				 WaveFunctionKokkos& wfc,
 				 Kokkos::View<ParticleSet::pskType*>& psk,
 				 ParticleSet::ParticleValue_t& values);
 
+  /*
   virtual void multi_evalGrad(const std::vector<WaveFunctionComponent*>& WFC_list,
 			      const std::vector<ParticleSet*>& P_list,
                               int iat, std::vector<posT>& grad_now);
+  */
 
   virtual void multi_evalGrad(const std::vector<WaveFunctionComponent*>& WFC_list,
 			      WaveFunctionKokkos& wfc,
@@ -506,15 +613,19 @@ struct TwoBodyJastrow : public WaveFunctionComponent
                                std::vector<ValueType>& ratios,
                                std::vector<PosType>& grad_new); 
 
+  /*
   virtual void multi_ratioGrad(const std::vector<WaveFunctionComponent*>& WFC_list,
 			       const std::vector<ParticleSet*>& P_list,
 			       int iat, std::vector<valT>& ratios,
 			       std::vector<posT>& grad_new);
-    
+  */
+
+  /*
   virtual void multi_acceptRestoreMove(const std::vector<WaveFunctionComponent*>& WFC_list,
 				       const std::vector<ParticleSet*>& P_list,
 				       const std::vector<bool>& isAccepted,
 				       int iat);
+  */
 
   virtual void multi_acceptrestoreMove(const std::vector<WaveFunctionComponent*>& WFC_list,
                                        WaveFunctionKokkos& wfc,
@@ -1018,6 +1129,7 @@ typename TwoBodyJastrow<FT>::RealType
   return LogValue;
 }
 
+/*
 template<typename FT>
 void TwoBodyJastrow<FT>::multi_evaluateLog(const std::vector<WaveFunctionComponent*>& WFC_list,
 					   const std::vector<ParticleSet*>& P_list,
@@ -1043,6 +1155,7 @@ void TwoBodyJastrow<FT>::multi_evaluateLog(const std::vector<WaveFunctionCompone
     values[i] = tempValMirror(i);
   }
 }
+*/
 
 template<typename FT>
 void TwoBodyJastrow<FT>::multi_evaluateLog(const std::vector<WaveFunctionComponent*>& WFC_list,
@@ -1059,7 +1172,8 @@ void TwoBodyJastrow<FT>::multi_evaluateLog(const std::vector<WaveFunctionCompone
     values[i] = wfc.ratios_view_mirror(i);
   }
 }
- 
+
+/*
 template<typename FT>
 void TwoBodyJastrow<FT>::multi_evalGrad(const std::vector<WaveFunctionComponent*>& WFC_list,
 					const std::vector<ParticleSet*>& P_list,
@@ -1085,6 +1199,7 @@ void TwoBodyJastrow<FT>::multi_evalGrad(const std::vector<WaveFunctionComponent*
     }
   }
 }
+*/
 
 template<typename FT>
 void TwoBodyJastrow<FT>::multi_evalGrad(const std::vector<WaveFunctionComponent*>& WFC_list,
@@ -1094,7 +1209,6 @@ void TwoBodyJastrow<FT>::multi_evalGrad(const std::vector<WaveFunctionComponent*
 					std::vector<posT>& grad_now) {
   const int numItems = WFC_list.size();
 
-  // need to write this function
   doTwoBodyJastrowMultiEvalGrad(wfc.twoBodyJastrows, iat, wfc.grad_view);
   // copy the results out to values
   Kokkos::deep_copy(wfc.grad_view_mirror, wfc.grad_view);
@@ -1116,7 +1230,8 @@ void TwoBodyJastrow<FT>::multi_ratioGrad(const std::vector<WaveFunctionComponent
 					 std::vector<PosType>& grad_new) {
   if (numValid > 0) {
 
-    doTwoBodyJastrowMultiRatioGrad(wfc.twoBodyJastrows, psk, isValidMap, numValid, iel, wfc.grad_view, wfc.ratios_view);
+    doTwoBodyJastrowMultiRatioGrad(wfc.twoBodyJastrows, psk, isValidMap, numValid, iel,
+				   wfc.grad_view, wfc.ratios_view, typename Kokkos::View<int*>::memory_space());
     Kokkos::fence();
 
     // copy the results out to values                                                                                                          
@@ -1135,7 +1250,7 @@ void TwoBodyJastrow<FT>::multi_ratioGrad(const std::vector<WaveFunctionComponent
  }
 
 
-
+/*
 template<typename FT>
 void TwoBodyJastrow<FT>::multi_ratioGrad(const std::vector<WaveFunctionComponent*>& WFC_list,
 					 const std::vector<ParticleSet*>& P_list,
@@ -1166,6 +1281,7 @@ void TwoBodyJastrow<FT>::multi_ratioGrad(const std::vector<WaveFunctionComponent
     }
   }
 }
+*/
 
 // still need to fix this one
 template<typename FT>
@@ -1201,10 +1317,10 @@ void TwoBodyJastrow<FT>::multi_acceptrestoreMove(const std::vector<WaveFunctionC
 						 Kokkos::View<ParticleSet::pskType*> psk,
 						 Kokkos::View<int*>& isAcceptedMap, int numAccepted, int iel) {
   doTwoBodyJastrowMultiAcceptRestoreMove(wfc.twoBodyJastrows, psk, isAcceptedMap, numAccepted, 
-					 iel, wfc.numElectrons, wfc.numIons);
+					 iel, wfc.numElectrons, wfc.numIons, typename Kokkos::DefaultExecutionSpace::memory_space());
 }
 
-
+/*
 template<typename FT>
 void TwoBodyJastrow<FT>::multi_acceptRestoreMove(const std::vector<WaveFunctionComponent*>& WFC_list,
 						 const std::vector<ParticleSet*>& P_list,
@@ -1226,6 +1342,7 @@ void TwoBodyJastrow<FT>::multi_acceptRestoreMove(const std::vector<WaveFunctionC
   
   // be careful on this one, looks like it is being done for side effects.  Should see what needs to go back!!!
 }
+*/
 
 template<typename FT>
 void TwoBodyJastrow<FT>::multi_evaluateGL(const std::vector<WaveFunctionComponent*>& WFC_list,
@@ -1248,7 +1365,6 @@ void TwoBodyJastrow<FT>::multi_evaluateGL(const std::vector<WaveFunctionComponen
     LogValue = LogValueMirror(0);
   }
 }
- 
 
 } // namespace qmcplusplus
 #endif

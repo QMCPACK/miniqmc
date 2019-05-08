@@ -170,6 +170,7 @@ struct WaveFunctionComponent : public QMCTraits
                           ParticleSet::ParticleLaplacian_t& L,
                           bool fromscratch = false) = 0;
 
+  /*
   /// operates on multiple walkers
   virtual void multi_evaluateLog(const std::vector<WaveFunctionComponent*>& WFC_list,
                                  const std::vector<ParticleSet*>& P_list,
@@ -181,6 +182,7 @@ struct WaveFunctionComponent : public QMCTraits
     for (int iw = 0; iw < P_list.size(); iw++)
       values[iw] = WFC_list[iw]->evaluateLog(*P_list[iw], *G_list[iw], *L_list[iw]);
   };
+  */
 
   virtual void multi_evaluateLog(const std::vector<WaveFunctionComponent*>& WFC_list,
 				 WaveFunctionKokkos& wfc,
@@ -231,7 +233,8 @@ struct WaveFunctionComponent : public QMCTraits
   {
     //
   };
-			       
+
+  /*
   virtual void multi_acceptrestoreMove(const std::vector<WaveFunctionComponent*>& WFC_list,
                                        const std::vector<ParticleSet*>& P_list,
                                        const std::vector<bool>& isAccepted,
@@ -244,6 +247,7 @@ struct WaveFunctionComponent : public QMCTraits
         WFC_list[iw]->acceptMove(*P_list[iw], iat);
     }
   };
+  */
 
   virtual void multi_acceptrestoreMove(const std::vector<WaveFunctionComponent*>& WFC_list,
 				       WaveFunctionKokkos& wfc,

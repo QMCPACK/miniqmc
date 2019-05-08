@@ -123,10 +123,12 @@ public:
   void multi_ratio(int pairNum, WaveFunctionKokkos& wfc, apsdType& apsd, psiVType& tempPsiV,
 		   likeTempRType& likeTempRs, unlikeTempRType& unlikeTempRs, eiListType& eiList, std::vector<valT>& ratios); 
 
+  /*
   void multi_acceptrestoreMove(const std::vector<WaveFunction*>& WF_list,
                                const std::vector<ParticleSet*>& P_list,
                                const std::vector<bool>& isAccepted,
                                int iat) const;
+  */
 
   void multi_acceptrestoreMove(const std::vector<WaveFunction*>& WF_list,
 			       WaveFunctionKokkos& wfc,

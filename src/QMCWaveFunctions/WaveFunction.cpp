@@ -445,6 +445,7 @@ void WaveFunction::multi_acceptrestoreMove(const std::vector<WaveFunction*>& WF_
   }
 }
 
+  /*
 void WaveFunction::multi_acceptrestoreMove(const std::vector<WaveFunction*>& WF_list,
                                            const std::vector<ParticleSet*>& P_list,
                                            const std::vector<bool>& isAccepted,
@@ -474,6 +475,7 @@ void WaveFunction::multi_acceptrestoreMove(const std::vector<WaveFunction*>& WF_
       }
   }
 }
+  */
 
 void WaveFunction::multi_evaluateGL(const std::vector<WaveFunction*>& WF_list,
                                     const std::vector<ParticleSet*>& P_list) const
