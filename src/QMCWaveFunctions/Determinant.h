@@ -805,10 +805,24 @@ void dddMAGPU(addkType& addk, vectorType& wfcv,
   auto isAcceptedMapMirror = Kokkos::create_mirror_view(isAcceptedMap);
   Kokkos::deep_copy(isAcceptedMapMirror, isAcceptedMap);
 
+  static std::vector<cudaStream_t> streams;
+  static int numAllocatedStreams = 0;
+  if (numAllocatedStreams < numAccepted) {
+    for (int i = numAllocatedStreams; i < numAccepted; i++) {
+      cudaStream_t stream;
+      cudaStreamCreate(&stream);
+      streams.push_back(stream);
+    }
+    numAllocatedStreams = numAccepted;
+  }
+  
+
+  /*
   cudaStream_t *streams = (cudaStream_t *) malloc(addk.extent(0)*sizeof(cudaStream_t));
   for (int i = 0; i < numAccepted; i++) {
     cudaStreamCreate(&streams[i]);
   }
+  */
 
   // 1. gemvTrans
   Kokkos::Profiling::pushRegion("updateRow::gemvTrans");
@@ -860,9 +874,9 @@ void dddMAGPU(addkType& addk, vectorType& wfcv,
   }
   cudaDeviceSynchronize();
   Kokkos::Profiling::popRegion();
-  for (int i =0; i < numWalkers; i++) {
-    cudaStreamDestroy(streams[i]);
-  }
+  //for (int i =0; i < numWalkers; i++) {
+  //  cudaStreamDestroy(streams[i]);
+  //}
   Kokkos::Profiling::popRegion();
 }
 
