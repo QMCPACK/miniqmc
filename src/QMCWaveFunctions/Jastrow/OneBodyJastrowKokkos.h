@@ -15,6 +15,9 @@ public:
   Kokkos::View<int[1]> NumGroups; // one element
   Kokkos::View<int[1]> updateMode; // zero for ORB_PBYP_RATIO, one for ORB_PBYP_ALL, two for ORB_PBYP_PARTIAL, three for ORB_WALKER
 
+  Kokkos::View<RealType[1]> temporaryScratch;
+  Kokkos::View<RealType[dim]> temporaryScratchDim;
+  
   Kokkos::View<RealType[dim]> curGrad; // OHMMS_DIM elements
   Kokkos::View<RealType[1]> curLap; // one element
   Kokkos::View<RealType[1]> curAt; // one elemnet
@@ -93,6 +96,42 @@ public:
     }
     return std::exp(Vat(iat) - curAt(0));
   }
+
+  template<typename pskType>
+  KOKKOS_INLINE_FUNCTION
+  void ratioGrad_part1(pskType& psk, int workingIonNum) {
+    if (workingIonNum == 0) {
+      updateMode(0) = 2;
+      temporaryScratch(0) = 0.0;
+      for (int i = 0; i < dim; i++) {
+	temporaryScratchDim(i) = 0.0;
+      }
+    }
+    computeU3(psk, psk.UnlikeDTTemp_r, workingIonNum);
+  }
+
+  template<typename pskType>
+  KOKKOS_INLINE_FUNCTION
+  void ratioGrad_part2(pskType& psk, int workingIonNum) {
+    const double lapfac = dim - 1.0;
+    Kokkos::atomic_add(&(curLap(0)), d2U(workingIonNum) + lapfac * dU(workingIonNum));
+    Kokkos::atomic_add(&(curAt(0)), U(workingIonNum));
+    for (int i = 0; i < dim; i++) {
+      Kokkos::atomic_add(&(temporaryScratchDim(i)), dU(workingIonNum) * psk.UnlikeDTTemp_dr(workingIonNum,dim));
+    }
+  }
+
+  template<typename gradType>
+  KOKKOS_INLINE_FUNCTION
+  RealType ratioGrad_part3(int iel, gradType& inG) {
+    RealType DiffVal = Vat(iel) - curAt(0);
+    for (int i = 0; i < dim; i++) {
+      inG(i) += temporaryScratchDim(i);
+    }
+    return std::exp(DiffVal);
+  }
+  
+
 
   // could later expand this to take a policy member and do hierarchical parallelism
   template<typename policyType, typename pskType>
@@ -197,6 +236,18 @@ public:
 			   }); 
     }
   }
+  
+  // new one that works for a single working ion
+  template<typename pskType, typename distViewType>
+  KOKKOS_INLINE_FUNCTION
+  void computeU3(pskType& psk, distViewType dist, int workingIon) {
+    U(workingIon) = 0.0;
+    dU(workingIon) = 0.0;
+    d2U(workingIon) = 0.0;
+    const int functorID = psk.ionGroupID(workingIon);
+    Fevaluate(functorID, workingIon, dist(workingIon));
+  }
+
 
   // just evaluate the value of the function for a given distance r and return
   KOKKOS_INLINE_FUNCTION
@@ -313,8 +364,6 @@ public:
     return d;
   }
     
-  
-
   // update U, dU and d2U for all atoms in a group starting at start and going to end
   template<typename policyType, typename distViewType>
   KOKKOS_INLINE_FUNCTION

@@ -190,6 +190,8 @@ void doTwoBodyJastrowMultiRatioGrad(atbjdType& atbjd, apsdType& apsd, Kokkos::Vi
 			 const int workingElNum = idx % numElectrons;
 			 atbjd(walkerNum).ratioGrad_part1(apsd(walkerNum), iel, workingElNum);
 		       });
+  // might see if recoding this as a loop over walkers where the reduction happens directly
+  // rather than with atomics would work
   Kokkos::parallel_for("tbj-evalRatioGrad-part2",
 		       Kokkos::RangePolicy<>(0,numWalkers*numElectrons),
 		       KOKKOS_LAMBDA(const int &idx) {

@@ -71,8 +71,45 @@ void doOneBodyJastrowMultiRatioGrad(aobjdType& aobjd, apsdType& apsd, Kokkos::Vi
 			       int numValid, int iel, Kokkos::View<valT**> gradNowView,
 			       Kokkos::View<valT*> ratiosView) {
   const int numWalkers = numValid;
+  const int numIons = aobjd(0).Nions(0); // note this is bad, relies on UVM, kill it
+  
+  Kokkos::Profiling::pushRegion("obj-evalRatioGrad");
+  Kokkos::parallel_for("obj-evalRatioGrad-part1",
+		       Kokkos::RangePolicy<>(0,numWalkers*numIons),
+		       KOKKOS_LAMBDA(const int &idx) {
+			 const int walkerIdx = idx / numIons;
+			 const int walkerNum = isValidMap(walkerIdx);
+			 const int workingIonNum = idx % numIons;
+			 aobjd(walkerNum).ratioGrad_part1(apsd(walkerNum), workingIonNum);
+		       });
+  Kokkos::parallel_for("obj-evalRatioGrad-part2",
+		       Kokkos::RangePolicy<>(0,numWalkers*numIons),
+		       KOKKOS_LAMBDA(const int &idx) {
+			 const int walkerIdx = idx / numIons;
+			 const int walkerNum = isValidMap(walkerIdx);
+			 const int workingIonNum = idx % numIons;
+			 aobjd(walkerNum).ratioGrad_part2(apsd(walkerNum), workingIonNum);
+		       });
+  Kokkos::parallel_for("obj-evalRatioGrad-part3",
+		       Kokkos::RangePolicy<>(0,numWalkers),
+		       KOKKOS_LAMBDA(const int &idx) {
+			 const int walkerIdx = idx;
+			 const int walkerNum = isValidMap(walkerIdx);
+			 auto gv = Kokkos::subview(gradNowView,walkerIdx,Kokkos::ALL());
+			 ratiosView(walkerIdx) = aobjd(walkerNum).ratioGrad_part3(iel, gv);
+		       });
+  Kokkos::Profiling::popRegion();
+
+}
+
+template<typename aobjdType, typename apsdType, typename valT>
+void doOneBodyJastrowMultiRatioGrad(aobjdType& aobjd, apsdType& apsd, Kokkos::View<int*>& isValidMap,
+			       int numValid, int iel, Kokkos::View<valT**> gradNowView,
+				    Kokkos::View<valT*> ratiosView, const Kokkos::HostSpace&) {
+  Kokkos::Profiling::pushRegion("obj-evalRatioGrad");
+  const int numWalkers = numValid;
   using BarePolicy = Kokkos::TeamPolicy<>;
-  BarePolicy pol(numWalkers, 1, 32);
+  BarePolicy pol(numWalkers, Kokkos::AUTO, 32);
   Kokkos::parallel_for("obj-evalRatioGrad-walker-loop", pol,
 		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
 			 int walkerIdx = member.league_rank();
@@ -80,10 +117,27 @@ void doOneBodyJastrowMultiRatioGrad(aobjdType& aobjd, apsdType& apsd, Kokkos::Vi
 			 auto gv = Kokkos::subview(gradNowView,walkerIdx,Kokkos::ALL());
 			 ratiosView(walkerIdx) = aobjd(walkerNum).ratioGrad(member, apsd(walkerNum), iel, gv);
 		       });
+  Kokkos::Profiling::popRegion();
 }
 
+#ifdef KOKKOS_ENABLE_CUDA
+template<typename aobjdType, typename apsdType, typename valT>
+void doOneBodyJastrowMultiRatioGrad(aobjdType& aobjd, apsdType& apsd, Kokkos::View<int*>& isValidMap,
+			       int numValid, int iel, Kokkos::View<valT**> gradNowView,
+				    Kokkos::View<valT*> ratiosView, const Kokkos::CudaSpace&) {
+  doOneBodyJastrowMultiRatioGrad(aobjd, apsd, isValidMap, numValid, iel, gradNowView, ratiosView);
+}
+
+template<typename aobjdType, typename apsdType, typename valT>
+void doOneBodyJastrowMultiRatioGrad(aobjdType& aobjd, apsdType& apsd, Kokkos::View<int*>& isValidMap,
+			       int numValid, int iel, Kokkos::View<valT**> gradNowView,
+				    Kokkos::View<valT*> ratiosView, const Kokkos::CudaUVMSpace&) {
+  doOneBodyJastrowMultiRatioGrad(aobjd, apsd, isValidMap, numValid, iel, gradNowView, ratiosView);
+}
+#endif
 
 
+/*
 template<typename aobjdType, typename apsdType, typename valT>
 void doOneBodyJastrowMultiRatioGrad(aobjdType aobjd, apsdType apsd, int iat, 
 				    Kokkos::View<valT**> gradNowView,
@@ -99,6 +153,7 @@ void doOneBodyJastrowMultiRatioGrad(aobjdType aobjd, apsdType apsd, int iat,
 			 ratiosView(walkerNum) = aobjd(walkerNum).ratioGrad(member, apsd(walkerNum), iat, gv);
 		       });
 }
+*/
 			 
 template<typename aobjdType, typename valT>
 void doOneBodyJastrowMultiEvalGrad(aobjdType aobjd, int iat, Kokkos::View<valT**> gradNowView) {
@@ -320,6 +375,9 @@ struct OneBodyJastrow : public WaveFunctionComponent
     updateModeMirror(0)    = 3;
     Kokkos::deep_copy(jasData.updateMode, updateModeMirror);
     
+    jasData.temporaryScratch = Kokkos::View<valT[1]>("temporaryScratch");
+    jasData.temporaryScratchDim = Kokkos::View<valT[OHMMS_DIM]>("temporaryScratchDim");
+
     // these things are just zero on the CPU, so don't have to set their values
     jasData.curGrad        = Kokkos::View<valT[OHMMS_DIM]>("curGrad");
     jasData.Grad           = Kokkos::View<valT*[OHMMS_DIM]>("Grad", Nelec);
@@ -540,7 +598,7 @@ struct OneBodyJastrow : public WaveFunctionComponent
     if (numValid > 0) {
       Kokkos::Profiling::pushRegion("obj-multi_ratioGrad::kernel");
       doOneBodyJastrowMultiRatioGrad(wfc.oneBodyJastrows, psk, isValidMap, numValid, iel, 
-				     wfc.grad_view, wfc.ratios_view);
+				     wfc.grad_view, wfc.ratios_view, typename Kokkos::View<int*>::memory_space());
       Kokkos::fence();
       Kokkos::Profiling::popRegion();
 
@@ -556,7 +614,7 @@ struct OneBodyJastrow : public WaveFunctionComponent
 	  grad_new[i][j] += wfc.grad_view_mirror(i,j);
 	}
       }
-    Kokkos::Profiling::popRegion();
+      Kokkos::Profiling::popRegion();
     }
     Kokkos::Profiling::popRegion();
     //std::cout << "      finishing J1 multi_ratioGrad" << std::endl;
@@ -565,7 +623,7 @@ struct OneBodyJastrow : public WaveFunctionComponent
       
 
 
-  
+  /*
   virtual void multi_ratioGrad(const std::vector<WaveFunctionComponent*>& WFC_list,
 			       const std::vector<ParticleSet*>& P_list,
 			       int iat,
@@ -607,7 +665,7 @@ struct OneBodyJastrow : public WaveFunctionComponent
     //std::cout << "      finishing J1 multi_ratioGrad" << std::endl;
 
   }
-
+  */
 
   virtual void multi_acceptrestoreMove(const std::vector<WaveFunctionComponent*>& WFC_list,
 				       WaveFunctionKokkos& wfc,
