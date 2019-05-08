@@ -345,6 +345,7 @@ int main(int argc, char** argv)
 		    << "Tile size = " << tileSize << endl
 		    << "Number of tiles = " << nTiles << endl
 		    << "Number of electrons = " << nels << endl
+	            << "Number of ions = " << ions.getTotalNum() << endl
 		    << "Rmax = " << Rmax << endl
 		    << "AcceptanceRatio = " << accept << endl;
       app_summary() << "Iterations = " << nsteps << endl;
@@ -504,7 +505,7 @@ int main(int argc, char** argv)
 	    //std::cout << "about to start multi_setActiveKokkos" << std::endl;
 	    // Operate on electron with index iel
 	    //anon_mover->els.multi_setActiveKokkos(P_list,iel); 
-	    anon_mover->els.multi_setActiveKokkos(allParticleSetData,iel);
+	    anon_mover->els.multi_setActiveKokkos(allParticleSetData,iel,nels,nions);
 
 	    // Compute gradient at the current position
 	    Kokkos::fence();

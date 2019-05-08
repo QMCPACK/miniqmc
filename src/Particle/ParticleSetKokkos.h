@@ -144,6 +144,48 @@ public:
 			 });
   }
 
+  KOKKOS_INLINE_FUNCTION
+  void DTComputeDistances(RealType x0, RealType y0, RealType z0,
+			  Kokkos::View<RealType*[dim],Kokkos::LayoutLeft> locR,
+			  Kokkos::View<RealType**>& temp_r,
+			  Kokkos::View<RealType**[dim]>& temp_dr, int elIndex,
+			  int workingPtcl, int flip_ind = 0) {
+    constexpr RealType minusone(-1);
+    constexpr RealType one(1);
+
+    const int iat = workingPtcl;
+    const RealType flip    = iat < flip_ind ? one : minusone;
+    const RealType displ_0 = (locR(iat,0) - x0) * flip;
+    const RealType displ_1 = (locR(iat,1) - y0) * flip;
+    const RealType displ_2 = (locR(iat,2) - z0) * flip;
+			   
+    const RealType ar_0 = -std::floor(displ_0 * DT_G(0,0) + displ_1 * DT_G(1,0) + displ_2 * DT_G(2,0));
+    const RealType ar_1 = -std::floor(displ_0 * DT_G(0,1) + displ_1 * DT_G(1,1) + displ_2 * DT_G(2,1));
+    const RealType ar_2 = -std::floor(displ_0 * DT_G(0,2) + displ_1 * DT_G(1,2) + displ_2 * DT_G(2,2));
+    
+    const RealType delx = displ_0 + ar_0 * DT_R(0,0) + ar_1 * DT_R(1,0) + ar_2 * DT_R(2,0);
+    const RealType dely = displ_1 + ar_0 * DT_R(0,1) + ar_1 * DT_R(1,1) + ar_2 * DT_R(2,1);
+    const RealType delz = displ_2 + ar_0 * DT_R(0,2) + ar_1 * DT_R(1,2) + ar_2 * DT_R(2,2);
+			   
+    RealType rmin = delx * delx + dely * dely + delz * delz;
+    int ic = 0;
+			   
+    for (int c = 1; c < 8; ++c)
+    {
+      const RealType x  = delx + corners(c,0);
+      const RealType y  = dely + corners(c,1);
+      const RealType z  = delz + corners(c,2);
+      const RealType r2 = x * x + y * y + z * z;
+      ic         = (r2 < rmin) ? c : ic;
+      rmin       = (r2 < rmin) ? r2 : rmin;
+    }
+			   
+    temp_r(elIndex, iat) = std::sqrt(rmin);
+    temp_dr(elIndex, iat,0) = flip * (delx + corners(ic,0));
+    temp_dr(elIndex, iat,1) = flip * (dely + corners(ic,1));
+    temp_dr(elIndex, iat,2) = flip * (delz + corners(ic,2));
+  }
+
   template<typename policyType> 
   KOKKOS_INLINE_FUNCTION
   void DTComputeDistances(policyType& pol, RealType x0, RealType y0, RealType z0,
@@ -324,6 +366,18 @@ public:
     LikeDTDistances(jat,jat) = BigR;
   }
 
+  KOKKOS_INLINE_FUNCTION
+  void LikeEvaluate(int jat, int workingEl) {
+    constexpr RealType BigR = std::numeric_limits<RealType>::max();
+    if (workingEl == jat) {
+      LikeDTDistances(jat,jat) = BigR;
+    } else {
+      DTComputeDistances(R(jat,0), R(jat,1), R(jat,2), RSoA,
+			 LikeDTDistances, LikeDTDisplacements, jat,
+			 workingEl, jat);
+    }
+  }
+
   template<typename policyType> 
   KOKKOS_INLINE_FUNCTION
   void UnlikeEvaluate(policyType& pol) {
@@ -341,6 +395,13 @@ public:
 		       UnlikeDTDistances, UnlikeDTDisplacements, jat,
 		       0, originR.extent(0));
   }
+
+  void UnlikeEvaluate(int jat, int workingIon) {
+    DTComputeDistances(R(jat,0), R(jat,1), R(jat,2), originR,
+		       UnlikeDTDistances, UnlikeDTDisplacements, jat,
+		       workingIon);
+  }
+
 
   template<typename policyType> 
   KOKKOS_INLINE_FUNCTION

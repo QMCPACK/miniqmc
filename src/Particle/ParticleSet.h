@@ -217,12 +217,35 @@ public:
   void multi_setActiveKokkos(std::vector<ParticleSet*>& P_list, int iel);
 
   template<typename apskType>
-  void multi_setActiveKokkos(apskType& apsk, int iel) {
+  void multi_setActiveKokkos(apskType& apsk, int iel, int numEl, int numIons) {
     int locIel = iel;
+    int numWalkers = apsk.extent(0);
     auto& allParticleSetData = apsk;
     // probably an issue in the evaluate functions
     // think about instead of using a subview, just passing on the 
     // value that should go to the second index of the Distances and Displacements
+    Kokkos::Profiling::pushRegion("ps-setActive");
+    Kokkos::parallel_for("ps-setactive-setPositions", Kokkos::RangePolicy<>(0,numWalkers),
+			 KOKKOS_LAMBDA(const int& i) {
+			   allParticleSetData(i).activePtcl(0) = iel;
+			   allParticleSetData(i).activePos(0) = allParticleSetData(i).R(iel,0);
+			   allParticleSetData(i).activePos(1) = allParticleSetData(i).R(iel,1);
+			   allParticleSetData(i).activePos(2) = allParticleSetData(i).R(iel,2);
+			 });
+    Kokkos::parallel_for("ps-setactive-likeEval", Kokkos::RangePolicy<>(0,numWalkers*numEl),
+			 KOKKOS_LAMBDA(const int& i) {
+			   const int walkerNum = i / numEl;
+			   const int workingEl = i % numEl;
+			   allParticleSetData(walkerNum).LikeEvaluate(iel, workingEl);
+			 });
+    Kokkos::parallel_for("ps-setactive-unlikeEval", Kokkos::RangePolicy<>(0,numWalkers*numIons),
+			 KOKKOS_LAMBDA(const int& i) {
+			   const int walkerNum = i / numIons;
+			   const int workingIon = i % numIons;
+			   allParticleSetData(walkerNum).UnlikeEvaluate(iel, workingIon);
+			 });
+    Kokkos::Profiling::popRegion();
+    /*
     using BarePolicy = Kokkos::TeamPolicy<>;
     BarePolicy pol(allParticleSetData.extent(0), Kokkos::AUTO, 32);
     Kokkos::parallel_for("ps-setActive", pol,
@@ -230,6 +253,7 @@ public:
 			   const int i = member.league_rank();
 			   allParticleSetData(i).setActivePtcl(member, locIel);
 			 });
+    */
   }
 
   /** return the position of the active partice
