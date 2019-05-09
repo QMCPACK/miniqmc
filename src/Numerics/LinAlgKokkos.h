@@ -121,6 +121,7 @@ void cgemm(const char &, const char &, const int &, const int &, const int &,
 namespace qmcplusplus
 {
 
+
 template<typename valueType, typename arrayLayout, typename memorySpace>
 void checkTemplateParams() {
   static_assert(std::is_same<arrayLayout, Kokkos::LayoutLeft>::value, "Require LayoutLeft Views for the time being to interface with linear algebra libraries");

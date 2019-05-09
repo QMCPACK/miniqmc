@@ -869,7 +869,7 @@ void dddMAGPU(addkType& addk, vectorType& wfcv,
   Kokkos::Profiling::popRegion();
 
   // 3. copyChangedRow for each walker 
-  Kokkos::Profiling::pushRegion("updateRow::populateRcopy");
+   Kokkos::Profiling::pushRegion("updateRow::populateRcopy");
   Kokkos::parallel_for("dd-populateRcopy", Kokkos::MDRangePolicy<Kokkos::Rank<2,Kokkos::Iterate::Left> >({0,0},{numAccepted,numEls}),
 		       KOKKOS_LAMBDA(const int& i0, const int& i1) {
 			 const int walkerNum = isAcceptedMap(i0);
@@ -886,6 +886,26 @@ void dddMAGPU(addkType& addk, vectorType& wfcv,
     ddp->lah.ger(ddp->ddk.psiMinv, ddp->ddk.rcopy, ddp->ddk.tempRowVec, -cone);
   }
   cudaDeviceSynchronize();
+
+
+  /*
+  using BarePolicy = Kokkos::TeamPolicy<>;
+  BarePolicy pol(numEls*numAccepted, 32, 32);
+
+  Kokkos::parallel_for("hand-rolled-multi-ger-withrcopy", pol,
+		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
+			 const int walkerIdx = member.league_rank() / numEls;
+			 const int walkerNum = isAcceptedMap(walkerIdx);
+			 const int i = member.league_rank() % numEls;
+			 //const ValueType temp = -cone * addk(walkerNum).rcopy(i);
+			 const ValueType temp = -cone * addk(walkerNum).psiMinv(rowChanged,i);
+			 Kokkos::parallel_for(Kokkos::TeamVectorRange(member, numEls),
+					      [&] (const int& j) {
+						addk(walkerNum).psiMinv(i,j) += temp * addk(walkerNum).tempRowVec(j);
+					      });
+		       });
+  */						
+
   Kokkos::Profiling::popRegion();
   //for (int i =0; i < numWalkers; i++) {
   //  cudaStreamDestroy(streams[i]);
