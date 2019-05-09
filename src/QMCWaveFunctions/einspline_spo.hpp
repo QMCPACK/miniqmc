@@ -232,7 +232,7 @@ struct einspline_spo : public SPOSet
 #ifdef ENABLE_OFFLOAD
       #pragma omp parallel num_threads(nSplinesPerBlock)
 #endif
-      MultiBsplineOffload<T>::evaluate_v_v2(einsplines_ptr[i],
+      spline2offload::evaluate_v_v2(einsplines_ptr[i],
                                             u[0],
                                             u[1],
                                             u[2],
@@ -329,7 +329,7 @@ struct einspline_spo : public SPOSet
 #ifdef ENABLE_OFFLOAD
       #pragma omp parallel num_threads(nSplinesPerBlock)
 #endif
-      MultiBsplineOffload<T>::evaluate_vgh_v2(einsplines_ptr[i],
+      spline2offload::evaluate_vgh_v2(einsplines_ptr[i],
                                               u[0],
                                               u[1],
                                               u[2],
@@ -439,7 +439,7 @@ struct einspline_spo : public SPOSet
 #ifdef ENABLE_OFFLOAD
         #pragma omp parallel
 #endif
-        MultiBsplineOffload<T>::evaluate_vgh_v2(einsplines_ptr[i],
+        spline2offload::evaluate_vgh_v2(einsplines_ptr[i],
                                                 u_shadows_ptr[iw][0],
                                                 u_shadows_ptr[iw][1],
                                                 u_shadows_ptr[iw][2],
