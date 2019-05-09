@@ -76,26 +76,11 @@ inline void evaluate_v(const typename bspline_traits<T, 3>::SplineType* restrict
 
 template <typename T>
 inline void evaluate_v_v2(const typename bspline_traits<T, 3>::SplineType* restrict spline_m,
-                                           T x, T y, T z, T *restrict vals,
+                                           const T (&a)[4], const T (&b)[4], const T (&c)[4],
+                                           int ix, int iy, int iz,
+                                           T *restrict vals,
                                            size_t num_splines)
 {
-  x -= spline_m->x_grid.start;
-  y -= spline_m->y_grid.start;
-  z -= spline_m->z_grid.start;
-  T tx, ty, tz;
-  int ix, iy, iz;
-  SplineBound<T>::get(x * spline_m->x_grid.delta_inv, tx, ix,
-                      spline_m->x_grid.num - 1);
-  SplineBound<T>::get(y * spline_m->y_grid.delta_inv, ty, iy,
-                      spline_m->y_grid.num - 1);
-  SplineBound<T>::get(z * spline_m->z_grid.delta_inv, tz, iz,
-                      spline_m->z_grid.num - 1);
-  T a[4], b[4], c[4];
-
-  MultiBsplineData<T>::compute_prefactors(a, tx);
-  MultiBsplineData<T>::compute_prefactors(b, ty);
-  MultiBsplineData<T>::compute_prefactors(c, tz);
-
   const intptr_t xs = spline_m->x_stride;
   const intptr_t ys = spline_m->y_stride;
   const intptr_t zs = spline_m->z_stride;
