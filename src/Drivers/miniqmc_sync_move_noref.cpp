@@ -66,7 +66,7 @@
 
   The Single Particle Orbitals (SPO) depend only on individual electron coordinates and are represented by a 3D spline.
   The 3D spline code is located in \ref src/Numerics/Spline2, with the evaluation code in the \ref qmcplusplus::MultiBspline "MultiBspline" class.
-  The connection from the wavefunction to the spline functions is located in the \ref qmcplusplus::einspline_spo "einspline_spo" class.
+  The connection from the wavefunction to the spline functions is located in the \ref qmcplusplus::einspline_spo "einspline_spo class.
 
   The core evaluation routine evaluates the value, the gradient, and the Laplacian at a given electron coordinate.
 
@@ -346,6 +346,7 @@ int main(int argc, char** argv)
 		    << "Number of tiles = " << nTiles << endl
 		    << "Number of electrons = " << nels << endl
 	            << "Number of ions = " << ions.getTotalNum() << endl
+	            << "Number of walkers = " << nmovers << endl
 		    << "Rmax = " << Rmax << endl
 		    << "AcceptanceRatio = " << accept << endl;
       app_summary() << "Iterations = " << nsteps << endl;
@@ -614,7 +615,10 @@ int main(int argc, char** argv)
 				  KOKKOS_LAMBDA(const int& idx, int& pairSum) {
 				    const int elNum = idx / nions;
 				    const int ionNum = idx % nions;
-				    if (allParticleSetData(walkerNum).UnlikeDTDistances(elNum, ionNum) < locRmax) {
+				    auto& locR = allParticleSetData(walkerNum).R;
+				    const auto dist = allParticleSetData(walkerNum).getDistanceIon(locR(elNum,0), locR(elNum,1), locR(elNum,2), ionNum);
+				    if ( dist < locRmax ) {
+				    //if (allParticleSetData(walkerNum).UnlikeDTDistances(elNum, ionNum) < locRmax) {
 				      pairSum++;
 				    }
 				  }, eiPairs[walkerNum]);
@@ -642,7 +646,10 @@ int main(int argc, char** argv)
 				KOKKOS_LAMBDA(const int& i, int& idx, bool final) {
 				  const int elNum = i / nions;
 				  const int ionNum = i % nions;
-				  if (allParticleSetData(walkerNum).UnlikeDTDistances(elNum, ionNum) < locRmax) {
+				  auto& locR = allParticleSetData(walkerNum).R;
+				  const auto dist = allParticleSetData(walkerNum).getDistanceIon(locR(elNum,0), locR(elNum,1), locR(elNum,2), ionNum);
+				  if (dist < locRmax) {
+				    //if (allParticleSetData(walkerNum).UnlikeDTDistances(elNum, ionNum) < locRmax) {
 				    if (final) {
 				      EiLists(walkerNum,idx,0) = elNum;
 				      EiLists(walkerNum,idx,1) = ionNum;

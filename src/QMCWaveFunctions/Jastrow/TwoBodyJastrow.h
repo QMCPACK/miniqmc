@@ -46,13 +46,13 @@ namespace qmcplusplus
 
 // this is something I could work on...
 template<typename atbjdType, typename apsdType>
-void doTwoBodyJastrowMultiEvaluateGL(atbjdType atbjd, apsdType apsd, bool fromscratch) {
+void doTwoBodyJastrowMultiEvaluateGL(atbjdType atbjd, apsdType apsd, int numEl, bool fromscratch) {
   const int numWalkers = atbjd.extent(0);
   using BarePolicy = Kokkos::TeamPolicy<>;
-  BarePolicy pol(numWalkers, 1, 32);
+  BarePolicy pol(numWalkers*numEl, 1, 32);
   Kokkos::parallel_for("tbj-evalGL-waker-loop", pol,
 		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
-			 int walkerNum = member.league_rank(); 
+			 int walkerNum = member.league_rank()/numEl; 
 			 atbjd(walkerNum).evaluateGL(member, apsd(walkerNum), fromscratch);
 		       });
 }
@@ -1358,7 +1358,7 @@ void TwoBodyJastrow<FT>::multi_evaluateGL(const std::vector<WaveFunctionComponen
   populateCollectiveViews(allTwoBodyJastrowData, allParticleSetData, WFC_list, P_list);
   
   // need to write this function
-  doTwoBodyJastrowMultiEvaluateGL(allTwoBodyJastrowData, allParticleSetData, fromscratch);
+  doTwoBodyJastrowMultiEvaluateGL(allTwoBodyJastrowData, allParticleSetData, N, fromscratch);
   
   // know that we will need LogValue to up updated after this, possibly other things in ParticleSet!!!
   for (int i = 0; i < WFC_list.size(); i++) {

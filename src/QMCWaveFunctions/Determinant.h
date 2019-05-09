@@ -854,6 +854,8 @@ void dddMAGPU(addkType& addk, vectorType& wfcv,
   
   // 2. poke one element on the device for each walker
   Kokkos::Profiling::pushRegion("updateRow::pokeSingleValue");
+
+  /*
   Kokkos::View<ValueType*> poke("poke", numAccepted);
   auto pokeView = Kokkos::create_mirror_view(poke);
   for (int i = 0; i < numAccepted; i++) {
@@ -865,6 +867,11 @@ void dddMAGPU(addkType& addk, vectorType& wfcv,
   Kokkos::parallel_for("dd-pokeElement", numWalkers, KOKKOS_LAMBDA(int i) {
       const int walkerNum = isAcceptedMap(i);
       addk(walkerNum).tempRowVec(rowChanged) = poke(i);
+    });
+  */
+  Kokkos::parallel_for("dd-pokeElement", numWalkers, KOKKOS_LAMBDA(int i) {
+      const int walkerNum = isAcceptedMap(i);
+      addk(walkerNum).tempRowVec(rowChanged) = cone - cone / addk(walkerNum).curRatio(0);
     });
   Kokkos::Profiling::popRegion();
 
@@ -886,12 +893,12 @@ void dddMAGPU(addkType& addk, vectorType& wfcv,
     ddp->lah.ger(ddp->ddk.psiMinv, ddp->ddk.rcopy, ddp->ddk.tempRowVec, -cone);
   }
   cudaDeviceSynchronize();
-
-
+  Kokkos::Profiling::popRegion();
+  // combination of copyChangedRow and ger
   /*
   using BarePolicy = Kokkos::TeamPolicy<>;
   BarePolicy pol(numEls*numAccepted, 32, 32);
-
+  Kokkos::Profiling::pushRegion("updateRow::franken-ger");
   Kokkos::parallel_for("hand-rolled-multi-ger-withrcopy", pol,
 		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
 			 const int walkerIdx = member.league_rank() / numEls;
@@ -903,10 +910,10 @@ void dddMAGPU(addkType& addk, vectorType& wfcv,
 					      [&] (const int& j) {
 						addk(walkerNum).psiMinv(i,j) += temp * addk(walkerNum).tempRowVec(j);
 					      });
-		       });
-  */						
-
+		       });						
   Kokkos::Profiling::popRegion();
+  */
+
   //for (int i =0; i < numWalkers; i++) {
   //  cudaStreamDestroy(streams[i]);
   //}

@@ -27,13 +27,13 @@ namespace qmcplusplus
 {
 
 template<typename aobjdType, typename apsdType>
-void doOneBodyJastrowMultiEvaluateGL(aobjdType aobjd, apsdType apsd, bool fromscratch) {
+void doOneBodyJastrowMultiEvaluateGL(aobjdType aobjd, apsdType apsd, int nelec, bool fromscratch) {
   const int numWalkers = aobjd.extent(0);
   using BarePolicy = Kokkos::TeamPolicy<>;
-  BarePolicy pol(numWalkers, 1, 32);
+  BarePolicy pol(numWalkers*nelec, 1, 32);
   Kokkos::parallel_for("obj-evalGL-waker-loop", pol,
 		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
-			 int walkerNum = member.league_rank(); 
+			 int walkerNum = member.league_rank()/nelec; 
 			 aobjd(walkerNum).evaluateGL(member, apsd(walkerNum), fromscratch);
 		       });
 }
@@ -732,7 +732,7 @@ struct OneBodyJastrow : public WaveFunctionComponent
     Kokkos::View<ParticleSet::pskType*> allParticleSetData("apsd", P_list.size());
     populateCollectiveViews(allOneBodyJastrowData, allParticleSetData, WFC_list, P_list);
 
-    doOneBodyJastrowMultiEvaluateGL(allOneBodyJastrowData, allParticleSetData, fromscratch);
+    doOneBodyJastrowMultiEvaluateGL(allOneBodyJastrowData, allParticleSetData, Nelec, fromscratch);
 
     // know that we will need LogValue to up updated after this, possibly other things in ParticleSet!!!
     for (int i = 0; i < WFC_list.size(); i++) {

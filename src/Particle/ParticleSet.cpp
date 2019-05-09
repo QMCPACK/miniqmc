@@ -124,12 +124,12 @@ void ParticleSet::pushDataToParticleSetKokkos() {
   psk.DT_R                  = Kokkos::View<RealType[DIM][DIM]>("DT_R"); //real lattice vectors (from Lattice.a)
   psk.BoxBConds             = Kokkos::View<int[DIM]>("BoxBConds");
   psk.corners               = Kokkos::View<RealType[8][DIM],Kokkos::LayoutLeft>("corners");
-  psk.LikeDTDistances       = Kokkos::View<RealType**>("LikeDTDistances", numElec, numElec);
-  psk.LikeDTDisplacements   = Kokkos::View<RealType**[DIM]>("LikeDTDisplacements", numElec, numElec);
+  //psk.LikeDTDistances       = Kokkos::View<RealType**>("LikeDTDistances", numElec, numElec);
+  //psk.LikeDTDisplacements   = Kokkos::View<RealType**[DIM]>("LikeDTDisplacements", numElec, numElec);
   psk.LikeDTTemp_r          = Kokkos::View<RealType*>("LikeDTTemp_r", numElec);
   psk.LikeDTTemp_dr         = Kokkos::View<RealType*[DIM],Kokkos::LayoutLeft>("LikeDTTemp_dr", numElec);
-  psk.UnlikeDTDistances     = Kokkos::View<RealType**>("UnlikeDTDistances", numElec, numIons);
-  psk.UnlikeDTDisplacements = Kokkos::View<RealType**[DIM]>("UnlikeDTDisplacements", numElec, numIons);
+  //psk.UnlikeDTDistances     = Kokkos::View<RealType**>("UnlikeDTDistances", numElec, numIons);
+  //psk.UnlikeDTDisplacements = Kokkos::View<RealType**[DIM]>("UnlikeDTDisplacements", numElec, numIons);
   psk.UnlikeDTTemp_r        = Kokkos::View<RealType*>("UnlikeDTTemp_r", numIons);
   psk.UnlikeDTTemp_dr       = Kokkos::View<RealType*[DIM],Kokkos::LayoutLeft>("UnlikeDTTemp_dr", numElec);
   psk.originR               = Kokkos::View<RealType*[DIM],Kokkos::LayoutLeft>("OriginR", numIons);
@@ -155,12 +155,12 @@ void ParticleSet::pushDataToParticleSetKokkos() {
   auto DT_RMirror                  = Kokkos::create_mirror_view(psk.DT_R);
   auto BoxBCondsMirror             = Kokkos::create_mirror_view(psk.BoxBConds);
   auto cornersMirror               = Kokkos::create_mirror_view(psk.corners);
-  auto LikeDTDistancesMirror       = Kokkos::create_mirror_view(psk.LikeDTDistances);
-  auto LikeDTDisplacementsMirror   = Kokkos::create_mirror_view(psk.LikeDTDisplacements);
+  //auto LikeDTDistancesMirror       = Kokkos::create_mirror_view(psk.LikeDTDistances);
+  //auto LikeDTDisplacementsMirror   = Kokkos::create_mirror_view(psk.LikeDTDisplacements);
   auto LikeDTTemp_rMirror          = Kokkos::create_mirror_view(psk.LikeDTTemp_r);
   auto LikeDTTemp_drMirror         = Kokkos::create_mirror_view(psk.LikeDTTemp_dr);
-  auto UnlikeDTDistancesMirror     = Kokkos::create_mirror_view(psk.UnlikeDTDistances);
-  auto UnlikeDTDisplacementsMirror = Kokkos::create_mirror_view(psk.UnlikeDTDisplacements);
+  //auto UnlikeDTDistancesMirror     = Kokkos::create_mirror_view(psk.UnlikeDTDistances);
+  //auto UnlikeDTDisplacementsMirror = Kokkos::create_mirror_view(psk.UnlikeDTDisplacements);
   auto UnlikeDTTemp_rMirror        = Kokkos::create_mirror_view(psk.UnlikeDTTemp_r);
   auto UnlikeDTTemp_drMirror       = Kokkos::create_mirror_view(psk.UnlikeDTTemp_dr);
   auto originRMirror               = Kokkos::create_mirror_view(psk.originR);
@@ -220,12 +220,14 @@ void ParticleSet::pushDataToParticleSetKokkos() {
 
   Kokkos::Profiling::pushRegion("copying like distance table");
   for (int j = 0; j < numElec; j++) {
+    /*
     for (int i = 0; i < numElec; i++) {
       LikeDTDistancesMirror(i,j) = DistTables[0]->Distances[i][j];
       for (int d = 0; d < DIM; d++) { 
 	LikeDTDisplacementsMirror(i,j,d) = DistTables[0]->Displacements[i][j][d];
       }
     }
+    */
     LikeDTTemp_rMirror(j) = DistTables[0]->Temp_r[j];
     for (int d = 0; d < DIM; d++) {
       LikeDTTemp_drMirror(j,d) = DistTables[0]->Temp_dr[j][d];
@@ -235,12 +237,14 @@ void ParticleSet::pushDataToParticleSetKokkos() {
 
   Kokkos::Profiling::pushRegion("copying unlike distance table");
   for (int j = 0; j < numIons; j++) {
+    /*
     for (int i = 0; i < numElec; i++) {
       UnlikeDTDistancesMirror(i,j) = DistTables[1]->Distances[i][j];
       for (int d = 0; d < DIM; d++) { 
 	UnlikeDTDisplacementsMirror(i,j,d) = DistTables[1]->Displacements[i][j][d];
       }
     }
+    */
     UnlikeDTTemp_rMirror(j) = DistTables[1]->Temp_r[j];
     for (int d = 0; d < DIM; d++) {
       UnlikeDTTemp_drMirror(j,d) = DistTables[1]->Temp_dr[j][d];
@@ -278,12 +282,12 @@ void ParticleSet::pushDataToParticleSetKokkos() {
   Kokkos::deep_copy(psk.DT_R, DT_RMirror);
   Kokkos::deep_copy(psk.BoxBConds, BoxBCondsMirror);
   Kokkos::deep_copy(psk.corners, cornersMirror);
-  Kokkos::deep_copy(psk.LikeDTDistances, LikeDTDistancesMirror);
-  Kokkos::deep_copy(psk.LikeDTDisplacements, LikeDTDisplacementsMirror);
+  //Kokkos::deep_copy(psk.LikeDTDistances, LikeDTDistancesMirror);
+  //Kokkos::deep_copy(psk.LikeDTDisplacements, LikeDTDisplacementsMirror);
   Kokkos::deep_copy(psk.LikeDTTemp_r, LikeDTTemp_rMirror);
   Kokkos::deep_copy(psk.LikeDTTemp_dr, LikeDTTemp_drMirror);
-  Kokkos::deep_copy(psk.UnlikeDTDistances, UnlikeDTDistancesMirror);
-  Kokkos::deep_copy(psk.UnlikeDTDisplacements, UnlikeDTDisplacementsMirror);
+  //Kokkos::deep_copy(psk.UnlikeDTDistances, UnlikeDTDistancesMirror);
+  //Kokkos::deep_copy(psk.UnlikeDTDisplacements, UnlikeDTDisplacementsMirror);
   Kokkos::deep_copy(psk.UnlikeDTTemp_r, UnlikeDTTemp_rMirror);
   Kokkos::deep_copy(psk.UnlikeDTTemp_dr, UnlikeDTTemp_drMirror);
   Kokkos::deep_copy(psk.originR, originRMirror);
@@ -479,8 +483,8 @@ int ParticleSet::addTable(const ParticleSet& psrc, int dt_type)
 void ParticleSet::update(bool skipSK)
 {
   RSoA.copyIn(R);
-  for (int i = 0; i < DistTables.size(); i++)
-    DistTables[i]->evaluate(*this);
+  //for (int i = 0; i < DistTables.size(); i++)
+  //  DistTables[i]->evaluate(*this);
   activePtcl = -1;
 }
 
@@ -553,6 +557,7 @@ bool ParticleSet::makeMoveAndCheck(Index_t iat, const SingleParticlePos_t& displ
   }
 }
 
+  // decorate this one with hostSpace perhaps?  otherwise move it to a global function in ParticleSetKokkos
 void ParticleSet::multi_makeMoveAndCheckKokkos(Kokkos::View<ParticleSet::pskType*>& allParticleSetData, 
 					       Kokkos::View<RealType*[3]>& dr,
 					       int iel, Kokkos::View<int*>& isValidList)
@@ -596,6 +601,10 @@ void ParticleSet::multi_makeMoveAndCheckKokkos(Kokkos::View<ParticleSet::pskType
 			 }
 		       });
 }
+
+
+  
+
 
 /** move the iat-th particle by displ
  *

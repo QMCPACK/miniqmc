@@ -56,6 +56,7 @@ public:
   void acceptMove(policyType& pol, pskType& psk, int iat) {
     if (updateMode(0) == 0) {
       computeU3(pol, psk, psk.UnlikeDTTemp_r);
+      //computeU3DistOnFly(pol, psk);
       curLap(0) = accumulateGL(pol, psk.UnlikeDTTemp_dr, curGrad);
     }
 
@@ -68,6 +69,12 @@ public:
       Lap(iat) = curLap(0);
     }
   }
+
+
+  
+
+
+
 
   template<typename policyType, typename pskType>
   KOKKOS_INLINE_FUNCTION
@@ -176,15 +183,18 @@ public:
   void recompute(policyType& pol, pskType& psk) {
     int iel = pol.league_rank()%Nelec(0);
 
-    computeU3(pol, psk, Kokkos::subview(psk.UnlikeDTDistances,iel,Kokkos::ALL()));
+    //computeU3(pol, psk, Kokkos::subview(psk.UnlikeDTDistances,iel,Kokkos::ALL()));
+    computeU3DistOnFly(pol, psk, iel);
+
     Vat(iel) = 0.0;
     for (int iat = 0; iat < Nions(0); iat++) {
       Vat(iel) += U(iat);
     }
-    auto subview1 = Kokkos::subview(psk.UnlikeDTDisplacements,iel,Kokkos::ALL(),Kokkos::ALL());
+    //auto subview1 = Kokkos::subview(psk.UnlikeDTDisplacements,iel,Kokkos::ALL(),Kokkos::ALL());
     auto subview2 = Kokkos::subview(Grad, iel, Kokkos::ALL());
     
-    Lap(iel) = accumulateGL(pol, subview1, subview2);
+    //Lap(iel) = accumulateGL(pol, subview1, subview2);
+    Lap(iel) = accumulateGLDistOnFly(pol, psk, iel, subview2);
   }
 
   template<typename policyType, typename pskType, typename distViewType>
@@ -214,6 +224,19 @@ public:
     RealType val = FevaluateV(functorGroupID, iel, dist, workingIonNum);
     Kokkos::atomic_add(&(devRatios(walkerIndex, knotNum)), val);
   }
+
+  template<typename policyType, typename pskType>
+  KOKKOS_INLINE_FUNCTION
+  void computeU3DistOnFly(policyType& pol, pskType& psk, int iel) {
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(pol, Nions(0)),
+			 [=](const int& iat) {
+			   int gid = psk.ionGroupID(iat);
+			   RealType d = psk.getDistanceIon(psk.R(iel,0), psk.R(iel,1), 
+								 psk.R(iel,2), iat);
+			   Fevaluate(gid,d);
+			 });
+  }
+    
 
   template<typename policyType, typename pskType, typename distViewType>
   KOKKOS_INLINE_FUNCTION
@@ -421,6 +444,35 @@ public:
 			 });
   }
 
+  template<typename policyType, typename pskType, typename gradViewType>
+  KOKKOS_INLINE_FUNCTION
+  RealType accumulateGLDistOnFly(policyType& pol, pskType& psk, int iel, gradViewType& grad) {
+    RealType lap(0);
+    constexpr RealType lapfac = dim - RealType(1);
+
+    Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(pol, Nions(0)),
+			    [&](const int& jat, RealType& locSum) 
+			    {
+			      locSum += d2U(jat) + lapfac * dU(jat);
+			    },lap);
+    
+    for (int idim = 0; idim < dim; idim++) {
+      RealType s(0.0);    
+      Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(pol, Nions(0)),
+			      [&](const int& jat, RealType& locSum) { 
+				RealType x[3];
+				psk.getDisplacementIon(psk.R(iel,0), psk.R(iel,1), psk.R(iel,2), 
+						       jat, x[0], x[1], x[2]);
+				locSum += dU(jat) * x[idim];
+			      },s);
+      grad(idim) = s;
+    }
+    return lap;
+  }
+
+
+
+    
   template<typename policyType, typename displViewType, typename gradViewType>
   KOKKOS_INLINE_FUNCTION
   RealType accumulateGL(policyType& pol, displViewType& displ, gradViewType& grad) {

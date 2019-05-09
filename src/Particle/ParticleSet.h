@@ -345,10 +345,15 @@ public:
 			   const int knotNum = member.league_rank() % numKnots;
 			   const int eNum = EiLists_(walkerNum, eiPair_, 0);
 			   const int atNum = EiLists_(walkerNum, eiPair_, 1);
-			   if (eNum > -1) {
+			   if (eNum > -1) {			     
+			     RealType x[3];
+			     auto& psk = allParticleSetData_(walkerNum);
+			     RealType dist = psk.getDisplacementIon(psk.R(eNum,0), psk.R(eNum,1), psk.R(eNum,2),
+								    atNum, x[0], x[1], x[2]);
 			     for (int dim = 0; dim < 3; dim++) {
-			       bigElPos_(walkerNum, knotNum, dim) = allParticleSetData_(walkerNum).UnlikeDTDistances(eNum,atNum) *
-				 rOnSphere_(walkerNum,knotNum,dim) - allParticleSetData_(walkerNum).UnlikeDTDisplacements(eNum,atNum,dim);
+			       //bigElPos_(walkerNum, knotNum, dim) = allParticleSetData_(walkerNum).UnlikeDTDistances(eNum,atNum) *
+			       //	 rOnSphere_(walkerNum,knotNum,dim) - allParticleSetData_(walkerNum).UnlikeDTDisplacements(eNum,atNum,dim);
+			       bigElPos_(walkerNum, knotNum, dim) = dist * rOnSphere_(walkerNum,knotNum,dim) - x[dim];
 			     }
 			     allParticleSetData_(walkerNum).DTComputeDistances(member, bigElPos(walkerNum,knotNum,0),	   
 									       bigElPos(walkerNum,knotNum,1),	   

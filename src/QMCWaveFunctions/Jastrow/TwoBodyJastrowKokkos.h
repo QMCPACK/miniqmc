@@ -54,7 +54,8 @@ public:
   template<typename policyType, typename pskType>
   KOKKOS_INLINE_FUNCTION
   void acceptMove(policyType& pol, pskType& psk, int iel) {
-    computeU3(pol, psk, iel, Kokkos::subview(psk.LikeDTDistances, iel, Kokkos::ALL()), old_u, old_du, old_d2u);
+    computeU3DistOnFly(pol, psk, iel, old_u, old_du, old_d2u);
+    //computeU3(pol, psk, iel, Kokkos::subview(psk.LikeDTDistances, iel, Kokkos::ALL()), old_u, old_du, old_d2u);
     if (updateMode(0) == 0)
     { // ratio-only during the move; need to compute derivatives
       computeU3(pol, psk, iel, psk.LikeDTTemp_r, cur_u, cur_du, cur_d2u);
@@ -62,7 +63,7 @@ public:
 
     valT cur_d2Uat(0);
     auto& new_dr = psk.LikeDTTemp_dr;
-    auto old_dr = Kokkos::subview(psk.LikeDTDisplacements,iel,Kokkos::ALL(), Kokkos::ALL());
+    //auto old_dr = Kokkos::subview(psk.LikeDTDisplacements,iel,Kokkos::ALL(), Kokkos::ALL());
     constexpr valT lapfac = OHMMS_DIM - RealType(1);
 
     // Number of electrons Reduction
@@ -84,7 +85,11 @@ public:
 			   for (int jel = 0; jel < Nelec(0); jel++)
 			   {
 			     const valT newg     = cur_du(jel) * new_dr(jel,idim);
-			     const valT dg       = newg - old_du(jel) * old_dr(jel,idim);
+			     RealType x[3];
+			     psk.getDisplacementElectron(psk.R(jel,0), psk.R(jel,1), psk.R(jel,2),
+							 iel, x[0], x[1], x[2]);
+			     const valT dg         = newg - old_du(jel) * x[idim];
+			     //const valT dg       = newg - old_du(jel) * old_dr(jel,idim);
 			     dUat(iel,idim)     -= dg;
 			     cur_g              += newg;
 			   }
@@ -103,8 +108,9 @@ public:
   template<typename pskType>
   KOKKOS_INLINE_FUNCTION
   void acceptMove_part1(pskType& psk, int iel, int workingElNum) {
-    computeU3(psk, iel, Kokkos::subview(psk.LikeDTDistances, iel, Kokkos::ALL()), 
-	      old_u, old_du, old_d2u, workingElNum);
+    //computeU3(psk, iel, Kokkos::subview(psk.LikeDTDistances, iel, Kokkos::ALL()), 
+    //      old_u, old_du, old_d2u, workingElNum);
+    computeU3DistOnFly(psk, iel, old_u, old_du, old_d2u, workingElNum);
     if (updateMode(0) == 0) {
       computeU3(psk, iel, psk.LikeDTTemp_r, cur_u, cur_du, cur_d2u, workingElNum);
     }
@@ -131,9 +137,15 @@ public:
     // the sum of -newl for all electrons goes into a temporary and then eventually into d2Uat(iel)
     Kokkos::atomic_add(&temporaryScratch(0),-newl);
 
+    RealType x[3];
+    psk.getDisplacementElectron(psk.R(workingElNum,0), psk.R(workingElNum,1), psk.R(workingElNum,2),
+				iel, x[0], x[1], x[2]);
+    
     for (int d = 0; d < dim; d++) {
-      const valT newg = cur_du(workingElNum) * psk.LikeDTTemp_dr(workingElNum,d);
-      const valT dg   = newg - old_du(workingElNum) * psk.LikeDTDisplacements(iel,workingElNum,d);
+      //const valT newg = cur_du(workingElNum) * psk.LikeDTTemp_dr(workingElNum,d);
+      //const valT dg   = newg - old_du(workingElNum) * psk.LikeDTDisplacements(iel,workingElNum,d);
+      const valT newg = cur_du(workingElNum) * x[d];
+      const valT dg   = newg - old_du(workingElNum) * x[d];
       Kokkos::atomic_add(&(dUat(iel,d)),-dg);
       // eventually this is bound for d2Uat(iel,d)
       Kokkos::atomic_add(&(temporaryScratchDim(d)),newg);
@@ -153,6 +165,7 @@ public:
   // so, every thing coming in will get an electron number and a walker number separately
   // seem s like this should not be too bad for computeU3
 
+  /*
   // when passing into this, psk is now on the host via UVM
   template<typename pskType>
   void acceptMove(Kokkos::DefaultExecutionSpace pol, pskType& psk, int iel) {
@@ -218,6 +231,7 @@ public:
       me.Uat(iel)     = me.cur_Uat(0);
     });
   }
+  */
 
   template<typename policyType, typename pskType>
   KOKKOS_INLINE_FUNCTION
@@ -247,8 +261,14 @@ public:
   KOKKOS_INLINE_FUNCTION
   void ratioGrad_part2(pskType& psk, int iel, int workingElNum) {
     Kokkos::atomic_add(&(cur_Uat(0)), cur_u(workingElNum));
+
+    RealType x[3];
+    psk.getDisplacementElectron(psk.R(workingElNum,0), psk.R(workingElNum,1), psk.R(workingElNum,2),
+				iel, x[0], x[1], x[2]);
+
     for (int i = 0; i < dim; i++) {
-      Kokkos::atomic_add(&(temporaryScratchDim(i)), cur_du(workingElNum) * psk.LikeDTDisplacements(iel, workingElNum, i));
+      //Kokkos::atomic_add(&(temporaryScratchDim(i)), cur_du(workingElNum) * psk.LikeDTDisplacements(iel, workingElNum, i));
+      Kokkos::atomic_add(&(temporaryScratchDim(i)), cur_du(workingElNum) * x[i]);
     }
   }
 
@@ -263,6 +283,7 @@ public:
   }
 
 
+  /*
   template<typename policyType, typename pskType, typename gradType>
   KOKKOS_INLINE_FUNCTION
   valT ratioGrad(policyType& pol, pskType& psk, int iel, gradType inG) {
@@ -287,6 +308,7 @@ public:
     }
     return std::exp(DiffVal);
   }
+  */
       
   template<typename policyType, typename pskType>
   KOKKOS_INLINE_FUNCTION
@@ -346,6 +368,53 @@ public:
 
   template<typename policyType, typename pskType>
   KOKKOS_INLINE_FUNCTION
+    void recompute(policyType& pol, pskType& psk) {
+    int iel = pol.league_rank()%Nelec(0);
+    //computeU3(pol, psk, Kokkos::subview(psk.UnlikeDTDistances,iel,Kokkos::ALL()));    
+    computeU3DistOnFly(pol, psk, iel, cur_u, cur_du, cur_d2u, true);
+
+    Uat(iel) = 0.0;
+    for (int iat = 0; iat < Nelec(0); iat++) {
+      Uat(iel) += cur_u(iat);
+    }
+    //auto subview1 = Kokkos::subview(psk.UnlikeDTDisplacements,iel,Kokkos::ALL(),Kokkos::ALL());
+    auto subview2 = Kokkos::subview(dUat, iel, Kokkos::ALL());
+    //Lap(iel) = accumulateGL(pol, subview1, subview2);
+    d2Uat(iel) = accumulateGLDistOnFly(pol, psk, iel, subview2);
+  }
+
+  template<typename policyType, typename pskType, typename gradViewType>
+  KOKKOS_INLINE_FUNCTION
+  RealType accumulateGLDistOnFly(policyType& pol, pskType& psk, int iel, gradViewType& grad) {
+    RealType lap(0);
+    constexpr RealType lapfac = dim - RealType(1);
+
+    Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(pol, Nelec(0)),
+                            [&](const int& jel, RealType& locSum)
+                            {
+                              locSum += cur_d2u(jel) + lapfac * cur_du(jel);
+                            },lap);
+
+    for (int idim = 0; idim < dim; idim++) {
+      RealType s(0.0);
+      Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(pol, Nelec(0)),
+                              [&](const int& jel, RealType& locSum) {
+                                RealType x[3];
+                                psk.getDisplacementElectron(psk.R(iel,0), psk.R(iel,1), psk.R(iel,2),
+							    jel, x[0], x[1], x[2]);
+                                locSum += cur_du(jel) * x[idim];
+                              },s);
+      grad(idim) = s;
+    }
+    return lap;
+  }
+
+                                                                                                        
+  
+
+  /*
+  template<typename policyType, typename pskType>
+  KOKKOS_INLINE_FUNCTION
   void recompute(policyType& pol, pskType& psk) {
     // 2
     for (int ig = 0; ig < NumGroups(0); ++ig)
@@ -359,48 +428,61 @@ public:
       //Kokkos::parallel_for(Kokkos::TeamThreadRange(pol,last),
 			//   [&](const int& i) {
       if(i<count) {
-			     const int iel = psk.first(ig)+i;
-			     computeU3(pol, psk, iel, Kokkos::subview(psk.LikeDTDistances, iel, Kokkos::ALL()),
-				       cur_u, cur_du, cur_d2u, true);
-			     Kokkos::single(Kokkos::PerTeam(pol),[&] (){
-			     Uat(iel) = 0.0;
-			     for (int j = 0; j < iel; j++) {
-			       Uat(iel) += cur_u(j);
-			     }
+	const int iel = psk.first(ig)+i;
+	//computeU3(pol, psk, iel, Kokkos::subview(psk.LikeDTDistances, iel, Kokkos::ALL()),
+	//	  cur_u, cur_du, cur_d2u, true);
+	computeU3DistOnFly(pol, psk, iel, cur_u, cur_du, cur_d2u, true);
+	Kokkos::single(Kokkos::PerTeam(pol),[&] (){
+	    Uat(iel) = 0.0;
+	    for (int j = 0; j < iel; j++) {
+	      Uat(iel) += cur_u(j);
+	    }
 
-			     Kokkos::Array<RealType,3> grad;
-			     valT lap(0);
-			     
-			     constexpr valT lapfac     = dim - RealType(1);
-			     for (int jel = 0; jel < iel; ++jel)
-			       lap += cur_d2u(jel) + lapfac * cur_du(jel);
-			     for (int idim = 0; idim < dim; ++idim)
-			     {
-			       valT s                  = valT();
-			       for (int jel = 0; jel < iel; ++jel)
-				 s += cur_du(jel) * psk.LikeDTDisplacements(iel,jel,idim);
-			       grad[idim] = s;
-			     }
-			     for(int idim = 0; idim < dim; idim++) {
-			       dUat(iel,idim)  = grad[idim];
-			     }
-			     d2Uat(iel) = -lap;
-			     // add the contribution from the upper triangle
-			     for (int jel = 0; jel < iel; jel++)
-			     {
-			       Uat(jel) += cur_u(jel);
-			       d2Uat(jel) -= cur_d2u(jel) + lapfac * cur_du[jel];
-			     }
-			     for (int idim = 0; idim < dim; ++idim)
-			     {
-			       for (int jel = 0; jel < iel; jel++)
-				 dUat(jel,idim) -= cur_du(jel) * psk.LikeDTDisplacements(iel,jel,idim); 
-			     }
-			     });
-			     pol.team_barrier();
-			   }
+	    Kokkos::Array<RealType,3> grad;
+	    valT lap(0);
+	    
+	    constexpr valT lapfac     = dim - RealType(1);
+	    for (int jel = 0; jel < iel; ++jel)
+	      lap += cur_d2u(jel) + lapfac * cur_du(jel);
+
+
+
+	    for (int idim = 0; idim < dim; ++idim)
+	      grad[idim] = valT();
+
+	    for (int jel = 0; jel < iel; jel++) {
+	      RealType x[3];
+	      psk.getDisplacementElectron(psk.R(jel,0), psk.R(jel,1), psk.R(jel,2),
+					  iel, x[0], x[1], x[2]);
+	      for (int idim = 0; idim < dim; ++idim)
+		grad[idim] += cur_du(jel) * x[idim];
+	    }
+
+	    for(int idim = 0; idim < dim; idim++) {
+	      dUat(iel,idim)  = grad[idim];
+	    }
+	    d2Uat(iel) = -lap;
+	    // add the contribution from the upper triangle
+	    for (int jel = 0; jel < iel; jel++)
+	      {
+		Uat(jel) += cur_u(jel);
+		d2Uat(jel) -= cur_d2u(jel) + lapfac * cur_du[jel];
+	      }
+	    for (int jel = 0; jel < iel; jel++) {
+	      RealType x[3];
+	      psk.getDisplacementElectron(psk.R(iel,0), psk.R(iel,1), psk.R(iel,2),
+					  jel, x[0], x[1], x[2]);
+	      for (int idim = 0; idim < dim; ++idim) {
+		//dUat(jel,idim) -= cur_du(jel) * psk.LikeDTDisplacements(iel,jel,idim);
+		dUat(jel,idim) -= cur_du(jel) * x[idim];
+	      } 
+	    }
+	  });
+	pol.team_barrier();
+      }
     }
   }
+  */
 
   template<typename policyType, typename pskType, typename distViewType>
   KOKKOS_INLINE_FUNCTION
@@ -426,6 +508,32 @@ public:
     Kokkos::atomic_add(&(devRatios(walkerIndex, knotNum)), val);
   }
 
+
+  template<typename policyType, typename pskType>
+  KOKKOS_INLINE_FUNCTION
+  void computeU3DistOnFly(policyType& pol, pskType& psk, int iel, 
+			  Kokkos::View<valT*> u, Kokkos::View<valT*> du,
+			  Kokkos::View<valT*> d2u, bool triangle = false) {
+    constexpr valT czero(0);
+    const int jelmax = triangle ? iel : Nelec(0);
+    Kokkos::parallel_for(Kokkos::ThreadVectorRange(pol,jelmax),
+			 [&](const int& i) {
+			   u(i) = czero;
+			   du(i) = czero;
+			   d2u(i) = czero;
+			 });
+    
+    const int igt = psk.GroupID(iel) * NumGroups(0);
+    for(int jg = 0; jg<NumGroups(0); jg++) {
+      const int istart = psk.first(jg);
+      int iend = jelmax;
+      if (psk.last(jg) < jelmax) {
+	iend = psk.last(jg);
+      }
+      FevaluateVGLDistOnFly(pol, igt+jg, iel, psk, istart, iend, u, du, d2u);
+    }
+  } 
+  
 
   template<typename policyType, typename pskType, typename distViewType>
   KOKKOS_INLINE_FUNCTION
@@ -469,6 +577,23 @@ public:
     const int workingElGroup = psk.GroupID(workingElNum);
     const int functorGroupID = igt+workingElGroup;
     FevaluateVGL(functorGroupID, iel, dist, u, du, d2u, workingElNum);
+  }
+
+  template<typename pskType>
+  KOKKOS_INLINE_FUNCTION
+  void computeU3DistOnFly(pskType& psk, int iel,
+			  Kokkos::View<valT*> u, Kokkos::View<valT*> du,
+			  Kokkos::View<valT*> d2u, int workingElNum, bool triangle = false) {
+    const int jelmax = triangle ? iel : Nelec(0);
+    if (workingElNum < jelmax) {
+      u(workingElNum) = valT(0);
+      du(workingElNum) = valT(0);
+      d2u(workingElNum) = valT(0);
+    }
+    const int igt = psk.GroupID(iel) * NumGroups(0);
+    const int workingElGroup = psk.GroupID(workingElNum);
+    const int functorGroupID = igt+workingElGroup;
+    FevaluateVGLDistOnFly(functorGroupID, iel, psk, u, du, d2u, workingElNum);
   }
 
 
@@ -612,6 +737,50 @@ public:
 			    },d);
     return d;
   }
+
+  template<typename pskType>
+  KOKKOS_INLINE_FUNCTION
+  void FevaluateVGLDistOnFly(int gid, int iel, pskType& psk, Kokkos::View<valT*>& u,
+			     Kokkos::View<valT*>& du, Kokkos::View<valT*> d2u, int workingElNum) {
+    
+    RealType dist = psk.getDistanceElectron(psk.R(iel,0), psk.R(iel,1), psk.R(iel,2), workingElNum);
+    if (dist < cutoff_radius(gid) && workingElNum != iel) {
+      const RealType dSquareDeltaRinv = DeltaRInv(gid) * DeltaRInv(gid);
+      const RealType cOne(1);
+      const RealType r = dist * DeltaRInv(gid);
+      const RealType rinv = cOne / dist;
+      const int iGather = (int) r;
+      
+      const RealType t = r - RealType(iGather);
+      const RealType tp0 = t*t*t;
+      const RealType tp1 = t*t;
+      const RealType tp2 = t;
+      
+      const RealType sCoef0 = SplineCoefs(gid, iGather+0);
+      const RealType sCoef1 = SplineCoefs(gid, iGather+1);
+      const RealType sCoef2 = SplineCoefs(gid, iGather+2);
+      const RealType sCoef3 = SplineCoefs(gid, iGather+3);
+
+      d2u(workingElNum) = dSquareDeltaRinv *
+	(sCoef0*( d2A( 2)*tp2 + d2A( 3))+
+	 sCoef1*( d2A( 6)*tp2 + d2A( 7))+
+	 sCoef2*( d2A(10)*tp2 + d2A(11))+
+	 sCoef3*( d2A(14)*tp2 + d2A(15)));
+      
+      du(workingElNum) = DeltaRInv(gid) * rinv *
+	(sCoef0*( dA( 1)*tp1 + dA( 2)*tp2 + dA( 3))+
+	 sCoef1*( dA( 5)*tp1 + dA( 6)*tp2 + dA( 7))+
+	 sCoef2*( dA( 9)*tp1 + dA(10)*tp2 + dA(11))+
+	 sCoef3*( dA(13)*tp1 + dA(14)*tp2 + dA(15)));
+      
+      u(workingElNum) = (sCoef0*(A( 0)*tp0 + A( 1)*tp1 + A( 2)*tp2 + A( 3))+
+			 sCoef1*(A( 4)*tp0 + A( 5)*tp1 + A( 6)*tp2 + A( 7))+
+			 sCoef2*(A( 8)*tp0 + A( 9)*tp1 + A(10)*tp2 + A(11))+
+			 sCoef3*(A(12)*tp0 + A(13)*tp1 + A(14)*tp2 + A(15)));
+    }
+  }
+
+
   
   template<typename distViewType>
   KOKKOS_INLINE_FUNCTION
@@ -653,7 +822,78 @@ public:
 			 sCoef3*(A(12)*tp0 + A(13)*tp1 + A(14)*tp2 + A(15)));
     }
   }
-  
+
+  template<typename policyType, typename pskType>
+  KOKKOS_INLINE_FUNCTION
+  void FevaluateVGLDistOnFly(policyType& pol, int gid, int iel, pskType& psk, int start, int end,
+			     Kokkos::View<valT*> u, Kokkos::View<valT*> du, Kokkos::View<valT*> d2u) {
+    RealType dSquareDeltaRinv = DeltaRInv(gid) * DeltaRInv(gid);
+    constexpr RealType cOne(1);
+    
+    int iCount = 0;
+    int iLimit = end - start;
+
+    if (pol.team_rank() == 0) {
+      Kokkos::parallel_scan(Kokkos::ThreadVectorRange(pol,iLimit),
+			  [&] (const int jel, int& mycount, bool final) {
+			    RealType r = psk.getDistanceElectron(psk.R(iel,0), psk.R(iel,1), psk.R(iel,2), jel+start);
+			    //RealType r = dist(jel+start);
+			    if (r < cutoff_radius(gid) && start + jel != iel) {
+			      if(final) {
+				DistIndices(mycount) = jel+start;
+				DistCompressed(mycount) = r;
+			      }
+			      mycount++;
+			    }
+			  });
+    }
+    Kokkos::parallel_reduce(Kokkos::TeamVectorRange(pol,iLimit),
+			    [&] (const int jel, int& mycount) {
+			    RealType r = psk.getDistanceElectron(psk.R(iel,0), psk.R(iel,1), psk.R(iel,2), jel+start);
+			    //RealType r = dist(jel+start);
+			    if (r < cutoff_radius(gid) && start + jel != iel) {
+			      mycount++;
+			    }
+			    },iCount);
+
+    pol.team_barrier();
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(pol, iCount),
+			 [&](const int& j) {
+			   const RealType r = DistCompressed(j)*DeltaRInv(gid);
+			   const RealType rinv = cOne / DistCompressed(j);
+			   const int iScatter   = DistIndices(j);
+			   const int iGather    = (int) r;
+			   
+			   const RealType t = r - RealType(iGather);
+			   const RealType tp0 = t*t*t;
+			   const RealType tp1 = t*t;
+			   const RealType tp2 = t;
+
+			   const RealType sCoef0 = SplineCoefs(gid, iGather+0);
+			   const RealType sCoef1 = SplineCoefs(gid, iGather+1);
+			   const RealType sCoef2 = SplineCoefs(gid, iGather+2);
+			   const RealType sCoef3 = SplineCoefs(gid, iGather+3);
+			   
+			   d2u(iScatter) = dSquareDeltaRinv *
+			     (sCoef0*( d2A( 2)*tp2 + d2A( 3))+
+			      sCoef1*( d2A( 6)*tp2 + d2A( 7))+
+			      sCoef2*( d2A(10)*tp2 + d2A(11))+
+			      sCoef3*( d2A(14)*tp2 + d2A(15)));
+			   
+			   du(iScatter) = DeltaRInv(gid) * rinv *
+			     (sCoef0*( dA( 1)*tp1 + dA( 2)*tp2 + dA( 3))+
+			      sCoef1*( dA( 5)*tp1 + dA( 6)*tp2 + dA( 7))+
+			      sCoef2*( dA( 9)*tp1 + dA(10)*tp2 + dA(11))+
+			      sCoef3*( dA(13)*tp1 + dA(14)*tp2 + dA(15)));
+      
+			   u(iScatter) = (sCoef0*(A( 0)*tp0 + A( 1)*tp1 + A( 2)*tp2 + A( 3))+
+					  sCoef1*(A( 4)*tp0 + A( 5)*tp1 + A( 6)*tp2 + A( 7))+
+					  sCoef2*(A( 8)*tp0 + A( 9)*tp1 + A(10)*tp2 + A(11))+
+					  sCoef3*(A(12)*tp0 + A(13)*tp1 + A(14)*tp2 + A(15)));
+			 });
+  }
+
+
 
   template<typename policyType, typename distViewType>
   KOKKOS_INLINE_FUNCTION

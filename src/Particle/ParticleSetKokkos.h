@@ -45,13 +45,13 @@ public:
   Kokkos::View<RealType[8][dim],Kokkos::LayoutLeft>     corners; // [8][dim]
   Kokkos::View<int[dim]>                                BoxBConds;
   
-  Kokkos::View<RealType**>                              LikeDTDistances; // [nparticles][nparticles]
-  Kokkos::View<RealType**[dim]>                         LikeDTDisplacements; // [nparticles][nparticles][dim]
+  //Kokkos::View<RealType**>                              LikeDTDistances; // [nparticles][nparticles]
+  //Kokkos::View<RealType**[dim]>                         LikeDTDisplacements; // [nparticles][nparticles][dim]
   Kokkos::View<RealType*>                               LikeDTTemp_r; // [nparticles]
   Kokkos::View<RealType*[dim],Kokkos::LayoutLeft>       LikeDTTemp_dr; // [nparticles][dim]
 
-  Kokkos::View<RealType**>                              UnlikeDTDistances; // [nparticles][ntargets]
-  Kokkos::View<RealType**[dim]>                         UnlikeDTDisplacements; // [nparticles][ntargets][dim]
+  //Kokkos::View<RealType**>                              UnlikeDTDistances; // [nparticles][ntargets]
+  //Kokkos::View<RealType**[dim]>                         UnlikeDTDisplacements; // [nparticles][ntargets][dim]
   Kokkos::View<RealType*>                               UnlikeDTTemp_r; // [ntargets]
   Kokkos::View<RealType*[dim],Kokkos::LayoutLeft>       UnlikeDTTemp_dr; // [ntargets][dim]
 
@@ -143,6 +143,105 @@ public:
 			   temp_dr(elIndex, iat,2) = flip * (delz + corners(ic,2));
 			 });
   }
+
+  //////////// new methods to compute distances on the fly
+  KOKKOS_INLINE_FUNCTION
+  RealType getDistance(RealType x0, RealType y0, RealType z0, 
+		       RealType srcx, RealType srcy, RealType srcz,
+		       RealType flip) const {
+    const RealType displ_0 = (srcx - x0) * flip;
+    const RealType displ_1 = (srcy - y0) * flip;
+    const RealType displ_2 = (srcz - z0) * flip;
+
+    const RealType ar_0 = -std::floor(displ_0 * DT_G(0,0) + displ_1 * DT_G(1,0) + displ_2 * DT_G(2,0));
+    const RealType ar_1 = -std::floor(displ_0 * DT_G(0,1) + displ_1 * DT_G(1,1) + displ_2 * DT_G(2,1));
+    const RealType ar_2 = -std::floor(displ_0 * DT_G(0,2) + displ_1 * DT_G(1,2) + displ_2 * DT_G(2,2));
+    
+    const RealType delx = displ_0 + ar_0 * DT_R(0,0) + ar_1 * DT_R(1,0) + ar_2 * DT_R(2,0);
+    const RealType dely = displ_1 + ar_0 * DT_R(0,1) + ar_1 * DT_R(1,1) + ar_2 * DT_R(2,1);
+    const RealType delz = displ_2 + ar_0 * DT_R(0,2) + ar_1 * DT_R(1,2) + ar_2 * DT_R(2,2);
+			   
+    RealType rmin = delx * delx + dely * dely + delz * delz;
+    int ic = 0;
+			   
+    for (int c = 1; c < 8; ++c)
+    {
+      const RealType x  = delx + corners(c,0);
+      const RealType y  = dely + corners(c,1);
+      const RealType z  = delz + corners(c,2);
+      const RealType r2 = x * x + y * y + z * z;
+      ic         = (r2 < rmin) ? c : ic;
+      rmin       = (r2 < rmin) ? r2 : rmin;
+    }
+    return sqrt(rmin);
+  }
+
+
+  KOKKOS_INLINE_FUNCTION
+  RealType getDisplacement(RealType x0, RealType y0, RealType z0, 
+			   RealType srcx, RealType srcy, RealType srcz,
+			   RealType& dx, RealType& dy, RealType& dz,
+			   RealType flip) const {
+    const RealType displ_0 = (srcx - x0) * flip;
+    const RealType displ_1 = (srcy - y0) * flip;
+    const RealType displ_2 = (srcz - z0) * flip;
+
+    const RealType ar_0 = -std::floor(displ_0 * DT_G(0,0) + displ_1 * DT_G(1,0) + displ_2 * DT_G(2,0));
+    const RealType ar_1 = -std::floor(displ_0 * DT_G(0,1) + displ_1 * DT_G(1,1) + displ_2 * DT_G(2,1));
+    const RealType ar_2 = -std::floor(displ_0 * DT_G(0,2) + displ_1 * DT_G(1,2) + displ_2 * DT_G(2,2));
+    
+    const RealType delx = displ_0 + ar_0 * DT_R(0,0) + ar_1 * DT_R(1,0) + ar_2 * DT_R(2,0);
+    const RealType dely = displ_1 + ar_0 * DT_R(0,1) + ar_1 * DT_R(1,1) + ar_2 * DT_R(2,1);
+    const RealType delz = displ_2 + ar_0 * DT_R(0,2) + ar_1 * DT_R(1,2) + ar_2 * DT_R(2,2);
+			   
+    RealType rmin = delx * delx + dely * dely + delz * delz;
+    int ic = 0;
+			   
+    for (int c = 1; c < 8; ++c)
+    {
+      const RealType x  = delx + corners(c,0);
+      const RealType y  = dely + corners(c,1);
+      const RealType z  = delz + corners(c,2);
+      const RealType r2 = x * x + y * y + z * z;
+      ic         = (r2 < rmin) ? c : ic;
+      rmin       = (r2 < rmin) ? r2 : rmin;
+    }
+    dx = flip * (delx + corners(ic,0));
+    dy = flip * (dely + corners(ic,1));
+    dz = flip * (delz + corners(ic,2));
+
+    return sqrt(rmin);
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  RealType getDistanceElectron(RealType x0, RealType y0, RealType z0, int elNum,
+			       int flip_ind = 0) const {
+    const RealType flip = elNum < flip_ind ? RealType(1.0) : RealType(-1.0);
+    return getDistance(x0, y0, z0, R(elNum,0), R(elNum,1), R(elNum,2), flip);
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  RealType getDisplacementElectron(RealType x0, RealType y0, RealType z0, int elNum,
+			           RealType& dx, RealType& dy, RealType& dz, int flip_ind = 0) const {
+    const RealType flip = elNum < flip_ind ? RealType(1.0) : RealType(-1.0);
+    return getDisplacement(x0, y0, z0, R(elNum,0), R(elNum,1), R(elNum,2), dx, dy, dz, flip);
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  RealType getDistanceIon(RealType x0, RealType y0, RealType z0, int ionNum,
+			  int flip_ind = 0) const {
+    const RealType flip = ionNum < flip_ind ? RealType(1.0) : RealType(-1.0);
+    return getDistance(x0, y0, z0, originR(ionNum,0), originR(ionNum,1), originR(ionNum,2), flip);
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  RealType getDisplacementIon(RealType x0, RealType y0, RealType z0, int ionNum,
+			      RealType& dx, RealType& dy, RealType& dz, int flip_ind = 0) const {
+    const RealType flip = ionNum < flip_ind ? RealType(1.0) : RealType(-1.0);
+    return getDisplacement(x0, y0, z0, originR(ionNum,0), originR(ionNum,1), originR(ionNum,2), 
+			   dx, dy, dz, flip);
+  }
+  //////////// Finish new single methods to calculate
 
   KOKKOS_INLINE_FUNCTION
   void DTComputeDistances(RealType x0, RealType y0, RealType z0,
@@ -346,6 +445,7 @@ public:
   template<typename policyType>
   KOKKOS_INLINE_FUNCTION
   void LikeEvaluate(policyType& pol) {
+    /*
     constexpr RealType BigR = std::numeric_limits<RealType>::max();
     for (int iat = 0; iat < LikeDTDistances.extent(1); ++iat)
     {
@@ -354,20 +454,24 @@ public:
 			 0, RSoA.extent(0), iat);
       LikeDTDistances(iat,iat) = BigR;
     }
+    */
   }
 
   template<typename policyType>
   KOKKOS_INLINE_FUNCTION
   void LikeEvaluate(policyType& pol, int jat) {
+    /*
     constexpr RealType BigR = std::numeric_limits<RealType>::max();
     DTComputeDistances(pol, R(jat,0), R(jat,1), R(jat,2), RSoA,
 		       LikeDTDistances, LikeDTDisplacements, jat,
 		       0, RSoA.extent(0), jat);
     LikeDTDistances(jat,jat) = BigR;
+    */
   }
 
   KOKKOS_INLINE_FUNCTION
   void LikeEvaluate(int jat, int workingEl) {
+    /*
     constexpr RealType BigR = std::numeric_limits<RealType>::max();
     if (workingEl == jat) {
       LikeDTDistances(jat,jat) = BigR;
@@ -376,30 +480,37 @@ public:
 			 LikeDTDistances, LikeDTDisplacements, jat,
 			 workingEl, jat);
     }
+    */
   }
 
   template<typename policyType> 
   KOKKOS_INLINE_FUNCTION
   void UnlikeEvaluate(policyType& pol) {
+    /*
     for (int iat = 0; iat < UnlikeDTDistances.extent(1); ++iat) {
       DTComputeDistances(pol, R(iat,0), R(iat,1), R(iat,2), originR,
 			 UnlikeDTDistances, UnlikeDTDisplacements, iat,
 			 0, originR.extent(0));
     }
+    */
   }
 
   template<typename policyType> 
   KOKKOS_INLINE_FUNCTION
   void UnlikeEvaluate(policyType& pol, int jat) {
+    /*
     DTComputeDistances(pol, R(jat,0), R(jat,1), R(jat,2), originR,
 		       UnlikeDTDistances, UnlikeDTDisplacements, jat,
 		       0, originR.extent(0));
+    */
   }
 
   void UnlikeEvaluate(int jat, int workingIon) {
+    /*
     DTComputeDistances(R(jat,0), R(jat,1), R(jat,2), originR,
 		       UnlikeDTDistances, UnlikeDTDisplacements, jat,
 		       workingIon);
+    */
   }
 
 
@@ -412,7 +523,7 @@ public:
   template<typename policyType>
   KOKKOS_INLINE_FUNCTION
   void LikeMoveOnSphere(policyType& pol, RealType x0, RealType y0, RealType z0) {
-    LikeDTComputeDistances(pol, x0, y0, z0, 0, LikeDTDistances.extent(0), activePtcl(0));
+    //LikeDTComputeDistances(pol, x0, y0, z0, 0, LikeDTDistances.extent(0), activePtcl(0));
   }
 
   template<typename policyType>
@@ -424,42 +535,49 @@ public:
   template<typename policyType>
   KOKKOS_INLINE_FUNCTION
   void UnlikeMoveOnSphere(policyType& pol, RealType x0, RealType y0, RealType z0) {
-    UnlikeDTComputeDistances(pol, x0, y0, z0, 0, UnlikeDTDistances.extent(1));
+    //UnlikeDTComputeDistances(pol, x0, y0, z0, 0, UnlikeDTDistances.extent(1));
   }
 
   KOKKOS_INLINE_FUNCTION
   void LikeUpdate(int iat) {
+    /*
     for (int i = 0; i < LikeDTTemp_r.extent(0); i++) {
-      LikeDTDistances(iat,i) = LikeDTTemp_r(i);
-      for (int j = 0; j < dim; j++) {
-  LikeDTDisplacements(iat,i,j) = LikeDTTemp_dr(i,j);
-      }
-    }
-  }
-
-  KOKKOS_INLINE_FUNCTION
-  void UnlikeUpdate(int iat) {
-    for (int i = 0; i < UnlikeDTTemp_r.extent(0); i++) {
-      UnlikeDTDistances(iat,i) = UnlikeDTTemp_r(i);
-      for (int j = 0; j < dim; j++) {
-  UnlikeDTDisplacements(iat,i,j) = UnlikeDTTemp_dr(i,j);
-      }
-    }
-  }
-
-  KOKKOS_INLINE_FUNCTION
-  void LikeUpdate(const Kokkos::TeamPolicy<>::member_type& member, int iat) {
-    Kokkos::parallel_for(Kokkos::TeamVectorRange(member,0,LikeDTTemp_r.extent(0)),
-        [&] (const int i) {
       LikeDTDistances(iat,i) = LikeDTTemp_r(i);
       for (int j = 0; j < dim; j++) {
 	LikeDTDisplacements(iat,i,j) = LikeDTTemp_dr(i,j);
       }
-    });
+    }
+    */
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  void UnlikeUpdate(int iat) {
+    /*
+    for (int i = 0; i < UnlikeDTTemp_r.extent(0); i++) {
+      UnlikeDTDistances(iat,i) = UnlikeDTTemp_r(i);
+      for (int j = 0; j < dim; j++) {
+	UnlikeDTDisplacements(iat,i,j) = UnlikeDTTemp_dr(i,j);
+      }
+    }
+    */
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  void LikeUpdate(const Kokkos::TeamPolicy<>::member_type& member, int iat) {
+    /*
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(member,0,LikeDTTemp_r.extent(0)),
+        [&] (const int i) {
+			   LikeDTDistances(iat,i) = LikeDTTemp_r(i);
+			   for (int j = 0; j < dim; j++) {
+			     LikeDTDisplacements(iat,i,j) = LikeDTTemp_dr(i,j);
+			   }
+			 });
+    */
   }
 
   KOKKOS_INLINE_FUNCTION
   void UnlikeUpdate(const Kokkos::TeamPolicy<>::member_type& member, int iat) {
+    /*
     Kokkos::parallel_for(Kokkos::TeamVectorRange(member,0,UnlikeDTTemp_r.extent(0)),
         [&] (const int i) {
       UnlikeDTDistances(iat,i) = UnlikeDTTemp_r(i);
@@ -467,6 +585,7 @@ public:
 	      UnlikeDTDisplacements(iat,i,j) = UnlikeDTTemp_dr(i,j);
       }
     });
+    */
   }
     
 
