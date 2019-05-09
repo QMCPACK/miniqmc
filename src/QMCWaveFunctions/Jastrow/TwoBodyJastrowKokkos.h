@@ -283,7 +283,6 @@ public:
   }
 
 
-  /*
   template<typename policyType, typename pskType, typename gradType>
   KOKKOS_INLINE_FUNCTION
   valT ratioGrad(policyType& pol, pskType& psk, int iel, gradType inG) {
@@ -301,14 +300,16 @@ public:
     
     valT DiffVal = Uat(iel) - cur_Uat(0);
 
+    
     Kokkos::Array<valT,3> tempG;
-    accumulateG(pol, cur_du, Kokkos::subview(psk.LikeDTDisplacements, iel, Kokkos::ALL(), Kokkos::ALL()), tempG);
+    //accumulateG(pol, cur_du, Kokkos::subview(psk.LikeDTDisplacements, iel, Kokkos::ALL(), Kokkos::ALL()), tempG);
+    accumulateGLDistOnFly(pol, psk, iel, temporaryScratchDim);
+
     for (int i = 0; i < dim; i++) {
-      inG(i) += tempG[i];
+      inG(i) += temporaryScratchDim(i);
     }
     return std::exp(DiffVal);
   }
-  */
       
   template<typename policyType, typename pskType>
   KOKKOS_INLINE_FUNCTION
