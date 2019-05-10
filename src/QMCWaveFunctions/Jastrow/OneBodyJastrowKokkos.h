@@ -71,11 +71,6 @@ public:
   }
 
 
-  
-
-
-
-
   template<typename policyType, typename pskType>
   KOKKOS_INLINE_FUNCTION
   RealType ratio(policyType& pol, pskType& psk, int iat) {

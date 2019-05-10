@@ -17,15 +17,10 @@
 
 #include <QMCWaveFunctions/WaveFunction.h>
 #include <QMCWaveFunctions/Determinant.h>
-#include <QMCWaveFunctions/DeterminantRef.h>
 #include <QMCWaveFunctions/Jastrow/BsplineFunctor.h>
-#include <QMCWaveFunctions/Jastrow/BsplineFunctorRef.h>
 #include <QMCWaveFunctions/Jastrow/PolynomialFunctor3D.h>
-#include <QMCWaveFunctions/Jastrow/OneBodyJastrowRef.h>
 #include <QMCWaveFunctions/Jastrow/OneBodyJastrow.h>
-#include <QMCWaveFunctions/Jastrow/TwoBodyJastrowRef.h>
 #include <QMCWaveFunctions/Jastrow/TwoBodyJastrow.h>
-#include <QMCWaveFunctions/Jastrow/ThreeBodyJastrowRef.h>
 #include <QMCWaveFunctions/Jastrow/ThreeBodyJastrow.h>
 #include <Input/Input.hpp>
 
@@ -62,96 +57,55 @@ void build_WaveFunction(bool useRef,
 
   const int nelup = els.getTotalNum() / 2;
 
-  if (useRef)
+  Kokkos::Profiling::pushRegion("building Wavefunction");
+  using J1OrbType = OneBodyJastrow<BsplineFunctor<valT>>;
+  using J2OrbType = TwoBodyJastrow<BsplineFunctor<valT>>;
+  using J3OrbType = ThreeBodyJastrow<PolynomialFunctor3D>;
+  using DetType   = DiracDeterminant;
+  
+  ions.RSoA = ions.R;
+  els.RSoA  = els.R;
+  
+  // distance tables
+  els.addTable(els, DT_SOA);
+  WF.ei_TableID = els.addTable(ions, DT_SOA);
+  
+  // determinant component
+  WF.nelup  = nelup;
+  Kokkos::Profiling::pushRegion("creating determinants");
+  WF.Det_up = new DetType(nelup, RNG, 0);
+  //std::cout << "In construction of wavefunction, for up determinant" << std::endl;
+  //std::cout << "psiV.extent(0) = " << static_cast<DetType*>(WF.Det_up)->ddk.psiV.extent(0) << std::endl;
+  WF.Det_dn = new DetType(els.getTotalNum() - nelup, RNG, nelup);
+  //std::cout << "In construction of wavefunction, for down determinant" << std::endl;
+  //std::cout << "psiV.extent(0) = " << static_cast<DetType*>(WF.Det_dn)->ddk.psiV.extent(0) << std::endl;
+  Kokkos::Profiling::popRegion();
+  
+  // J1 component
+  Kokkos::Profiling::pushRegion("creating J1");
+  J1OrbType* J1 = new J1OrbType(ions, els);
+  buildJ1(*J1, els.Lattice.WignerSeitzRadius);
+  WF.Jastrows.push_back(J1);
+  Kokkos::Profiling::popRegion();
+
+  // J2 component
+  Kokkos::Profiling::pushRegion("creating J2");
+  J2OrbType* J2 = new J2OrbType(els);
+  buildJ2(*J2, els.Lattice.WignerSeitzRadius);
+  //std::cout << "finished buildJ2" << std::endl;
+  WF.Jastrows.push_back(J2);
+  Kokkos::Profiling::popRegion();
+  
+  // J3 component
+  if (enableJ3)
   {
-    using J1OrbType = miniqmcreference::OneBodyJastrowRef<BsplineFunctorRef<valT>>;
-    using J2OrbType = miniqmcreference::TwoBodyJastrowRef<BsplineFunctorRef<valT>>;
-    using J3OrbType = miniqmcreference::ThreeBodyJastrowRef<PolynomialFunctor3D>;
-    using DetType   = miniqmcreference::DiracDeterminantRef;
-
-    ions.RSoA = ions.R;
-    els.RSoA  = els.R;
-
-    // distance tables
-    els.addTable(els, DT_SOA);
-    WF.ei_TableID = els.addTable(ions, DT_SOA);
-
-    // determinant component
-    WF.nelup  = nelup;
-    WF.Det_up = new DetType(nelup, RNG, 0);
-    WF.Det_dn = new DetType(els.getTotalNum() - nelup, RNG, nelup);
-
-    // J1 component
-    J1OrbType* J1 = new J1OrbType(ions, els);
-    buildJ1(*J1, els.Lattice.WignerSeitzRadius);
-    WF.Jastrows.push_back(J1);
-
-    // J2 component
-    J2OrbType* J2 = new J2OrbType(els);
-    buildJ2(*J2, els.Lattice.WignerSeitzRadius);
-    WF.Jastrows.push_back(J2);
-
-    // J3 component
-    if (enableJ3)
-    {
-      J3OrbType* J3 = new J3OrbType(ions, els);
-      buildJeeI(*J3, els.Lattice.WignerSeitzRadius);
-      WF.Jastrows.push_back(J3);
-    }
+    J3OrbType* J3 = new J3OrbType(ions, els);
+    buildJeeI(*J3, els.Lattice.WignerSeitzRadius);
+    WF.Jastrows.push_back(J3);
   }
-  else
-  {
-    Kokkos::Profiling::pushRegion("building Wavefunction");
-    using J1OrbType = OneBodyJastrow<BsplineFunctor<valT>>;
-    using J2OrbType = TwoBodyJastrow<BsplineFunctor<valT>>;
-    using J3OrbType = ThreeBodyJastrow<PolynomialFunctor3D>;
-    using DetType   = DiracDeterminant;
-
-    ions.RSoA = ions.R;
-    els.RSoA  = els.R;
-
-    // distance tables
-    els.addTable(els, DT_SOA);
-    WF.ei_TableID = els.addTable(ions, DT_SOA);
-
-    // determinant component
-    WF.nelup  = nelup;
-    Kokkos::Profiling::pushRegion("creating determinants");
-    WF.Det_up = new DetType(nelup, RNG, 0);
-    //std::cout << "In construction of wavefunction, for up determinant" << std::endl;
-    //std::cout << "psiV.extent(0) = " << static_cast<DetType*>(WF.Det_up)->ddk.psiV.extent(0) << std::endl;
-    WF.Det_dn = new DetType(els.getTotalNum() - nelup, RNG, nelup);
-    //std::cout << "In construction of wavefunction, for down determinant" << std::endl;
-    //std::cout << "psiV.extent(0) = " << static_cast<DetType*>(WF.Det_dn)->ddk.psiV.extent(0) << std::endl;
-    Kokkos::Profiling::popRegion();
-
-    // J1 component
-    Kokkos::Profiling::pushRegion("creating J1");
-    J1OrbType* J1 = new J1OrbType(ions, els);
-    buildJ1(*J1, els.Lattice.WignerSeitzRadius);
-    WF.Jastrows.push_back(J1);
-    Kokkos::Profiling::popRegion();
-
-    // J2 component
-    Kokkos::Profiling::pushRegion("creating J2");
-    J2OrbType* J2 = new J2OrbType(els);
-    buildJ2(*J2, els.Lattice.WignerSeitzRadius);
-    //std::cout << "finished buildJ2" << std::endl;
-    WF.Jastrows.push_back(J2);
-    Kokkos::Profiling::popRegion();
-
-    // J3 component
-    if (enableJ3)
-    {
-      J3OrbType* J3 = new J3OrbType(ions, els);
-      buildJeeI(*J3, els.Lattice.WignerSeitzRadius);
-      WF.Jastrows.push_back(J3);
-    }
-    Kokkos::Profiling::popRegion();
-  }
+  Kokkos::Profiling::popRegion();
 
   WF.setupTimers();
-
   WF.Is_built = true;
 }
 
@@ -176,107 +130,8 @@ void WaveFunction::setupTimers()
   }
 }
 
-void WaveFunction::evaluateLog(ParticleSet& P)
-{
-  constexpr valT czero(0);
-  if (FirstTime)
-  {
-    P.G      = czero;
-    P.L      = czero;
-    LogValue = Det_up->evaluateLog(P, P.G, P.L);
-    LogValue += Det_dn->evaluateLog(P, P.G, P.L);
-    for (size_t i = 0; i < Jastrows.size(); i++)
-      LogValue += Jastrows[i]->evaluateLog(P, P.G, P.L);
-    FirstTime = false;
-  }
-}
 
-WaveFunction::posT WaveFunction::evalGrad(ParticleSet& P, int iat)
-{
-  timers[Timer_Det]->start();
-  posT grad_iat = (iat < nelup ? Det_up->evalGrad(P, iat) : Det_dn->evalGrad(P, iat));
-  timers[Timer_Det]->stop();
 
-  for (size_t i = 0; i < Jastrows.size(); i++)
-  {
-    jastrow_timers[i]->start();
-    grad_iat += Jastrows[i]->evalGrad(P, iat);
-    jastrow_timers[i]->stop();
-  }
-  return grad_iat;
-}
-
-WaveFunction::valT WaveFunction::ratioGrad(ParticleSet& P, int iat, posT& grad)
-{
-  timers[Timer_Det]->start();
-  grad       = valT(0);
-  valT ratio = (iat < nelup ? Det_up->ratioGrad(P, iat, grad) : Det_dn->ratioGrad(P, iat, grad));
-  timers[Timer_Det]->stop();
-
-  for (size_t i = 0; i < Jastrows.size(); i++)
-  {
-    jastrow_timers[i]->start();
-    ratio *= Jastrows[i]->ratioGrad(P, iat, grad);
-    jastrow_timers[i]->stop();
-  }
-  return ratio;
-}
-
-WaveFunction::valT WaveFunction::ratio(ParticleSet& P, int iat)
-{
-  timers[Timer_Det]->start();
-  valT ratio = (iat < nelup ? Det_up->ratio(P, iat) : Det_dn->ratio(P, iat));
-  timers[Timer_Det]->stop();
-
-  for (size_t i = 0; i < Jastrows.size(); i++)
-  {
-    jastrow_timers[i]->start();
-    ratio *= Jastrows[i]->ratio(P, iat);
-    jastrow_timers[i]->stop();
-  }
-  return ratio;
-}
-
-void WaveFunction::acceptMove(ParticleSet& P, int iat)
-{
-  timers[Timer_Det]->start();
-  if (iat < nelup)
-    Det_up->acceptMove(P, iat);
-  else
-    Det_dn->acceptMove(P, iat);
-  timers[Timer_Det]->stop();
-
-  for (size_t i = 0; i < Jastrows.size(); i++)
-  {
-    jastrow_timers[i]->start();
-    Jastrows[i]->acceptMove(P, iat);
-    jastrow_timers[i]->stop();
-  }
-}
-
-void WaveFunction::restore(int iat) {}
-
-void WaveFunction::evaluateGL(ParticleSet& P)
-{
-  ScopedTimer local_timer(timers[Timer_GL]);
-
-  constexpr valT czero(0);
-  P.G = czero;
-  P.L = czero;
-  timers[Timer_Det]->start();
-  Det_up->evaluateGL(P, P.G, P.L);
-  Det_dn->evaluateGL(P, P.G, P.L);
-  LogValue = Det_up->LogValue + Det_dn->LogValue;
-  timers[Timer_Det]->stop();
-
-  for (size_t i = 0; i < Jastrows.size(); i++)
-  {
-    jastrow_timers[i]->start();
-    Jastrows[i]->evaluateGL(P, P.G, P.L);
-    LogValue += Jastrows[i]->LogValue;
-    jastrow_timers[i]->stop();
-  }
-}
 
 //void WaveFunction::multi_evaluateLog(const std::vector<WaveFunction*>& WF_list,
 //                                   const std::vector<ParticleSet*>& P_list) const

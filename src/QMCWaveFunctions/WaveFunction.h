@@ -71,13 +71,6 @@ public:
   ~WaveFunction();
 
   /// operates on a single walker
-  void evaluateLog(ParticleSet& P);
-  posT evalGrad(ParticleSet& P, int iat);
-  valT ratioGrad(ParticleSet& P, int iat, posT& grad);
-  valT ratio(ParticleSet& P, int iat);
-  void acceptMove(ParticleSet& P, int iat);
-  void restore(int iat);
-  void evaluateGL(ParticleSet& P);
 
   /// operates on multiple walkers
   void multi_evaluateLog(const std::vector<WaveFunction*>& WF_list,
@@ -276,8 +269,10 @@ void WaveFunction::multi_ratio(int pairNum, WaveFunctionKokkos& wfc, apsdType& a
 			      isActive(i) = 1;
 			      if (elNum < locNelUp) {
 				activeDDs(i) = upDets(i);
+				activeDDs(i).FirstIndex(0) = upDets(i).FirstIndex(0);
 			      } else {
 				activeDDs(i) = downDets(i);
+				activeDDs(i).FirstIndex(0) = downDets(i).FirstIndex(0);
 			      }
 			      locActive++;
 			    } else {

@@ -695,22 +695,65 @@ void doDiracDeterminantMultiEvalRatio(int pairNum, WaveFunctionKokkos& wfc, eiLi
   const int numKnots = psiVScratch.extent(1);
   const int numWalkers = numActive;
   
+  /*
+  Kokkos::parallel_for("dd-evalRatio-debug", Kokkos::RangePolicy<>(0,1),
+		       KOKKOS_LAMBDA(const int& i) {
+			 for (int walkerIdx = 0; walkerIdx < numWalkers; walkerIdx++) {
+			   const int walkerNum = wfc.activeMap(walkerIdx);
+			   const int firstIndexInDD = wfc.activeDDs(walkerIdx).FirstIndex(0);
+			   const int bandIdx = eiList(walkerNum, pairNum, 0) - firstIndexInDD;
+			   const int numElsInDD = wfc.activeDDs(walkerIdx).psiMinv.extent(0);
+			   for (int knotNum = 0; knotNum < numKnots; knotNum++) {
+			     for (int i = 0; i < numElsInDD; i++) {
+			       wfc.knots_ratios_view(walkerIdx, knotNum) +=
+				 psiVScratch(walkerNum, knotNum, i+firstIndexInDD);
+			     }
+			   }
+			 }
+		       });
+  */  
+
+  
+  auto knots_ratios_view = wfc.knots_ratios_view;
+  auto activeDDs = wfc.activeDDs;
+  auto activeMap = wfc.activeMap;
   using BarePolicy = Kokkos::TeamPolicy<>;
   BarePolicy pol(numWalkers*numKnots, Kokkos::AUTO, 32);
+  //BarePolicy pol(numWalkers*numKnots, 1, 1);
   Kokkos::parallel_for("dd-evalRatio-general", pol,
 		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
-			 const int walkerIdx = member.league_rank() / numKnots;
-			 const int knotNum = member.league_rank() % numKnots;
-			 const int walkerNum = wfc.activeMap(walkerIdx);
-			 const int firstIndexInDD = wfc.activeDDs(walkerNum).FirstIndex(0);
+			 const int walkerIdx = member.league_rank() % numWalkers;
+			 const int firstIndexInDD = activeDDs(walkerIdx).FirstIndex(0);
+
+			 const int knotNum = member.league_rank() / numWalkers;
+			 const int walkerNum = activeMap(walkerIdx);
 			 const int bandIdx = eiList(walkerNum, pairNum, 0) - firstIndexInDD;
-			 const int numElsInDD = wfc.activeDDs(walkerNum).psiMinv.extent(0);
+			 const int numElsInDD = activeDDs(walkerIdx).psiMinv.extent(0);
+			 
+			 //printf ("   psiVScratch dims = (%lu, %lu, %lu)\n", psiVScratch.extent(0), psiVScratch.extent(1), psiVScratch.extent(2));
+			 //printf ("   walkerIdx = %d, walkerNum = %d, knotNum = %d\n", walkerIdx, walkerNum, knotNum);
+
+			                                        
+			 /*
+			 Kokkos::single(Kokkos::PerTeam(member), [&]() {
+			     //printf( "walkerIdx = %d, knotNum = %d, knots_ratios_view dims = (%lu, %lu)\n", 
+			     //     walkerIdx, knotNum, knots_ratios_view.extent(0), knots_ratios_view.extent(1)); 
+			     knots_ratios_view(walkerIdx, knotNum) = 0.0;
+			     for (int i = 0; i < numElsInDD; i++) {
+			       //printf ("walkerNum = %d, knotNum = %d, idx = %d\n", walkerNum, knotNum, i+firstIndexInDD);
+			       knots_ratios_view(walkerIdx, knotNum) += psiVScratch(walkerNum,knotNum,i+firstIndexInDD);
+			     }
+			   });
+			 */
+			 
 			 Kokkos::parallel_reduce(Kokkos::TeamVectorRange(member, numElsInDD),
 						 [=] (const int& i, ValueType& innersum) {
 						   innersum += psiVScratch(walkerNum,knotNum,i+firstIndexInDD) *
 						     wfc.activeDDs(walkerIdx).psiMinv(bandIdx,i);
-						 }, wfc.knots_ratios_view(walkerIdx, knotNum));
+						   
+						 }, wfc.knots_ratios_view(walkerIdx, knotNum));			 
 		       });
+  
 
   Kokkos::deep_copy(wfc.knots_ratios_view_mirror, wfc.knots_ratios_view);
   for (int i = 0; i < numWalkers; i++) {

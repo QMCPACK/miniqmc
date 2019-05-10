@@ -118,58 +118,6 @@ struct WaveFunctionComponent : public QMCTraits
 
   /// operates on a single walker
 
-  /** evaluate the value of the wavefunction
-   * @param P active ParticleSet
-   * @param G Gradients, \f$\nabla\ln\Psi\f$
-   * @param L Laplacians, \f$\nabla^2\ln\Psi\f$
-   *
-   */
-  virtual RealType evaluateLog(ParticleSet& P,
-                               ParticleSet::ParticleGradient_t& G,
-                               ParticleSet::ParticleLaplacian_t& L) = 0;
-
-  /** return the current gradient for the iat-th particle
-   * @param Pquantum particle set
-   * @param iat particle index
-   * @return the gradient of the iat-th particle
-   */
-  virtual GradType evalGrad(ParticleSet& P, int iat) = 0;
-
-  /** evaluate the ratio of the new to old wavefunction component value
-   * @param P the active ParticleSet
-   * @param iat the index of a particle
-   * @param grad_iat Gradient for the active particle
-   */
-  virtual ValueType ratioGrad(ParticleSet& P, int iat, GradType& grad_iat) = 0;
-
-  /** a move for iat-th particle is accepted. Update the content for the next
-   * moves
-   * @param P target ParticleSet
-   * @param iat index of the particle whose new position was proposed
-   */
-  virtual void acceptMove(ParticleSet& P, int iat) = 0;
-
-  /** evalaute the ratio of the new to old wavefunction component value
-   *@param P the active ParticleSet
-   *@param iat the index of a particle
-   *@return \f$ \psi( \{ {\bf R}^{'} \} )/ \psi( \{ {\bf R}^{'}\})\f$
-   *
-   *Specialized for particle-by-particle move.
-   */
-  virtual ValueType ratio(ParticleSet& P, int iat) = 0;
-
-  /** compute G and L after the sweep
-   * @param P active ParticleSet
-   * @param G Gradients, \f$\nabla\ln\Psi\f$
-   * @param L Laplacians, \f$\nabla^2\ln\Psi\f$
-   * @param fromscratch, recompute internal data if true
-   *
-   */
-  virtual void evaluateGL(ParticleSet& P,
-                          ParticleSet::ParticleGradient_t& G,
-                          ParticleSet::ParticleLaplacian_t& L,
-                          bool fromscratch = false) = 0;
-
   /*
   /// operates on multiple walkers
   virtual void multi_evaluateLog(const std::vector<WaveFunctionComponent*>& WFC_list,
@@ -197,9 +145,7 @@ struct WaveFunctionComponent : public QMCTraits
                               int iat,
                               std::vector<PosType>& grad_now)
   {
-    //#pragma omp parallel for
-    for (int iw = 0; iw < P_list.size(); iw++)
-      grad_now[iw] = WFC_list[iw]->evalGrad(*P_list[iw], iat);
+    //
   };
 
   virtual void multi_evalGrad(const std::vector<WaveFunctionComponent*>& WFC_list,
@@ -216,11 +162,8 @@ struct WaveFunctionComponent : public QMCTraits
                                const std::vector<ParticleSet*>& P_list,
                                int iat,
                                std::vector<ValueType>& ratios,
-                               std::vector<PosType>& grad_new)
-  {
-    #pragma omp parallel for
-    for (int iw = 0; iw < P_list.size(); iw++)
-      ratios[iw] = WFC_list[iw]->ratioGrad(*P_list[iw], iat, grad_new[iw]);
+                               std::vector<PosType>& grad_new) {
+    //
   };
 
   virtual void multi_ratioGrad(const std::vector<WaveFunctionComponent*>& WFC_list,
@@ -279,12 +222,10 @@ struct WaveFunctionComponent : public QMCTraits
                                 const std::vector<ParticleSet*>& P_list,
                                 const std::vector<ParticleSet::ParticleGradient_t*>& G_list,
                                 const std::vector<ParticleSet::ParticleLaplacian_t*>& L_list,
-                                bool fromscratch = false)
-  {
-    #pragma omp parallel for
-    for (int iw = 0; iw < P_list.size(); iw++)
-      WFC_list[iw]->evaluateGL(*P_list[iw], *G_list[iw], *L_list[iw], fromscratch);
-  };
-};
-} // namespace qmcplusplus
+                                bool fromscratch = false) {
+    //
+  }
+}; 
+
+}// namespace qmcplusplus
 #endif

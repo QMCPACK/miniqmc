@@ -483,7 +483,8 @@ int main(int argc, char** argv)
       std::vector<GradType> grad_now(nmovers);
       std::vector<GradType> grad_new(nmovers);
       std::vector<ValueType> ratios(nmovers);
-      aligned_vector<RealType> ur(nmovers);
+      std::vector<RealType> ur(nmovers);
+      //aligned_vector<RealType> ur(nmovers);
       /// masks for movers with valid moves
       //std::vector<int> isValid(nmovers);
 
