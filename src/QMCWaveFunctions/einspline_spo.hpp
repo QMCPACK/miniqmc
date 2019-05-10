@@ -224,12 +224,14 @@ struct einspline_spo : public SPOSet
     auto x = u[0];
     auto y = u[1];
     auto z = u[2];
+    auto nBlocks_local = nBlocks;
+    auto nSplinesPerBlock_local = nSplinesPerBlock;
 #ifdef ENABLE_OFFLOAD
     #pragma omp target teams distribute num_teams(nBlocks) thread_limit(nSplinesPerBlock)
 #else
     #pragma omp parallel for
 #endif
-    for (int i = 0; i < nBlocks; ++i)
+    for (int i = 0; i < nBlocks_local; ++i)
     {
       const auto* restrict spline_m = einsplines_ptr[i];
 
@@ -239,13 +241,13 @@ struct einspline_spo : public SPOSet
                                             x, y, z,
                                             ix, iy, iz, a, b, c);
 #ifdef ENABLE_OFFLOAD
-      #pragma omp parallel num_threads(nSplinesPerBlock)
+      #pragma omp parallel
 #endif
       spline2offload::evaluate_v_v2(spline_m,
                                     ix, iy, iz,
                                     a, b, c,
                                     psi_shadows_ptr[i],
-                                    nSplinesPerBlock);
+                                    nSplinesPerBlock_local);
     }
   }
 
@@ -329,12 +331,14 @@ struct einspline_spo : public SPOSet
     auto x = u[0];
     auto y = u[1];
     auto z = u[2];
+    auto nBlocks_local = nBlocks;
+    auto nSplinesPerBlock_local = nSplinesPerBlock;
 #ifdef ENABLE_OFFLOAD
     #pragma omp target teams distribute num_teams(nBlocks) thread_limit(nSplinesPerBlock)
 #else
     #pragma omp parallel for
 #endif
-    for (int i = 0; i < nBlocks; ++i)
+    for (int i = 0; i < nBlocks_local; ++i)
     {
       const auto* restrict spline_m = einsplines_ptr[i];
 
@@ -353,7 +357,7 @@ struct einspline_spo : public SPOSet
                                       psi_shadows_ptr[i],
                                       grad_shadows_ptr[i],
                                       hess_shadows_ptr[i],
-                                      nSplinesPerBlock);
+                                      nSplinesPerBlock_local);
     }
   }
 
@@ -444,14 +448,18 @@ struct einspline_spo : public SPOSet
     spline_type** restrict einsplines_ptr = einsplines.data();
     OMPTinyVector<T, 3>* u_shadows_ptr    = u_shadows.data();
 
+    auto nw_local = nw;
+    auto nBlocks_local = nBlocks;
+    auto nSplinesPerBlock_local = nSplinesPerBlock;
+
 #ifdef ENABLE_OFFLOAD
     #pragma omp target teams distribute collapse(2) num_teams(nw*nBlocks) thread_limit(nSplinesPerBlock) \
     map(always, to : u_shadows_ptr [0:u_shadows.size()])
 #else
     #pragma omp parallel for collapse(2)
 #endif
-    for (size_t iw = 0; iw < nw; iw++)
-      for (int i = 0; i < nBlocks; ++i)
+    for (size_t iw = 0; iw < nw_local; iw++)
+      for (int i = 0; i < nBlocks_local; ++i)
       {
         const auto* restrict spline_m = einsplines_ptr[i];
 
@@ -474,10 +482,10 @@ struct einspline_spo : public SPOSet
                                         a, b, c,
                                         da, db, dc,
                                         d2a, d2b, d2c,
-                                        psi_shadows_ptr[iw * nBlocks + i],
-                                        grad_shadows_ptr[iw * nBlocks + i],
-                                        hess_shadows_ptr[iw * nBlocks + i],
-                                        nSplinesPerBlock);
+                                        psi_shadows_ptr[iw * nBlocks_local + i],
+                                        grad_shadows_ptr[iw * nBlocks_local + i],
+                                        hess_shadows_ptr[iw * nBlocks_local + i],
+                                        nSplinesPerBlock_local);
       }
   }
 
