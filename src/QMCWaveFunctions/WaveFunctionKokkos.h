@@ -53,6 +53,8 @@ public:
   Kokkos::View<int*>::HostMirror activeMapMirror;
 
   int numElectrons;
+  int numUpElectrons;
+  int numDownElectrons;
   int numIons;
 
  public:

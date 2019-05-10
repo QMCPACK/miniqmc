@@ -83,11 +83,6 @@ public:
 		      Kokkos::View<ParticleSet::pskType*>& psk,
                       int iat,
                       std::vector<posT>& grad_now) const;
-  void multi_ratioGrad(const std::vector<WaveFunction*>& WF_list,
-                       const std::vector<ParticleSet*>& P_list,
-                       int iat,
-                       std::vector<valT>& ratio_list,
-                       std::vector<posT>& grad_new) const;
 
   // think about making this not a template!!!
   template<typename valsType, typename isValidMapMirrorType>
@@ -244,10 +239,10 @@ void WaveFunction::multi_ratioGrad(const std::vector<WaveFunction*>& WF_list,
     Kokkos::View<valT*> tempResults("tempResults", numValid);
     if (iel < nelup) {
       doDiracDeterminantMultiEvalRatio(wfc.upDets, psiVs, tempResults, isValidMap, 
-				       numValid, iel, wfc.numElectrons);
+				       numValid, iel, wfc.numUpElectrons);
     } else {
       doDiracDeterminantMultiEvalRatio(wfc.downDets, psiVs, tempResults, isValidMap, 
-				       numValid, iel, wfc.numElectrons);
+				       numValid, iel, wfc.numDownElectrons);
     }
     auto tempResultsMirror = Kokkos::create_mirror_view(tempResults);
     Kokkos::deep_copy(tempResultsMirror, tempResults);

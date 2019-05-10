@@ -561,7 +561,6 @@ int main(int argc, char** argv)
 	      //std::cout << "  did evaluate_vgh" << std::endl;
 	      
 	      // note at this point, allPsi(walkerNum)(particlenum) is the value of the psiV
-	      //anon_mover->wavefunction.multi_ratioGrad(valid_WF_list, valid_P_list, iel, ratios, grad_new);
 	      anon_mover->wavefunction.multi_ratioGrad(WF_list, wfKokkos, allParticleSetData, allPsi,
 						       isValidMap, isValidMapMirror, numValid,
 						       iel, ratios, grad_new);
