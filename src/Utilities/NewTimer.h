@@ -361,7 +361,7 @@ public:
 
 #ifdef USE_STACK_TIMERS
       bool is_true_master(true);
-      for(int level = omp_get_active_level(); level>0; level--)
+      for(int level = omp_get_level(); level>0; level--)
         if(omp_get_ancestor_thread_num(level)!=0) is_true_master = false;
       if(is_true_master)
       {
@@ -406,7 +406,7 @@ public:
 
 #ifdef USE_STACK_TIMERS
       bool is_true_master(true);
-      for(int level = omp_get_active_level(); level>0; level--)
+      for(int level = omp_get_level(); level>0; level--)
         if(omp_get_ancestor_thread_num(level)!=0) is_true_master = false;
       if(is_true_master)
 #endif
