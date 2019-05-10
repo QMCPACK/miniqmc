@@ -167,8 +167,6 @@ void WaveFunction::multi_ratio(int pairNum, WaveFunctionKokkos& wfc, apsdType& a
   auto isActive = wfc.isActive;
   auto activeMap = wfc.activeMap;
 
-  int locNelUp = this->nelup;
-
   Kokkos::parallel_reduce("set-up-worklist", 1,
 			  KOKKOS_LAMBDA(const int& z, int& locActive) {
 			    int idx = 0;

@@ -48,6 +48,7 @@ struct BsplineFunctor : public OptimizableFunctorBase
   int Dummy;
   TinyVector<real_type, 16> A, dA, d2A, d3A;
   Kokkos::View<real_type*> SplineCoefs;
+  Kokkos::View<real_type*>::HostMirror SplineCoefsMirror;
 
   // static const real_type A[16], dA[16], d2A[16];
   real_type DeltaR, DeltaRInv;
@@ -98,7 +99,9 @@ struct BsplineFunctor : public OptimizableFunctorBase
     DeltaR       = cutoff_radius / (real_type)(numKnots - 1);
     DeltaRInv    = 1.0 / DeltaR;
     Parameters   = Kokkos::View<real_type*>("Parameters",n);
+
     SplineCoefs  = Kokkos::View<real_type*>("SplineCoefs",numCoefs);;
+    SplineCoefsMirror = Kokkos::create_mirror_view(SplineCoefs);
   }
 
   void reset()
@@ -107,14 +110,21 @@ struct BsplineFunctor : public OptimizableFunctorBase
     int numKnots = numCoefs - 2;
     DeltaR       = cutoff_radius / (real_type)(numKnots - 1);
     DeltaRInv    = 1.0 / DeltaR;
-    for (int i = 0; i < SplineCoefs.size(); i++)
-      SplineCoefs[i] = 0.0;
-    // Ensure that cusp conditions is satsified at the origin
-    SplineCoefs[1] = Parameters[0];
-    SplineCoefs[2] = Parameters[1];
-    SplineCoefs[0] = Parameters[1] - 2.0 * DeltaR * CuspValue;
-    for (int i = 2; i < Parameters.size(); i++)
-      SplineCoefs[i + 1] = Parameters[i];
+    auto locCuspValue = CuspValue;
+
+    Kokkos::parallel_for("setup-bspline-parameters", 1,
+			 KOKKOS_LAMBDA(const int& j) {
+			   for (int i = 0; i < SplineCoefs.extent(0); i++) {
+			     SplineCoefs(i) = 0.0;
+			   }
+			   SplineCoefs(1) = Parameters(0);
+			   SplineCoefs(2) = Parameters(1);
+			   SplineCoefs(0) = Parameters(1) - 2.0 * DeltaR * locCuspValue;
+			   for (int i = 2; i < Parameters.extent(0); i++) {
+			     SplineCoefs(i+1) = Parameters(i);
+			   }
+			 });
+    Kokkos::deep_copy(SplineCoefsMirror, SplineCoefs);
   }
 
   void setupParameters(int n, real_type rcut, real_type cusp, std::vector<real_type>& params)
@@ -122,10 +132,12 @@ struct BsplineFunctor : public OptimizableFunctorBase
     CuspValue     = cusp;
     cutoff_radius = rcut;
     resize(n);
+    auto ParametersMirror = Kokkos::create_mirror_view(Parameters);
     for (int i = 0; i < n; i++)
     {
-      Parameters[i] = params[i];
+      ParametersMirror(i) = params[i];
     }
+    Kokkos::deep_copy(Parameters, ParametersMirror);
     reset();
   }
 
@@ -140,8 +152,7 @@ struct BsplineFunctor : public OptimizableFunctorBase
    * @param distIndices temp storage for the compressed index
    */
   // clang-format off
-  template <typename TeamType>
-  void evaluateVGL(const TeamType& team, const int iat, const int iStart, const int iEnd, 
+  void evaluateVGL(const int iat, const int iStart, const int iEnd, 
       const T* _distArray,  
       T* restrict _valArray,
       T* restrict _gradArray, 
@@ -176,11 +187,12 @@ struct BsplineFunctor : public OptimizableFunctorBase
     tp[2] = t;
     tp[3] = 1.0;
     // clang-format off
+
     return
-      (SplineCoefs[i+0]*(A[ 0]*tp[0] + A[ 1]*tp[1] + A[ 2]*tp[2] + A[ 3]*tp[3])+
-       SplineCoefs[i+1]*(A[ 4]*tp[0] + A[ 5]*tp[1] + A[ 6]*tp[2] + A[ 7]*tp[3])+
-       SplineCoefs[i+2]*(A[ 8]*tp[0] + A[ 9]*tp[1] + A[10]*tp[2] + A[11]*tp[3])+
-       SplineCoefs[i+3]*(A[12]*tp[0] + A[13]*tp[1] + A[14]*tp[2] + A[15]*tp[3]));
+      (SplineCoefsMirror[i+0]*(A[ 0]*tp[0] + A[ 1]*tp[1] + A[ 2]*tp[2] + A[ 3]*tp[3])+
+       SplineCoefsMirror[i+1]*(A[ 4]*tp[0] + A[ 5]*tp[1] + A[ 6]*tp[2] + A[ 7]*tp[3])+
+       SplineCoefsMirror[i+2]*(A[ 8]*tp[0] + A[ 9]*tp[1] + A[10]*tp[2] + A[11]*tp[3])+
+       SplineCoefsMirror[i+3]*(A[12]*tp[0] + A[13]*tp[1] + A[14]*tp[2] + A[15]*tp[3]));
     // clang-format on
   }
 
@@ -201,21 +213,22 @@ struct BsplineFunctor : public OptimizableFunctorBase
     tp[2] = t;
     tp[3] = 1.0;
     // clang-format off
+
     d2udr2 = DeltaRInv * DeltaRInv *
-             (SplineCoefs[i+0]*(d2A[ 0]*tp[0] + d2A[ 1]*tp[1] + d2A[ 2]*tp[2] + d2A[ 3]*tp[3])+
-              SplineCoefs[i+1]*(d2A[ 4]*tp[0] + d2A[ 5]*tp[1] + d2A[ 6]*tp[2] + d2A[ 7]*tp[3])+
-              SplineCoefs[i+2]*(d2A[ 8]*tp[0] + d2A[ 9]*tp[1] + d2A[10]*tp[2] + d2A[11]*tp[3])+
-              SplineCoefs[i+3]*(d2A[12]*tp[0] + d2A[13]*tp[1] + d2A[14]*tp[2] + d2A[15]*tp[3]));
+             (SplineCoefsMirror[i+0]*(d2A[ 0]*tp[0] + d2A[ 1]*tp[1] + d2A[ 2]*tp[2] + d2A[ 3]*tp[3])+
+              SplineCoefsMirror[i+1]*(d2A[ 4]*tp[0] + d2A[ 5]*tp[1] + d2A[ 6]*tp[2] + d2A[ 7]*tp[3])+
+              SplineCoefsMirror[i+2]*(d2A[ 8]*tp[0] + d2A[ 9]*tp[1] + d2A[10]*tp[2] + d2A[11]*tp[3])+
+              SplineCoefsMirror[i+3]*(d2A[12]*tp[0] + d2A[13]*tp[1] + d2A[14]*tp[2] + d2A[15]*tp[3]));
     dudr = DeltaRInv *
-           (SplineCoefs[i+0]*(dA[ 0]*tp[0] + dA[ 1]*tp[1] + dA[ 2]*tp[2] + dA[ 3]*tp[3])+
-            SplineCoefs[i+1]*(dA[ 4]*tp[0] + dA[ 5]*tp[1] + dA[ 6]*tp[2] + dA[ 7]*tp[3])+
-            SplineCoefs[i+2]*(dA[ 8]*tp[0] + dA[ 9]*tp[1] + dA[10]*tp[2] + dA[11]*tp[3])+
-            SplineCoefs[i+3]*(dA[12]*tp[0] + dA[13]*tp[1] + dA[14]*tp[2] + dA[15]*tp[3]));
+           (SplineCoefsMirror[i+0]*(dA[ 0]*tp[0] + dA[ 1]*tp[1] + dA[ 2]*tp[2] + dA[ 3]*tp[3])+
+            SplineCoefsMirror[i+1]*(dA[ 4]*tp[0] + dA[ 5]*tp[1] + dA[ 6]*tp[2] + dA[ 7]*tp[3])+
+            SplineCoefsMirror[i+2]*(dA[ 8]*tp[0] + dA[ 9]*tp[1] + dA[10]*tp[2] + dA[11]*tp[3])+
+            SplineCoefsMirror[i+3]*(dA[12]*tp[0] + dA[13]*tp[1] + dA[14]*tp[2] + dA[15]*tp[3]));
     return
-      (SplineCoefs[i+0]*(A[ 0]*tp[0] + A[ 1]*tp[1] + A[ 2]*tp[2] + A[ 3]*tp[3])+
-       SplineCoefs[i+1]*(A[ 4]*tp[0] + A[ 5]*tp[1] + A[ 6]*tp[2] + A[ 7]*tp[3])+
-       SplineCoefs[i+2]*(A[ 8]*tp[0] + A[ 9]*tp[1] + A[10]*tp[2] + A[11]*tp[3])+
-       SplineCoefs[i+3]*(A[12]*tp[0] + A[13]*tp[1] + A[14]*tp[2] + A[15]*tp[3]));
+      (SplineCoefsMirror[i+0]*(A[ 0]*tp[0] + A[ 1]*tp[1] + A[ 2]*tp[2] + A[ 3]*tp[3])+
+       SplineCoefsMirror[i+1]*(A[ 4]*tp[0] + A[ 5]*tp[1] + A[ 6]*tp[2] + A[ 7]*tp[3])+
+       SplineCoefsMirror[i+2]*(A[ 8]*tp[0] + A[ 9]*tp[1] + A[10]*tp[2] + A[11]*tp[3])+
+       SplineCoefsMirror[i+3]*(A[12]*tp[0] + A[13]*tp[1] + A[14]*tp[2] + A[15]*tp[3]));
     // clang-format on
   }
 };
@@ -254,19 +267,19 @@ inline T BsplineFunctor<T>::evaluateV(const int iat,
     real_type tp1 = t * t;
     real_type tp2 = t;
 
-    real_type d1 = SplineCoefs[i + 0] * (A[0] * tp0 + A[1] * tp1 + A[2] * tp2 + A[3]);
-    real_type d2 = SplineCoefs[i + 1] * (A[4] * tp0 + A[5] * tp1 + A[6] * tp2 + A[7]);
-    real_type d3 = SplineCoefs[i + 2] * (A[8] * tp0 + A[9] * tp1 + A[10] * tp2 + A[11]);
-    real_type d4 = SplineCoefs[i + 3] * (A[12] * tp0 + A[13] * tp1 + A[14] * tp2 + A[15]);
+
+    real_type d1 = SplineCoefsMirror[i + 0] * (A[0] * tp0 + A[1] * tp1 + A[2] * tp2 + A[3]);
+    real_type d2 = SplineCoefsMirror[i + 1] * (A[4] * tp0 + A[5] * tp1 + A[6] * tp2 + A[7]);
+    real_type d3 = SplineCoefsMirror[i + 2] * (A[8] * tp0 + A[9] * tp1 + A[10] * tp2 + A[11]);
+    real_type d4 = SplineCoefsMirror[i + 3] * (A[12] * tp0 + A[13] * tp1 + A[14] * tp2 + A[15]);
     d += (d1 + d2 + d3 + d4);
   }
   return d;
 }
 
+
 template<typename T>
-template<typename TeamType>
-KOKKOS_INLINE_FUNCTION void BsplineFunctor<T>::evaluateVGL(const TeamType& team,
-                                           const int iat,
+inline void BsplineFunctor<T>::evaluateVGL(const int iat,
                                            const int iStart,
                                            const int iEnd,
                                            const T* _distArray,
@@ -290,25 +303,21 @@ KOKKOS_INLINE_FUNCTION void BsplineFunctor<T>::evaluateVGL(const TeamType& team,
   real_type* gradArray       = _gradArray + iStart;
   real_type* laplArray       = _laplArray + iStart;
 
-  Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(team,iLimit), [&](const int& jat, int& count){
+#pragma vector always
+  for (int jat = 0; jat < iLimit; jat++)
+  {
     real_type r = distArray[jat];
-    if( r < cutoff_radius && iStart + jat != iat)
-      count++;
-  },iCount);
-
-  Kokkos::parallel_scan(Kokkos::ThreadVectorRange(team,iLimit), [&](const int& jat, int& count, const bool& final){
-    real_type r = distArray[jat];
-    if( r < cutoff_radius && iStart + jat != iat)
+    if (r < cutoff_radius && iStart + jat != iat)
     {
-      if(final){
-        distIndices[count]         = jat;
-        distArrayCompressed[count] = r;
-      }
-      count++;
+      distIndices[iCount]         = jat;
+      distArrayCompressed[iCount] = r;
+      iCount++;
     }
-  }); 
+  }
 
-  Kokkos::parallel_for(Kokkos::ThreadVectorRange(team,iCount), [&](const int& j){
+  #pragma omp simd
+  for (int j = 0; j < iCount; j++)
+  {
     real_type r    = distArrayCompressed[j];
     int iScatter   = distIndices[j];
     real_type rinv = cOne / r;
@@ -319,10 +328,10 @@ KOKKOS_INLINE_FUNCTION void BsplineFunctor<T>::evaluateVGL(const TeamType& team,
     real_type tp1 = t * t;
     real_type tp2 = t;
 
-    real_type sCoef0 = SplineCoefs[iGather + 0];
-    real_type sCoef1 = SplineCoefs[iGather + 1];
-    real_type sCoef2 = SplineCoefs[iGather + 2];
-    real_type sCoef3 = SplineCoefs[iGather + 3];
+    real_type sCoef0 = SplineCoefsMirror[iGather + 0];
+    real_type sCoef1 = SplineCoefsMirror[iGather + 1];
+    real_type sCoef2 = SplineCoefsMirror[iGather + 2];
+    real_type sCoef3 = SplineCoefsMirror[iGather + 3];
 
     // clang-format off
     laplArray[iScatter] = dSquareDeltaRinv *
@@ -342,7 +351,8 @@ KOKKOS_INLINE_FUNCTION void BsplineFunctor<T>::evaluateVGL(const TeamType& team,
         sCoef2*(A[ 8]*tp0 + A[ 9]*tp1 + A[10]*tp2 + A[11])+
         sCoef3*(A[12]*tp0 + A[13]*tp1 + A[14]*tp2 + A[15]));
     // clang-format on
-  });
+  }
 }
+
 } // namespace qmcplusplus
 #endif

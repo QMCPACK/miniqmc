@@ -135,7 +135,6 @@ void WaveFunction::multi_evaluateLog(const std::vector<WaveFunction*>& WF_list,
   const int numItems = WF_list.size();
   if (WF_list[0]->FirstTime)
   {
-    constexpr valT czero(0);
     ParticleSet::ParticleValue_t LogValues(numItems);
 
     if (numItems > 0) {

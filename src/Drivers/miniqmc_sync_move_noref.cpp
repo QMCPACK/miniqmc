@@ -193,12 +193,12 @@ int main(int argc, char** argv)
     int nb     = 1;
     int nc     = 1;
     int nsteps = 5;
-    int iseed  = 11;
+    //int iseed  = 11;
     int nx = 37, ny = 37, nz = 37;
     int nmovers = 1; // LNS -- changed from number of threads.  Must use w option
     // thread blocking
     int tileSize  = -1;
-    int team_size = 1;
+    //int team_size = 1;
     int nsubsteps = 1;
     // Set cutoff for NLPP use.
     RealType Rmax(1.7);
@@ -225,16 +225,16 @@ int main(int argc, char** argv)
 	case 'a':
 	  tileSize = atoi(optarg);
 	  break;
-	case 'c': // number of members per team
-	  team_size = atoi(optarg);
-	  break;
+	  //	case 'c': // number of members per team
+	  //      team_size = atoi(optarg);
+	  //	  break;
 	case 'g': // tiling1 tiling2 tiling3
 	  sscanf(optarg, "%d %d %d", &na, &nb, &nc);
 	  break;
 	case 'h':
 	  print_help();
 	  return 1;
-	  break;
+	  //break;
 	case 'j':
 	  enableJ3 = true;
 	  break;
@@ -255,9 +255,9 @@ int main(int argc, char** argv)
 	case 'r':
 	  accept = atof(optarg);
 	  break;
-	case 's':
-	  iseed = atoi(optarg);
-	  break;
+	  //	case 's':
+	  //	  iseed = atoi(optarg);
+	  //	  break;
 	case 't':
 	  timer_level_name = std::string(optarg);
 	  break;
@@ -267,7 +267,7 @@ int main(int argc, char** argv)
 	case 'V':
 	  print_version(true);
 	  return 1;
-	  break;
+	  //break;
 	case 'w': // number of nmovers
 	  nmovers = atoi(optarg);
 	  break;

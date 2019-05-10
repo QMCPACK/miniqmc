@@ -218,7 +218,6 @@ public:
 
   template<typename apskType>
   void multi_setActiveKokkos(apskType& apsk, int iel, int numEl, int numIons) {
-    int locIel = iel;
     int numWalkers = apsk.extent(0);
     auto& allParticleSetData = apsk;
     // probably an issue in the evaluate functions

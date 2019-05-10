@@ -141,10 +141,10 @@ void doTwoBodyJastrowMultiAcceptRestoreMove(atbjdType atbjd, apsdType apsd,
 
  
 // Used for GPU
-template<typename atbjdType, typename apsdType, typename valT>
+template<typename atbjdType, typename apsdType, typename ValueType>
 void doTwoBodyJastrowMultiRatioGrad(atbjdType& atbjd, apsdType& apsd, Kokkos::View<int*>& isValidMap,
-				int numValid, int iel, Kokkos::View<valT**> gradNowView,
-				    Kokkos::View<valT*> ratiosView) {
+				int numValid, int iel, Kokkos::View<ValueType**> gradNowView,
+				    Kokkos::View<ValueType*> ratiosView) {
   const int numWalkers = numValid;
   const int numElectrons = atbjd(0).Nelec(0); // note this is bad, relies on UVM, kill it
   
@@ -180,10 +180,10 @@ void doTwoBodyJastrowMultiRatioGrad(atbjdType& atbjd, apsdType& apsd, Kokkos::Vi
 }
 
 // used for OpenMP
-template<typename atbjdType, typename apsdType, typename valT>
+template<typename atbjdType, typename apsdType, typename ValueType>
 void doTwoBodyJastrowMultiRatioGrad(atbjdType& atbjd, apsdType& apsd, Kokkos::View<int*>& isValidMap,
-				    int numValid, int iel, Kokkos::View<valT**> gradNowView,
-				    Kokkos::View<valT*> ratiosView, const Kokkos::HostSpace& ) {
+				    int numValid, int iel, Kokkos::View<ValueType**> gradNowView,
+				    Kokkos::View<ValueType*> ratiosView, const Kokkos::HostSpace& ) {
   const int numWalkers = atbjd.extent(0);
   using BarePolicy = Kokkos::TeamPolicy<>;
   BarePolicy pol(numWalkers, Kokkos::AUTO, 32);
@@ -197,25 +197,25 @@ void doTwoBodyJastrowMultiRatioGrad(atbjdType& atbjd, apsdType& apsd, Kokkos::Vi
 }
 
 #ifdef KOKKOS_ENABLE_CUDA
-template<typename atbjdType, typename apsdType, typename valT>
+template<typename atbjdType, typename apsdType, typename ValueType>
 void doTwoBodyJastrowMultiRatioGrad(atbjdType& atbjd, apsdType& apsd, Kokkos::View<int*>& isValidMap,
-				    int numValid, int iel, Kokkos::View<valT**> gradNowView,
-				    Kokkos::View<valT*> ratiosView, const Kokkos::CudaSpace& ms) {
+				    int numValid, int iel, Kokkos::View<ValueType**> gradNowView,
+				    Kokkos::View<ValueType*> ratiosView, const Kokkos::CudaSpace& ms) {
   doTwoBodyJastrowMultiRatioGrad(atbjd, apsd, isValidMap, numValid, iel, gradNowView, ratiosView);
 }
 
-template<typename atbjdType, typename apsdType, typename valT>
+template<typename atbjdType, typename apsdType, typename ValueType>
 void doTwoBodyJastrowMultiRatioGrad(atbjdType& atbjd, apsdType& apsd, Kokkos::View<int*>& isValidMap,
-				    int numValid, int iel, Kokkos::View<valT**> gradNowView,
-				    Kokkos::View<valT*> ratiosView, const Kokkos::CudaUVMSpace& ms) {
+				    int numValid, int iel, Kokkos::View<ValueType**> gradNowView,
+				    Kokkos::View<ValueType*> ratiosView, const Kokkos::CudaUVMSpace& ms) {
   doTwoBodyJastrowMultiRatioGrad(atbjd, apsd, isValidMap, numValid, iel, gradNowView, ratiosView);
 }
 #endif
  
 
 
-template<typename atbjdType, typename valT>
-void doTwoBodyJastrowMultiEvalGrad(atbjdType atbjd, int iat, Kokkos::View<valT**> gradNowView) {
+template<typename atbjdType, typename ValueType>
+void doTwoBodyJastrowMultiEvalGrad(atbjdType atbjd, int iat, Kokkos::View<ValueType**> gradNowView) {
   int numWalkers = atbjd.extent(0);
   using BarePolicy = Kokkos::TeamPolicy<>;
   BarePolicy pol(numWalkers, 1, 1);
@@ -322,8 +322,8 @@ void doTwoBodyJastrowMultiEvalRatio(int pairNum, eiListType& eiList, apskType& a
 // could potentially restore this for OpenMP, but note that
 // on the back end would need to restore the previous backside implementation
 // that does not expect a single electron per member
-template<typename atbjdType, typename apsdType, typename valT>
-void doTwoBodyJastrowMultiEvaluateLog(atbjdType atbjd, apsdType apsd, Kokkos::View<valT*> values) {
+template<typename atbjdType, typename apsdType, typename ValueType>
+void doTwoBodyJastrowMultiEvaluateLog(atbjdType atbjd, apsdType apsd, Kokkos::View<ValueType*> values) {
   Kokkos::Profiling::pushRegion("2BJ-multiEvalLog");
   const int numWalkers = atbjd.extent(0);
   using BarePolicy = Kokkos::TeamPolicy<>;
@@ -355,10 +355,6 @@ struct TwoBodyJastrow : public WaveFunctionComponent
   
   /// alias FuncType
   using FuncType = FT;
-  /// type of each component U, dU, d2U;
-  using valT = typename FT::real_type;
-  /// element position type
-  using posT = TinyVector<valT, OHMMS_DIM>;
   /// use the same container
   using RowContainer = DistanceTableData::RowContainer;
 
@@ -374,9 +370,9 @@ struct TwoBodyJastrow : public WaveFunctionComponent
 
   /// diff value
   RealType DiffVal;
-  Kokkos::View<valT*> cur_u, cur_du, cur_d2u;
-  Kokkos::View<valT*> old_u, old_du, old_d2u;
-  Kokkos::View<valT*> DistCompressed;
+  Kokkos::View<ValueType*> cur_u, cur_du, cur_d2u;
+  Kokkos::View<ValueType*> old_u, old_du, old_d2u;
+  Kokkos::View<ValueType*> DistCompressed;
   Kokkos::View<int*> DistIndice;
   /// Container for \f$F[ig*NumGroups+jg]\f$
 
@@ -416,7 +412,7 @@ struct TwoBodyJastrow : public WaveFunctionComponent
   virtual void multi_evalGrad(const std::vector<WaveFunctionComponent*>& WFC_list,
 			      WaveFunctionKokkos& wfc,
 			      Kokkos::View<ParticleSet::pskType*>& psk,
-                              int iat, std::vector<posT>& grad_now);
+                              int iat, std::vector<PosType>& grad_now);
 
   virtual void multi_ratioGrad(const std::vector<WaveFunctionComponent*>& WFC_list,
                                WaveFunctionKokkos& wfc,
@@ -475,21 +471,21 @@ void TwoBodyJastrow<FT>::init(ParticleSet& p)
   }
 
   //And now the Kokkos vectors
-  cur_u   = Kokkos::View<valT*>("cur_u",N);
-  cur_du  = Kokkos::View<valT*>("cur_du",N);
-  cur_d2u = Kokkos::View<valT*>("cur_d2u",N);
-  old_u   = Kokkos::View<valT*>("old_u",N);
-  old_du  = Kokkos::View<valT*>("old_du",N);
-  old_d2u = Kokkos::View<valT*>("old_d2u",N);
+  cur_u   = Kokkos::View<ValueType*>("cur_u",N);
+  cur_du  = Kokkos::View<ValueType*>("cur_du",N);
+  cur_d2u = Kokkos::View<ValueType*>("cur_d2u",N);
+  old_u   = Kokkos::View<ValueType*>("old_u",N);
+  old_du  = Kokkos::View<ValueType*>("old_du",N);
+  old_d2u = Kokkos::View<ValueType*>("old_d2u",N);
   DistIndice=Kokkos::View<int*>("DistIndice",N);
-  DistCompressed=Kokkos::View<valT*>("DistCompressed",N);
+  DistCompressed=Kokkos::View<ValueType*>("DistCompressed",N);
 
   initializeJastrowKokkos();
 }
 
 template<typename FT>
 void TwoBodyJastrow<FT>::initializeJastrowKokkos() {
-  jasData.LogValue       = Kokkos::View<valT[1]>("LogValue");
+  jasData.LogValue       = Kokkos::View<ValueType[1]>("LogValue");
 
   jasData.Nelec          = Kokkos::View<int[1]>("Nelec");
   auto NelecMirror       = Kokkos::create_mirror_view(jasData.Nelec);
@@ -518,13 +514,13 @@ void TwoBodyJastrow<FT>::initializeJastrowKokkos() {
   updateModeMirror(0)     = 3;
   Kokkos::deep_copy(jasData.updateMode, updateModeMirror);
 
-  jasData.temporaryScratch = Kokkos::View<valT[1]>("temporaryScratch");
-  jasData.temporaryScratchDim = Kokkos::View<valT[OHMMS_DIM]>("temporaryScratchDim");
+  jasData.temporaryScratch = Kokkos::View<ValueType[1]>("temporaryScratch");
+  jasData.temporaryScratchDim = Kokkos::View<ValueType[OHMMS_DIM]>("temporaryScratchDim");
 
-  jasData.cur_Uat         = Kokkos::View<valT[1]>("cur_Uat");
-  jasData.Uat             = Kokkos::View<valT*>("Uat", N);
-  jasData.dUat            = Kokkos::View<valT*[OHMMS_DIM], Kokkos::LayoutLeft>("dUat", N);
-  jasData.d2Uat           = Kokkos::View<valT*>("d2Uat", N);
+  jasData.cur_Uat         = Kokkos::View<ValueType[1]>("cur_Uat");
+  jasData.Uat             = Kokkos::View<ValueType*>("Uat", N);
+  jasData.dUat            = Kokkos::View<ValueType*[OHMMS_DIM], Kokkos::LayoutLeft>("dUat", N);
+  jasData.d2Uat           = Kokkos::View<ValueType*>("d2Uat", N);
 
   // these things are already views, so just do operator=
   jasData.cur_u = cur_u;
@@ -537,24 +533,24 @@ void TwoBodyJastrow<FT>::initializeJastrowKokkos() {
   jasData.DistIndices = DistIndice;
 
   // need to put in the data for A, dA and d2A    
-  TinyVector<valT, 16> A(-1.0/6.0,  3.0/6.0, -3.0/6.0, 1.0/6.0,
+  TinyVector<ValueType, 16> A(-1.0/6.0,  3.0/6.0, -3.0/6.0, 1.0/6.0,
   			  3.0/6.0, -6.0/6.0,  0.0/6.0, 4.0/6.0,
 			 -3.0/6.0,  3.0/6.0,  3.0/6.0, 1.0/6.0,
 			  1.0/6.0,  0.0/6.0,  0.0/6.0, 0.0/6.0);
-  TinyVector<valT,16>  dA(0.0, -0.5,  1.0, -0.5,
+  TinyVector<ValueType,16>  dA(0.0, -0.5,  1.0, -0.5,
 			  0.0,  1.5, -2.0,  0.0,
 			  0.0, -1.5,  1.0,  0.5,
 			  0.0,  0.5,  0.0,  0.0);
-  TinyVector<valT,16>  d2A(0.0, 0.0, -1.0,  1.0,
+  TinyVector<ValueType,16>  d2A(0.0, 0.0, -1.0,  1.0,
 			   0.0, 0.0,  3.0, -2.0,
 			   0.0, 0.0, -3.0,  1.0,
 			   0.0, 0.0,  1.0,  0.0);
   
-  jasData.A              = Kokkos::View<valT[16]>("A");
+  jasData.A              = Kokkos::View<ValueType[16]>("A");
   auto Amirror           = Kokkos::create_mirror_view(jasData.A);
-  jasData.dA             = Kokkos::View<valT[16]>("dA");
+  jasData.dA             = Kokkos::View<ValueType[16]>("dA");
   auto dAmirror          = Kokkos::create_mirror_view(jasData.dA);
-  jasData.d2A            = Kokkos::View<valT[16]>("d2A");
+  jasData.d2A            = Kokkos::View<ValueType[16]>("d2A");
   auto d2Amirror         = Kokkos::create_mirror_view(jasData.d2A);
 
   for (int i = 0; i < 16; i++) {
@@ -568,8 +564,8 @@ void TwoBodyJastrow<FT>::initializeJastrowKokkos() {
   Kokkos::deep_copy(jasData.d2A, d2Amirror);
 
   // also set up and allocate memory for cutoff_radius, DeltaRInv
-  jasData.cutoff_radius   = Kokkos::View<valT*>("Cutoff_Radii", NumGroups*NumGroups);
-  jasData.DeltaRInv       = Kokkos::View<valT*>("DeltaRInv", NumGroups*NumGroups);
+  jasData.cutoff_radius   = Kokkos::View<ValueType*>("Cutoff_Radii", NumGroups*NumGroups);
+  jasData.DeltaRInv       = Kokkos::View<ValueType*>("DeltaRInv", NumGroups*NumGroups);
   
   // unfortunately have to defer setting up SplineCoefs because we don't yet know
   // how many elements are in SplineCoefs on the cpu
@@ -582,7 +578,7 @@ void TwoBodyJastrow<FT>::addFunc(int ia, int ib, FT* j)
 {
   if (splCoefsNotAllocated) {
     splCoefsNotAllocated = false;
-    jasData.SplineCoefs   = Kokkos::View<valT**>("SplineCoefficients", NumGroups*NumGroups, j->SplineCoefs.extent(0));
+    jasData.SplineCoefs   = Kokkos::View<ValueType**>("SplineCoefficients", NumGroups*NumGroups, j->SplineCoefs.extent(0));
   }
 
   if (ia == ib)
@@ -714,7 +710,7 @@ void TwoBodyJastrow<FT>::multi_evalGrad(const std::vector<WaveFunctionComponent*
 					WaveFunctionKokkos& wfc,
 					Kokkos::View<ParticleSet::pskType*>& psk,
 					int iat,
-					std::vector<posT>& grad_now) {
+					std::vector<PosType>& grad_now) {
   const int numItems = WFC_list.size();
 
   doTwoBodyJastrowMultiEvalGrad(wfc.twoBodyJastrows, iat, wfc.grad_view);

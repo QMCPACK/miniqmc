@@ -44,7 +44,7 @@ void doOneBodyJastrowMultiAcceptRestoreMove(aobjdType aobjd, apsdType apsd,
 					    int numAccepted,int iat) {
   const int numWalkers = numAccepted;
   using BarePolicy = Kokkos::TeamPolicy<>;
-  BarePolicy pol(numAccepted, 1, 32);
+  BarePolicy pol(numWalkers, 1, 32);
   Kokkos::parallel_for("obj-acceptRestoreMove-waker-loop", pol,
 		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
 			 int walkerIdx = member.league_rank(); 

@@ -435,11 +435,10 @@ void doDiracDeterminantMultiEvalRatio(addkType& addk, psiVsType& psiVs,
 				      tempResType ratios, Kokkos::View<int*>& isValidMap,
 				      int numValid, int iel, int numEls) {
   using ValueType = typename tempResType::value_type;
-  const int numWalkers = numValid;
 
   // put values into psiV vectors
   Kokkos::parallel_for("dd-mevalRatio-fill-psiVs",
-		       Kokkos::MDRangePolicy<Kokkos::Rank<2,Kokkos::Iterate::Left> >({0,0},{numWalkers,numEls}),
+		       Kokkos::MDRangePolicy<Kokkos::Rank<2,Kokkos::Iterate::Left> >({0,0},{numValid,numEls}),
 		       KOKKOS_LAMBDA(const int& walkIdx, const int& elNum) {
 			 const int walkNum = isValidMap(walkIdx);
 			 addk(walkNum).psiV(elNum) = psiVs(walkNum)(elNum);
