@@ -301,29 +301,6 @@ evaluate_vgh_v2(const typename bspline_traits<T, 3>::SplineType* restrict spline
   const intptr_t ys = spline_m->y_stride;
   const intptr_t zs = spline_m->z_stride;
 
-  const size_t out_offset = spline_m->num_splines;
-
-  T *restrict gxs = grads;
-  T *restrict gys = grads + out_offset;
-  T *restrict gzs = grads + 2 * out_offset;
-
-  T *restrict hxxs = hess;
-  T *restrict hxys = hess + out_offset;
-  T *restrict hxzs = hess + 2 * out_offset;
-  T *restrict hyys = hess + 3 * out_offset;
-  T *restrict hyzs = hess + 4 * out_offset;
-  T *restrict hzzs = hess + 5 * out_offset;
-
-  const T dxInv = spline_m->x_grid.delta_inv;
-  const T dyInv = spline_m->y_grid.delta_inv;
-  const T dzInv = spline_m->z_grid.delta_inv;
-  const T dxx   = dxInv * dxInv;
-  const T dyy   = dyInv * dyInv;
-  const T dzz   = dzInv * dzInv;
-  const T dxy   = dxInv * dyInv;
-  const T dxz   = dxInv * dzInv;
-  const T dyz   = dyInv * dzInv;
-
 #ifdef ENABLE_OFFLOAD
   #pragma omp for nowait
 #else
@@ -381,16 +358,23 @@ evaluate_vgh_v2(const typename bspline_traits<T, 3>::SplineType* restrict spline
         gz  += pre00 * sum1;
         val += pre00 * sum0;
       }
+
     vals[n] = val;
-    gxs[n]   = gx * dxInv;
-    gys[n]   = gy * dyInv;
-    gzs[n]   = gz * dzInv;
-    hxxs[n]  = hxx * dxx;
-    hxys[n]  = hxy * dxy;
-    hxzs[n]  = hxz * dxz;
-    hyys[n]  = hyy * dyy;
-    hyzs[n]  = hyz * dyz;
-    hzzs[n]  = hzz * dzz;
+
+    const T dxInv = spline_m->x_grid.delta_inv;
+    const T dyInv = spline_m->y_grid.delta_inv;
+    const T dzInv = spline_m->z_grid.delta_inv;
+    const size_t out_offset = spline_m->num_splines;
+
+    grads[n]                  = gx * dxInv;
+    grads[n + out_offset]     = gy * dyInv;
+    grads[n + 2 * out_offset] = gz * dzInv;
+    hess[n]                   = hxx * dxInv * dxInv;
+    hess[n + out_offset]      = hxy * dxInv * dyInv;
+    hess[n + 2 * out_offset]  = hxz * dxInv * dzInv;
+    hess[n + 3 * out_offset]  = hyy * dyInv * dyInv;
+    hess[n + 4 * out_offset]  = hyz * dyInv * dzInv;
+    hess[n + 5 * out_offset]  = hzz * dzInv * dzInv;
   }
 }
 
