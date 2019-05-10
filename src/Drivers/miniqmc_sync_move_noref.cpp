@@ -113,7 +113,6 @@
 #include <Utilities/qmcpack_version.h>
 #include <Input/Input.hpp>
 #include <QMCWaveFunctions/SPOSet.h>
-#include <QMCWaveFunctions/SPOSet_builder.h>
 #include <QMCWaveFunctions/WaveFunction.h>
 #include <QMCWaveFunctions/WaveFunctionKokkos.h>
 #include <Drivers/Mover.hpp>

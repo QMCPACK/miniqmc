@@ -656,7 +656,7 @@ void ParticleSet::multi_acceptRejectMoveKokkos(Kokkos::View<ParticleSet::pskType
 					       int numAccepted, int iel) {
   int locIel = iel;
   using BarePolicy = Kokkos::TeamPolicy<>;
-  BarePolicy pol(numAccepted, 32, 32);
+  BarePolicy pol(numAccepted, Kokkos::AUTO, 32);
   Kokkos::parallel_for("ps-multi_acceptRejectMove", pol,
 		       KOKKOS_LAMBDA(const BarePolicy::member_type& member) {
 			 const int idx = member.league_rank();
@@ -679,49 +679,6 @@ void ParticleSet::multi_acceptRejectMoveKokkos(Kokkos::View<ParticleSet::pskType
 
   
 }
-
-
-
-void ParticleSet::multi_acceptRejectMoveKokkos(std::vector<ParticleSet*>& psets, 
-					       std::vector<bool>& isAccepted, int iel) {
-  //std::cout << "psets.size() = " << psets.size() << std::endl;
-  Kokkos::View<ParticleSet::pskType*> allParticleSetData("apsd", psets.size());
-  auto apsdMirror = Kokkos::create_mirror_view(allParticleSetData);
-  for (int i = 0; i < psets.size(); i++) {
-    apsdMirror(i) = psets[i]->psk;
-  }
-  Kokkos::deep_copy(allParticleSetData, apsdMirror);
-  Kokkos::View<bool*> deviceIsAccepted("devIsAccepted", isAccepted.size());
-  auto devIsAcceptedMirror = Kokkos::create_mirror_view(deviceIsAccepted);
-  for (int i = 0; i < isAccepted.size(); i++) {
-    devIsAcceptedMirror(i) = isAccepted[i];
-  }
-  Kokkos::deep_copy(deviceIsAccepted, devIsAcceptedMirror);
-
-  int locIel = iel;
-  //std::cout << " about to start parallel_for" << std::endl;
-
-  using BarePolicy = Kokkos::TeamPolicy<>;
-  BarePolicy pol(psets.size(), 1, 1);
-  Kokkos::parallel_for("ps-multi_acceptRejectMove", pol,
-		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
-			 const int i = member.league_rank();
-			 auto& psd = allParticleSetData(i);
-			 if (deviceIsAccepted(i)) {
-			   psd.LikeUpdate(locIel);
-			   psd.UnlikeUpdate(locIel);
-			   //std::cout << "finished psd.UnlikeUpdate" << std::endl;
-			   for (int dim = 0; dim < 3; dim++) {
-			     psd.R(locIel,dim) = psd.activePos(dim);
-			     psd.RSoA(locIel,dim) = psd.activePos(dim);
-			   }
-			 }
-			 psd.activePtcl(0) = -1;
-			 //std::cout << "at end of loop" << std::endl;
-		       });
-  
-}
-
 
 void ParticleSet::donePbyP(bool skipSK) { activePtcl = -1; }
 

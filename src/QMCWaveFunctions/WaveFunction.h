@@ -73,18 +73,10 @@ public:
   /// operates on a single walker
 
   /// operates on multiple walkers
-  void multi_evaluateLog(const std::vector<WaveFunction*>& WF_list,
-                         const std::vector<ParticleSet*>& P_list) const;
-
   
   void multi_evaluateLog(const std::vector<WaveFunction*>& WF_list,
 			 WaveFunctionKokkos& wfc,
 			 Kokkos::View<ParticleSet::pskType*>& psk) const;
-
-  void multi_evalGrad(const std::vector<WaveFunction*>& WF_list,
-                      const std::vector<ParticleSet*>& P_list,
-                      int iat,
-                      std::vector<posT>& grad_now) const;
 
   void multi_evalGrad(const std::vector<WaveFunction*>& WF_list,
                       WaveFunctionKokkos& wfc,
@@ -96,6 +88,8 @@ public:
                        int iat,
                        std::vector<valT>& ratio_list,
                        std::vector<posT>& grad_new) const;
+
+  // think about making this not a template!!!
   template<typename valsType, typename isValidMapMirrorType>
   void multi_ratioGrad(const std::vector<WaveFunction*>& WF_list,
 		       WaveFunctionKokkos wfc,
@@ -107,21 +101,11 @@ public:
 		       std::vector<posT>& grad_new) const;
 
 
-  /*
-  template<typename apsdType, typename psiVType, typename likeTempRType, typename unlikeTempRType, typename eiListType>
-  void multi_ratio(int pairNum, const std::vector<WaveFunction*>& WF_list, apsdType& apsd, psiVType& tempPsiV,
-		   likeTempRType& likeTempRs, unlikeTempRType& unlikeTempRs, eiListType& eiList, std::vector<valT>& ratios); 
-  */
-  template<typename apsdType, typename psiVType, typename likeTempRType, typename unlikeTempRType, typename eiListType>
+  template<typename apsdType, typename psiVType, typename likeTempRType, 
+           typename unlikeTempRType, typename eiListType>
   void multi_ratio(int pairNum, WaveFunctionKokkos& wfc, apsdType& apsd, psiVType& tempPsiV,
-		   likeTempRType& likeTempRs, unlikeTempRType& unlikeTempRs, eiListType& eiList, std::vector<valT>& ratios); 
-
-  /*
-  void multi_acceptrestoreMove(const std::vector<WaveFunction*>& WF_list,
-                               const std::vector<ParticleSet*>& P_list,
-                               const std::vector<bool>& isAccepted,
-                               int iat) const;
-  */
+		   likeTempRType& likeTempRs, unlikeTempRType& unlikeTempRs, eiListType& eiList, 
+		   std::vector<valT>& ratios); 
 
   void multi_acceptrestoreMove(const std::vector<WaveFunction*>& WF_list,
 			       WaveFunctionKokkos& wfc,
@@ -164,83 +148,10 @@ const std::vector<WaveFunctionComponent*> extract_dn_list(const std::vector<Wave
 const std::vector<WaveFunctionComponent*>
     extract_jas_list(const std::vector<WaveFunction*>& WF_list, int jas_id);
 
-/*
-template<typename apsdType, typename psiVType, typename likeTempRType, typename unlikeTempRType, typename eiListType>
-void WaveFunction::multi_ratio(int pairNum, const std::vector<WaveFunction*>& WF_list, apsdType& apsd, psiVType& tempPsiV,
-			       likeTempRType& likeTempRs, unlikeTempRType& unlikeTempRs, eiListType& eiList,
-			       std::vector<valT>& ratios) {
-  timers[Timer_Det]->start();
-  int numWalkers = eiList.extent(0);
-  int numKnots = tempPsiV.extent(1);
-  std::vector<valT> ratios_det(numWalkers*numKnots);
-  for (int iw = 0; iw < numWalkers*numKnots; iw++) {
-    ratios[iw] = valT(0);
-  }
-  
-  auto& tmpEiList = eiList;
-  // complication here in that we are not always looking at the same electron from walker to walker
-  //std::cout << "about to make EiListMirror" << std::endl;
-  //std::cout << "dimensionality of eiList = " << tmpEiList.extent(0) << ", " << tmpEiList.extent(1) << ", " << tmpEiList.extent(2) << std::endl;
-  typename eiListType::HostMirror EiListMirror = Kokkos::create_mirror_view(tmpEiList);
-  //std::cout << "mirror view created, about to do deep_copy" << std::endl;
-  Kokkos::deep_copy(EiListMirror, tmpEiList);
-  //std::cout << "finished setting up EiListMirror" << std::endl;
 
-  std::vector<int> packedIndex;
-  for (int iw = 0; iw < numWalkers; iw++) {
-    const int elNum = EiListMirror(iw,pairNum,0);
-    if (elNum > 0) {
-      packedIndex.push_back(iw);
-    }
-  }
 
-  //std::cout << "about to make activeWalkerIndex view" << std::endl;
-  Kokkos::View<int*> activeWalkerIndex("activeWalkerIndex", packedIndex.size());
-  auto activeWalkerIndexMirror = Kokkos::create_mirror_view(activeWalkerIndex);
-
-  Kokkos::View<DiracDeterminantKokkos*> addk("AllDiracDeterminantKokkos", packedIndex.size());
-  auto addkMirror = Kokkos::create_mirror_view(addk);
-
-  for (int i = 0; i< packedIndex.size(); i++) {
-    const int awi = packedIndex[i];
-    activeWalkerIndexMirror(i) = awi;
-    if (EiListMirror(awi,pairNum,0) < nelup) {
-      addkMirror(i) = static_cast<DiracDeterminant*>(WF_list[awi]->Det_up)->ddk;
-    } else {
-      addkMirror(i) = static_cast<DiracDeterminant*>(WF_list[awi]->Det_dn)->ddk;
-    }
-  }
-  Kokkos::deep_copy(activeWalkerIndex, activeWalkerIndexMirror);
-  Kokkos::deep_copy(addk, addkMirror);
-  // will do this for one set of pairs for every walker if available
-  // note, ratios_set holds all the values, so need to index accordingly
-  //std::cout << "in multi_ratio, about to call do DiracDeterminantMultiEvalRatio" << std::endl;
-  doDiracDeterminantMultiEvalRatio(pairNum, addk, activeWalkerIndex, eiList, tempPsiV, ratios_det);
-
-  for (int i = 0; i < numWalkers*numKnots; i++) {
-    ratios[i] = ratios_det[i];
-  }
-  timers[Timer_Det]->stop();
-
-  for (size_t i = 0; i < Jastrows.size(); i++)
-  {
-    jastrow_timers[i]->start();
-    std::vector<valT> ratios_jas(numWalkers*numKnots);
-    std::vector<WaveFunctionComponent*> jas_list;
-    for (int j = 0; j < packedIndex.size(); j++) {
-      jas_list.push_back(WF_list[packedIndex[j]]->Jastrows[i]);
-    }
-    //std::cout << "in multi_ratio, about to call Jastrow[i]->multi_evalRatio for i = " << i << std::endl;
-    Jastrows[i]->multi_evalRatio(pairNum, eiList, jas_list, apsd, likeTempRs, unlikeTempRs, activeWalkerIndex, ratios_jas); // handing in both because we don't know what type each is...
-
-    for (int idx = 0; idx < numWalkers*numKnots; idx++)
-      ratios[idx] *= ratios_jas[idx];
-    jastrow_timers[i]->stop();
-  }
-}
-*/
-
-template<typename apsdType, typename psiVType, typename likeTempRType, typename unlikeTempRType, typename eiListType>
+template<typename apsdType, typename psiVType, typename likeTempRType, 
+         typename unlikeTempRType, typename eiListType>
 void WaveFunction::multi_ratio(int pairNum, WaveFunctionKokkos& wfc, apsdType& apsd, psiVType& tempPsiV,
 			       likeTempRType& likeTempRs, unlikeTempRType& unlikeTempRs, eiListType& eiList,
 			       std::vector<valT>& ratios) {
@@ -305,8 +216,7 @@ void WaveFunction::multi_ratio(int pairNum, WaveFunctionKokkos& wfc, apsdType& a
     {
       jastrow_timers[i]->start();
       std::vector<valT> ratios_jas(numWalkers*numKnots, 1);
-      //std::cout << "in multi_ratio, about to call Jastrow[i]->multi_evalRatio for i = " << i << std::endl;
-      Jastrows[i]->multi_evalRatio(pairNum, eiList, wfc, apsd, likeTempRs, unlikeTempRs, ratios_jas, numActive); // handing in both because we don't know what type each is...
+      Jastrows[i]->multi_evalRatio(pairNum, eiList, wfc, apsd, likeTempRs, unlikeTempRs, ratios_jas, numActive);
 
       for (int idx = 0; idx < numWalkers*numKnots; idx++)
 	ratios[idx] *= ratios_jas[idx];
@@ -333,15 +243,11 @@ void WaveFunction::multi_ratioGrad(const std::vector<WaveFunction*>& WF_list,
     
     Kokkos::View<valT*> tempResults("tempResults", numValid);
     if (iel < nelup) {
-      //std::cout << "in multi_ratioGrad, using up determinant, iel = " << iel << std::endl;
-      std::vector<WaveFunctionComponent*> up_list(extract_up_list(WF_list));
-      //Det_up->multi_ratioGrad(up_list, P_list, iat, ratios_det, grad_new);
-      doDiracDeterminantMultiEvalRatio(wfc.upDets, up_list, psiVs, tempResults, isValidMap, numValid, iel);
+      doDiracDeterminantMultiEvalRatio(wfc.upDets, psiVs, tempResults, isValidMap, 
+				       numValid, iel, wfc.numElectrons);
     } else {
-      //std::cout << "in multi_ratioGrad, using down determinant, iel = " << iel << std::endl;
-      std::vector<WaveFunctionComponent*> dn_list(extract_dn_list(WF_list));
-      //Det_up->multi_ratioGrad(up_list, P_list, iat, ratios_det, grad_new);
-      doDiracDeterminantMultiEvalRatio(wfc.downDets, dn_list, psiVs, tempResults, isValidMap, numValid, iel);
+      doDiracDeterminantMultiEvalRatio(wfc.downDets, psiVs, tempResults, isValidMap, 
+				       numValid, iel, wfc.numElectrons);
     }
     auto tempResultsMirror = Kokkos::create_mirror_view(tempResults);
     Kokkos::deep_copy(tempResultsMirror, tempResults);
@@ -355,11 +261,9 @@ void WaveFunction::multi_ratioGrad(const std::vector<WaveFunction*>& WF_list,
 
     for (size_t i = 0; i < Jastrows.size(); i++)
     {
-      //std::cout << "    doing multi_ratioGrad for Jastrow " << i << std::endl;
       jastrow_timers[i]->start();
       std::vector<valT> ratios_jas(numValid);
       std::vector<WaveFunctionComponent*> jas_list(extract_jas_list(WF_list, i));
-      //Jastrows[i]->multi_ratioGrad(jas_list, P_list, iat, ratios_jas, grad_new);
       Jastrows[i]->multi_ratioGrad(jas_list, wfc, psk, iel, isValidMap, numValid, ratios_jas, grad_new);
       for (int iw = 0; iw < numValid; iw++)
 	ratio_list[isValidMapMirror(iw)] *= ratios_jas[iw];
