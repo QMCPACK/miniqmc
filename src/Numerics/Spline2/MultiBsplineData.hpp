@@ -24,22 +24,8 @@
 #ifndef QMCPLUSPLUS_MULTIEINSPLINE_DATA_HPP
 #define QMCPLUSPLUS_MULTIEINSPLINE_DATA_HPP
 
-#include <cmath>
-#include <algorithm>
-
 namespace qmcplusplus
 {
-template<typename T>
-struct SplineBound
-{
-  static inline void get(T x, T& dx, int& ind, int ng)
-  {
-    T ipart;
-    dx  = std::modf(x, &ipart);
-    ind = std::min(std::max(int(0), static_cast<int>(ipart)), ng);
-  }
-};
-
 template<typename T>
 struct MultiBsplineData
 {
