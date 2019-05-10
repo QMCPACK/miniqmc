@@ -707,7 +707,7 @@ int main(int argc, char** argv)
 
 	  // actually putting the values calculated by evaluate_vs into tempPsiV
 	  //std::cout << "  About to start multi_evaluate_v" << std::endl;
-	  spo.multi_evaluate_v(bigElPos, tempPsiV, allParticleSetData); // also perhaps hand in result views to store the output
+	  spo.multi_evaluate_v(bigElPos, tempPsiV, allParticleSetData); 
 	  
 	  // note, for a given eiPair, all evaluations for a single mover will be for the same electron
 	  // but not all movers will be working on the same electron necessarily

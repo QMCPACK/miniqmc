@@ -168,37 +168,31 @@ void WaveFunction::multi_ratio(int pairNum, WaveFunctionKokkos& wfc, apsdType& a
 
   int locNelUp = this->nelup;
 
-  Kokkos::parallel_reduce("set-up-worklist", Kokkos::RangePolicy<>(0, numWalkers),
-			  KOKKOS_LAMBDA(const int& i, int &locActive) {			    
-			    const int elNum = tmpEiList(i,pairNum,0);
-			    if (elNum >= 0) {
-			      isActive(i) = 1;
-			      if (elNum < locNelUp) {
-				activeDDs(i) = upDets(i);
-				activeDDs(i).FirstIndex(0) = upDets(i).FirstIndex(0);
-			      } else {
-				activeDDs(i) = downDets(i);
-				activeDDs(i).FirstIndex(0) = downDets(i).FirstIndex(0);
-			      }
-			      locActive++;
-			    } else {
+  Kokkos::parallel_reduce("set-up-worklist", 1,
+			  KOKKOS_LAMBDA(const int& z, int& locActive) {
+			    int idx = 0;
+			    for (int i = 0; i < numWalkers; i++) {
+			      const int elNum = tmpEiList(i,pairNum,0);
+			      //printf("in set-up-worklist, for walker %d, activeElectron is: %d\n", i, elNum);
 			      isActive(i) = 0;
+			      if (elNum >= 0) {
+				isActive(i) = 1;
+				if (elNum < wfc.numUpElectrons) {
+				  activeDDs(i) = upDets(i);
+				} else {
+				  activeDDs(i) = downDets(i);
+				}
+				locActive++;
+				activeMap(idx) = i;
+				idx++;
+			      }
 			    }
 			  }, numActive);
-			   
+  Kokkos::deep_copy(wfc.activeMapMirror, wfc.activeMap);
+  
+  //std::cout << "numActive = " << numActive << std::endl;
   if (numActive > 0) {
-    timers[Timer_Det]->start();
-    Kokkos::parallel_for("set-up-map", Kokkos::RangePolicy<>(0, 1),
-			 KOKKOS_LAMBDA(const int& i) {
-			   int idx = 0;
-			   for (int j = 0; j < upDets.extent(0); j++) {
-			     if (isActive(j) == 1) {
-			       activeMap(idx) = j;
-			       idx++;
-			     }
-			   }
-			 });
-    Kokkos::deep_copy(wfc.activeMapMirror, wfc.activeMap);
+    timers[Timer_Det]->start();    
 
     doDiracDeterminantMultiEvalRatio(pairNum, wfc, eiList, tempPsiV, ratios_det, numActive);
 

@@ -327,12 +327,12 @@ public:
 			  tempRType& bigLikeTempR, tempRType& bigUnlikeTempR) {
     int eiPair_ = eiPair;
     //std::cout <<" about to make local references" << std::endl;
-    auto& allParticleSetData_ = allParticleSetData;
-    auto& EiLists_ = EiLists;
-    auto& rOnSphere_ = rOnSphere;
-    auto& bigElPos_ = bigElPos;
-    auto& bigLikeTempR_ = bigLikeTempR;
-    auto& bigUnlikeTempR_ = bigUnlikeTempR;
+    auto allParticleSetData_ = allParticleSetData;
+    auto EiLists_ = EiLists;
+    auto rOnSphere_ = rOnSphere;
+    auto bigElPos_ = bigElPos;
+    auto bigLikeTempR_ = bigLikeTempR;
+    auto bigUnlikeTempR_ = bigUnlikeTempR;
     //std::cout << " finished making local references" << std::endl;
 
     const int numMovers = allParticleSetData_.extent(0);
@@ -355,19 +355,19 @@ public:
 			       //	 rOnSphere_(walkerNum,knotNum,dim) - allParticleSetData_(walkerNum).UnlikeDTDisplacements(eNum,atNum,dim);
 			       bigElPos_(walkerNum, knotNum, dim) = dist * rOnSphere_(walkerNum,knotNum,dim) - x[dim];
 			     }
-			     allParticleSetData_(walkerNum).DTComputeDistances(member, bigElPos(walkerNum,knotNum,0),	   
-									       bigElPos(walkerNum,knotNum,1),	   
-									       bigElPos(walkerNum,knotNum,2),	   
-									       allParticleSetData_(walkerNum).RSoA,			   
-									       bigLikeTempR_, walkerNum, knotNum, 		   
-									       0, bigLikeTempR_.extent(2), eNum);
+			     psk.DTComputeDistances(member, bigElPos(walkerNum,knotNum,0),	   
+						    bigElPos(walkerNum,knotNum,1),	   
+						    bigElPos(walkerNum,knotNum,2),	   
+						    allParticleSetData_(walkerNum).RSoA,			   
+						    bigLikeTempR_, walkerNum, knotNum, 		   
+						    0, bigLikeTempR_.extent(2), eNum);
 			     
-			     allParticleSetData_(walkerNum).DTComputeDistances(member, bigElPos(walkerNum,knotNum,0),	   
-									       bigElPos(walkerNum,knotNum,1),	   
-									       bigElPos(walkerNum,knotNum,2),	   
-									       allParticleSetData_(walkerNum).originR,			   
-									       bigUnlikeTempR_, walkerNum, knotNum, 		   
-									       0, bigUnlikeTempR_.extent(2), eNum);
+			     psk.DTComputeDistances(member, bigElPos(walkerNum,knotNum,0),	   
+						    bigElPos(walkerNum,knotNum,1),	   
+						    bigElPos(walkerNum,knotNum,2),	   
+						    allParticleSetData_(walkerNum).originR,			   
+						    bigUnlikeTempR_, walkerNum, knotNum, 		   
+						    0, bigUnlikeTempR_.extent(2), eNum);
 			   }			     
 			 });
   }

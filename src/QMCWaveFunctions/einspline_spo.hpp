@@ -145,9 +145,9 @@ struct einspline_spo : public SPOSet
   inline void multi_evaluate_v(Kokkos::View<T**[3]>& all_pos, Kokkos::View<ValueType***> allPsiV, apsdType& apsd) {
     // need to do to_unit_floor for all positions then pass to spline.multi_evaluate_v
     ScopedTimer local_timer(timer);
-    auto& tmpAllPos = all_pos;
-    auto& tmpapsd = apsd;
-    auto& tmpallPsiV = allPsiV;
+    auto tmpAllPos = all_pos;
+    auto tmpapsd = apsd;
+    auto tmpallPsiV = allPsiV;
     //Kokkos::View<T**[3]> allPosToUnitFloor("allPosToUnitFloor", all_pos.extent(0),all_pos.extent(1));
     Kokkos::parallel_for("positionsToFloorLoop", 
 			 Kokkos::MDRangePolicy<Kokkos::Rank<2,Kokkos::Iterate::Left> >({0,0}, {tmpAllPos.extent(0), tmpAllPos.extent(1)}),
