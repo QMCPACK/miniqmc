@@ -111,7 +111,7 @@ struct einspline_spo : public SPOSet
 #ifdef ENABLE_OFFLOAD
       spline_type** einsplines_ptr = einsplines.data();
       auto& tile_ptr               = in.einsplines[t];
-      #pragma omp target map(to : i) device(0)
+      #pragma omp target map(to : i)
       {
         einsplines_ptr[i] = tile_ptr;
       }
@@ -178,11 +178,11 @@ struct einspline_spo : public SPOSet
         spline_type** restrict einsplines_ptr = einsplines.data();
         spline_type* restrict& tile_ptr       = einsplines[i];
         T* restrict& coefs_ptr                = einsplines[i]->coefs;
-        #pragma omp target enter data map(to : tile_ptr [0:1]) device(0)
+        #pragma omp target enter data map(to : tile_ptr [0:1])
         // Ye: I still don't understand why this line must be separated from the previous one.
-        #pragma omp target enter data map(to : coefs_ptr [0:einsplines[i]->coefs_size]) device(0)
+        #pragma omp target enter data map(to : coefs_ptr [0:einsplines[i]->coefs_size])
         //std::cout << "YYYY offload size = " << einsplines[i]->coefs_size << std::endl;
-        #pragma omp target map(to : i) device(0)
+        #pragma omp target map(to : i)
         {
           einsplines_ptr[i]        = tile_ptr;
           einsplines_ptr[i]->coefs = coefs_ptr;
@@ -208,7 +208,7 @@ struct einspline_spo : public SPOSet
       {
         T* restrict psi_ptr  = psi[i].data();
 #ifdef ENABLE_OFFLOAD
-        #pragma omp target map(to : i) device(0)
+        #pragma omp target map(to : i)
 #endif
         {
           psi_shadows_ptr[i]  = psi_ptr;
@@ -225,7 +225,7 @@ struct einspline_spo : public SPOSet
     auto y = u[1];
     auto z = u[2];
 #ifdef ENABLE_OFFLOAD
-    #pragma omp target teams distribute num_teams(nBlocks) device(0)
+    #pragma omp target teams distribute num_teams(nBlocks) thread_limit(nSplinesPerBlock)
 #else
     #pragma omp parallel for
 #endif
@@ -309,7 +309,7 @@ struct einspline_spo : public SPOSet
         T* restrict grad_ptr = grad[i].data();
         T* restrict hess_ptr = hess[i].data();
 #ifdef ENABLE_OFFLOAD
-        #pragma omp target map(to : i) device(0)
+        #pragma omp target map(to : i)
 #endif
         {
           psi_shadows_ptr[i]  = psi_ptr;
@@ -330,7 +330,7 @@ struct einspline_spo : public SPOSet
     auto y = u[1];
     auto z = u[2];
 #ifdef ENABLE_OFFLOAD
-    #pragma omp target teams distribute num_teams(nBlocks) device(0)
+    #pragma omp target teams distribute num_teams(nBlocks) thread_limit(nSplinesPerBlock)
 #else
     #pragma omp parallel for
 #endif
@@ -343,7 +343,7 @@ struct einspline_spo : public SPOSet
       spline2::computeLocationAndFractional(spline_m, x, y, z, ix, iy, iz, a, b, c, da, db, dc, d2a, d2b, d2c);
 
 #ifdef ENABLE_OFFLOAD
-      #pragma omp parallel num_threads(nSplinesPerBlock)
+      #pragma omp parallel
 #endif
       spline2offload::evaluate_vgh_v2(spline_m,
                                       ix, iy, iz,
@@ -445,7 +445,7 @@ struct einspline_spo : public SPOSet
     OMPTinyVector<T, 3>* u_shadows_ptr    = u_shadows.data();
 
 #ifdef ENABLE_OFFLOAD
-    #pragma omp target teams distribute collapse(2) num_teams(nw* nBlocks) device(0) \
+    #pragma omp target teams distribute collapse(2) num_teams(nw*nBlocks) thread_limit(nSplinesPerBlock) \
     map(always, to : u_shadows_ptr [0:u_shadows.size()])
 #else
     #pragma omp parallel for collapse(2)
