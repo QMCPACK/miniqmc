@@ -225,8 +225,7 @@ struct einspline_spo : public SPOSet
     auto y = u[1];
     auto z = u[2];
 #ifdef ENABLE_OFFLOAD
-    #pragma omp target teams distribute num_teams(nBlocks) device(0) \
-    map(to: nBlocks, nSplinesPerBlock)
+    #pragma omp target teams distribute num_teams(nBlocks) device(0)
 #else
     #pragma omp parallel for
 #endif
@@ -331,8 +330,7 @@ struct einspline_spo : public SPOSet
     auto y = u[1];
     auto z = u[2];
 #ifdef ENABLE_OFFLOAD
-    #pragma omp target teams distribute num_teams(nBlocks) device(0) \
-    map(to : nBlocks, nSplinesPerBlock) map(always, to : u)
+    #pragma omp target teams distribute num_teams(nBlocks) device(0)
 #else
     #pragma omp parallel for
 #endif
@@ -448,7 +446,7 @@ struct einspline_spo : public SPOSet
 
 #ifdef ENABLE_OFFLOAD
     #pragma omp target teams distribute collapse(2) num_teams(nw* nBlocks) device(0) \
-        map(to : nw, nBlocks, nSplinesPerBlock) map(always, to : u_shadows_ptr [0:u_shadows.size()])
+    map(always, to : u_shadows_ptr [0:u_shadows.size()])
 #else
     #pragma omp parallel for collapse(2)
 #endif
