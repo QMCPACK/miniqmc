@@ -34,26 +34,11 @@ namespace spline2offload
 
 template <typename T>
 inline void evaluate_v(const typename bspline_traits<T, 3>::SplineType* restrict spline_m,
-                                           T x, T y, T z, T *restrict vals,
+                                           int ix, int iy, int iz,
+                                           const T a[4], const T b[4], const T c[4],
+                                           T *restrict vals,
                                            size_t num_splines)
 {
-  x -= spline_m->x_grid.start;
-  y -= spline_m->y_grid.start;
-  z -= spline_m->z_grid.start;
-  T tx, ty, tz;
-  int ix, iy, iz;
-  SplineBound<T>::get(x * spline_m->x_grid.delta_inv, tx, ix,
-                      spline_m->x_grid.num - 1);
-  SplineBound<T>::get(y * spline_m->y_grid.delta_inv, ty, iy,
-                      spline_m->y_grid.num - 1);
-  SplineBound<T>::get(z * spline_m->z_grid.delta_inv, tz, iz,
-                      spline_m->z_grid.num - 1);
-  T a[4], b[4], c[4];
-
-  MultiBsplineData<T>::compute_prefactors(a, tx);
-  MultiBsplineData<T>::compute_prefactors(b, ty);
-  MultiBsplineData<T>::compute_prefactors(c, tz);
-
   const intptr_t xs = spline_m->x_stride;
   const intptr_t ys = spline_m->y_stride;
   const intptr_t zs = spline_m->z_stride;
@@ -76,8 +61,8 @@ inline void evaluate_v(const typename bspline_traits<T, 3>::SplineType* restrict
 
 template <typename T>
 inline void evaluate_v_v2(const typename bspline_traits<T, 3>::SplineType* restrict spline_m,
-                                           const T (&a)[4], const T (&b)[4], const T (&c)[4],
                                            int ix, int iy, int iz,
+                                           const T a[4], const T b[4], const T c[4],
                                            T *restrict vals,
                                            size_t num_splines)
 {
@@ -109,28 +94,14 @@ inline void evaluate_v_v2(const typename bspline_traits<T, 3>::SplineType* restr
 template <typename T>
 inline void
 evaluate_vgl(const typename bspline_traits<T, 3>::SplineType* restrict spline_m,
-                                 T x, T y, T z, T *restrict vals,
+                                 int ix, int iy, int iz,
+                                 const T a[4], const T b[4], const T c[4],
+                                 const T da[4], const T db[4], const T dc[4],
+                                 const T d2a[4], const T d2b[4], const T d2c[4],
+                                 T *restrict vals,
                                  T *restrict grads, T *restrict lapl,
                                  size_t num_splines)
 {
-  x -= spline_m->x_grid.start;
-  y -= spline_m->y_grid.start;
-  z -= spline_m->z_grid.start;
-  T tx, ty, tz;
-  int ix, iy, iz;
-  SplineBound<T>::get(x * spline_m->x_grid.delta_inv, tx, ix,
-                      spline_m->x_grid.num - 1);
-  SplineBound<T>::get(y * spline_m->y_grid.delta_inv, ty, iy,
-                      spline_m->y_grid.num - 1);
-  SplineBound<T>::get(z * spline_m->z_grid.delta_inv, tz, iz,
-                      spline_m->z_grid.num - 1);
-
-  T a[4], b[4], c[4], da[4], db[4], dc[4], d2a[4], d2b[4], d2c[4];
-
-  MultiBsplineData<T>::compute_prefactors(a, da, d2a, tx);
-  MultiBsplineData<T>::compute_prefactors(b, db, d2b, ty);
-  MultiBsplineData<T>::compute_prefactors(c, dc, d2c, tz);
-
   const intptr_t xs = spline_m->x_stride;
   const intptr_t ys = spline_m->y_stride;
   const intptr_t zs = spline_m->z_stride;
@@ -208,29 +179,14 @@ evaluate_vgl(const typename bspline_traits<T, 3>::SplineType* restrict spline_m,
 template <typename T>
 inline void
 evaluate_vgh(const typename bspline_traits<T, 3>::SplineType* restrict spline_m,
-                                 T x, T y, T z, T *restrict vals,
+                                 int ix, int iy, int iz,
+                                 const T a[4], const T b[4], const T c[4],
+                                 const T da[4], const T db[4], const T dc[4],
+                                 const T d2a[4], const T d2b[4], const T d2c[4],
+                                 T *restrict vals,
                                  T *restrict grads, T *restrict hess,
                                  size_t num_splines)
 {
-
-  int ix, iy, iz;
-  T tx, ty, tz;
-  T a[4], b[4], c[4], da[4], db[4], dc[4], d2a[4], d2b[4], d2c[4];
-
-  x -= spline_m->x_grid.start;
-  y -= spline_m->y_grid.start;
-  z -= spline_m->z_grid.start;
-  SplineBound<T>::get(x * spline_m->x_grid.delta_inv, tx, ix,
-                      spline_m->x_grid.num - 1);
-  SplineBound<T>::get(y * spline_m->y_grid.delta_inv, ty, iy,
-                      spline_m->y_grid.num - 1);
-  SplineBound<T>::get(z * spline_m->z_grid.delta_inv, tz, iz,
-                      spline_m->z_grid.num - 1);
-
-  MultiBsplineData<T>::compute_prefactors(a, da, d2a, tx);
-  MultiBsplineData<T>::compute_prefactors(b, db, d2b, ty);
-  MultiBsplineData<T>::compute_prefactors(c, dc, d2c, tz);
-
   const intptr_t xs = spline_m->x_stride;
   const intptr_t ys = spline_m->y_stride;
   const intptr_t zs = spline_m->z_stride;
@@ -333,29 +289,14 @@ evaluate_vgh(const typename bspline_traits<T, 3>::SplineType* restrict spline_m,
 template <typename T>
 inline void
 evaluate_vgh_v2(const typename bspline_traits<T, 3>::SplineType* restrict spline_m,
-                                 T x, T y, T z, T *restrict vals,
+                                 int ix, int iy, int iz,
+                                 const T a[4], const T b[4], const T c[4],
+                                 const T da[4], const T db[4], const T dc[4],
+                                 const T d2a[4], const T d2b[4], const T d2c[4],
+                                 T *restrict vals,
                                  T *restrict grads, T *restrict hess,
                                  size_t num_splines)
 {
-
-  int ix, iy, iz;
-  T tx, ty, tz;
-  T a[4], b[4], c[4], da[4], db[4], dc[4], d2a[4], d2b[4], d2c[4];
-
-  x -= spline_m->x_grid.start;
-  y -= spline_m->y_grid.start;
-  z -= spline_m->z_grid.start;
-  SplineBound<T>::get(x * spline_m->x_grid.delta_inv, tx, ix,
-                      spline_m->x_grid.num - 1);
-  SplineBound<T>::get(y * spline_m->y_grid.delta_inv, ty, iy,
-                      spline_m->y_grid.num - 1);
-  SplineBound<T>::get(z * spline_m->z_grid.delta_inv, tz, iz,
-                      spline_m->z_grid.num - 1);
-
-  MultiBsplineData<T>::compute_prefactors(a, da, d2a, tx);
-  MultiBsplineData<T>::compute_prefactors(b, db, d2b, ty);
-  MultiBsplineData<T>::compute_prefactors(c, dc, d2c, tz);
-
   const intptr_t xs = spline_m->x_stride;
   const intptr_t ys = spline_m->y_stride;
   const intptr_t zs = spline_m->z_stride;
