@@ -111,16 +111,25 @@ struct BsplineFunctor : public OptimizableFunctorBase
     DeltaR       = cutoff_radius / (real_type)(numKnots - 1);
     DeltaRInv    = 1.0 / DeltaR;
     auto locCuspValue = CuspValue;
+    auto locDeltaR = DeltaR;
+
+    int spExtent = SplineCoefs.extent(0);
+    int pmExtent = Parameters.extent(0); 
+
+    printf("SplineCoefs.extent(0) = %d, Parameters.extent(0) = %d\n", spExtent, pmExtent);
 
     Kokkos::parallel_for("setup-bspline-parameters", 1,
 			 KOKKOS_LAMBDA(const int& j) {
-			   for (int i = 0; i < SplineCoefs.extent(0); i++) {
+			   for (int i = 0; i < spExtent; i++) {
+			     printf("working on index %d\n", i);
 			     SplineCoefs(i) = 0.0;
 			   }
 			   SplineCoefs(1) = Parameters(0);
 			   SplineCoefs(2) = Parameters(1);
-			   SplineCoefs(0) = Parameters(1) - 2.0 * DeltaR * locCuspValue;
-			   for (int i = 2; i < Parameters.extent(0); i++) {
+			   SplineCoefs(0) = Parameters(1) - 2.0 * locDeltaR * locCuspValue;
+			   printf("SplineCoefs.extent(0) = %d, Parameters.extent(0) = %d\n", spExtent, pmExtent);
+			   for (int i = 2; i < pmExtent; i++) {
+			     printf("working on index %d\n", i);
 			     SplineCoefs(i+1) = Parameters(i);
 			   }
 			 });
