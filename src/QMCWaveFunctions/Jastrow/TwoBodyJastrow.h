@@ -439,14 +439,9 @@ struct TwoBodyJastrow : public WaveFunctionComponent
 			       Kokkos::View<RealType***>& unlikeTempR,
 			       std::vector<ValueType>& ratios, int numActive);
   
-  // this is the one that could be nice to fix up
-  virtual void multi_evaluateGL(const std::vector<WaveFunctionComponent*>& WFC_list,
-				const std::vector<ParticleSet*>& P_list,
-				const std::vector<ParticleSet::ParticleGradient_t*>& G_list,
-				const std::vector<ParticleSet::ParticleLaplacian_t*>& L_list,
+  virtual void multi_evaluateGL(WaveFunctionKokkos& wfc,
+				Kokkos::View<ParticleSet::pskType*>& apsk,
 				bool fromscratch = false);
-
-
 };
 
 template<typename FT>
@@ -799,28 +794,12 @@ void TwoBodyJastrow<FT>::multi_acceptrestoreMove(const std::vector<WaveFunctionC
 					 iel, wfc.numElectrons, wfc.numIons, typename Kokkos::DefaultExecutionSpace::memory_space());
 }
 
-
 template<typename FT>
-void TwoBodyJastrow<FT>::multi_evaluateGL(const std::vector<WaveFunctionComponent*>& WFC_list,
-					  const std::vector<ParticleSet*>& P_list,
-					  const std::vector<ParticleSet::ParticleGradient_t*>& G_list,
-					  const std::vector<ParticleSet::ParticleLaplacian_t*>& L_list,
-					  bool fromscratch) {
-  // make a view of all of the TwoBodyJastrowData and relevantParticleSetData
-  Kokkos::View<jasDataType*> allTwoBodyJastrowData("atbjd", WFC_list.size()); 
-  Kokkos::View<ParticleSet::pskType*> allParticleSetData("apsd", P_list.size());
-  populateCollectiveViews(allTwoBodyJastrowData, allParticleSetData, WFC_list, P_list);
-  
-  // need to write this function
-  doTwoBodyJastrowMultiEvaluateGL(allTwoBodyJastrowData, allParticleSetData, N, fromscratch);
-  
-  // know that we will need LogValue to up updated after this, possibly other things in ParticleSet!!!
-  for (int i = 0; i < WFC_list.size(); i++) {
-    auto LogValueMirror = Kokkos::create_mirror_view(static_cast<TwoBodyJastrow*>(WFC_list[i])->jasData.LogValue);
-    Kokkos::deep_copy(LogValueMirror, static_cast<TwoBodyJastrow*>(WFC_list[i])->jasData.LogValue);
-    LogValue = LogValueMirror(0);
-  }
+void TwoBodyJastrow<FT>::multi_evaluateGL(WaveFunctionKokkos& wfc,
+					  Kokkos::View<ParticleSet::pskType*>& apsk, bool fromscratch) {
+  doTwoBodyJastrowMultiEvaluateGL(wfc.twoBodyJastrows, apsk, wfc.numElectrons, fromscratch);
 }
+
 
 } // namespace qmcplusplus
 #endif

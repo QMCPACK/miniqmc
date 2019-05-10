@@ -1,12 +1,10 @@
-#!/bin/bash -ex
-cmake $HOME/src/miniqmc \
--DQMC_USE_KOKKOS=1 \
--DKOKKOS_PREFIX=$HOME/src/kokkos \
--DKOKKOS_ENABLE_CUDA=true \
--DKOKKOS_ENABLE_OPENMP=false \
--DKOKKOS_ARCH="Power8;Pascal60" \
--DKOKKOS_ENABLE_CUDA_UVM=true \
--DKOKKOS_ENABLE_CUDA_LAMBDA=true \
--DCMAKE_CXX_COMPILER=$HOME/src/kokkos/bin/nvcc_wrapper \
--DCMAKE_CXX_FLAGS="-Drestrict=__restrict__ -D__forceinline=inline" .. \
-2>&1 | tee config_log
+KOKKOS_ROOT=/home/lshulen/sandbox/kokkos
+cmake -DQMC_USE_KOKKOS=1 \
+    -DKOKKOS_PREFIX=${KOKKOS_ROOT} \
+    -DKOKKOS_ENABLE_CUDA=false \
+    -DKOKKOS_ENABLE_OPENMP=true \
+    -DKOKKOS_ARCH="HSW" \
+    -DKOKKOS_ENABLE_EXPLICIT_INSTANTIATION=false \
+    -DCMAKE_CXX_COMPILER="clang++" \
+    -DCMAKE_CXX_FLAGS="-Drestrict=__restrict__ -D__forceinline=inline" \
+    ..

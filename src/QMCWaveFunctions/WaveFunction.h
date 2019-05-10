@@ -108,8 +108,9 @@ public:
 			       Kokkos::View<int*>& isAcceptedMap,
 			       int numAccepted, int iel) const;
 
-  void multi_evaluateGL(const std::vector<WaveFunction*>& WF_list,
-                        const std::vector<ParticleSet*>& P_list) const;
+  void multi_evaluateGL(WaveFunctionKokkos& wfc,
+			Kokkos::View<ParticleSet::pskType*>& apsk) const;
+
 
   // others
   int get_ei_TableID() const { return ei_TableID; }

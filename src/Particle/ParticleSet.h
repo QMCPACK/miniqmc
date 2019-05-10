@@ -317,7 +317,14 @@ public:
    */
   void donePbyP(bool skipSK = false);
 
-  void multi_donePbyP(std::vector<ParticleSet*>& psets, bool skipSK = false);
+  //void multi_donePbyP(std::vector<ParticleSet*>& psets, bool skipSK = false);
+  template<typename apskType>
+  void multi_donePbyP(apskType& apsk, bool skipSK = false) {
+    Kokkos::parallel_for("ps-multi_donePbyP", apsk.extent(0),
+			 KOKKOS_LAMBDA(const int& i) {
+			   apsk(i).activePtcl(0) = -1;
+			 });
+  }
 
 
   template<typename allPsdType, typename EiListType, typename rOnSphereType,

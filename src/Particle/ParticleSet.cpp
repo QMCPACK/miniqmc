@@ -682,19 +682,6 @@ void ParticleSet::multi_acceptRejectMoveKokkos(Kokkos::View<ParticleSet::pskType
 
 void ParticleSet::donePbyP(bool skipSK) { activePtcl = -1; }
 
-void ParticleSet::multi_donePbyP(std::vector<ParticleSet*>& psets, bool skipSK) {
-  Kokkos::View<ParticleSet::pskType*> allParticleSetData("apsd", psets.size());
-  auto apsdMirror = Kokkos::create_mirror_view(allParticleSetData);
-  for (int i = 0; i < psets.size(); i++) {
-    apsdMirror(i) = psets[i]->psk;
-  }
-  Kokkos::deep_copy(allParticleSetData, apsdMirror);
-  Kokkos::parallel_for("ps-multi_donePbyP", psets.size(),
-		       KOKKOS_LAMBDA(const int& i) {
-			 allParticleSetData(i).activePtcl(0) = -1;
-		       });
-}
-
 void ParticleSet::loadWalker(Walker_t& awalker, bool pbyp)
 {
   R = awalker.R;

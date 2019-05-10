@@ -195,7 +195,8 @@ struct DiracDeterminant : public WaveFunctionComponent
       grad_now[i] = PosType();
     }
   }
-    
+   
+  /*
   virtual void multi_evaluateGL(const std::vector<WaveFunctionComponent*>& WFC_list,
 				const std::vector<ParticleSet*>& P_list,
 				const std::vector<ParticleSet::ParticleGradient_t*>& G_list,
@@ -203,6 +204,7 @@ struct DiracDeterminant : public WaveFunctionComponent
 				bool fromscratch = false) {
     // code in miniapp does NOTHING here
   }
+  */
 
   DiracDeterminantKokkos ddk;
   /// Helper class to handle linear algebra
@@ -243,6 +245,12 @@ ValueType InvertWithLog(DiracDeterminantKokkos& ddk, linAlgHelperType& lah, Valu
   return locLogDet;
 }
 
+
+template<typename addkType>
+void doDiracDeterminantMultiEvaluateGL(addkType& addk) {
+  // code in minapp does NOTHING here
+}
+  
 
 
 

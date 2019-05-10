@@ -519,27 +519,12 @@ struct OneBodyJastrow : public WaveFunctionComponent
   }
 
   // would be good to quickly fix this!
-  virtual void multi_evaluateGL(const std::vector<WaveFunctionComponent*>& WFC_list,
-				const std::vector<ParticleSet*>& P_list,
-				const std::vector<ParticleSet::ParticleGradient_t*>& G_list,
-				const std::vector<ParticleSet::ParticleLaplacian_t*>& L_list,
-				bool fromscratch = false) {
-    
-    // make a view of all of the OneBodyJastrowData and relevantParticleSetData
-    Kokkos::View<jasDataType*> allOneBodyJastrowData("aobjd", WFC_list.size()); 
-    Kokkos::View<ParticleSet::pskType*> allParticleSetData("apsd", P_list.size());
-    populateCollectiveViews(allOneBodyJastrowData, allParticleSetData, WFC_list, P_list);
-
-    doOneBodyJastrowMultiEvaluateGL(allOneBodyJastrowData, allParticleSetData, Nelec, fromscratch);
-
-    // know that we will need LogValue to up updated after this, possibly other things in ParticleSet!!!
-    for (int i = 0; i < WFC_list.size(); i++) {
-      auto LogValueMirror = Kokkos::create_mirror_view(static_cast<OneBodyJastrow*>(WFC_list[i])->jasData.LogValue);
-      Kokkos::deep_copy(LogValueMirror, static_cast<OneBodyJastrow*>(WFC_list[i])->jasData.LogValue);
-      LogValue = LogValueMirror(0);
-    }
-  }
   
+  virtual void multi_evaluateGL(WaveFunctionKokkos& wfc,
+				Kokkos::View<ParticleSet::pskType*>& apsk,
+				bool fromscratch) {
+    doOneBodyJastrowMultiEvaluateGL(wfc.oneBodyJastrows, apsk, wfc.numElectrons, fromscratch);
+  }
   
   ///////////////////////// end internal multi functions
 

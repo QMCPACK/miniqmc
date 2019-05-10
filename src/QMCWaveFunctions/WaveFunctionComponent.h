@@ -168,14 +168,12 @@ struct WaveFunctionComponent : public QMCTraits
     // TODO
   };
 
-  // this is the one to clean up
-  virtual void multi_evaluateGL(const std::vector<WaveFunctionComponent*>& WFC_list,
-                                const std::vector<ParticleSet*>& P_list,
-                                const std::vector<ParticleSet::ParticleGradient_t*>& G_list,
-                                const std::vector<ParticleSet::ParticleLaplacian_t*>& L_list,
-                                bool fromscratch = false) {
+  virtual void multi_evaluateGL(WaveFunctionKokkos& wfc,
+				Kokkos::View<ParticleSetKokkos<RealType, ValueType, 3>*>& apsk,
+				bool fromscratch = false) {
     //
   }
+
 }; 
 
 }// namespace qmcplusplus
