@@ -221,21 +221,43 @@ struct einspline_spo : public SPOSet
     T** restrict psi_shadows_ptr          = psi_shadows.data();
     spline_type** restrict einsplines_ptr = einsplines.data();
 
+    auto x = u[0];
+    auto y = u[1];
+    auto z = u[2];
 #ifdef ENABLE_OFFLOAD
     #pragma omp target teams distribute num_teams(nBlocks) device(0) \
-    map(to : nBlocks, nSplinesPerBlock) map(always, to : u)
+    map(to: nBlocks, nSplinesPerBlock) private(x,y,z)
 #else
-    #pragma omp parallel for
+    #pragma omp parallel for private(x,y,z)
 #endif
     for (int i = 0; i < nBlocks; ++i)
     {
+      const auto* restrict spline_m = einsplines_ptr[i];
+
+      x -= spline_m->x_grid.start;
+      y -= spline_m->y_grid.start;
+      z -= spline_m->z_grid.start;
+
+      T tx, ty, tz;
+      int ix, iy, iz;
+      SplineBound<T>::get(x * spline_m->x_grid.delta_inv, tx, ix,
+                          spline_m->x_grid.num - 1);
+      SplineBound<T>::get(y * spline_m->y_grid.delta_inv, ty, iy,
+                          spline_m->y_grid.num - 1);
+      SplineBound<T>::get(z * spline_m->z_grid.delta_inv, tz, iz,
+                          spline_m->z_grid.num - 1);
+      T a[4], b[4], c[4];
+
+      MultiBsplineData<T>::compute_prefactors(a, tx);
+      MultiBsplineData<T>::compute_prefactors(b, ty);
+      MultiBsplineData<T>::compute_prefactors(c, tz);
+
 #ifdef ENABLE_OFFLOAD
       #pragma omp parallel num_threads(nSplinesPerBlock)
 #endif
-      MultiBsplineOffload<T>::evaluate_v_v2(einsplines_ptr[i],
-                                            u[0],
-                                            u[1],
-                                            u[2],
+      spline2offload::evaluate_v_v2(spline_m,
+                                            a, b, c,
+                                            ix, iy, iz,
                                             psi_shadows_ptr[i],
                                             nSplinesPerBlock);
     }
@@ -329,7 +351,7 @@ struct einspline_spo : public SPOSet
 #ifdef ENABLE_OFFLOAD
       #pragma omp parallel num_threads(nSplinesPerBlock)
 #endif
-      MultiBsplineOffload<T>::evaluate_vgh_v2(einsplines_ptr[i],
+      spline2offload::evaluate_vgh_v2(einsplines_ptr[i],
                                               u[0],
                                               u[1],
                                               u[2],
@@ -439,7 +461,7 @@ struct einspline_spo : public SPOSet
 #ifdef ENABLE_OFFLOAD
         #pragma omp parallel
 #endif
-        MultiBsplineOffload<T>::evaluate_vgh_v2(einsplines_ptr[i],
+        spline2offload::evaluate_vgh_v2(einsplines_ptr[i],
                                                 u_shadows_ptr[iw][0],
                                                 u_shadows_ptr[iw][1],
                                                 u_shadows_ptr[iw][2],

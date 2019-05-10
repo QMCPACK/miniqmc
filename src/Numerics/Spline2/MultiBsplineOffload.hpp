@@ -29,40 +29,11 @@
 namespace qmcplusplus
 {
 
-PRAGMA_OMP("omp declare target")
-template <typename T> struct MultiBsplineOffload
+namespace spline2offload
 {
-  /// define the einsplie object type
-  using spliner_type = typename bspline_traits<T, 3>::SplineType;
-
-  MultiBsplineOffload() {}
-  MultiBsplineOffload(const MultiBsplineOffload &in) = delete;
-  MultiBsplineOffload &operator=(const MultiBsplineOffload &in) = delete;
-
-  /** compute values vals[0,num_splines)
-   *
-   * The base address for vals, grads and lapl are set by the callers, e.g.,
-   * evaluate_vgh(r,psi,grad,hess,ip).
-   */
-
-  static void evaluate_v(const spliner_type *restrict spline_m, T x, T y, T z, T *restrict vals,
-                  size_t num_splines);
-
-  static void evaluate_v_v2(const spliner_type *restrict spline_m, T x, T y, T z, T *restrict vals,
-                  size_t num_splines);
-
-  static void evaluate_vgl(const spliner_type *restrict spline_m, T x, T y, T z, T *restrict vals, T *restrict grads,
-                    T *restrict lapl, size_t num_splines);
-
-  static void evaluate_vgh(const spliner_type *restrict spline_m, T x, T y, T z, T *restrict vals, T *restrict grads,
-                    T *restrict hess, size_t num_splines);
-
-  static void evaluate_vgh_v2(const spliner_type *restrict spline_m, T x, T y, T z, T *restrict vals, T *restrict grads,
-                    T *restrict hess, size_t num_splines);
-};
 
 template <typename T>
-inline void MultiBsplineOffload<T>::evaluate_v(const spliner_type *restrict spline_m,
+inline void evaluate_v(const typename bspline_traits<T, 3>::SplineType* restrict spline_m,
                                            T x, T y, T z, T *restrict vals,
                                            size_t num_splines)
 {
@@ -104,27 +75,12 @@ inline void MultiBsplineOffload<T>::evaluate_v(const spliner_type *restrict spli
 }
 
 template <typename T>
-inline void MultiBsplineOffload<T>::evaluate_v_v2(const spliner_type *restrict spline_m,
-                                           T x, T y, T z, T *restrict vals,
+inline void evaluate_v_v2(const typename bspline_traits<T, 3>::SplineType* restrict spline_m,
+                                           const T (&a)[4], const T (&b)[4], const T (&c)[4],
+                                           int ix, int iy, int iz,
+                                           T *restrict vals,
                                            size_t num_splines)
 {
-  x -= spline_m->x_grid.start;
-  y -= spline_m->y_grid.start;
-  z -= spline_m->z_grid.start;
-  T tx, ty, tz;
-  int ix, iy, iz;
-  SplineBound<T>::get(x * spline_m->x_grid.delta_inv, tx, ix,
-                      spline_m->x_grid.num - 1);
-  SplineBound<T>::get(y * spline_m->y_grid.delta_inv, ty, iy,
-                      spline_m->y_grid.num - 1);
-  SplineBound<T>::get(z * spline_m->z_grid.delta_inv, tz, iz,
-                      spline_m->z_grid.num - 1);
-  T a[4], b[4], c[4];
-
-  MultiBsplineData<T>::compute_prefactors(a, tx);
-  MultiBsplineData<T>::compute_prefactors(b, ty);
-  MultiBsplineData<T>::compute_prefactors(c, tz);
-
   const intptr_t xs = spline_m->x_stride;
   const intptr_t ys = spline_m->y_stride;
   const intptr_t zs = spline_m->z_stride;
@@ -152,7 +108,7 @@ inline void MultiBsplineOffload<T>::evaluate_v_v2(const spliner_type *restrict s
 
 template <typename T>
 inline void
-MultiBsplineOffload<T>::evaluate_vgl(const spliner_type *restrict spline_m,
+evaluate_vgl(const typename bspline_traits<T, 3>::SplineType* restrict spline_m,
                                  T x, T y, T z, T *restrict vals,
                                  T *restrict grads, T *restrict lapl,
                                  size_t num_splines)
@@ -251,7 +207,7 @@ MultiBsplineOffload<T>::evaluate_vgl(const spliner_type *restrict spline_m,
 
 template <typename T>
 inline void
-MultiBsplineOffload<T>::evaluate_vgh(const spliner_type *restrict spline_m,
+evaluate_vgh(const typename bspline_traits<T, 3>::SplineType* restrict spline_m,
                                  T x, T y, T z, T *restrict vals,
                                  T *restrict grads, T *restrict hess,
                                  size_t num_splines)
@@ -376,7 +332,7 @@ MultiBsplineOffload<T>::evaluate_vgh(const spliner_type *restrict spline_m,
 
 template <typename T>
 inline void
-MultiBsplineOffload<T>::evaluate_vgh_v2(const spliner_type *restrict spline_m,
+evaluate_vgh_v2(const typename bspline_traits<T, 3>::SplineType* restrict spline_m,
                                  T x, T y, T z, T *restrict vals,
                                  T *restrict grads, T *restrict hess,
                                  size_t num_splines)
@@ -496,7 +452,8 @@ MultiBsplineOffload<T>::evaluate_vgh_v2(const spliner_type *restrict spline_m,
     hzzs[n]  = hzz * dzz;
   }
 }
-PRAGMA_OMP("omp end declare target")
+
+}
 
 } /** qmcplusplus namespace */
 #endif
