@@ -23,6 +23,7 @@
 #include <iostream>
 #include <Numerics/Spline2/bspline_allocator.hpp>
 #include <Numerics/Spline2/MultiBsplineData.hpp>
+#include <Numerics/Spline2/MultiBsplineEvalHelper.hpp>
 #include <stdlib.h>
 
 namespace miniqmcreference
@@ -76,9 +77,9 @@ inline void MultiBsplineRef<T>::evaluate_v(
   z -= spline_m->z_grid.start;
   T tx, ty, tz;
   int ix, iy, iz;
-  SplineBound<T>::get(x * spline_m->x_grid.delta_inv, tx, ix, spline_m->x_grid.num - 1);
-  SplineBound<T>::get(y * spline_m->y_grid.delta_inv, ty, iy, spline_m->y_grid.num - 1);
-  SplineBound<T>::get(z * spline_m->z_grid.delta_inv, tz, iz, spline_m->z_grid.num - 1);
+  spline2::getSplineBound(x * spline_m->x_grid.delta_inv, tx, ix, spline_m->x_grid.num - 1);
+  spline2::getSplineBound(y * spline_m->y_grid.delta_inv, ty, iy, spline_m->y_grid.num - 1);
+  spline2::getSplineBound(z * spline_m->z_grid.delta_inv, tz, iz, spline_m->z_grid.num - 1);
   T a[4], b[4], c[4];
 
   MultiBsplineData<T>::compute_prefactors(a, tx);
@@ -119,9 +120,9 @@ inline void MultiBsplineRef<T>::evaluate_vgl(const spliner_type* restrict spline
   z -= spline_m->z_grid.start;
   T tx, ty, tz;
   int ix, iy, iz;
-  SplineBound<T>::get(x * spline_m->x_grid.delta_inv, tx, ix, spline_m->x_grid.num - 1);
-  SplineBound<T>::get(y * spline_m->y_grid.delta_inv, ty, iy, spline_m->y_grid.num - 1);
-  SplineBound<T>::get(z * spline_m->z_grid.delta_inv, tz, iz, spline_m->z_grid.num - 1);
+  spline2::getSplineBound(x * spline_m->x_grid.delta_inv, tx, ix, spline_m->x_grid.num - 1);
+  spline2::getSplineBound(y * spline_m->y_grid.delta_inv, ty, iy, spline_m->y_grid.num - 1);
+  spline2::getSplineBound(z * spline_m->z_grid.delta_inv, tz, iz, spline_m->z_grid.num - 1);
 
   T a[4], b[4], c[4], da[4], db[4], dc[4], d2a[4], d2b[4], d2c[4];
 
@@ -219,9 +220,9 @@ inline void MultiBsplineRef<T>::evaluate_vgh(const spliner_type* restrict spline
   x -= spline_m->x_grid.start;
   y -= spline_m->y_grid.start;
   z -= spline_m->z_grid.start;
-  SplineBound<T>::get(x * spline_m->x_grid.delta_inv, tx, ix, spline_m->x_grid.num - 1);
-  SplineBound<T>::get(y * spline_m->y_grid.delta_inv, ty, iy, spline_m->y_grid.num - 1);
-  SplineBound<T>::get(z * spline_m->z_grid.delta_inv, tz, iz, spline_m->z_grid.num - 1);
+  spline2::getSplineBound(x * spline_m->x_grid.delta_inv, tx, ix, spline_m->x_grid.num - 1);
+  spline2::getSplineBound(y * spline_m->y_grid.delta_inv, ty, iy, spline_m->y_grid.num - 1);
+  spline2::getSplineBound(z * spline_m->z_grid.delta_inv, tz, iz, spline_m->z_grid.num - 1);
 
   MultiBsplineData<T>::compute_prefactors(a, da, d2a, tx);
   MultiBsplineData<T>::compute_prefactors(b, db, d2b, ty);
