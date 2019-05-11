@@ -116,21 +116,23 @@ struct BsplineFunctor : public OptimizableFunctorBase
     int spExtent = SplineCoefs.extent(0);
     int pmExtent = Parameters.extent(0); 
 
-    printf("SplineCoefs.extent(0) = %d, Parameters.extent(0) = %d\n", spExtent, pmExtent);
+    //printf("SplineCoefs.extent(0) = %d, Parameters.extent(0) = %d\n", spExtent, pmExtent);
+    auto spcoef = SplineCoefs;
+    auto param = Parameters;
 
     Kokkos::parallel_for("setup-bspline-parameters", 1,
 			 KOKKOS_LAMBDA(const int& j) {
 			   for (int i = 0; i < spExtent; i++) {
-			     printf("working on index %d\n", i);
-			     SplineCoefs(i) = 0.0;
+			     //printf("working on index %d\n", i);
+			     spcoef(i) = 0.0;
 			   }
-			   SplineCoefs(1) = Parameters(0);
-			   SplineCoefs(2) = Parameters(1);
-			   SplineCoefs(0) = Parameters(1) - 2.0 * locDeltaR * locCuspValue;
-			   printf("SplineCoefs.extent(0) = %d, Parameters.extent(0) = %d\n", spExtent, pmExtent);
+			   spcoef(1) = param(0);
+			   spcoef(2) = param(1);
+			   spcoef(0) = param(1) - 2.0 * locDeltaR * locCuspValue;
+			   //printf("spcoef.extent(0) = %d, param.extent(0) = %d\n", spExtent, pmExtent);
 			   for (int i = 2; i < pmExtent; i++) {
-			     printf("working on index %d\n", i);
-			     SplineCoefs(i+1) = Parameters(i);
+			     //printf("working on index %d\n", i);
+			     spcoef(i+1) = param(i);
 			   }
 			 });
     Kokkos::deep_copy(SplineCoefsMirror, SplineCoefs);

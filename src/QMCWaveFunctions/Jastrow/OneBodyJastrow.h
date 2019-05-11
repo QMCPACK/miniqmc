@@ -56,11 +56,11 @@ void doOneBodyJastrowMultiAcceptRestoreMove(aobjdType aobjd, apsdType apsd,
 
 // the version done for CUDA
 template<typename aobjdType, typename apsdType, typename valT>
-void doOneBodyJastrowMultiRatioGrad(aobjdType& aobjd, apsdType& apsd, Kokkos::View<int*>& isValidMap,
-			       int numValid, int iel, Kokkos::View<valT**> gradNowView,
-			       Kokkos::View<valT*> ratiosView) {
+void doOneBodyJastrowMultiRatioGrad(int numIons, aobjdType& aobjd, apsdType& apsd, 
+				    Kokkos::View<int*>& isValidMap,
+				    int numValid, int iel, Kokkos::View<valT**> gradNowView,
+				    Kokkos::View<valT*> ratiosView) {
   const int numWalkers = numValid;
-  const int numIons = aobjd(0).Nions(0); // note this is bad, relies on UVM, kill it
   
   Kokkos::Profiling::pushRegion("obj-evalRatioGrad");
   Kokkos::parallel_for("obj-evalRatioGrad-part1",
@@ -93,9 +93,10 @@ void doOneBodyJastrowMultiRatioGrad(aobjdType& aobjd, apsdType& apsd, Kokkos::Vi
 
 // the version done on OpenMP
 template<typename aobjdType, typename apsdType, typename valT>
-void doOneBodyJastrowMultiRatioGrad(aobjdType& aobjd, apsdType& apsd, Kokkos::View<int*>& isValidMap,
-			       int numValid, int iel, Kokkos::View<valT**> gradNowView,
-				    Kokkos::View<valT*> ratiosView, const Kokkos::HostSpace&) {
+  void doOneBodyJastrowMultiRatioGrad(int numIons, aobjdType& aobjd, apsdType& apsd, 
+				      Kokkos::View<int*>& isValidMap,
+				      int numValid, int iel, Kokkos::View<valT**> gradNowView,
+				      Kokkos::View<valT*> ratiosView, const Kokkos::HostSpace&) {
   Kokkos::Profiling::pushRegion("obj-evalRatioGrad");
   const int numWalkers = numValid;
   using BarePolicy = Kokkos::TeamPolicy<>;
@@ -113,17 +114,19 @@ void doOneBodyJastrowMultiRatioGrad(aobjdType& aobjd, apsdType& apsd, Kokkos::Vi
 #ifdef KOKKOS_ENABLE_CUDA
 // just here for dispatching
 template<typename aobjdType, typename apsdType, typename valT>
-void doOneBodyJastrowMultiRatioGrad(aobjdType& aobjd, apsdType& apsd, Kokkos::View<int*>& isValidMap,
-			       int numValid, int iel, Kokkos::View<valT**> gradNowView,
+void doOneBodyJastrowMultiRatioGrad(int numIons, aobjdType& aobjd, apsdType& apsd, 
+				    Kokkos::View<int*>& isValidMap,
+				    int numValid, int iel, Kokkos::View<valT**> gradNowView,
 				    Kokkos::View<valT*> ratiosView, const Kokkos::CudaSpace&) {
-  doOneBodyJastrowMultiRatioGrad(aobjd, apsd, isValidMap, numValid, iel, gradNowView, ratiosView);
+  doOneBodyJastrowMultiRatioGrad(numIons, aobjd, apsd, isValidMap, numValid, iel, gradNowView, ratiosView);
 }
 
 template<typename aobjdType, typename apsdType, typename valT>
-void doOneBodyJastrowMultiRatioGrad(aobjdType& aobjd, apsdType& apsd, Kokkos::View<int*>& isValidMap,
-			       int numValid, int iel, Kokkos::View<valT**> gradNowView,
+void doOneBodyJastrowMultiRatioGrad(int numIons, aobjdType& aobjd, apsdType& apsd, 
+				    Kokkos::View<int*>& isValidMap,
+				    int numValid, int iel, Kokkos::View<valT**> gradNowView,
 				    Kokkos::View<valT*> ratiosView, const Kokkos::CudaUVMSpace&) {
-  doOneBodyJastrowMultiRatioGrad(aobjd, apsd, isValidMap, numValid, iel, gradNowView, ratiosView);
+  doOneBodyJastrowMultiRatioGrad(numIons, aobjd, apsd, isValidMap, numValid, iel, gradNowView, ratiosView);
 }
 #endif
 
@@ -145,13 +148,12 @@ void doOneBodyJastrowMultiEvalGrad(aobjdType aobjd, int iat, Kokkos::View<valT**
 
 template<typename eiListType, typename apskType, typename aobjdType, typename tempRType,
          typename devRatioType, typename activeMapType>
-void doOneBodyJastrowMultiEvalRatio(int pairNum, eiListType& eiList, apskType& apsk,
+void doOneBodyJastrowMultiEvalRatio(int numIons, int pairNum, eiListType& eiList, apskType& apsk,
 				    aobjdType& allOneBodyJastrowData,
 				    tempRType& unlikeTempR, devRatioType& devRatios, 
 				    activeMapType& activeMap, int numActive) {
   int numWalkers = numActive;
   int numKnots = unlikeTempR.extent(1);
-  const int numIons = allOneBodyJastrowData(0).Nions(0); // note this is bad, relies on UVM, kill it
   
   Kokkos::parallel_for("obj-multi-ratio", Kokkos::RangePolicy<>(0,numWalkers*numKnots*numIons),
 		       KOKKOS_LAMBDA(const int& idx) {
@@ -207,11 +209,11 @@ void doOneBodyJastrowMultiEvalRatio(int pairNum, eiListType& eiList, apskType& a
 }
  
 template<typename aobjdType, typename apsdType, typename valT>
-void doOneBodyJastrowMultiEvaluateLog(aobjdType aobjd, apsdType apsd, Kokkos::View<valT*> values) {
+  void doOneBodyJastrowMultiEvaluateLog(int numElectrons, aobjdType aobjd, apsdType apsd, Kokkos::View<valT*> values) {
   Kokkos::Profiling::pushRegion("1BJ-multiEvalLog");
   const int numWalkers = aobjd.extent(0);
   using BarePolicy = Kokkos::TeamPolicy<>;
-  const int numElectrons = aobjd(0).Nelec(0);
+
   BarePolicy pol(numWalkers*numElectrons, 1, 32);
   Kokkos::parallel_for("obj-evalLog-waker-loop", pol,
 		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
@@ -422,7 +424,7 @@ struct OneBodyJastrow : public WaveFunctionComponent
 				 Kokkos::View<ParticleSet::pskType*>& psk,
 				 ParticleSet::ParticleValue_t& values) {
     // need to write this function
-    doOneBodyJastrowMultiEvaluateLog(wfc.oneBodyJastrows, psk, wfc.ratios_view);
+    doOneBodyJastrowMultiEvaluateLog(wfc.numElectrons, wfc.oneBodyJastrows, psk, wfc.ratios_view);
       
     Kokkos::deep_copy(wfc.ratios_view_mirror, wfc.ratios_view);
     
@@ -459,7 +461,7 @@ struct OneBodyJastrow : public WaveFunctionComponent
     Kokkos::Profiling::pushRegion("obj-multi_ratioGrad");
     if (numValid > 0) {
       Kokkos::Profiling::pushRegion("obj-multi_ratioGrad::kernel");
-      doOneBodyJastrowMultiRatioGrad(wfc.oneBodyJastrows, psk, isValidMap, numValid, iel, 
+      doOneBodyJastrowMultiRatioGrad(wfc.numIons, wfc.oneBodyJastrows, psk, isValidMap, numValid, iel, 
 				     wfc.grad_view, wfc.ratios_view, typename Kokkos::View<int*>::memory_space());
       Kokkos::fence();
       Kokkos::Profiling::popRegion();
@@ -501,7 +503,7 @@ struct OneBodyJastrow : public WaveFunctionComponent
     const int numKnots = unlikeTempR.extent(1);
     
     Kokkos::Profiling::pushRegion("obj-multi_eval_ratio-meat");
-    doOneBodyJastrowMultiEvalRatio(pairNum, eiList, apsk, wfc.oneBodyJastrows, unlikeTempR, 
+    doOneBodyJastrowMultiEvalRatio(wfc.numIons, pairNum, eiList, apsk, wfc.oneBodyJastrows, unlikeTempR, 
 				   wfc.knots_ratios_view, wfc.activeMap, numActive);
     Kokkos::Profiling::popRegion();  
     

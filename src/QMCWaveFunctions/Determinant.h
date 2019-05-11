@@ -327,6 +327,9 @@ void dddMELGPU(addkType& addk, vectorType& wfcv, resVecType& results) {
   using ValueType = DiracDeterminantKokkos::MatType::value_type;
   const int numWalkers = addk.extent(0);
   const int numEls = static_cast<DiracDeterminant*>(wfcv[0])->ddk.psiV.extent(0);
+  const unsigned int psiMextent0 = static_cast<DiracDeterminant*>(wfcv[0])->ddk.psiM.extent(0);
+  const unsigned int psiMextent1 = static_cast<DiracDeterminant*>(wfcv[0])->ddk.psiM.extent(1);
+
 
   Kokkos::Profiling::pushRegion("dd-MultiEvalLog-copyallin");  
   // 1. copy transpose of psiMsave to psiM for all walkers and also zero out temp matrices
@@ -405,7 +408,7 @@ void dddMELGPU(addkType& addk, vectorType& wfcv, resVecType& results) {
   Kokkos::Profiling::pushRegion("dd-MultiEvalLog-copyback");  
   // 3. copy getRiWs to psiM and to psiMinv
   Kokkos::parallel_for("dd-elementWiseCopyAllPsiM",
-		       Kokkos::MDRangePolicy<Kokkos::Rank<3,Kokkos::Iterate::Left> >({0,0,0}, {addk.extent(0), addk(0).psiM.extent(0), addk(0).psiM.extent(1)}),
+		       Kokkos::MDRangePolicy<Kokkos::Rank<3,Kokkos::Iterate::Left> >({0,0,0}, {numWalkers, psiMextent0, psiMextent1}),
 		       KOKKOS_LAMBDA(const int& i0, const int& i1, const int& i2) {
 			 addk(i0).psiM(i1,i2) = addk(i0).getRiWorkSpace(i1,i2);
 			 addk(i0).psiMinv(i1, i2) = addk(i0).getRiWorkSpace(i1,i2);
