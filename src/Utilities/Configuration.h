@@ -53,14 +53,6 @@ inline omp_int_t omp_get_ancestor_thread_num(int level) { return 0; }
 // uncomment this out to trace the call tree of destructors
 //#define DEBUG_MEMORY(msg) std::cerr << "<<<< " << msg << std::endl;
 
-#if defined(DEBUG_PSIBUFFER_ON)
-#define DEBUG_PSIBUFFER(who, msg)                              \
-  std::cerr << "PSIBUFFER " << who << " " << msg << std::endl; \
-  std::cerr.flush();
-#else
-#define DEBUG_PSIBUFFER(who, msg)
-#endif
-
 namespace qmcplusplus
 {
 /** traits for the common particle attributes
