@@ -94,46 +94,30 @@
 /* For FCIQMC compilation  */
 #cmakedefine BUILD_FCIQMC @BUILD_FCIQMC@
 
-#cmakedefine DEBUG_PSIBUFFER_ON @DEBUG_PSIBUFFER_ON@
-
-#if (__cplusplus >= 201103L)
-  #if defined(__INTEL_COMPILER)
-    #if defined(__KNC__) || defined(__AVX512F__)
-      #define QMC_CLINE 64
-      #define QMC_ALIGNAS alignas(64)
-      #define ASSUME_ALIGNED(x) __assume_aligned(x,64)
-    #else
-      #define QMC_CLINE 32
-      #define QMC_ALIGNAS alignas(32)
-      #define ASSUME_ALIGNED(x) __assume_aligned(x,32)
-    #endif
-  #elif defined(__GNUC__) && !defined(__ibmxl__)
-    #if defined(__AVX512F__)
-      #define QMC_CLINE 64
-      #define QMC_ALIGNAS alignas(64)
-      #define ASSUME_ALIGNED(x) (x) = (__typeof__(x)) __builtin_assume_aligned(x,64)
-    #else
-      #define QMC_CLINE 32
-      #define QMC_ALIGNAS alignas(32)
-      #define ASSUME_ALIGNED(x) (x) = (__typeof__(x)) __builtin_assume_aligned(x,32)
-    #endif
-  #else
-   #define QMC_CLINE 32
-   #define QMC_ALIGNAS
-   #define ASSUME_ALIGNED(x)
-  #endif
-
-#else //capture both C or non-c++11
-  #if defined(__KNC__) || defined(__AVX512F__)
+#if defined(__INTEL_COMPILER)
+  #if defined(__AVX512F__)
     #define QMC_CLINE 64
+    #define QMC_ALIGNAS alignas(64)
+    #define ASSUME_ALIGNED(x) __assume_aligned(x,64)
   #else
     #define QMC_CLINE 32
+    #define QMC_ALIGNAS alignas(32)
+    #define ASSUME_ALIGNED(x) __assume_aligned(x,32)
   #endif
-  #define QMC_ALIGNAS
+#elif defined(__GNUC__) && !defined(__ibmxl__)
+  #if defined(__AVX512F__)
+    #define QMC_CLINE 64
+    #define QMC_ALIGNAS alignas(64)
+    #define ASSUME_ALIGNED(x) (x) = (__typeof__(x)) __builtin_assume_aligned(x,64)
+  #else
+    #define QMC_CLINE 32
+    #define QMC_ALIGNAS alignas(32)
+    #define ASSUME_ALIGNED(x) (x) = (__typeof__(x)) __builtin_assume_aligned(x,32)
+  #endif
+#else
+  #define QMC_CLINE 32
+  #define QMC_ALIGNAS alignas(32)
   #define ASSUME_ALIGNED(x)
-  #ifndef nullptr
-  #define nullptr NULL
-  #endif
 #endif
 
 /* Internal timers */

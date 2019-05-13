@@ -73,21 +73,13 @@ struct DistanceTableData
     VisitorIndex,
     PairIndex
   };
-#if (__cplusplus >= 201103L)
+
   using IndexType       = QMCTraits::IndexType;
   using RealType        = QMCTraits::RealType;
   using PosType         = QMCTraits::PosType;
   using IndexVectorType = aligned_vector<IndexType>;
   using ripair          = std::pair<RealType, IndexType>;
   using RowContainer    = VectorSoAContainer<RealType, DIM>;
-#else
-  typedef QMCTraits::IndexType IndexType;
-  typedef QMCTraits::RealType RealType;
-  typedef QMCTraits::PosType PosType;
-  typedef aligned_vector<IndexType> IndexVectorType;
-  typedef std::pair<RealType, IndexType> ripair;
-  typedef Container<RealType, DIM> RowContainer;
-#endif
 
   /// type of cell
   int CellType;

@@ -1,21 +1,18 @@
 # Check compiler version
 SET(INTEL_COMPILER 1)
-IF ( CMAKE_CXX_COMPILER_VERSION VERSION_LESS 15.0 )
-MESSAGE(FATAL_ERROR "Requires Intel 15.0 or higher ")
+IF ( CMAKE_CXX_COMPILER_VERSION VERSION_LESS 18.0 )
+MESSAGE(FATAL_ERROR "Requires Intel 18.0 or higher ")
 ENDIF()
 
 # Enable OpenMP
 IF(QMC_OMP)
   SET(ENABLE_OPENMP 1)
-  IF ( CMAKE_CXX_COMPILER_VERSION VERSION_LESS 16 )
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -openmp")
-  ELSE()
   IF(ENABLE_OFFLOAD)
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -qopenmp -qopenmp-offload=host")
+    SET(OFFLOAD_TARGET "host" CACHE STRING "Offload target architecture")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -qopenmp -qopenmp-offload=${OFFLOAD_TARGET}")
   ELSE(ENABLE_OFFLOAD)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -qopenmp")
   ENDIF(ENABLE_OFFLOAD)
-  ENDIF()
 ENDIF(QMC_OMP)
 
 # Suppress compile warnings
@@ -26,15 +23,8 @@ SET( CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -restrict -unroll -ip" )
 SET( CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -restrict -unroll -ip" )
 SET( CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -restrict -unroll -ip" )
 
-# Use deprecated options prior to 11.1
-SET(ICC_DEPRECATED_OPTS FALSE)
-IF ( CMAKE_CXX_COMPILER_VERSION VERSION_LESS 11.1 )
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -prefetch" )
-ELSEIF(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 16 )  
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -opt-prefetch" )
-ELSE()
+# Set prefetch flag
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -qopt-prefetch" )
-ENDIF()
 
 #check if -ftz is accepted
 CHECK_CXX_COMPILER_FLAG( "${CMAKE_CXX_FLAGS} -ftz" INTEL_FTZ )
@@ -47,9 +37,10 @@ ENDIF( INTEL_FTZ)
 #------------------------
 IF(NOT $ENV{CRAYPE_VERSION} MATCHES ".")
 
+SET(X_OPTION "^-x| -x")
+SET(AX_OPTION "^-ax| -ax")
 #check if the user has already specified -x option for cross-compiling.
-if(CMAKE_CXX_FLAGS MATCHES "-x" OR CMAKE_CXX_FLAGS MATCHES "-ax")
-else() #(CMAKE_CXX_FLAGS MATCHES "-x" OR CMAKE_CXX_FLAGS MATCHES "-ax")
+if(NOT (CMAKE_CXX_FLAGS MATCHES ${X_OPTION} OR CMAKE_CXX_FLAGS MATCHES ${AX_OPTION}))
   #check if -xHost is accepted
   CHECK_CXX_COMPILER_FLAG( "-xHost" INTEL_CXX_FLAGS )
   IF(INTEL_CXX_FLAGS)
