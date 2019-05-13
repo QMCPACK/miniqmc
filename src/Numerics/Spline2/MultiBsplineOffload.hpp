@@ -304,7 +304,7 @@ evaluate_vgh_v2(const typename bspline_traits<T, 3>::SplineType* restrict spline
 #ifdef ENABLE_OFFLOAD
   #pragma omp for nowait
 #else
-  #pragma omp simd aligned(vals,gxs,gys,gzs,hxxs,hyys,hzzs,hxys,hxzs,hyzs)
+  #pragma omp simd aligned(vals,grads,hess)
 #endif
   for (int n = 0; n < num_splines; n++)
   {
