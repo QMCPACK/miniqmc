@@ -407,8 +407,6 @@ IF ( HAVE_MPI )
   MESSAGE(STATUS "MPI runner is ${MPIEXEC}")
 ENDIF(HAVE_MPI)
 
-MESSAGE(STATUS "CXX compiler flags: ${CMAKE_CXX_FLAGS}")
-
 INCLUDE(${CMAKE_ROOT}/Modules/FindThreads.cmake)
 
 ####################################################################
@@ -516,7 +514,7 @@ ENDIF()
 #this might be redundant but maybe not in all CMake versions.
 STRING(TOUPPER "${CMAKE_BUILD_TYPE}" THIS_CONFIG)
 
-SET(PROJECT_CMAKE_${lang}_FLAGS ${CMAKE_${lang}_FLAGS})
+SET(PROJECT_CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
 #pre 3.0 cmake does not have string CONCAT
 SET(TMP_PROJECT_CMAKE_CXX_FLAGS "${PROJECT_CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${THIS_CONFIG}}")
 MESSAGE("Project CXX_FLAGS: ${TMP_PROJECT_CMAKE_CXX_FLAGS}")
