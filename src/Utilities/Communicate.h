@@ -36,6 +36,8 @@ public:
   MPI_Comm world() { return m_world; }
 #endif
   void reduce(int& value);
+  void reduce(float& value);
+  void reduce(double& value);
 
 protected:
   int m_rank;

@@ -43,3 +43,19 @@ void Communicate::reduce(int& value)
   MPI_Reduce(&local_value, &value, 1, MPI_INT, MPI_SUM, 0, m_world);
 #endif
 }
+
+void Communicate::reduce(float& value)
+{
+#ifdef HAVE_MPI
+  float local_value = value;
+  MPI_Reduce(&local_value, &value, 1, MPI_FLOAT, MPI_SUM, 0, m_world);
+#endif
+}
+
+void Communicate::reduce(double& value)
+{
+#ifdef HAVE_MPI
+  double local_value = value;
+  MPI_Reduce(&local_value, &value, 1, MPI_DOUBLE, MPI_SUM, 0, m_world);
+#endif
+}
