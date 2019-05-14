@@ -462,7 +462,7 @@ void doDiracDeterminantMultiEvalRatio(addkType& addk, psiVsType& psiVs,
 						   innersum += addk(walkerNum).psiV(i) * addk(walkerNum).psiMinv(idx,i); 
 						 }, sumOver);
 			 Kokkos::single(Kokkos::PerTeam(member), [=]() {
-			     ratios(walkerNum) = sumOver;
+			     ratios(walkerIdx) = sumOver;
 			   });
 		       });
 }
