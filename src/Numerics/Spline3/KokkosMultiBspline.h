@@ -17,6 +17,7 @@ Kokkos::TeamPolicy<> getTeamPolicy(int numTeams, int maxSize, const Kokkos::Host
   Kokkos::TeamPolicy<> policy(numTeams, 1, 16);
   return policy;
 }
+#ifdef KOKKOS_ENABLE_CUDA
 Kokkos::TeamPolicy<> getTeamPolicy(int numTeams, int maxSize, const Kokkos::CudaSpace&) {
   Kokkos::TeamPolicy<> policy(numTeams, maxSize, 32);
   return policy;
@@ -25,6 +26,7 @@ Kokkos::TeamPolicy<> getTeamPolicy(int numTeams, int maxSize, const Kokkos::Cuda
   Kokkos::TeamPolicy<> policy(numTeams, maxSize, 32);
   return policy;
 }
+#endif
 
 template<typename p, typename valType, typename coefType>
 void doEval_v(p x, p y, p z, valType& vals, coefType& coefs,
