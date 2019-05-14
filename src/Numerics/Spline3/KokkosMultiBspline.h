@@ -13,6 +13,19 @@
 namespace qmcplusplus
 {
 
+Kokkos::TeamPolicy<> getTeamPolicy(int numTeams, int maxSize, const Kokkos::HostSpace&) {
+  Kokkos::TeamPolicy<> policy(numTeams, 1, 16);
+  return policy;
+}
+Kokkos::TeamPolicy<> getTeamPolicy(int numTeams, int maxSize, const Kokkos::CudaSpace&) {
+  Kokkos::TeamPolicy<> policy(numTeams, maxSize, 32);
+  return policy;
+}
+Kokkos::TeamPolicy<> getTeamPolicy(int numTeams, int maxSize, const Kokkos::CudaUVMSpace&) {
+  Kokkos::TeamPolicy<> policy(numTeams, maxSize, 32);
+  return policy;
+}
+
 template<typename p, typename valType, typename coefType>
 void doEval_v(p x, p y, p z, valType& vals, coefType& coefs,
 	      Kokkos::View<p[3]>& gridStarts, Kokkos::View<p[3]>& delta_invs,
@@ -375,7 +388,8 @@ void doEval_v(p x, p y, p z, valType& vals, coefType& coefs,
     numBlocks++;
   }
   
-  Kokkos::TeamPolicy<> policy(numBlocks,1,32);
+  
+  Kokkos::TeamPolicy<> policy = getTeamPolicy(numBlocks, 1, typename Kokkos::View<int*>::memory_space());
   Kokkos::parallel_for("KokkosMultiBspline-doEval_v",
 		       policy, KOKKOS_LAMBDA(Kokkos::TeamPolicy<>::member_type member) {
       const int start = blockSize * member.league_rank();
@@ -434,7 +448,9 @@ void doMultiEval_v2d(multiPosType& pos, valType& vals, activeMapType& activeMap,
   if (coefs.extent(3) % blockSize != 0) {
     numBlocks++;
   }
-  Kokkos::TeamPolicy<> policy(numWalkers*numKnots,Kokkos::AUTO,32);
+  //Kokkos::TeamPolicy<> policy(numWalkers*numKnots,Kokkos::AUTO,32);
+  //Kokkos::TeamPolicy<> policy(numWalkers*numKnots,16,32);
+  Kokkos::TeamPolicy<> policy = getTeamPolicy(numWalkers*numKnots, 16, typename Kokkos::View<int*>::memory_space());
   Kokkos::parallel_for("KokkosMultiBspline-doMultiEval_v2d",
 		       policy, KOKKOS_LAMBDA(Kokkos::TeamPolicy<>::member_type member) {
       int walkerIdx = member.league_rank() / numKnots;
@@ -563,7 +579,8 @@ void doEval_vgh(p x, p y, p z, valType& vals, gradType& grad,
     numBlocks++;
   }
     
-  Kokkos::TeamPolicy<> policy(numBlocks,1,32);
+  //Kokkos::TeamPolicy<> policy(numBlocks,1,32);
+  Kokkos::TeamPolicy<> policy = getTeamPolicy(numBlocks, 2, typename Kokkos::View<int*>::memory_space());
   Kokkos::parallel_for("KokkosMultiBspline-doEval_vgh",
 		       policy, KOKKOS_LAMBDA(Kokkos::TeamPolicy<>::member_type member) {
       const int start = blockSize * member.league_rank();
@@ -592,7 +609,7 @@ void doEval_vgh(p x, p y, p z, valType& vals, gradType& grad,
       compute_prefactors(b, db, d2b, ts[1], A44, dA44, d2A44);
       compute_prefactors(c, dc, d2c, ts[2], A44, dA44, d2A44);
 
-      Kokkos::parallel_for(Kokkos::ThreadVectorRange(member, num_splines), [&](const int& i) {
+      Kokkos::parallel_for(Kokkos::TeamVectorRange(member, num_splines), [&](const int& i) {
 	  const int spl = start + i;
 	  vals(spl) = p();
 	  grad(spl,0) = p();
@@ -616,7 +633,7 @@ void doEval_vgh(p x, p y, p z, valType& vals, gradType& grad,
 	  const p pre01 = a[i] * db[j];
 	  const p pre02 = a[i] * d2b[j];
 
-	  Kokkos::parallel_for(Kokkos::ThreadVectorRange(member, num_splines), [&](const int& n) {
+	  Kokkos::parallel_for(Kokkos::TeamVectorRange(member, num_splines), [&](const int& n) {
 	      const int sponum = start+n;
 	      const p sum0 = c[0] * coefs(is[0]+i, is[1]+j, is[2], sponum) +
 		c[1] * coefs(is[0]+i, is[1]+j, is[2]+1, sponum) +
@@ -652,7 +669,7 @@ void doEval_vgh(p x, p y, p z, valType& vals, gradType& grad,
       const p dxz = delta_invs(0) * delta_invs(2);
       const p dyz = delta_invs(1) * delta_invs(2);
       
-      Kokkos::parallel_for(Kokkos::ThreadVectorRange(member, num_splines), [&](const int& n) {
+      Kokkos::parallel_for(Kokkos::TeamVectorRange(member, num_splines), [&](const int& n) {
 	  const int sponum = start+n;
 	  grad(sponum,0) *= delta_invs(0);
 	  grad(sponum,1) *= delta_invs(1);
@@ -680,7 +697,8 @@ void doMultiEval_vgh(multiPosType& pos, valType& vals, gradType& grad,
   if (coefs.extent(3) % blockSize != 0) {
     numBlocks++;
   }
-  Kokkos::TeamPolicy<> policy(numWalkers*numBlocks,1,32);
+  //Kokkos::TeamPolicy<> policy(numWalkers*numBlocks,1,32);
+  Kokkos::TeamPolicy<> policy = getTeamPolicy(numWalkers*numBlocks, 1, typename Kokkos::View<int*>::memory_space());
   Kokkos::parallel_for("KokkosMultiBspline-doMultiEval_vgh",
 		       policy, KOKKOS_LAMBDA(Kokkos::TeamPolicy<>::member_type member) {
       const int packedWalkerIdx = member.league_rank() / numBlocks;
@@ -713,7 +731,7 @@ void doMultiEval_vgh(multiPosType& pos, valType& vals, gradType& grad,
       compute_prefactors(b, db, d2b, ts[1], A44, dA44, d2A44);
       compute_prefactors(c, dc, d2c, ts[2], A44, dA44, d2A44);
       
-      Kokkos::parallel_for(Kokkos::ThreadVectorRange(member, num_splines), 
+      Kokkos::parallel_for(Kokkos::TeamVectorRange(member, num_splines), 
 			   [&](const int& i) {
 			     const int spl = start + i;
 			     vals(walkerNum)(spl) = p();
@@ -742,7 +760,7 @@ void doMultiEval_vgh(multiPosType& pos, valType& vals, gradType& grad,
 	  const p pre01 = a[i] * db[j];
 	  const p pre02 = a[i] * d2b[j];
 
-	  Kokkos::parallel_for(Kokkos::ThreadVectorRange(member, num_splines), 
+	  Kokkos::parallel_for(Kokkos::TeamVectorRange(member, num_splines), 
 			       [&](const int& n) {
 				 const int sponum = start+n;
 				 const p sum0 = c[0] * coefs(is[0]+i, is[1]+j, is[2], sponum) +
@@ -780,7 +798,7 @@ void doMultiEval_vgh(multiPosType& pos, valType& vals, gradType& grad,
       const p dxz = delta_invs(0) * delta_invs(2);
       const p dyz = delta_invs(1) * delta_invs(2);
       
-      Kokkos::parallel_for(Kokkos::ThreadVectorRange(member, num_splines), 
+      Kokkos::parallel_for(Kokkos::TeamVectorRange(member, num_splines), 
 			   [&](const int& n) {
 			     const int sponum = start+n;
 			     grad(walkerNum)(sponum,0) *= delta_invs(0);
