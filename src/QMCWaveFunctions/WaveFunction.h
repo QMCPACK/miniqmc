@@ -158,42 +158,12 @@ void WaveFunction::multi_ratio(int pairNum, WaveFunctionKokkos& wfc, apsdType& a
     ratios[iw] = valT(1.0);
   }
 
-  auto tmpEiList = eiList;
-  int numActive = 0;
-
-  auto upDets = wfc.upDets;
-  auto downDets = wfc.downDets;
-  auto activeDDs = wfc.activeDDs;
-  auto isActive = wfc.isActive;
-  auto activeMap = wfc.activeMap;
-
-  Kokkos::parallel_reduce("set-up-worklist", 1,
-			  KOKKOS_LAMBDA(const int& z, int& locActive) {
-			    int idx = 0;
-			    for (int i = 0; i < numWalkers; i++) {
-			      const int elNum = tmpEiList(i,pairNum,0);
-			      //printf("in set-up-worklist, for walker %d, activeElectron is: %d\n", i, elNum);
-			      isActive(i) = 0;
-			      if (elNum >= 0) {
-				isActive(i) = 1;
-				if (elNum < wfc.numUpElectrons) {
-				  activeDDs(i) = upDets(i);
-				} else {
-				  activeDDs(i) = downDets(i);
-				}
-				locActive++;
-				activeMap(idx) = i;
-				idx++;
-			      }
-			    }
-			  }, numActive);
-  Kokkos::deep_copy(wfc.activeMapMirror, wfc.activeMap);
   
   //std::cout << "numActive = " << numActive << std::endl;
-  if (numActive > 0) {
+  if (wfc.numActive > 0) {
     timers[Timer_Det]->start();    
 
-    doDiracDeterminantMultiEvalRatio(pairNum, wfc, eiList, tempPsiV, ratios_det, numActive);
+    doDiracDeterminantMultiEvalRatio(pairNum, wfc, eiList, tempPsiV, ratios_det);
 
     for (int i = 0; i < numWalkers*numKnots; i++) {
       ratios[i] = ratios_det[i];
@@ -204,7 +174,7 @@ void WaveFunction::multi_ratio(int pairNum, WaveFunctionKokkos& wfc, apsdType& a
     {
       jastrow_timers[i]->start();
       std::vector<valT> ratios_jas(numWalkers*numKnots, 1);
-      Jastrows[i]->multi_evalRatio(pairNum, eiList, wfc, apsd, likeTempRs, unlikeTempRs, ratios_jas, numActive);
+      Jastrows[i]->multi_evalRatio(pairNum, eiList, wfc, apsd, likeTempRs, unlikeTempRs, ratios_jas);
 
       for (int idx = 0; idx < numWalkers*numKnots; idx++)
 	ratios[idx] *= ratios_jas[idx];

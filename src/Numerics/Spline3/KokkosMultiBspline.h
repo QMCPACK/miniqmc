@@ -23,8 +23,9 @@ void doMultiEval_v(multiPosType& pos, valType& vals, coefType& coefs,
 		   Kokkos::View<p[3]>& gridStarts, Kokkos::View<p[3]>& delta_invs,
 		   Kokkos::View<p[16]>& A44, int blockSize = 32);
 
-template<typename p, typename multiPosType, typename valType, typename coefType>
-void doMultiEval_v2d(multiPosType& pos, valType& vals, coefType& coefs,
+ template<typename p, typename multiPosType, typename valType, typename activeMapType, typename coefType>
+void doMultiEval_v2d(multiPosType& pos, valType& vals, activeMapType& activeMap, 
+		     int numActive, coefType& coefs, 
 		     Kokkos::View<p[3]>& gridStarts, Kokkos::View<p[3]>& delta_invs,
 		     Kokkos::View<p[16]>& A44, int blockSize = 32);
 
@@ -258,9 +259,9 @@ struct multi_UBspline<p, blocksize, 3> : public multi_UBspline_base<p,3> {
 
   // the 2d here refers to the dimensionality of pos and vals
   // instead of just n positions and values, we have nwalkers x nknots
-  template<typename multiPosType, typename multiValType>
-  void multi_evaluate_v2d(multiPosType& pos, multiValType& vals) {
-    doMultiEval_v2d(pos, vals, coef, this->gridStarts, this->delta_invs, A44, blocksize);
+  template<typename multiPosType, typename multiValType, typename activeMapType>
+  void multi_evaluate_v2d(multiPosType& pos, multiValType& vals, activeMapType& activeMap, int numActive) {
+    doMultiEval_v2d(pos, vals, activeMap, numActive, coef, this->gridStarts, this->delta_invs, A44, blocksize);
   }
 
   template<typename valType, typename gradType, typename hessType>
@@ -360,7 +361,7 @@ template<typename T>
 KOKKOS_INLINE_FUNCTION void get(T x, T& dx, int& ind, int ng) {
   T ipart;
   dx  = std::modf(x, &ipart);
-  ind = MYMIN(MYMAX(int(0), static_cast<int>(ipart)), ng);
+  ind = MYMIN( MYMAX(int(0), static_cast<int>(ipart)) , ng);
 }
 #undef MYMAX
 #undef MYMIN
@@ -396,7 +397,7 @@ void doEval_v(p x, p y, p z, valType& vals, coefType& coefs,
       Kokkos::Array<p,3> ts;
       Kokkos::Array<int,3> is;
       for (int i = 0; i < 3; i++) {
-	get(loc[i] * delta_invs(i), ts[i], is[i], coefs.extent(i)-1);
+	get(loc[i] * delta_invs(i), ts[i], is[i], coefs.extent(i)-4);
       }
 
       Kokkos::Array<p,4> a,b,c;
@@ -422,12 +423,12 @@ void doEval_v(p x, p y, p z, valType& vals, coefType& coefs,
       }
     });      
 }
-
-template<typename p, typename multiPosType, typename valType, typename coefType>
-void doMultiEval_v2d(multiPosType& pos, valType& vals, coefType& coefs,
+template<typename p, typename multiPosType, typename valType, typename activeMapType, typename coefType>
+void doMultiEval_v2d(multiPosType& pos, valType& vals, activeMapType& activeMap,
+		     int numActive, coefType& coefs,
 		     Kokkos::View<p[3]>& gridStarts, Kokkos::View<p[3]>& delta_invs,
 		     Kokkos::View<p[16]>& A44, int blockSize) {
-  int numWalkers = pos.extent(0);
+  int numWalkers = numActive;
   int numKnots = pos.extent(1);
   int numBlocks = coefs.extent(3) / blockSize;
   if (coefs.extent(3) % blockSize != 0) {
@@ -436,10 +437,11 @@ void doMultiEval_v2d(multiPosType& pos, valType& vals, coefType& coefs,
   Kokkos::TeamPolicy<> policy(numWalkers*numKnots,Kokkos::AUTO,32);
   Kokkos::parallel_for("KokkosMultiBspline-doMultiEval_v2d",
 		       policy, KOKKOS_LAMBDA(Kokkos::TeamPolicy<>::member_type member) {
-      int walkerNum = member.league_rank() / numKnots;
+      int walkerIdx = member.league_rank() / numKnots;
+      int walkerNum = activeMap(walkerIdx);
       int knotNum = member.league_rank() % numKnots;
       
-      // wrap this so only a single thread per league does this
+      // wrap this so only a single thread per team does this
       Kokkos::single(Kokkos::PerTeam(member), [&]() {	 
 	  for(int i = 0; i < 3; i++) {
 	    pos(walkerNum, knotNum,i) -= gridStarts(i);
@@ -456,10 +458,11 @@ void doMultiEval_v2d(multiPosType& pos, valType& vals, coefType& coefs,
 			     }
 			     const int num_splines = end-start;
 			   
+			     // would be nice to move this stuff outside of is parallel region
 			     Kokkos::Array<p,3> ts;
 			     Kokkos::Array<int,3> is;
 			     for (int i = 0; i < 3; i++) {
-			       get(pos(walkerNum,knotNum,i) * delta_invs(i), ts[i], is[i], coefs.extent(i)-1);
+			       get(pos(walkerNum,knotNum,i) * delta_invs(i), ts[i], is[i], coefs.extent(i)-4);
 			     }
 			     Kokkos::Array<p,4> a,b,c;
 			     compute_prefactors(a, ts[0], A44);
@@ -521,7 +524,7 @@ void doMultiEval_v(multiPosType& pos, valType& vals, coefType& coefs,
 			     Kokkos::Array<p,3> ts;
 			     Kokkos::Array<int,3> is;
 			     for (int i = 0; i < 3; i++) {
-			       get(pos(walkerNum,i) * delta_invs(i), ts[i], is[i], coefs.extent(i)-1);
+			       get(pos(walkerNum,i) * delta_invs(i), ts[i], is[i], coefs.extent(i)-4);
 			     }
 			     Kokkos::Array<p,4> a,b,c;
 			     compute_prefactors(a, ts[0], A44);
@@ -581,7 +584,7 @@ void doEval_vgh(p x, p y, p z, valType& vals, gradType& grad,
       Kokkos::Array<p,3> ts;
       Kokkos::Array<int,3> is;
       for (int i = 0; i < 3; i++) {
-	get(loc[i] * delta_invs[i], ts[i], is[i], coefs.extent(i)-1);
+	get(loc[i] * delta_invs[i], ts[i], is[i], coefs.extent(i)-4);
       }
 
       Kokkos::Array<p,4> a,b,c, da, db, dc, d2a, d2b, d2c;
@@ -702,7 +705,7 @@ void doMultiEval_vgh(multiPosType& pos, valType& vals, gradType& grad,
       Kokkos::Array<p,3> ts;
       Kokkos::Array<int,3> is;
       for (int i = 0; i < 3; i++) {
-	get(locpos[i] * delta_invs(i), ts[i], is[i], coefs.extent(i)-1);
+	get(locpos[i] * delta_invs(i), ts[i], is[i], coefs.extent(i)-4);
       }
 
       Kokkos::Array<p,4> a,b,c, da, db, dc, d2a, d2b, d2c;

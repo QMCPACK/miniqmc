@@ -498,19 +498,19 @@ struct OneBodyJastrow : public WaveFunctionComponent
 			       Kokkos::View<ParticleSetKokkos<RealType, ValueType, 3>*>& apsk,
 			       Kokkos::View<RealType***>& likeTempR,
 			       Kokkos::View<RealType***>& unlikeTempR,
-			       std::vector<ValueType>& ratios, int numActive) {
+			       std::vector<ValueType>& ratios) {
     Kokkos::Profiling::pushRegion("obj-multi_eval_ratio");
     const int numKnots = unlikeTempR.extent(1);
     
     Kokkos::Profiling::pushRegion("obj-multi_eval_ratio-meat");
     doOneBodyJastrowMultiEvalRatio(wfc.numIons, pairNum, eiList, apsk, wfc.oneBodyJastrows, unlikeTempR, 
-				   wfc.knots_ratios_view, wfc.activeMap, numActive);
+				   wfc.knots_ratios_view, wfc.activeMap, wfc.numActive);
     Kokkos::Profiling::popRegion();  
     
     Kokkos::Profiling::pushRegion("obj-multi_eval_ratio-postlude");
     
     Kokkos::deep_copy(wfc.knots_ratios_view_mirror, wfc.knots_ratios_view);
-    for (int i = 0; i < numActive; i++) {
+    for (int i = 0; i < wfc.numActive; i++) {
       const int walkerNum = wfc.activeMapMirror(i);
       for (int j = 0; j < wfc.knots_ratios_view_mirror.extent(1); j++) {
 	ratios[walkerNum*numKnots+j] = wfc.knots_ratios_view_mirror(i,j);

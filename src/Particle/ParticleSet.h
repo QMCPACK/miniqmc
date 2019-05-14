@@ -38,6 +38,7 @@
 #include <Utilities/NewTimer.h>
 #include <Numerics/Containers.h>
 #include <Particle/ParticleSetKokkos.h>
+#include <QMCWaveFunctions/WaveFunctionKokkos.h>
 
 namespace qmcplusplus
 {
@@ -328,7 +329,7 @@ public:
 
   template<typename allPsdType, typename EiListType, typename rOnSphereType,
            typename bigElPosType, typename tempRType>    
-  void updateTempPosAndRs(int eiPair, allPsdType& allParticleSetData,
+  void updateTempPosAndRs(int eiPair, allPsdType& allParticleSetData, WaveFunctionKokkos& wfc,
 			  EiListType& EiLists, rOnSphereType& rOnSphere, bigElPosType& bigElPos,
 			  tempRType& bigLikeTempR, tempRType& bigUnlikeTempR) {
     int eiPair_ = eiPair;
@@ -341,40 +342,41 @@ public:
     auto bigUnlikeTempR_ = bigUnlikeTempR;
     //std::cout << " finished making local references" << std::endl;
 
-    const int numMovers = allParticleSetData_.extent(0);
+  
+    const int numActive = wfc.numActive;
     const int numKnots = rOnSphere_.extent(1);
-    Kokkos::TeamPolicy<> pol(numMovers*numKnots, 1, 32);
+    Kokkos::TeamPolicy<> pol(numActive*numKnots, 1, 32);
 
     Kokkos::parallel_for("ps-updateTempPosAndRs", pol,
 			 KOKKOS_LAMBDA(Kokkos::TeamPolicy<>::member_type member) {
-			   const int walkerNum = member.league_rank() / numKnots;
+			   const int walkerIdx = member.league_rank() / numKnots;
+			   const int walkerNum = wfc.activeMap(walkerIdx);
 			   const int knotNum = member.league_rank() % numKnots;
 			   const int eNum = EiLists_(walkerNum, eiPair_, 0);
 			   const int atNum = EiLists_(walkerNum, eiPair_, 1);
-			   if (eNum > -1) {			     
-			     RealType x[3];
-			     auto& psk = allParticleSetData_(walkerNum);
-			     RealType dist = psk.getDisplacementIon(psk.R(eNum,0), psk.R(eNum,1), psk.R(eNum,2),
-								    atNum, x[0], x[1], x[2]);
-			     for (int dim = 0; dim < 3; dim++) {
-			       //bigElPos_(walkerNum, knotNum, dim) = allParticleSetData_(walkerNum).UnlikeDTDistances(eNum,atNum) *
-			       //	 rOnSphere_(walkerNum,knotNum,dim) - allParticleSetData_(walkerNum).UnlikeDTDisplacements(eNum,atNum,dim);
-			       bigElPos_(walkerNum, knotNum, dim) = dist * rOnSphere_(walkerNum,knotNum,dim) - x[dim];
-			     }
-			     psk.DTComputeDistances(member, bigElPos(walkerNum,knotNum,0),	   
-						    bigElPos(walkerNum,knotNum,1),	   
-						    bigElPos(walkerNum,knotNum,2),	   
-						    allParticleSetData_(walkerNum).RSoA,			   
-						    bigLikeTempR_, walkerNum, knotNum, 		   
-						    0, bigLikeTempR_.extent(2), eNum);
-			     
-			     psk.DTComputeDistances(member, bigElPos(walkerNum,knotNum,0),	   
-						    bigElPos(walkerNum,knotNum,1),	   
-						    bigElPos(walkerNum,knotNum,2),	   
-						    allParticleSetData_(walkerNum).originR,			   
-						    bigUnlikeTempR_, walkerNum, knotNum, 		   
-						    0, bigUnlikeTempR_.extent(2), eNum);
-			   }			     
+
+			   RealType x[3];
+			   auto& psk = allParticleSetData_(walkerNum);
+			   RealType dist = psk.getDisplacementIon(psk.R(eNum,0), psk.R(eNum,1), 
+								  psk.R(eNum,2), atNum, x[0], 
+								  x[1], x[2]);
+			   for (int dim = 0; dim < 3; dim++) {
+			     bigElPos_(walkerNum, knotNum, dim) = 
+			       dist * rOnSphere_(walkerNum,knotNum,dim) - x[dim];
+			   }
+			   psk.DTComputeDistances(member, bigElPos(walkerNum,knotNum,0),	   
+						  bigElPos(walkerNum,knotNum,1),	   
+						  bigElPos(walkerNum,knotNum,2),	   
+						  allParticleSetData_(walkerNum).RSoA,
+						  bigLikeTempR_, walkerNum, knotNum, 		   
+						  0, bigLikeTempR_.extent(2), eNum);
+			   
+			   psk.DTComputeDistances(member, bigElPos(walkerNum,knotNum,0),	   
+						  bigElPos(walkerNum,knotNum,1),	   
+						  bigElPos(walkerNum,knotNum,2),	   
+						  allParticleSetData_(walkerNum).originR,
+						  bigUnlikeTempR_, walkerNum, knotNum, 		   
+						  0, bigUnlikeTempR_.extent(2), eNum);
 			 });
   }
 						    

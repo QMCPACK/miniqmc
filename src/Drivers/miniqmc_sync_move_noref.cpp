@@ -657,12 +657,38 @@ int main(int argc, char** argv)
        
 	std::cout << "About to start loop over eiPairs.  There are " << maxSize << " of them" << std::endl;
 	for (int eiPair = 0; eiPair < maxSize; eiPair++) {
-	  anon_mover->els.updateTempPosAndRs(eiPair, allParticleSetData, EiLists,
+	  // update wfKokkos to have the proper isActive, activeMap and DDs set
+	  wfKokkos.numActive = 0;
+	  // could be done as a prefix scan followed by a reduction, but I doubt this takes
+	  // much time
+	  Kokkos::parallel_reduce("set-up-worklist", 1,
+				  KOKKOS_LAMBDA(const int& z, int& locActive) {
+				    int idx = 0;
+				    for (int i = 0; i < nmovers; i++) {
+				      const int elNum = EiLists(i,eiPair,0);
+				      wfKokkos.isActive(i) = 0;
+				      if (elNum >= 0) {
+					wfKokkos.isActive(i) = 1;
+					if (elNum < wfKokkos.numUpElectrons) {
+					wfKokkos.activeDDs(i) = wfKokkos.upDets(i);
+				      } else {
+					wfKokkos.activeDDs(i) = wfKokkos.downDets(i);
+				      }
+				      locActive++;
+				      wfKokkos.activeMap(idx) = i;
+				      idx++;
+				      }
+				    }
+				  }, wfKokkos.numActive);
+	  Kokkos::deep_copy(wfKokkos.activeMapMirror, wfKokkos.activeMap);
+
+
+	  anon_mover->els.updateTempPosAndRs(eiPair, allParticleSetData, wfKokkos, EiLists,
 					     rOnSphere, bigElPos, bigLikeTempR, bigUnlikeTempR);
 	  Timers[Timer_Value]->start();
 
 	  // actually putting the values calculated by evaluate_vs into tempPsiV
-	  spo.multi_evaluate_v(bigElPos, tempPsiV, allParticleSetData); 
+	  spo.multi_evaluate_v(bigElPos, tempPsiV, allParticleSetData, wfKokkos); 
 	  
 	  // note, for a given eiPair, all evaluations for a single mover will be for the same electron
 	  // but not all movers will be working on the same electron necessarily
@@ -721,3 +747,4 @@ int main(int argc, char** argv)
   Kokkos::finalize();
   return 0;
 }
+

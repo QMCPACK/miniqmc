@@ -77,11 +77,11 @@ void doDiracDeterminantMultiEvalRatio(addkType& addk, psiVsType& psiVs,
 // using this one for NLPP
 template<typename eiListType, typename psiVType, typename ratiosType>
 void doDiracDeterminantMultiEvalRatio(int pairNum, WaveFunctionKokkos& wfc, eiListType& eiList, 
-				      psiVType& psiVScratch, ratiosType& ratios, int numActive);
+				      psiVType& psiVScratch, ratiosType& ratios);
 
 template<typename eiListType, typename psiVType, typename ratiosType>
 void doDiracDeterminantMultiEvalRatioDebug(int pairNum, WaveFunctionKokkos& wfc, eiListType& eiList, 
-					   psiVType& psiVScratch, ratiosType& ratios, int numActive);
+					   psiVType& psiVScratch, ratiosType& ratios);
 
 
 
@@ -471,10 +471,10 @@ void doDiracDeterminantMultiEvalRatio(addkType& addk, psiVsType& psiVs,
 
 template<typename eiListType, typename psiVType, typename ratiosType>
 void doDiracDeterminantMultiEvalRatio(int pairNum, WaveFunctionKokkos& wfc, eiListType& eiList, 
-				      psiVType& psiVScratch, ratiosType& ratios, int numActive) {
+				      psiVType& psiVScratch, ratiosType& ratios) {
   using ValueType = typename psiVType::value_type;
   const int numKnots = psiVScratch.extent(1);
-  const int numWalkers = numActive;
+  const int numWalkers = wfc.numActive;
   
   
   auto knots_ratios_view = wfc.knots_ratios_view;

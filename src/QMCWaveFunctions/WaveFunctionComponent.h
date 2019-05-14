@@ -164,7 +164,7 @@ struct WaveFunctionComponent : public QMCTraits
 			       Kokkos::View<ParticleSetKokkos<RealType, ValueType, 3>*>& apsk,
 			       Kokkos::View<RealType***>& likeTempR,
 			       Kokkos::View<RealType***>& unlikeTempR,
-			       std::vector<ValueType>& ratios, int numActive) {
+			       std::vector<ValueType>& ratios) {
     // TODO
   };
 

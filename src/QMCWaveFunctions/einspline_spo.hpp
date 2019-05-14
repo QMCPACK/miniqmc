@@ -23,6 +23,7 @@
 #include <Utilities/NewTimer.h>
 #include <Particle/ParticleSet.h>
 #include <Numerics/Spline3/KokkosMultiBspline.h>
+#include <QMCWaveFunctions/WaveFunctionKokkos.h>
 #include "QMCWaveFunctions/SPOSet.h"
 #include <iostream>
 
@@ -142,7 +143,8 @@ struct einspline_spo : public SPOSet
   }    
 
   template<typename apsdType>
-  inline void multi_evaluate_v(Kokkos::View<T**[3]>& all_pos, Kokkos::View<ValueType***> allPsiV, apsdType& apsd) {
+  inline void multi_evaluate_v(Kokkos::View<T**[3]>& all_pos, Kokkos::View<ValueType***> allPsiV, 
+			       apsdType& apsd, WaveFunctionKokkos& wfc) {
     // need to do to_unit_floor for all positions then pass to spline.multi_evaluate_v
     ScopedTimer local_timer(timer);
     auto tmpAllPos = all_pos;
@@ -150,8 +152,9 @@ struct einspline_spo : public SPOSet
     auto tmpallPsiV = allPsiV;
     //Kokkos::View<T**[3]> allPosToUnitFloor("allPosToUnitFloor", all_pos.extent(0),all_pos.extent(1));
     Kokkos::parallel_for("positionsToFloorLoop", 
-			 Kokkos::MDRangePolicy<Kokkos::Rank<2,Kokkos::Iterate::Left> >({0,0}, {tmpAllPos.extent(0), tmpAllPos.extent(1)}),
-			 KOKKOS_LAMBDA(const int& walkerNum, const int& knotNum) {
+			 Kokkos::MDRangePolicy<Kokkos::Rank<2,Kokkos::Iterate::Left> >({0,0}, {wfc.numActive, tmpAllPos.extent(1)}),
+			 KOKKOS_LAMBDA(const int& walkerIdx, const int& knotNum) {
+			   const int walkerNum = wfc.activeMap(walkerIdx);
 			   T tempx;
 			   T tempy;
 			   T tempz;
@@ -173,7 +176,7 @@ struct einspline_spo : public SPOSet
 			   tmpAllPos(walkerNum, knotNum, 2) = tempz;
 			 });
     //spline.multi_evaluate_v2d(allPosToUnitFloor, tmpallPsiV);
-    spline.multi_evaluate_v2d(tmpAllPos, tmpallPsiV);
+    spline.multi_evaluate_v2d(tmpAllPos, tmpallPsiV, wfc.activeMap, wfc.numActive);
   }			     			     
   
   inline void multi_evaluate_v(std::vector<PosType>& pos_list, std::vector<vContainer_type>& vals) {

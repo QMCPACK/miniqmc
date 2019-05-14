@@ -429,7 +429,7 @@ struct TwoBodyJastrow : public WaveFunctionComponent
 			       Kokkos::View<ParticleSetKokkos<RealType, ValueType, 3>*>& apsk,
 			       Kokkos::View<RealType***>& likeTempR,
 			       Kokkos::View<RealType***>& unlikeTempR,
-			       std::vector<ValueType>& ratios, int numActive);
+			       std::vector<ValueType>& ratios);
   
   virtual void multi_evaluateGL(WaveFunctionKokkos& wfc,
 				Kokkos::View<ParticleSet::pskType*>& apsk,
@@ -756,18 +756,18 @@ void TwoBodyJastrow<FT>::multi_evalRatio(int pairNum, Kokkos::View<int***>& eiLi
 					 Kokkos::View<ParticleSetKokkos<RealType, ValueType, 3>*>& apsk,
 					 Kokkos::View<RealType***>& likeTempR,
 					 Kokkos::View<RealType***>& unlikeTempR,
-					 std::vector<ValueType>& ratios, int numActive) {
+					 std::vector<ValueType>& ratios) {
   Kokkos::Profiling::pushRegion("tbj-multi_eval_ratio");
   const int numKnots = likeTempR.extent(1);
 
   Kokkos::Profiling::pushRegion("tbj-multi_eval_ratio-meat");
   doTwoBodyJastrowMultiEvalRatio(wfc.numElectrons, pairNum, eiList, apsk, wfc.twoBodyJastrows, likeTempR, 
-				 wfc.knots_ratios_view, wfc.activeMap, numActive);
+				 wfc.knots_ratios_view, wfc.activeMap, wfc.numActive);
   Kokkos::Profiling::popRegion();  
 
   Kokkos::Profiling::pushRegion("tbj-multi_eval_ratio-postlude");
   Kokkos::deep_copy(wfc.knots_ratios_view_mirror, wfc.knots_ratios_view);
-  for (int i = 0; i < numActive; i++) {
+  for (int i = 0; i < wfc.numActive; i++) {
     const int walkerNum = wfc.activeMapMirror(i);
     for (int j = 0; j < wfc.knots_ratios_view_mirror.extent(1); j++) {
       ratios[walkerNum*numKnots+j] = wfc.knots_ratios_view_mirror(i,j);
