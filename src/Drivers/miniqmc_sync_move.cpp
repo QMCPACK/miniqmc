@@ -179,7 +179,6 @@ int main(int argc, char** argv)
 {
   // clang-format off
   typedef QMCTraits::RealType           RealType;
-  typedef ParticleSet::ParticlePos_t    ParticlePos_t;
   typedef ParticleSet::PosType          PosType;
   typedef ParticleSet::GradType         GradType;
   typedef ParticleSet::ValueType        ValueType;
@@ -395,7 +394,7 @@ int main(int argc, char** argv)
   for (int iw = 0; iw < nmovers; iw++)
   {
     // create and initialize movers
-    Mover* thiswalker = new Mover(myPrimes[iw], ions);
+    Mover* thiswalker = new Mover(myPrimes[iw], ions, Rmax);
     mover_list[iw]    = thiswalker;
 
     // create wavefunction per mover
@@ -513,33 +512,7 @@ int main(int argc, char** argv)
       #pragma omp parallel for
       for (int iw = first; iw < last; iw++)
       {
-        auto& els          = mover_list[iw]->els;
-        auto& wavefunction = mover_list[iw]->wavefunction;
-        auto& ecp          = mover_list[iw]->nlpp;
-
-        ParticlePos_t rOnSphere(nknots);
-        ecp.randomize(rOnSphere); // pick random sphere
-        const DistanceTableData* d_ie = els.DistTables[wavefunction.get_ei_TableID()];
-
-        for (int jel = 0; jel < els.getTotalNum(); ++jel)
-        {
-          const auto& dist  = d_ie->Distances[jel];
-          const auto& displ = d_ie->Displacements[jel];
-          for (int iat = 0; iat < nions; ++iat)
-            if (dist[iat] < Rmax)
-              for (int k = 0; k < nknots; k++)
-              {
-                PosType deltar(dist[iat] * rOnSphere[k] - displ[iat]);
-
-                els.makeMove(jel, deltar);
-
-                Timers[Timer_Value]->start();
-                wavefunction.ratio(els, jel);
-                Timers[Timer_Value]->stop();
-
-                els.rejectMove(jel);
-              }
-        }
+        mover_list[iw]->nlpp.evaluate(mover_list[iw]->els, mover_list[iw]->wavefunction);
       }
       Timers[Timer_ECP]->stop();
     } // batch

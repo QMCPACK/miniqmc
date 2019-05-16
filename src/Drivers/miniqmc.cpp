@@ -376,7 +376,7 @@ int main(int argc, char** argv)
     const int member_id = ip % team_size;
 
     // create and initialize movers
-    Mover* thiswalker = new Mover(myPrimes[ip], ions);
+    Mover* thiswalker = new Mover(myPrimes[ip], ions, Rmax);
     mover_list[iw]    = thiswalker;
 
     // create wavefunction per mover
