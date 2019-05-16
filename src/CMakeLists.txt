@@ -165,6 +165,7 @@ ENDIF()
   # create libqmcbase 
   ####################################
   SET(PARTICLE ${PARTICLE}
+    Particle/VirtualParticleSet.cpp 
     Particle/ParticleSet.cpp 
     Particle/ParticleSet.BC.cpp 
     Particle/DistanceTableAA.cpp
