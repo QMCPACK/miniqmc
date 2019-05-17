@@ -38,13 +38,8 @@ namespace qmcplusplus
 template<typename T, unsigned D>
 struct VectorSoAContainer
 {
-#if (__cplusplus >= 201103L)
   using Type_t    = TinyVector<T, D>;
   using Element_t = T;
-#else
-  typedef TinyVector<T, D> Type_t;
-  typedef T Element_t;
-#endif
   /////alias to ParticleAttrib<T1,D>
   // template <class T1> using PosArray = ParticleAttrib<TinyVector<T1,D> >;
   /// number of elements
@@ -84,7 +79,6 @@ struct VectorSoAContainer
     return *this;
   }
 
-#if (__cplusplus >= 201103L)
   /// move constructor
   VectorSoAContainer(VectorSoAContainer&& in) : nLocal(in.nLocal), nGhosts(in.nGhosts)
   {
@@ -94,7 +88,6 @@ struct VectorSoAContainer
     in.myData     = nullptr;
     in.nAllocated = 0;
   }
-#endif
 
   /** constructor with size n  without initialization
    */
