@@ -32,12 +32,10 @@ class Allocator
 public:
   /// constructor
   Allocator();
-#if (__cplusplus >= 201103L)
   /// disable copy constructor
   Allocator(const Allocator&) = delete;
   /// disable assignement
   Allocator& operator=(const Allocator&) = delete;
-#endif
   /// destructor
   ~Allocator();
 
