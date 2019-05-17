@@ -30,18 +30,12 @@
  */
 #ifndef OHMMS_CRYSTALLATTICE_H
 #define OHMMS_CRYSTALLATTICE_H
+
+#include <limits>
 #include <Particle/Lattice/LatticeOperations.h>
 #include <Numerics/OhmmsPETE/Tensor.h>
 #include <Numerics/OhmmsPETE/TinyVector.h>
-#include <limits>
-
-#ifndef TWOPI
-#ifndef M_PI
-#define TWOPI 6.2831853071795862
-#else
-#define TWOPI (2 * M_PI)
-#endif /* M_PI */
-#endif /* TWOPI */
+#include "Utilities/Constants.h"
 
 #define USE_BOXBCONDS
 

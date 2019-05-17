@@ -19,11 +19,12 @@
 
 #ifndef QMCPLUSPLUS_DETERMINANTREF_H
 #define QMCPLUSPLUS_DETERMINANTREF_H
+
 #include "Numerics/OhmmsPETE/OhmmsMatrix.h"
 #include "Numerics/DeterminantOperators.h"
 #include "Particle/ParticleSet.h"
 #include "QMCWaveFunctions/WaveFunctionComponent.h"
-
+#include "Utilities/Constants.h"
 
 namespace miniqmcreference
 {
