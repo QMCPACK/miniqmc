@@ -520,10 +520,12 @@ void doDiracDeterminantMultiAccept(addkType& addk, vectorType& WFC_list,
   doDiracDeterminantMultiAccept(addk, WFC_list, isAcceptedMap, numAccepted, iel, typename addkType::memory_space());
 }
 
+// for historical significance, other one seems smaller but maybe if 
+// slate or something implements good batched gemv and ger this would change
 template<typename addkType, typename vectorType>
-void doDiracDeterminantMultiAccept(addkType& addk, vectorType& WFC_list, 
-				   Kokkos::View<int*>& isAcceptedMap, int numAccepted,
-				   int iel, const Kokkos::HostSpace& ms) {
+void doDiracDeterminantMultiAcceptOldBlas(addkType& addk, vectorType& WFC_list, 
+					  Kokkos::View<int*>& isAcceptedMap, int numAccepted,
+					  int iel, const Kokkos::HostSpace& ms) {
   Kokkos::Profiling::pushRegion("dd-MultiAccept");
   // for every walker, need to do updateRow followed by copyBack
   int numWalkers = numAccepted;
@@ -535,8 +537,8 @@ void doDiracDeterminantMultiAccept(addkType& addk, vectorType& WFC_list,
 
   auto isAcceptedMapMirror = Kokkos::create_mirror_view(isAcceptedMap);
   Kokkos::deep_copy(isAcceptedMapMirror, isAcceptedMap);
-
   // 1. gemvTrans
+
   Kokkos::Profiling::pushRegion("updateRow::gemvTrans");
   for (int i = 0; i < numAccepted; i++) {
     const int walkerNum = isAcceptedMapMirror(i);
@@ -546,7 +548,6 @@ void doDiracDeterminantMultiAccept(addkType& addk, vectorType& WFC_list,
     ddp->lah.gemvTrans(ddk.psiMinv, ddk.psiV, ddk.tempRowVec, c_ratio, czero); 
   }
   Kokkos::Profiling::popRegion();
-
   // 2. poke one element on the device for each walker
   Kokkos::Profiling::pushRegion("updateRow::pokeSingleValue");
   Kokkos::View<ValueType*> poke("poke", numAccepted);
@@ -562,6 +563,7 @@ void doDiracDeterminantMultiAccept(addkType& addk, vectorType& WFC_list,
       addk(walkerNum).tempRowVec(rowChanged) = poke(i);
     });
   Kokkos::Profiling::popRegion();
+
 
   // 3. copyChangedRow for each walker 
   Kokkos::Profiling::pushRegion("dd-updateRow::populateRcopy");
@@ -580,15 +582,52 @@ void doDiracDeterminantMultiAccept(addkType& addk, vectorType& WFC_list,
     ddp->lah.ger(ddp->ddk.psiMinv, ddp->ddk.rcopy, ddp->ddk.tempRowVec, -cone);
   }
   Kokkos::Profiling::popRegion();
+}
 
-  // 5. copy the result back from psiV to the right row of psiMsave
-  Kokkos::Profiling::pushRegion("copyBack");
-  Kokkos::parallel_for("dd-copyBack", Kokkos::MDRangePolicy<Kokkos::Rank<2,Kokkos::Iterate::Left> >({0,0},{numAccepted,numEls}),
-		       KOKKOS_LAMBDA(const int& i0, const int& i1) {
-			 const int walkerNum = isAcceptedMap(i0);
-			 addk(walkerNum).psiMsave(rowChanged,i1) = addk(walkerNum).psiV(i1);
+
+template<typename addkType, typename vectorType>
+void doDiracDeterminantMultiAccept(addkType& addk, vectorType& WFC_list, 
+				   Kokkos::View<int*>& isAcceptedMap, int numAccepted,
+				   int iel, const Kokkos::HostSpace& ms) {
+  Kokkos::Profiling::pushRegion("dd-MultiAccept (general)");
+
+  int numEls = static_cast<DiracDeterminant*>(WFC_list[0])->ddk.psiV.extent(0);
+  using ValueType = DiracDeterminantKokkos::MatType::value_type;
+  constexpr ValueType cone(1.0);
+
+  // new version without blas
+  // strange observation, but if you fuse these two kernels, it is a LOT slower
+  using BarePolicy = Kokkos::TeamPolicy<>;
+  BarePolicy pol(numEls*numAccepted, 1, 32);
+  Kokkos::parallel_for("hand-rolled-gemvTrans", pol,
+		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
+			 const int walkerIdx = member.league_rank() / numEls;			 
+			 const int walkerNum = isAcceptedMap(walkerIdx);
+			 
+			 const int j = member.league_rank() % numEls;
+			 Kokkos::parallel_reduce(Kokkos::TeamVectorRange(member, numEls),
+						 [&](const int& i, ValueType temp) {
+						   temp += addk(walkerNum).psiMinv(i,j)*addk(walkerNum).psiV(i);
+						 }, addk(walkerNum).tempRowVec(j));
+			 Kokkos::single(Kokkos::PerTeam(member), [=]() {
+			     const ValueType alpha = cone / addk(walkerNum).curRatio(0);
+			     addk(walkerNum).tempRowVec(j) *= alpha;
+			   });
 		       });
-  Kokkos::Profiling::popRegion();
+  Kokkos::parallel_for("hand-rolled-ger+stuff", pol,
+		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
+			 const int walkerIdx = member.league_rank() / numEls; 
+			 const int walkerNum = isAcceptedMap(walkerIdx);
+			 const int newi = member.league_rank() % numEls;		       
+			 const int rowChanged = iel-addk(walkerNum).FirstIndex(0);
+			 
+			 const ValueType temp = -cone * addk(walkerNum).psiMinv(rowChanged,newi);
+			 
+			 Kokkos::parallel_for(Kokkos::TeamVectorRange(member, numEls),
+					      [&] (const int& newj) {
+						addk(walkerNum).psiMinv(newi,newj) += temp * addk(walkerNum).tempRowVec(newj);
+					      });
+		       });
   Kokkos::Profiling::popRegion();
 }
 

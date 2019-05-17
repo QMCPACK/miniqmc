@@ -704,11 +704,13 @@ int main(int argc, char** argv)
     Kokkos::Profiling::popRegion();
     Timers[Timer_Total]->stop();
     
+    /*
     // free all movers
     for (int iw = 0; iw < nmovers; iw++)
       delete mover_list[iw];
     mover_list.clear();
-    
+    */
+
     if (comm.root())
     {
       cout << "================================== " << endl;
