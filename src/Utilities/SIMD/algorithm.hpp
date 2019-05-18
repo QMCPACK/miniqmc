@@ -29,6 +29,24 @@ inline T2 accumulate_n(const T1* restrict in, size_t n, T2 res)
   return res;
 }
 
+/** transpose of A(m,n) to B(n,m)
+     * @param A starting address, A(m,lda)
+     * @param m number of A rows
+     * @param lda stride of A's row
+     * @param B starting address B(n,ldb)
+     * @param n number of B rows
+     * @param ldb stride of B's row
+     *
+     * Blas-like interface
+     */
+template<typename T, typename TO>
+inline void transpose(const T* restrict A, size_t m, size_t lda, TO* restrict B, size_t n, size_t ldb)
+{
+  for (size_t i = 0; i < n; ++i)
+    for (size_t j = 0; j < m; ++j)
+      B[i * ldb + j] = A[j * lda + i];
+}
+
 ///inner product
 template<typename T1, typename T2, typename T3>
 inline T3 inner_product_n(const T1* restrict a, const T2* restrict b, int n, T3 res)
