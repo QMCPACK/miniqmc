@@ -21,7 +21,6 @@
 #define QMCPLUSPLUS_MULTIEINSPLINE_OFFLOAD_HPP
 #include "config.h"
 #include <iostream>
-#include <Numerics/Spline2/bspline_allocator.hpp>
 #include <Numerics/Spline2/MultiBsplineData.hpp>
 #include <OMP_target_test/OMPVector.h>
 #include <stdlib.h>

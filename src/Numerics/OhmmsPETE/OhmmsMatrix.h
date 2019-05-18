@@ -1,31 +1,28 @@
 //////////////////////////////////////////////////////////////////////////////////////
-// This file is distributed under the University of Illinois/NCSA Open Source
-// License. See LICENSE file in top directory for details.
+// This file is distributed under the University of Illinois/NCSA Open Source License.
+// See LICENSE file in top directory for details.
 //
 // Copyright (c) 2016 Jeongnim Kim and QMCPACK developers.
 //
-// File developed by: Ken Esler, kpesler@gmail.com, University of Illinois at
-// Urbana-Champaign
-//		      Miguel Morales, moralessilva2@llnl.gov, Lawrence Livermore
-//National Laboratory
-//  		      Jeremy McMinnis, jmcminis@gmail.com, University of Illinois at
-//  Urbana-Champaign
+// File developed by: Ken Esler, kpesler@gmail.com, University of Illinois at Urbana-Champaign
+//		      Miguel Morales, moralessilva2@llnl.gov, Lawrence Livermore National Laboratory
+//  		      Jeremy McMinnis, jmcminis@gmail.com, University of Illinois at Urbana-Champaign
 //
-// File created by: Jeongnim Kim, jeongnim.kim@gmail.com, University of Illinois
-// at Urbana-Champaign
+// File created by: Jeongnim Kim, jeongnim.kim@gmail.com, University of Illinois at Urbana-Champaign
 //////////////////////////////////////////////////////////////////////////////////////
 
 #ifndef OHMMS_PETE_MATRIX_H
 #define OHMMS_PETE_MATRIX_H
 
-#include "Numerics/PETE/PETE.h"
 #include <cstdlib>
-#include "Numerics/OhmmsPETE/OhmmsVector.h"
+#include <type_traits>
 #include <iostream>
+#include "Numerics/PETE/PETE.h"
+#include "Numerics/OhmmsPETE/OhmmsVector.h"
 
 namespace qmcplusplus
 {
-template<class T, typename Alloc = std::allocator<T>>
+template<class T, typename Alloc = std::allocator<T>, unsigned MemType = MemorySpace::HOST>
 class Matrix
 {
 public:
@@ -33,30 +30,35 @@ public:
   typedef T value_type;
   typedef T* pointer;
   typedef const T* const_pointer;
-  typedef Vector<T, Alloc> Container_t;
+  typedef Vector<T, Alloc, MemType> Container_t;
   typedef typename Container_t::size_type size_type;
   typedef typename Container_t::iterator iterator;
-  typedef Matrix<T, Alloc> This_t;
+  typedef Matrix<T, Alloc, MemType> This_t;
 
   Matrix() : D1(0), D2(0), TotSize(0) {} // Default Constructor initializes to zero.
 
   Matrix(size_type n)
   {
     resize(n, n);
-    // assign(*this, T());
+    //assign(*this, T());
   }
 
   Matrix(size_type n, size_type m)
   {
     resize(n, m);
-    // assign(*this, T());
+    //assign(*this, T());
   }
 
   /** constructor with an initialized ref */
   inline Matrix(T* ref, size_type n, size_type m) : D1(n), D2(m), TotSize(n * m), X(ref, n * m) {}
 
   // Copy Constructor
-  Matrix(const Matrix<T, Alloc>& rhs) { copy(rhs); }
+  Matrix(const This_t& rhs)
+  {
+    resize(rhs.D1, rhs.D2);
+    if (MemType == MemorySpace::HOST)
+      assign(*this, rhs);
+  }
 
   // Destructor
   ~Matrix() {}
@@ -84,6 +86,7 @@ public:
 
   inline void resize(size_type n, size_type m)
   {
+    static_assert(std::is_same<value_type, typename Alloc::value_type>::value, "Matrix and Alloc data types must agree!");
     D1      = n;
     D2      = m;
     TotSize = n * m;
@@ -106,28 +109,36 @@ public:
 
   inline void add(size_type n) // you can add rows: adding columns are forbidden
   {
+    static_assert(MemType == MemorySpace::HOST, "Matrix::add MemType must be MemorySpace::HOST");
     X.insert(X.end(), n * D2, T());
     D1 += n;
   }
 
-  inline void copy(const Matrix<T, Alloc>& rhs)
+  inline void copy(const This_t& rhs)
   {
+    static_assert(MemType == MemorySpace::HOST, "Matrix::copy MemType must be MemorySpace::HOST");
     resize(rhs.D1, rhs.D2);
     assign(*this, rhs);
   }
 
   // Assignment Operators
-  inline This_t& operator=(const Matrix<T, Alloc>& rhs)
+  inline This_t& operator=(const This_t& rhs)
   {
+    static_assert(MemType == MemorySpace::HOST, "Matrix::operator= MemType must be MemorySpace::HOST");
     resize(rhs.D1, rhs.D2);
     return assign(*this, rhs);
   }
 
-  inline const This_t& operator=(const Matrix<T, Alloc>& rhs) const { return assign(*this, rhs); }
+  inline const This_t& operator=(const This_t& rhs) const
+  {
+    static_assert(MemType == MemorySpace::HOST, "Matrix::operator= MemType must be MemorySpace::HOST");
+    return assign(*this, rhs);
+  }
 
   template<class RHS>
   This_t& operator=(const RHS& rhs)
   {
+    static_assert(MemType == MemorySpace::HOST, "Matrix::operator= MemType must be MemorySpace::HOST");
     return assign(*this, rhs);
   }
 
@@ -154,24 +165,42 @@ public:
   // returns a pointer of i-th row
   inline const Type_t* last_address() const { return X.data() + TotSize; }
 
+
   // returns a const pointer of i-th row
   inline const Type_t* operator[](size_type i) const { return X.data() + i * D2; }
 
   /// returns a pointer of i-th row, g++ iterator problem
   inline Type_t* operator[](size_type i) { return X.data() + i * D2; }
 
-  inline Type_t& operator()(size_type i) { return X[i]; }
+  inline Type_t& operator()(size_type i)
+  {
+    static_assert(MemType == MemorySpace::HOST, "Matrix::operator() MemType must be MemorySpace::HOST");
+    return X[i];
+  }
   // returns the i-th value in D1*D2 vector
-  inline Type_t operator()(size_type i) const { return X[i]; }
+  inline Type_t operator()(size_type i) const
+  {
+    static_assert(MemType == MemorySpace::HOST, "Matrix::operator() MemType must be MemorySpace::HOST");
+    return X[i];
+  }
 
   // returns val(i,j)
-  inline Type_t& operator()(size_type i, size_type j) { return X[i * D2 + j]; }
+  inline Type_t& operator()(size_type i, size_type j)
+  {
+    static_assert(MemType == MemorySpace::HOST, "Matrix::operator() MemType must be MemorySpace::HOST");
+    return X[i * D2 + j];
+  }
 
   // returns val(i,j)
-  inline Type_t operator()(size_type i, size_type j) const { return X[i * D2 + j]; }
+  inline const Type_t& operator()(size_type i, size_type j) const
+  {
+    static_assert(MemType == MemorySpace::HOST, "Matrix::operator() MemType must be MemorySpace::HOST");
+    return X[i * D2 + j];
+  }
 
   inline void swap_rows(int r1, int r2)
   {
+    static_assert(MemType == MemorySpace::HOST, "Matrix::operator() MemType must be MemorySpace::HOST");
     for (int col = 0; col < D2; col++)
     {
       Type_t tmp       = (*this)(r1, col);
@@ -182,6 +211,7 @@ public:
 
   inline void swap_cols(int c1, int c2)
   {
+    static_assert(MemType == MemorySpace::HOST, "Matrix::operator() MemType must be MemorySpace::HOST");
     for (int row = 0; row < D1; row++)
     {
       Type_t tmp       = (*this)(row, c1);
@@ -190,15 +220,18 @@ public:
     }
   }
 
+
   template<class IT>
   inline void replaceRow(IT first, size_type i)
   {
+    static_assert(MemType == MemorySpace::HOST, "Matrix::operator() MemType must be MemorySpace::HOST");
     std::copy(first, first + D2, X.begin() + i * D2);
   }
 
   template<class IT>
   inline void replaceColumn(IT first, size_type j)
   {
+    static_assert(MemType == MemorySpace::HOST, "Matrix::operator() MemType must be MemorySpace::HOST");
     typename Container_t::iterator ii(X.begin() + j);
     for (int i = 0; i < D1; i++, ii += D2)
       *ii = *first++;
@@ -207,6 +240,7 @@ public:
   template<class IT>
   inline void add2Column(IT first, size_type j)
   {
+    static_assert(MemType == MemorySpace::HOST, "Matrix::operator() MemType must be MemorySpace::HOST");
     typename Container_t::iterator ii(X.begin() + j);
     for (int i = 0; i < D1; i++, ii += D2)
       *ii += *first++;
@@ -222,6 +256,7 @@ public:
   template<class T1>
   inline void add(const T1* sub, size_type d1, size_type d2, size_type i0, size_type j0)
   {
+    static_assert(MemType == MemorySpace::HOST, "Matrix::operator() MemType must be MemorySpace::HOST");
     int ii = 0;
     for (int i = 0; i < d1; i++)
     {
@@ -236,6 +271,7 @@ public:
   template<class T1>
   inline void add(const T1* sub, size_type d1, size_type d2, size_type i0, size_type j0, const T& phi)
   {
+    static_assert(MemType == MemorySpace::HOST, "Matrix::operator() MemType must be MemorySpace::HOST");
     size_type ii = 0;
     for (size_type i = 0; i < d1; i++)
     {
@@ -246,9 +282,11 @@ public:
       }
     }
   }
+
   template<class SubMat_t>
   inline void add(const SubMat_t& sub, unsigned int i0, unsigned int j0)
   {
+    static_assert(MemType == MemorySpace::HOST, "Matrix::operator() MemType must be MemorySpace::HOST");
     size_type ii = 0;
     for (size_type i = 0; i < sub.rows(); i++)
     {
@@ -259,8 +297,10 @@ public:
       }
     }
   }
+
   inline void add(const This_t& sub, unsigned int i0, unsigned int j0)
   {
+    static_assert(MemType == MemorySpace::HOST, "Matrix::operator() MemType must be MemorySpace::HOST");
     size_type ii = 0;
     for (size_type i = 0; i < sub.rows(); i++)
     {
@@ -275,6 +315,7 @@ public:
   template<class Msg>
   inline Msg& putMessage(Msg& m)
   {
+    static_assert(MemType == MemorySpace::HOST, "Matrix::operator() MemType must be MemorySpace::HOST");
     m.Pack(X.data(), D1 * D2);
     return m;
   }
@@ -282,6 +323,7 @@ public:
   template<class Msg>
   inline Msg& getMessage(Msg& m)
   {
+    static_assert(MemType == MemorySpace::HOST, "Matrix::operator() MemType must be MemorySpace::HOST");
     m.Unpack(X.data(), D1 * D2);
     return m;
   }
@@ -306,6 +348,7 @@ std::ostream& operator<<(std::ostream& out, const Matrix<T, Alloc>& rhs)
   }
   return out;
 }
+
 
 template<class T, typename Alloc>
 std::istream& operator>>(std::istream& is, Matrix<T, Alloc>& rhs)
@@ -363,10 +406,7 @@ template<class T, typename Alloc>
 struct LeafFunctor<Matrix<T, Alloc>, SizeLeaf2>
 {
   typedef bool Type_t;
-  inline static bool apply(const Matrix<T, Alloc>& v, const SizeLeaf2& s)
-  {
-    return s(v.rows(), v.cols());
-  }
+  inline static bool apply(const Matrix<T, Alloc>& v, const SizeLeaf2& s) { return s(v.rows(), v.cols()); }
 };
 
 //-----------------------------------------------------------------------------
@@ -391,11 +431,9 @@ template<class T, typename Alloc>
 struct LeafFunctor<Matrix<T, Alloc>, EvalLeaf2>
 {
   typedef T Type_t;
-  inline static Type_t apply(const Matrix<T, Alloc>& mat, const EvalLeaf2& f)
-  {
-    return mat(f.val1(), f.val2());
-  }
+  inline static Type_t apply(const Matrix<T, Alloc>& mat, const EvalLeaf2& f) { return mat(f.val1(), f.val2()); }
 };
+
 
 ///////////////////////////////////////////////////////////////////////////////
 // LOOP is done by evaluate function
@@ -418,8 +456,7 @@ inline void evaluate(Matrix<T, Alloc>& lhs, const Op& op, const Expression<RHS>&
   }
   else
   {
-    std::cerr << "Error: LHS and RHS don't conform in OhmmsMatrix." << std::endl;
-    abort();
+    throw std::runtime_error("Error in evaluate: LHS and RHS don't conform in OhmmsMatrix.");
   }
 }
 } // namespace qmcplusplus

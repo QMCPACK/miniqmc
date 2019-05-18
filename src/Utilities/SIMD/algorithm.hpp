@@ -2,7 +2,7 @@
 // This file is distributed under the University of Illinois/NCSA Open Source License.
 // See LICENSE file in top directory for details.
 //
-// Copyright (c) 2016 Jeongnim Kim and QMCPACK developers.
+// Copyright (c) 2019 QMCPACK developers.
 //
 // File developed by:
 //
@@ -20,23 +20,10 @@ namespace qmcplusplus
 {
 namespace simd
 {
-/** simd version of copy_n( InputIt first, Size count, OutputIt result)
-     * @param first starting address of the input
-     * @param count number of elements to copy
-     * @param result starting address of the output
-     */
-template<typename T1, typename T2>
-inline void copy_n(const T1* restrict first, size_t count, T2* restrict result)
-{
-  //#pragma omp simd
-  for (size_t i = 0; i < count; ++i)
-    result[i] = static_cast<T2>(first[i]);
-}
-
 template<typename T1, typename T2>
 inline T2 accumulate_n(const T1* restrict in, size_t n, T2 res)
 {
-  //#pragma omp simd reduction(+:res)
+  #pragma omp simd reduction(+ : res)
   for (int i = 0; i < n; ++i)
     res += in[i];
   return res;
