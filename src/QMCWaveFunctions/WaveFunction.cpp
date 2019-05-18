@@ -157,6 +157,7 @@ WaveFunction::~WaveFunction()
 {
   if (Is_built)
   {
+    delete spo;
     delete Det_up;
     delete Det_dn;
     for (size_t i = 0; i < Jastrows.size(); i++)
