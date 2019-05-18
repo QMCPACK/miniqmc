@@ -65,7 +65,7 @@ struct VectorSoAContainer
   {
     setDefaults();
     resize(in.nLocal);
-    simd::copy_n(in.myData, nGhosts * D, myData);
+    std::copy_n(in.myData, nGhosts * D, myData);
   }
 
   /// default copy operator
@@ -74,7 +74,7 @@ struct VectorSoAContainer
     if (myData != in.myData)
     {
       resize(in.nLocal);
-      simd::copy_n(in.myData, nGhosts * D, myData);
+      std::copy_n(in.myData, nGhosts * D, myData);
     }
     return *this;
   }

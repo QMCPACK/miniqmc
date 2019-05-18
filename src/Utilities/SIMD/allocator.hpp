@@ -17,29 +17,33 @@
 #include <config.h>
 #include <vector>
 #include <cstdlib>
-
 #include "Utilities/SIMD/Mallocator.hpp"
 
 namespace qmcplusplus
 {
 template<class T>
-using aligned_allocator = qmcplusplus::Mallocator<T, QMC_CLINE>;
+using aligned_allocator = Mallocator<T, QMC_CLINE>;
+
 template<class T>
 using aligned_vector = std::vector<T, aligned_allocator<T>>;
 
 } // namespace qmcplusplus
 
-template<typename T>
+/** return size in T's of allocated aligned memory
+ */
+template<typename T, size_t ALIGN = QMC_CLINE>
 inline size_t getAlignedSize(size_t n)
 {
-  constexpr size_t ND = QMC_CLINE / sizeof(T);
+  constexpr size_t ND = ALIGN / sizeof(T);
+  static_assert(ALIGN % sizeof(T) == 0, "getAlignedSize ALIGN must be a multiple of sizeof(T)");
   return ((n + ND - 1) / ND) * ND;
 }
 
-template<typename T>
+template<typename T, size_t ALIGN = QMC_CLINE>
 inline size_t getAlignment()
 {
-  return QMC_CLINE / sizeof(T);
+  static_assert(ALIGN % sizeof(T) == 0, "getAlignedSize ALIGN must be a multiple of sizeof(T)");
+  return ALIGN / sizeof(T);
 }
 
 #endif
