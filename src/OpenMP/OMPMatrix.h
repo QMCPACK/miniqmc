@@ -12,7 +12,7 @@
 #ifndef QMCPLUSPLUS_OMP_MATRIX_HPP
 #define QMCPLUSPLUS_OMP_MATRIX_HPP
 
-#include <OMP_target_test/OMPVector.h>
+#include <OpenMP/OMPVector.h>
 
 namespace qmcplusplus
 {

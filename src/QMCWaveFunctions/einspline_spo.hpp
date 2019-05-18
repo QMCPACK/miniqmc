@@ -27,9 +27,9 @@
 #include <Numerics/Spline2/MultiBsplineOffload.hpp>
 #include <Utilities/SIMD/allocator.hpp>
 #include "Numerics/OhmmsPETE/OhmmsArray.h"
-#include "OMP_target_test/OMPTinyVector.h"
-#include "OMP_target_test/OMPVector.h"
-#include "OMP_target_test/OMPVectorSoAContainer.h"
+#include "OpenMP/OMPTinyVector.h"
+#include "OpenMP/OMPVector.h"
+#include "OpenMP/OMPVectorSoAContainer.h"
 #include "QMCWaveFunctions/SPOSet.h"
 #include <iostream>
 

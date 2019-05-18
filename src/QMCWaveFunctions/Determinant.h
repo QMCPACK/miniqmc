@@ -19,7 +19,7 @@
 #define QMCPLUSPLUS_DETERMINANT_H
 
 #include "Numerics/OhmmsPETE/OhmmsMatrix.h"
-#include <OMP_target_test/OMPMatrix.h>
+#include <OpenMP/OMPMatrix.h>
 #include "Numerics/DeterminantOperators.h"
 #include "QMCWaveFunctions/WaveFunctionComponent.h"
 #include "Utilities/Constants.h"

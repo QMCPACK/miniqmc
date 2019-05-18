@@ -13,8 +13,8 @@
  * @brief Miniapp to check 3D spline implementation against the reference.
  */
 #include <Utilities/Configuration.h>
-#include "OMP_target_test/OMPVector.h"
-#include "OMP_target_test/OMPTinyVector.h"
+#include "OpenMP/OMPVector.h"
+#include "OpenMP/OMPTinyVector.h"
 
 using namespace std;
 using namespace qmcplusplus;
