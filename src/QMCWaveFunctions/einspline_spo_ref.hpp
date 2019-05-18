@@ -22,7 +22,6 @@
 #include <Utilities/Configuration.h>
 #include <Utilities/NewTimer.h>
 #include <Particle/ParticleSet.h>
-#include <Numerics/Spline2/bspline_allocator.hpp>
 #include <Numerics/Spline2/MultiBsplineRef.hpp>
 #include <Utilities/SIMD/allocator.hpp>
 #include "Numerics/OhmmsPETE/OhmmsArray.h"
@@ -57,7 +56,7 @@ struct einspline_spo_ref : public SPOSet
   bool Owner;
   lattice_type Lattice;
   /// use allocator
-  einspline::Allocator myAllocator;
+  BsplineAllocator<T> myAllocator;
 
   aligned_vector<spline_type*> einsplines;
   aligned_vector<vContainer_type> psi;
