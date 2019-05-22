@@ -231,6 +231,40 @@ int main(int argc, char** argv)
     els.update();
     els_ref.update();
 
+    // Check distance tables correctness.
+    
+    // To do so we will compare the values of the `els.DistTables[a] -> Displacements[b][c]` to reference values.
+    //      where a,b,c were chosen arbitrarily.
+
+    //  Please note that this testing function is not robust.
+    //  You may have introduced some error that this test doesn't catch.
+    //  The only sure thing is that if this test is failing, you have an error.
+
+    {
+      // Create the data structure who store  a,b,c indexes, and the associated reference values.
+      std::map< std::tuple<int, int,int> , std::vector<double> > m ;
+      m[ std::make_tuple(0, 0, 1) ] = {7.104603175, 0.7542160934, -1.616895442};
+      m[ std::make_tuple(0, 1, 2) ] =  {5.20541, 2.22362, 1.17907};
+
+      // Iterate over the maps, gather the data and compare
+      cout << "Check distance table..."  << endl;
+      for (auto const& x : m){
+            int a, b, c;
+            std::tie (a, b, c) = x.first; // unpack indexes
+            auto ref = x.second;
+            auto cur = els.DistTables[a] -> Displacements[b][c];
+
+            for (int i=0; i < ref.size(); i++) {
+                 if ( abs(ref[i] - cur[i]) > 1E-5 ){
+                      cerr << "Error in distance tables calculation" << endl;
+                      cerr<< "ref " <<ref[i] << "| cur " << cur[i] << endl;
+                      abort();
+                 }
+            }
+      }
+      cout << "Passed" << endl;
+    }
+    
     {
       els.G = czero;
       els.L = czero;
