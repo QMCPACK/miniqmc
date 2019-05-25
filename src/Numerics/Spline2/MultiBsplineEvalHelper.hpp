@@ -23,7 +23,6 @@ namespace qmcplusplus
 {
 namespace spline2
 {
-
 /** break x into the integer part and residual part and apply bounds
  * @param x input coordinate
  * @param dx fractional part
@@ -69,10 +68,9 @@ inline void getSplineBound(T x, TRESIDUAL& dx, int& ind, int nmax)
  * also it precomputes auxilary array a, b and c
  */
 template<typename T>
-inline void computeLocationAndFractional(const typename qmcplusplus::bspline_traits<T, 3>::SplineType* restrict spline_m,
-                            T x, T y, T z,
-                            int& ix, int& iy, int& iz,
-                            T a[4], T b[4], T c[4])
+inline void computeLocationAndFractional(
+    const typename qmcplusplus::bspline_traits<T, 3>::SplineType* restrict spline_m, T x, T y, T z,
+    int& ix, int& iy, int& iz, T a[4], T b[4], T c[4])
 {
   x -= spline_m->x_grid.start;
   y -= spline_m->y_grid.start;
@@ -94,12 +92,10 @@ inline void computeLocationAndFractional(const typename qmcplusplus::bspline_tra
  * also it precomputes auxilary array (a,b,c) (da,db,dc) (d2a,d2b,d2c)
  */
 template<typename T>
-inline void computeLocationAndFractional(const typename qmcplusplus::bspline_traits<T, 3>::SplineType* restrict spline_m,
-                            T x, T y, T z,
-                            int& ix, int& iy, int& iz,
-                            T a[4], T b[4], T c[4],
-                            T da[4], T db[4], T dc[4],
-                            T d2a[4], T d2b[4], T d2c[4])
+inline void computeLocationAndFractional(
+    const typename qmcplusplus::bspline_traits<T, 3>::SplineType* restrict spline_m, T x, T y, T z,
+    int& ix, int& iy, int& iz, T a[4], T b[4], T c[4], T da[4], T db[4], T dc[4], T d2a[4],
+    T d2b[4], T d2c[4])
 {
   x -= spline_m->x_grid.start;
   y -= spline_m->y_grid.start;
