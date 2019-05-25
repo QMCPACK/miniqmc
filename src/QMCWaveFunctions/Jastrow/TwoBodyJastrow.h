@@ -108,9 +108,9 @@ void doTwoBodyJastrowMultiAcceptRestoreMove(atbjdType atbjd, apsdType apsd,
 					    Kokkos::View<int*>& isAcceptedMap,
 					    int numAccepted, int iat, int numElectrons,
 					    int numIons, const typename Kokkos::HostSpace&) {
-  const int numWalkers = atbjd.extent(0);
+  const int numWalkers = numAccepted;
   using BarePolicy = Kokkos::TeamPolicy<>;
-  BarePolicy pol(numWalkers, Kokkos::AUTO, 32);
+  BarePolicy pol(numWalkers, Kokkos::AUTO, 16);
   Kokkos::parallel_for("tbj-acceptRestoreMove-waker-loop", pol,
 		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
 			 int walkerIdx = member.league_rank();
@@ -694,7 +694,6 @@ void TwoBodyJastrow<FT>::multi_evaluateLog(const std::vector<WaveFunctionCompone
   doTwoBodyJastrowMultiEvaluateLog(wfc.numElectrons, wfc.twoBodyJastrows, psk, wfc.ratios_view);
 
   Kokkos::deep_copy(wfc.ratios_view_mirror, wfc.ratios_view);
-  
   for (int i = 0; i < WFC_list.size(); i++) {
     values[i] = wfc.ratios_view_mirror(i);
   }

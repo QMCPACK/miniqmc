@@ -2,6 +2,7 @@
 #define QMCPLUSPLUS_ONEBODY_JAS_KOKKOS_H
 #include <Kokkos_Core.hpp>
 #include "Particle/ParticleSetKokkos.h"
+#include "Utilities/KokkosHelpers.h"
 
 namespace qmcplusplus
 {
@@ -445,22 +446,21 @@ public:
     RealType lap(0);
     constexpr RealType lapfac = dim - RealType(1);
 
+
+    structReductionHelper<RealType,4> redHelper;
     Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(pol, Nions(0)),
-			    [&](const int& jat, RealType& locSum) 
-			    {
-			      locSum += d2U(jat) + lapfac * dU(jat);
-			    },lap);
-    
-    for (int idim = 0; idim < dim; idim++) {
-      RealType s(0.0);    
-      Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(pol, Nions(0)),
-			      [&](const int& jat, RealType& locSum) { 
-				RealType x[3];
-				psk.getDisplacementIon(psk.R(iel,0), psk.R(iel,1), psk.R(iel,2), 
-						       jat, x[0], x[1], x[2]);
-				locSum += dU(jat) * x[idim];
-			      },s);
-      grad(idim) = s;
+                            [&](const int & jat, structReductionHelper<RealType,4>& rh) {
+                              rh(0) += d2U(jat) + lapfac * dU(jat);
+                              RealType x[3];
+                              psk.getDisplacementIon(psk.R(iel,0), psk.R(iel,1), psk.R(iel,2),
+						     jat, x[0], x[1], x[2]);
+                              for (int idim = 0; idim < 3; idim++) {
+                                rh(idim+1) += dU(jat) * x[idim];
+                              }
+                            },redHelper);
+    lap = redHelper(0);
+    for (int idim = 0; idim < 3; idim++) {
+      grad(idim) = redHelper(idim+1);
     }
     return lap;
   }

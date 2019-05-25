@@ -1,6 +1,7 @@
 #ifndef QMCPLUSPLUS_TWOBODYJASTROW_KOKKOS_H
 #define QMCPLUSPLUS_TWOBODYJASTROW_KOKKOS_H
 #include <Kokkos_Core.hpp>
+#include <Utilities/KokkosHelpers.h>
 #include "Particle/ParticleSetKokkos.h"
 
 namespace qmcplusplus
@@ -61,47 +62,40 @@ public:
       computeU3(pol, psk, iel, psk.LikeDTTemp_r, cur_u, cur_du, cur_d2u);
     }
 
-    ValueType cur_d2Uat(0);
     auto& new_dr = psk.LikeDTTemp_dr;
     //auto old_dr = Kokkos::subview(psk.LikeDTDisplacements,iel,Kokkos::ALL(), Kokkos::ALL());
     constexpr ValueType lapfac = OHMMS_DIM - RealType(1);
-
+    constexpr int srhSize = dim+1;
+    
+    structReductionHelper<ValueType, srhSize> srh;
     // Number of electrons Reduction
     Kokkos::parallel_reduce(Kokkos::TeamVectorRange(pol,Nelec(0)),
-			    [&](const int& jel, ValueType& cursum) {
+			    [&](const int& jel, structReductionHelper<ValueType,srhSize>& tempSrh) {
 			      const ValueType du   = cur_u(jel) - old_u(jel);
 			      const ValueType newl = cur_d2u(jel) + lapfac * cur_du(jel);
 			      const ValueType dl   = old_d2u(jel) + lapfac * old_du(jel) - newl;
 			      Uat(jel) += du;
 			      d2Uat(jel) += dl;
-			      cursum -= newl;
-			    },cur_d2Uat);
+			      tempSrh(0) -= newl;
 
-    Kokkos::Array<ValueType,3> cur_dUat;
-    Kokkos::parallel_for(Kokkos::TeamVectorRange(pol,dim),
-			 [&](const int& idim) {
-			   ValueType cur_g  = cur_dUat[idim];
-			   // Number of Electrons Reduction
-			   for (int jel = 0; jel < Nelec(0); jel++)
-			   {
-			     const ValueType newg     = cur_du(jel) * new_dr(jel,idim);
-			     RealType x[3];
-			     psk.getDisplacementElectron(psk.R(jel,0), psk.R(jel,1), psk.R(jel,2),
-							 iel, x[0], x[1], x[2]);
-			     const ValueType dg         = newg - old_du(jel) * x[idim];
-			     //const ValueType dg       = newg - old_du(jel) * old_dr(jel,idim);
-			     dUat(iel,idim)     -= dg;
-			     cur_g              += newg;
-			   }
-			   cur_dUat[idim] = cur_g;
-			 });
+			      RealType x[3];
+			      psk.getDisplacementElectron(psk.R(jel,0), psk.R(jel,1), psk.R(jel,2),
+							  iel, x[0], x[1], x[2]);
+			      for (int idim = 0; idim < dim; idim++) {
+				const ValueType newg = cur_du(jel) * new_dr(jel,idim);
+				const ValueType dg = newg - old_du(jel) * x[idim];
+				dUat(iel,idim) -= dg;
+				tempSrh(idim+1) += newg;
+			      }
+			      
+			    },srh);
 
     LogValue(0) += Uat(iel) - cur_Uat(0);
     Uat(iel)     = cur_Uat(0);
     for (int idim = 0; idim < dim; idim++) {
-      dUat(iel,idim)  = cur_dUat[idim];
+      dUat(iel,idim)  = srh(idim+1);
     }
-    d2Uat(iel) = cur_d2Uat;
+    d2Uat(iel) = srh(0);
   }
 
   // this does the two calls to computeU3
@@ -265,9 +259,7 @@ public:
     RealType x[3];
     psk.getDisplacementElectron(psk.R(workingElNum,0), psk.R(workingElNum,1), psk.R(workingElNum,2),
 				iel, x[0], x[1], x[2]);
-
     for (int i = 0; i < dim; i++) {
-      //Kokkos::atomic_add(&(temporaryScratchDim(i)), cur_du(workingElNum) * psk.LikeDTDisplacements(iel, workingElNum, i));
       Kokkos::atomic_add(&(temporaryScratchDim(i)), cur_du(workingElNum) * x[i]);
     }
   }
@@ -290,19 +282,12 @@ public:
     
     computeU3(pol, psk, iel, psk.LikeDTTemp_r, cur_u, cur_du, cur_d2u);
 
-    Kokkos::single(Kokkos::PerTeam(pol),
-		   [=] () {
-		     cur_Uat(0) = 0.0;
-		     for (int i = 0; i < Nelec(0); i++) {
-		       cur_Uat(0) += cur_u(i);
-		     }
-		   });
-    
-    ValueType DiffVal = Uat(iel) - cur_Uat(0);
+    Kokkos::parallel_reduce(Kokkos::TeamVectorRange(pol,Nelec(0)),
+			    [&](const int& jel, ValueType& tmp) {
+			      tmp += cur_u(jel);
+			    },cur_Uat(0));
 
-    
-    Kokkos::Array<ValueType,3> tempG;
-    //accumulateG(pol, cur_du, Kokkos::subview(psk.LikeDTDisplacements, iel, Kokkos::ALL(), Kokkos::ALL()), tempG);
+    ValueType DiffVal = Uat(iel) - cur_Uat(0);    
     accumulateGLDistOnFly(pol, psk, iel, temporaryScratchDim);
 
     for (int i = 0; i < dim; i++) {
@@ -390,101 +375,26 @@ public:
     RealType lap(0);
     constexpr RealType lapfac = dim - RealType(1);
 
-    Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(pol, Nelec(0)),
-                            [&](const int& jel, RealType& locSum)
-                            {
-                              locSum += cur_d2u(jel) + lapfac * cur_du(jel);
-                            },lap);
 
-    for (int idim = 0; idim < dim; idim++) {
-      RealType s(0.0);
-      Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(pol, Nelec(0)),
-                              [&](const int& jel, RealType& locSum) {
-                                RealType x[3];
-                                psk.getDisplacementElectron(psk.R(iel,0), psk.R(iel,1), psk.R(iel,2),
-							    jel, x[0], x[1], x[2]);
-                                locSum += cur_du(jel) * x[idim];
-                              },s);
-      grad(idim) = s;
-    }
+    structReductionHelper<ValueType,4> redHelper; 
+    Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(pol, Nelec(0)),
+			    [&](const int & jel, structReductionHelper<ValueType,4>& rh) {
+			      rh(0) += cur_d2u(jel) + lapfac * cur_du(jel);
+			      RealType x[3];
+			      psk.getDisplacementElectron(psk.R(iel,0), psk.R(iel,1), psk.R(iel,2),
+							  jel, x[0], x[1], x[2]);
+			      for (int idim = 0; idim < 3; idim++) {
+				rh(idim+1) += cur_du(jel) * x[idim];
+			      }
+			    },redHelper);
+    lap = redHelper(0);
+    for (int idim = 0; idim < 3; idim++) {
+      grad(idim) = redHelper(idim+1);
+    }    
     return lap;
   }
 
                                                                                                         
-  
-
-  /*
-  template<typename policyType, typename pskType>
-  KOKKOS_INLINE_FUNCTION
-  void recompute(policyType& pol, pskType& psk) {
-    // 2
-    for (int ig = 0; ig < NumGroups(0); ++ig)
-    {
-      const int igt = ig * NumGroups(0);
-      int count = psk.last(ig)-psk.first(ig);
-      
-      const int i = pol.league_rank()%Nelec(0);
-      // number of electrons/2
-
-      //Kokkos::parallel_for(Kokkos::TeamThreadRange(pol,last),
-			//   [&](const int& i) {
-      if(i<count) {
-	const int iel = psk.first(ig)+i;
-	//computeU3(pol, psk, iel, Kokkos::subview(psk.LikeDTDistances, iel, Kokkos::ALL()),
-	//	  cur_u, cur_du, cur_d2u, true);
-	computeU3DistOnFly(pol, psk, iel, cur_u, cur_du, cur_d2u, true);
-	Kokkos::single(Kokkos::PerTeam(pol),[&] (){
-	    Uat(iel) = 0.0;
-	    for (int j = 0; j < iel; j++) {
-	      Uat(iel) += cur_u(j);
-	    }
-
-	    Kokkos::Array<RealType,3> grad;
-	    ValueType lap(0);
-	    
-	    constexpr ValueType lapfac     = dim - RealType(1);
-	    for (int jel = 0; jel < iel; ++jel)
-	      lap += cur_d2u(jel) + lapfac * cur_du(jel);
-
-
-
-	    for (int idim = 0; idim < dim; ++idim)
-	      grad[idim] = ValueType();
-
-	    for (int jel = 0; jel < iel; jel++) {
-	      RealType x[3];
-	      psk.getDisplacementElectron(psk.R(jel,0), psk.R(jel,1), psk.R(jel,2),
-					  iel, x[0], x[1], x[2]);
-	      for (int idim = 0; idim < dim; ++idim)
-		grad[idim] += cur_du(jel) * x[idim];
-	    }
-
-	    for(int idim = 0; idim < dim; idim++) {
-	      dUat(iel,idim)  = grad[idim];
-	    }
-	    d2Uat(iel) = -lap;
-	    // add the contribution from the upper triangle
-	    for (int jel = 0; jel < iel; jel++)
-	      {
-		Uat(jel) += cur_u(jel);
-		d2Uat(jel) -= cur_d2u(jel) + lapfac * cur_du[jel];
-	      }
-	    for (int jel = 0; jel < iel; jel++) {
-	      RealType x[3];
-	      psk.getDisplacementElectron(psk.R(iel,0), psk.R(iel,1), psk.R(iel,2),
-					  jel, x[0], x[1], x[2]);
-	      for (int idim = 0; idim < dim; ++idim) {
-		//dUat(jel,idim) -= cur_du(jel) * psk.LikeDTDisplacements(iel,jel,idim);
-		dUat(jel,idim) -= cur_du(jel) * x[idim];
-	      } 
-	    }
-	  });
-	pol.team_barrier();
-      }
-    }
-  }
-  */
-
   template<typename policyType, typename pskType, typename distViewType>
   KOKKOS_INLINE_FUNCTION
   ValueType computeU(policyType& pol, pskType& psk, int iel, distViewType dist) {
