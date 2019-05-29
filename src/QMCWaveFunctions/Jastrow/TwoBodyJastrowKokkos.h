@@ -744,6 +744,12 @@ public:
     int iCount = 0;
     int iLimit = end - start;
 
+    Kokkos::parallel_for(Kokkos::ThreadVectorRange(pol,iLimit),
+			 [&] (const int i) {
+			   DistIndices(i) = -1;
+			 });
+    pol.team_barrier();
+
     if (pol.team_rank() == 0) {
       Kokkos::parallel_scan(Kokkos::ThreadVectorRange(pol,iLimit),
 			  [&] (const int jel, int& mycount, bool final) {
@@ -760,14 +766,18 @@ public:
     }
     Kokkos::parallel_reduce(Kokkos::TeamVectorRange(pol,iLimit),
 			    [&] (const int jel, int& mycount) {
-			    RealType r = psk.getDistanceElectron(psk.R(iel,0), psk.R(iel,1), psk.R(iel,2), jel+start);
-			    //RealType r = dist(jel+start);
-			    if (r < cutoff_radius(gid) && start + jel != iel) {
-			      mycount++;
-			    }
-			    },iCount);
 
+			      if (DistIndices(jel) >= 0) {
+				mycount++;
+			      }
+			      //RealType r = psk.getDistanceElectron(psk.R(iel,0), psk.R(iel,1), psk.R(iel,2), jel+start);
+			      //RealType r = dist(jel+start);
+			      //if (r < cutoff_radius(gid) && start + jel != iel) {
+			      //mycount++;
+			      //}
+			    },iCount);
     pol.team_barrier();
+
     Kokkos::parallel_for(Kokkos::TeamVectorRange(pol, iCount),
 			 [&](const int& j) {
 			   const RealType r = DistCompressed(j)*DeltaRInv(gid);
