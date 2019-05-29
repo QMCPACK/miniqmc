@@ -146,10 +146,9 @@ ENDIF()
     ${GITREV_TMP}
     )
 
-   ADD_LIBRARY(qmcutil ${UTILITIES})
+  ADD_LIBRARY(qmcutil ${UTILITIES})
 
-   ADD_EXECUTABLE(test_utilities Utilities/catch-main.cpp Utilities/tests/test_PrimeNumberSet.cpp)
-   ADD_UNIT_TEST(test_utilities "${qmcpack_BINARY_DIR}/bin/test_utilities")
+  SUBDIRS(Utilities/tests)
 
   # For unit tests, enable use for the fake RNG
   FUNCTION( USE_FAKE_RNG TARGET )
@@ -178,5 +177,7 @@ ENDIF()
     )
 
   ADD_LIBRARY(qmcbase ${PARTICLE})
+
+  SUBDIRS(Particle/tests)
 
   SUBDIRS(Drivers)
