@@ -21,8 +21,8 @@ set(CMAKE_VER            "3.14.0")
 
 set(GCC_VER             "7.3.0")
 set(PYCICLE_BUILD_STAMP "power9_CUDA10_1-gcc-${GCC_VER}")
-set(CFLAGS           "-fPIC -march=native -mtune=native -ffast-math")
-set(CXXFLAGS         "-fPIC -march=native -mtune=native -ffast-math")
+set(CFLAGS           "")
+set(CXXFLAGS         "")
 set(CUDA_DIR         "/usr/local/cuda-10.1")
 set(LDFLAGS          "-L/home/epd/spack/opt/spack/linux-centos7-ppc64le/gcc-4.8.5/gcc-7.3.0-bco5a3lq3pzlot65mqywljwofqhsgxim/lib64 -Wl,-rpath,/home/epd/spack/opt/spack/linux-centos7-ppc64le/gcc-4.8.5/gcc-7.3.0-bco5a3lq3pzlot65mqywljwofqhsgxim/lib64 -L${CUDA_DIR}/lib64 -Wl,-rpath,${CUDA_DIR}/lib64")
 set(LDCXXFLAGS       "${LDFLAGS}")
@@ -34,6 +34,7 @@ set(PYCICLE_COMPILER_SETUP "
     module load gcc/7.3.0/boost
     module load cuda/10.1
     module load gcc/7.3.0/cmake
+    module load gcc/7.3.0/mpich
 
     #
     # use openmpi compiler wrappers to make MPI use easy
@@ -99,7 +100,7 @@ set(PYCICLE_JOB_SCRIPT_TEMPLATE "#!/bin/bash
 # ---------------------
 # unload or load modules that differ from the defaults on the system
 # ---------------------
-. /software/user_tools/current/cades-cnms/spack/share/spack/setup-env.sh
+
 #
 # ---------------------
 # setup stuff that might differ between compilers
