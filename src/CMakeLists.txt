@@ -148,7 +148,7 @@ ENDIF()
 
    ADD_LIBRARY(qmcutil ${UTILITIES})
 
-   ADD_EXECUTABLE(test_utilities test/catch-main.cpp Utilities/test/test_PrimeNumberSet.cpp)
+   ADD_EXECUTABLE(test_utilities Utilities/catch-main.cpp Utilities/tests/test_PrimeNumberSet.cpp)
    ADD_UNIT_TEST(test_utilities "${qmcpack_BINARY_DIR}/bin/test_utilities")
 
   # For unit tests, enable use for the fake RNG
