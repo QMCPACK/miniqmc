@@ -52,6 +52,7 @@ public:
 
   TwoBodyJastrowKokkos(const TwoBodyJastrowKokkos&) = default;
 
+  // here the policy is such that each team is working on a whole walker
   template<typename policyType, typename pskType>
   KOKKOS_INLINE_FUNCTION
   void acceptMove(policyType& pol, pskType& psk, int iel) {
@@ -61,7 +62,7 @@ public:
     { // ratio-only during the move; need to compute derivatives
       computeU3(pol, psk, iel, psk.LikeDTTemp_r, cur_u, cur_du, cur_d2u);
     }
-    Kokkos::fence();
+    pol.team_barrier();
 
     //auto old_dr = Kokkos::subview(psk.LikeDTDisplacements,iel,Kokkos::ALL(), Kokkos::ALL());
     constexpr ValueType lapfac = OHMMS_DIM - RealType(1);
@@ -329,14 +330,13 @@ public:
       recompute(pol, psk);
     }
     int iel = pol.league_rank()%Nelec(0);
-    LogValue(0) = RealType(0);
     Kokkos::single(Kokkos::PerTeam(pol),[&]() {
 	Kokkos::atomic_add(&LogValue(0),RealType(0.5)*Uat(iel));
-      for (int d = 0; d < dim; d++) {
-        psk.G(iel,d) += dUat(iel,d);
-      }
-      psk.L(iel) += d2Uat(iel);
-    });
+	for (int d = 0; d < dim; d++) {
+	  psk.G(iel,d) += dUat(iel,d);
+	}
+	psk.L(iel) += d2Uat(iel);
+      });
     /*
     Kokkos::parallel_reduce(Kokkos::TeamVectorRange(pol,Nelec(0)),
 			    [=](const int& iel, ValueType& locVal) {
@@ -354,21 +354,51 @@ public:
   }
 
 
+  // here the policy is such that each team is working on one electron worth of the problem
+  // have a bit of a problem in that cur_u, cur_du, cur_d2u etc are shared between all teams
+  // working on this walker
   template<typename policyType, typename pskType>
   KOKKOS_INLINE_FUNCTION
-    void recompute(policyType& pol, pskType& psk) {
+  void recompute(policyType& pol, pskType& psk) {
     int iel = pol.league_rank()%Nelec(0);
-    //computeU3(pol, psk, Kokkos::subview(psk.UnlikeDTDistances,iel,Kokkos::ALL()));    
-    computeU3DistOnFly(pol, psk, iel, cur_u, cur_du, cur_d2u, true);
+    const int igt = psk.GroupID(iel) * NumGroups(0);
 
-    Uat(iel) = 0.0;
-    for (int iat = 0; iat < Nelec(0); iat++) {
-      Uat(iel) += cur_u(iat);
-    }
-    //auto subview1 = Kokkos::subview(psk.UnlikeDTDisplacements,iel,Kokkos::ALL(),Kokkos::ALL());
+    constexpr RealType lapfac = dim - RealType(1);
+    structReductionHelper<ValueType,5> redHelper; 
+
     auto subview2 = Kokkos::subview(dUat, iel, Kokkos::ALL());
-    //Lap(iel) = accumulateGL(pol, subview1, subview2);
-    d2Uat(iel) = accumulateGLDistOnFly(pol, psk, iel, subview2);
+    Kokkos::parallel_reduce(Kokkos::TeamVectorRange(pol,Nelec(0)),
+			    [&](const int& jel, structReductionHelper<ValueType,5>& rh) {
+			      const int workingElGroup = psk.GroupID(jel);
+			      const int functorGroupID = igt+workingElGroup;
+
+			      RealType x[3];
+			      RealType dist = psk.getDisplacementElectron(psk.R(iel,0), psk.R(iel,1), psk.R(iel,2),
+									  jel, x[0], x[1], x[2], Nelec(0));
+			      if (iel == jel) {
+				dist = cutoff_radius(functorGroupID)*2;
+			      }
+			      ValueType u;
+			      ValueType du;
+			      ValueType d2u;
+			      FevaluateVGL(functorGroupID, dist, u, du, d2u);
+			      
+			      rh(0) += u;
+			      rh(1) += d2u + lapfac * du;
+			      for (int i = 0; i < 3; i++) {
+				rh(i+2) += du * x[i];
+			      }
+			    },redHelper);
+    pol.team_barrier();
+    
+    Kokkos::single(Kokkos::PerTeam(pol),[&]() {
+	Uat(iel) = redHelper(0);
+	d2Uat(iel) = redHelper(1);
+	for (int i = 0; i < 3; i++) {
+	  dUat(iel,i) = redHelper(2+i);
+	}
+      });
+    pol.team_barrier();
   }
 
   template<typename policyType, typename pskType, typename gradViewType>
@@ -422,6 +452,7 @@ public:
   }
 
 
+  // be very careful in here, the policy is such that 
   template<typename policyType, typename pskType>
   KOKKOS_INLINE_FUNCTION
   void computeU3DistOnFly(policyType& pol, pskType& psk, int iel, 
@@ -492,6 +523,7 @@ public:
     FevaluateVGL(functorGroupID, iel, dist, u, du, d2u, workingElNum);
   }
 
+  // compute only that part of u, du and d2u for workingElNum
   template<typename pskType>
   KOKKOS_INLINE_FUNCTION
   void computeU3DistOnFly(pskType& psk, int iel,
@@ -600,8 +632,17 @@ public:
   KOKKOS_INLINE_FUNCTION
   RealType FevaluateV(int gid, int iel, distViewType& dist, int workingElNum) {
     RealType d = 0.0;
-    if (dist(workingElNum) < cutoff_radius(gid) && iel != workingElNum) {
-      const RealType r = dist(workingElNum) * DeltaRInv(gid);
+    if (iel != workingElNum) {
+      d = FevaluateV(gid, dist(workingElNum));
+    }
+    return d;
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  RealType FevaluateV(int gid, RealType dist) {
+    RealType d = 0.0;
+    if (dist < cutoff_radius(gid)) {
+      const RealType r = dist * DeltaRInv(gid);
       const int i = (int)r;
       const RealType t = r - RealType(i);
       const RealType tp0 = t*t*t;
@@ -615,7 +656,7 @@ public:
       d = d1+d2+d3+d4;
     }
     return d;
-  }
+  }   
 
   template<typename policyType, typename distViewType>
   KOKKOS_INLINE_FUNCTION
@@ -651,13 +692,9 @@ public:
     return d;
   }
 
-  template<typename pskType>
   KOKKOS_INLINE_FUNCTION
-  void FevaluateVGLDistOnFly(int gid, int iel, pskType& psk, Kokkos::View<ValueType*>& u,
-			     Kokkos::View<ValueType*>& du, Kokkos::View<ValueType*> d2u, int workingElNum) {
-    
-    RealType dist = psk.getDistanceElectron(psk.R(iel,0), psk.R(iel,1), psk.R(iel,2), workingElNum);
-    if (dist < cutoff_radius(gid) && workingElNum != iel) {
+  void FevaluateVGL(int gid, RealType dist, ValueType& u, ValueType& du, ValueType& d2u) { 
+    if (dist < cutoff_radius(gid)) {
       const RealType dSquareDeltaRinv = DeltaRInv(gid) * DeltaRInv(gid);
       const RealType cOne(1);
       const RealType r = dist * DeltaRInv(gid);
@@ -674,26 +711,36 @@ public:
       const RealType sCoef2 = SplineCoefs(gid, iGather+2);
       const RealType sCoef3 = SplineCoefs(gid, iGather+3);
 
-      d2u(workingElNum) = dSquareDeltaRinv *
+      d2u = dSquareDeltaRinv *
 	(sCoef0*( d2A( 2)*tp2 + d2A( 3))+
 	 sCoef1*( d2A( 6)*tp2 + d2A( 7))+
 	 sCoef2*( d2A(10)*tp2 + d2A(11))+
 	 sCoef3*( d2A(14)*tp2 + d2A(15)));
       
-      du(workingElNum) = DeltaRInv(gid) * rinv *
+      du = DeltaRInv(gid) * rinv *
 	(sCoef0*( dA( 1)*tp1 + dA( 2)*tp2 + dA( 3))+
 	 sCoef1*( dA( 5)*tp1 + dA( 6)*tp2 + dA( 7))+
 	 sCoef2*( dA( 9)*tp1 + dA(10)*tp2 + dA(11))+
 	 sCoef3*( dA(13)*tp1 + dA(14)*tp2 + dA(15)));
       
-      u(workingElNum) = (sCoef0*(A( 0)*tp0 + A( 1)*tp1 + A( 2)*tp2 + A( 3))+
-			 sCoef1*(A( 4)*tp0 + A( 5)*tp1 + A( 6)*tp2 + A( 7))+
-			 sCoef2*(A( 8)*tp0 + A( 9)*tp1 + A(10)*tp2 + A(11))+
-			 sCoef3*(A(12)*tp0 + A(13)*tp1 + A(14)*tp2 + A(15)));
+      u = (sCoef0*(A( 0)*tp0 + A( 1)*tp1 + A( 2)*tp2 + A( 3))+
+	   sCoef1*(A( 4)*tp0 + A( 5)*tp1 + A( 6)*tp2 + A( 7))+
+	   sCoef2*(A( 8)*tp0 + A( 9)*tp1 + A(10)*tp2 + A(11))+
+	   sCoef3*(A(12)*tp0 + A(13)*tp1 + A(14)*tp2 + A(15)));
     }
   }
-
-
+    
+  template<typename pskType>
+  KOKKOS_INLINE_FUNCTION
+  void FevaluateVGLDistOnFly(int gid, int iel, pskType& psk, Kokkos::View<ValueType*>& u,
+			     Kokkos::View<ValueType*>& du, Kokkos::View<ValueType*> d2u, int workingElNum) {
+    
+    RealType dist = psk.getDistanceElectron(psk.R(iel,0), psk.R(iel,1), psk.R(iel,2), workingElNum);
+    if (workingElNum != iel) {
+      FevaluateVGL(gid, dist, u(workingElNum), du(workingElNum), d2u(workingElNum));
+    }
+  }
+    
   
   template<typename distViewType>
   KOKKOS_INLINE_FUNCTION
@@ -752,7 +799,12 @@ public:
 			 });
     pol.team_barrier();
 
+#ifdef KOKKOS_ENABLE_CUDA
+    if (pol.team_rank() == 0) {
+      Kokkos::parallel_scan(Kokkos::ThreadVectorRange(pol,iLimit),
+#else
     Kokkos::parallel_scan(Kokkos::TeamVectorRange(pol,iLimit),
+#endif
 			  [&] (const int jel, int& mycount, bool final) {
 			    RealType r = psk.getDistanceElectron(psk.R(iel,0), psk.R(iel,1), psk.R(iel,2), jel+start);
 			    //RealType r = dist(jel+start);
@@ -764,6 +816,10 @@ public:
 			      mycount++;
 			    }
 			  });
+#ifdef KOKKOS_ENABLE_CUDA	
+      }		    
+#endif
+
     Kokkos::parallel_reduce(Kokkos::TeamVectorRange(pol,iLimit),
 			    [&] (const int jel, int& mycount) {
 
