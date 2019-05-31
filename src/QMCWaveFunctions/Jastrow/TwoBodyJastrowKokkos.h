@@ -61,8 +61,8 @@ public:
     { // ratio-only during the move; need to compute derivatives
       computeU3(pol, psk, iel, psk.LikeDTTemp_r, cur_u, cur_du, cur_d2u);
     }
+    Kokkos::fence();
 
-    auto& new_dr = psk.LikeDTTemp_dr;
     //auto old_dr = Kokkos::subview(psk.LikeDTDisplacements,iel,Kokkos::ALL(), Kokkos::ALL());
     constexpr ValueType lapfac = OHMMS_DIM - RealType(1);
     constexpr int srhSize = dim+1;
@@ -82,20 +82,22 @@ public:
 			      psk.getDisplacementElectron(psk.R(jel,0), psk.R(jel,1), psk.R(jel,2),
 							  iel, x[0], x[1], x[2]);
 			      for (int idim = 0; idim < dim; idim++) {
-				const ValueType newg = cur_du(jel) * new_dr(jel,idim);
+				const ValueType newg = cur_du(jel) * psk.LikeDTTemp_dr(jel,idim);
 				const ValueType dg = newg - old_du(jel) * x[idim];
 				dUat(iel,idim) -= dg;
 				tempSrh(idim+1) += newg;
 			      }
 			      
 			    },srh);
-
-    LogValue(0) += Uat(iel) - cur_Uat(0);
-    Uat(iel)     = cur_Uat(0);
-    for (int idim = 0; idim < dim; idim++) {
-      dUat(iel,idim)  = srh(idim+1);
+    if (pol.league_rank() == 0){
+      LogValue(0) += Uat(iel) - cur_Uat(0);
+      Uat(iel)     = cur_Uat(0);
+      for (int idim = 0; idim < dim; idim++) {
+	dUat(iel,idim)  = srh(idim+1);
+      }
+      d2Uat(iel) = srh(0);
     }
-    d2Uat(iel) = srh(0);
+      
   }
 
   // this does the two calls to computeU3
@@ -427,7 +429,7 @@ public:
 			  Kokkos::View<ValueType*> d2u, bool triangle = false) {
     constexpr ValueType czero(0);
     const int jelmax = triangle ? iel : Nelec(0);
-    Kokkos::parallel_for(Kokkos::ThreadVectorRange(pol,jelmax),
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(pol,jelmax),
 			 [&](const int& i) {
 			   u(i) = czero;
 			   du(i) = czero;
@@ -744,14 +746,13 @@ public:
     int iCount = 0;
     int iLimit = end - start;
 
-    Kokkos::parallel_for(Kokkos::ThreadVectorRange(pol,iLimit),
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(pol,iLimit),
 			 [&] (const int i) {
 			   DistIndices(i) = -1;
 			 });
     pol.team_barrier();
 
-    if (pol.team_rank() == 0) {
-      Kokkos::parallel_scan(Kokkos::ThreadVectorRange(pol,iLimit),
+    Kokkos::parallel_scan(Kokkos::TeamVectorRange(pol,iLimit),
 			  [&] (const int jel, int& mycount, bool final) {
 			    RealType r = psk.getDistanceElectron(psk.R(iel,0), psk.R(iel,1), psk.R(iel,2), jel+start);
 			    //RealType r = dist(jel+start);
@@ -763,18 +764,12 @@ public:
 			      mycount++;
 			    }
 			  });
-    }
     Kokkos::parallel_reduce(Kokkos::TeamVectorRange(pol,iLimit),
 			    [&] (const int jel, int& mycount) {
 
 			      if (DistIndices(jel) >= 0) {
 				mycount++;
 			      }
-			      //RealType r = psk.getDistanceElectron(psk.R(iel,0), psk.R(iel,1), psk.R(iel,2), jel+start);
-			      //RealType r = dist(jel+start);
-			      //if (r < cutoff_radius(gid) && start + jel != iel) {
-			      //mycount++;
-			      //}
 			    },iCount);
     pol.team_barrier();
 

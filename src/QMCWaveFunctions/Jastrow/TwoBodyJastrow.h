@@ -110,7 +110,7 @@ void doTwoBodyJastrowMultiAcceptRestoreMove(atbjdType atbjd, apsdType apsd,
 					    int numIons, const typename Kokkos::HostSpace&) {
   const int numWalkers = numAccepted;
   using BarePolicy = Kokkos::TeamPolicy<>;
-  BarePolicy pol(numWalkers, Kokkos::AUTO, 16);
+  BarePolicy pol(numWalkers, 1, 16);
   Kokkos::parallel_for("tbj-acceptRestoreMove-waker-loop", pol,
 		       KOKKOS_LAMBDA(BarePolicy::member_type member) {
 			 int walkerIdx = member.league_rank();
