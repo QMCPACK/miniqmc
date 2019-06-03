@@ -2,20 +2,23 @@
 #// This file is distributed under the University of Illinois/NCSA Open Source License.
 #// See LICENSE file in top directory for details.
 #//
-#// Copyright (c) 2016 Jeongnim Kim and QMCPACK developers.
+#// Copyright (c) 2019 QMCPACK developers.
 #//
-#// File developed by: Jeongnim Kim, jeongnim.kim@gmail.com, University of Illinois at Urbana-Champaign
-#//                    Jeremy McMinnis, jmcminis@gmail.com, University of Illinois at Urbana-Champaign  
-#//                    Ken Esler, kpesler@gmail.com, University of Illinois at Urbana-Champaign
-#//                    Cynthia Gu, zg1@ornl.gov, Oak Ridge National Laboratory
-#//                    Norbert Podhorszki, pnorbert@ornl.gov, Oak Ridge National Laboratory
-#//                    Raymond Clay III, j.k.rofling@gmail.com, Lawrence Livermore National Laboratory
-#//                    Ying Wai Li, yingwaili@ornl.gov, Oak Ridge National Laboratory
-#//                    Marl Dewing, markdewing@gmail.com, University of Illinois at Urbana-Champaign
+#// File developed by: Peter Doak, doakpw@ornl.gov, Oak Ridge National Lab
 #//		       Ye Luo, yeluo@anl.gov, Argonne National Laboratory
+#//                    Marl Dewing, markdewing@gmail.com, University of Illinois at Urbana-Champaign
+#//                    Ying Wai Li, yingwaili@ornl.gov, Oak Ridge National Laboratory
+#//                    Raymond Clay III, j.k.rofling@gmail.com, Lawrence Livermore National Laboratory
+#//                    Norbert Podhorszki, pnorbert@ornl.gov, Oak Ridge National Laboratory
+#//                    Cynthia Gu, zg1@ornl.gov, Oak Ridge National Laboratory
+#//                    Ken Esler, kpesler@gmail.com, University of Illinois at Urbana-Champaign
+#//                    Jeremy McMinnis, jmcminis@gmail.com, University of Illinois at Urbana-Champaign  
+#//                    Jeongnim Kim, jeongnim.kim@gmail.com, University of Illinois at Urbana-Champaign
 #//
 #// File created by: Jeongnim Kim, jeongnim.kim@gmail.com, University of Illinois at Urbana-Champaign
 #//////////////////////////////////////////////////////////////////////////////////////
+
+INCLUDE(${PROJECT_SOURCE_DIR}/CMake/unit_test.cmake)
 
 CONFIGURE_FILE(${qmcpack_SOURCE_DIR}/src/config.h.cmake.in
   ${qmcpack_BINARY_DIR}/src/config.h)
@@ -141,8 +144,9 @@ ENDIF()
     ${GITREV_TMP}
     )
 
-   ADD_LIBRARY(qmcutil ${UTILITIES})
+  ADD_LIBRARY(qmcutil ${UTILITIES})
 
+  SUBDIRS(Utilities/tests)
 
   # For unit tests, enable use for the fake RNG
   FUNCTION( USE_FAKE_RNG TARGET )
@@ -171,5 +175,7 @@ ENDIF()
     )
 
   ADD_LIBRARY(qmcbase ${PARTICLE})
+
+  SUBDIRS(Particle/tests)
 
   SUBDIRS(Drivers)

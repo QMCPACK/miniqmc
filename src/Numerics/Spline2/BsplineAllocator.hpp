@@ -21,7 +21,6 @@
 
 namespace qmcplusplus
 {
-
 template<typename T, size_t ALIGN = QMC_CLINE, typename ALLOC = Mallocator<T, ALIGN>>
 class BsplineAllocator
 {
@@ -51,13 +50,8 @@ public:
   }
 
   ///allocate a multi-bspline structure
-  SplineType* allocateMultiBspline(Ugrid x_grid,
-                                   Ugrid y_grid,
-                                   Ugrid z_grid,
-                                   BCType xBC,
-                                   BCType yBC,
-                                   BCType zBC,
-                                   int num_splines);
+  SplineType* allocateMultiBspline(
+      Ugrid x_grid, Ugrid y_grid, Ugrid z_grid, BCType xBC, BCType yBC, BCType zBC, int num_splines);
 
   /** allocate a multi_UBspline_3d_(s,d)
    * @tparam T datatype
@@ -73,9 +67,7 @@ public:
    * @param coeff array of coefficients
    * @param spline target MultibsplineType
    */
-  void setCoefficientsForOneOrbital(int i,
-                                    Array<T, 3>& coeff,
-                                    SplineType* spline);
+  void setCoefficientsForOneOrbital(int i, Array<T, 3>& coeff, SplineType* spline);
 
   /** copy a UBSpline_3d_X to multi_UBspline_3d_X at i-th band
      * @param single  UBspline_3d_X
@@ -89,14 +81,9 @@ public:
 };
 
 template<typename T, size_t ALIGN, typename ALLOC>
-typename BsplineAllocator<T, ALIGN, ALLOC>::SplineType* BsplineAllocator<T, ALIGN, ALLOC>::allocateMultiBspline(
-    Ugrid x_grid,
-    Ugrid y_grid,
-    Ugrid z_grid,
-    BCType xBC,
-    BCType yBC,
-    BCType zBC,
-    int num_splines)
+typename BsplineAllocator<T, ALIGN, ALLOC>::SplineType*
+BsplineAllocator<T, ALIGN, ALLOC>::allocateMultiBspline(
+    Ugrid x_grid, Ugrid y_grid, Ugrid z_grid, BCType xBC, BCType yBC, BCType zBC, int num_splines)
 {
   // Create new spline
   SplineType* restrict spline = new SplineType;
@@ -149,8 +136,8 @@ typename BsplineAllocator<T, ALIGN, ALLOC>::SplineType* BsplineAllocator<T, ALIG
 
 template<typename T, size_t ALIGN, typename ALLOC>
 template<typename ValT, typename IntT>
-typename bspline_traits<T, 3>::SplineType*
-BsplineAllocator<T, ALIGN, ALLOC>::createMultiBspline(T dummy, ValT& start, ValT& end, IntT& ng, bc_code bc, int num_splines)
+typename bspline_traits<T, 3>::SplineType* BsplineAllocator<T, ALIGN, ALLOC>::createMultiBspline(
+    T dummy, ValT& start, ValT& end, IntT& ng, bc_code bc, int num_splines)
 {
   Ugrid x_grid, y_grid, z_grid;
   typename bspline_traits<T, 3>::BCType xBC, yBC, zBC;
@@ -171,8 +158,8 @@ BsplineAllocator<T, ALIGN, ALLOC>::createMultiBspline(T dummy, ValT& start, ValT
 
 template<typename T, size_t ALIGN, typename ALLOC>
 void BsplineAllocator<T, ALIGN, ALLOC>::setCoefficientsForOneOrbital(int i,
-                                             Array<T, 3>& coeff,
-                                             SplineType* spline)
+                                                                     Array<T, 3>& coeff,
+                                                                     SplineType* spline)
 {
 #pragma omp parallel for collapse(3)
   for (int ix = 0; ix < spline->x_grid.num + 3; ix++)
@@ -192,7 +179,8 @@ void BsplineAllocator<T, ALIGN, ALLOC>::setCoefficientsForOneOrbital(int i,
 
 template<typename T, size_t ALIGN, typename ALLOC>
 template<typename UBT, typename MBT>
-void BsplineAllocator<T, ALIGN, ALLOC>::copy(UBT* single, MBT* multi, int i, const int* offset, const int* N)
+void BsplineAllocator<T, ALIGN, ALLOC>::copy(
+    UBT* single, MBT* multi, int i, const int* offset, const int* N)
 {
   typedef typename bspline_type<MBT>::value_type out_type;
   typedef typename bspline_type<UBT>::value_type in_type;
