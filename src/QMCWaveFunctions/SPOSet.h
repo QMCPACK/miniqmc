@@ -28,7 +28,7 @@ class ParticleSet;
  */
 class SPOSet : public QMCTraits
 {
-private:
+protected:
   /// number of SPOs
   int OrbitalSetSize;
   /// name of the basis set
