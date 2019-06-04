@@ -11,14 +11,15 @@
 // -*- C++ -*-
 
 /**
- * @file Determinant.h
+ * @file DeterminantOMP.h
  * @brief Determinant piece of the wave function
  */
 
-#ifndef QMCPLUSPLUS_DETERMINANT_H
-#define QMCPLUSPLUS_DETERMINANT_H
+#ifndef QMCPLUSPLUS_DETERMINANT_OMP_H
+#define QMCPLUSPLUS_DETERMINANT_OMP_H
 
 #include "Numerics/OhmmsPETE/OhmmsMatrix.h"
+#include <OpenMP/OMPMatrix.h>
 #include "Numerics/DeterminantOperators.h"
 #include "QMCWaveFunctions/WaveFunctionComponent.h"
 #include "Utilities/Constants.h"
@@ -127,6 +128,35 @@ inline void
   getri(n, x, lda, pivot, work, lwork);
 }
 
+/// gemv offload to accelerator
+template <class T>
+inline void gemv_offload(int n, T alpha, const T *restrict A, const T *restrict V, T *restrict Vout)
+{
+  PRAGMA_OMP("omp target teams distribute parallel for map(to:n, V[:n]) map(from:Vout[:n])")
+  for(size_t row=0; row<n; row++)
+  {
+    T sum = T(0);
+    const T *restrict A_row = A+row*n;
+    for(size_t col=0; col<n; col++)
+      sum += A_row[col]*V[col];
+    Vout[row] = sum*alpha;
+  }
+}
+
+/// ger offload to accelerator
+/// A = alpha Y * X^T + A
+template <class T>
+inline void ger_offload(T alpha, const T *restrict X, const T *restrict Y, T *restrict A, int n)
+{
+  PRAGMA_OMP("omp target teams distribute parallel for map(to:n, X[:n], Y[:n])")
+  for(size_t row=0; row<n; row++)
+  {
+    T *restrict A_row = A+row*n;
+    for(size_t col=0; col<n; col++)
+      A_row[col] += X[col]*Y[row]*alpha;
+  }
+}
+
 /** update Row as implemented in the full code */
 /** [UpdateRow] */
 template<typename T, typename RT>
@@ -137,10 +167,12 @@ inline void
   constexpr T czero(0);
   T temp[m], rcopy[m];
   T c_ratio = cone / c_ratio_in;
-  BLAS::gemv('T', m, m, c_ratio, pinv, m, tv, 1, czero, temp, 1);
+  //BLAS::gemv('T', m, m, c_ratio, pinv, m, tv, 1, czero, temp, 1);
+  gemv_offload(m, c_ratio, pinv, tv, temp);
   temp[rowchanged] = cone - c_ratio;
   std::copy_n(pinv + m * rowchanged, m, rcopy);
-  BLAS::ger(m, m, -cone, rcopy, 1, temp, 1, pinv, m);
+  //BLAS::ger(m, m, -cone, rcopy, 1, temp, 1, pinv, m);
+  ger_offload(-cone, rcopy, temp, pinv, m);
 }
 /** [UpdateRow] */
 /**@}*/
@@ -184,9 +216,9 @@ void checkDiff(const MT1& a, const MT2& b, const std::string& tag)
             << std::endl;
 }
 
-struct DiracDeterminant : public WaveFunctionComponent
+struct DiracDeterminantOMP : public WaveFunctionComponent
 {
-  DiracDeterminant(int nels, const RandomGenerator<RealType>& RNG, int First = 0)
+  DiracDeterminantOMP(int nels, const RandomGenerator<RealType>& RNG, int First = 0)
       : FirstIndex(First), myRandom(RNG)
   {
     psiMinv.resize(nels, nels);
@@ -211,6 +243,8 @@ struct DiracDeterminant : public WaveFunctionComponent
     transpose(psiMsave.data(), psiM.data(), nels, nels);
     LogValue = InvertWithLog(psiM.data(), nels, nels, work.data(), LWork, pivot.data(), phase);
     std::copy_n(psiM.data(), nels * nels, psiMinv.data());
+    // keep the device consistent
+    psiMinv.update_to_device();
   }
 
   void checkMatrix()
@@ -249,6 +283,8 @@ struct DiracDeterminant : public WaveFunctionComponent
     transpose(psiMsave.data(), psiM.data(), nels, nels);
     InvertOnly(psiM.data(), nels, nels, work.data(), pivot.data(), LWork);
     std::copy_n(psiM.data(), nels * nels, psiMinv.data());
+    // keep the device consistent
+    psiMinv.update_to_device();
   }
 
   /** return determinant ratio for the row replacement
@@ -261,6 +297,7 @@ struct DiracDeterminant : public WaveFunctionComponent
     constexpr double czero(0);
     for (int j = 0; j < nels; ++j)
       psiV[j] = myRandom() - shift;
+    psiMinv.update_row_from_device(iel - FirstIndex);
     curRatio = inner_product_n(psiV.data(), psiMinv[iel - FirstIndex], nels, czero);
     return curRatio;
   }
@@ -271,6 +308,11 @@ struct DiracDeterminant : public WaveFunctionComponent
     const int nels = psiV.size();
     updateRow(psiMinv.data(), psiV.data(), nels, nels, iel - FirstIndex, curRatio);
     std::copy_n(psiV.data(), nels, psiMsave[iel - FirstIndex]);
+  }
+
+  inline void transfer_from_device()
+  {
+    psiMinv.update_from_device();
   }
 
   /** accessor functions for checking */
@@ -287,7 +329,7 @@ private:
   /// initial particle index
   const int FirstIndex;
   /// inverse matrix to be update
-  Matrix<RealType> psiMinv;
+  OMPMatrix<RealType> psiMinv;
   /// a SPO set for the row update
   aligned_vector<RealType> psiV;
   /// internal storage to perform inversion correctly

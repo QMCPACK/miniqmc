@@ -26,7 +26,7 @@
 #include <Utilities/RandomGenerator.h>
 #include <Utilities/qmcpack_version.h>
 #include <Input/Input.hpp>
-#include <QMCWaveFunctions/Determinant.h>
+#include <QMCWaveFunctions/DeterminantOMP.h>
 #include <QMCWaveFunctions/DeterminantRef.h>
 #include <getopt.h>
 
@@ -145,7 +145,7 @@ int main(int argc, char** argv)
 
     miniqmcreference::DiracDeterminantRef determinant_ref(nels, random_th);
     determinant_ref.checkMatrix();
-    DiracDeterminant determinant(nels, random_th);
+    DiracDeterminantOMP determinant(nels, random_th);
     determinant.checkMatrix();
 
     ParticlePos_t delta(nels);

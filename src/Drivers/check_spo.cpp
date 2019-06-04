@@ -24,7 +24,7 @@
 #include <Particle/ParticleSet_builder.hpp>
 #include <Utilities/RandomGenerator.h>
 #include <Input/Input.hpp>
-#include <QMCWaveFunctions/einspline_spo.hpp>
+#include <QMCWaveFunctions/einspline_spo_omp.hpp>
 #include <QMCWaveFunctions/einspline_spo_ref.hpp>
 #include <Utilities/qmcpack_version.h>
 #include <getopt.h>
@@ -151,7 +151,7 @@ int main(int argc, char** argv)
 
   OHMMS_PRECISION ratio = 0.0;
 
-  using spo_type = einspline_spo<OHMMS_PRECISION>;
+  using spo_type = einspline_spo_omp<OHMMS_PRECISION>;
   spo_type spo_main;
   using spo_ref_type = miniqmcreference::einspline_spo_ref<OHMMS_PRECISION>;
   spo_ref_type spo_ref_main;

@@ -24,12 +24,8 @@
 #include <Particle/ParticleSet.h>
 #include <Numerics/Spline2/BsplineAllocator.hpp>
 #include <Numerics/Spline2/MultiBspline.hpp>
-#include <Numerics/Spline2/MultiBsplineOffload.hpp>
 #include <Utilities/SIMD/allocator.hpp>
 #include "Numerics/OhmmsPETE/OhmmsArray.h"
-#include "OpenMP/OMPTinyVector.h"
-#include "OpenMP/OMPVector.h"
-#include "OpenMP/OMPVectorSoAContainer.h"
 #include "QMCWaveFunctions/SPOSet.h"
 #include <iostream>
 
@@ -39,11 +35,10 @@ template<typename T>
 struct einspline_spo : public SPOSet
 {
   /// define the einsplie data object type
-  using self_type       = einspline_spo<T>;
   using spline_type     = typename bspline_traits<T, 3>::SplineType;
-  using vContainer_type = OMPVector<T, aligned_vector<T>>;
-  using gContainer_type = OMPVectorSoAContainer<T, 3>;
-  using hContainer_type = OMPVectorSoAContainer<T, 6>;
+  using vContainer_type = aligned_vector<T>;
+  using gContainer_type = VectorSoAContainer<T, 3>;
+  using hContainer_type = VectorSoAContainer<T, 6>;
   using lattice_type    = CrystalLattice<T, 3>;
 
   /// number of blocks
@@ -62,16 +57,11 @@ struct einspline_spo : public SPOSet
   /// use allocator
   BsplineAllocator<T> myAllocator;
 
-  OMPVector<spline_type*> einsplines;
-  std::vector<vContainer_type> psi;
-  std::vector<gContainer_type> grad;
-  std::vector<hContainer_type> hess;
+  aligned_vector<spline_type*> einsplines;
+  aligned_vector<vContainer_type> psi;
+  aligned_vector<gContainer_type> grad;
+  aligned_vector<hContainer_type> hess;
 
-  // for shadows
-  OMPVector<T*> psi_shadows;
-  OMPVector<T*> grad_shadows;
-  OMPVector<T*> hess_shadows;
-  OMPVector<OMPTinyVector<T, 3>> u_shadows;
 
   /// Timer
   NewTimer* timer;
@@ -103,17 +93,7 @@ struct einspline_spo : public SPOSet
     nBlocks          = lastBlock - firstBlock;
     einsplines.resize(nBlocks);
     for (int i = 0, t = firstBlock; i < nBlocks; ++i, ++t)
-    {
       einsplines[i] = in.einsplines[t];
-#ifdef ENABLE_OFFLOAD
-      spline_type** einsplines_ptr = einsplines.data();
-      auto& tile_ptr               = in.einsplines[t];
-      #pragma omp target map(to : i)
-      {
-        einsplines_ptr[i] = tile_ptr;
-      }
-#endif
-    }
     resize();
     timer = TimerManager.createTimer("Single-Particle Orbitals", timer_level_fine);
   }
@@ -169,86 +149,23 @@ struct einspline_spo : public SPOSet
             myAllocator.setCoefficientsForOneOrbital(j, coef_data, einsplines[i]);
           }
         }
-#ifdef ENABLE_OFFLOAD
-        // attach pointers
-        spline_type** restrict einsplines_ptr = einsplines.data();
-        spline_type* restrict& tile_ptr       = einsplines[i];
-        T* restrict& coefs_ptr                = einsplines[i]->coefs;
-        #pragma omp target enter data map(to : tile_ptr [0:1])
-        // Ye: I still don't understand why this line must be separated from the previous one.
-        #pragma omp target enter data map(to : coefs_ptr [0:einsplines[i]->coefs_size])
-        //std::cout << "YYYY offload size = " << einsplines[i]->coefs_size << std::endl;
-        #pragma omp target map(to : i)
-        {
-          einsplines_ptr[i]        = tile_ptr;
-          einsplines_ptr[i]->coefs = coefs_ptr;
-        }
-        //std::cout << "YYYY end of spline offloading" << std::endl;
-#endif
       }
     }
     resize();
   }
 
   /** evaluate psi */
-  inline void evaluate_v(const PosType& p) override
+  inline void evaluate_v(const PosType& p)
   {
     ScopedTimer local_timer(timer);
 
-    if (nBlocks != psi_shadows.size())
-    {
-      psi_shadows.resize(nBlocks);
-
-      T** restrict psi_shadows_ptr  = psi_shadows.data();
-      for (int i = 0; i < nBlocks; ++i)
-      {
-        T* restrict psi_ptr  = psi[i].data();
-#ifdef ENABLE_OFFLOAD
-        #pragma omp target map(to : i)
-#endif
-        {
-          psi_shadows_ptr[i]  = psi_ptr;
-        }
-      }
-    }
-
-    OMPTinyVector<T, 3> u = Lattice.toUnit_floor(p);
-
-    T** restrict psi_shadows_ptr          = psi_shadows.data();
-    spline_type** restrict einsplines_ptr = einsplines.data();
-
-    auto x = u[0];
-    auto y = u[1];
-    auto z = u[2];
-    auto nBlocks_local = nBlocks;
-    auto nSplinesPerBlock_local = nSplinesPerBlock;
-#ifdef ENABLE_OFFLOAD
-    #pragma omp target teams distribute num_teams(nBlocks) thread_limit(nSplinesPerBlock)
-#else
-    #pragma omp parallel for
-#endif
-    for (int i = 0; i < nBlocks_local; ++i)
-    {
-      const auto* restrict spline_m = einsplines_ptr[i];
-
-      int ix, iy, iz;
-      T a[4], b[4], c[4];
-      spline2::computeLocationAndFractional(spline_m,
-                                            x, y, z,
-                                            ix, iy, iz, a, b, c);
-#ifdef ENABLE_OFFLOAD
-      #pragma omp parallel
-#endif
-      spline2offload::evaluate_v_v2(spline_m,
-                                    ix, iy, iz,
-                                    a, b, c,
-                                    psi_shadows_ptr[i],
-                                    nSplinesPerBlock_local);
-    }
+    auto u = Lattice.toUnit_floor(p);
+    for (int i = 0; i < nBlocks; ++i)
+      MultiBsplineEval::evaluate_v(einsplines[i], u[0], u[1], u[2], psi[i].data(), nSplinesPerBlock);
   }
 
   /** evaluate psi, grad and lap */
-  inline void evaluate_vgl(const PosType& p) override
+  inline void evaluate_vgl(const PosType& p)
   {
     auto u = Lattice.toUnit_floor(p);
     for (int i = 0; i < nBlocks; ++i)
@@ -257,191 +174,14 @@ struct einspline_spo : public SPOSet
   }
 
   /** evaluate psi, grad and hess */
-  inline void evaluate_vgh(const PosType& p) override
+  inline void evaluate_vgh(const PosType& p)
   {
     ScopedTimer local_timer(timer);
 
-    if (nBlocks != psi_shadows.size())
-    {
-      psi_shadows.resize(nBlocks);
-      grad_shadows.resize(nBlocks);
-      hess_shadows.resize(nBlocks);
-
-      T** restrict psi_shadows_ptr  = psi_shadows.data();
-      T** restrict grad_shadows_ptr = grad_shadows.data();
-      T** restrict hess_shadows_ptr = hess_shadows.data();
-      for (int i = 0; i < nBlocks; ++i)
-      {
-        T* restrict psi_ptr  = psi[i].data();
-        T* restrict grad_ptr = grad[i].data();
-        T* restrict hess_ptr = hess[i].data();
-#ifdef ENABLE_OFFLOAD
-        #pragma omp target map(to : i)
-#endif
-        {
-          psi_shadows_ptr[i]  = psi_ptr;
-          grad_shadows_ptr[i] = grad_ptr;
-          hess_shadows_ptr[i] = hess_ptr;
-        }
-      }
-    }
-
-    OMPTinyVector<T, 3> u = Lattice.toUnit_floor(p);
-
-    T** restrict psi_shadows_ptr          = psi_shadows.data();
-    T** restrict grad_shadows_ptr         = grad_shadows.data();
-    T** restrict hess_shadows_ptr         = hess_shadows.data();
-    spline_type** restrict einsplines_ptr = einsplines.data();
-
-    auto x = u[0];
-    auto y = u[1];
-    auto z = u[2];
-    auto nBlocks_local = nBlocks;
-    auto nSplinesPerBlock_local = nSplinesPerBlock;
-#ifdef ENABLE_OFFLOAD
-    #pragma omp target teams distribute num_teams(nBlocks) thread_limit(nSplinesPerBlock)
-#else
-    #pragma omp parallel for
-#endif
-    for (int i = 0; i < nBlocks_local; ++i)
-    {
-      const auto* restrict spline_m = einsplines_ptr[i];
-
-      int ix, iy, iz;
-      T a[4], b[4], c[4], da[4], db[4], dc[4], d2a[4], d2b[4], d2c[4];
-      spline2::computeLocationAndFractional(spline_m, x, y, z, ix, iy, iz, a, b, c, da, db, dc, d2a, d2b, d2c);
-
-#ifdef ENABLE_OFFLOAD
-      #pragma omp parallel
-#endif
-      spline2offload::evaluate_vgh_v2(spline_m,
-                                      ix, iy, iz,
-                                      a, b, c,
-                                      da, db, dc,
-                                      d2a, d2b, d2c,
-                                      psi_shadows_ptr[i],
-                                      grad_shadows_ptr[i],
-                                      hess_shadows_ptr[i],
-                                      nSplinesPerBlock_local);
-    }
-  }
-
-  void transfer_v_from_device()
-  {
+    auto u = Lattice.toUnit_floor(p);
     for (int i = 0; i < nBlocks; ++i)
-      psi[i].update_from_device();
-  }
-
-  void transfer_vgh_from_device()
-  {
-    for (int i = 0; i < nBlocks; ++i)
-    {
-      psi[i].update_from_device();
-      grad[i].update_from_device();
-      hess[i].update_from_device();
-    }
-  }
-
-  /** evaluate psi, grad and hess of multiple walkers with offload */
-  inline void multi_evaluate_vgh(const std::vector<SPOSet*>& spo_list,
-                                 const std::vector<PosType>& p) override
-  {
-    ScopedTimer local_timer(timer);
-
-    const size_t nw = spo_list.size();
-    std::vector<self_type*> shadows;
-    for (int iw = 0; iw < nw; iw++)
-      shadows.push_back(dynamic_cast<self_type*>(spo_list[iw]));
-
-    if (nw * nBlocks != psi_shadows.size())
-    {
-      psi_shadows.resize(nw * nBlocks);
-      grad_shadows.resize(nw * nBlocks);
-      hess_shadows.resize(nw * nBlocks);
-
-      T** restrict psi_shadows_ptr  = psi_shadows.data();
-      T** restrict grad_shadows_ptr = grad_shadows.data();
-      T** restrict hess_shadows_ptr = hess_shadows.data();
-      for (size_t iw = 0; iw < nw; iw++)
-      {
-        auto& shadow = *shadows[iw];
-        for (int i = 0; i < nBlocks; ++i)
-        {
-          const size_t idx     = iw * nBlocks + i;
-          T* restrict psi_ptr  = shadow.psi[i].data();
-          T* restrict grad_ptr = shadow.grad[i].data();
-          T* restrict hess_ptr = shadow.hess[i].data();
-#ifdef ENABLE_OFFLOAD
-          //std::cout << "psi_shadows_ptr mapped already? " << omp_target_is_present(psi_shadows_ptr,0) << std::endl;
-          //std::cout << "psi_ptr mapped already? " << omp_target_is_present(psi_ptr,0) << std::endl;
-          #pragma omp target map(to : idx) device(0)
-#endif
-          {
-            psi_shadows_ptr[idx]  = psi_ptr;
-            grad_shadows_ptr[idx] = grad_ptr;
-            hess_shadows_ptr[idx] = hess_ptr;
-          }
-        }
-      }
-    }
-
-    u_shadows.resize(nw);
-    for (size_t iw = 0; iw < nw; iw++)
-      u_shadows[iw] = Lattice.toUnit_floor(p[iw]);
-    //std::cout << "mapped already? " << omp_target_is_present(u_shadows.data(),0) << std::endl;
-    //u_shadows.update_to_device();
-
-    T** restrict psi_shadows_ptr          = psi_shadows.data();
-    T** restrict grad_shadows_ptr         = grad_shadows.data();
-    T** restrict hess_shadows_ptr         = hess_shadows.data();
-    spline_type** restrict einsplines_ptr = einsplines.data();
-    OMPTinyVector<T, 3>* u_shadows_ptr    = u_shadows.data();
-
-    auto nw_local = nw;
-    auto nBlocks_local = nBlocks;
-    auto nSplinesPerBlock_local = nSplinesPerBlock;
-
-#ifdef ENABLE_OFFLOAD
-    #pragma omp target teams distribute collapse(2) num_teams(nw*nBlocks) thread_limit(nSplinesPerBlock) \
-    map(always, to : u_shadows_ptr [0:u_shadows.size()])
-#else
-    #pragma omp parallel for collapse(2)
-#endif
-    for (size_t iw = 0; iw < nw_local; iw++)
-      for (int i = 0; i < nBlocks_local; ++i)
-      {
-        const auto* restrict spline_m = einsplines_ptr[i];
-
-        int ix, iy, iz;
-        T a[4], b[4], c[4], da[4], db[4], dc[4], d2a[4], d2b[4], d2c[4];
-        spline2::computeLocationAndFractional(spline_m,
-                                              u_shadows_ptr[iw][0],
-                                              u_shadows_ptr[iw][1],
-                                              u_shadows_ptr[iw][2],
-                                              ix, iy, iz,
-                                              a, b, c,
-                                              da, db, dc,
-                                              d2a, d2b, d2c);
-
-#ifdef ENABLE_OFFLOAD
-        #pragma omp parallel
-#endif
-        spline2offload::evaluate_vgh_v2(spline_m,
-                                        ix, iy, iz,
-                                        a, b, c,
-                                        da, db, dc,
-                                        d2a, d2b, d2c,
-                                        psi_shadows_ptr[iw * nBlocks_local + i],
-                                        grad_shadows_ptr[iw * nBlocks_local + i],
-                                        hess_shadows_ptr[iw * nBlocks_local + i],
-                                        nSplinesPerBlock_local);
-      }
-  }
-
-  void multi_transfer_vgh_from_device(const std::vector<SPOSet*>& spo_list) const
-  {
-    for (size_t iw = 0; iw < spo_list.size(); iw++)
-      (dynamic_cast<self_type*>(spo_list[iw]))->transfer_vgh_from_device();
+      MultiBsplineEval::evaluate_vgh(einsplines[i], u[0], u[1], u[2], psi[i].data(), grad[i].data(), hess[i].data(),
+                                     nSplinesPerBlock);
   }
 
   void print(std::ostream& os)

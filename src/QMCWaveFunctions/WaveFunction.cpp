@@ -16,7 +16,7 @@
  */
 
 #include <QMCWaveFunctions/WaveFunction.h>
-#include <QMCWaveFunctions/Determinant.h>
+#include <QMCWaveFunctions/DeterminantOMP.h>
 #include <QMCWaveFunctions/DeterminantRef.h>
 #include <QMCWaveFunctions/Jastrow/BsplineFunctor.h>
 #include <QMCWaveFunctions/Jastrow/PolynomialFunctor3D.h>
@@ -104,7 +104,7 @@ void build_WaveFunction(bool useRef,
     using J1OrbType = OneBodyJastrow<BsplineFunctor<valT>>;
     using J2OrbType = TwoBodyJastrow<BsplineFunctor<valT>>;
     using J3OrbType = ThreeBodyJastrow<PolynomialFunctor3D>;
-    using DetType   = DiracDeterminant;
+    using DetType   = DiracDeterminantOMP;
 
     ions.RSoA = ions.R;
     els.RSoA  = els.R;
