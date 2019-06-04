@@ -46,6 +46,7 @@ void build_WaveFunction(bool useRef,
                         ParticleSet& ions,
                         ParticleSet& els,
                         const RandomGenerator<QMCTraits::RealType>& RNG,
+                        int delay_rank,
                         bool enableJ3)
 {
   using valT = WaveFunction::valT;
@@ -115,8 +116,8 @@ void build_WaveFunction(bool useRef,
 
     // determinant component
     WF.nelup  = nelup;
-    WF.Det_up = new DetType(WF.spo, 0, 1);
-    WF.Det_dn = new DetType(WF.spo, nelup, 1);
+    WF.Det_up = new DetType(WF.spo, 0, delay_rank);
+    WF.Det_dn = new DetType(WF.spo, nelup, delay_rank);
 
     // J1 component
     J1OrbType* J1 = new J1OrbType(ions, els);

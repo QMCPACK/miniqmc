@@ -154,6 +154,7 @@ void print_help()
   app_summary() << "            [-n steps] [-N substeps] [-x rmax]"              << '\n';
   app_summary() << "            [-r AcceptanceRatio] [-s seed] [-w walkers]"     << '\n';
   app_summary() << "            [-a tile_size] [-t timer_level] [-B nw_b]"       << '\n';
+  app_summary() << "            [-u delay_rank]"                                 << '\n';
   app_summary() << "options:"                                                    << '\n';
   app_summary() << "  -a  size of each spline tile       default: num of orbs"   << '\n';
   app_summary() << "  -b  use reference implementations  default: off"           << '\n';
@@ -168,9 +169,10 @@ void print_help()
   app_summary() << "  -r  set the acceptance ratio.      default: 0.5"           << '\n';
   app_summary() << "  -s  set the random seed.           default: 11"            << '\n';
   app_summary() << "  -t  timer level: coarse or fine    default: fine"          << '\n';
-  app_summary() << "  -w  number of walker(movers)       default: num of threads"<< '\n';
+  app_summary() << "  -u  matrix delayed update rank     default: 32"            << '\n';
   app_summary() << "  -v  verbose output"                                        << '\n';
   app_summary() << "  -V  print version information and exit"                    << '\n';
+  app_summary() << "  -w  number of walker(movers)       default: num of threads"<< '\n';
   app_summary() << "  -x  set the Rmax.                  default: 1.7"           << '\n';
   // clang-format on
 }
@@ -205,6 +207,7 @@ int main(int argc, char** argv)
   // Set cutoff for NLPP use.
   RealType Rmax(1.7);
   RealType accept  = 0.5;
+  int delay_rank = 32;
   bool useRef   = false;
   bool enableJ3 = false;
   bool run_pseudo = true;
@@ -222,7 +225,7 @@ int main(int argc, char** argv)
   int opt;
   while (optind < argc)
   {
-    if ((opt = getopt(argc, argv, "bhjPvVa:B:c:g:m:n:N:r:s:t:w:x:")) != -1)
+    if ((opt = getopt(argc, argv, "bhjPvVa:B:c:g:m:n:N:r:s:t:u:w:x:")) != -1)
     {
       switch (opt)
       {
@@ -273,6 +276,9 @@ int main(int argc, char** argv)
         break;
       case 't':
         timer_level_name = std::string(optarg);
+        break;
+      case 'u':
+        delay_rank = atoi(optarg);
         break;
       case 'v':
         verbose = true;
@@ -372,6 +378,7 @@ int main(int argc, char** argv)
 
     app_summary() << "\nSPO coefficients size = " << SPO_coeff_size << " bytes ("
                   << SPO_coeff_size_MB << " MB)" << endl;
+    app_summary() << "delayed update rank = " << delay_rank << endl;
 
     spo_main = build_SPOSet(useRef, nx, ny, nz, norb, nTiles, lattice_b);
     Timers[Timer_Setup]->stop();
@@ -399,7 +406,7 @@ int main(int argc, char** argv)
     mover_list[iw]    = thiswalker;
 
     // create wavefunction per mover
-    build_WaveFunction(useRef, spo_main, thiswalker->wavefunction, ions, thiswalker->els, thiswalker->rng, enableJ3);
+    build_WaveFunction(useRef, spo_main, thiswalker->wavefunction, ions, thiswalker->els, thiswalker->rng, delay_rank, enableJ3);
 
     // initial computing
     thiswalker->els.update();

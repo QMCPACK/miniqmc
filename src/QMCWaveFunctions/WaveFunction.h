@@ -100,6 +100,7 @@ public:
                                  ParticleSet& ions,
                                  ParticleSet& els,
                                  const RandomGenerator<QMCTraits::RealType>& RNG,
+                                 int delay_rank,
                                  bool enableJ3);
   const std::vector<SPOSet*> extract_spo_list(const std::vector<WaveFunction*>& WF_list) const;
   const std::vector<WaveFunctionComponent*>
@@ -116,6 +117,7 @@ void build_WaveFunction(bool useRef,
                         ParticleSet& ions,
                         ParticleSet& els,
                         const RandomGenerator<QMCTraits::RealType>& RNG,
+                        int delay_rank,
                         bool enableJ3);
 } // namespace qmcplusplus
 
