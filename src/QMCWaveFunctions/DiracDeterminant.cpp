@@ -35,12 +35,12 @@ DiracDeterminant<DU_TYPE>::DiracDeterminant(SPOSet* const spos, int first, int d
       ndelay(delay),
       NumPtcls(spos->size()),
       NumOrbitals(spos->size()),
-      UpdateTimer("DiracDeterminantBase::update", timer_level_fine),
-      RatioTimer("DiracDeterminantBase::ratio", timer_level_fine),
-      InverseTimer("DiracDeterminantBase::inverse", timer_level_fine),
-      BufferTimer("DiracDeterminantBase::buffer", timer_level_fine),
-      SPOVTimer("DiracDeterminantBase::spoval", timer_level_fine),
-      SPOVGLTimer("DiracDeterminantBase::spovgl", timer_level_fine)
+      UpdateTimer("DiracDeterminant::update", timer_level_fine),
+      RatioTimer("DiracDeterminant::ratio", timer_level_fine),
+      InverseTimer("DiracDeterminant::inverse", timer_level_fine),
+      BufferTimer("DiracDeterminant::buffer", timer_level_fine),
+      SPOVTimer("DiracDeterminant::spoval", timer_level_fine),
+      SPOVGLTimer("DiracDeterminant::spovgl", timer_level_fine)
 {
   registerTimers();
   resize(spos->size(), spos->size());

@@ -116,7 +116,7 @@ void build_WaveFunction(bool useRef,
     // determinant component
     WF.nelup  = nelup;
     WF.Det_up = new DetType(WF.spo, 0, 1);
-    WF.Det_dn = new DetType(WF.spo, 0, 1);
+    WF.Det_dn = new DetType(WF.spo, nelup, 1);
 
     // J1 component
     J1OrbType* J1 = new J1OrbType(ions, els);
