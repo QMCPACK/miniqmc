@@ -12,11 +12,15 @@
 #ifndef QMCPLUSPLUS_SINGLEPARTICLEORBITALSET_H
 #define QMCPLUSPLUS_SINGLEPARTICLEORBITALSET_H
 
-#include <Utilities/Configuration.h>
 #include <string>
+#include "Utilities/Configuration.h"
+#include <Numerics/OhmmsPETE/OhmmsMatrix.h>
 
 namespace qmcplusplus
 {
+
+class ParticleSet;
+
 /** base class for Single-particle orbital sets
  *
  * SPOSet stands for S(ingle)P(article)O(rbital)Set which contains
@@ -31,6 +35,12 @@ private:
   std::string className;
 
 public:
+
+  using ValueVector_t = Vector<ValueType>;
+  using GradVector_t = Vector<GradType>;
+  using ValueMatrix_t = Matrix<ValueType>;
+  using GradMatrix_t = Matrix<GradType>;
+
   /// return the size of the orbital set
   inline int size() const { return OrbitalSetSize; }
 
@@ -42,6 +52,51 @@ public:
   virtual void evaluate_v(const PosType& p)   = 0;
   virtual void evaluate_vgl(const PosType& p) = 0;
   virtual void evaluate_vgh(const PosType& p) = 0;
+
+  /** evaluate the values of this single-particle orbital set
+   * @param P current ParticleSet
+   * @param iat active particle
+   * @param psi values of the SPO
+   */
+  virtual void evaluate(const ParticleSet& P, int iat, ValueVector_t& psi)
+  {
+    //FIXME
+  }
+
+  /** evaluate the values, gradients and laplacians of this single-particle orbital set
+   * @param P current ParticleSet
+   * @param iat active particle
+   * @param psi values of the SPO
+   * @param dpsi gradients of the SPO
+   * @param d2psi laplacians of the SPO
+   */
+  virtual void evaluate(const ParticleSet& P,
+                        int iat,
+                        ValueVector_t& psi,
+                        GradVector_t& dpsi,
+                        ValueVector_t& d2psi)
+  {
+    //FIXME
+  }
+
+  /** evaluate the values, gradients and laplacians of this single-particle orbital for [first,last) particles
+   * @param P current ParticleSet
+   * @param first starting index of the particles
+   * @param last ending index of the particles
+   * @param logdet determinant matrix to be inverted
+   * @param dlogdet gradients
+   * @param d2logdet laplacians
+   *
+   */
+  virtual void evaluate_notranspose(const ParticleSet& P,
+                                    int first,
+                                    int last,
+                                    ValueMatrix_t& logdet,
+                                    GradMatrix_t& dlogdet,
+                                    ValueMatrix_t& d2logdet)
+  {
+    //FIXME
+  }
 
   /// operates on multiple walkers
   virtual void

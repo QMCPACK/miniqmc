@@ -47,13 +47,44 @@ inline void transpose(const T* restrict A, size_t m, size_t lda, TO* restrict B,
       B[i * ldb + j] = A[j * lda + i];
 }
 
-///inner product
-template<typename T1, typename T2, typename T3>
-inline T3 inner_product_n(const T1* restrict a, const T2* restrict b, int n, T3 res)
+/** dot product
+     * @param a starting address of an array of type T
+     * @param b starting address of an array of type T
+     * @param n size
+     * @param res initial value, default=0.0
+     * @return  \f$ res = \sum_i a[i] b[i]\f$
+     *
+     * same as inner_product(a,a+n,b,0.0)
+     * The arguments of this inline function are different from BLAS::dot
+     * This is more efficient than BLAS::dot due to the function overhead,
+     * if a compiler knows how to inline.
+     */
+template<typename T>
+inline T dot(const T* restrict a, const T* restrict b, int n, T res = T())
 {
-  for (int i = 0; i < n; ++i)
+  for (int i = 0; i < n; i++)
     res += a[i] * b[i];
   return res;
+}
+
+template<class T, unsigned D>
+inline TinyVector<T, D> dot(const T* a, const TinyVector<T, D>* b, int n)
+{
+  TinyVector<T, D> res;
+  for (int i = 0; i < n; i++)
+    res += a[i] * b[i];
+  return res;
+}
+
+/** copy function using memcpy
+     * @param target starting address of the target
+     * @param source starting address of the source
+     * @param n size of the data to copy
+     */
+template<typename T>
+inline void copy(T* restrict target, const T* restrict source, size_t n)
+{
+  memcpy(target, source, sizeof(T) * n);
 }
 
 } // namespace simd

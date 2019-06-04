@@ -16,6 +16,7 @@
 #include <Numerics/OhmmsPETE/OhmmsVector.h>
 #include <Numerics/OhmmsPETE/OhmmsMatrix.h>
 #include "Numerics/OhmmsBlas.h"
+#include "QMCWaveFunctions/DeterminantHelper.h"
 #include "QMCWaveFunctions/DiracMatrix.h"
 #include "Numerics/BlasThreadingEnv.h"
 

@@ -17,10 +17,8 @@
 
 
 #include "QMCWaveFunctions/DiracDeterminant.h"
-//#include "Numerics/DeterminantOperators.h"
 #include "Numerics/OhmmsBlas.h"
-//#include "Numerics/MatrixOperators.h"
-//#include "simd/simd.hpp"
+#include "QMCWaveFunctions/DeterminantHelper.h"
 
 namespace qmcplusplus
 {
@@ -30,7 +28,7 @@ namespace qmcplusplus
  */
 template<typename DU_TYPE>
 DiracDeterminant<DU_TYPE>::DiracDeterminant(SPOSet* const spos, int first, int delay)
-    : ndelay(1), invRow_id(-1),
+    : invRow_id(-1),
         Phi(spos),
         FirstIndex(first),
         LastIndex(first + spos->size()),

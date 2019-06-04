@@ -13,6 +13,7 @@
 #define QMCPLUSPLUS_DIRAC_MATRIX_H
 
 #include "Numerics/Blasf.h"
+#include "Numerics/OhmmsBlas.h"
 #include "Numerics/OhmmsPETE/OhmmsMatrix.h"
 #include "Numerics/BlasThreadingEnv.h"
 #include "Utilities/scalar_traits.h"
