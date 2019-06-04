@@ -159,13 +159,19 @@ struct einspline_spo : public SPOSet
   }
 
   /** evaluate psi */
-  inline void evaluate_v(const PosType& p)
+  inline void evaluate_v(const PosType& p) {}
+  inline void evaluate(const ParticleSet& P, int iat, ValueVector_t& psi_v)
   {
     ScopedTimer local_timer(timer);
 
-    auto u = Lattice.toUnit_floor(p);
+    auto u = Lattice.toUnit_floor(P.activeR(iat));
     for (int i = 0; i < nBlocks; ++i)
+    {
       MultiBsplineEval::evaluate_v(einsplines[i], u[0], u[1], u[2], psi[i].data(), nSplinesPerBlock);
+      // in real simulation, phase needs to be applied. Here just fake computation
+      const int first = i*nBlocks;
+      std::copy_n(psi[i].data(), std::min((i+1)*nSplinesPerBlock, OrbitalSetSize) - first, psi_v.data()+first);
+    }
   }
 
   /** evaluate psi, grad and lap */
@@ -178,14 +184,26 @@ struct einspline_spo : public SPOSet
   }
 
   /** evaluate psi, grad and hess */
-  inline void evaluate_vgh(const PosType& p)
+  inline void evaluate_vgh(const PosType& p) {}
+  inline void evaluate(const ParticleSet& P, int iat, ValueVector_t& psi_v, GradVector_t& dpsi_v, ValueVector_t& d2psi_v)
   {
     ScopedTimer local_timer(timer);
 
-    auto u = Lattice.toUnit_floor(p);
+    auto u = Lattice.toUnit_floor(P.activeR(iat));
     for (int i = 0; i < nBlocks; ++i)
+    {
       MultiBsplineEval::evaluate_vgh(einsplines[i], u[0], u[1], u[2], psi[i].data(), grad[i].data(), hess[i].data(),
                                      nSplinesPerBlock);
+      // in real simulation, phase needs to be applied. Here just fake computation
+      const int first = i*nBlocks;
+      for (int j = first; j < std::min((i+1)*nSplinesPerBlock, OrbitalSetSize); j++)
+      {
+        psi_v[j] = psi[i][j-first];
+        dpsi_v[j] = grad[i][j-first];
+        d2psi_v[j] = hess[i].data(0)[j-first] + hess[i].data(1)[j-first] + hess[i].data(2)[j-first] +
+                     hess[i].data(3)[j-first] + hess[i].data(4)[j-first] + hess[i].data(5)[j-first];
+      }
+    }
   }
 
   void print(std::ostream& os)

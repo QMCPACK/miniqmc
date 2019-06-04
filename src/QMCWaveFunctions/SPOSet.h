@@ -14,11 +14,11 @@
 
 #include <string>
 #include "Utilities/Configuration.h"
-#include <Numerics/OhmmsPETE/OhmmsMatrix.h>
+#include "Numerics/OhmmsPETE/OhmmsMatrix.h"
+#include "Particle/ParticleSet.h"
 
 namespace qmcplusplus
 {
-class ParticleSet;
 
 /** base class for Single-particle orbital sets
  *
@@ -56,9 +56,9 @@ public:
    * @param iat active particle
    * @param psi values of the SPO
    */
-  virtual void evaluate(const ParticleSet& P, int iat, ValueVector_t& psi)
+  virtual void evaluate(const ParticleSet& P, int iat, ValueVector_t& psi_v)
   {
-    //FIXME
+    evaluate_v(P.activeR(iat));
   }
 
   /** evaluate the values, gradients and laplacians of this single-particle orbital set
@@ -68,9 +68,9 @@ public:
    * @param dpsi gradients of the SPO
    * @param d2psi laplacians of the SPO
    */
-  virtual void evaluate(const ParticleSet& P, int iat, ValueVector_t& psi, GradVector_t& dpsi, ValueVector_t& d2psi)
+  virtual void evaluate(const ParticleSet& P, int iat, ValueVector_t& psi_v, GradVector_t& dpsi_v, ValueVector_t& d2psi_v)
   {
-    //FIXME
+    evaluate_vgh(P.activeR(iat));
   }
 
   /** evaluate the values, gradients and laplacians of this single-particle orbital for [first,last) particles
@@ -89,7 +89,13 @@ public:
                                     GradMatrix_t& dlogdet,
                                     ValueMatrix_t& d2logdet)
   {
-    //FIXME
+    for (int iat = first, i = 0; iat < last; ++iat, ++i)
+    {
+      ValueVector_t v(logdet[i], OrbitalSetSize);
+      GradVector_t g(dlogdet[i], OrbitalSetSize);
+      ValueVector_t l(d2logdet[i], OrbitalSetSize);
+      evaluate(P, iat, v, g, l);
+    }
   }
 
   /// operates on multiple walkers
