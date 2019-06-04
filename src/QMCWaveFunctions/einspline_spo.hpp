@@ -85,6 +85,7 @@ struct einspline_spo : public SPOSet
    */
   einspline_spo(const einspline_spo& in, int team_size, int member_id) : Owner(false), Lattice(in.Lattice)
   {
+    OrbitalSetSize   = in.OrbitalSetSize;
     nSplines         = in.nSplines;
     nSplinesPerBlock = in.nSplinesPerBlock;
     nBlocks          = (in.nBlocks + team_size - 1) / team_size;
@@ -123,6 +124,9 @@ struct einspline_spo : public SPOSet
   // fix for general num_splines
   void set(int nx, int ny, int nz, int num_splines, int nblocks, bool init_random = true)
   {
+    // setting OrbitalSetSize to num_splines made artificial only in miniQMC
+    OrbitalSetSize   = num_splines;
+
     nSplines         = num_splines;
     nBlocks          = nblocks;
     nSplinesPerBlock = num_splines / nblocks;
