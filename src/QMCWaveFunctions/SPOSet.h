@@ -18,7 +18,6 @@
 
 namespace qmcplusplus
 {
-
 class ParticleSet;
 
 /** base class for Single-particle orbital sets
@@ -35,11 +34,10 @@ protected:
   std::string className;
 
 public:
-
   using ValueVector_t = Vector<ValueType>;
-  using GradVector_t = Vector<GradType>;
+  using GradVector_t  = Vector<GradType>;
   using ValueMatrix_t = Matrix<ValueType>;
-  using GradMatrix_t = Matrix<GradType>;
+  using GradMatrix_t  = Matrix<GradType>;
 
   /// return the size of the orbital set
   inline int size() const { return OrbitalSetSize; }
@@ -70,11 +68,7 @@ public:
    * @param dpsi gradients of the SPO
    * @param d2psi laplacians of the SPO
    */
-  virtual void evaluate(const ParticleSet& P,
-                        int iat,
-                        ValueVector_t& psi,
-                        GradVector_t& dpsi,
-                        ValueVector_t& d2psi)
+  virtual void evaluate(const ParticleSet& P, int iat, ValueVector_t& psi, GradVector_t& dpsi, ValueVector_t& d2psi)
   {
     //FIXME
   }
@@ -99,26 +93,23 @@ public:
   }
 
   /// operates on multiple walkers
-  virtual void
-      multi_evaluate_v(const std::vector<SPOSet*>& spo_list, const std::vector<PosType>& pos_list)
+  virtual void multi_evaluate_v(const std::vector<SPOSet*>& spo_list, const std::vector<PosType>& pos_list)
   {
-    #pragma omp parallel for
+#pragma omp parallel for
     for (int iw = 0; iw < spo_list.size(); iw++)
       spo_list[iw]->evaluate_v(pos_list[iw]);
   }
 
-  virtual void
-      multi_evaluate_vgl(const std::vector<SPOSet*>& spo_list, const std::vector<PosType>& pos_list)
+  virtual void multi_evaluate_vgl(const std::vector<SPOSet*>& spo_list, const std::vector<PosType>& pos_list)
   {
-    #pragma omp parallel for
+#pragma omp parallel for
     for (int iw = 0; iw < spo_list.size(); iw++)
       spo_list[iw]->evaluate_vgl(pos_list[iw]);
   }
 
-  virtual void
-      multi_evaluate_vgh(const std::vector<SPOSet*>& spo_list, const std::vector<PosType>& pos_list)
+  virtual void multi_evaluate_vgh(const std::vector<SPOSet*>& spo_list, const std::vector<PosType>& pos_list)
   {
-    #pragma omp parallel for
+#pragma omp parallel for
     for (int iw = 0; iw < spo_list.size(); iw++)
       spo_list[iw]->evaluate_vgh(pos_list[iw]);
   }

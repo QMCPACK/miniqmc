@@ -155,16 +155,12 @@ class DiracMatrix
   }
 
 public:
-
   DiracMatrix() : Lwork(0) {}
 
   /** compute the inverse of the transpose of matrix A
    * assume precision T_FP >= T, do the inversion always with T_FP
    */
-  inline void invert_transpose(const Matrix<T>& amat,
-                               Matrix<T>& invMat,
-                               real_type& LogDet,
-                               real_type& Phase)
+  inline void invert_transpose(const Matrix<T>& amat, Matrix<T>& invMat, real_type& LogDet, real_type& Phase)
   {
     BlasThreadingEnv knob(getNumThreadsNested());
     const int n   = invMat.rows();
@@ -174,18 +170,18 @@ public:
     simd::transpose(amat.data(), n, amat.cols(), invMat.data(), n, invMat.cols());
     invMat_ptr = invMat.data();
 #else
-    psiM_fp.resize(n,lda);
+    psiM_fp.resize(n, lda);
     simd::transpose(amat.data(), n, amat.cols(), psiM_fp.data(), n, psiM_fp.cols());
     invMat_ptr = psiM_fp.data();
 #endif
     if (Lwork < lda)
       reset(invMat_ptr, lda);
     Xgetrf(n, n, invMat_ptr, lda, m_pivot.data());
-    for(int i=0; i<n; i++)
-      LU_diag[i] = invMat_ptr[i*lda+i];
+    for (int i = 0; i < n; i++)
+      LU_diag[i] = invMat_ptr[i * lda + i];
     real_type_fp Phase_tmp;
     LogDet = computeLogDet(LU_diag.data(), n, m_pivot.data(), Phase_tmp);
-    Phase = Phase_tmp;
+    Phase  = Phase_tmp;
     Xgetri(n, invMat_ptr, lda, m_pivot.data(), m_work.data(), Lwork);
 #if defined(MIXED_PRECISION)
     invMat = psiM_fp;

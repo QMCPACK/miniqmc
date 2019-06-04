@@ -38,12 +38,12 @@ class DiracDeterminant : public WaveFunctionComponent
 public:
   using ValueVector_t = Vector<ValueType>;
   using ValueMatrix_t = Matrix<ValueType>;
-  using GradVector_t = Vector<GradType>;
-  using GradMatrix_t = Matrix<GradType>;
+  using GradVector_t  = Vector<GradType>;
+  using GradMatrix_t  = Matrix<GradType>;
 
-  using mValueType = QMCTraits::QTFull::ValueType;
+  using mValueType       = QMCTraits::QTFull::ValueType;
   using ValueMatrix_hp_t = Matrix<mValueType>;
-  using mGradType = TinyVector<mValueType, DIM>;
+  using mGradType        = TinyVector<mValueType, DIM>;
 
   /** constructor
    *@param spos the single-particle orbital set
@@ -58,7 +58,10 @@ public:
   ///invert psiM or its copies
   void invertPsiM(const ValueMatrix_t& logdetT, ValueMatrix_t& invMat);
 
-  void evaluateGL(ParticleSet& P, ParticleSet::ParticleGradient_t& G, ParticleSet::ParticleLaplacian_t& L, bool fromscratch = false);
+  void evaluateGL(ParticleSet& P,
+                  ParticleSet::ParticleGradient_t& G,
+                  ParticleSet::ParticleLaplacian_t& L,
+                  bool fromscratch = false);
 
   /** return the ratio only for the  iat-th partcle move
    * @param P current configuration
@@ -114,7 +117,7 @@ public:
   int invRow_id;
 
   ValueType curRatio;
-  
+
 private:
   /// Timers
   NewTimer UpdateTimer, RatioTimer, InverseTimer, BufferTimer, SPOVTimer, SPOVGLTimer;
@@ -147,7 +150,6 @@ private:
     TimerManager.addTimer(&SPOVTimer);
     TimerManager.addTimer(&SPOVGLTimer);
   }
-
 };
 
 

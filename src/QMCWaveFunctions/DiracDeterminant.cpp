@@ -29,22 +29,22 @@ namespace qmcplusplus
 template<typename DU_TYPE>
 DiracDeterminant<DU_TYPE>::DiracDeterminant(SPOSet* const spos, int first, int delay)
     : invRow_id(-1),
-        Phi(spos),
-        FirstIndex(first),
-        LastIndex(first + spos->size()),
-        ndelay(delay),
-        NumPtcls(spos->size()),
-        NumOrbitals(spos->size()),
-        UpdateTimer("DiracDeterminantBase::update", timer_level_fine),
-        RatioTimer("DiracDeterminantBase::ratio", timer_level_fine),
-        InverseTimer("DiracDeterminantBase::inverse", timer_level_fine),
-        BufferTimer("DiracDeterminantBase::buffer", timer_level_fine),
-        SPOVTimer("DiracDeterminantBase::spoval", timer_level_fine),
-        SPOVGLTimer("DiracDeterminantBase::spovgl", timer_level_fine)
-  {
-    registerTimers();
-    resize(spos->size(), spos->size());
-  }
+      Phi(spos),
+      FirstIndex(first),
+      LastIndex(first + spos->size()),
+      ndelay(delay),
+      NumPtcls(spos->size()),
+      NumOrbitals(spos->size()),
+      UpdateTimer("DiracDeterminantBase::update", timer_level_fine),
+      RatioTimer("DiracDeterminantBase::ratio", timer_level_fine),
+      InverseTimer("DiracDeterminantBase::inverse", timer_level_fine),
+      BufferTimer("DiracDeterminantBase::buffer", timer_level_fine),
+      SPOVTimer("DiracDeterminantBase::spoval", timer_level_fine),
+      SPOVGLTimer("DiracDeterminantBase::spovgl", timer_level_fine)
+{
+  registerTimers();
+  resize(spos->size(), spos->size());
+}
 
 template<typename DU_TYPE>
 void DiracDeterminant<DU_TYPE>::invertPsiM(const ValueMatrix_t& logdetT, ValueMatrix_t& invMat)

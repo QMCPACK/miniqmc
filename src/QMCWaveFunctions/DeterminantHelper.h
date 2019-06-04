@@ -17,7 +17,6 @@
 
 namespace qmcplusplus
 {
-
 template<typename T>
 inline T evaluatePhase(T sign_v)
 {
