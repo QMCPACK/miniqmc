@@ -95,6 +95,7 @@ struct einspline_spo_omp : public SPOSet
    */
   einspline_spo_omp(const einspline_spo_omp& in, int team_size, int member_id) : Owner(false), Lattice(in.Lattice)
   {
+    OrbitalSetSize   = in.OrbitalSetSize;
     nSplines         = in.nSplines;
     nSplinesPerBlock = in.nSplinesPerBlock;
     nBlocks          = (in.nBlocks + team_size - 1) / team_size;
@@ -143,6 +144,9 @@ struct einspline_spo_omp : public SPOSet
   // fix for general num_splines
   void set(int nx, int ny, int nz, int num_splines, int nblocks, bool init_random = true)
   {
+    // setting OrbitalSetSize to num_splines made artificial only in miniQMC
+    OrbitalSetSize   = num_splines;
+
     nSplines         = num_splines;
     nBlocks          = nblocks;
     nSplinesPerBlock = num_splines / nblocks;
@@ -191,7 +195,8 @@ struct einspline_spo_omp : public SPOSet
   }
 
   /** evaluate psi */
-  inline void evaluate_v(const PosType& p) override
+  inline void evaluate_v(const PosType& p) override {}
+  inline void evaluate(const ParticleSet& P, int iat, ValueVector_t& psi_v) override
   {
     ScopedTimer local_timer(timer);
 
@@ -212,7 +217,7 @@ struct einspline_spo_omp : public SPOSet
       }
     }
 
-    OMPTinyVector<T, 3> u = Lattice.toUnit_floor(p);
+    OMPTinyVector<T, 3> u = Lattice.toUnit_floor(P.activeR(iat));
 
     T** restrict psi_shadows_ptr          = psi_shadows.data();
     spline_type** restrict einsplines_ptr = einsplines.data();
@@ -245,6 +250,14 @@ struct einspline_spo_omp : public SPOSet
                                     psi_shadows_ptr[i],
                                     nSplinesPerBlock_local);
     }
+
+    for (int i = 0; i < nBlocks; ++i)
+    {
+      psi[i].update_from_device();
+      // in real simulation, phase needs to be applied. Here just fake computation
+      const int first = i*nBlocks;
+      std::copy_n(psi[i].data(), std::min((i+1)*nSplinesPerBlock, OrbitalSetSize) - first, psi_v.data()+first);
+    }
   }
 
   /** evaluate psi, grad and lap */
@@ -257,7 +270,8 @@ struct einspline_spo_omp : public SPOSet
   }
 
   /** evaluate psi, grad and hess */
-  inline void evaluate_vgh(const PosType& p) override
+  inline void evaluate_vgh(const PosType& p) override {}
+  inline void evaluate(const ParticleSet& P, int iat, ValueVector_t& psi_v, GradVector_t& dpsi_v, ValueVector_t& d2psi_v) override
   {
     ScopedTimer local_timer(timer);
 
@@ -286,7 +300,7 @@ struct einspline_spo_omp : public SPOSet
       }
     }
 
-    OMPTinyVector<T, 3> u = Lattice.toUnit_floor(p);
+    OMPTinyVector<T, 3> u = Lattice.toUnit_floor(P.activeR(iat));
 
     T** restrict psi_shadows_ptr          = psi_shadows.data();
     T** restrict grad_shadows_ptr         = grad_shadows.data();
@@ -323,6 +337,22 @@ struct einspline_spo_omp : public SPOSet
                                       grad_shadows_ptr[i],
                                       hess_shadows_ptr[i],
                                       nSplinesPerBlock_local);
+    }
+
+    for (int i = 0; i < nBlocks; ++i)
+    {
+      psi[i].update_from_device();
+      grad[i].update_from_device();
+      hess[i].update_from_device();
+      // in real simulation, phase needs to be applied. Here just fake computation
+      const int first = i*nBlocks;
+      for (int j = first; j < std::min((i+1)*nSplinesPerBlock, OrbitalSetSize); j++)
+      {
+        psi_v[j] = psi[i][j-first];
+        dpsi_v[j] = grad[i][j-first];
+        d2psi_v[j] = hess[i].data(0)[j-first] + hess[i].data(1)[j-first] + hess[i].data(2)[j-first] +
+                     hess[i].data(3)[j-first] + hess[i].data(4)[j-first] + hess[i].data(5)[j-first];
+      }
     }
   }
 
