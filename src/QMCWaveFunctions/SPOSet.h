@@ -12,11 +12,14 @@
 #ifndef QMCPLUSPLUS_SINGLEPARTICLEORBITALSET_H
 #define QMCPLUSPLUS_SINGLEPARTICLEORBITALSET_H
 
-#include <Utilities/Configuration.h>
 #include <string>
+#include "Utilities/Configuration.h"
+#include "Numerics/OhmmsPETE/OhmmsMatrix.h"
+#include "Particle/ParticleSet.h"
 
 namespace qmcplusplus
 {
+
 /** base class for Single-particle orbital sets
  *
  * SPOSet stands for S(ingle)P(article)O(rbital)Set which contains
@@ -24,13 +27,18 @@ namespace qmcplusplus
  */
 class SPOSet : public QMCTraits
 {
-private:
+protected:
   /// number of SPOs
   int OrbitalSetSize;
   /// name of the basis set
   std::string className;
 
 public:
+  using ValueVector_t = Vector<ValueType>;
+  using GradVector_t  = Vector<GradType>;
+  using ValueMatrix_t = Matrix<ValueType>;
+  using GradMatrix_t  = Matrix<GradType>;
+
   /// return the size of the orbital set
   inline int size() const { return OrbitalSetSize; }
 
@@ -43,27 +51,71 @@ public:
   virtual void evaluate_vgl(const PosType& p) = 0;
   virtual void evaluate_vgh(const PosType& p) = 0;
 
-  /// operates on multiple walkers
-  virtual void
-      multi_evaluate_v(const std::vector<SPOSet*>& spo_list, const std::vector<PosType>& pos_list)
+  /** evaluate the values of this single-particle orbital set
+   * @param P current ParticleSet
+   * @param iat active particle
+   * @param psi values of the SPO
+   */
+  virtual void evaluate(const ParticleSet& P, int iat, ValueVector_t& psi_v)
   {
-    #pragma omp parallel for
+    evaluate_v(P.activeR(iat));
+  }
+
+  /** evaluate the values, gradients and laplacians of this single-particle orbital set
+   * @param P current ParticleSet
+   * @param iat active particle
+   * @param psi values of the SPO
+   * @param dpsi gradients of the SPO
+   * @param d2psi laplacians of the SPO
+   */
+  virtual void evaluate(const ParticleSet& P, int iat, ValueVector_t& psi_v, GradVector_t& dpsi_v, ValueVector_t& d2psi_v)
+  {
+    evaluate_vgh(P.activeR(iat));
+  }
+
+  /** evaluate the values, gradients and laplacians of this single-particle orbital for [first,last) particles
+   * @param P current ParticleSet
+   * @param first starting index of the particles
+   * @param last ending index of the particles
+   * @param logdet determinant matrix to be inverted
+   * @param dlogdet gradients
+   * @param d2logdet laplacians
+   *
+   */
+  virtual void evaluate_notranspose(const ParticleSet& P,
+                                    int first,
+                                    int last,
+                                    ValueMatrix_t& logdet,
+                                    GradMatrix_t& dlogdet,
+                                    ValueMatrix_t& d2logdet)
+  {
+    for (int iat = first, i = 0; iat < last; ++iat, ++i)
+    {
+      ValueVector_t v(logdet[i], OrbitalSetSize);
+      GradVector_t g(dlogdet[i], OrbitalSetSize);
+      ValueVector_t l(d2logdet[i], OrbitalSetSize);
+      evaluate(P, iat, v, g, l);
+    }
+  }
+
+  /// operates on multiple walkers
+  virtual void multi_evaluate_v(const std::vector<SPOSet*>& spo_list, const std::vector<PosType>& pos_list)
+  {
+#pragma omp parallel for
     for (int iw = 0; iw < spo_list.size(); iw++)
       spo_list[iw]->evaluate_v(pos_list[iw]);
   }
 
-  virtual void
-      multi_evaluate_vgl(const std::vector<SPOSet*>& spo_list, const std::vector<PosType>& pos_list)
+  virtual void multi_evaluate_vgl(const std::vector<SPOSet*>& spo_list, const std::vector<PosType>& pos_list)
   {
-    #pragma omp parallel for
+#pragma omp parallel for
     for (int iw = 0; iw < spo_list.size(); iw++)
       spo_list[iw]->evaluate_vgl(pos_list[iw]);
   }
 
-  virtual void
-      multi_evaluate_vgh(const std::vector<SPOSet*>& spo_list, const std::vector<PosType>& pos_list)
+  virtual void multi_evaluate_vgh(const std::vector<SPOSet*>& spo_list, const std::vector<PosType>& pos_list)
   {
-    #pragma omp parallel for
+#pragma omp parallel for
     for (int iw = 0; iw < spo_list.size(); iw++)
       spo_list[iw]->evaluate_vgh(pos_list[iw]);
   }

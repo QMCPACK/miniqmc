@@ -16,7 +16,7 @@
  */
 
 #include <QMCWaveFunctions/WaveFunction.h>
-#include <QMCWaveFunctions/DeterminantOMP.h>
+#include <QMCWaveFunctions/DiracDeterminant.h>
 #include <QMCWaveFunctions/DeterminantRef.h>
 #include <QMCWaveFunctions/Jastrow/BsplineFunctor.h>
 #include <QMCWaveFunctions/Jastrow/PolynomialFunctor3D.h>
@@ -46,6 +46,7 @@ void build_WaveFunction(bool useRef,
                         ParticleSet& ions,
                         ParticleSet& els,
                         const RandomGenerator<QMCTraits::RealType>& RNG,
+                        int delay_rank,
                         bool enableJ3)
 {
   using valT = WaveFunction::valT;
@@ -104,7 +105,7 @@ void build_WaveFunction(bool useRef,
     using J1OrbType = OneBodyJastrow<BsplineFunctor<valT>>;
     using J2OrbType = TwoBodyJastrow<BsplineFunctor<valT>>;
     using J3OrbType = ThreeBodyJastrow<PolynomialFunctor3D>;
-    using DetType   = DiracDeterminantOMP;
+    using DetType   = DiracDeterminant<>;
 
     ions.RSoA = ions.R;
     els.RSoA  = els.R;
@@ -115,8 +116,8 @@ void build_WaveFunction(bool useRef,
 
     // determinant component
     WF.nelup  = nelup;
-    WF.Det_up = new DetType(nelup, RNG, 0);
-    WF.Det_dn = new DetType(els.getTotalNum() - nelup, RNG, nelup);
+    WF.Det_up = new DetType(WF.spo, 0, delay_rank);
+    WF.Det_dn = new DetType(WF.spo, nelup, delay_rank);
 
     // J1 component
     J1OrbType* J1 = new J1OrbType(ions, els);
