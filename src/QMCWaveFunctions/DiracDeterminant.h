@@ -120,7 +120,12 @@ public:
 
 private:
   /// Timers
-  NewTimer UpdateTimer, RatioTimer, InverseTimer, BufferTimer, SPOVTimer, SPOVGLTimer;
+  NewTimer* UpdateTimer;
+  NewTimer* RatioTimer;
+  NewTimer* InverseTimer;
+  NewTimer* BufferTimer;
+  NewTimer* SPOVTimer;
+  NewTimer* SPOVGLTimer;
   /// a set of single-particle orbitals used to fill in the  values of the matrix
   SPOSet* const Phi;
   ///index of the first particle with respect to the particle set
@@ -134,22 +139,8 @@ private:
   /// delayed update rank
   int ndelay;
 
-
   ///reset the size: with the number of particles and number of orbtials
   void resize(int nel, int morb);
-
-  /// register all the timers
-  void registerTimers()
-  {
-    UpdateTimer.reset();
-    RatioTimer.reset();
-    TimerManager.addTimer(&UpdateTimer);
-    TimerManager.addTimer(&RatioTimer);
-    TimerManager.addTimer(&InverseTimer);
-    TimerManager.addTimer(&BufferTimer);
-    TimerManager.addTimer(&SPOVTimer);
-    TimerManager.addTimer(&SPOVGLTimer);
-  }
 };
 
 

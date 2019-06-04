@@ -34,24 +34,23 @@ DiracDeterminant<DU_TYPE>::DiracDeterminant(SPOSet* const spos, int first, int d
       LastIndex(first + spos->size()),
       ndelay(delay),
       NumPtcls(spos->size()),
-      NumOrbitals(spos->size()),
-      UpdateTimer("DiracDeterminant::update", timer_level_fine),
-      RatioTimer("DiracDeterminant::ratio", timer_level_fine),
-      InverseTimer("DiracDeterminant::inverse", timer_level_fine),
-      BufferTimer("DiracDeterminant::buffer", timer_level_fine),
-      SPOVTimer("DiracDeterminant::spoval", timer_level_fine),
-      SPOVGLTimer("DiracDeterminant::spovgl", timer_level_fine)
+      NumOrbitals(spos->size())
 {
-  registerTimers();
+  UpdateTimer = TimerManager.createTimer("DiracDeterminant::update", timer_level_fine);
+  RatioTimer = TimerManager.createTimer("DiracDeterminant::ratio", timer_level_fine);
+  InverseTimer = TimerManager.createTimer("DiracDeterminant::inverse", timer_level_fine);
+  BufferTimer = TimerManager.createTimer("DiracDeterminant::buffer", timer_level_fine);
+  SPOVTimer = TimerManager.createTimer("DiracDeterminant::spoval", timer_level_fine);
+  SPOVGLTimer = TimerManager.createTimer("DiracDeterminant::spovgl", timer_level_fine);
   resize(spos->size(), spos->size());
 }
 
 template<typename DU_TYPE>
 void DiracDeterminant<DU_TYPE>::invertPsiM(const ValueMatrix_t& logdetT, ValueMatrix_t& invMat)
 {
-  InverseTimer.start();
+  InverseTimer->start();
   updateEng.invert_transpose(logdetT, invMat, LogValue, PhaseValue);
-  InverseTimer.stop();
+  InverseTimer->stop();
 }
 
 
@@ -81,11 +80,11 @@ template<typename DU_TYPE>
 typename DiracDeterminant<DU_TYPE>::GradType DiracDeterminant<DU_TYPE>::evalGrad(ParticleSet& P, int iat)
 {
   const int WorkingIndex = iat - FirstIndex;
-  RatioTimer.start();
+  RatioTimer->start();
   invRow_id = WorkingIndex;
   updateEng.getInvRow(psiM, WorkingIndex, invRow);
   GradType g = simd::dot(invRow.data(), dpsiM[WorkingIndex], invRow.size());
-  RatioTimer.stop();
+  RatioTimer->stop();
   return g;
 }
 
@@ -94,10 +93,10 @@ typename DiracDeterminant<DU_TYPE>::ValueType DiracDeterminant<DU_TYPE>::ratioGr
                                                                                    int iat,
                                                                                    GradType& grad_iat)
 {
-  SPOVGLTimer.start();
+  SPOVGLTimer->start();
   Phi->evaluate(P, iat, psiV, dpsiV, d2psiV);
-  SPOVGLTimer.stop();
-  RatioTimer.start();
+  SPOVGLTimer->stop();
+  RatioTimer->start();
   const int WorkingIndex = iat - FirstIndex;
   UpdateMode             = ORB_PBYP_PARTIAL;
   GradType rv;
@@ -112,7 +111,7 @@ typename DiracDeterminant<DU_TYPE>::ValueType DiracDeterminant<DU_TYPE>::ratioGr
   }
   curRatio = simd::dot(invRow.data(), psiV.data(), invRow.size());
   grad_iat += ((RealType)1.0 / curRatio) * simd::dot(invRow.data(), dpsiV.data(), invRow.size());
-  RatioTimer.stop();
+  RatioTimer->stop();
   return curRatio;
 }
 
@@ -124,7 +123,7 @@ void DiracDeterminant<DU_TYPE>::acceptMove(ParticleSet& P, int iat)
   const int WorkingIndex = iat - FirstIndex;
   PhaseValue += evaluatePhase(curRatio);
   LogValue += std::log(std::abs(curRatio));
-  UpdateTimer.start();
+  UpdateTimer->start();
   updateEng.acceptRow(psiM, WorkingIndex, psiV);
   // invRow becomes invalid after accepting a move
   invRow_id = -1;
@@ -133,18 +132,18 @@ void DiracDeterminant<DU_TYPE>::acceptMove(ParticleSet& P, int iat)
     simd::copy(dpsiM[WorkingIndex], dpsiV.data(), NumOrbitals);
     simd::copy(d2psiM[WorkingIndex], d2psiV.data(), NumOrbitals);
   }
-  UpdateTimer.stop();
+  UpdateTimer->stop();
   curRatio = 1.0;
 }
 
 template<typename DU_TYPE>
 void DiracDeterminant<DU_TYPE>::completeUpdates()
 {
-  UpdateTimer.start();
+  UpdateTimer->start();
   // invRow becomes invalid after updating the inverse matrix
   invRow_id = -1;
   updateEng.updateInvMat(psiM);
-  UpdateTimer.stop();
+  UpdateTimer->stop();
 }
 
 template<typename DU_TYPE>
@@ -155,9 +154,9 @@ void DiracDeterminant<DU_TYPE>::evaluateGL(ParticleSet& P,
 {
   if (UpdateMode == ORB_PBYP_RATIO)
   { //need to compute dpsiM and d2psiM. Do not touch psiM!
-    SPOVGLTimer.start();
+    SPOVGLTimer->start();
     Phi->evaluate_notranspose(P, FirstIndex, LastIndex, psiM_temp, dpsiM, d2psiM);
-    SPOVGLTimer.stop();
+    SPOVGLTimer->stop();
   }
 
   if (NumPtcls == 1)
@@ -188,10 +187,10 @@ typename DiracDeterminant<DU_TYPE>::ValueType DiracDeterminant<DU_TYPE>::ratio(P
 {
   UpdateMode             = ORB_PBYP_RATIO;
   const int WorkingIndex = iat - FirstIndex;
-  SPOVTimer.start();
+  SPOVTimer->start();
   Phi->evaluate(P, iat, psiV);
-  SPOVTimer.stop();
-  RatioTimer.start();
+  SPOVTimer->stop();
+  RatioTimer->start();
   // This is an optimization.
   // check invRow_id against WorkingIndex to see if getInvRow() has been called
   // This is intended to save redundant compuation in TM1 and TM3
@@ -201,7 +200,7 @@ typename DiracDeterminant<DU_TYPE>::ValueType DiracDeterminant<DU_TYPE>::ratio(P
     updateEng.getInvRow(psiM, WorkingIndex, invRow);
   }
   curRatio = simd::dot(invRow.data(), psiV.data(), invRow.size());
-  RatioTimer.stop();
+  RatioTimer->stop();
   return curRatio;
 }
 
@@ -209,12 +208,12 @@ typename DiracDeterminant<DU_TYPE>::ValueType DiracDeterminant<DU_TYPE>::ratio(P
 template<typename DU_TYPE>
 void DiracDeterminant<DU_TYPE>::evaluateRatios(VirtualParticleSet& VP, std::vector<ValueType>& ratios)
 {
-  SPOVTimer.start();
+  SPOVTimer->start();
   const int WorkingIndex = VP.refPtcl - FirstIndex;
   invRow_id              = WorkingIndex;
   updateEng.getInvRow(psiM, WorkingIndex, invRow);
   Phi->evaluateDetRatios(VP, psiV, invRow, ratios);
-  SPOVTimer.stop();
+  SPOVTimer->stop();
 }
 */
 
@@ -258,9 +257,9 @@ typename DiracDeterminant<DU_TYPE>::RealType DiracDeterminant<DU_TYPE>::evaluate
 template<typename DU_TYPE>
 void DiracDeterminant<DU_TYPE>::recompute(ParticleSet& P)
 {
-  SPOVGLTimer.start();
+  SPOVGLTimer->start();
   Phi->evaluate_notranspose(P, FirstIndex, LastIndex, psiM_temp, dpsiM, d2psiM);
-  SPOVGLTimer.stop();
+  SPOVGLTimer->stop();
   if (NumPtcls == 1)
   {
     //CurrentDet=psiM(0,0);
