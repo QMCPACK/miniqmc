@@ -249,10 +249,10 @@ int main(int argc, char** argv)
       // VMC
       for (int iel = 0; iel < nels; ++iel)
       {
-        PosType pos = els.R[iel] + delta[iel];
-        spo.evaluate_vgh(pos);
+        els.makeMove(iel, delta[iel]);
+        spo.evaluate_vgh(els, iel);
         spo.transfer_vgh_from_device();
-        spo_ref.evaluate_vgh(pos);
+        spo_ref.evaluate_vgh(els, iel);
         // accumulate error
         for (int ib = 0; ib < spo.nBlocks; ib++)
           for (int n = 0; n < spo.nSplinesPerBlock; n++)
@@ -273,7 +273,7 @@ int main(int argc, char** argv)
           }
         if (ur[iel] < accept)
         {
-          els.R[iel] = pos;
+          els.acceptMove(iel);
           my_accepted++;
         }
       }
@@ -289,12 +289,14 @@ int main(int argc, char** argv)
 
         for (int nn = 0; nn < nnF; ++nn)
         {
+          int iel = nn + iat * zval;
           for (int k = 0; k < nknots; k++)
           {
-            PosType pos = centerP + r * rOnSphere[k];
-            spo.evaluate_v(pos);
+            PosType delta_qp = centerP + r * rOnSphere[k] - els.R[iel];
+            els.makeMove(iel, delta_qp);
+            spo.evaluate_v(els, iel);
             spo.transfer_v_from_device();
-            spo_ref.evaluate_v(pos);
+            spo_ref.evaluate_v(els, iel);
             // accumulate error
             for (int ib = 0; ib < spo.nBlocks; ib++)
               for (int n = 0; n < spo.nSplinesPerBlock; n++)

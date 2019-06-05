@@ -156,30 +156,30 @@ struct einspline_spo_ref : public SPOSet
   }
 
   /** evaluate psi */
-  inline void evaluate_v(const PosType& p)
+  inline void evaluate_v(const ParticleSet& P, int iat)
   {
     ScopedTimer local_timer(timer);
 
-    auto u = Lattice.toUnit_floor(p);
+    auto u = Lattice.toUnit_floor(P.activeR(iat));
     for (int i = 0; i < nBlocks; ++i)
       MultiBsplineEvalRef::evaluate_v(einsplines[i], u[0], u[1], u[2], psi[i].data(), nSplinesPerBlock);
   }
 
   /** evaluate psi, grad and lap */
-  inline void evaluate_vgl(const PosType& p)
+  inline void evaluate_vgl(const ParticleSet& P, int iat)
   {
-    auto u = Lattice.toUnit_floor(p);
+    auto u = Lattice.toUnit_floor(P.activeR(iat));
     for (int i = 0; i < nBlocks; ++i)
       MultiBsplineEvalRef::evaluate_vgl(einsplines[i], u[0], u[1], u[2], psi[i].data(), grad[i].data(), hess[i].data(),
                                         nSplinesPerBlock);
   }
 
   /** evaluate psi, grad and hess */
-  inline void evaluate_vgh(const PosType& p)
+  inline void evaluate_vgh(const ParticleSet& P, int iat)
   {
     ScopedTimer local_timer(timer);
 
-    auto u = Lattice.toUnit_floor(p);
+    auto u = Lattice.toUnit_floor(P.activeR(iat));
     for (int i = 0; i < nBlocks; ++i)
       MultiBsplineEvalRef::evaluate_vgh(einsplines[i], u[0], u[1], u[2], psi[i].data(), grad[i].data(), hess[i].data(),
                                         nSplinesPerBlock);

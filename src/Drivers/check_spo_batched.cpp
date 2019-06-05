@@ -232,7 +232,6 @@ int main(int argc, char** argv)
   std::vector<ParticlePos_t> rOnSphere_list(nmovers);
   std::vector<std::vector<RealType>> ur_list(nmovers);
   std::vector<int> my_accepted_list(nmovers), my_vals_list(nmovers);
-  std::vector<PosType> pos_list(nmovers);
   std::vector<SPOSet*> spo_shadows(nmovers);
 
 #pragma omp parallel for
@@ -293,12 +292,12 @@ int main(int argc, char** argv)
       {
         auto& els   = mover_list[iw]->els;
         auto& delta = delta_list[iw];
-        auto& pos   = pos_list[iw];
-        pos         = els.R[iel] + sqrttau * delta[iel];
+        auto pos    = sqrttau * delta[iel];
+        els.makeMove(iel, pos);
       }
 
       Timers[Timer_SPO_vgh]->start();
-      anon_spo->multi_evaluate_vgh(spo_shadows, pos_list);
+      anon_spo->multi_evaluate_vgh(spo_shadows, extract_els_list(mover_list), iel);
       Timers[Timer_SPO_vgh]->stop();
       if (transfer)
         anon_spo->multi_transfer_vgh_from_device(spo_shadows);
@@ -309,13 +308,12 @@ int main(int argc, char** argv)
         auto& mover       = *mover_list[iw];
         auto& spo         = *spo_views[iw];
         auto& spo_ref     = *spo_ref_views[iw];
-        auto& pos         = pos_list[iw];
         auto& els         = mover.els;
         auto& ur          = ur_list[iw];
         auto& my_accepted = my_accepted_list[iw];
         Timers[Timer_SPO_ref_vgh]->start();
         if (transfer)
-          spo_ref.evaluate_vgh(pos);
+          spo_ref.evaluate_vgh(els, iel);
         Timers[Timer_SPO_ref_vgh]->stop();
         // accumulate error
         for (int ib = 0; ib < spo.nBlocks; ib++)
@@ -337,7 +335,7 @@ int main(int argc, char** argv)
           }
         if (ur[iel] > accept)
         {
-          els.R[iel] = pos;
+          els.acceptMove(iel);
           my_accepted++;
         }
       }

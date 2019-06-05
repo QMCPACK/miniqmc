@@ -195,8 +195,7 @@ struct einspline_spo_omp : public SPOSet
   }
 
   /** evaluate psi */
-  inline void evaluate_v(const PosType& p) override {}
-  inline void evaluate(const ParticleSet& P, int iat, ValueVector_t& psi_v) override
+  inline void evaluate_v(const ParticleSet& P, int iat) override
   {
     ScopedTimer local_timer(timer);
 
@@ -250,6 +249,11 @@ struct einspline_spo_omp : public SPOSet
                                     psi_shadows_ptr[i],
                                     nSplinesPerBlock_local);
     }
+  }
+
+  inline void evaluate(const ParticleSet& P, int iat, ValueVector_t& psi_v) override
+  {
+    evaluate_v(P, iat);
 
     for (int i = 0; i < nBlocks; ++i)
     {
@@ -261,17 +265,16 @@ struct einspline_spo_omp : public SPOSet
   }
 
   /** evaluate psi, grad and lap */
-  inline void evaluate_vgl(const PosType& p) override
+  inline void evaluate_vgl(const ParticleSet& P, int iat) override
   {
-    auto u = Lattice.toUnit_floor(p);
+    auto u = Lattice.toUnit_floor(P.activeR(iat));
     for (int i = 0; i < nBlocks; ++i)
       MultiBsplineEval::evaluate_vgl(einsplines[i], u[0], u[1], u[2], psi[i].data(), grad[i].data(), hess[i].data(),
                                      nSplinesPerBlock);
   }
 
   /** evaluate psi, grad and hess */
-  inline void evaluate_vgh(const PosType& p) override {}
-  inline void evaluate(const ParticleSet& P, int iat, ValueVector_t& psi_v, GradVector_t& dpsi_v, ValueVector_t& d2psi_v) override
+  inline void evaluate_vgh(const ParticleSet& P, int iat) override
   {
     ScopedTimer local_timer(timer);
 
@@ -338,6 +341,11 @@ struct einspline_spo_omp : public SPOSet
                                       hess_shadows_ptr[i],
                                       nSplinesPerBlock_local);
     }
+  }
+
+  inline void evaluate(const ParticleSet& P, int iat, ValueVector_t& psi_v, GradVector_t& dpsi_v, ValueVector_t& d2psi_v) override
+  {
+    evaluate_vgh(P, iat);
 
     for (int i = 0; i < nBlocks; ++i)
     {
@@ -374,7 +382,7 @@ struct einspline_spo_omp : public SPOSet
 
   /** evaluate psi, grad and hess of multiple walkers with offload */
   inline void multi_evaluate_vgh(const std::vector<SPOSet*>& spo_list,
-                                 const std::vector<PosType>& p) override
+                                 const std::vector<ParticleSet*>& P_list, int iat) override
   {
     ScopedTimer local_timer(timer);
 
@@ -417,7 +425,7 @@ struct einspline_spo_omp : public SPOSet
 
     u_shadows.resize(nw);
     for (size_t iw = 0; iw < nw; iw++)
-      u_shadows[iw] = Lattice.toUnit_floor(p[iw]);
+      u_shadows[iw] = Lattice.toUnit_floor(P_list[iw]->activeR(iat));
     //std::cout << "mapped already? " << omp_target_is_present(u_shadows.data(),0) << std::endl;
     //u_shadows.update_to_device();
 

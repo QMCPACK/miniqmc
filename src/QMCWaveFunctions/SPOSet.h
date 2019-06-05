@@ -47,9 +47,9 @@ public:
 
   /// operates on a single walker
   /// evaluating SPOs
-  virtual void evaluate_v(const PosType& p)   = 0;
-  virtual void evaluate_vgl(const PosType& p) = 0;
-  virtual void evaluate_vgh(const PosType& p) = 0;
+  virtual void evaluate_v(const ParticleSet& P, int iat)   = 0;
+  virtual void evaluate_vgl(const ParticleSet& P, int iat) = 0;
+  virtual void evaluate_vgh(const ParticleSet& P, int iat) = 0;
 
   /** evaluate the values of this single-particle orbital set
    * @param P current ParticleSet
@@ -58,7 +58,7 @@ public:
    */
   virtual void evaluate(const ParticleSet& P, int iat, ValueVector_t& psi_v)
   {
-    evaluate_v(P.activeR(iat));
+    evaluate_v(P, iat);
   }
 
   /** evaluate the values, gradients and laplacians of this single-particle orbital set
@@ -70,7 +70,7 @@ public:
    */
   virtual void evaluate(const ParticleSet& P, int iat, ValueVector_t& psi_v, GradVector_t& dpsi_v, ValueVector_t& d2psi_v)
   {
-    evaluate_vgh(P.activeR(iat));
+    evaluate_vgh(P, iat);
   }
 
   /** evaluate the values, gradients and laplacians of this single-particle orbital for [first,last) particles
@@ -99,25 +99,25 @@ public:
   }
 
   /// operates on multiple walkers
-  virtual void multi_evaluate_v(const std::vector<SPOSet*>& spo_list, const std::vector<PosType>& pos_list)
+  virtual void multi_evaluate_v(const std::vector<SPOSet*>& spo_list, const std::vector<ParticleSet*>& P_list, int iat)
   {
 #pragma omp parallel for
     for (int iw = 0; iw < spo_list.size(); iw++)
-      spo_list[iw]->evaluate_v(pos_list[iw]);
+      spo_list[iw]->evaluate_v(*P_list[iw], iat);
   }
 
-  virtual void multi_evaluate_vgl(const std::vector<SPOSet*>& spo_list, const std::vector<PosType>& pos_list)
+  virtual void multi_evaluate_vgl(const std::vector<SPOSet*>& spo_list, const std::vector<ParticleSet*>& P_list, int iat)
   {
 #pragma omp parallel for
     for (int iw = 0; iw < spo_list.size(); iw++)
-      spo_list[iw]->evaluate_vgl(pos_list[iw]);
+      spo_list[iw]->evaluate_vgl(*P_list[iw], iat);
   }
 
-  virtual void multi_evaluate_vgh(const std::vector<SPOSet*>& spo_list, const std::vector<PosType>& pos_list)
+  virtual void multi_evaluate_vgh(const std::vector<SPOSet*>& spo_list, const std::vector<ParticleSet*>& P_list, int iat)
   {
 #pragma omp parallel for
     for (int iw = 0; iw < spo_list.size(); iw++)
-      spo_list[iw]->evaluate_vgh(pos_list[iw]);
+      spo_list[iw]->evaluate_vgh(*P_list[iw], iat);
   }
 };
 
