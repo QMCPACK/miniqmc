@@ -41,8 +41,7 @@ class WaveFunction
   using posT     = TinyVector<valT, OHMMS_DIM>;
 
 private:
-  /// single particle orbitals
-  SPOSet* spo;
+  /// Slater determinants
   WaveFunctionComponent* Det_up;
   WaveFunctionComponent* Det_dn;
   /// Jastrow factors
@@ -103,7 +102,6 @@ public:
                                  const RandomGenerator<QMCTraits::RealType>& RNG,
                                  int delay_rank,
                                  bool enableJ3);
-  const std::vector<SPOSet*> extract_spo_list(const std::vector<WaveFunction*>& WF_list) const;
   const std::vector<WaveFunctionComponent*>
       extract_up_list(const std::vector<WaveFunction*>& WF_list) const;
   const std::vector<WaveFunctionComponent*>

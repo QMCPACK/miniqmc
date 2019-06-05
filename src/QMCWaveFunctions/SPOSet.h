@@ -99,26 +99,24 @@ public:
   }
 
   /// operates on multiple walkers
-  virtual void multi_evaluate_v(const std::vector<SPOSet*>& spo_list, const std::vector<ParticleSet*>& P_list, int iat)
+  virtual void multi_evaluate(const std::vector<SPOSet*>& spo_list, const std::vector<ParticleSet*>& P_list, int iat,
+                              std::vector<ValueVector_t*>& psi_v_list)
   {
 #pragma omp parallel for
     for (int iw = 0; iw < spo_list.size(); iw++)
-      spo_list[iw]->evaluate_v(*P_list[iw], iat);
+      spo_list[iw]->evaluate(*P_list[iw], iat, *psi_v_list[iw]);
   }
 
-  virtual void multi_evaluate_vgl(const std::vector<SPOSet*>& spo_list, const std::vector<ParticleSet*>& P_list, int iat)
+  virtual void multi_evaluate(const std::vector<SPOSet*>& spo_list, const std::vector<ParticleSet*>& P_list, int iat,
+                              std::vector<ValueVector_t*>& psi_v_list,
+                              std::vector<GradVector_t*>& dpsi_v_list,
+                              std::vector<ValueVector_t*>& d2psi_v_list)
   {
 #pragma omp parallel for
     for (int iw = 0; iw < spo_list.size(); iw++)
-      spo_list[iw]->evaluate_vgl(*P_list[iw], iat);
+      spo_list[iw]->evaluate(*P_list[iw], iat, *psi_v_list[iw], *dpsi_v_list[iw], *d2psi_v_list[iw]);
   }
 
-  virtual void multi_evaluate_vgh(const std::vector<SPOSet*>& spo_list, const std::vector<ParticleSet*>& P_list, int iat)
-  {
-#pragma omp parallel for
-    for (int iw = 0; iw < spo_list.size(); iw++)
-      spo_list[iw]->evaluate_vgh(*P_list[iw], iat);
-  }
 };
 
 } // namespace qmcplusplus
