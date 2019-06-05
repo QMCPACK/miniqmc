@@ -93,7 +93,6 @@ typename DiracDeterminant<DU_TYPE>::ValueType DiracDeterminant<DU_TYPE>::ratioGr
                                                                                    int iat,
                                                                                    GradType& grad_iat)
 {
-  UpdateMode             = ORB_PBYP_PARTIAL;
   SPOVGLTimer->start();
   Phi->evaluate(P, iat, psiV, dpsiV, d2psiV);
   SPOVGLTimer->stop();
@@ -104,6 +103,7 @@ template<typename DU_TYPE>
 typename DiracDeterminant<DU_TYPE>::ValueType DiracDeterminant<DU_TYPE>::ratioGrad_compute(int iat,
                                                                                            GradType& grad_iat)
 {
+  UpdateMode             = ORB_PBYP_PARTIAL;
   RatioTimer->start();
   const int WorkingIndex = iat - FirstIndex;
   ValueType ratio;

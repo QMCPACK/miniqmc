@@ -459,7 +459,9 @@ int main(int argc, char** argv)
         } // iel
       }   // substeps
 
+      Timers[Timer_Update]->start();
       wavefunction.completeUpdates();
+      Timers[Timer_Update]->stop();
       els.donePbyP();
 
       // evaluate Kinetic Energy
