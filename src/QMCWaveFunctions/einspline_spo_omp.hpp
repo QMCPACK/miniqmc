@@ -346,7 +346,11 @@ struct einspline_spo_omp : public SPOSet
   inline void evaluate(const ParticleSet& P, int iat, ValueVector_t& psi_v, GradVector_t& dpsi_v, ValueVector_t& d2psi_v) override
   {
     evaluate_vgh(P, iat);
+    evaluate_build_vgl(psi_v, dpsi_v, d2psi_v);
+  }
 
+  inline void evaluate_build_vgl(ValueVector_t& psi_v, GradVector_t& dpsi_v, ValueVector_t& d2psi_v)
+  {
     for (int i = 0; i < nBlocks; ++i)
     {
       psi[i].update_from_device();
@@ -382,14 +386,14 @@ struct einspline_spo_omp : public SPOSet
 
   /** evaluate psi, grad and hess of multiple walkers with offload */
   inline void multi_evaluate_vgh(const std::vector<SPOSet*>& spo_list,
-                                 const std::vector<ParticleSet*>& P_list, int iat) override
+                                 const std::vector<ParticleSet*>& P_list, int iat)
   {
     ScopedTimer local_timer(timer);
 
     const size_t nw = spo_list.size();
     std::vector<self_type*> shadows;
     for (int iw = 0; iw < nw; iw++)
-      shadows.push_back(dynamic_cast<self_type*>(spo_list[iw]));
+      shadows.push_back(static_cast<self_type*>(spo_list[iw]));
 
     if (nw * nBlocks != psi_shadows.size())
     {
@@ -476,10 +480,22 @@ struct einspline_spo_omp : public SPOSet
       }
   }
 
+  inline void multi_evaluate(const std::vector<SPOSet*>& spo_list,
+                             const std::vector<ParticleSet*>& P_list,
+                             int iat,
+                             std::vector<ValueVector_t*>& psi_v_list,
+                             std::vector<GradVector_t*>& dpsi_v_list,
+                             std::vector<ValueVector_t*>& d2psi_v_list) override
+  {
+    multi_evaluate_vgh(spo_list, P_list, iat);
+    for (size_t iw = 0; iw < spo_list.size(); iw++)
+      static_cast<self_type*>(spo_list[iw])->evaluate_build_vgl(*psi_v_list[iw], *dpsi_v_list[iw], *d2psi_v_list[iw]);
+  }
+
   void multi_transfer_vgh_from_device(const std::vector<SPOSet*>& spo_list) const
   {
     for (size_t iw = 0; iw < spo_list.size(); iw++)
-      (dynamic_cast<self_type*>(spo_list[iw]))->transfer_vgh_from_device();
+      (static_cast<self_type*>(spo_list[iw]))->transfer_vgh_from_device();
   }
 
   void print(std::ostream& os)
