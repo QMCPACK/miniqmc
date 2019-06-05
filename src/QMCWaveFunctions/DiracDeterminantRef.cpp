@@ -38,12 +38,12 @@ DiracDeterminantRef<DU_TYPE>::DiracDeterminantRef(SPOSet* const spos, int first,
       NumPtcls(spos->size()),
       NumOrbitals(spos->size())
 {
-  UpdateTimer = TimerManager.createTimer("DiracDeterminantRef::update", timer_level_fine);
-  RatioTimer = TimerManager.createTimer("DiracDeterminantRef::ratio", timer_level_fine);
-  InverseTimer = TimerManager.createTimer("DiracDeterminantRef::inverse", timer_level_fine);
-  BufferTimer = TimerManager.createTimer("DiracDeterminantRef::buffer", timer_level_fine);
-  SPOVTimer = TimerManager.createTimer("DiracDeterminantRef::spoval", timer_level_fine);
-  SPOVGLTimer = TimerManager.createTimer("DiracDeterminantRef::spovgl", timer_level_fine);
+  UpdateTimer  = TimerManager.createTimer("DeterminantRef::update", timer_level_fine);
+  RatioTimer   = TimerManager.createTimer("DeterminantRef::ratio", timer_level_fine);
+  InverseTimer = TimerManager.createTimer("DeterminantRef::inverse", timer_level_fine);
+  BufferTimer  = TimerManager.createTimer("DeterminantRef::buffer", timer_level_fine);
+  SPOVTimer    = TimerManager.createTimer("DeterminantRef::spoval", timer_level_fine);
+  SPOVGLTimer  = TimerManager.createTimer("DeterminantRef::spovgl", timer_level_fine);
   resize(spos->size(), spos->size());
 }
 

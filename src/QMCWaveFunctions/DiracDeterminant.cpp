@@ -36,12 +36,12 @@ DiracDeterminant<DU_TYPE>::DiracDeterminant(SPOSet* const spos, int first, int d
       NumPtcls(spos->size()),
       NumOrbitals(spos->size())
 {
-  UpdateTimer = TimerManager.createTimer("DiracDeterminant::update", timer_level_fine);
-  RatioTimer = TimerManager.createTimer("DiracDeterminant::ratio", timer_level_fine);
-  InverseTimer = TimerManager.createTimer("DiracDeterminant::inverse", timer_level_fine);
-  BufferTimer = TimerManager.createTimer("DiracDeterminant::buffer", timer_level_fine);
-  SPOVTimer = TimerManager.createTimer("DiracDeterminant::spoval", timer_level_fine);
-  SPOVGLTimer = TimerManager.createTimer("DiracDeterminant::spovgl", timer_level_fine);
+  UpdateTimer  = TimerManager.createTimer("Determinant::update", timer_level_fine);
+  RatioTimer   = TimerManager.createTimer("Determinant::ratio", timer_level_fine);
+  InverseTimer = TimerManager.createTimer("Determinant::inverse", timer_level_fine);
+  BufferTimer  = TimerManager.createTimer("Determinant::buffer", timer_level_fine);
+  SPOVTimer    = TimerManager.createTimer("Determinant::spoval", timer_level_fine);
+  SPOVGLTimer  = TimerManager.createTimer("Determinant::spovgl", timer_level_fine);
   resize(spos->size(), spos->size());
 }
 
@@ -93,12 +93,20 @@ typename DiracDeterminant<DU_TYPE>::ValueType DiracDeterminant<DU_TYPE>::ratioGr
                                                                                    int iat,
                                                                                    GradType& grad_iat)
 {
+  UpdateMode             = ORB_PBYP_PARTIAL;
   SPOVGLTimer->start();
   Phi->evaluate(P, iat, psiV, dpsiV, d2psiV);
   SPOVGLTimer->stop();
+  return ratioGrad_compute(iat, grad_iat);
+}
+
+template<typename DU_TYPE>
+typename DiracDeterminant<DU_TYPE>::ValueType DiracDeterminant<DU_TYPE>::ratioGrad_compute(int iat,
+                                                                                           GradType& grad_iat)
+{
   RatioTimer->start();
   const int WorkingIndex = iat - FirstIndex;
-  UpdateMode             = ORB_PBYP_PARTIAL;
+  ValueType ratio;
   GradType rv;
 
   // This is an optimization.
@@ -271,6 +279,36 @@ void DiracDeterminant<DU_TYPE>::recompute(ParticleSet& P)
   {
     invertPsiM(psiM_temp, psiM);
   }
+}
+
+template<typename DU_TYPE>
+void DiracDeterminant<DU_TYPE>::multi_ratioGrad(const std::vector<WaveFunctionComponent*>& WFC_list,
+                       const std::vector<ParticleSet*>& P_list,
+                       int iat,
+                       std::vector<ValueType>& ratios,
+                       std::vector<PosType>& grad_new)
+{
+  SPOVGLTimer->start();
+  std::vector<SPOSet*> phi_list; phi_list.reserve(WFC_list.size());
+  std::vector<ValueVector_t*> psi_v_list; psi_v_list.reserve(WFC_list.size());
+  std::vector<GradVector_t*> dpsi_v_list; dpsi_v_list.reserve(WFC_list.size());
+  std::vector<ValueVector_t*> d2psi_v_list; d2psi_v_list.reserve(WFC_list.size());
+
+  for(auto wfc : WFC_list)
+  {
+    auto det = static_cast<DiracDeterminant<DU_TYPE>*>(wfc);
+    phi_list.push_back(det->Phi);
+    psi_v_list.push_back(&(det->psiV));
+    dpsi_v_list.push_back(&(det->dpsiV));
+    d2psi_v_list.push_back(&(det->d2psiV));
+  }
+
+  Phi->multi_evaluate(phi_list, P_list, iat, psi_v_list, dpsi_v_list, d2psi_v_list);
+  SPOVGLTimer->stop();
+
+  //#pragma omp parallel for
+  for (int iw = 0; iw < P_list.size(); iw++)
+    ratios[iw] = static_cast<DiracDeterminant<DU_TYPE>*>(WFC_list[iw])->ratioGrad_compute(iat, grad_new[iw]);
 }
 
 typedef QMCTraits::ValueType ValueType;

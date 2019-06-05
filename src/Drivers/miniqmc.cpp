@@ -459,6 +459,7 @@ int main(int argc, char** argv)
         } // iel
       }   // substeps
 
+      wavefunction.completeUpdates();
       els.donePbyP();
 
       // evaluate Kinetic Energy

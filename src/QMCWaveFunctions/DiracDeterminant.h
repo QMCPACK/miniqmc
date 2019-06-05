@@ -74,6 +74,9 @@ public:
    */
 
   ValueType ratioGrad(ParticleSet& P, int iat, GradType& grad_iat);
+  //helper function, called by ratioGrad and multi_ratioGrad
+  ValueType ratioGrad_compute(int iat, GradType& grad_iat);
+
   GradType evalGrad(ParticleSet& P, int iat);
 
   /** move was accepted, update the real container
@@ -85,6 +88,12 @@ public:
   RealType evaluateLog(ParticleSet& P, ParticleSet::ParticleGradient_t& G, ParticleSet::ParticleLaplacian_t& L);
 
   void recompute(ParticleSet& P);
+
+  void multi_ratioGrad(const std::vector<WaveFunctionComponent*>& WFC_list,
+                       const std::vector<ParticleSet*>& P_list,
+                       int iat,
+                       std::vector<ValueType>& ratios,
+                       std::vector<PosType>& grad_new);
 
   /// psiM(j,i) \f$= \psi_j({\bf r}_i)\f$
   ValueMatrix_t psiM_temp;
@@ -119,6 +128,7 @@ public:
   ValueType curRatio;
 
 private:
+
   /// Timers
   NewTimer* UpdateTimer;
   NewTimer* RatioTimer;
