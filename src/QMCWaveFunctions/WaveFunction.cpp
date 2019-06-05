@@ -193,9 +193,7 @@ void WaveFunction::evaluateLog(ParticleSet& P)
 
 WaveFunction::posT WaveFunction::evalGrad(ParticleSet& P, int iat)
 {
-  timers[Timer_Det]->start();
   posT grad_iat = (iat < nelup ? Det_up->evalGrad(P, iat) : Det_dn->evalGrad(P, iat));
-  timers[Timer_Det]->stop();
 
   for (size_t i = 0; i < Jastrows.size(); i++)
   {
@@ -208,12 +206,8 @@ WaveFunction::posT WaveFunction::evalGrad(ParticleSet& P, int iat)
 
 WaveFunction::valT WaveFunction::ratioGrad(ParticleSet& P, int iat, posT& grad)
 {
-  spo->evaluate_vgh(P, iat);
-
-  timers[Timer_Det]->start();
   grad       = valT(0);
   valT ratio = (iat < nelup ? Det_up->ratioGrad(P, iat, grad) : Det_dn->ratioGrad(P, iat, grad));
-  timers[Timer_Det]->stop();
 
   for (size_t i = 0; i < Jastrows.size(); i++)
   {
@@ -226,11 +220,7 @@ WaveFunction::valT WaveFunction::ratioGrad(ParticleSet& P, int iat, posT& grad)
 
 WaveFunction::valT WaveFunction::ratio(ParticleSet& P, int iat)
 {
-  spo->evaluate_v(P, iat);
-
-  timers[Timer_Det]->start();
   valT ratio = (iat < nelup ? Det_up->ratio(P, iat) : Det_dn->ratio(P, iat));
-  timers[Timer_Det]->stop();
 
   for (size_t i = 0; i < Jastrows.size(); i++)
   {
@@ -243,12 +233,10 @@ WaveFunction::valT WaveFunction::ratio(ParticleSet& P, int iat)
 
 void WaveFunction::acceptMove(ParticleSet& P, int iat)
 {
-  timers[Timer_Det]->start();
   if (iat < nelup)
     Det_up->acceptMove(P, iat);
   else
     Det_dn->acceptMove(P, iat);
-  timers[Timer_Det]->stop();
 
   for (size_t i = 0; i < Jastrows.size(); i++)
   {
