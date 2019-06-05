@@ -186,7 +186,11 @@ void WaveFunction::evaluateLog(ParticleSet& P)
     LogValue = Det_up->evaluateLog(P, P.G, P.L);
     LogValue += Det_dn->evaluateLog(P, P.G, P.L);
     for (size_t i = 0; i < Jastrows.size(); i++)
+    {
+      jastrow_timers[i]->start();
       LogValue += Jastrows[i]->evaluateLog(P, P.G, P.L);
+      jastrow_timers[i]->stop();
+    }
     FirstTime = false;
   }
 }
