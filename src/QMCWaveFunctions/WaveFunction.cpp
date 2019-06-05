@@ -32,12 +32,11 @@ namespace qmcplusplus
 {
 enum WaveFunctionTimers
 {
-  Timer_Det,
   Timer_GL,
 };
 
 TimerNameLevelList_t<WaveFunctionTimers> WaveFunctionTimerNames =
-    {{Timer_Det, "Determinant", timer_level_fine}, {Timer_GL, "Kinetic Energy", timer_level_coarse}};
+    {{Timer_GL, "Kinetic Energy", timer_level_coarse}};
 
 
 void build_WaveFunction(bool useRef,
@@ -263,11 +262,9 @@ void WaveFunction::evaluateGL(ParticleSet& P)
   constexpr valT czero(0);
   P.G = czero;
   P.L = czero;
-  timers[Timer_Det]->start();
   Det_up->evaluateGL(P, P.G, P.L);
   Det_dn->evaluateGL(P, P.G, P.L);
   LogValue = Det_up->LogValue + Det_dn->LogValue;
-  timers[Timer_Det]->stop();
 
   for (size_t i = 0; i < Jastrows.size(); i++)
   {
@@ -296,7 +293,6 @@ void WaveFunction::flex_evaluateLog(const std::vector<WaveFunction*>& WF_list,
       *L_list[iw] = czero;
     }
     // det up/dn
-    timers[Timer_Det]->start();
     std::vector<WaveFunctionComponent*> up_list(extract_up_list(WF_list));
     Det_up->multi_evaluateLog(up_list, P_list, G_list, L_list, LogValues);
     for (int iw = 0; iw < P_list.size(); iw++)
@@ -305,7 +301,6 @@ void WaveFunction::flex_evaluateLog(const std::vector<WaveFunction*>& WF_list,
     Det_dn->multi_evaluateLog(dn_list, P_list, G_list, L_list, LogValues);
     for (int iw = 0; iw < P_list.size(); iw++)
       WF_list[iw]->LogValue += LogValues[iw];
-    timers[Timer_Det]->stop();
     // Jastrow factors
     for (size_t i = 0; i < Jastrows.size(); i++)
     {
@@ -330,7 +325,6 @@ void WaveFunction::flex_evalGrad(const std::vector<WaveFunction*>& WF_list,
 {
   if (P_list.size() > 1)
   {
-    timers[Timer_Det]->start();
     std::vector<posT> grad_now_det(P_list.size());
     if (iat < nelup)
     {
@@ -344,7 +338,6 @@ void WaveFunction::flex_evalGrad(const std::vector<WaveFunction*>& WF_list,
     }
     for (int iw = 0; iw < P_list.size(); iw++)
       grad_now[iw] = grad_now_det[iw];
-    timers[Timer_Det]->stop();
 
     for (size_t i = 0; i < Jastrows.size(); i++)
     {
@@ -369,7 +362,6 @@ void WaveFunction::flex_ratioGrad(const std::vector<WaveFunction*>& WF_list,
 {
   if (P_list.size() > 1)
   {
-    timers[Timer_Det]->start();
     std::vector<valT> ratios_det(P_list.size());
     for (int iw = 0; iw < P_list.size(); iw++)
       grad_new[iw] = valT(0);
@@ -385,7 +377,6 @@ void WaveFunction::flex_ratioGrad(const std::vector<WaveFunction*>& WF_list,
     }
     for (int iw = 0; iw < P_list.size(); iw++)
       ratios[iw] = ratios_det[iw];
-    timers[Timer_Det]->stop();
 
     for (size_t i = 0; i < Jastrows.size(); i++)
     {
@@ -409,7 +400,6 @@ void WaveFunction::flex_acceptrestoreMove(const std::vector<WaveFunction*>& WF_l
 {
   if (P_list.size() > 1)
   {
-    timers[Timer_Det]->start();
     if (iat < nelup)
     {
       std::vector<WaveFunctionComponent*> up_list(extract_up_list(WF_list));
@@ -420,7 +410,6 @@ void WaveFunction::flex_acceptrestoreMove(const std::vector<WaveFunction*>& WF_l
       std::vector<WaveFunctionComponent*> dn_list(extract_dn_list(WF_list));
       Det_dn->multi_acceptrestoreMove(dn_list, P_list, isAccepted, iat);
     }
-    timers[Timer_Det]->stop();
 
     for (size_t i = 0; i < Jastrows.size(); i++)
     {
@@ -439,6 +428,8 @@ void WaveFunction::flex_evaluateGL(const std::vector<WaveFunction*>& WF_list,
 {
   if (P_list.size() > 1)
   {
+    ScopedTimer local_timer(timers[Timer_GL]);
+
     constexpr valT czero(0);
     const std::vector<ParticleSet::ParticleGradient_t*> G_list(extract_G_list(P_list));
     const std::vector<ParticleSet::ParticleLaplacian_t*> L_list(extract_L_list(P_list));

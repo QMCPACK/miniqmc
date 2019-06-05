@@ -504,6 +504,11 @@ int main(int argc, char** argv)
         } // iel
       } // substeps
 
+      Timers[Timer_Update]->start();
+      for (int iw = 0; iw < nw_this_batch; iw++)
+        WF_list[iw]->completeUpdates();
+      Timers[Timer_Update]->stop();
+
       for (int iw = 0; iw < nw_this_batch; iw++)
         Sub_list[iw]->els.donePbyP();
 
