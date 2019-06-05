@@ -86,6 +86,7 @@ struct einspline_spo_ref : public SPOSet
    */
   einspline_spo_ref(const einspline_spo_ref& in, int team_size, int member_id) : Owner(false), Lattice(in.Lattice)
   {
+    OrbitalSetSize   = in.OrbitalSetSize;
     nSplines         = in.nSplines;
     nSplinesPerBlock = in.nSplinesPerBlock;
     nBlocks          = (in.nBlocks + team_size - 1) / team_size;
@@ -124,6 +125,9 @@ struct einspline_spo_ref : public SPOSet
   // fix for general num_splines
   void set(int nx, int ny, int nz, int num_splines, int nblocks, bool init_random = true)
   {
+    // setting OrbitalSetSize to num_splines made artificial only in miniQMC
+    OrbitalSetSize   = num_splines;
+
     nSplines         = num_splines;
     nBlocks          = nblocks;
     nSplinesPerBlock = num_splines / nblocks;
@@ -165,6 +169,18 @@ struct einspline_spo_ref : public SPOSet
       MultiBsplineEvalRef::evaluate_v(einsplines[i], u[0], u[1], u[2], psi[i].data(), nSplinesPerBlock);
   }
 
+  inline void evaluate(const ParticleSet& P, int iat, ValueVector_t& psi_v)
+  {
+    evaluate_v(P, iat);
+
+    for (int i = 0; i < nBlocks; ++i)
+    {
+      // in real simulation, phase needs to be applied. Here just fake computation
+      const int first = i*nBlocks;
+      std::copy_n(psi[i].data(), std::min((i+1)*nSplinesPerBlock, OrbitalSetSize) - first, psi_v.data()+first);
+    }
+  }
+
   /** evaluate psi, grad and lap */
   inline void evaluate_vgl(const ParticleSet& P, int iat)
   {
@@ -183,6 +199,24 @@ struct einspline_spo_ref : public SPOSet
     for (int i = 0; i < nBlocks; ++i)
       MultiBsplineEvalRef::evaluate_vgh(einsplines[i], u[0], u[1], u[2], psi[i].data(), grad[i].data(), hess[i].data(),
                                         nSplinesPerBlock);
+  }
+
+  inline void evaluate(const ParticleSet& P, int iat, ValueVector_t& psi_v, GradVector_t& dpsi_v, ValueVector_t& d2psi_v)
+  {
+    evaluate_vgh(P, iat);
+
+    for (int i = 0; i < nBlocks; ++i)
+    {
+      // in real simulation, phase needs to be applied. Here just fake computation
+      const int first = i*nBlocks;
+      for (int j = first; j < std::min((i+1)*nSplinesPerBlock, OrbitalSetSize); j++)
+      {
+        psi_v[j] = psi[i][j-first];
+        dpsi_v[j] = grad[i][j-first];
+        d2psi_v[j] = hess[i].data(0)[j-first] + hess[i].data(1)[j-first] + hess[i].data(2)[j-first] +
+                     hess[i].data(3)[j-first] + hess[i].data(4)[j-first] + hess[i].data(5)[j-first];
+      }
+    }
   }
 
   void print(std::ostream& os)
