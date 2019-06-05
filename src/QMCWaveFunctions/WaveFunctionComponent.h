@@ -169,6 +169,10 @@ struct WaveFunctionComponent : public QMCTraits
                           ParticleSet::ParticleLaplacian_t& L,
                           bool fromscratch = false) = 0;
 
+  /** complete all the delayed updates, must be called after each substep or step during pbyp move
+   */
+  virtual void completeUpdates(){};
+
   /// operates on multiple walkers
   virtual void multi_evaluateLog(const std::vector<WaveFunctionComponent*>& WFC_list,
                                  const std::vector<ParticleSet*>& P_list,

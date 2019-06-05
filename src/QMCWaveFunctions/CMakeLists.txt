@@ -9,6 +9,8 @@
 #// File created by: Ye Luo, yeluo@anl.gov, Argonne National Laboratory
 #//////////////////////////////////////////////////////////////////////////////////////
 
-ADD_LIBRARY(qmcwfs ../QMCWaveFunctions/WaveFunction.cpp ../QMCWaveFunctions/SPOSet_builder.cpp ../QMCWaveFunctions/DiracDeterminant.cpp)
+ADD_LIBRARY(qmcwfs
+            ../QMCWaveFunctions/WaveFunction.cpp ../QMCWaveFunctions/SPOSet_builder.cpp
+            ../QMCWaveFunctions/DiracDeterminant.cpp ../QMCWaveFunctions/DiracDeterminantRef.cpp)
 
 SUBDIRS(tests)
