@@ -208,7 +208,7 @@ WaveFunction::posT WaveFunction::evalGrad(ParticleSet& P, int iat)
 
 WaveFunction::valT WaveFunction::ratioGrad(ParticleSet& P, int iat, posT& grad)
 {
-  spo->evaluate_vgh(P.activePos);
+  spo->evaluate_vgh(P, iat);
 
   timers[Timer_Det]->start();
   grad       = valT(0);
@@ -226,7 +226,7 @@ WaveFunction::valT WaveFunction::ratioGrad(ParticleSet& P, int iat, posT& grad)
 
 WaveFunction::valT WaveFunction::ratio(ParticleSet& P, int iat)
 {
-  spo->evaluate_v(P.activePos);
+  spo->evaluate_v(P, iat);
 
   timers[Timer_Det]->start();
   valT ratio = (iat < nelup ? Det_up->ratio(P, iat) : Det_dn->ratio(P, iat));
@@ -373,11 +373,8 @@ void WaveFunction::flex_ratioGrad(const std::vector<WaveFunction*>& WF_list,
 {
   if (P_list.size() > 1)
   {
-    std::vector<posT> pos_list(P_list.size());
-    for (int iw = 0; iw < P_list.size(); iw++)
-      pos_list[iw] = P_list[iw]->activePos;
     auto spo_list(extract_spo_list(WF_list));
-    spo->multi_evaluate_vgh(spo_list, pos_list);
+    spo->multi_evaluate_vgh(spo_list, P_list, iat);
 
     timers[Timer_Det]->start();
     std::vector<valT> ratios_det(P_list.size());

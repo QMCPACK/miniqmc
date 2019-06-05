@@ -66,9 +66,9 @@ public:
                                     GradMatrix_t& dlogdet,
                                     ValueMatrix_t& d2logdet);
 
-  void evaluate_v(const PosType& p) {};
-  void evaluate_vgl(const PosType& p) {};
-  void evaluate_vgh(const PosType& p) {};
+  void evaluate_v(const ParticleSet& P, int iat) {};
+  void evaluate_vgl(const ParticleSet& P, int iat) {};
+  void evaluate_vgh(const ParticleSet& P, int iat) {};
 };
 
 FakeSPO::FakeSPO()
