@@ -246,6 +246,12 @@ void WaveFunction::acceptMove(ParticleSet& P, int iat)
   }
 }
 
+void WaveFunction::completeUpdates()
+{
+  Det_up->completeUpdates();
+  Det_dn->completeUpdates();
+}
+
 void WaveFunction::restore(int iat) {}
 
 void WaveFunction::evaluateGL(ParticleSet& P)

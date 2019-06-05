@@ -66,6 +66,7 @@ public:
   valT ratio(ParticleSet& P, int iat);
   void acceptMove(ParticleSet& P, int iat);
   void restore(int iat);
+  void completeUpdates();
   void evaluateGL(ParticleSet& P);
 
   /// operates on multiple walkers
