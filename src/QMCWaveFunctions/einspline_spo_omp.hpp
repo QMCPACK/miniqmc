@@ -321,9 +321,8 @@ struct einspline_spo_omp : public SPOSet
       for (int j = first; j < std::min((i+1)*nSplinesPerBlock, OrbitalSetSize); j++)
       {
         psi_v[j] = psi_grad_hess[i].data(0)[j-first];
-        dpsi_v[j] = psi_grad_hess[i].data(1)[j-first];
-        d2psi_v[j] = psi_grad_hess[i].data(4)[j-first] + psi_grad_hess[i].data(5)[j-first] + psi_grad_hess[i].data(6)[j-first] +
-                     psi_grad_hess[i].data(7)[j-first] + psi_grad_hess[i].data(8)[j-first] + psi_grad_hess[i].data(9)[j-first];
+        dpsi_v[j] = GradType(psi_grad_hess[i].data(1)[j-first], psi_grad_hess[i].data(2)[j-first], psi_grad_hess[i].data(3)[j-first]);
+        d2psi_v[j] = psi_grad_hess[i].data(4)[j-first];
       }
     }
   }
