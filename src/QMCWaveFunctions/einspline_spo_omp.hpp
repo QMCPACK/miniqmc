@@ -195,7 +195,7 @@ struct einspline_spo_omp : public SPOSet
   }
 
   /** evaluate psi */
-  inline void evaluate_v(const ParticleSet& P, int iat) override
+  inline void evaluate_v(const ParticleSet& P, int iat)
   {
     ScopedTimer local_timer(timer);
 
@@ -265,7 +265,7 @@ struct einspline_spo_omp : public SPOSet
   }
 
   /** evaluate psi, grad and lap */
-  inline void evaluate_vgl(const ParticleSet& P, int iat) override
+  inline void evaluate_vgl(const ParticleSet& P, int iat)
   {
     auto u = Lattice.toUnit_floor(P.activeR(iat));
     for (int i = 0; i < nBlocks; ++i)
@@ -274,7 +274,7 @@ struct einspline_spo_omp : public SPOSet
   }
 
   /** evaluate psi, grad and hess */
-  inline void evaluate_vgh(const ParticleSet& P, int iat) override
+  inline void evaluate_vgh(const ParticleSet& P, int iat)
   {
     ScopedTimer local_timer(timer);
 
