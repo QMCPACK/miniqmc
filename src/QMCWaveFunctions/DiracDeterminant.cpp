@@ -282,6 +282,17 @@ void DiracDeterminant<DU_TYPE>::recompute(ParticleSet& P)
 }
 
 template<typename DU_TYPE>
+void DiracDeterminant<DU_TYPE>::multi_evaluateLog(const std::vector<WaveFunctionComponent*>& WFC_list,
+                                 const std::vector<ParticleSet*>& P_list,
+                                 const std::vector<ParticleSet::ParticleGradient_t*>& G_list,
+                                 const std::vector<ParticleSet::ParticleLaplacian_t*>& L_list,
+                                 ParticleSet::ParticleValue_t& values)
+{
+  for (int iw = 0; iw < P_list.size(); iw++)
+    values[iw] = WFC_list[iw]->evaluateLog(*P_list[iw], *G_list[iw], *L_list[iw]);
+};
+
+template<typename DU_TYPE>
 void DiracDeterminant<DU_TYPE>::multi_ratioGrad(const std::vector<WaveFunctionComponent*>& WFC_list,
                        const std::vector<ParticleSet*>& P_list,
                        int iat,
@@ -310,6 +321,18 @@ void DiracDeterminant<DU_TYPE>::multi_ratioGrad(const std::vector<WaveFunctionCo
   for (int iw = 0; iw < P_list.size(); iw++)
     ratios[iw] = static_cast<DiracDeterminant<DU_TYPE>*>(WFC_list[iw])->ratioGrad_compute(iat, grad_new[iw]);
 }
+
+template<typename DU_TYPE>
+void DiracDeterminant<DU_TYPE>::multi_acceptrestoreMove(const std::vector<WaveFunctionComponent*>& WFC_list,
+                                       const std::vector<ParticleSet*>& P_list,
+                                       const std::vector<bool>& isAccepted,
+                                       int iat)
+{
+  for (int iw = 0; iw < P_list.size(); iw++)
+    if (isAccepted[iw])
+      WFC_list[iw]->acceptMove(*P_list[iw], iat);
+};
+
 
 typedef QMCTraits::ValueType ValueType;
 typedef QMCTraits::QTFull::ValueType mValueType;
