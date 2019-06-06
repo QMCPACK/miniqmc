@@ -61,39 +61,50 @@ public:
   void evaluateGL(ParticleSet& P,
                   ParticleSet::ParticleGradient_t& G,
                   ParticleSet::ParticleLaplacian_t& L,
-                  bool fromscratch = false);
+                  bool fromscratch = false) override;
 
   /** return the ratio only for the  iat-th partcle move
    * @param P current configuration
    * @param iat the particle thas is being moved
    */
-  ValueType ratio(ParticleSet& P, int iat);
+  ValueType ratio(ParticleSet& P, int iat) override;
 
   /** compute multiple ratios for a particle move
   void evaluateRatios(VirtualParticleSet& VP, std::vector<ValueType>& ratios);
    */
 
-  ValueType ratioGrad(ParticleSet& P, int iat, GradType& grad_iat);
+  ValueType ratioGrad(ParticleSet& P, int iat, GradType& grad_iat) override;
   //helper function, called by ratioGrad and multi_ratioGrad
   ValueType ratioGrad_compute(int iat, GradType& grad_iat);
 
-  GradType evalGrad(ParticleSet& P, int iat);
+  GradType evalGrad(ParticleSet& P, int iat) override;
 
   /** move was accepted, update the real container
    */
-  void acceptMove(ParticleSet& P, int iat);
-  void completeUpdates();
+  void acceptMove(ParticleSet& P, int iat) override;
+  void completeUpdates() override;
 
   ///evaluate log of a determinant for a particle set
-  RealType evaluateLog(ParticleSet& P, ParticleSet::ParticleGradient_t& G, ParticleSet::ParticleLaplacian_t& L);
+  RealType evaluateLog(ParticleSet& P, ParticleSet::ParticleGradient_t& G, ParticleSet::ParticleLaplacian_t& L) override;
 
   void recompute(ParticleSet& P);
+
+  void multi_evaluateLog(const std::vector<WaveFunctionComponent*>& WFC_list,
+                         const std::vector<ParticleSet*>& P_list,
+                         const std::vector<ParticleSet::ParticleGradient_t*>& G_list,
+                         const std::vector<ParticleSet::ParticleLaplacian_t*>& L_list,
+                         ParticleSet::ParticleValue_t& values) override;
 
   void multi_ratioGrad(const std::vector<WaveFunctionComponent*>& WFC_list,
                        const std::vector<ParticleSet*>& P_list,
                        int iat,
                        std::vector<ValueType>& ratios,
-                       std::vector<PosType>& grad_new);
+                       std::vector<PosType>& grad_new) override;
+
+  void multi_acceptrestoreMove(const std::vector<WaveFunctionComponent*>& WFC_list,
+                               const std::vector<ParticleSet*>& P_list,
+                               const std::vector<bool>& isAccepted,
+                               int iat) override;
 
   /// psiM(j,i) \f$= \psi_j({\bf r}_i)\f$
   ValueMatrix_t psiM_temp;
