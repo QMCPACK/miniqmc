@@ -70,7 +70,7 @@ echo checking Determinant update full precision
 echo ----------------------------------------------------
 echo
 
-./bin/check_determinant
+./bin/check_wfc -f Det
 
 echo ""
 echo ""
@@ -120,7 +120,7 @@ echo checking Determinant update mixed precision
 echo ----------------------------------------------------
 echo
 
-./bin/check_determinant
+./bin/check_wfc -f Det
 
 EOF
 
