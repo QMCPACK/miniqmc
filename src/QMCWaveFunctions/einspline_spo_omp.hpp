@@ -313,7 +313,6 @@ struct einspline_spo_omp : public SPOSet
   {
     for (int i = 0; i < nBlocks; ++i)
     {
-      psi_grad_hess[i].update_from_device();
       // in real simulation, phase needs to be applied. Here just fake computation
       const int first = i*nBlocks;
       auto* restrict psi_grad_hess_ptr = psi_grad_hess[i].data();
