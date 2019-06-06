@@ -57,11 +57,10 @@ void print_help()
 {
   // clang-format off
   app_summary() << "usage:" << '\n';
-  app_summary() << "  check_spo [-fhvV] [-g \"n0 n1 n2\"] [-m meshfactor]"       << '\n';
+  app_summary() << "  check_spo [-hvV] [-g \"n0 n1 n2\"] [-m meshfactor]"        << '\n';
   app_summary() << "            [-n steps] [-r rmax] [-s seed]"                  << '\n';
   app_summary() << "options:"                                                    << '\n';
   app_summary() << "  -g  set the 3D tiling.             default: 1 1 1"         << '\n';
-  app_summary() << "  -f  results are not transfered back"                       << '\n';
   app_summary() << "  -h  print help and exit"                                   << '\n';
   app_summary() << "  -m  meshfactor                     default: 1.0"           << '\n';
   app_summary() << "  -n  number of MC steps             default: 5"             << '\n';
@@ -96,7 +95,6 @@ int main(int argc, char** argv)
   RealType Rmax(1.7);
   int nx = 37, ny = 37, nz = 37;
   int tileSize  = -1;
-  bool transfer = true;
   bool verbose  = false;
 
   if (!comm.root())
@@ -107,7 +105,7 @@ int main(int argc, char** argv)
   int opt;
   while (optind < argc)
   {
-    if ((opt = getopt(argc, argv, "fhvVa:g:m:n:r:s:w:")) != -1)
+    if ((opt = getopt(argc, argv, "hvVa:g:m:n:r:s:w:")) != -1)
     {
       switch (opt)
       {
@@ -116,10 +114,6 @@ int main(int argc, char** argv)
         break;
       case 'g': // tiling1 tiling2 tiling3
         sscanf(optarg, "%d %d %d", &na, &nb, &nc);
-        break;
-      case 'f': // forward only, no transfer back to host
-        printf("Results are not transferred back. Checking report should be ignored.\n");
-        transfer = false;
         break;
       case 'h':
         print_help();
@@ -299,8 +293,6 @@ int main(int argc, char** argv)
       Timers[Timer_SPO_vgh]->start();
       anon_spo->multi_evaluate_vgh(spo_shadows, extract_els_list(mover_list), iel);
       Timers[Timer_SPO_vgh]->stop();
-      if (transfer)
-        anon_spo->multi_transfer_vgh_from_device(spo_shadows);
 
 #pragma omp parallel for reduction(+ : evalVGH_v_err, evalVGH_g_err, evalVGH_h_err)
       for (size_t iw = 0; iw < mover_list.size(); iw++)
@@ -312,26 +304,25 @@ int main(int argc, char** argv)
         auto& ur          = ur_list[iw];
         auto& my_accepted = my_accepted_list[iw];
         Timers[Timer_SPO_ref_vgh]->start();
-        if (transfer)
-          spo_ref.evaluate_vgh(els, iel);
+        spo_ref.evaluate_vgh(els, iel);
         Timers[Timer_SPO_ref_vgh]->stop();
         // accumulate error
         for (int ib = 0; ib < spo.nBlocks; ib++)
           for (int n = 0; n < spo.nSplinesPerBlock; n++)
           {
             // value
-            evalVGH_v_err += std::fabs(spo.psi[ib][n] - spo_ref.psi[ib][n]);
+            evalVGH_v_err += std::fabs(spo.psi_grad_hess[ib].data(0)[n] - spo_ref.psi[ib][n]);
             // grad
-            evalVGH_g_err += std::fabs(spo.grad[ib].data(0)[n] - spo_ref.grad[ib].data(0)[n]);
-            evalVGH_g_err += std::fabs(spo.grad[ib].data(1)[n] - spo_ref.grad[ib].data(1)[n]);
-            evalVGH_g_err += std::fabs(spo.grad[ib].data(2)[n] - spo_ref.grad[ib].data(2)[n]);
+            evalVGH_g_err += std::fabs(spo.psi_grad_hess[ib].data(1)[n] - spo_ref.grad[ib].data(0)[n]);
+            evalVGH_g_err += std::fabs(spo.psi_grad_hess[ib].data(2)[n] - spo_ref.grad[ib].data(1)[n]);
+            evalVGH_g_err += std::fabs(spo.psi_grad_hess[ib].data(3)[n] - spo_ref.grad[ib].data(2)[n]);
             // hess
-            evalVGH_h_err += std::fabs(spo.hess[ib].data(0)[n] - spo_ref.hess[ib].data(0)[n]);
-            evalVGH_h_err += std::fabs(spo.hess[ib].data(1)[n] - spo_ref.hess[ib].data(1)[n]);
-            evalVGH_h_err += std::fabs(spo.hess[ib].data(2)[n] - spo_ref.hess[ib].data(2)[n]);
-            evalVGH_h_err += std::fabs(spo.hess[ib].data(3)[n] - spo_ref.hess[ib].data(3)[n]);
-            evalVGH_h_err += std::fabs(spo.hess[ib].data(4)[n] - spo_ref.hess[ib].data(4)[n]);
-            evalVGH_h_err += std::fabs(spo.hess[ib].data(5)[n] - spo_ref.hess[ib].data(5)[n]);
+            evalVGH_h_err += std::fabs(spo.psi_grad_hess[ib].data(4)[n] - spo_ref.hess[ib].data(0)[n]);
+            evalVGH_h_err += std::fabs(spo.psi_grad_hess[ib].data(5)[n] - spo_ref.hess[ib].data(1)[n]);
+            evalVGH_h_err += std::fabs(spo.psi_grad_hess[ib].data(6)[n] - spo_ref.hess[ib].data(2)[n]);
+            evalVGH_h_err += std::fabs(spo.psi_grad_hess[ib].data(7)[n] - spo_ref.hess[ib].data(3)[n]);
+            evalVGH_h_err += std::fabs(spo.psi_grad_hess[ib].data(8)[n] - spo_ref.hess[ib].data(4)[n]);
+            evalVGH_h_err += std::fabs(spo.psi_grad_hess[ib].data(9)[n] - spo_ref.hess[ib].data(5)[n]);
           }
         if (ur[iel] > accept)
         {

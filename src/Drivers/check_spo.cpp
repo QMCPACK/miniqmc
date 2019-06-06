@@ -251,25 +251,24 @@ int main(int argc, char** argv)
       {
         els.makeMove(iel, delta[iel]);
         spo.evaluate_vgh(els, iel);
-        spo.transfer_vgh_from_device();
         spo_ref.evaluate_vgh(els, iel);
         // accumulate error
         for (int ib = 0; ib < spo.nBlocks; ib++)
           for (int n = 0; n < spo.nSplinesPerBlock; n++)
           {
             // value
-            evalVGH_v_err += std::fabs(spo.psi[ib][n] - spo_ref.psi[ib][n]);
+            evalVGH_v_err += std::fabs(spo.psi_grad_hess[ib].data(0)[n] - spo_ref.psi[ib][n]);
             // grad
-            evalVGH_g_err += std::fabs(spo.grad[ib].data(0)[n] - spo_ref.grad[ib].data(0)[n]);
-            evalVGH_g_err += std::fabs(spo.grad[ib].data(1)[n] - spo_ref.grad[ib].data(1)[n]);
-            evalVGH_g_err += std::fabs(spo.grad[ib].data(2)[n] - spo_ref.grad[ib].data(2)[n]);
+            evalVGH_g_err += std::fabs(spo.psi_grad_hess[ib].data(1)[n] - spo_ref.grad[ib].data(0)[n]);
+            evalVGH_g_err += std::fabs(spo.psi_grad_hess[ib].data(2)[n] - spo_ref.grad[ib].data(1)[n]);
+            evalVGH_g_err += std::fabs(spo.psi_grad_hess[ib].data(3)[n] - spo_ref.grad[ib].data(2)[n]);
             // hess
-            evalVGH_h_err += std::fabs(spo.hess[ib].data(0)[n] - spo_ref.hess[ib].data(0)[n]);
-            evalVGH_h_err += std::fabs(spo.hess[ib].data(1)[n] - spo_ref.hess[ib].data(1)[n]);
-            evalVGH_h_err += std::fabs(spo.hess[ib].data(2)[n] - spo_ref.hess[ib].data(2)[n]);
-            evalVGH_h_err += std::fabs(spo.hess[ib].data(3)[n] - spo_ref.hess[ib].data(3)[n]);
-            evalVGH_h_err += std::fabs(spo.hess[ib].data(4)[n] - spo_ref.hess[ib].data(4)[n]);
-            evalVGH_h_err += std::fabs(spo.hess[ib].data(5)[n] - spo_ref.hess[ib].data(5)[n]);
+            evalVGH_h_err += std::fabs(spo.psi_grad_hess[ib].data(4)[n] - spo_ref.hess[ib].data(0)[n]);
+            evalVGH_h_err += std::fabs(spo.psi_grad_hess[ib].data(5)[n] - spo_ref.hess[ib].data(1)[n]);
+            evalVGH_h_err += std::fabs(spo.psi_grad_hess[ib].data(6)[n] - spo_ref.hess[ib].data(2)[n]);
+            evalVGH_h_err += std::fabs(spo.psi_grad_hess[ib].data(7)[n] - spo_ref.hess[ib].data(3)[n]);
+            evalVGH_h_err += std::fabs(spo.psi_grad_hess[ib].data(8)[n] - spo_ref.hess[ib].data(4)[n]);
+            evalVGH_h_err += std::fabs(spo.psi_grad_hess[ib].data(9)[n] - spo_ref.hess[ib].data(5)[n]);
           }
         if (ur[iel] < accept)
         {
@@ -295,12 +294,11 @@ int main(int argc, char** argv)
             PosType delta_qp = centerP + r * rOnSphere[k] - els.R[iel];
             els.makeMove(iel, delta_qp);
             spo.evaluate_v(els, iel);
-            spo.transfer_v_from_device();
             spo_ref.evaluate_v(els, iel);
             // accumulate error
             for (int ib = 0; ib < spo.nBlocks; ib++)
               for (int n = 0; n < spo.nSplinesPerBlock; n++)
-                evalV_v_err += std::fabs(spo.psi[ib][n] - spo_ref.psi[ib][n]);
+                evalV_v_err += std::fabs(spo.psi_grad_hess[ib].data(0)[n] - spo_ref.psi[ib][n]);
           }
         } // els
       }   // ions

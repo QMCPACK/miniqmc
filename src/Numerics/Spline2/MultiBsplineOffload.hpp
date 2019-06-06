@@ -63,7 +63,7 @@ inline void evaluate_v_v2(const typename bspline_traits<T, 3>::SplineType* restr
                                            int ix, int iy, int iz,
                                            const T a[4], const T b[4], const T c[4],
                                            T *restrict vals,
-                                           size_t num_splines)
+                                           int first, int last)
 {
   const intptr_t xs = spline_m->x_stride;
   const intptr_t ys = spline_m->y_stride;
@@ -74,14 +74,14 @@ inline void evaluate_v_v2(const typename bspline_traits<T, 3>::SplineType* restr
 #else
   #pragma omp simd aligned(vals)
 #endif
-  for (size_t n = 0; n < num_splines; n++)
+  for (size_t n = 0; n < last - first; n++)
   {
     T val = T();
     for (size_t i = 0; i < 4; i++)
       for (size_t j = 0; j < 4; j++)
         {
           const T *restrict coefs =
-            spline_m->coefs + (ix + i) * xs + (iy + j) * ys + iz * zs;
+            spline_m->coefs + (ix + i) * xs + (iy + j) * ys + iz * zs + first;
           val += a[i] * b[j] * 
             (c[0] * coefs[n] + c[1] * coefs[n + zs] +
              c[2] * coefs[n + 2 * zs] + c[3] * coefs[n + 3 * zs]);
@@ -292,9 +292,10 @@ evaluate_vgh_v2(const typename bspline_traits<T, 3>::SplineType* restrict spline
                                  const T a[4], const T b[4], const T c[4],
                                  const T da[4], const T db[4], const T dc[4],
                                  const T d2a[4], const T d2b[4], const T d2c[4],
-                                 T *restrict vals,
-                                 T *restrict grads, T *restrict hess,
-                                 size_t num_splines)
+                                 T *restrict val_grad_hess,
+                                 size_t out_offset,
+                                 const int first,
+                                 const int last)
 {
   const intptr_t xs = spline_m->x_stride;
   const intptr_t ys = spline_m->y_stride;
@@ -305,7 +306,7 @@ evaluate_vgh_v2(const typename bspline_traits<T, 3>::SplineType* restrict spline
 #else
   #pragma omp simd aligned(vals,grads,hess)
 #endif
-  for (int n = 0; n < num_splines; n++)
+  for (int n = 0; n < last - first; n++)
   {
     T val = T();
     T  gx = T();
@@ -322,7 +323,7 @@ evaluate_vgh_v2(const typename bspline_traits<T, 3>::SplineType* restrict spline
       for (int j = 0; j < 4; j++)
       {
         const T *restrict coefs =
-            spline_m->coefs + (ix + i) * xs + (iy + j) * ys + iz * zs;
+            spline_m->coefs + (ix + i) * xs + (iy + j) * ys + iz * zs + first;
         const T *restrict coefszs  = coefs + zs;
         const T *restrict coefs2zs = coefs + 2 * zs;
         const T *restrict coefs3zs = coefs + 3 * zs;
@@ -358,22 +359,21 @@ evaluate_vgh_v2(const typename bspline_traits<T, 3>::SplineType* restrict spline
         val += pre00 * sum0;
       }
 
-    vals[n] = val;
+    val_grad_hess[n] = val;
 
     const T dxInv = spline_m->x_grid.delta_inv;
     const T dyInv = spline_m->y_grid.delta_inv;
     const T dzInv = spline_m->z_grid.delta_inv;
-    const size_t out_offset = spline_m->num_splines;
 
-    grads[n]                  = gx * dxInv;
-    grads[n + out_offset]     = gy * dyInv;
-    grads[n + 2 * out_offset] = gz * dzInv;
-    hess[n]                   = hxx * dxInv * dxInv;
-    hess[n + out_offset]      = hxy * dxInv * dyInv;
-    hess[n + 2 * out_offset]  = hxz * dxInv * dzInv;
-    hess[n + 3 * out_offset]  = hyy * dyInv * dyInv;
-    hess[n + 4 * out_offset]  = hyz * dyInv * dzInv;
-    hess[n + 5 * out_offset]  = hzz * dzInv * dzInv;
+    val_grad_hess[n + 1 * out_offset] = gx * dxInv;
+    val_grad_hess[n + 2 * out_offset] = gy * dyInv;
+    val_grad_hess[n + 3 * out_offset] = gz * dzInv;
+    val_grad_hess[n + 4 * out_offset] = hxx * dxInv * dxInv;
+    val_grad_hess[n + 5 * out_offset] = hxy * dxInv * dyInv;
+    val_grad_hess[n + 6 * out_offset] = hxz * dxInv * dzInv;
+    val_grad_hess[n + 7 * out_offset] = hyy * dyInv * dyInv;
+    val_grad_hess[n + 8 * out_offset] = hyz * dyInv * dzInv;
+    val_grad_hess[n + 9 * out_offset] = hzz * dzInv * dzInv;
   }
 }
 
