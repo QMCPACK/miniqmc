@@ -46,20 +46,12 @@ public:
   virtual ~SPOSet() {}
 
   /// operates on a single walker
-  /// evaluating SPOs
-  virtual void evaluate_v(const ParticleSet& P, int iat)   = 0;
-  virtual void evaluate_vgl(const ParticleSet& P, int iat) = 0;
-  virtual void evaluate_vgh(const ParticleSet& P, int iat) = 0;
-
   /** evaluate the values of this single-particle orbital set
    * @param P current ParticleSet
    * @param iat active particle
    * @param psi values of the SPO
    */
-  virtual void evaluate(const ParticleSet& P, int iat, ValueVector_t& psi_v)
-  {
-    evaluate_v(P, iat);
-  }
+  virtual void evaluate(const ParticleSet& P, int iat, ValueVector_t& psi_v) = 0;
 
   /** evaluate the values, gradients and laplacians of this single-particle orbital set
    * @param P current ParticleSet
@@ -68,10 +60,7 @@ public:
    * @param dpsi gradients of the SPO
    * @param d2psi laplacians of the SPO
    */
-  virtual void evaluate(const ParticleSet& P, int iat, ValueVector_t& psi_v, GradVector_t& dpsi_v, ValueVector_t& d2psi_v)
-  {
-    evaluate_vgh(P, iat);
-  }
+  virtual void evaluate(const ParticleSet& P, int iat, ValueVector_t& psi_v, GradVector_t& dpsi_v, ValueVector_t& d2psi_v) = 0;
 
   /** evaluate the values, gradients and laplacians of this single-particle orbital for [first,last) particles
    * @param P current ParticleSet
