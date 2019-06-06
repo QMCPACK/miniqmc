@@ -212,8 +212,7 @@ struct einspline_spo : public SPOSet
       {
         psi_v[j] = psi[i][j-first];
         dpsi_v[j] = grad[i][j-first];
-        d2psi_v[j] = hess[i].data(0)[j-first] + hess[i].data(1)[j-first] + hess[i].data(2)[j-first] +
-                     hess[i].data(3)[j-first] + hess[i].data(4)[j-first] + hess[i].data(5)[j-first];
+        d2psi_v[j] = hess[i].data(0)[j-first];
       }
     }
   }
