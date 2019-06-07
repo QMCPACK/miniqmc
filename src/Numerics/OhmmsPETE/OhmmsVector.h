@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////////////////
-// This file is distributed under the University of Illinois/NCSA Open Source
-// License. See LICENSE file in top directory for details.
+// This file is distributed under the University of Illinois/NCSA Open Source License.
+// See LICENSE file in top directory for details.
 //
 // Copyright (c) 2016 Jeongnim Kim and QMCPACK developers.
 //
@@ -10,29 +10,31 @@
 // File created by: Jeongnim Kim, jeongnim.kim@intel.com, Intel Corp.
 //////////////////////////////////////////////////////////////////////////////////////
 
+
 /** @file Vector.h
  *
  *  Declaraton of Vector<T,Alloc>
- *  Manage memory through Alloc directly and allow referencing an existing
- * memory.
+ *  Manage memory through Alloc directly and allow referencing an existing memory.
  */
 
 #ifndef OHMMS_NEW_VECTOR_H
 #define OHMMS_NEW_VECTOR_H
-#include "Numerics/PETE/PETE.h"
 #include <algorithm>
 #include <vector>
 #include <iostream>
 #include <type_traits>
 #include <stdexcept>
+#include "Numerics/PETE/PETE.h"
+#include "Utilities/SIMD/MemorySpace.hpp"
 
 namespace qmcplusplus
 {
-template<class T, typename Alloc = std::allocator<T>>
+template<class T, typename Alloc = std::allocator<T>, unsigned MemType = MemorySpace::HOST>
 class Vector
 {
 public:
   typedef T Type_t;
+  typedef T value_type;
   typedef T* iterator;
   typedef const T* const_iterator;
   typedef typename Alloc::size_type size_type;
@@ -46,7 +48,8 @@ public:
     if (n)
     {
       resize_impl(n);
-      std::fill_n(X, n, val);
+      if (MemType == MemorySpace::HOST)
+        std::fill_n(X, n, val);
     }
   }
 
@@ -57,14 +60,18 @@ public:
   Vector(const Vector& rhs) : nLocal(rhs.nLocal), nAllocated(0), X(nullptr)
   {
     resize_impl(rhs.nLocal);
-    std::copy_n(rhs.data(), nLocal, X);
+    if (MemType == MemorySpace::HOST)
+      std::copy_n(rhs.data(), nLocal, X);
   }
 
   // default assignment operator
   inline Vector& operator=(const Vector& rhs)
   {
-    if (this == &rhs) return *this;
-    if (nLocal != rhs.nLocal) resize(rhs.nLocal);
+    static_assert(MemType == MemorySpace::HOST, "Vector::operator= MemType must be MemorySpace::HOST");
+    if (this == &rhs)
+      return *this;
+    if (nLocal != rhs.nLocal)
+      resize(rhs.nLocal);
     std::copy_n(rhs.data(), nLocal, X);
     return *this;
   }
@@ -73,9 +80,12 @@ public:
   template<typename T1, typename C1>
   inline Vector& operator=(const Vector<T1, C1>& rhs)
   {
+    static_assert(MemType == MemorySpace::HOST,
+                  "Vector::operator= the MemType of both sides must be MemorySpace::HOST");
     if (std::is_convertible<T1, T>::value)
     {
-      if (nLocal != rhs.nLocal) resize(rhs.nLocal);
+      if (nLocal != rhs.nLocal)
+        resize(rhs.nLocal);
       std::copy_n(rhs.data(), nLocal, X);
     }
     return *this;
@@ -85,6 +95,7 @@ public:
   template<class RHS>
   inline Vector& operator=(const RHS& rhs)
   {
+    static_assert(MemType == MemorySpace::HOST, "Vector::operator= MemType must be MemorySpace::HOST");
     assign(*this, rhs);
     return *this;
   }
@@ -92,7 +103,10 @@ public:
   //! Destructor
   virtual ~Vector()
   {
-    if (nAllocated) { mAllocator.deallocate(X, nAllocated); }
+    if (nAllocated)
+    {
+      mAllocator.deallocate(X, nAllocated);
+    }
   }
 
   // Attach to pre-allocated memory
@@ -108,19 +122,22 @@ public:
   //! return the current size
   inline size_t size() const { return nLocal; }
 
-  /// resize
+  ///resize
   inline void resize(size_t n, Type_t val = Type_t())
   {
+    static_assert(std::is_same<value_type, typename Alloc::value_type>::value, "Vector and Alloc data types must agree!");
     if (nLocal > nAllocated)
       throw std::runtime_error("Resize not allowed on Vector constructed by initialized memory.");
     if (n > nAllocated)
     {
       resize_impl(n);
-      std::fill_n(X, n, val);
+      if (MemType == MemorySpace::HOST)
+        std::fill_n(X, n, val);
     }
     else if (n > nLocal)
     {
-      std::fill_n(X + nLocal, n - nLocal, val);
+      if (MemType == MemorySpace::HOST)
+        std::fill_n(X + nLocal, n - nLocal, val);
       nLocal = n;
     }
     else
@@ -128,29 +145,40 @@ public:
     return;
   }
 
-  /// clear
+  ///clear
   inline void clear() { nLocal = 0; }
 
-  /// free
+  ///free
   inline void free()
   {
-    if (nAllocated) { mAllocator.deallocate(X, nAllocated); }
+    if (nAllocated)
+    {
+      mAllocator.deallocate(X, nAllocated);
+    }
     nLocal     = 0;
     nAllocated = 0;
     X          = nullptr;
   }
 
   // Get and Set Operations
-  inline Type_t& operator[](size_t i) { return X[i]; }
+  inline Type_t& operator[](size_t i)
+  {
+    static_assert(MemType == MemorySpace::HOST, "Vector::operator[] MemType must be MemorySpace::HOST");
+    return X[i];
+  }
 
-  inline const Type_t& operator[](size_t i) const { return X[i]; }
+  inline const Type_t& operator[](size_t i) const
+  {
+    static_assert(MemType == MemorySpace::HOST, "Vector::operator[] MemType must be MemorySpace::HOST");
+    return X[i];
+  }
 
-  // inline Type_t& operator()(size_t i)
+  //inline Type_t& operator()(size_t i)
   //{
   //  return X[i];
   //}
 
-  // inline Type_t operator()( size_t i) const
+  //inline Type_t operator()( size_t i) const
   //{
   //  return X[i];
   //}
@@ -171,18 +199,21 @@ public:
   inline const_pointer last_address() const { return X + nLocal; }
 
 private:
-  /// size
+  ///size
   size_t nLocal;
-  /// The number of allocated
+  ///The number of allocated
   size_t nAllocated;
-  /// pointer to the data managed by this object
+  ///pointer to the data managed by this object
   T* X;
-  /// allocator
+  ///allocator
   Alloc mAllocator;
 
   inline void resize_impl(size_t n)
   {
-    if (nAllocated) { mAllocator.deallocate(X, nAllocated); }
+    if (nAllocated)
+    {
+      mAllocator.deallocate(X, nAllocated);
+    }
     X          = mAllocator.allocate(n);
     nLocal     = n;
     nAllocated = n;
@@ -276,8 +307,7 @@ inline void evaluate(Vector<T, C>& lhs, const Op& op, const Expression<RHS>& rhs
   }
   else
   {
-    std::cerr << "Error: LHS and RHS don't conform in OhmmsVector." << std::endl;
-    abort();
+    throw std::runtime_error("Error in evaluate: LHS and RHS don't conform in OhmmsVector.");
   }
 }
 // I/O
@@ -292,7 +322,7 @@ std::ostream& operator<<(std::ostream& out, const Vector<T, C>& rhs)
 template<class T, class C>
 std::istream& operator>>(std::istream& is, Vector<T, C>& rhs)
 {
-  // printTinyVector<TinyVector<T,D> >::print(out,rhs);
+  //printTinyVector<TinyVector<T,D> >::print(out,rhs);
   for (int i = 0; i < rhs.size(); i++)
     is >> rhs[i];
   return is;

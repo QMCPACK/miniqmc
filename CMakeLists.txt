@@ -262,6 +262,8 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
     INCLUDE(${PROJECT_CMAKE}/GNUCompilers.cmake)
   ELSEIF( ${COMPILER} MATCHES "Clang" )
     INCLUDE(${PROJECT_CMAKE}/ClangCompilers.cmake)
+  ELSEIF( ${COMPILER} MATCHES "PGI" )
+    INCLUDE(${PROJECT_CMAKE}/PGICompilers.cmake)
   ELSE()
     MESSAGE(WARNING "No default file for compiler (${COMPILER})")
   ENDIF()
@@ -404,8 +406,6 @@ IF ( HAVE_MPI )
   MESSAGE(STATUS "MPI runner is ${MPIEXEC}")
 ENDIF(HAVE_MPI)
 
-MESSAGE(STATUS "CXX compiler flags: ${CMAKE_CXX_FLAGS}")
-
 INCLUDE(${CMAKE_ROOT}/Modules/FindThreads.cmake)
 
 ####################################################################
@@ -485,6 +485,11 @@ if(CMAKE_CXX_LINKER)
 endif()
 
 ###################################################
+# external codes includes
+###################################################
+INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/external_codes/catch)
+
+###################################################
 # Add user extra flags
 ###################################################
 IF(QMC_INCLUDE)
@@ -507,11 +512,31 @@ IF(ENABLE_GCOV)
 MESSAGE(STATUS "GCOV is enabled")
 ENDIF()
 
+############################################################
+# FLAGS at the project level
+############################################################
+#this might be redundant but maybe not in all CMake versions.
+STRING(TOUPPER "${CMAKE_BUILD_TYPE}" THIS_CONFIG)
+
+SET(PROJECT_CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+#pre 3.0 cmake does not have string CONCAT
+SET(TMP_PROJECT_CMAKE_CXX_FLAGS "${PROJECT_CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${THIS_CONFIG}}")
+MESSAGE("Project CXX_FLAGS: ${TMP_PROJECT_CMAKE_CXX_FLAGS}")
+
+get_directory_property(TMP_PROJECT_INCLUDE_DIRECTORIES INCLUDE_DIRECTORIES)
+MESSAGE("Project INCLUDE_DIRECTORIES: ${TMP_PROJECT_INCLUDE_DIRECTORIES}")
+
+FOREACH(target_type IN ITEMS EXE SHARED)
+  SET(PROJECT_CMAKE_${target_type}_LINKER_FLAGS ${CMAKE_${target_type}_LINKER_FLAGS})
+  SET(TMP_PROJECT_CMAKE_${target_type}_LINKER_FLAGS "${PROJECT_CMAKE_${target_type}_LINKER_FLAGS} ${CMAKE_${target_type}_LINKER_FLAGS_${THIS_CONFIG}}")
+  MESSAGE("Project ${target_type}_LINKER_FLAGS: ${TMP_PROJECT_CMAKE_${target_type}_LINKER_FLAGS}")
+ENDFOREACH(target_type IN ITEMS EXE SHARED)
+
 ###################################################
-# Done searching libraries. Start building qmcpack
+# Done searching libraries. Start building miniQMC
 ###################################################
 
-MESSAGE(STATUS "Ready to build qmcpack")
+MESSAGE(STATUS "Ready to build miniQMC")
 
 ####################################################################
 # add definitions
@@ -519,7 +544,7 @@ MESSAGE(STATUS "Ready to build qmcpack")
 #  -DMPICH_SKIP_MPICXX : disable C++ binding of MPICH
 ####################################################################
 
-ADD_DEFINITIONS(-DHAVE_CONFIG_H -DH5_USE_16_API -DUSE_REAL_STRUCT_FACTOR -DINLINE_ALL=inline -DADD_)
+ADD_DEFINITIONS(-DHAVE_CONFIG_H -DH5_USE_16_API -DADD_)
 
 if(HAVE_MPI)
   ADD_DEFINITIONS(-DMPICH_SKIP_MPICXX)

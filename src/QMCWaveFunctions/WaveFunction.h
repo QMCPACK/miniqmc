@@ -41,8 +41,7 @@ class WaveFunction
   using posT     = TinyVector<valT, OHMMS_DIM>;
 
 private:
-  /// single particle orbitals
-  SPOSet* spo;
+  /// Slater determinants
   WaveFunctionComponent* Det_up;
   WaveFunctionComponent* Det_dn;
   /// Jastrow factors
@@ -66,6 +65,7 @@ public:
   valT ratio(ParticleSet& P, int iat);
   void acceptMove(ParticleSet& P, int iat);
   void restore(int iat);
+  void completeUpdates();
   void evaluateGL(ParticleSet& P);
 
   /// operates on multiple walkers
@@ -100,8 +100,8 @@ public:
                                  ParticleSet& ions,
                                  ParticleSet& els,
                                  const RandomGenerator<QMCTraits::RealType>& RNG,
+                                 int delay_rank,
                                  bool enableJ3);
-  const std::vector<SPOSet*> extract_spo_list(const std::vector<WaveFunction*>& WF_list) const;
   const std::vector<WaveFunctionComponent*>
       extract_up_list(const std::vector<WaveFunction*>& WF_list) const;
   const std::vector<WaveFunctionComponent*>
@@ -116,6 +116,7 @@ void build_WaveFunction(bool useRef,
                         ParticleSet& ions,
                         ParticleSet& els,
                         const RandomGenerator<QMCTraits::RealType>& RNG,
+                        int delay_rank,
                         bool enableJ3);
 } // namespace qmcplusplus
 

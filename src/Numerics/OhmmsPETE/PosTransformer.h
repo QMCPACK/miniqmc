@@ -35,7 +35,9 @@ void PosAoS2SoA(int nrows, int ncols, const T1* restrict iptr, int lda, T2* rest
   T2* restrict x = out;
   T2* restrict y = out + ldb;
   T2* restrict z = out + 2 * ldb;
+#if !defined(__ibmxl__)
 #pragma omp simd aligned(x, y, z)
+#endif
   for (int i = 0; i < nrows; ++i)
   {
     x[i] = iptr[i * ncols];     // x[i]=in[i][0];
@@ -60,7 +62,9 @@ void PosSoA2AoS(int nrows, int ncols, const T1* restrict iptr, int lda, T2* rest
   const T1* restrict x = iptr;
   const T1* restrict y = iptr + lda;
   const T1* restrict z = iptr + 2 * lda;
+#if !defined(__ibmxl__)
 #pragma omp simd aligned(x, y, z)
+#endif
   for (int i = 0; i < nrows; ++i)
   {
     out[i * ldb]     = x[i]; // out[i][0]=x[i];

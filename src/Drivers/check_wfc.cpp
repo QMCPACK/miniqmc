@@ -36,6 +36,9 @@
 #include <QMCWaveFunctions/Jastrow/OneBodyJastrow.h>
 #include <QMCWaveFunctions/Jastrow/TwoBodyJastrowRef.h>
 #include <QMCWaveFunctions/Jastrow/TwoBodyJastrow.h>
+#include <QMCWaveFunctions/SPOSet_builder.h>
+#include <QMCWaveFunctions/DiracDeterminantRef.h>
+#include <QMCWaveFunctions/DiracDeterminant.h>
 #include <Utilities/qmcpack_version.h>
 #include <getopt.h>
 
@@ -50,7 +53,7 @@ void print_help()
   cout << "            [-r rmax] [-s seed]"                             << '\n';
   cout << "options:"                                                    << '\n';
   cout << "  -f  specify wavefunction component to check"               << '\n';
-  cout << "      one of: J1, J2, J3.            default: J2"            << '\n';
+  cout << "      one of: J1, J2, J3, Det.       default: J2"            << '\n';
   cout << "  -g  set the 3D tiling.             default: 1 1 1"         << '\n';
   cout << "  -h  print help and exit"                                   << '\n';
   cout << "  -r  set the Rmax.                  default: 1.7"           << '\n';
@@ -128,7 +131,7 @@ int main(int argc, char** argv)
   else
     outputManager.setVerbosity(Verbosity::LOW);
 
-  if (wfc_name != "J1" && wfc_name != "J2" && wfc_name != "J3" && wfc_name != "JeeI")
+  if (wfc_name != "J1" && wfc_name != "J2" && wfc_name != "J3" && wfc_name != "JeeI" && wfc_name != "Det")
   {
     cerr << "Uknown wave funciton component:  " << wfc_name << endl << endl;
     print_help();
@@ -153,6 +156,14 @@ int main(int argc, char** argv)
   double ratio_err         = 0.0;
 
   PrimeNumberSet<uint32_t> myPrimes;
+
+  SPOSet* spo_main = nullptr;
+  {
+    ParticleSet els;
+    RandomGenerator<RealType> random_th(myPrimes[0]);
+    build_els(els, ions, random_th);
+    if (wfc_name == "Det") spo_main = build_SPOSet(false, 40, 40, 40, els.getTotalNum(), 1, lattice_b);
+  }
 
 // clang-format off
   #pragma omp parallel reduction(+:evaluateLog_v_err,evaluateLog_g_err,evaluateLog_l_err,evalGrad_g_err) \
@@ -187,6 +198,7 @@ int main(int argc, char** argv)
 
     WaveFunctionComponentPtr wfc     = nullptr;
     WaveFunctionComponentPtr wfc_ref = nullptr;
+
     if (wfc_name == "J2")
     {
       TwoBodyJastrow<BsplineFunctor<RealType>>* J = new TwoBodyJastrow<BsplineFunctor<RealType>>(els);
@@ -223,6 +235,17 @@ int main(int argc, char** argv)
       buildJeeI(*J_ref, els.Lattice.WignerSeitzRadius);
       wfc_ref = dynamic_cast<WaveFunctionComponentPtr>(J_ref);
       cout << "Built JeeI_ref" << endl;
+    }
+    else if (wfc_name == "Det")
+    {
+      SPOSet* spo = build_SPOSet_view(false, spo_main, 1, 0);
+      auto* Det = new DiracDeterminant<>(spo, 0, 31);
+      wfc = dynamic_cast<WaveFunctionComponentPtr>(Det);
+      cout << "Built Det" << endl;
+      SPOSet* spo_ref = build_SPOSet_view(false, spo_main, 1, 0);
+      auto* Det_ref = new miniqmcreference::DiracDeterminantRef<>(spo_ref, 0, 31);
+      wfc_ref = dynamic_cast<WaveFunctionComponentPtr>(Det_ref);
+      cout << "Built Det_ref" << endl;
     }
 
     constexpr RealType czero(0);
@@ -310,6 +333,10 @@ int main(int argc, char** argv)
           els_ref.rejectMove(iel);
         }
       }
+
+      wfc->completeUpdates();
+      wfc_ref->completeUpdates();
+
       cout << "Accepted " << naccepted << "/" << nels << endl;
       cout << "evalGrad::G      Error = " << g_eval / nels << endl;
       cout << "ratioGrad::G     Error = " << g_ratio / nels << endl;
@@ -382,8 +409,9 @@ int main(int argc, char** argv)
     }
   } // end of omp parallel
 
-  int np                   = omp_get_max_threads();
-  constexpr RealType small = std::numeric_limits<RealType>::epsilon() * 1e4;
+  int np = omp_get_max_threads();
+  const RealType small = std::numeric_limits<RealType>::epsilon() * ( wfc_name == "Det" ? 1e8 : 1e4 );
+  std::cout << "Tolerance " << small << std::endl;
   bool fail                = false;
   cout << std::endl;
   if (evaluateLog_v_err / np > small)
