@@ -4,7 +4,7 @@ BUILD_DIR=$(pwd)
 echo $BUILD_DIR
 
 cat > $BUILD_TAG.pbs << EOF
-#PBS -A MAT151
+#PBS -A MAT151ci
 #PBS -N $BUILD_TAG
 #PBS -j oe
 #PBS -l walltime=1:00:00,nodes=1
@@ -70,7 +70,7 @@ echo checking Determinant update full precision
 echo ----------------------------------------------------
 echo
 
-./bin/check_determinant
+./bin/check_wfc -f Det
 
 echo ""
 echo ""
@@ -120,7 +120,7 @@ echo checking Determinant update mixed precision
 echo ----------------------------------------------------
 echo
 
-./bin/check_determinant
+./bin/check_wfc -f Det
 
 EOF
 

@@ -16,6 +16,7 @@
 #include "Utilities/Configuration.h"
 #include "Numerics/OhmmsPETE/OhmmsMatrix.h"
 #include "Particle/ParticleSet.h"
+#include "Particle/VirtualParticleSet.h"
 
 namespace qmcplusplus
 {
@@ -61,6 +62,25 @@ public:
    * @param d2psi laplacians of the SPO
    */
   virtual void evaluate(const ParticleSet& P, int iat, ValueVector_t& psi_v, GradVector_t& dpsi_v, ValueVector_t& d2psi_v) = 0;
+
+  /** evaluate determinant ratios for virtual moves, e.g., sphere move for nonlocalPP
+   * @param VP virtual particle set
+   * @param psi values of the SPO, used as a scratch space if needed
+   * @param psiinv the row of inverse slater matrix corresponding to the particle moved virtually
+   * @param ratios return determinant ratios
+   */
+  virtual void evaluateDetRatios(const VirtualParticleSet& VP,
+                                 ValueVector_t& psi,
+                                 const ValueVector_t& psiinv,
+                                 std::vector<ValueType>& ratios)
+  {
+    assert(psi.size() == psiinv.size());
+    for (int iat = 0; iat < VP.getTotalNum(); ++iat)
+    {
+      evaluate(VP, iat, psi);
+      ratios[iat] = simd::dot(psi.data(), psiinv.data(), psi.size());
+    }
+  }
 
   /** evaluate the values, gradients and laplacians of this single-particle orbital for [first,last) particles
    * @param P current ParticleSet

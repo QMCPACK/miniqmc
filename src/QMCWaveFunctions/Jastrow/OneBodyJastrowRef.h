@@ -133,6 +133,12 @@ struct OneBodyJastrowRef : public WaveFunctionComponent
     return std::exp(Vat[iat] - curAt);
   }
 
+  inline void evaluateRatios(VirtualParticleSet& VP, std::vector<ValueType>& ratios)
+  {
+    for (int k = 0; k < ratios.size(); ++k)
+      ratios[k] = std::exp(Vat[VP.refPtcl] - computeU(VP.DistTables[myTableID]->Distances[k]));
+  }
+
   inline valT computeU(const valT* dist)
   {
     valT curVat(0);

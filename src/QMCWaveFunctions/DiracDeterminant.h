@@ -70,8 +70,8 @@ public:
   ValueType ratio(ParticleSet& P, int iat) override;
 
   /** compute multiple ratios for a particle move
-  void evaluateRatios(VirtualParticleSet& VP, std::vector<ValueType>& ratios);
    */
+  void evaluateRatios(VirtualParticleSet& VP, std::vector<ValueType>& ratios) override;
 
   ValueType ratioGrad(ParticleSet& P, int iat, GradType& grad_iat) override;
   //helper function, called by ratioGrad and multi_ratioGrad

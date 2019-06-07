@@ -66,6 +66,13 @@ struct MCDataType
   T LivingFraction;
 };
 
+enum DistanceTimers
+{
+  Timer_makeMove,
+  Timer_setActive,
+  Timer_acceptMove
+};
+
 /** Specialized paritlce class for atomistic simulations
  *
  * Derived from QMCTraits, ParticleBase<PtclOnLatticeTraits> and

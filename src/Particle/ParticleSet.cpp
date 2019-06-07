@@ -42,12 +42,6 @@
 
 namespace qmcplusplus
 {
-enum DistanceTimers
-{
-  Timer_makeMove,
-  Timer_setActive,
-  Timer_acceptMove
-};
 
 TimerNameList_t<DistanceTimers> DistanceTimerNames{
     {Timer_makeMove, "Make move"},
