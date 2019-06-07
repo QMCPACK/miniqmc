@@ -33,10 +33,12 @@ namespace qmcplusplus
 enum WaveFunctionTimers
 {
   Timer_GL,
+  Timer_CompleteUpdates,
 };
 
 TimerNameLevelList_t<WaveFunctionTimers> WaveFunctionTimerNames =
-    {{Timer_GL, "Kinetic Energy", timer_level_coarse}};
+    {{Timer_GL, "Kinetic Energy", timer_level_coarse},
+     {Timer_CompleteUpdates, "Complete Updates", timer_level_coarse}};
 
 
 void build_WaveFunction(bool useRef,
@@ -249,6 +251,7 @@ void WaveFunction::acceptMove(ParticleSet& P, int iat)
 
 void WaveFunction::completeUpdates()
 {
+  ScopedTimer local_timer(timers[Timer_CompleteUpdates]);
   Det_up->completeUpdates();
   Det_dn->completeUpdates();
 }
@@ -459,6 +462,21 @@ void WaveFunction::flex_evaluateGL(const std::vector<WaveFunction*>& WF_list,
   }
   else if(P_list.size()==1)
     WF_list[0]->evaluateGL(*P_list[0]);
+}
+
+void WaveFunction::flex_completeUpdates(const std::vector<WaveFunction*>& WF_list) const
+{
+  if (WF_list.size() > 1)
+  {
+    ScopedTimer local_timer(timers[Timer_CompleteUpdates]);
+
+    std::vector<WaveFunctionComponent*> up_list(extract_up_list(WF_list));
+    Det_up->multi_completeUpdates(up_list);
+    std::vector<WaveFunctionComponent*> dn_list(extract_dn_list(WF_list));
+    Det_dn->multi_completeUpdates(dn_list);
+  }
+  else if(WF_list.size()==1)
+    WF_list[0]->completeUpdates();
 }
 
 const std::vector<WaveFunctionComponent*> WaveFunction::extract_up_list(const std::vector<WaveFunction*>& WF_list) const

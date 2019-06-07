@@ -236,6 +236,13 @@ struct WaveFunctionComponent : public QMCTraits
     for (int iw = 0; iw < P_list.size(); iw++)
       WFC_list[iw]->evaluateGL(*P_list[iw], *G_list[iw], *L_list[iw], fromscratch);
   };
+
+  virtual void multi_completeUpdates(const std::vector<WaveFunctionComponent*>& WFC_list)
+  {
+    #pragma omp parallel for
+    for (int iw = 0; iw < WFC_list.size(); iw++)
+      WFC_list[iw]->completeUpdates();
+  }
 };
 } // namespace qmcplusplus
 #endif
