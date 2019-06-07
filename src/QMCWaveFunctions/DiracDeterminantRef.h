@@ -63,28 +63,28 @@ public:
   void evaluateGL(ParticleSet& P,
                   ParticleSet::ParticleGradient_t& G,
                   ParticleSet::ParticleLaplacian_t& L,
-                  bool fromscratch = false);
+                  bool fromscratch = false) override;
 
   /** return the ratio only for the  iat-th partcle move
    * @param P current configuration
    * @param iat the particle thas is being moved
    */
-  ValueType ratio(ParticleSet& P, int iat);
+  ValueType ratio(ParticleSet& P, int iat) override;
 
   /** compute multiple ratios for a particle move
    */
   void evaluateRatios(VirtualParticleSet& VP, std::vector<ValueType>& ratios) override;
 
-  ValueType ratioGrad(ParticleSet& P, int iat, GradType& grad_iat);
-  GradType evalGrad(ParticleSet& P, int iat);
+  ValueType ratioGrad(ParticleSet& P, int iat, GradType& grad_iat) override;
+  GradType evalGrad(ParticleSet& P, int iat) override;
 
   /** move was accepted, update the real container
    */
-  void acceptMove(ParticleSet& P, int iat);
-  void completeUpdates();
+  void acceptMove(ParticleSet& P, int iat) override;
+  void completeUpdates() override;
 
   ///evaluate log of a determinant for a particle set
-  RealType evaluateLog(ParticleSet& P, ParticleSet::ParticleGradient_t& G, ParticleSet::ParticleLaplacian_t& L);
+  RealType evaluateLog(ParticleSet& P, ParticleSet::ParticleGradient_t& G, ParticleSet::ParticleLaplacian_t& L) override;
 
   void recompute(ParticleSet& P);
 
