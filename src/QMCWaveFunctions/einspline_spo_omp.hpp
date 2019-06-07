@@ -301,15 +301,13 @@ struct einspline_spo_omp : public SPOSet
           auto* restrict offload_scratch_iVP_ptr = offload_scratch_ptr + padded_size * iVP;
 
           int ix, iy, iz;
-          T a[4], b[4], c[4], da[4], db[4], dc[4], d2a[4], d2b[4], d2c[4];
+          T a[4], b[4], c[4];
           spline2::computeLocationAndFractional(spline_m,
                                                 pos_scratch_ptr[iVP*3  ],
                                                 pos_scratch_ptr[iVP*3+1],
                                                 pos_scratch_ptr[iVP*3+2],
                                                 ix, iy, iz,
-                                                a, b, c,
-                                                da, db, dc,
-                                                d2a, d2b, d2c);
+                                                a, b, c);
           T sum(0);
           PRAGMA_OFFLOAD("omp parallel")
           {
