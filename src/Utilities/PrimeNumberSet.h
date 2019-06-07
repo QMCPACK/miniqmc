@@ -151,7 +151,7 @@ struct PrimeNumberSet : public PrimeConstants<UIntType>
       std::ostringstream o;
       o << "  PrimeNumberSet::get Failed to generate " << n2add << " prime numbers among " << n
         << " requested.";
-      throw std::runtime_error(o);
+      throw std::runtime_error(o.str());
     }
     primes_add.insert(primes_add.end(), primes.begin() + offset, primes.begin() + offset + n);
     return true;
