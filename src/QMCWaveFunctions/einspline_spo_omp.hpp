@@ -41,7 +41,6 @@ struct einspline_spo_omp : public SPOSet
   using spline_type     = typename bspline_traits<T, 3>::SplineType;
   using OffloadAlignedAllocator = OMPallocator<T, Mallocator<T, QMC_CLINE>>;
   using OMPMatrix_type = Matrix<T, OffloadAlignedAllocator>;
-  using OMPVector_type = Vector<T, OffloadAlignedAllocator>;
   using lattice_type    = CrystalLattice<T, 3>;
 
   /// number of blocks
@@ -61,6 +60,9 @@ struct einspline_spo_omp : public SPOSet
   BsplineAllocator<T> myAllocator;
 
   Vector<spline_type*, OMPallocator<spline_type*>> einsplines;
+  ///thread private ratios for reduction when using nested threading, numVP x numThread
+  std::vector<OMPMatrix_type> ratios_private;
+  ///offload scratch space, dynamically resized to the maximal need
   std::vector<OMPMatrix_type> offload_scratch;
 
   // for shadows
@@ -124,6 +126,7 @@ struct einspline_spo_omp : public SPOSet
   /// resize the containers
   void resize()
   {
+    ratios_private.resize(nBlocks);
     offload_scratch.resize(nBlocks);
     for (int i = 0; i < nBlocks; ++i)
     {
@@ -240,6 +243,92 @@ struct einspline_spo_omp : public SPOSet
       // in real simulation, phase needs to be applied. Here just fake computation
       const int first = i*nBlocks;
       std::copy_n(offload_scratch[i].data(), std::min((i+1)*nSplinesPerBlock, OrbitalSetSize) - first, psi_v.data()+first);
+    }
+  }
+
+  void evaluateDetRatios(const VirtualParticleSet& VP,
+                         ValueVector_t& psi,
+                         const ValueVector_t& psiinv,
+                         std::vector<ValueType>& ratios) override
+  {
+    ScopedTimer local_timer(timer);
+
+    // pack particle positions
+    const int nVP = VP.getTotalNum();
+    for (int iVP = 0; iVP < nVP; ++iVP)
+      ratios[iVP] = ValueType(0);
+    pos_scratch.resize(nVP * 3);
+    for (int iVP = 0; iVP < nVP; ++iVP)
+    {
+      auto ru(Lattice.toUnit_floor(VP.activeR(iVP)));
+      pos_scratch[iVP * 3]     = ru[0];
+      pos_scratch[iVP * 3 + 1] = ru[1];
+      pos_scratch[iVP * 3 + 2] = ru[2];
+    }
+    auto* pos_scratch_ptr = pos_scratch.data();
+
+    auto nBlocks_local = nBlocks;
+    auto nSplinesPerBlock_local = nSplinesPerBlock;
+
+    const int ChunkSizePerTeam = 128;
+    const int NumTeams         = (nSplinesPerBlock + ChunkSizePerTeam - 1) / ChunkSizePerTeam;
+    for (int i = 0; i < nBlocks; ++i)
+    {
+      const auto* restrict spline_m = einsplines[i];
+      if (ratios_private[i].size() < NumTeams * nVP)
+        ratios_private[i].resize(nVP, NumTeams);
+      int padded_size = getAlignedSize<T>(nSplinesPerBlock);
+      if (offload_scratch[i].rows() < nVP)
+        offload_scratch[i].resize(nVP, padded_size);
+
+      auto* restrict offload_scratch_ptr = offload_scratch[i].data();
+      auto* restrict ratios_private_ptr  = ratios_private[i].data();
+      auto* restrict psiinv_ptr          = psiinv.data() + i*nSplinesPerBlock;
+      const int actual_block_size = std::min(nSplinesPerBlock, OrbitalSetSize - i*nSplinesPerBlock);
+
+#ifdef ENABLE_OFFLOAD
+      #pragma omp target teams distribute collapse(2) num_teams(nVP*NumTeams) thread_limit(ChunkSizePerTeam) \
+        map(always, to : pos_scratch_ptr[:pos_scratch.size()], psiinv_ptr[:actual_block_size]) \
+        map(always, from: ratios_private_ptr[0:NumTeams*nVP])
+#else
+      //#pragma omp parallel for
+#endif
+      for (size_t iVP = 0; iVP < nVP; iVP++)
+        for (int team_id = 0; team_id < NumTeams; team_id++)
+        {
+          const int first = ChunkSizePerTeam * team_id;
+          const int last  = (first + ChunkSizePerTeam) > nSplinesPerBlock_local ? nSplinesPerBlock_local : first + ChunkSizePerTeam;
+          auto* restrict offload_scratch_iVP_ptr = offload_scratch_ptr + padded_size * iVP;
+
+          int ix, iy, iz;
+          T a[4], b[4], c[4], da[4], db[4], dc[4], d2a[4], d2b[4], d2c[4];
+          spline2::computeLocationAndFractional(spline_m,
+                                                pos_scratch_ptr[iVP*3  ],
+                                                pos_scratch_ptr[iVP*3+1],
+                                                pos_scratch_ptr[iVP*3+2],
+                                                ix, iy, iz,
+                                                a, b, c,
+                                                da, db, dc,
+                                                d2a, d2b, d2c);
+          T sum(0);
+          PRAGMA_OFFLOAD("omp parallel")
+          {
+            spline2offload::evaluate_v_v2(spline_m,
+                                          ix, iy, iz,
+                                          a, b, c,
+                                          offload_scratch_iVP_ptr + first,
+                                          first, last);
+            PRAGMA_OFFLOAD("omp for reduction(+:sum)")
+            for (int j = first; j < last; j++)
+              sum += offload_scratch_iVP_ptr[j] * psiinv_ptr[j];
+          }
+          ratios_private_ptr[iVP * NumTeams + team_id] = sum;
+        }
+
+      // do the reduction manually
+      for (int iVP = 0; iVP < nVP; ++iVP)
+        for (int tid = 0; tid < NumTeams; tid++)
+          ratios[iVP] += ratios_private[i][iVP][tid];
     }
   }
 
