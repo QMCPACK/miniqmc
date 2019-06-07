@@ -262,6 +262,17 @@ public:
     return std::exp(DiffVal);
   }
 
+  void evaluateRatios(VirtualParticleSet& VP, std::vector<ValueType>& ratios)
+  {
+    for (int k = 0; k < ratios.size(); ++k)
+      ratios[k] = std::exp(Uat[VP.refPtcl] -
+                           computeU(VP.refPS,
+                                    VP.refPtcl,
+                                    VP.refPS.GroupID[VP.refPtcl],
+                                    VP.DistTables[myTableID]->Distances[k],
+                                    VP.DistTables[0]->Distances[k]));
+  }
+
   GradType evalGrad(ParticleSet& P, int iat) { return GradType(dUat[iat]); }
 
   ValueType ratioGrad(ParticleSet& P, int iat, GradType& grad_iat)

@@ -401,11 +401,14 @@ int main(int argc, char** argv)
   for (int iw = 0; iw < nmovers; iw++)
   {
     // create and initialize movers
-    Mover* thiswalker = new Mover(myPrimes[iw], ions, Rmax);
+    Mover* thiswalker = new Mover(myPrimes[iw], ions);
     mover_list[iw]    = thiswalker;
 
     // create wavefunction per mover
     build_WaveFunction(useRef, spo_main, thiswalker->wavefunction, ions, thiswalker->els, thiswalker->rng, delay_rank, enableJ3);
+
+    // initialize virtual particle sets
+    thiswalker->nlpp.initialize_VPs(ions, thiswalker->els, Rmax);
 
     // initial computing
     thiswalker->els.update();

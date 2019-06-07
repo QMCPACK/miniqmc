@@ -72,8 +72,8 @@ public:
   ValueType ratio(ParticleSet& P, int iat);
 
   /** compute multiple ratios for a particle move
-  void evaluateRatios(VirtualParticleSet& VP, std::vector<ValueType>& ratios);
    */
+  void evaluateRatios(VirtualParticleSet& VP, std::vector<ValueType>& ratios) override;
 
   ValueType ratioGrad(ParticleSet& P, int iat, GradType& grad_iat);
   GradType evalGrad(ParticleSet& P, int iat);

@@ -100,6 +100,12 @@ struct TwoBodyJastrowRef : public WaveFunctionComponent
   void recompute(ParticleSet& P);
 
   ValueType ratio(ParticleSet& P, int iat);
+  void evaluateRatios(VirtualParticleSet& VP, std::vector<ValueType>& ratios)
+  {
+    for (int k = 0; k < ratios.size(); ++k)
+      ratios[k] = std::exp(Uat[VP.refPtcl] - computeU(VP.refPS, VP.refPtcl, VP.DistTables[0]->Distances[k]));
+  }
+
   GradType evalGrad(ParticleSet& P, int iat);
   ValueType ratioGrad(ParticleSet& P, int iat, GradType& grad_iat);
   void acceptMove(ParticleSet& P, int iat);

@@ -27,6 +27,7 @@
 #define QMCPLUSPLUS_WAVEFUNCTIONCOMPONENTBASE_H
 #include "Utilities/Configuration.h"
 #include "Particle/ParticleSet.h"
+#include "Particle/VirtualParticleSet.h"
 #include "Particle/DistanceTableData.h"
 
 /**@file WaveFunctionComponent.h
@@ -172,6 +173,12 @@ struct WaveFunctionComponent : public QMCTraits
   /** complete all the delayed updates, must be called after each substep or step during pbyp move
    */
   virtual void completeUpdates(){};
+
+  /** evaluate ratios to evaluate the non-local PP
+   * @param VP VirtualParticleSet
+   * @param ratios ratios with new positions VP.R[k] the VP.refPtcl
+   */
+  virtual void evaluateRatios(VirtualParticleSet& VP, std::vector<ValueType>& ratios) = 0;
 
   /// operates on multiple walkers
   virtual void multi_evaluateLog(const std::vector<WaveFunctionComponent*>& WFC_list,

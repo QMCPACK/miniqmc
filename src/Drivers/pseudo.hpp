@@ -111,9 +111,10 @@ struct NonLocalPP
       rrotsgrid[i] = dot(rmat, sgridxyz_m[i]);
   }
 
-  void evaluate(const ParticleSet& els, const WaveFunction& wf)
+  void evaluate(const ParticleSet& els, WaveFunction& wf)
   {
      ParticlePos_t rOnSphere(size());
+     std::vector<QMCTraits::ValueType> ratios(size());
      randomize(rOnSphere); // pick random sphere
      const DistanceTableData* d_ie = els.DistTables[wf.get_ei_TableID()];
      const ParticleSet& ions(d_ie->origin());
@@ -128,7 +129,7 @@ struct NonLocalPP
          {
            auto& VP = VPs[ions.GroupID[iat]];
            VP.makeMoves(jel, rOnSphere, true, iat);
-           //wf.ratio(els, jel);
+           wf.evaluateRatios(VP, ratios);
          }
        }
      }
