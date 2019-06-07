@@ -267,26 +267,26 @@ int main(int argc, char** argv)
       cout << "Check values ref " << wfc_ref->LogValue << " " << els_ref.G[12] << " "
            << els_ref.L[12] << endl
            << endl;
-      cout << "evaluateLog::V Error = " << (wfc->LogValue - wfc_ref->LogValue) / nels << endl;
-      evaluateLog_v_err += std::fabs((wfc->LogValue - wfc_ref->LogValue) / nels);
+      cout << "evaluateLog::V relative Error = " << (wfc->LogValue - wfc_ref->LogValue) / (wfc_ref->LogValue * nels) << endl;
+      evaluateLog_v_err += std::fabs((wfc->LogValue - wfc_ref->LogValue) / (wfc_ref->LogValue * nels));
       {
         double g_err = 0.0;
         for (int iel = 0; iel < nels; ++iel)
         {
           PosType dr = (els.G[iel] - els_ref.G[iel]);
-          RealType d = sqrt(dot(dr, dr));
+          RealType d = sqrt(dot(dr, dr)) / dot(els_ref.G[iel],els_ref.G[iel]);
           g_err += d;
         }
-        cout << "evaluateLog::G Error = " << g_err / nels << endl;
+        cout << "evaluateLog::G relative Error = " << g_err / nels << endl;
         evaluateLog_g_err += std::fabs(g_err / nels);
       }
       {
         double l_err = 0.0;
         for (int iel = 0; iel < nels; ++iel)
         {
-          l_err += abs(els.L[iel] - els_ref.L[iel]);
+          l_err += abs((els.L[iel] - els_ref.L[iel])/els_ref.L[iel]);
         }
-        cout << "evaluateLog::L Error = " << l_err / nels << endl;
+        cout << "evaluateLog::L relative Error = " << l_err / nels << endl;
         evaluateLog_l_err += std::fabs(l_err / nels);
       }
 
@@ -304,7 +304,7 @@ int main(int argc, char** argv)
 
         els_ref.setActive(iel);
         PosType grad_ref = wfc_ref->evalGrad(els_ref, iel) - grad_soa;
-        g_eval += sqrt(dot(grad_ref, grad_ref));
+        g_eval += sqrt(dot(grad_ref, grad_ref)/dot(grad_soa,grad_soa));
 
         els.makeMove(iel, delta[iel]);
         els_ref.makeMove(iel, delta[iel]);
@@ -315,7 +315,7 @@ int main(int argc, char** argv)
         RealType r_ref = wfc_ref->ratioGrad(els_ref, iel, grad_ref);
 
         grad_ref -= grad_soa;
-        g_ratio += sqrt(dot(grad_ref, grad_ref));
+        g_ratio += sqrt(dot(grad_ref, grad_ref)/dot(grad_soa, grad_soa));
         r_ratio += abs(r_soa / r_ref - 1);
 
         if (ur[iel] < r_ref)
@@ -338,8 +338,8 @@ int main(int argc, char** argv)
       wfc_ref->completeUpdates();
 
       cout << "Accepted " << naccepted << "/" << nels << endl;
-      cout << "evalGrad::G      Error = " << g_eval / nels << endl;
-      cout << "ratioGrad::G     Error = " << g_ratio / nels << endl;
+      cout << "evalGrad::G      relative Error = " << g_eval / nels << endl;
+      cout << "ratioGrad::G     relative Error = " << g_ratio / nels << endl;
       cout << "ratioGrad::Ratio Error = " << r_ratio / nels << endl;
       evalGrad_g_err  += std::fabs(g_eval / nels);
       ratioGrad_g_err += std::fabs(g_ratio / nels);
@@ -362,19 +362,19 @@ int main(int argc, char** argv)
         for (int iel = 0; iel < nels; ++iel)
         {
           PosType dr = (els.G[iel] - els_ref.G[iel]);
-          RealType d = sqrt(dot(dr, dr));
+          RealType d = sqrt(dot(dr, dr)/dot(els_ref.G[iel],els_ref.G[iel]));
           g_err += d;
         }
-        cout << "evaluteGL::G Error = " << g_err / nels << endl;
+        cout << "evaluteGL::G relative Error = " << g_err / nels << endl;
         evaluateGL_g_err += std::fabs(g_err / nels);
       }
       {
         double l_err = 0.0;
         for (int iel = 0; iel < nels; ++iel)
         {
-          l_err += abs(els.L[iel] - els_ref.L[iel]);
+          l_err += abs((els.L[iel] - els_ref.L[iel])/els_ref.L[iel]);
         }
-        cout << "evaluteGL::L Error = " << l_err / nels << endl;
+        cout << "evaluteGL::L relative Error = " << l_err / nels << endl;
         evaluateGL_l_err += std::fabs(l_err / nels);
       }
 
@@ -410,8 +410,8 @@ int main(int argc, char** argv)
   } // end of omp parallel
 
   int np = omp_get_max_threads();
-  const RealType small = std::numeric_limits<RealType>::epsilon() * ( wfc_name == "Det" ? 1e8 : 1e4 );
-  std::cout << "Tolerance " << small << std::endl;
+  const RealType small = std::numeric_limits<RealType>::epsilon() * ( wfc_name == "Det" ? 1e6 : 1e4 );
+  std::cout << "Passing Tolerance " << small << std::endl;
   bool fail                = false;
   cout << std::endl;
   if (evaluateLog_v_err / np > small)
