@@ -24,7 +24,7 @@ namespace qmcplusplus
 {
 /** Fixed-size array. candidate for array<T,D>
  */
-PRAGMA_OMP("omp declare target")
+PRAGMA_OFFLOAD("omp declare target")
 template <class T, unsigned D> struct OMPTinyVector
 {
   typedef T Type_t;
@@ -120,7 +120,7 @@ template <class T, unsigned D> struct OMPTinyVector
   inline Type_t *end() { return X + D; }
   inline const Type_t *end() const { return X + D; }
 };
-PRAGMA_OMP("omp end declare target")
+PRAGMA_OFFLOAD("omp end declare target")
 
 //----------------------------------------------------------------------
 // I/O

@@ -26,10 +26,8 @@
 #include <Numerics/Spline2/MultiBspline.hpp>
 #include <Numerics/Spline2/MultiBsplineOffload.hpp>
 #include <Utilities/SIMD/allocator.hpp>
+#include "OpenMP/OMPallocator.hpp"
 #include "Numerics/OhmmsPETE/OhmmsArray.h"
-#include "OpenMP/OMPTinyVector.h"
-#include "OpenMP/OMPVector.h"
-#include "OpenMP/OMPVectorSoAContainer.h"
 #include "QMCWaveFunctions/SPOSet.h"
 #include <iostream>
 
@@ -41,7 +39,9 @@ struct einspline_spo_omp : public SPOSet
   /// define the einsplie data object type
   using self_type       = einspline_spo_omp<T>;
   using spline_type     = typename bspline_traits<T, 3>::SplineType;
-  using vghContainer_type = OMPVectorSoAContainer<T, 10>;
+  using OffloadAlignedAllocator = OMPallocator<T, Mallocator<T, QMC_CLINE>>;
+  using OMPMatrix_type = Matrix<T, OffloadAlignedAllocator>;
+  using OMPVector_type = Vector<T, OffloadAlignedAllocator>;
   using lattice_type    = CrystalLattice<T, 3>;
 
   /// number of blocks
@@ -60,12 +60,12 @@ struct einspline_spo_omp : public SPOSet
   /// use allocator
   BsplineAllocator<T> myAllocator;
 
-  OMPVector<spline_type*> einsplines;
-  std::vector<vghContainer_type> psi_grad_hess;
+  Vector<spline_type*, OMPallocator<spline_type*>> einsplines;
+  std::vector<OMPMatrix_type> offload_scratch;
 
   // for shadows
-  OMPVector<T*> psi_grad_hess_shadows;
-  OMPVector<OMPTinyVector<T, 3>> u_shadows;
+  Vector<T*, OMPallocator<T*>> offload_scratch_shadows;
+  Vector<T, OMPallocator<T>> pos_scratch;
 
   /// Timer
   NewTimer* timer;
@@ -124,10 +124,10 @@ struct einspline_spo_omp : public SPOSet
   /// resize the containers
   void resize()
   {
-    psi_grad_hess.resize(nBlocks);
+    offload_scratch.resize(nBlocks);
     for (int i = 0; i < nBlocks; ++i)
     {
-      psi_grad_hess[i].resize(nSplinesPerBlock);
+      offload_scratch[i].resize(10,getAlignedSize<T>(nSplinesPerBlock));
     }
   }
 
@@ -142,7 +142,7 @@ struct einspline_spo_omp : public SPOSet
     nSplinesPerBlock = num_splines / nblocks;
     firstBlock       = 0;
     lastBlock        = nBlocks;
-    if (einsplines.empty())
+    if (einsplines.size()==0)
     {
       Owner = true;
       TinyVector<int, 3> ng(nx, ny, nz);
@@ -202,7 +202,7 @@ struct einspline_spo_omp : public SPOSet
     for (int i = 0; i < nBlocks; ++i)
     {
       const auto* restrict spline_m = einsplines[i];
-      auto* restrict psi_ptr = psi_grad_hess[i].data();
+      auto* restrict psi_ptr = offload_scratch[i].data();
 
 #ifdef ENABLE_OFFLOAD
       #pragma omp target teams distribute num_teams(NumTeams) thread_limit(ChunkSizePerTeam) map(always, from:psi_ptr[:nSplinesPerBlock])
@@ -239,7 +239,7 @@ struct einspline_spo_omp : public SPOSet
     {
       // in real simulation, phase needs to be applied. Here just fake computation
       const int first = i*nBlocks;
-      std::copy_n(psi_grad_hess[i].data(), std::min((i+1)*nSplinesPerBlock, OrbitalSetSize) - first, psi_v.data()+first);
+      std::copy_n(offload_scratch[i].data(), std::min((i+1)*nSplinesPerBlock, OrbitalSetSize) - first, psi_v.data()+first);
     }
   }
 
@@ -248,7 +248,7 @@ struct einspline_spo_omp : public SPOSet
   {
     auto u = Lattice.toUnit_floor(P.activeR(iat));
     for (int i = 0; i < nBlocks; ++i)
-      MultiBsplineEval::evaluate_vgl(einsplines[i], u[0], u[1], u[2], psi_grad_hess[i].data(0), psi_grad_hess[i].data(1), psi_grad_hess[i].data(4),
+      MultiBsplineEval::evaluate_vgl(einsplines[i], u[0], u[1], u[2], offload_scratch[i][0], offload_scratch[i][1], offload_scratch[i][4],
                                      nSplinesPerBlock);
   }
 
@@ -270,12 +270,12 @@ struct einspline_spo_omp : public SPOSet
     for (int i = 0; i < nBlocks; ++i)
     {
       const auto* restrict spline_m = einsplines[i];
-      auto* restrict psi_grad_hess_ptr = psi_grad_hess[i].data();
-      auto padded_size = psi_grad_hess[i].capacity();
+      auto* restrict offload_scratch_ptr = offload_scratch[i].data();
+      int padded_size = getAlignedSize<T>(nSplinesPerBlock);
 
 #ifdef ENABLE_OFFLOAD
       #pragma omp target teams distribute num_teams(NumTeams) thread_limit(ChunkSizePerTeam) \
-        map(always, from:psi_grad_hess_ptr[:10*padded_size])
+        map(always, from:offload_scratch_ptr[:10*padded_size])
 #else
       #pragma omp parallel for
 #endif
@@ -296,7 +296,7 @@ struct einspline_spo_omp : public SPOSet
                                         a, b, c,
                                         da, db, dc,
                                         d2a, d2b, d2c,
-                                        psi_grad_hess_ptr + first,
+                                        offload_scratch_ptr + first,
                                         padded_size,
                                         first, last);
       }
@@ -315,14 +315,13 @@ struct einspline_spo_omp : public SPOSet
     {
       // in real simulation, phase needs to be applied. Here just fake computation
       const int first = i*nBlocks;
-      auto* restrict psi_grad_hess_ptr = psi_grad_hess[i].data();
-      auto padded_size = psi_grad_hess[i].capacity();
+      int padded_size = getAlignedSize<T>(nSplinesPerBlock);
 
       for (int j = first; j < std::min((i+1)*nSplinesPerBlock, OrbitalSetSize); j++)
       {
-        psi_v[j] = psi_grad_hess[i].data(0)[j-first];
-        dpsi_v[j] = GradType(psi_grad_hess[i].data(1)[j-first], psi_grad_hess[i].data(2)[j-first], psi_grad_hess[i].data(3)[j-first]);
-        d2psi_v[j] = psi_grad_hess[i].data(4)[j-first];
+        psi_v[j] = offload_scratch[i][0][j-first];
+        dpsi_v[j] = GradType(offload_scratch[i][1][j-first], offload_scratch[i][2][j-first], offload_scratch[i][3][j-first]);
+        d2psi_v[j] = offload_scratch[i][4][j-first];
       }
     }
   }
@@ -334,14 +333,14 @@ struct einspline_spo_omp : public SPOSet
     ScopedTimer local_timer(timer);
 
     const size_t nw = spo_list.size();
-    std::vector<self_type*> shadows;
+    std::vector<self_type*> shadows; shadows.reserve(spo_list.size());
     for (int iw = 0; iw < nw; iw++)
       shadows.push_back(static_cast<self_type*>(spo_list[iw]));
 
-    if (nw * nBlocks != psi_grad_hess_shadows.size())
+    if (nw * nBlocks != offload_scratch_shadows.size())
     {
-      psi_grad_hess_shadows.resize(nw * nBlocks);
-      T** restrict psi_grad_hess_shadows_ptr  = psi_grad_hess_shadows.data();
+      offload_scratch_shadows.resize(nw * nBlocks);
+      T** restrict offload_scratch_shadows_ptr  = offload_scratch_shadows.data();
 
       for (size_t iw = 0; iw < nw; iw++)
       {
@@ -349,27 +348,32 @@ struct einspline_spo_omp : public SPOSet
         for (int i = 0; i < nBlocks; ++i)
         {
           const size_t idx     = iw * nBlocks + i;
-          T* restrict psi_grad_hess_ptr  = shadow.psi_grad_hess[i].data();
+          T* restrict offload_scratch_ptr  = shadow.offload_scratch[i].data();
 #ifdef ENABLE_OFFLOAD
           //std::cout << "psi_shadows_ptr mapped already? " << omp_target_is_present(psi_shadows_ptr,0) << std::endl;
           //std::cout << "psi_ptr mapped already? " << omp_target_is_present(psi_ptr,0) << std::endl;
           #pragma omp target map(to : idx)
 #endif
           {
-            psi_grad_hess_shadows_ptr[idx] = psi_grad_hess_ptr;
+            offload_scratch_shadows_ptr[idx] = offload_scratch_ptr;
           }
         }
       }
     }
-    T** restrict psi_grad_hess_shadows_ptr = psi_grad_hess_shadows.data();
+    T** restrict offload_scratch_shadows_ptr = offload_scratch_shadows.data();
 
-    u_shadows.resize(nw);
+    pos_scratch.resize(nw*3);
     for (size_t iw = 0; iw < nw; iw++)
-      u_shadows[iw] = Lattice.toUnit_floor(P_list[iw]->activeR(iat));
-    //std::cout << "mapped already? " << omp_target_is_present(u_shadows.data(),0) << std::endl;
-    //u_shadows.update_to_device();
+    {
+      auto u = Lattice.toUnit_floor(P_list[iw]->activeR(iat));
+      pos_scratch[iw*3  ] = u[0];
+      pos_scratch[iw*3+1] = u[1];
+      pos_scratch[iw*3+2] = u[2];
+    }
+    //std::cout << "mapped already? " << omp_target_is_present(pos_scratch.data(),0) << std::endl;
+    //pos_scratch.update_to_device();
 
-    OMPTinyVector<T, 3>* u_shadows_ptr    = u_shadows.data();
+    auto* pos_scratch_ptr = pos_scratch.data();
 
     auto nBlocks_local = nBlocks;
     auto nSplinesPerBlock_local = nSplinesPerBlock;
@@ -380,11 +384,11 @@ struct einspline_spo_omp : public SPOSet
     for (int i = 0; i < nBlocks; ++i)
     {
       const auto* restrict spline_m = einsplines[i];
-      auto padded_size = psi_grad_hess[i].capacity();
+      int padded_size = getAlignedSize<T>(nSplinesPerBlock);
 
 #ifdef ENABLE_OFFLOAD
       #pragma omp target teams distribute collapse(2) num_teams(nw*NumTeams) thread_limit(ChunkSizePerTeam) \
-        map(always, to : u_shadows_ptr [0:u_shadows.size()])
+        map(always, to : pos_scratch_ptr [:pos_scratch.size()])
 #else
       #pragma omp parallel for
 #endif
@@ -397,9 +401,9 @@ struct einspline_spo_omp : public SPOSet
           int ix, iy, iz;
           T a[4], b[4], c[4], da[4], db[4], dc[4], d2a[4], d2b[4], d2c[4];
           spline2::computeLocationAndFractional(spline_m,
-                                                u_shadows_ptr[iw][0],
-                                                u_shadows_ptr[iw][1],
-                                                u_shadows_ptr[iw][2],
+                                                pos_scratch_ptr[iw*3  ],
+                                                pos_scratch_ptr[iw*3+1],
+                                                pos_scratch_ptr[iw*3+2],
                                                 ix, iy, iz,
                                                 a, b, c,
                                                 da, db, dc,
@@ -413,13 +417,18 @@ struct einspline_spo_omp : public SPOSet
                                           a, b, c,
                                           da, db, dc,
                                           d2a, d2b, d2c,
-                                          psi_grad_hess_shadows_ptr[iw * nBlocks_local + i] + first,
+                                          offload_scratch_shadows_ptr[iw * nBlocks_local + i] + first,
                                           padded_size,
                                           first, last);
         }
 
       for (size_t iw = 0; iw < spo_list.size(); iw++)
-        shadows[iw]->psi_grad_hess[i].update_from_device();
+      {
+        auto* offload_scratch_ptr = shadows[iw]->offload_scratch[i].data();
+#ifdef ENABLE_OFFLOAD
+        #pragma omp target update from(offload_scratch_ptr[:padded_size*10])
+#endif
+      }
     }
   }
 

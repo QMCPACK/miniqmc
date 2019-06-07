@@ -311,18 +311,18 @@ int main(int argc, char** argv)
           for (int n = 0; n < spo.nSplinesPerBlock; n++)
           {
             // value
-            evalVGH_v_err += std::fabs(spo.psi_grad_hess[ib].data(0)[n] - spo_ref.psi[ib][n]);
+            evalVGH_v_err += std::fabs(spo.offload_scratch[ib][0][n] - spo_ref.psi[ib][n]);
             // grad
-            evalVGH_g_err += std::fabs(spo.psi_grad_hess[ib].data(1)[n] - spo_ref.grad[ib].data(0)[n]);
-            evalVGH_g_err += std::fabs(spo.psi_grad_hess[ib].data(2)[n] - spo_ref.grad[ib].data(1)[n]);
-            evalVGH_g_err += std::fabs(spo.psi_grad_hess[ib].data(3)[n] - spo_ref.grad[ib].data(2)[n]);
+            evalVGH_g_err += std::fabs(spo.offload_scratch[ib][1][n] - spo_ref.grad[ib].data(0)[n]);
+            evalVGH_g_err += std::fabs(spo.offload_scratch[ib][2][n] - spo_ref.grad[ib].data(1)[n]);
+            evalVGH_g_err += std::fabs(spo.offload_scratch[ib][3][n] - spo_ref.grad[ib].data(2)[n]);
             // hess
-            evalVGH_h_err += std::fabs(spo.psi_grad_hess[ib].data(4)[n] - spo_ref.hess[ib].data(0)[n]);
-            evalVGH_h_err += std::fabs(spo.psi_grad_hess[ib].data(5)[n] - spo_ref.hess[ib].data(1)[n]);
-            evalVGH_h_err += std::fabs(spo.psi_grad_hess[ib].data(6)[n] - spo_ref.hess[ib].data(2)[n]);
-            evalVGH_h_err += std::fabs(spo.psi_grad_hess[ib].data(7)[n] - spo_ref.hess[ib].data(3)[n]);
-            evalVGH_h_err += std::fabs(spo.psi_grad_hess[ib].data(8)[n] - spo_ref.hess[ib].data(4)[n]);
-            evalVGH_h_err += std::fabs(spo.psi_grad_hess[ib].data(9)[n] - spo_ref.hess[ib].data(5)[n]);
+            evalVGH_h_err += std::fabs(spo.offload_scratch[ib][4][n] - spo_ref.hess[ib].data(0)[n]);
+            evalVGH_h_err += std::fabs(spo.offload_scratch[ib][5][n] - spo_ref.hess[ib].data(1)[n]);
+            evalVGH_h_err += std::fabs(spo.offload_scratch[ib][6][n] - spo_ref.hess[ib].data(2)[n]);
+            evalVGH_h_err += std::fabs(spo.offload_scratch[ib][7][n] - spo_ref.hess[ib].data(3)[n]);
+            evalVGH_h_err += std::fabs(spo.offload_scratch[ib][8][n] - spo_ref.hess[ib].data(4)[n]);
+            evalVGH_h_err += std::fabs(spo.offload_scratch[ib][9][n] - spo_ref.hess[ib].data(5)[n]);
           }
         if (ur[iel] > accept)
         {

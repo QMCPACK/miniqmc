@@ -77,19 +77,4 @@ class OMPVector : public Container
 };
 
 }
-
-namespace OMPstd
-{
-PRAGMA_OMP("omp declare target")
-  template <typename T>
-  inline void fill_n(T *x, size_t count, const T& value)
-  {
-#ifdef ENABLE_OFFLOAD
-    #pragma omp for
-#endif
-    for(size_t id=0; id<count; id++)
-      x[id]=value;
-  }
-PRAGMA_OMP("omp end declare target")
-}
 #endif
