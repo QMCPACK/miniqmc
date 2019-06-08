@@ -93,6 +93,8 @@ public:
   void flex_evaluateGL(const std::vector<WaveFunction*>& WF_list,
                         const std::vector<ParticleSet*>& P_list) const;
 
+  void flex_completeUpdates(const std::vector<WaveFunction*>& WF_list) const;
+
   // others
   int get_ei_TableID() const { return ei_TableID; }
   valT getLogValue() const { return LogValue; }
