@@ -82,6 +82,8 @@ struct NonLocalPP
   void initialize_VPs(const ParticleSet& ions, const ParticleSet& elecs, const RealType Rmax_in)
   {
     if(VPs.size()) throw std::runtime_error("Can not create VPs again.\n");
+    // reserving space avoids the copy constructor of VirtualParticleSet which is not safe to use.
+    VPs.reserve(ions.groups());
     for (int i = 0; i < ions.groups(); ++i)
       VPs.emplace_back(elecs, size());
     Rmax = Rmax_in;
