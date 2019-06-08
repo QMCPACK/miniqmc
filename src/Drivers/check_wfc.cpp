@@ -65,6 +65,24 @@ void print_help()
   exit(1); // print help and exit
 }
 
+template<typename T>
+T check_grads(TinyVector<T,3>& grad, TinyVector<T,3>& grad_ref, bool use_relative_error)
+{
+  if(use_relative_error)
+    return sqrt(dot(grad - grad_ref, grad - grad_ref) / dot(grad, grad_ref));
+  else
+    return sqrt(dot(grad - grad_ref, grad - grad_ref));
+}
+
+template<typename T>
+T check_val(T val, T val_ref, bool use_relative_error)
+{
+  if(use_relative_error)
+    return abs((val-val_ref)/val_ref);
+  else
+    return abs(val-val_ref);
+}
+
 int main(int argc, char** argv)
 {
   // clang-format off
@@ -199,6 +217,8 @@ int main(int argc, char** argv)
     WaveFunctionComponentPtr wfc     = nullptr;
     WaveFunctionComponentPtr wfc_ref = nullptr;
 
+    bool use_relative_error(false);
+
     if (wfc_name == "J2")
     {
       TwoBodyJastrow<BsplineFunctor<RealType>>* J = new TwoBodyJastrow<BsplineFunctor<RealType>>(els);
@@ -246,6 +266,7 @@ int main(int argc, char** argv)
       auto* Det_ref = new miniqmcreference::DiracDeterminantRef<>(spo_ref, 0, 31);
       wfc_ref = dynamic_cast<WaveFunctionComponentPtr>(Det_ref);
       cout << "Built Det_ref" << endl;
+      use_relative_error = true;
     }
 
     constexpr RealType czero(0);
@@ -267,26 +288,25 @@ int main(int argc, char** argv)
       cout << "Check values ref " << wfc_ref->LogValue << " " << els_ref.G[12] << " "
            << els_ref.L[12] << endl
            << endl;
-      cout << "evaluateLog::V relative Error = " << (wfc->LogValue - wfc_ref->LogValue) / (wfc_ref->LogValue * nels) << endl;
-      evaluateLog_v_err += std::fabs((wfc->LogValue - wfc_ref->LogValue) / (wfc_ref->LogValue * nels));
+      cout << "evaluateLog::V Error = " << (wfc->LogValue - wfc_ref->LogValue) / nels << endl;
+      evaluateLog_v_err += std::fabs((wfc->LogValue - wfc_ref->LogValue) / nels);
       {
         double g_err = 0.0;
         for (int iel = 0; iel < nels; ++iel)
         {
-          PosType dr = (els.G[iel] - els_ref.G[iel]);
-          RealType d = sqrt(dot(dr, dr)) / dot(els_ref.G[iel],els_ref.G[iel]);
+          RealType d = check_grads(els.G[iel], els_ref.G[iel], use_relative_error);
           g_err += d;
         }
-        cout << "evaluateLog::G relative Error = " << g_err / nels << endl;
+        cout << "evaluateLog::G Error = " << g_err / nels << endl;
         evaluateLog_g_err += std::fabs(g_err / nels);
       }
       {
         double l_err = 0.0;
         for (int iel = 0; iel < nels; ++iel)
         {
-          l_err += abs((els.L[iel] - els_ref.L[iel])/els_ref.L[iel]);
+          l_err += check_val(els.L[iel], els_ref.L[iel], use_relative_error);
         }
-        cout << "evaluateLog::L relative Error = " << l_err / nels << endl;
+        cout << "evaluateLog::L Error = " << l_err / nels << endl;
         evaluateLog_l_err += std::fabs(l_err / nels);
       }
 
@@ -303,8 +323,8 @@ int main(int argc, char** argv)
         PosType grad_soa = wfc->evalGrad(els, iel);
 
         els_ref.setActive(iel);
-        PosType grad_ref = wfc_ref->evalGrad(els_ref, iel) - grad_soa;
-        g_eval += sqrt(dot(grad_ref, grad_ref)/dot(grad_soa,grad_soa));
+        PosType grad_ref = wfc_ref->evalGrad(els_ref, iel);
+        g_eval += check_grads(grad_soa, grad_ref, use_relative_error);
 
         els.makeMove(iel, delta[iel]);
         els_ref.makeMove(iel, delta[iel]);
@@ -314,8 +334,7 @@ int main(int argc, char** argv)
         grad_ref       = 0;
         RealType r_ref = wfc_ref->ratioGrad(els_ref, iel, grad_ref);
 
-        grad_ref -= grad_soa;
-        g_ratio += sqrt(dot(grad_ref, grad_ref)/dot(grad_soa, grad_soa));
+        g_ratio += check_grads(grad_soa, grad_ref, use_relative_error);
         r_ratio += abs(r_soa / r_ref - 1);
 
         if (ur[iel] < r_ref)
@@ -338,8 +357,8 @@ int main(int argc, char** argv)
       wfc_ref->completeUpdates();
 
       cout << "Accepted " << naccepted << "/" << nels << endl;
-      cout << "evalGrad::G      relative Error = " << g_eval / nels << endl;
-      cout << "ratioGrad::G     relative Error = " << g_ratio / nels << endl;
+      cout << "evalGrad::G      Error = " << g_eval / nels << endl;
+      cout << "ratioGrad::G     Error = " << g_ratio / nels << endl;
       cout << "ratioGrad::Ratio Error = " << r_ratio / nels << endl;
       evalGrad_g_err  += std::fabs(g_eval / nels);
       ratioGrad_g_err += std::fabs(g_ratio / nels);
@@ -361,20 +380,18 @@ int main(int argc, char** argv)
         double g_err = 0.0;
         for (int iel = 0; iel < nels; ++iel)
         {
-          PosType dr = (els.G[iel] - els_ref.G[iel]);
-          RealType d = sqrt(dot(dr, dr)/dot(els_ref.G[iel],els_ref.G[iel]));
-          g_err += d;
+          g_err += check_grads(els.G[iel], els_ref.G[iel], use_relative_error);
         }
-        cout << "evaluteGL::G relative Error = " << g_err / nels << endl;
+        cout << "evaluteGL::G Error = " << g_err / nels << endl;
         evaluateGL_g_err += std::fabs(g_err / nels);
       }
       {
         double l_err = 0.0;
         for (int iel = 0; iel < nels; ++iel)
         {
-          l_err += abs((els.L[iel] - els_ref.L[iel])/els_ref.L[iel]);
+          l_err += check_val(els.L[iel], els_ref.L[iel], use_relative_error);
         }
-        cout << "evaluteGL::L relative Error = " << l_err / nels << endl;
+        cout << "evaluteGL::L Error = " << l_err / nels << endl;
         evaluateGL_l_err += std::fabs(l_err / nels);
       }
 
