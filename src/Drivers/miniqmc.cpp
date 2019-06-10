@@ -153,7 +153,7 @@ void print_help()
   app_summary() << "  miniqmc   [-bhjvV] [-g \"n0 n1 n2\"] [-m meshfactor]"      << '\n';
   app_summary() << "            [-n steps] [-N substeps] [-x rmax]"              << '\n';
   app_summary() << "            [-r AcceptanceRatio] [-s seed] [-w walkers]"     << '\n';
-  app_summary() << "            [-a tile_size] [-t timer_level] [-u delay_rank]" << '\n';
+  app_summary() << "            [-a tile_size] [-t timer_level] [-k delay_rank]" << '\n';
   app_summary() << "options:"                                                    << '\n';
   app_summary() << "  -a  size of each spline tile       default: num of orbs"   << '\n';
   app_summary() << "  -b  use reference implementations  default: off"           << '\n';
@@ -166,7 +166,7 @@ void print_help()
   app_summary() << "  -r  set the acceptance ratio.      default: 0.5"           << '\n';
   app_summary() << "  -s  set the random seed.           default: 11"            << '\n';
   app_summary() << "  -t  timer level: coarse or fine    default: fine"          << '\n';
-  app_summary() << "  -u  matrix delayed update rank     default: 32"            << '\n';
+  app_summary() << "  -k  matrix delayed update rank     default: 32"            << '\n';
   app_summary() << "  -v  verbose output"                                        << '\n';
   app_summary() << "  -V  print version information and exit"                    << '\n';
   app_summary() << "  -w  number of walker(movers)       default: num of threads"<< '\n';
@@ -217,7 +217,7 @@ int main(int argc, char** argv)
   int opt;
   while (optind < argc)
   {
-    if ((opt = getopt(argc, argv, "bhjvVa:c:g:m:n:N:r:s:t:u:w:x:")) != -1)
+    if ((opt = getopt(argc, argv, "bhjvVa:c:g:m:n:N:r:s:t:k:w:x:")) != -1)
     {
       switch (opt)
       {
@@ -263,7 +263,7 @@ int main(int argc, char** argv)
       case 't':
         timer_level_name = std::string(optarg);
         break;
-      case 'u':
+      case 'k':
         delay_rank = atoi(optarg);
         break;
       case 'v':
