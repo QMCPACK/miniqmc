@@ -130,4 +130,4 @@ EOF
 cp $BUILD_DIR/$BUILD_TAG.o* ../
 
 # get status from all checks
-[ $(grep -e 'All checks passed for J[123]' -e 'All checks passed for spo' -e 'All checks passed for determinant' ../$BUILD_TAG.o* | wc -l) -eq 9 ]
+[ $(grep -e 'All checks passed for J[123]' -e 'All checks passed for spo' -e 'All checks passed for Det' ../$BUILD_TAG.o* | wc -l) -eq 9 ]
