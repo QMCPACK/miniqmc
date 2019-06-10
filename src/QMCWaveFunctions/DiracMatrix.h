@@ -162,7 +162,7 @@ public:
    */
   inline void invert_transpose(const Matrix<T>& amat, Matrix<T>& invMat, real_type& LogDet, real_type& Phase)
   {
-    BlasThreadingEnv knob(getNumThreadsNested());
+    BlasThreadingEnv knob(getNextLevelNumThreads());
     const int n   = invMat.rows();
     const int lda = invMat.cols();
     T_FP* invMat_ptr(nullptr);

@@ -174,7 +174,7 @@ public:
     else
     {
       const int lda_Binv     = Binv.cols();
-      int num_threads_nested = getNumThreadsNested();
+      int num_threads_nested = getNextLevelNumThreads();
       // always use serial when norb is small or only one second level thread
       bool use_serial(norb <= 256 || num_threads_nested == 1);
       if (use_serial || BlasThreadingEnv::NestedThreadingSupported())
