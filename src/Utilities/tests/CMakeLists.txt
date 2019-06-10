@@ -15,7 +15,7 @@ SET(SRC_DIR utilities)
 SET(UTEST_EXE test_${SRC_DIR})
 SET(UTEST_NAME unit_test_${SRC_DIR})
 
-ADD_EXECUTABLE(${UTEST_EXE} ../../Utilities/catch-main.cpp test_PrimeNumberSet.cpp)
+ADD_EXECUTABLE(${UTEST_EXE} ../../Utilities/catch-main.cpp test_PrimeNumberSet.cpp test_ParallelBlock.cpp)
 TARGET_LINK_LIBRARIES(${UTEST_EXE} qmcutil ${QMC_UTIL_LIBS} ${MPI_LIBRARY})
 
 ADD_UNIT_TEST(${UTEST_NAME} "${QMCPACK_UNIT_TEST_DIR}/${UTEST_EXE}")

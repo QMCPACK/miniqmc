@@ -16,19 +16,11 @@
 
 #include <functional>
 #include <thread>
+#include <omp.h>
+#include <iostream>
 
 namespace qmcplusplus
 {
-template<typename F>
-class TaskWrapper
-{
-  F f;
-  template<typename... T>
-  void operator()(T&&... args)
-  {
-    f(std::forward<T>(args)...);
-  }
-};
 
 enum class ParallelBlockThreading
 {
@@ -60,7 +52,6 @@ private:
 template<ParallelBlockThreading TT>
 inline void ParallelBlockBarrier<TT>::wait()
 {
-  std::cout << "At omp barrier\n";
 #pragma omp barrier
 }
 
@@ -89,7 +80,7 @@ private:
   unsigned int num_threads_;
 };
 
-template<Threading TT>
+template<ParallelBlockThreading TT>
 template<typename F, typename... Args>
 void ParallelBlock<TT>::operator()(F&& f, Args&&... args)
 
@@ -100,8 +91,26 @@ void ParallelBlock<TT>::operator()(F&& f, Args&&... args)
     f(task_id, std::forward<Args>(args)...);
   }
 }
+    
+template<>
+template<typename F, typename... Args>
+void ParallelBlock<ParallelBlockThreading::STD>::operator()(F&& f, Args&&... args)
 
-template<Threading TT>
+{
+  std::vector<std::thread> threads(num_threads_);
+
+  for (int task_id = 0; task_id < num_threads_; ++task_id)
+  {
+      threads[task_id] = std::thread(std::forward<F>(f), task_id, std::forward<Args>(args)...);
+  }
+
+  for (int task_id = 0; task_id < num_threads_; ++task_id)
+  {
+    threads[task_id].join();
+  }
+}
+
+template<ParallelBlockThreading TT>
 template<typename F, typename... Args>
 void ParallelBlock<TT>::operator()(F&& f, ParallelBlockBarrier<TT>& barrier, Args&&... args)
 
@@ -114,23 +123,6 @@ void ParallelBlock<TT>::operator()(F&& f, ParallelBlockBarrier<TT>& barrier, Arg
   }
 }
 
-template<>
-template<typename F, typename... Args>
-void ParallelBlock<ParallelBlockThreading::STD>::operator()(F&& f, Args&&... args)
-
-{
-  std::vector<std::thread> threads(num_threads_);
-
-  for (int task_id = 0; task_id < num_threads_; ++task_id)
-  {
-    threads[task_id] = std::thread(TaskWrapper<F>{std::forward<F>(f)}, task_id, std::forward<Args>(args)...);
-  }
-
-  for (int task_id = 0; task_id < num_threads_; ++task_id)
-  {
-    threads[task_id].join();
-  }
-}
 } // namespace qmcplusplus
 
 #endif
