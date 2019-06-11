@@ -65,7 +65,7 @@ public:
   int nsteps        = 5;
   int iseed         = 11;
   int nx = 37, ny = 37, nz = 37;
-  int nmovers = 1;
+  int num_crowds = 1;
   // thread blocking
   int splines_per_block = -1;
   int nsubsteps         = 1;
@@ -81,9 +81,9 @@ public:
   bool verbose                 = false;
   std::string timer_level_name = "fine";
   TimerList_t Timers;
-
-  int crowd_size;
-
+  
+  int crowd_size  = 1;
+  int walkers_per_rank = 0;
   MiniQMCOptions()                      = default;
   MiniQMCOptions(const MiniQMCOptions&) = default; // { std::cout << "MiniQMCOptions copy made" << '\n'; }
 };

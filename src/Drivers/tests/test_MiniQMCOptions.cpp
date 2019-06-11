@@ -25,7 +25,7 @@ namespace qmcplusplus
 {
 
 TEST_CASE("MiniQMCOptions Read", "[Application]") {
-    int argc = 26;
+    int argc = 28;
     std::vector<std::string> opt_strs = {"dummy_progname",
 					 "-a","256",
 					 "-b",
@@ -39,7 +39,8 @@ TEST_CASE("MiniQMCOptions Read", "[Application]") {
 					 "-s","140",
 					 "-t","fine",
 					 "-v",
-					 "-w","20",
+					 "-w","200",
+					 "-C","10",
 					 "-x","1.7"
     };
     
@@ -58,6 +59,7 @@ TEST_CASE("MiniQMCOptions Read", "[Application]") {
     REQUIRE(mq_opt.splines_per_block == 256);
     REQUIRE(mq_opt.useRef);
     REQUIRE(mq_opt.crowd_size == 8);
+    REQUIRE(mq_opt.num_crowds == 10);
     REQUIRE(mq_opt.na == 2);
     REQUIRE(mq_opt.nb == 1);
     REQUIRE(mq_opt.nc == 3);
@@ -71,7 +73,7 @@ TEST_CASE("MiniQMCOptions Read", "[Application]") {
     REQUIRE(mq_opt.iseed == 140);
     REQUIRE(mq_opt.timer_level_name == "fine");
     REQUIRE(mq_opt.verbose);
-    REQUIRE(mq_opt.nmovers == 20);
+    REQUIRE(mq_opt.walkers_per_rank == 200);
     REQUIRE(mq_opt.Rmax == 1.7);
     
     

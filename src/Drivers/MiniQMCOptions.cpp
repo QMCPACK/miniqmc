@@ -23,7 +23,7 @@ MiniQMCOptions readOptions(int argc, char** argv)
   int opt;
   while (optind < argc)
   {
-    if ((opt = getopt(argc, argv, "bhjvVa:c:d:g:m:n:N:r:s:t:w:x:z:")) != -1)
+    if ((opt = getopt(argc, argv, "bhjvVa:c:C:d:g:m:n:N:r:s:t:w:x:z:")) != -1)
     {
       switch (opt)
       {
@@ -33,6 +33,9 @@ MiniQMCOptions readOptions(int argc, char** argv)
       case 'b':
         mq_opt.useRef = true;
         break;
+      case 'C': // number of crowds
+	  mq_opt.num_crowds = atoi(optarg);
+	  break;
       case 'c': // number of walkers per crowd
         mq_opt.crowd_size = atoi(optarg);
         break;
@@ -83,7 +86,7 @@ MiniQMCOptions readOptions(int argc, char** argv)
         //should throw
         break;
       case 'w': // number of crowds
-        mq_opt.nmovers = atoi(optarg);
+        mq_opt.walkers_per_rank = atoi(optarg);
         break;
       case 'x': // rmax
         mq_opt.Rmax = atof(optarg);
@@ -120,11 +123,12 @@ void MiniQMCOptions::print_help()
   app_summary() << "  -m  meshfactor                     default: 1.0" << '\n';
   app_summary() << "  -n  number of MC steps             default: 5" << '\n';
   app_summary() << "  -N  number of MC substeps          default: 1" << '\n';
-  app_summary() << "  -p  crowd size                     default: 1\n";
+  app_summary() << "  -c  crowd size                     default: 1\n";
+  app_summary() << "  -C  number of crowds               default: 1\n";
   app_summary() << "  -r  set the acceptance ratio.      default: 0.5" << '\n';
   app_summary() << "  -s  set the random seed.           default: 11" << '\n';
   app_summary() << "  -t  timer level: coarse or fine    default: fine" << '\n';
-  app_summary() << "  -w  number of crowds               default: 1" << '\n';
+  app_summary() << "  -w  walkers per rank               default: 1" << '\n';
   app_summary() << "  -v  verbose output" << '\n';
   app_summary() << "  -V  print version information and exit" << '\n';
   app_summary() << "  -x  set the Rmax.                  default: 1.7" << '\n';
