@@ -574,7 +574,7 @@ void ParticleSet::multi_makeMoveAndCheckKokkos(Kokkos::View<ParticleSet::pskType
 			 auto& pset = allParticleSetData(i);
 			 pset.activePtcl(0) = locIel;
 			 for (int d = 0; d < 3; d++) { 
-			   pset.activePos(d) = pset.R(i,d) + locDr(i,d);
+			   pset.activePos(d) = pset.R(locIel,d) + locDr(i,d);
 			 }
 			 if (pset.UseBoundBox(0)) {
 			   RealType x;

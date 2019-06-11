@@ -362,7 +362,7 @@ public:
 								  x[1], x[2]);
 			   for (int dim = 0; dim < 3; dim++) {
 			     bigElPos_(walkerNum, knotNum, dim) = 
-			       dist * rOnSphere_(walkerNum,knotNum,dim) - x[dim];
+			       dist * rOnSphere_(walkerNum,knotNum,dim) - x[dim] + psk.R(eNum,dim);
 			   }
 			   psk.DTComputeDistances(member, bigElPos(walkerNum,knotNum,0),	   
 						  bigElPos(walkerNum,knotNum,1),	   

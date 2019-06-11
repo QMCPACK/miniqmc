@@ -633,11 +633,19 @@ int main(int argc, char** argv)
 				    if (final) {
 				      EiLists(walkerNum,idx,0) = elNum;
 				      EiLists(walkerNum,idx,1) = ionNum;
-				    } else {
-				      idx++;
 				    }
+				    idx++;
 				  }
 				});
+	  /*
+	  int sum = 0;
+	  for (int j = 0; j < maxSize; j++) {
+	    if (EiLists(walkerNum,j,0) >= 0) {
+	      sum++;
+	    }
+	  }
+	  std::cout << "pair check on w " << walkerNum << "  " << sum << "  eipairs " << eiPairs[walkerNum] << std::endl;
+	  */
 	}
 	
 	for(int walkerNum = 0; walkerNum < nmovers; walkerNum++) {

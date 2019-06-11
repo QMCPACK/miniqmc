@@ -326,7 +326,8 @@ void doTwoBodyJastrowMultiEvaluateLog(int numElectrons, atbjdType atbjd, apsdTyp
   const int numWalkers = atbjd.extent(0);
   using BarePolicy = Kokkos::TeamPolicy<>;
 
-  BarePolicy pol(numWalkers*numElectrons, 8, 32);
+  //BarePolicy pol(numWalkers*numElectrons, 8, 32);
+  BarePolicy pol(numWalkers*numElectrons, 1, 32);
   Kokkos::parallel_for("tbj-evalLog-init", Kokkos::RangePolicy<>(0,numWalkers),
 		       KOKKOS_LAMBDA(const int& wnum) {
 			 atbjd(wnum).LogValue(0) = 0.0;
