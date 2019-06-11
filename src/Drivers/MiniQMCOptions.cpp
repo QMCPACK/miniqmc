@@ -33,10 +33,10 @@ MiniQMCOptions readOptions(int argc, char** argv)
       case 'b':
         mq_opt.useRef = true;
         break;
-      case 'C': // number of crowds
+      case 'C':
 	  mq_opt.num_crowds = atoi(optarg);
 	  break;
-      case 'c': // number of walkers per crowd
+      case 'c':
         mq_opt.crowd_size = atoi(optarg);
         break;
       // case 'd': // Device choice
@@ -68,8 +68,8 @@ MiniQMCOptions readOptions(int argc, char** argv)
       case 'N':
         mq_opt.nsubsteps = atoi(optarg);
         break;
-      case 'r': // accept
-        mq_opt.accept = atof(optarg);
+      case 'r':
+        mq_opt.accept_ratio = atof(optarg);
         break;
       case 's':
         mq_opt.iseed = atoi(optarg);
@@ -83,12 +83,11 @@ MiniQMCOptions readOptions(int argc, char** argv)
       case 'V':
         ::print_version(true);
         return mq_opt;
-        //should throw
         break;
-      case 'w': // number of crowds
+      case 'w':
         mq_opt.walkers_per_rank = atoi(optarg);
         break;
-      case 'x': // rmax
+      case 'x':
         mq_opt.Rmax = atof(optarg);
         break;
       default:
@@ -101,7 +100,6 @@ MiniQMCOptions readOptions(int argc, char** argv)
       mq_opt.valid = false;
       mq_opt.print_help();
       return mq_opt;
-      //should throw
     }
   }
   return mq_opt;

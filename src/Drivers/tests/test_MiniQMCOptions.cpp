@@ -69,7 +69,7 @@ TEST_CASE("MiniQMCOptions Read", "[Application]") {
     REQUIRE(mq_opt.nz == 256 * 37);
     REQUIRE(mq_opt.nsteps == 10);
     REQUIRE(mq_opt.nsubsteps == 1);
-    REQUIRE(mq_opt.accept == 0.75);
+    REQUIRE(mq_opt.accept_ratio == 0.75);
     REQUIRE(mq_opt.iseed == 140);
     REQUIRE(mq_opt.timer_level_name == "fine");
     REQUIRE(mq_opt.verbose);

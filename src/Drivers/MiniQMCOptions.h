@@ -35,7 +35,7 @@ enum MiniQMCTimers
   Timer_Update,
 };
 
-/** Reads and holds the options to support more flexible non 'c' main drivers
+/** Reads and holds the options to support more flexible non 'c main()' drivers
  *  
  */
 class MiniQMCOptions
@@ -66,26 +66,25 @@ public:
   int iseed         = 11;
   int nx = 37, ny = 37, nz = 37;
   int num_crowds = 1;
-  // thread blocking
   int splines_per_block = -1;
   int nsubsteps         = 1;
   int nels = 0;
   // Set cutoff for NLPP use.
   // This makes precision an issue to select at run time.
   QMCT::RealType Rmax          = 1.7;
-  QMCT::RealType accept        = 0.5;
-  //useRef is a particular implementation of numerous objects fix that and remove this option
+  QMCT::RealType accept_ratio  = 0.5;
+  //useRef is a particular implementation of numerous objects fix that remove this option
+  //and many branch statements
   bool useRef                  = false;
   bool enableJ3                = false;
   bool enableCrowd             = false;
   bool verbose                 = false;
   std::string timer_level_name = "fine";
   TimerList_t Timers;
-  
   int crowd_size  = 1;
   int walkers_per_rank = 0;
   MiniQMCOptions()                      = default;
-  MiniQMCOptions(const MiniQMCOptions&) = default; // { std::cout << "MiniQMCOptions copy made" << '\n'; }
+  MiniQMCOptions(const MiniQMCOptions&) = default;
 };
 
 MiniQMCOptions readOptions(int argc,char** argv);
