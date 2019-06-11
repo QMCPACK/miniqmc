@@ -19,6 +19,8 @@ ENDFOREACH(p ${ESTEST})
 
 endif()
 
+SUBDIRS(tests)
+
 #SET(boost_test exchange_walker)
 #FOREACH(p ${boost_test})
 #  ADD_EXECUTABLE( ${p}  ${p}.cpp)
