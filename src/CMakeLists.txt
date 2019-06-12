@@ -178,4 +178,6 @@ ENDIF()
 
   SUBDIRS(Particle/tests)
 
+  SUBDIRS(QMCWaveFunctions)
+
   SUBDIRS(Drivers)

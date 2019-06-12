@@ -372,58 +372,48 @@ struct BLAS
   }
 };
 
-struct LAPACK
+namespace LAPACK
 {
-
-  inline static void gesvd(char *jobu, char *jobvt, int *m, int *n, float *a,
-                           int *lda, float *s, float *u, int *ldu, float *vt,
-                           int *ldvt, float *work, int *lwork, int *info)
+  inline void getrf(int n, int m, float* a, int lda, int* piv, int& status)
   {
-    sgesvd(jobu, jobvt, m, n, a, lda, s, u, ldu, vt, ldvt, work, lwork, info);
+    sgetrf(n, m, a, lda, piv, status);
   }
 
-  inline static void gesvd(char *jobu, char *jobvt, int *m, int *n, double *a,
-                           int *lda, double *s, double *u, int *ldu, double *vt,
-                           int *ldvt, double *work, int *lwork, int *info)
+  inline void getrf(int n, int m, std::complex<float>* a, int lda, int* piv, int& status)
   {
-    dgesvd(jobu, jobvt, m, n, a, lda, s, u, ldu, vt, ldvt, work, lwork, info);
+    cgetrf(n, m, a, lda, piv, status);
   }
 
-  inline static void geev(char *jobvl, char *jobvr, int *n, double *a, int *lda,
-                          double *alphar, double *alphai, double *vl, int *ldvl,
-                          double *vr, int *ldvr, double *work, int *lwork,
-                          int *info)
+  inline void getrf(int n, int m, double* a, int lda, int* piv, int& status)
   {
-    dgeev(jobvl, jobvr, n, a, lda, alphar, alphai, vl, ldvl, vr, ldvr, work,
-          lwork, info);
+    dgetrf(n, m, a, lda, piv, status);
   }
 
-  inline static void geev(char *jobvl, char *jobvr, int *n, float *a, int *lda,
-                          float *alphar, float *alphai, float *vl, int *ldvl,
-                          float *vr, int *ldvr, float *work, int *lwork,
-                          int *info)
+  inline void getrf(int n, int m, std::complex<double>* a, int lda, int* piv, int& status)
   {
-    sgeev(jobvl, jobvr, n, a, lda, alphar, alphai, vl, ldvl, vr, ldvr, work,
-          lwork, info);
+    zgetrf(n, m, a, lda, piv, status);
   }
 
-  inline static void ggev(char *jobvl, char *jobvr, int *n, double *a, int *lda,
-                          double *b, int *ldb, double *alphar, double *alphai,
-                          double *beta, double *vl, int *ldvl, double *vr,
-                          int *ldvr, double *work, int *lwork, int *info)
+  inline void getri(int n, float* a, int lda, int* piv, float* work, int& lwork, int& status)
   {
-    dggev(jobvl, jobvr, n, a, lda, b, ldb, alphar, alphai, beta, vl, ldvl, vr,
-          ldvr, work, lwork, info);
+    sgetri(n, a, lda, piv, work, lwork, status);
   }
 
-  inline static void ggev(char *jobvl, char *jobvr, int *n, float *a, int *lda,
-                          float *b, int *ldb, float *alphar, float *alphai,
-                          float *beta, float *vl, int *ldvl, float *vr,
-                          int *ldvr, float *work, int *lwork, int *info)
+  inline void getri(int n, std::complex<float>* a, int lda, int* piv, std::complex<float>* work, int& lwork, int& status)
   {
-    sggev(jobvl, jobvr, n, a, lda, b, ldb, alphar, alphai, beta, vl, ldvl, vr,
-          ldvr, work, lwork, info);
+    cgetri(n, a, lda, piv, work, lwork, status);
   }
+
+  inline void getri(int n, double* a, int lda, int* piv, double* work, int& lwork, int& status)
+  {
+    dgetri(n, a, lda, piv, work, lwork, status);
+  }
+
+  inline void getri(int n, std::complex<double>* a, int lda, int* piv, std::complex<double>* work, int& lwork, int& status)
+  {
+    zgetri(n, a, lda, piv, work, lwork, status);
+  }
+
 };
 // clang-format on
 #endif // OHMMS_BLAS_H

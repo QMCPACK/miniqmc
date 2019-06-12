@@ -25,6 +25,7 @@
 #include <vector>
 #include <map>
 #include <complex>
+#include <Utilities/QMCTypes.h>
 #include <Numerics/OhmmsPETE/TinyVector.h>
 #include <Numerics/OhmmsPETE/Tensor.h>
 #include "Particle/Lattice/CrystalLattice.h"
@@ -44,9 +45,22 @@ typedef int omp_int_t;
 inline omp_int_t omp_get_thread_num() { return 0; }
 inline omp_int_t omp_get_max_threads() { return 1; }
 inline omp_int_t omp_get_num_threads() { return 1; }
-inline omp_int_t omp_get_active_level() { return 0; }
+inline omp_int_t omp_get_level() { return 0; }
 inline omp_int_t omp_get_ancestor_thread_num(int level) { return 0; }
+inline bool omp_get_nested() { return false; }
 #endif
+
+/// get the number of threads at the next parallel level
+inline int getNextLevelNumThreads()
+{
+  int num_threads = 1;
+#pragma omp parallel
+  {
+#pragma omp master
+    num_threads = omp_get_num_threads();
+  }
+  return num_threads;
+}
 
 // define empty DEBUG_MEMORY
 #define DEBUG_MEMORY(msg)
@@ -76,22 +90,23 @@ struct PtclAttribTraits
  */
 struct QMCTraits
 {
-  // clang-format off
-  enum {DIM = OHMMS_DIM};
-  typedef OHMMS_INDEXTYPE                IndexType;
-  typedef OHMMS_PRECISION                RealType;
-  typedef OHMMS_PRECISION_FULL           EstimatorRealType;
-#if defined(QMC_COMPLEX)
-  typedef std::complex<OHMMS_PRECISION>  ValueType;
-#else
-  typedef OHMMS_PRECISION                ValueType;
-#endif
-  typedef std::complex<RealType>         ComplexType;
-  typedef TinyVector<RealType,DIM>       PosType;
-  typedef TinyVector<ValueType,DIM>      GradType;
-  typedef Tensor<RealType,DIM>           TensorType;
-  // clang-format on
+  enum
+  {
+    DIM = OHMMS_DIM
+  };
+  using QTBase = QMCTypes<OHMMS_PRECISION, DIM>;
+  using QTFull = QMCTypes<OHMMS_PRECISION_FULL, DIM>;
+  typedef QTBase::RealType RealType;
+  typedef QTBase::ComplexType ComplexType;
+  typedef QTBase::ValueType ValueType;
+  typedef QTBase::PosType PosType;
+  typedef QTBase::GradType GradType;
+  typedef QTBase::TensorType TensorType;
+  ///define other types
+  typedef OHMMS_INDEXTYPE IndexType;
+  typedef QTFull::RealType EstimatorRealType;
 };
+
 
 /** Particle traits to use UniformGridLayout for the ParticleLayout.
  */
@@ -100,9 +115,11 @@ struct PtclOnLatticeTraits
   // clang-format off
   typedef CrystalLattice<OHMMS_PRECISION,3,OHMMS_ORTHO>  ParticleLayout_t;
 
-  typedef int                                          Index_t;
-  typedef OHMMS_PRECISION_FULL                         Scalar_t;
-  typedef std::complex<Scalar_t>                       Complex_t;
+  using QTFull = QMCTraits::QTFull;
+
+  typedef int Index_t;
+  typedef QTFull::RealType Scalar_t;
+  typedef QTFull::ComplexType Complex_t;
 
   typedef ParticleLayout_t::SingleParticleIndex_t      SingleParticleIndex_t;
   typedef ParticleLayout_t::SingleParticlePos_t        SingleParticlePos_t;
@@ -127,6 +144,15 @@ struct PtclOnLatticeTraits
   // clang-format on
 };
 
+// For unit tests
+//  Check if we are compiling with Catch defined.  Could use other symbols if needed.
+#ifdef TEST_CASE
+#ifdef QMC_COMPLEX
+typedef ComplexApprox ValueApprox;
+#else
+typedef Approx ValueApprox;
+#endif
+#endif
 
 } // namespace qmcplusplus
 
