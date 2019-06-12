@@ -31,7 +31,6 @@ struct scalar_traits
   };
   typedef T real_type;
   typedef T value_type;
-  static inline T* get_address(T* a) { return a; }
 };
 
 template<typename T>
@@ -43,7 +42,6 @@ struct scalar_traits<std::complex<T>>
   };
   typedef T real_type;
   typedef std::complex<T> value_type;
-  static inline T* get_address(std::complex<T>* a) { return reinterpret_cast<T*>(a); }
 };
 
 } // namespace qmcplusplus
