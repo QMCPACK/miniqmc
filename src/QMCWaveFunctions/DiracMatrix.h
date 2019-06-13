@@ -22,77 +22,6 @@
 
 namespace qmcplusplus
 {
-inline void Xgetrf(int n, int m, float* restrict a, int lda, int* restrict piv)
-{
-  int status;
-  sgetrf(n, m, a, lda, piv, status);
-}
-
-inline void Xgetri(int n, float* restrict a, int lda, int* restrict piv, float* restrict work, int& lwork)
-{
-  int status;
-  sgetri(n, a, lda, piv, work, lwork, status);
-}
-
-inline void Xgetrf(int n, int m, std::complex<float>* restrict a, int lda, int* restrict piv)
-{
-  int status;
-  cgetrf(n, m, a, lda, piv, status);
-}
-
-/** inversion of a float matrix after lu factorization*/
-inline void Xgetri(int n,
-                   std::complex<float>* restrict a,
-                   int lda,
-                   int* restrict piv,
-                   std::complex<float>* restrict work,
-                   int& lwork)
-{
-  int status;
-  cgetri(n, a, lda, piv, work, lwork, status);
-}
-
-inline void Xgetrf(int n, int m, double* restrict a, int lda, int* restrict piv)
-{
-  int status;
-  dgetrf(n, m, a, lda, piv, status);
-}
-
-inline void Xgetri(int n, double* restrict a, int lda, int* restrict piv, double* restrict work, int& lwork)
-{
-  int status;
-  dgetri(n, a, lda, piv, work, lwork, status);
-}
-
-inline void Xgetrf(int n, int m, std::complex<double>* restrict a, int lda, int* restrict piv)
-{
-  int status;
-  zgetrf(n, m, a, lda, piv, status);
-}
-
-/** inversion of a std::complex<double> matrix after lu factorization*/
-inline void Xgetri(int n,
-                   std::complex<double>* restrict a,
-                   int lda,
-                   int* restrict piv,
-                   std::complex<double>* restrict work,
-                   int& lwork)
-{
-  int status;
-  zgetri(n, a, lda, piv, work, lwork, status);
-}
-
-
-template<typename TIN, typename TOUT>
-inline void TansposeSquare(const TIN* restrict in, TOUT* restrict out, size_t n, size_t lda)
-{
-#pragma omp simd
-  for (size_t i = 0; i < n; ++i)
-    for (size_t j = 0; j < n; ++j)
-      out[i * lda + j] = in[i + j * lda];
-}
-
-
 template<typename T>
 inline T computeLogDet(const T* restrict diag, int n, const int* restrict pivot, T& phase)
 {
@@ -147,7 +76,8 @@ class DiracMatrix
     Lwork = -1;
     T_FP tmp;
     real_type_fp lw;
-    Xgetri(lda, invMat_ptr, lda, m_pivot.data(), &tmp, Lwork);
+    int status;
+    LAPACK::getri(lda, invMat_ptr, lda, m_pivot.data(), &tmp, Lwork, status);
     convert(tmp, lw);
     Lwork = static_cast<int>(lw);
     m_work.resize(Lwork);
@@ -176,13 +106,14 @@ public:
 #endif
     if (Lwork < lda)
       reset(invMat_ptr, lda);
-    Xgetrf(n, n, invMat_ptr, lda, m_pivot.data());
+    int status;
+    LAPACK::getrf(n, n, invMat_ptr, lda, m_pivot.data(), status);
     for (int i = 0; i < n; i++)
       LU_diag[i] = invMat_ptr[i * lda + i];
     real_type_fp Phase_tmp;
     LogDet = computeLogDet(LU_diag.data(), n, m_pivot.data(), Phase_tmp);
     Phase  = Phase_tmp;
-    Xgetri(n, invMat_ptr, lda, m_pivot.data(), m_work.data(), Lwork);
+    LAPACK::getri(n, invMat_ptr, lda, m_pivot.data(), m_work.data(), Lwork, status);
 #if defined(MIXED_PRECISION)
     invMat = psiM_fp;
 #endif
