@@ -15,3 +15,6 @@ FOREACH(p ${DRIVERS})
   ADD_EXECUTABLE( ${p}  ${p}.cpp)
   TARGET_LINK_LIBRARIES(${p} qmcwfs qmcbase qmcutil ${QMC_UTIL_LIBS} ${MPI_LIBRARY})
 ENDFOREACH(p ${ESTEST})
+
+SUBDIRS(tests)
+
