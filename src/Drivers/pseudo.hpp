@@ -23,6 +23,8 @@
 
 namespace qmcplusplus
 {
+
+/// Consider this is a class derived from QMCHamiltonianBase
 template<typename T>
 struct NonLocalPP
 {
@@ -138,7 +140,15 @@ struct NonLocalPP
          }
        }
      }
+  }
 
+  void multi_evaluate(const std::vector<NonLocalPP<T>*>& nlpp_list,
+                      const std::vector<WaveFunction*>& WF_list,
+                      const std::vector<ParticleSet*>& P_list)
+  {
+    #pragma omp parallel for
+    for (int iw = 0; iw < nlpp_list.size(); iw++)
+      nlpp_list[iw]->evaluate(*P_list[iw], *WF_list[iw]);
   }
 };
 } // namespace qmcplusplus

@@ -445,6 +445,7 @@ int main(int argc, char** argv)
       const std::vector<Mover*> Sub_list(extract_sub_list(mover_list, first, last));
       const std::vector<ParticleSet*> P_list(extract_els_list(Sub_list));
       const std::vector<WaveFunction*> WF_list(extract_wf_list(Sub_list));
+      const std::vector<NonLocalPP<RealType>*> NLPP_list(extract_nlpp_list(Sub_list));
       const Mover& anon_mover = *Sub_list[0];
 
       int nw_this_batch = last - first;
@@ -518,13 +519,8 @@ int main(int argc, char** argv)
       if(!run_pseudo) continue;
 
       // Compute NLPP energy using integral over spherical points
-      // Ye: I have not found a strategy for NLPP
       Timers[Timer_ECP]->start();
-      #pragma omp parallel for
-      for (int iw = first; iw < last; iw++)
-      {
-        mover_list[iw]->nlpp.evaluate(mover_list[iw]->els, mover_list[iw]->wavefunction);
-      }
+      Sub_list[0]->nlpp.multi_evaluate(NLPP_list, WF_list, P_list);
       Timers[Timer_ECP]->stop();
     } // batch
   } // nsteps

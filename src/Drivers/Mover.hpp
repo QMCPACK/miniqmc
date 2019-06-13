@@ -103,6 +103,14 @@ const std::vector<WaveFunction*> extract_wf_list(const std::vector<Mover*>& move
   return wf_list;
 }
 
+const std::vector<NonLocalPP<QMCTraits::RealType>*> extract_nlpp_list(const std::vector<Mover*>& mover_list)
+{
+  std::vector<NonLocalPP<QMCTraits::RealType>*> nlpp_list;
+  for (auto it = mover_list.begin(); it != mover_list.end(); it++)
+    nlpp_list.push_back(&(*it)->nlpp);
+  return nlpp_list;
+}
+
 } // namespace qmcplusplus
 
 #endif
