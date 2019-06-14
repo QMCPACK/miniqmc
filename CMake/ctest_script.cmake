@@ -87,7 +87,7 @@ ENDIF( BUILD_SERIAL )
 CTEST_EMPTY_BINARY_DIRECTORY( ${CTEST_BINARY_DIRECTORY} )
 FILE(WRITE "${CTEST_BINARY_DIRECTORY}/CMakeCache.txt" "CTEST_TEST_CTEST:BOOL=1")
 
-MESSAGE("Configure options: ${CTEST_OPTIONS}")
+MESSAGE("Configure options: ${CMAKE_CONFIGURE_OPTIONS}")
 
 SET( CTEST_CMAKE_GENERATOR "Unix Makefiles")
 
@@ -98,21 +98,20 @@ ELSE()
     SET( CTEST_SITE ${HOSTNAME} )
 ENDIF()
 
-# Configure and run the tests
+# Run the configure
 CTEST_START("${CTEST_DASHBOARD}")
 CTEST_UPDATE()
 CTEST_CONFIGURE(
     BUILD   ${CTEST_BINARY_DIRECTORY}
     SOURCE  ${CTEST_SOURCE_DIRECTORY}
-    OPTIONS "${CTEST_OPTIONS}"
+    OPTIONS "${CMAKE_CONFIGURE_OPTIONS}"
 )
 
 
-# Run the configure, build and tests
+# Run the build
 CTEST_BUILD()
 
-# run and submit unclassified tests to the default track
-CTEST_START( "${CTEST_DASHBOARD}" TRACK "${CTEST_DASHBOARD}" APPEND)
+# Run and submit unclassified tests to the default track
 CTEST_TEST( EXCLUDE_LABEL "performance" PARALLEL_LEVEL ${N_CONCURRENT_TESTS} )
 CTEST_SUBMIT( PARTS Test )
 
@@ -124,7 +123,7 @@ SET( CTEST_DROP_SITE_CDASH TRUE )
 SET( DROP_SITE_CDASH TRUE )
 CTEST_SUBMIT( PARTS Configure Build Test )
 
-# run and submit the classified tests to their corresponding track
+# Run and submit the classified tests to their corresponding track
 CTEST_START( "${CTEST_DASHBOARD}" TRACK "Performance" APPEND)
 CTEST_TEST( INCLUDE_LABEL "performance" PARALLEL_LEVEL 16 )
 CTEST_SUBMIT( PARTS Test )
