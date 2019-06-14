@@ -39,8 +39,9 @@ struct einspline_spo_omp : public SPOSet
   /// define the einsplie data object type
   using self_type       = einspline_spo_omp<T>;
   using spline_type     = typename bspline_traits<T, 3>::SplineType;
-  using OffloadAlignedAllocator = OMPallocator<T, Mallocator<T, QMC_CLINE>>;
-  using OMPMatrix_type = Matrix<T, OffloadAlignedAllocator>;
+  template<typename TT>
+  using OffloadAlignedAllocator = OMPallocator<TT, Mallocator<TT, QMC_CLINE>>;
+  using OMPMatrix_type = Matrix<T, OffloadAlignedAllocator<T>>;
   using lattice_type    = CrystalLattice<T, 3>;
 
   /// number of blocks
@@ -64,6 +65,8 @@ struct einspline_spo_omp : public SPOSet
   std::vector<OMPMatrix_type> ratios_private;
   ///offload scratch space, dynamically resized to the maximal need
   std::vector<OMPMatrix_type> offload_scratch;
+  ///psiinv scratch space
+  Vector<T, OffloadAlignedAllocator<T>> psiinv_copy;
 
   // for shadows
   Vector<T*, OMPallocator<T*>> offload_scratch_shadows;
@@ -253,6 +256,10 @@ struct einspline_spo_omp : public SPOSet
   {
     ScopedTimer local_timer(timer);
 
+    psiinv_copy.resize(psiinv.size());
+    std::copy_n(psiinv.data(), psiinv.size(), psiinv_copy.data());
+    auto* restrict psiinv_ptr = psiinv_copy.data();
+
     // pack particle positions
     const int nVP = VP.getTotalNum();
     for (int iVP = 0; iVP < nVP; ++iVP)
@@ -283,12 +290,11 @@ struct einspline_spo_omp : public SPOSet
 
       auto* restrict offload_scratch_ptr = offload_scratch[i].data();
       auto* restrict ratios_private_ptr  = ratios_private[i].data();
-      auto* restrict psiinv_ptr          = psiinv.data() + i*nSplinesPerBlock;
       const int actual_block_size = std::min(nSplinesPerBlock, OrbitalSetSize - i*nSplinesPerBlock);
 
 #ifdef ENABLE_OFFLOAD
       #pragma omp target teams distribute collapse(2) num_teams(nVP*NumTeams) thread_limit(ChunkSizePerTeam) \
-        map(always, to : pos_scratch_ptr[:pos_scratch.size()], psiinv_ptr[:actual_block_size]) \
+        map(always, to : pos_scratch_ptr[:pos_scratch.size()], psiinv_ptr[i*nSplinesPerBlock:actual_block_size]) \
         map(always, from: ratios_private_ptr[0:NumTeams*nVP])
 #else
       //#pragma omp parallel for
@@ -318,7 +324,7 @@ struct einspline_spo_omp : public SPOSet
                                           first, last);
             PRAGMA_OFFLOAD("omp for reduction(+:sum)")
             for (int j = first; j < last; j++)
-              sum += offload_scratch_iVP_ptr[j] * psiinv_ptr[j];
+              sum += offload_scratch_iVP_ptr[j] * psiinv_ptr[i * nSplinesPerBlock_local + j];
           }
           ratios_private_ptr[iVP * NumTeams + team_id] = sum;
         }
