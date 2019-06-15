@@ -56,6 +56,8 @@ struct einspline_spo_omp : public SPOSet
   int nSplinesPerBlock;
   /// if true, responsible for cleaning up einsplines
   bool Owner;
+  /// total dimention of v, g, h
+  const int vgh_dim;
   lattice_type Lattice;
   /// use allocator
   BsplineAllocator<T> myAllocator;
@@ -65,18 +67,19 @@ struct einspline_spo_omp : public SPOSet
   std::vector<OMPMatrix_type> ratios_private;
   ///offload scratch space, dynamically resized to the maximal need
   std::vector<OMPMatrix_type> offload_scratch;
+  ///offload scratch space for multi_XXX, dynamically resized to the maximal need
+  std::vector<OMPMatrix_type> multi_offload_scratch;
   ///psiinv scratch space
   Vector<T, OffloadAlignedAllocator<T>> psiinv_copy;
 
   // for shadows
-  Vector<T*, OMPallocator<T*>> offload_scratch_shadows;
   Vector<T, OMPallocator<T>> pos_scratch;
 
   /// Timer
   NewTimer* timer;
 
   /// default constructor
-  einspline_spo_omp() : nBlocks(0), nSplines(0), firstBlock(0), lastBlock(0), Owner(false)
+  einspline_spo_omp() : nBlocks(0), nSplines(0), firstBlock(0), lastBlock(0), Owner(false), vgh_dim(10)
   {
     timer = TimerManager.createTimer("Single-Particle Orbitals", timer_level_fine);
   }
@@ -92,7 +95,7 @@ struct einspline_spo_omp : public SPOSet
    *
    * Create a view of the big object. A simple blocking & padding  method.
    */
-  einspline_spo_omp(const einspline_spo_omp& in, int team_size, int member_id) : Owner(false), Lattice(in.Lattice)
+  einspline_spo_omp(const einspline_spo_omp& in, int team_size, int member_id) : Owner(false), vgh_dim(10), Lattice(in.Lattice)
   {
     OrbitalSetSize   = in.OrbitalSetSize;
     nSplines         = in.nSplines;
@@ -131,9 +134,10 @@ struct einspline_spo_omp : public SPOSet
   {
     ratios_private.resize(nBlocks);
     offload_scratch.resize(nBlocks);
+    multi_offload_scratch.resize(nBlocks);
     for (int i = 0; i < nBlocks; ++i)
     {
-      offload_scratch[i].resize(10,getAlignedSize<T>(nSplinesPerBlock));
+      offload_scratch[i].resize(vgh_dim,getAlignedSize<T>(nSplinesPerBlock));
     }
   }
 
@@ -297,7 +301,7 @@ struct einspline_spo_omp : public SPOSet
         map(always, to : pos_scratch_ptr[:pos_scratch.size()], psiinv_ptr[i*nSplinesPerBlock:actual_block_size]) \
         map(always, from: ratios_private_ptr[0:NumTeams*nVP])
 #else
-      //#pragma omp parallel for
+      #pragma omp parallel for collapse(2)
 #endif
       for (size_t iVP = 0; iVP < nVP; iVP++)
         for (int team_id = 0; team_id < NumTeams; team_id++)
@@ -368,7 +372,7 @@ struct einspline_spo_omp : public SPOSet
 
 #ifdef ENABLE_OFFLOAD
       #pragma omp target teams distribute num_teams(NumTeams) thread_limit(ChunkSizePerTeam) \
-        map(always, from:offload_scratch_ptr[:10*padded_size])
+        map(always, from:offload_scratch_ptr[:vgh_dim*padded_size])
 #else
       #pragma omp parallel for
 #endif
@@ -430,31 +434,6 @@ struct einspline_spo_omp : public SPOSet
     for (int iw = 0; iw < nw; iw++)
       shadows.push_back(static_cast<self_type*>(spo_list[iw]));
 
-    if (nw * nBlocks != offload_scratch_shadows.size())
-    {
-      offload_scratch_shadows.resize(nw * nBlocks);
-      T** restrict offload_scratch_shadows_ptr  = offload_scratch_shadows.data();
-
-      for (size_t iw = 0; iw < nw; iw++)
-      {
-        auto& shadow = *shadows[iw];
-        for (int i = 0; i < nBlocks; ++i)
-        {
-          const size_t idx     = iw * nBlocks + i;
-          T* restrict offload_scratch_ptr  = shadow.offload_scratch[i].data();
-#ifdef ENABLE_OFFLOAD
-          //std::cout << "psi_shadows_ptr mapped already? " << omp_target_is_present(psi_shadows_ptr,0) << std::endl;
-          //std::cout << "psi_ptr mapped already? " << omp_target_is_present(psi_ptr,0) << std::endl;
-          #pragma omp target map(to : idx)
-#endif
-          {
-            offload_scratch_shadows_ptr[idx] = offload_scratch_ptr;
-          }
-        }
-      }
-    }
-    T** restrict offload_scratch_shadows_ptr = offload_scratch_shadows.data();
-
     pos_scratch.resize(nw*3);
     for (size_t iw = 0; iw < nw; iw++)
     {
@@ -479,11 +458,15 @@ struct einspline_spo_omp : public SPOSet
       const auto* restrict spline_m = einsplines[i];
       int padded_size = getAlignedSize<T>(nSplinesPerBlock);
 
+      multi_offload_scratch[i].resize(vgh_dim*nw, padded_size);
+      auto* multi_offload_scratch_ptr = multi_offload_scratch[i].data();
+
 #ifdef ENABLE_OFFLOAD
       #pragma omp target teams distribute collapse(2) num_teams(nw*NumTeams) thread_limit(ChunkSizePerTeam) \
-        map(always, to : pos_scratch_ptr [:pos_scratch.size()])
+        map(always, to : pos_scratch_ptr [:pos_scratch.size()]) \
+        map(always, from : multi_offload_scratch_ptr[:vgh_dim*nw*padded_size])
 #else
-      #pragma omp parallel for
+      #pragma omp parallel for collapse(2)
 #endif
       for (size_t iw = 0; iw < nw; iw++)
         for (int team_id = 0; team_id < NumTeams; team_id++)
@@ -510,18 +493,13 @@ struct einspline_spo_omp : public SPOSet
                                           a, b, c,
                                           da, db, dc,
                                           d2a, d2b, d2c,
-                                          offload_scratch_shadows_ptr[iw * nBlocks_local + i] + first,
+                                          multi_offload_scratch_ptr + iw * vgh_dim * padded_size + first,
                                           padded_size,
                                           first, last);
         }
 
-      for (size_t iw = 0; iw < spo_list.size(); iw++)
-      {
-        auto* offload_scratch_ptr = shadows[iw]->offload_scratch[i].data();
-#ifdef ENABLE_OFFLOAD
-        #pragma omp target update from(offload_scratch_ptr[:padded_size*10])
-#endif
-      }
+      for (size_t iw = 0; iw < nw; iw++)
+        std::copy_n(multi_offload_scratch_ptr + iw * vgh_dim * padded_size, padded_size*vgh_dim, shadows[iw]->offload_scratch[i].data());
     }
   }
 
