@@ -57,7 +57,7 @@ struct einspline_spo_omp : public SPOSet
   /// if true, responsible for cleaning up einsplines
   bool Owner;
   /// total dimention of v, g, h
-  const int vgh_dim;
+  static const int vgh_dim = 10;
   lattice_type Lattice;
   /// use allocator
   BsplineAllocator<T> myAllocator;
@@ -79,7 +79,7 @@ struct einspline_spo_omp : public SPOSet
   NewTimer* timer;
 
   /// default constructor
-  einspline_spo_omp() : nBlocks(0), nSplines(0), firstBlock(0), lastBlock(0), Owner(false), vgh_dim(10)
+  einspline_spo_omp() : nBlocks(0), nSplines(0), firstBlock(0), lastBlock(0), Owner(false)
   {
     timer = TimerManager.createTimer("Single-Particle Orbitals", timer_level_fine);
   }
@@ -95,7 +95,7 @@ struct einspline_spo_omp : public SPOSet
    *
    * Create a view of the big object. A simple blocking & padding  method.
    */
-  einspline_spo_omp(const einspline_spo_omp& in, int team_size, int member_id) : Owner(false), vgh_dim(10), Lattice(in.Lattice)
+  einspline_spo_omp(const einspline_spo_omp& in, int team_size, int member_id) : Owner(false), Lattice(in.Lattice)
   {
     OrbitalSetSize   = in.OrbitalSetSize;
     nSplines         = in.nSplines;
