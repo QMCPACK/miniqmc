@@ -69,8 +69,8 @@ struct einspline_spo_omp : public SPOSet
   std::vector<OMPMatrix_type> offload_scratch;
   ///offload scratch space for multi_XXX, dynamically resized to the maximal need
   std::vector<OMPMatrix_type> multi_offload_scratch;
-  ///psiinv scratch space
-  Vector<T, OffloadAlignedAllocator<T>> psiinv_copy;
+  ///psiinv and position scratch space, used to avoid allocation on the fly and faster transfer
+  Vector<T, OffloadAlignedAllocator<T>> psiinv_pos_copy;
 
   // for shadows
   Vector<T, OMPallocator<T>> pos_scratch;
@@ -260,15 +260,14 @@ struct einspline_spo_omp : public SPOSet
   {
     ScopedTimer local_timer(timer);
 
-    psiinv_copy.resize(psiinv.size());
-    std::copy_n(psiinv.data(), psiinv.size(), psiinv_copy.data());
-    auto* restrict psiinv_ptr = psiinv_copy.data();
+    const int nVP = VP.getTotalNum();
+    if(psiinv_pos_copy.size() < psiinv.size() + nVP * 3)
+      psiinv_pos_copy.resize(psiinv.size() + nVP * 3);
+    // stage psiinv to psiinv_pos_copy
+    std::copy_n(psiinv.data(), psiinv.size(), psiinv_pos_copy.data());
 
     // pack particle positions
-    const int nVP = VP.getTotalNum();
-    for (int iVP = 0; iVP < nVP; ++iVP)
-      ratios[iVP] = ValueType(0);
-    pos_scratch.resize(nVP * 3);
+    auto* restrict pos_scratch = psiinv_pos_copy.data() + psiinv.size();
     for (int iVP = 0; iVP < nVP; ++iVP)
     {
       auto ru(Lattice.toUnit_floor(VP.activeR(iVP)));
@@ -276,7 +275,6 @@ struct einspline_spo_omp : public SPOSet
       pos_scratch[iVP * 3 + 1] = ru[1];
       pos_scratch[iVP * 3 + 2] = ru[2];
     }
-    auto* pos_scratch_ptr = pos_scratch.data();
 
     auto nBlocks_local = nBlocks;
     auto nSplinesPerBlock_local = nSplinesPerBlock;
@@ -295,10 +293,12 @@ struct einspline_spo_omp : public SPOSet
       auto* restrict offload_scratch_ptr = offload_scratch[i].data();
       auto* restrict ratios_private_ptr  = ratios_private[i].data();
       const int actual_block_size = std::min(nSplinesPerBlock, OrbitalSetSize - i*nSplinesPerBlock);
+      auto* restrict psiinv_ptr = psiinv_pos_copy.data();
+      const auto psiinv_size = psiinv.size();
 
 #ifdef ENABLE_OFFLOAD
       #pragma omp target teams distribute collapse(2) num_teams(nVP*NumTeams) thread_limit(ChunkSizePerTeam) \
-        map(always, to : pos_scratch_ptr[:pos_scratch.size()], psiinv_ptr[i*nSplinesPerBlock:actual_block_size]) \
+        map(always, to : psiinv_ptr[0:psiinv_pos_copy.size()]) \
         map(always, from: ratios_private_ptr[0:NumTeams*nVP])
 #else
       #pragma omp parallel for collapse(2)
@@ -309,13 +309,14 @@ struct einspline_spo_omp : public SPOSet
           const int first = ChunkSizePerTeam * team_id;
           const int last  = (first + ChunkSizePerTeam) > nSplinesPerBlock_local ? nSplinesPerBlock_local : first + ChunkSizePerTeam;
           auto* restrict offload_scratch_iVP_ptr = offload_scratch_ptr + padded_size * iVP;
+          auto* restrict pos_scratch             = psiinv_ptr + psiinv_size;
 
           int ix, iy, iz;
           T a[4], b[4], c[4];
           spline2::computeLocationAndFractional(spline_m,
-                                                pos_scratch_ptr[iVP*3  ],
-                                                pos_scratch_ptr[iVP*3+1],
-                                                pos_scratch_ptr[iVP*3+2],
+                                                pos_scratch[iVP*3  ],
+                                                pos_scratch[iVP*3+1],
+                                                pos_scratch[iVP*3+2],
                                                 ix, iy, iz,
                                                 a, b, c);
           T sum(0);
@@ -335,8 +336,11 @@ struct einspline_spo_omp : public SPOSet
 
       // do the reduction manually
       for (int iVP = 0; iVP < nVP; ++iVP)
+      {
+        ratios[iVP] = ValueType(0);
         for (int tid = 0; tid < NumTeams; tid++)
           ratios[iVP] += ratios_private[i][iVP][tid];
+      }
     }
   }
 
