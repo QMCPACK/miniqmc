@@ -126,6 +126,7 @@ struct NonLocalPP
       const auto& displ = d_ie->Displacements[jel];
       for (int iat = 0; iat < ions_ref.getTotalNum(); ++iat)
       {
+        //due to < Rmax condition, the actually iteration iat is [0,2] in a real simulation
         if (dist[iat] < Rmax)
         {
           for (int k = 0; k < size(); k++)
