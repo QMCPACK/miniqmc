@@ -57,7 +57,7 @@ struct Mover
   NonLocalPP<RealType> nlpp;
 
   /// constructor
-  Mover(const uint32_t myPrime, const ParticleSet& ions) : rng(myPrime), nlpp(rng)
+  Mover(const uint32_t myPrime, const ParticleSet& ions) : rng(myPrime), nlpp(rng, ions)
   {
     build_els(els, ions, rng);
   }

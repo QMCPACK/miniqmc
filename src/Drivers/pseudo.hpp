@@ -49,8 +49,12 @@ struct NonLocalPP
   std::vector<PosType> sgridxyz_m;
   /** Virtual ParticleSet for each ionic specie*/
   std::vector<VirtualParticleSet> VPs;
+  /** ions particle set */
+  const ParticleSet& ions_ref;
+
   /** default constructor with knots=12 */
-  NonLocalPP(const RandomGenerator<RealType>& rng) : myRNG(rng)
+  NonLocalPP(const RandomGenerator<RealType>& rng, const ParticleSet& ions)
+    : myRNG(rng), ions_ref(ions)
   {
     // use fixed seed
     myRNG.init(0, 1, 11);
@@ -122,19 +126,18 @@ struct NonLocalPP
      std::vector<QMCTraits::ValueType> ratios(size());
      randomize(rOnSphere); // pick random sphere
      const DistanceTableData* d_ie = els.DistTables[wf.get_ei_TableID()];
-     const ParticleSet& ions(d_ie->origin());
 
      for (int jel = 0; jel < els.getTotalNum(); ++jel)
      {
        const auto& dist  = d_ie->Distances[jel];
        const auto& displ = d_ie->Displacements[jel];
-       for (int iat = 0; iat < ions.getTotalNum(); ++iat)
+       for (int iat = 0; iat < ions_ref.getTotalNum(); ++iat)
        {
          if (dist[iat] < Rmax)
          {
            for (int k = 0; k < size(); k++)
              virtualPos[k] = dist[iat] * rOnSphere[k] + displ[iat] + els.R[jel];
-           auto& VP = VPs[ions.GroupID[iat]];
+           auto& VP = VPs[ions_ref.GroupID[iat]];
            VP.makeMoves(jel, virtualPos, true, iat);
            wf.evaluateRatios(VP, ratios);
          }
