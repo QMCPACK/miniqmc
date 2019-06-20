@@ -26,7 +26,7 @@
 #include <Input/Input.hpp>
 #include <QMCWaveFunctions/einspline_spo.hpp>
 #include <QMCWaveFunctions/einspline_spo_ref.hpp>
-#include <Drivers/pseudo.hpp>
+#include <Drivers/NonLocalPP.hpp>
 #include <Utilities/qmcpack_version.h>
 #include <getopt.h>
 

@@ -29,7 +29,7 @@
 #include "QMCWaveFunctions/SPOSet.h"
 #include <QMCWaveFunctions/WaveFunction.h>
 #include <Particle/ParticleSet_builder.hpp>
-#include <Drivers/pseudo.hpp>
+#include <Drivers/NonLocalPP.hpp>
 
 namespace qmcplusplus
 {
