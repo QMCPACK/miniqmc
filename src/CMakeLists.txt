@@ -179,6 +179,8 @@ ENDIF()
 
   SUBDIRS(Particle/tests)
 
+  SUBDIRS(OpenMP/tests)
+
   SUBDIRS(QMCWaveFunctions)
 
   SUBDIRS(Drivers)
