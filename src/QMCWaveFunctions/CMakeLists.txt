@@ -10,7 +10,8 @@
 #//////////////////////////////////////////////////////////////////////////////////////
 
 ADD_LIBRARY(qmcwfs
-            ../QMCWaveFunctions/WaveFunction.cpp ../QMCWaveFunctions/SPOSet_builder.cpp
-            ../QMCWaveFunctions/DiracDeterminant.cpp ../QMCWaveFunctions/DiracDeterminantRef.cpp)
+            einspline_spo_omp.cpp
+            WaveFunction.cpp SPOSet_builder.cpp
+            DiracDeterminant.cpp DiracDeterminantRef.cpp)
 
 SUBDIRS(tests)
