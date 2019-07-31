@@ -74,7 +74,7 @@ TEST_CASE("MiniQMCOptions Read", "[Application]") {
     REQUIRE(mq_opt.timer_level_name == "fine");
     REQUIRE(mq_opt.verbose);
     REQUIRE(mq_opt.walkers_per_rank == 200);
-    REQUIRE(mq_opt.Rmax == 1.7);
+    REQUIRE(mq_opt.Rmax == ValueApprox(1.7));
     
     
 }

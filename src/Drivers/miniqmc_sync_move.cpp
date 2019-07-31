@@ -153,12 +153,12 @@ void print_help()
   app_summary() << "  miniqmc   [-bhjPvV] [-g \"n0 n1 n2\"] [-m meshfactor]"     << '\n';
   app_summary() << "            [-n steps] [-N substeps] [-x rmax]"              << '\n';
   app_summary() << "            [-r AcceptanceRatio] [-s seed] [-w walkers]"     << '\n';
-  app_summary() << "            [-a tile_size] [-t timer_level] [-B nw_b]"       << '\n';
+  app_summary() << "            [-a tile_size] [-t timer_level] [-c nw_b]"       << '\n';
   app_summary() << "            [-k delay_rank]"                                 << '\n';
   app_summary() << "options:"                                                    << '\n';
   app_summary() << "  -a  size of each spline tile       default: num of orbs"   << '\n';
   app_summary() << "  -b  use reference implementations  default: off"           << '\n';
-  app_summary() << "  -B  number of walkers per batch    default: 1"             << '\n';
+  app_summary() << "  -c  number of walkers per batch    default: 1"             << '\n';
   app_summary() << "  -g  set the 3D tiling.             default: 1 1 1"         << '\n';
   app_summary() << "  -h  print help and exit"                                   << '\n';
   app_summary() << "  -j  enable three body Jastrow      default: off"           << '\n';
@@ -201,7 +201,6 @@ int main(int argc, char** argv)
   int nw_b = 1;
   // thread blocking
   int tileSize  = -1;
-  int team_size = 1;
   int nsubsteps = 1;
   // Set cutoff for NLPP use.
   RealType Rmax(1.7);
@@ -224,7 +223,7 @@ int main(int argc, char** argv)
   int opt;
   while (optind < argc)
   {
-    if ((opt = getopt(argc, argv, "bhjPvVa:B:c:g:m:n:N:r:s:t:k:w:x:")) != -1)
+    if ((opt = getopt(argc, argv, "bhjPvVa:c:g:m:n:N:r:s:t:k:w:x:")) != -1)
     {
       switch (opt)
       {
@@ -234,11 +233,8 @@ int main(int argc, char** argv)
       case 'b':
         useRef = true;
         break;
-      case 'B': // number of walkers per batch
+      case 'c': // number of walkers per batch
         nw_b = atoi(optarg);
-        break;
-      case 'c': // number of members per team
-        team_size = atoi(optarg);
         break;
       case 'g': // tiling1 tiling2 tiling3
         sscanf(optarg, "%d %d %d", &na, &nb, &nc);
