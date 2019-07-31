@@ -26,6 +26,7 @@
 #include <Utilities/RandomGenerator.h>
 #include <Utilities/NewTimer.h>
 #include <Particle/ParticleSet.h>
+#include <Particle/VirtualParticleSet.h>
 #include <QMCWaveFunctions/SPOSet_builder.h>
 #include <QMCWaveFunctions/WaveFunctionComponent.h>
 
@@ -67,6 +68,10 @@ public:
   void restore(int iat);
   void completeUpdates();
   void evaluateGL(ParticleSet& P);
+
+  /** compulte multiple ratios to handle non-local moves and other virtual moves
+   */
+  void evaluateRatios(VirtualParticleSet& P, std::vector<valT>& ratios);
 
   /// operates on multiple walkers
   void flex_evaluateLog(const std::vector<WaveFunction*>& WF_list,

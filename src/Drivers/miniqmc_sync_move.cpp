@@ -181,7 +181,6 @@ int main(int argc, char** argv)
 {
   // clang-format off
   typedef QMCTraits::RealType           RealType;
-  typedef ParticleSet::ParticlePos_t    ParticlePos_t;
   typedef ParticleSet::PosType          PosType;
   typedef ParticleSet::GradType         GradType;
   typedef ParticleSet::ValueType        ValueType;
@@ -404,6 +403,9 @@ int main(int argc, char** argv)
     // create wavefunction per mover
     build_WaveFunction(useRef, spo_main, thiswalker->wavefunction, ions, thiswalker->els, thiswalker->rng, delay_rank, enableJ3);
 
+    // initialize virtual particle sets
+    thiswalker->nlpp.initialize_VPs(ions, thiswalker->els, Rmax);
+
     // initial computing
     thiswalker->els.update();
   }
@@ -439,6 +441,7 @@ int main(int argc, char** argv)
       const std::vector<Mover*> Sub_list(extract_sub_list(mover_list, first, last));
       const std::vector<ParticleSet*> P_list(extract_els_list(Sub_list));
       const std::vector<WaveFunction*> WF_list(extract_wf_list(Sub_list));
+      const std::vector<NonLocalPP<RealType>*> NLPP_list(extract_nlpp_list(Sub_list));
       const Mover& anon_mover = *Sub_list[0];
 
       int nw_this_batch = last - first;
@@ -512,39 +515,8 @@ int main(int argc, char** argv)
       if(!run_pseudo) continue;
 
       // Compute NLPP energy using integral over spherical points
-      // Ye: I have not found a strategy for NLPP
       Timers[Timer_ECP]->start();
-      #pragma omp parallel for
-      for (int iw = first; iw < last; iw++)
-      {
-        auto& els          = mover_list[iw]->els;
-        auto& wavefunction = mover_list[iw]->wavefunction;
-        auto& ecp          = mover_list[iw]->nlpp;
-
-        ParticlePos_t rOnSphere(nknots);
-        ecp.randomize(rOnSphere); // pick random sphere
-        const DistanceTableData* d_ie = els.DistTables[wavefunction.get_ei_TableID()];
-
-        for (int jel = 0; jel < els.getTotalNum(); ++jel)
-        {
-          const auto& dist  = d_ie->Distances[jel];
-          const auto& displ = d_ie->Displacements[jel];
-          for (int iat = 0; iat < nions; ++iat)
-            if (dist[iat] < Rmax)
-              for (int k = 0; k < nknots; k++)
-              {
-                PosType deltar(dist[iat] * rOnSphere[k] - displ[iat]);
-
-                els.makeMove(jel, deltar);
-
-                Timers[Timer_Value]->start();
-                wavefunction.ratio(els, jel);
-                Timers[Timer_Value]->stop();
-
-                els.rejectMove(jel);
-              }
-        }
-      }
+      Sub_list[0]->nlpp.multi_evaluate(NLPP_list, WF_list, P_list);
       Timers[Timer_ECP]->stop();
     } // batch
   } // nsteps

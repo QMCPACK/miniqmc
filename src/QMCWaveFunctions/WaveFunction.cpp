@@ -278,6 +278,25 @@ void WaveFunction::evaluateGL(ParticleSet& P)
   }
 }
 
+void WaveFunction::evaluateRatios(VirtualParticleSet& VP, std::vector<valT>& ratios)
+{
+  assert(VP.getTotalNum() == ratios.size());
+  if (VP.refPtcl < nelup)
+    Det_up->evaluateRatios(VP, ratios);
+  else
+    Det_dn->evaluateRatios(VP, ratios);
+
+  std::vector<valT> t(ratios.size());
+  for (size_t i = 0; i < Jastrows.size(); i++)
+  {
+    jastrow_timers[i]->start();
+    Jastrows[i]->evaluateRatios(VP, t);
+    for (int j = 0; j < ratios.size(); ++j)
+      ratios[j] *= t[j];
+    jastrow_timers[i]->stop();
+  }
+}
+
 void WaveFunction::flex_evaluateLog(const std::vector<WaveFunction*>& WF_list,
                                     const std::vector<ParticleSet*>& P_list) const
 {

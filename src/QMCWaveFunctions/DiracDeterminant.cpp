@@ -212,7 +212,6 @@ typename DiracDeterminant<DU_TYPE>::ValueType DiracDeterminant<DU_TYPE>::ratio(P
   return curRatio;
 }
 
-/* Ye: to be recovered
 template<typename DU_TYPE>
 void DiracDeterminant<DU_TYPE>::evaluateRatios(VirtualParticleSet& VP, std::vector<ValueType>& ratios)
 {
@@ -223,7 +222,6 @@ void DiracDeterminant<DU_TYPE>::evaluateRatios(VirtualParticleSet& VP, std::vect
   Phi->evaluateDetRatios(VP, psiV, invRow, ratios);
   SPOVTimer->stop();
 }
-*/
 
 /** Calculate the log value of the Dirac determinant for particles
  *@param P input configuration containing N particles

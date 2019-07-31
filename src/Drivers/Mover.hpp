@@ -29,7 +29,7 @@
 #include "QMCWaveFunctions/SPOSet.h"
 #include <QMCWaveFunctions/WaveFunction.h>
 #include <Particle/ParticleSet_builder.hpp>
-#include <Input/pseudo.hpp>
+#include <Drivers/NonLocalPP.hpp>
 
 namespace qmcplusplus
 {
@@ -57,7 +57,7 @@ struct Mover
   NonLocalPP<RealType> nlpp;
 
   /// constructor
-  Mover(const uint32_t myPrime, const ParticleSet& ions) : rng(myPrime), nlpp(rng)
+  Mover(const uint32_t myPrime, const ParticleSet& ions) : rng(myPrime), nlpp(rng, ions)
   {
     build_els(els, ions, rng);
   }
@@ -101,6 +101,14 @@ const std::vector<WaveFunction*> extract_wf_list(const std::vector<Mover*>& move
   for (auto it = mover_list.begin(); it != mover_list.end(); it++)
     wf_list.push_back(&(*it)->wavefunction);
   return wf_list;
+}
+
+const std::vector<NonLocalPP<QMCTraits::RealType>*> extract_nlpp_list(const std::vector<Mover*>& mover_list)
+{
+  std::vector<NonLocalPP<QMCTraits::RealType>*> nlpp_list;
+  for (auto it = mover_list.begin(); it != mover_list.end(); it++)
+    nlpp_list.push_back(&(*it)->nlpp);
+  return nlpp_list;
 }
 
 } // namespace qmcplusplus
