@@ -6,7 +6,12 @@ ENDIF()
 # Enable OpenMP
 IF(QMC_OMP)
   SET(ENABLE_OPENMP 1)
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
+  IF(ENABLE_OFFLOAD)
+    SET(OFFLOAD_TARGET "nvptx-none" CACHE STRING "Offload target architecture")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp -foffload=${OFFLOAD_TARGET}")
+  ELSE()
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
+  ENDIF()
 ENDIF(QMC_OMP)
 
 # Set gnu specfic flags (which we always want)
