@@ -21,6 +21,8 @@ module load openblas/0.3.5
 module load git/2.18.0
 module load cmake/3.13.4
 
+export OMP_NUM_THREADS=4
+
 env
 
 module list
@@ -78,6 +80,8 @@ echo "starting new test for real mixed precision"
 echo ""
 echo ""
 
+ctest -L unit --output-on-failure
+
 cd ../
 rm -rf ./build
 mkdir -p build
@@ -123,6 +127,9 @@ echo
 # YL: commented out mixed precision check. Too unstable
 #./bin/check_wfc -f Det
 
+ctest -L unit --output-on-failure
+
+cd ../
 EOF
 
 /home/mat151ci_auser/blocking_qsub $BUILD_DIR $BUILD_TAG.pbs
@@ -130,4 +137,25 @@ EOF
 cp $BUILD_DIR/$BUILD_TAG.o* ../
 
 # get status from all checks
-[ $(grep -e 'All checks passed for J[123]' -e 'All checks passed for spo' -e 'All checks passed for Det' ../$BUILD_TAG.o* | wc -l) -eq 9 ]
+
+CHECK_XXX_FAILED=0
+
+if [ $(grep -e 'All checks passed for J[123]' -e 'All checks passed for spo' -e 'All checks passed for Det' ../$BUILD_TAG.o* | wc -l) -ne 9 ]
+then
+  echo; echo
+  echo One or more build variants failed in check_XXX. Check the build log for details.
+  echo; echo
+  CHECK_XXX_FAILED=1
+fi
+
+UNIT_TESTS_FAILED=0
+
+if [ $(grep '100% tests passed, 0 tests failed out of [0-9]*' ../$BUILD_TAG.o* | wc -l) -ne 2 ]
+then
+  echo; echo
+  echo One or more build variants failed in unit tests. Check the build log for details.
+  echo; echo
+  UNIT_TESTS_FAILED=1
+fi
+
+[ $CHECK_XXX_FAILED -eq 0 -a $UNIT_TESTS_FAILED -eq 0 ]

@@ -25,9 +25,6 @@
 /* define the git last commit date */
 // #cmakedefine QMCPLUSPLUS_LAST_CHANGED_DATE  "@QMCPLUSPLUS_LAST_CHANGED_DATE@"
 
-/* define QMC_BUILD_LEVEL */
-#cmakedefine QMC_BUILD_LEVEL @QMC_BUILD_LEVEL@
-
 /* Enable OpenMP parallelization. */
 #cmakedefine ENABLE_OPENMP @ENABLE_OPENMP@
 

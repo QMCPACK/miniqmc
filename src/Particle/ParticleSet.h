@@ -155,7 +155,7 @@ public:
   /// default constructor
   ParticleSet();
 
-  /// copy constructor
+  /// copy constructor, it is not safe unless the DistTables[0] is an AA type. To be fixed.
   ParticleSet(const ParticleSet& p);
 
   /// default destructor

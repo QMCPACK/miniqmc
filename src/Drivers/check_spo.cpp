@@ -26,7 +26,7 @@
 #include <Input/Input.hpp>
 #include <QMCWaveFunctions/einspline_spo_omp.hpp>
 #include <QMCWaveFunctions/einspline_spo_ref.hpp>
-#include <Drivers/pseudo.hpp>
+#include <Drivers/NonLocalPP.hpp>
 #include <Utilities/qmcpack_version.h>
 #include <getopt.h>
 
@@ -220,7 +220,7 @@ int main(int argc, char** argv)
     const int nels3 = 3 * nels;
 
     // create pseudopp
-    NonLocalPP<OHMMS_PRECISION> ecp(random_th);
+    NonLocalPP<OHMMS_PRECISION> ecp(random_th, ions);
     // create spo per thread
     spo_type spo(spo_main, team_size, member_id);
     spo_ref_type spo_ref(spo_ref_main, team_size, member_id);

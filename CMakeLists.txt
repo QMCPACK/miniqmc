@@ -32,11 +32,6 @@ SET( DART_TESTING_TIMEOUT 3600 CACHE STRING "Maximum time for one test")
 ENABLE_TESTING()
 INCLUDE( CTest )
 
-######################################################################
-# Build level
-######################################################################
-SET(QMC_BUILD_LEVEL 5 CACHE INTEGER
-  "QMC Build Level: 1=bare, 2=developer, 3=experimental, 4=minimal, 5=miniapps")
 IF ( NOT CMAKE_BUILD_TYPE AND NOT CMAKE_TOOLCHAIN_FILE)
   SET( CMAKE_BUILD_TYPE Release )
 ENDIF()
@@ -74,7 +69,7 @@ SET (EXECUTABLE_OUTPUT_PATH ${qmcpack_BINARY_DIR}/bin CACHE PATH "Single output 
 # QMC_MPI =  enable MPI
 # QMC_OMP = enable OMP
 ######################################################################
-SET(OHMMS_DIM 3 CACHE INTEGER "Select physical dimension")
+SET(OHMMS_DIM 3 CACHE STRING "Select physical dimension")
 SET(OHMMS_INDEXTYPE int)
 MESSAGE(STATUS "defining the float point precision")
 SET(OHMMS_PRECISION_FULL double)
@@ -97,7 +92,7 @@ SET(ENABLE_GCOV FALSE CACHE BOOL "Enable code coverage")
 ######################################################################
 SET(QMC_MPI 0 CACHE BOOL "Enable/disable MPI")
 SET(QMC_OMP 1 CACHE BOOL "Enable/disable OpenMP")
-SET(QMC_COMPLEX 0 CACHE INTEGER "Build for complex binary")
+SET(QMC_COMPLEX 0 CACHE STRING "Build for complex binary")
 
 ######################################################################
 # Standard test
