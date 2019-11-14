@@ -109,7 +109,7 @@ public:
 
   /// operates on multiple walkers
   virtual void multi_evaluate(const std::vector<SPOSet*>& spo_list, const std::vector<ParticleSet*>& P_list, int iat,
-                              std::vector<ValueVector_t*>& psi_v_list)
+                              const std::vector<ValueVector_t*>& psi_v_list)
   {
 #pragma omp parallel for
     for (int iw = 0; iw < spo_list.size(); iw++)
@@ -117,9 +117,9 @@ public:
   }
 
   virtual void multi_evaluate(const std::vector<SPOSet*>& spo_list, const std::vector<ParticleSet*>& P_list, int iat,
-                              std::vector<ValueVector_t*>& psi_v_list,
-                              std::vector<GradVector_t*>& dpsi_v_list,
-                              std::vector<ValueVector_t*>& d2psi_v_list)
+                              const std::vector<ValueVector_t*>& psi_v_list,
+                              const std::vector<GradVector_t*>& dpsi_v_list,
+                              const std::vector<ValueVector_t*>& d2psi_v_list)
   {
 #pragma omp parallel for
     for (int iw = 0; iw < spo_list.size(); iw++)

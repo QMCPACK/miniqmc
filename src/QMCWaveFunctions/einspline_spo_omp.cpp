@@ -437,9 +437,9 @@ template<typename T>
 inline void einspline_spo_omp<T>::multi_evaluate(const std::vector<SPOSet*>& spo_list,
                                                  const std::vector<ParticleSet*>& P_list,
                                                  int iat,
-                                                 std::vector<ValueVector_t*>& psi_v_list,
-                                                 std::vector<GradVector_t*>& dpsi_v_list,
-                                                 std::vector<ValueVector_t*>& d2psi_v_list)
+                                                 const std::vector<ValueVector_t*>& psi_v_list,
+                                                 const std::vector<GradVector_t*>& dpsi_v_list,
+                                                 const std::vector<ValueVector_t*>& d2psi_v_list)
 {
   multi_evaluate_vgh(spo_list, P_list, iat);
   for (size_t iw = 0; iw < spo_list.size(); iw++)
