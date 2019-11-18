@@ -47,7 +47,7 @@ einspline_spo_omp<T>::einspline_spo_omp(const einspline_spo_omp& in, int team_si
     einsplines[i] = in.einsplines[t];
 #ifdef ENABLE_OFFLOAD
     spline_type** einsplines_ptr = einsplines.data();
-    auto& tile_ptr               = in.einsplines[t];
+    spline_type* tile_ptr        = in.einsplines[t];
     #pragma omp target map(to : i)
     {
       einsplines_ptr[i] = tile_ptr;
@@ -115,9 +115,9 @@ void einspline_spo_omp<T>::set(int nx, int ny, int nz, int num_splines, int nblo
       }
 #ifdef ENABLE_OFFLOAD
       // attach pointers
-      spline_type** restrict einsplines_ptr = einsplines.data();
-      spline_type* restrict& tile_ptr       = einsplines[i];
-      T* restrict& coefs_ptr                = einsplines[i]->coefs;
+      spline_type** einsplines_ptr = einsplines.data();
+      spline_type* tile_ptr        = einsplines[i];
+      T* coefs_ptr                 = einsplines[i]->coefs;
       #pragma omp target enter data map(to : tile_ptr [0:1])
       // Ye: I still don't understand why this line must be separated from the previous one.
       #pragma omp target enter data map(to : coefs_ptr [0:einsplines[i]->coefs_size])
