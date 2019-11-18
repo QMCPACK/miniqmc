@@ -13,7 +13,7 @@ cmake -D CMAKE_CXX_COMPILER="$AOMP" \
       -D CMAKE_CXX_FLAGS="-march=native -Xopenmp-target=amdgcn-amd-amdhsa -march=gfx906" \
       -D OFFLOAD_TARGET="amdgcn-amd-amdhsa" \
       -D CMAKE_FIND_ROOT_PATH=/opt/math-libraries/OpenBLAS/current \
-      -D QMC_MPI=0 -D ENABLE_OFFLOAD=1 ..
+      -D ENABLE_OFFLOAD=1 ..
 make -j 16
 cd ..
 
@@ -24,6 +24,6 @@ cmake -D CMAKE_CXX_COMPILER="$AOMP" \
       -D CMAKE_CXX_FLAGS="-march=native -Xopenmp-target=amdgcn-amd-amdhsa -march=gfx906" \
       -D OFFLOAD_TARGET="amdgcn-amd-amdhsa" \
       -D CMAKE_FIND_ROOT_PATH=/opt/math-libraries/OpenBLAS/current \
-       -D QMC_MIXED_PRECISION=1 -D QMC_MPI=0 -D ENABLE_OFFLOAD=1 ..
+      -D QMC_MIXED_PRECISION=1 -D ENABLE_OFFLOAD=1 ..
 make -j 16
 cd ..
