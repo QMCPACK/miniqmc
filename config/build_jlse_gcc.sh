@@ -3,7 +3,7 @@
 # Last modified: Nov 17, 2019                  #
 ################################################
 
-module load gcc mkl
+module load gcc public_mkl
 
 folder=build_gnu_offload
 mkdir $folder
