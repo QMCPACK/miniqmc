@@ -7,7 +7,7 @@ ENDIF()
 # Enable OpenMP
 IF(QMC_OMP)
   SET(ENABLE_OPENMP 1)
-  IF(ENABLE_OFFLOAD)
+  IF(ENABLE_OFFLOAD AND NOT $ENV{CRAYPE_VERSION} MATCHES ".")
     SET(OFFLOAD_TARGET "nvptx64-nvidia-cuda" CACHE STRING "Offload target architecture")
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp -fopenmp-targets=${OFFLOAD_TARGET}")
   ELSE()
