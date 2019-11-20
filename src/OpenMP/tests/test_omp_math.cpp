@@ -124,4 +124,53 @@ TEST_CASE("sin_cos", "[openmp]")
   test_sin_cos<double>(-0.5);
 }
 
+template<typename T>
+void test_sincos(T x);
+
+template<>
+void test_sincos<float>(float x)
+{
+  float sin_v, cos_v;
+
+  PRAGMA_OFFLOAD("omp target map(from: sin_v, cos_v)")
+  {
+    sincosf(x, &sin_v, &cos_v);
+  }
+
+  float sin_v_host, cos_v_host;
+  {
+    sincosf(x, &sin_v_host, &cos_v_host);
+  }
+
+  REQUIRE(sin_v == ValueApprox(sin_v_host));
+  REQUIRE(cos_v == ValueApprox(cos_v_host));
+}
+
+template<>
+void test_sincos<double>(double x)
+{
+  double sin_v, cos_v;
+
+  PRAGMA_OFFLOAD("omp target map(from: sin_v, cos_v)")
+  {
+    sincos(x, &sin_v, &cos_v);
+  }
+
+  double sin_v_host, cos_v_host;
+  {
+    sincos(x, &sin_v_host, &cos_v_host);
+  }
+
+  REQUIRE(sin_v == ValueApprox(sin_v_host));
+  REQUIRE(cos_v == ValueApprox(cos_v_host));
+}
+
+TEST_CASE("sincos", "[openmp]")
+{
+  test_sincos(1.5f);
+  test_sincos(-0.5f);
+  test_sincos(1.5);
+  test_sincos(-0.5);
+}
+
 } // namespace qmcplusplus
