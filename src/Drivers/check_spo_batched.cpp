@@ -431,5 +431,8 @@ int main(int argc, char** argv)
   if (nfail == 0)
     app_log() << "All checks passed for spo" << std::endl;
 
+  app_log() << "evaluateVGH loads "
+            << size_t(64) * sizeof(OHMMS_PRECISION) * nels/2 * nels * nsteps * nmovers
+            << " bytes of coefficients from memory." << std::endl << std::endl;
   return 0;
 }
