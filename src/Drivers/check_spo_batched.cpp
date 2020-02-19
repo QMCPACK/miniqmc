@@ -406,22 +406,22 @@ int main(int argc, char** argv)
   constexpr RealType small_h = std::numeric_limits<RealType>::epsilon() * 6e8;
   int nfail                  = 0;
   app_log() << std::endl;
-  if (evalV_v_err / np > small_v)
+  if (evalV_v_err / np > small_v || evalV_v_err != evalV_v_err)
   {
     app_log() << "Fail in evaluate_v, V error =" << evalV_v_err / np << std::endl;
     nfail = 1;
   }
-  if (evalVGH_v_err / np > small_v)
+  if (evalVGH_v_err / np > small_v || evalVGH_v_err != evalVGH_v_err)
   {
     app_log() << "Fail in evaluate_vgh, V error =" << evalVGH_v_err / np << std::endl;
     nfail += 1;
   }
-  if (evalVGH_g_err / np > small_g)
+  if (evalVGH_g_err / np > small_g || evalVGH_g_err != evalVGH_g_err)
   {
     app_log() << "Fail in evaluate_vgh, G error =" << evalVGH_g_err / np << std::endl;
     nfail += 1;
   }
-  if (evalVGH_h_err / np > small_h)
+  if (evalVGH_h_err / np > small_h || evalVGH_h_err != evalVGH_h_err)
   {
     app_log() << "Fail in evaluate_vgh, H error =" << evalVGH_h_err / np << std::endl;
     nfail += 1;
