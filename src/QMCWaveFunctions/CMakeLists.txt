@@ -9,9 +9,14 @@
 #// File created by: Ye Luo, yeluo@anl.gov, Argonne National Laboratory
 #//////////////////////////////////////////////////////////////////////////////////////
 
-ADD_LIBRARY(qmcwfs
-            einspline_spo_omp.cpp
+SET(WFS_SRC einspline_spo_omp.cpp
             WaveFunction.cpp SPOSet_builder.cpp
             DiracDeterminant.cpp DiracDeterminantRef.cpp)
+
+IF(USE_OBJECT_TARGET)
+  ADD_LIBRARY(qmcwfs OBJECT ${WFS_SRC})
+ELSE(USE_OBJECT_TARGET)
+  ADD_LIBRARY(qmcwfs ${WFS_SRC})
+ENDIF(USE_OBJECT_TARGET)
 
 SUBDIRS(tests)
