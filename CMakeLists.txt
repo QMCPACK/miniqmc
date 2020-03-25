@@ -125,6 +125,7 @@ SET(BUILD_FCIQMC 0 CACHE BOOL "Build with FCIQMC")
 SET(QMC_BUILD_STATIC 0 CACHE BOOL "Link to static libraries")
 SET(ENABLE_TIMERS 1 CACHE BOOL "Enable internal timers")
 SET(ENABLE_OFFLOAD 0 CACHE BOOL "Enable OpenMP offload")
+OPTION(USE_OBJECT_TARGET "Enable OpenMP offload" OFF)
 
 ######################################################################
 # FIXED PARAMETERS for test and legacy reasons
