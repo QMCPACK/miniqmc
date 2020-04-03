@@ -178,7 +178,9 @@ ENDIF()
 
   SUBDIRS(Particle/tests)
 
-  SUBDIRS(OpenMP/tests)
+  IF(ENABLE_OFFLOAD)
+    SUBDIRS(OpenMP/tests)
+  ENDIF()
 
   SUBDIRS(QMCWaveFunctions)
 
