@@ -204,6 +204,11 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
       FIND_PROGRAM(MPIEXEC srun)
     ENDIF(NOT MPIEXEC)
     SET(MPIEXEC_NUMPROC_FLAG "-n")
+  ELSE()
+    GET_FILENAME_COMPONENT(BASE_CXX_COMPILER_NAME ${CMAKE_CXX_COMPILER} NAME)
+    IF(BASE_CXX_COMPILER_NAME STREQUAL "CC")
+      MESSAGE(FATAL_ERROR "Cray compiler wrapper detected. Empty the build folder and rerun cmake with -DCMAKE_SYSTEM_NAME=CrayLinuxEnvironment added.")
+    ENDIF()
   ENDIF()
 
   #------------------------------------
