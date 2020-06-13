@@ -194,10 +194,8 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
   #------------------------
   # On Cray's machine
   #------------------------
-  IF($ENV{CRAYPE_VERSION} MATCHES ".")
+  IF(CMAKE_SYSTEM_NAME STREQUAL "CrayLinuxEnvironment")
     MESSAGE(STATUS "Running on a Cray machine.")
-    SET(CMAKE_SKIP_RPATH TRUE)
-
     # Flags for ctest
     SET(USE_EXT_MPI_FOR_SERIAL_TESTS 1)
     FIND_PROGRAM(MPIEXEC aprun)
@@ -206,19 +204,7 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
       FIND_PROGRAM(MPIEXEC srun)
     ENDIF(NOT MPIEXEC)
     SET(MPIEXEC_NUMPROC_FLAG "-n")
-
-    IF(QMC_BUILD_STATIC)
-      MESSAGE(STATUS "Building CPU code. Linking statically.")
-      SET(BUILD_SHARED_LIBS off)
-      SET(CMAKE_FIND_LIBRARY_SUFFIXES .a)
-      FOREACH(type SHARED_LIBRARY SHARED_MODULE EXE)
-        SET(CMAKE_${type}_LINK_STATIC_CXX_FLAGS "-Wl,-Bstatic")
-        SET(CMAKE_${type}_LINK_DYNAMIC_CXX_FLAGS "-static")
-      ENDFOREACH(type)
-    ELSE(QMC_BUILD_STATIC)
-      MESSAGE(STATUS "Building CPU code. Linking dynamically.")
-    ENDIF(QMC_BUILD_STATIC)
-  ENDIF($ENV{CRAYPE_VERSION} MATCHES ".")
+  ENDIF()
 
   #------------------------------------
   # Identify the compiler
@@ -277,7 +263,7 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
     if(${BASE_CXX_COMPILER_NAME} MATCHES "^mp")
       SET(HAVE_MPI 1)
       SET(MPI_FOUND TRUE)
-    elseif($ENV{CRAYPE_VERSION} MATCHES ".")
+    elseif(CMAKE_SYSTEM_NAME STREQUAL "CrayLinuxEnvironment")
       SET(HAVE_MPI 1)
       SET(MPI_FOUND TRUE)
     else()
@@ -335,7 +321,7 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
     SET(LAPACK_FOUND 1)
     SET(LAPACK_LIBRARIES "${MKL_LIBRARIES}")
     SET(LAPACK_LINKER_FLAGS "${MKL_LINKER_FLAGS}")
-  ELSEIF ( $ENV{CRAYPE_VERSION} MATCHES "." )
+  ELSEIF (CMAKE_SYSTEM_NAME STREQUAL "CrayLinuxEnvironment")
     # Cray specific environment variable indicates we are on a cray. Assume libsci will be linked
     # preferable to attempt a compile/link 
     SET(LAPACK_FOUND 1)
