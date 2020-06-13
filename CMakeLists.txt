@@ -6,6 +6,7 @@ cmake_policy(SET CMP0003 NEW)
 #Actually set CXX11 flag for Clang on Apple, even llvm non apple clang
 #This is contrary to what the --help-policy says
 cmake_policy(SET CMP0025 NEW)
+include(CMakeDependentOption)
 
 ######################################################################
 PROJECT(qmcpack CXX)
@@ -124,8 +125,12 @@ SET(BUILD_AFQMC 0 CACHE BOOL "Build with AFQMC")
 SET(BUILD_FCIQMC 0 CACHE BOOL "Build with FCIQMC")
 SET(QMC_BUILD_STATIC 0 CACHE BOOL "Link to static libraries")
 SET(ENABLE_TIMERS 1 CACHE BOOL "Enable internal timers")
-SET(ENABLE_OFFLOAD 0 CACHE BOOL "Enable OpenMP offload")
-OPTION(USE_OBJECT_TARGET "Enable OpenMP offload" OFF)
+OPTION(ENABLE_OFFLOAD "Enable OpenMP offload" OFF)
+# Use CMake object library targets to workaround clang linker not being able to handle fat
+# binary archives which contain both host and device codes, for example OpenMP offload regions.
+# CMake does not propagate indirect object files by design.
+# So the dependency must be explicitly specified with USE_OBJECT_TARGET.
+CMAKE_DEPENDENT_OPTION(USE_OBJECT_TARGET "Use CMake object library target" OFF "ENABLE_OFFLOAD" OFF)
 
 ######################################################################
 # FIXED PARAMETERS for test and legacy reasons

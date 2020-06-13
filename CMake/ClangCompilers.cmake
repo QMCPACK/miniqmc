@@ -7,7 +7,7 @@ ENDIF()
 # Enable OpenMP
 IF(QMC_OMP)
   SET(ENABLE_OPENMP 1)
-  IF(ENABLE_OFFLOAD AND NOT $ENV{CRAYPE_VERSION} MATCHES ".")
+  IF(ENABLE_OFFLOAD AND NOT CMAKE_SYSTEM_NAME STREQUAL "CrayLinuxEnvironment")
     SET(OFFLOAD_TARGET "nvptx64-nvidia-cuda" CACHE STRING "Offload target architecture")
     IF(OFFLOAD_TARGET MATCHES "spir64")
       SET(OMP_FLAG "-fiopenmp")
