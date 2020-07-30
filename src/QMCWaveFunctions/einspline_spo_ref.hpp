@@ -122,11 +122,14 @@ struct einspline_spo_ref : public SPOSet
     }
   }
 
-  // fix for general num_splines
+  /// If not initialized previously, generate splines coeficients of \p num_splines
+  /// divided into \p nblocks chunks each with a grid \p nx x \p ny x \p nz.
+  /// If \p init_random is true, in each chunk, one orbital is fully randomized
+  /// and others are tweaked based on it.
   void set(int nx, int ny, int nz, int num_splines, int nblocks, bool init_random = true)
   {
     // setting OrbitalSetSize to num_splines made artificial only in miniQMC
-    OrbitalSetSize   = num_splines;
+    OrbitalSetSize = num_splines;
 
     nSplines         = num_splines;
     nBlocks          = nblocks;
@@ -147,12 +150,10 @@ struct einspline_spo_ref : public SPOSet
         einsplines[i] = myAllocator.createMultiBspline(T(0), start, end, ng, PERIODIC, nSplinesPerBlock);
         if (init_random)
         {
-          for (int j = 0; j < nSplinesPerBlock; ++j)
-          {
-            // Generate different coefficients for each orbital
-            myrandom.generate_uniform(coef_data.data(), coef_data.size());
-            myAllocator.setCoefficientsForOneOrbital(j, coef_data, einsplines[i]);
-          }
+          // Generate a orbital fully with fully randomized coefficients
+          myrandom.generate_uniform(coef_data.data(), coef_data.size());
+          // Generate different coefficients for each orbital by tweaking coef_data
+          myAllocator.setCoefficientsForOrbitals(0, nSplinesPerBlock, coef_data, einsplines[i]);
         }
       }
     }
@@ -176,8 +177,8 @@ struct einspline_spo_ref : public SPOSet
     for (int i = 0; i < nBlocks; ++i)
     {
       // in real simulation, phase needs to be applied. Here just fake computation
-      const int first = i*nBlocks;
-      std::copy_n(psi[i].data(), std::min((i+1)*nSplinesPerBlock, OrbitalSetSize) - first, psi_v.data()+first);
+      const int first = i * nBlocks;
+      std::copy_n(psi[i].data(), std::min((i + 1) * nSplinesPerBlock, OrbitalSetSize) - first, psi_v.data() + first);
     }
   }
 
@@ -201,19 +202,23 @@ struct einspline_spo_ref : public SPOSet
                                         nSplinesPerBlock);
   }
 
-  inline void evaluate(const ParticleSet& P, int iat, ValueVector_t& psi_v, GradVector_t& dpsi_v, ValueVector_t& d2psi_v)
+  inline void evaluate(const ParticleSet& P,
+                       int iat,
+                       ValueVector_t& psi_v,
+                       GradVector_t& dpsi_v,
+                       ValueVector_t& d2psi_v)
   {
     evaluate_vgh(P, iat);
 
     for (int i = 0; i < nBlocks; ++i)
     {
       // in real simulation, phase needs to be applied. Here just fake computation
-      const int first = i*nBlocks;
-      for (int j = first; j < std::min((i+1)*nSplinesPerBlock, OrbitalSetSize); j++)
+      const int first = i * nBlocks;
+      for (int j = first; j < std::min((i + 1) * nSplinesPerBlock, OrbitalSetSize); j++)
       {
-        psi_v[j] = psi[i][j-first];
-        dpsi_v[j] = grad[i][j-first];
-        d2psi_v[j] = hess[i].data(0)[j-first];
+        psi_v[j]   = psi[i][j - first];
+        dpsi_v[j]  = grad[i][j - first];
+        d2psi_v[j] = hess[i].data(0)[j - first];
       }
     }
   }

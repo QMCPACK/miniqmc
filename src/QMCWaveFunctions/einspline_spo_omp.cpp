@@ -80,7 +80,10 @@ void einspline_spo_omp<T>::resize()
   }
 }
 
-// fix for general num_splines
+/// If not initialized previously, generate splines coeficients of \p num_splines
+/// divided into \p nblocks chunks each with a grid \p nx x \p ny x \p nz.
+/// If \p init_random is true, in each chunk, one orbital is fully randomized
+/// and others are tweaked based on it.
 template<typename T>
 void einspline_spo_omp<T>::set(int nx, int ny, int nz, int num_splines, int nblocks, bool init_random)
 {
@@ -106,12 +109,10 @@ void einspline_spo_omp<T>::set(int nx, int ny, int nz, int num_splines, int nblo
       einsplines[i] = myAllocator.createMultiBspline(T(0), start, end, ng, PERIODIC, nSplinesPerBlock);
       if (init_random)
       {
-        for (int j = 0; j < nSplinesPerBlock; ++j)
-        {
-          // Generate different coefficients for each orbital
-          myrandom.generate_uniform(coef_data.data(), coef_data.size());
-          myAllocator.setCoefficientsForOneOrbital(j, coef_data, einsplines[i]);
-        }
+        // Generate a orbital fully with fully randomized coefficients
+        myrandom.generate_uniform(coef_data.data(), coef_data.size());
+        // Generate different coefficients for each orbital by tweaking coef_data
+        myAllocator.setCoefficientsForOrbitals(0, nSplinesPerBlock, coef_data, einsplines[i]);
       }
 #ifdef ENABLE_OFFLOAD
       // attach pointers
