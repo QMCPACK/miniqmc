@@ -165,7 +165,7 @@ void BsplineAllocator<T, ALIGN, ALLOC>::setCoefficientsForOrbitals(int first,
 {
   const int size = last - first;
   std::vector<T> prefactor(size);
-  for(int ind = first; ind < last; ind++)
+  for (int ind = first; ind < last; ind++)
     prefactor[ind] = std::cos(2 * M_PI * ind / size);
 
 #pragma omp parallel for collapse(3)
@@ -173,10 +173,10 @@ void BsplineAllocator<T, ALIGN, ALLOC>::setCoefficientsForOrbitals(int first,
     for (int iy = 0; iy < spline->y_grid.num + 3; iy++)
       for (int iz = 0; iz < spline->z_grid.num + 3; iz++)
       {
-        intptr_t xs                                    = spline->x_stride;
-        intptr_t ys                                    = spline->y_stride;
-        intptr_t zs                                    = spline->z_stride;
-        for(int ind = first; ind < last; ind++)
+        intptr_t xs = spline->x_stride;
+        intptr_t ys = spline->y_stride;
+        intptr_t zs = spline->z_stride;
+        for (int ind = first; ind < last; ind++)
           spline->coefs[ix * xs + iy * ys + iz * zs + ind] = coeff(ix, iy, iz) * prefactor[ind];
       }
 }
