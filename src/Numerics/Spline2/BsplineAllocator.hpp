@@ -68,7 +68,7 @@ public:
    * @param coeff array of coefficients
    * @param spline target MultibsplineType
    */
-  void setCoefficientsForOneOrbital(int first, int last, Array<T, 3>& coeff, SplineType* spline);
+  void setCoefficientsForOrbitals(int first, int last, Array<T, 3>& coeff, SplineType* spline);
 
   /** copy a UBSpline_3d_X to multi_UBspline_3d_X at i-th band
      * @param single  UBspline_3d_X
@@ -158,10 +158,10 @@ typename bspline_traits<T, 3>::SplineType* BsplineAllocator<T, ALIGN, ALLOC>::cr
 }
 
 template<typename T, size_t ALIGN, typename ALLOC>
-void BsplineAllocator<T, ALIGN, ALLOC>::setCoefficientsForOneOrbital(int first,
-                                                                     int last,
-                                                                     Array<T, 3>& coeff,
-                                                                     SplineType* spline)
+void BsplineAllocator<T, ALIGN, ALLOC>::setCoefficientsForOrbitals(int first,
+                                                                   int last,
+                                                                   Array<T, 3>& coeff,
+                                                                   SplineType* spline)
 {
   const int size = last - first;
   std::vector<T> prefactor(size);
