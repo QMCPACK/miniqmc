@@ -147,12 +147,9 @@ struct einspline_spo_ref : public SPOSet
         einsplines[i] = myAllocator.createMultiBspline(T(0), start, end, ng, PERIODIC, nSplinesPerBlock);
         if (init_random)
         {
-          for (int j = 0; j < nSplinesPerBlock; ++j)
-          {
-            // Generate different coefficients for each orbital
-            myrandom.generate_uniform(coef_data.data(), coef_data.size());
-            myAllocator.setCoefficientsForOneOrbital(j, coef_data, einsplines[i]);
-          }
+          myrandom.generate_uniform(coef_data.data(), coef_data.size());
+          // Generate different coefficients for each orbital by tweaking coef_data
+          myAllocator.setCoefficientsForOneOrbital(0, nSplinesPerBlock, coef_data, einsplines[i]);
         }
       }
     }

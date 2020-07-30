@@ -16,6 +16,7 @@
 #define QMCPLUSPLUS_EINSPLINE_BSPLINE_ALLOCATOR_H
 
 #include "Utilities/SIMD/Mallocator.hpp"
+#include <cmath>
 #include "Numerics/Spline2/bspline_traits.hpp"
 #include <Numerics/OhmmsPETE/OhmmsArray.h>
 
@@ -67,7 +68,7 @@ public:
    * @param coeff array of coefficients
    * @param spline target MultibsplineType
    */
-  void setCoefficientsForOneOrbital(int i, Array<T, 3>& coeff, SplineType* spline);
+  void setCoefficientsForOneOrbital(int first, int last, Array<T, 3>& coeff, SplineType* spline);
 
   /** copy a UBSpline_3d_X to multi_UBspline_3d_X at i-th band
      * @param single  UBspline_3d_X
@@ -157,24 +158,27 @@ typename bspline_traits<T, 3>::SplineType* BsplineAllocator<T, ALIGN, ALLOC>::cr
 }
 
 template<typename T, size_t ALIGN, typename ALLOC>
-void BsplineAllocator<T, ALIGN, ALLOC>::setCoefficientsForOneOrbital(int i,
+void BsplineAllocator<T, ALIGN, ALLOC>::setCoefficientsForOneOrbital(int first,
+                                                                     int last,
                                                                      Array<T, 3>& coeff,
                                                                      SplineType* spline)
 {
+  const int size = last - first;
+  std::vector<T> prefactor(size);
+  for(int ind = first; ind < last; ind++)
+    prefactor[ind] = std::cos(2 * M_PI * ind / size);
+
 #pragma omp parallel for collapse(3)
   for (int ix = 0; ix < spline->x_grid.num + 3; ix++)
-  {
     for (int iy = 0; iy < spline->y_grid.num + 3; iy++)
-    {
       for (int iz = 0; iz < spline->z_grid.num + 3; iz++)
       {
         intptr_t xs                                    = spline->x_stride;
         intptr_t ys                                    = spline->y_stride;
         intptr_t zs                                    = spline->z_stride;
-        spline->coefs[ix * xs + iy * ys + iz * zs + i] = coeff(ix, iy, iz);
+        for(int ind = first; ind < last; ind++)
+          spline->coefs[ix * xs + iy * ys + iz * zs + ind] = coeff(ix, iy, iz) * prefactor[ind];
       }
-    }
-  }
 }
 
 template<typename T, size_t ALIGN, typename ALLOC>
