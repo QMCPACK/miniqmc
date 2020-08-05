@@ -171,8 +171,9 @@ void einspline_spo_omp<T>::evaluate_v(const ParticleSet& P, int iat)
       int ix, iy, iz;
       T a[4], b[4], c[4];
       spline2::computeLocationAndFractional(spline_m, x, y, z, ix, iy, iz, a, b, c);
-      PRAGMA_OFFLOAD("omp parallel")
-      spline2offload::evaluate_v_v2(spline_m, ix, iy, iz, a, b, c, psi_ptr + first, first, last);
+      PRAGMA_OFFLOAD("omp parallel for")
+      for (int ind = 0; ind < last - first; ind++)
+        spline2offload::evaluate_v_v2(spline_m, ix, iy, iz, a, b, c, psi_ptr + first, first, ind);
     }
   }
 }
@@ -255,14 +256,13 @@ void einspline_spo_omp<T>::evaluateDetRatios(const VirtualParticleSet& VP,
         T a[4], b[4], c[4];
         spline2::computeLocationAndFractional(spline_m, pos_scratch[iVP * 3], pos_scratch[iVP * 3 + 1],
                                               pos_scratch[iVP * 3 + 2], ix, iy, iz, a, b, c);
+        PRAGMA_OFFLOAD("omp parallel for")
+        for (int ind = 0; ind < last - first; ind++)
+          spline2offload::evaluate_v_v2(spline_m, ix, iy, iz, a, b, c, offload_scratch_iVP_ptr + first, first, ind);
         T sum(0);
-        PRAGMA_OFFLOAD("omp parallel")
-        {
-          spline2offload::evaluate_v_v2(spline_m, ix, iy, iz, a, b, c, offload_scratch_iVP_ptr + first, first, last);
-          PRAGMA_OFFLOAD("omp for reduction(+:sum)")
-          for (int j = first; j < last; j++)
-            sum += offload_scratch_iVP_ptr[j] * psiinv_ptr[i * nSplinesPerBlock_local + j];
-        }
+        PRAGMA_OFFLOAD("omp parallel for reduction(+:sum)")
+        for (int j = first; j < last; j++)
+          sum += offload_scratch_iVP_ptr[j] * psiinv_ptr[i * nSplinesPerBlock_local + j];
         ratios_private_ptr[iVP * NumTeams + team_id] = sum;
       }
 
@@ -324,9 +324,10 @@ void einspline_spo_omp<T>::evaluate_vgh(const ParticleSet& P, int iat)
       T a[4], b[4], c[4], da[4], db[4], dc[4], d2a[4], d2b[4], d2c[4];
       spline2::computeLocationAndFractional(spline_m, x, y, z, ix, iy, iz, a, b, c, da, db, dc, d2a, d2b, d2c);
 
-      PRAGMA_OFFLOAD("omp parallel")
-      spline2offload::evaluate_vgh_v2(spline_m, ix, iy, iz, a, b, c, da, db, dc, d2a, d2b, d2c,
-                                      offload_scratch_ptr + first, padded_size, first, last);
+      PRAGMA_OFFLOAD("omp parallel for")
+      for (int ind = 0; ind < last - first; ind++)
+        spline2offload::evaluate_vgh_v2(spline_m, ix, iy, iz, a, b, c, da, db, dc, d2a, d2b, d2c,
+                                        offload_scratch_ptr + first, padded_size, first, ind);
     }
   }
 }
@@ -422,10 +423,11 @@ void einspline_spo_omp<T>::multi_evaluate_vgh(const std::vector<SPOSet*>& spo_li
                                               pos_scratch_ptr[iw * 3 + 2], ix, iy, iz, a, b, c, da, db, dc, d2a, d2b,
                                               d2c);
 
-        PRAGMA_OFFLOAD("omp parallel")
-        spline2offload::evaluate_vgh_v2(spline_m, ix, iy, iz, a, b, c, da, db, dc, d2a, d2b, d2c,
-                                        multi_offload_scratch_ptr + iw * vgh_dim * padded_size + first, padded_size,
-                                        first, last);
+        PRAGMA_OFFLOAD("omp parallel for")
+        for (int ind = 0; ind < last - first; ind++)
+          spline2offload::evaluate_vgh_v2(spline_m, ix, iy, iz, a, b, c, da, db, dc, d2a, d2b, d2c,
+                                          multi_offload_scratch_ptr + iw * vgh_dim * padded_size + first, padded_size,
+                                          first, ind);
       }
 
     for (size_t iw = 0; iw < nw; iw++)
