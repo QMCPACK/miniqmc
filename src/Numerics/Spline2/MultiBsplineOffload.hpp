@@ -286,15 +286,18 @@ evaluate_vgh_v2(const typename bspline_traits<T, 3>::SplineType* restrict spline
       const T pre11 = da[i] * db[j];
       const T pre01 = a[i] * db[j];
       const T pre02 = a[i] * d2b[j];
+      // 6 FLOP
 
       T coefsv    = coefs[ind];
       T coefsvzs  = coefszs[ind];
       T coefsv2zs = coefs2zs[ind];
       T coefsv3zs = coefs3zs[ind];
+      // load 4 of T
 
       T sum0 = c[0] * coefsv + c[1] * coefsvzs + c[2] * coefsv2zs + c[3] * coefsv3zs;
       T sum1 = dc[0] * coefsv + dc[1] * coefsvzs + dc[2] * coefsv2zs + dc[3] * coefsv3zs;
       T sum2 = d2c[0] * coefsv + d2c[1] * coefsvzs + d2c[2] * coefsv2zs + d2c[3] * coefsv3zs;
+      // 21 FLOP
 
       hxx += pre20 * sum0;
       hxy += pre11 * sum0;
@@ -306,6 +309,7 @@ evaluate_vgh_v2(const typename bspline_traits<T, 3>::SplineType* restrict spline
       gy += pre01 * sum0;
       gz += pre00 * sum1;
       val += pre00 * sum0;
+      // 20 FLOP
     }
 
   val_grad_hess[ind] = val;
@@ -323,6 +327,9 @@ evaluate_vgh_v2(const typename bspline_traits<T, 3>::SplineType* restrict spline
   val_grad_hess[ind + 7 * out_offset] = hyy * dyInv * dyInv;
   val_grad_hess[ind + 8 * out_offset] = hyz * dyInv * dzInv;
   val_grad_hess[ind + 9 * out_offset] = hzz * dzInv * dzInv;
+  // 15 FLOP
+
+  // In total, (6 + 21 + 20) * 16 + 15 = 767 FLOP, 4 * 16 + 10 of size(T)
 }
 
 } // namespace spline2offload
