@@ -437,6 +437,8 @@ int main(int argc, char** argv)
             << "evaluateVGH stores "
             << size_t(10) * sizeof(OHMMS_PRECISION) * nels/2 * nels * nsteps * nmovers
             << " bytes of result values to memory." << std::endl
+            << "evaluateVGH operates "
+            << size_t(767) * nels/2 * nels * nsteps * nmovers << " FLOP." << std::endl
             << "evaluateVGH Arithmetic Intensity " << 767.0 / (74 * sizeof(OHMMS_PRECISION))
             << std::endl << std::endl;
   return 0;
