@@ -1,6 +1,3 @@
-
-INCLUDE("${PROJECT_SOURCE_DIR}/CMake/test_labels.cmake")
-
 # Runs unit tests
 FUNCTION( ADD_UNIT_TEST TESTNAME TEST_BINARY )
     MESSAGE("Adding test ${TESTNAME}")
