@@ -5,15 +5,23 @@
 # Run the nightlies
 # 
 
+source /etc/profile.d/z00_lmod.sh
+if [ -d /scratch/packages/modulefiles ]; then
+  module use /scratch/packages/modulefiles
+fi
+
+module purge
+module load cmake intel/18.3 intel-mkl llvm/dev-latest
+
 export TEST_SITE_NAME=bora.alcf.anl.gov
 export N_PROCS_BUILD=24
 export N_PROCS=32
 
-#Must be an absolute path
-place=/sandbox/MINIQMC_CI_BUILDS_DO_NOT_REMOVE
+# run on the 1st socket
+NUMA_ID=0
 
-#define and load compiler
-compiler=Intel2018
+#Must be an absolute path
+place=/scratch/MINIQMC_CI_BUILDS_DO_NOT_REMOVE
 
 if [ ! -e $place ]; then
 mkdir $place
@@ -25,7 +33,7 @@ cd $place
 echo --- Hostname --- $HOSTNAME
 echo --- Checkout for $sys `date`
 
-branch=develop
+branch=OMP_offload
 entry=miniqmc-${branch}
 
 if [ ! -e $entry ]; then
@@ -43,10 +51,10 @@ cd $entry
 
 git checkout $branch
 
-for sys in Real Real-Mixed # Complex-SoA Complex-Mixed-SoA
+for sys in Clang-Real Clang-Real-Mixed Clang-Offload-Real Clang-Offload-Real-Mixed Intel-Real Intel-Real-Mixed Clang-Nightly-Offload-Real
 do
 
-folder=build_$compiler_$sys
+folder=build_$sys
 
 if [ -e $folder ]; then
 rm -r $folder
@@ -63,7 +71,21 @@ then
   mkdir -p $place/log/$entry/$mydate
 fi
 
-CTEST_FLAGS="-DCMAKE_CXX_COMPILER=icpc;-DCMAKE_CXX_FLAGS=-xCOMMON-AVX512"
+if [[ $sys == *"Intel"* ]]; then
+  module load llvm/dev-latest
+  CTEST_FLAGS="-DCMAKE_CXX_COMPILER=icpc;-DCMAKE_CXX_FLAGS=-xCOMMON-AVX512"
+elif [[ $sys == *"Clang"* ]]; then
+  if [[ $sys == *"Nightly"* ]]; then
+    module load llvm/dev-latest
+  else
+    module load llvm/master-nightly
+  fi
+  CTEST_FLAGS="-DCMAKE_CXX_COMPILER=clang++;-DENABLE_MKL=1"
+fi
+
+if [[ $sys == *"Offload"* ]]; then
+  CTEST_FLAGS="$CTEST_FLAGS;-DENABLE_OFFLOAD=1;-DUSE_OBJECT_TARGET=ON"
+fi
 
 if [[ $sys == *"Complex"* ]]; then
   CTEST_FLAGS="$CTEST_FLAGS;-DQMC_COMPLEX=1"
@@ -73,8 +95,9 @@ if [[ $sys == *"-Mixed"* ]]; then
   CTEST_FLAGS="$CTEST_FLAGS;-DQMC_MIXED_PRECISION=1"
 fi
 
-export MINIQMC_TEST_SUBMIT_NAME=${compiler}-${sys}-Release
+export MINIQMC_TEST_SUBMIT_NAME=${sys}-Release
 
+numactl -N $NUMA_ID \
 ctest -DCMAKE_CONFIGURE_OPTIONS=$CTEST_FLAGS -S $PWD/../CMake/ctest_script.cmake -VV --timeout 800 &> $place/log/$entry/$mydate/${MINIQMC_TEST_SUBMIT_NAME}.log
 
 cd ..

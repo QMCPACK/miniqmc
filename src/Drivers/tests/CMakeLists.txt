@@ -22,3 +22,8 @@ ADD_EXECUTABLE(${UTEST_EXE} ../../Utilities/catch-main.cpp ../MiniQMCOptions.cpp
 TARGET_LINK_LIBRARIES(${UTEST_EXE} qmcutil ${MPI_LIBRARY})
 
 ADD_UNIT_TEST(${UTEST_NAME} "${QMCPACK_UNIT_TEST_DIR}/${UTEST_EXE}")
+
+RUN_APP(miniqmc-g111-r1-t16 miniqmc 1 16 miniqmc TEST_ADDED)
+RUN_APP(miniqmc_sync_move-g111-r1-t16 miniqmc_sync_move 1 16 miniqmc TEST_ADDED)
+RUN_APP(check_spo-g111-r1-t16 check_spo 1 16 check TEST_ADDED)
+RUN_APP(check_wfc-g111-r1-t16 check_wfc 1 16 check TEST_ADDED)
