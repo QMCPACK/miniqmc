@@ -477,11 +477,6 @@ if(CMAKE_CXX_LINKER)
 endif()
 
 ###################################################
-# external codes includes
-###################################################
-INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/external_codes/catch)
-
-###################################################
 # Add user extra flags
 ###################################################
 IF(QMC_INCLUDE)
