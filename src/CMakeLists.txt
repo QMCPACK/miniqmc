@@ -145,7 +145,7 @@ ENDIF()
 
   ADD_LIBRARY(qmcutil ${UTILITIES})
 
-  SUBDIRS(Utilities/tests)
+  SUBDIRS(Utilities)
 
   # For unit tests, enable use for the fake RNG
   FUNCTION( USE_FAKE_RNG TARGET )
