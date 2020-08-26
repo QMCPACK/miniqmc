@@ -12,6 +12,7 @@
 
 #include "catch.hpp"
 #include <cmath>
+#include <iostream>
 #include "Utilities/Configuration.h"
 #include "Numerics/my_math.hpp"
 
@@ -167,8 +168,10 @@ void test_sincos<double>(double x)
 
 TEST_CASE("sincos", "[openmp]")
 {
+  std::cout << "Testing float" << std::endl;
   test_sincos(1.5f);
   test_sincos(-0.5f);
+  std::cout << "Testing double" << std::endl;
   test_sincos(1.5);
   test_sincos(-0.5);
 }
