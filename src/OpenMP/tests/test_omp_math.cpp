@@ -99,6 +99,7 @@ TEST_CASE("float_point_my_break_up", "[openmp]")
 template<typename T>
 void test_sin_cos(T x)
 {
+  std::cout << "Testing sin and cos" << std::endl;
   T sin_v, cos_v;
 
   PRAGMA_OFFLOAD("omp target map(from: sin_v, cos_v)")
@@ -119,51 +120,72 @@ void test_sin_cos(T x)
 
 TEST_CASE("sin_cos", "[openmp]")
 {
+  std::cout << "Testing float" << std::endl;
   test_sin_cos<float>(1.5);
   test_sin_cos<float>(-0.5);
+  std::cout << "Testing double" << std::endl;
   test_sin_cos<double>(1.5);
   test_sin_cos<double>(-0.5);
 }
 
-template<typename T>
-void test_sincos(T x);
-
-template<>
-void test_sincos<float>(float x)
+inline void sincos(double a, double* s, double* c)
 {
-  float sin_v, cos_v;
+  ::sincos(a,s,c);
+}
+
+inline void sincos(float a, float* s, float* c)
+{
+  ::sincosf(a,s,c);
+}
+
+template<typename T>
+void test_sincos(T x)
+{
+  std::cout << "Testing sincos" << std::endl;
+  T sin_v, cos_v;
 
   PRAGMA_OFFLOAD("omp target map(from: sin_v, cos_v)")
   {
-    sincosf(x, &sin_v, &cos_v);
+    qmcplusplus::sincos(x, &sin_v, &cos_v);
   }
 
-  float sin_v_host, cos_v_host;
+  T sin_v_host, cos_v_host;
   {
-    sincosf(x, &sin_v_host, &cos_v_host);
+    qmcplusplus::sincos(x, &sin_v_host, &cos_v_host);
   }
 
   REQUIRE(sin_v == ValueApprox(sin_v_host));
   REQUIRE(cos_v == ValueApprox(cos_v_host));
 }
 
-template<>
-void test_sincos<double>(double x)
+template<typename T>
+void test_sincos_vector(T x, int size)
 {
-  double sin_v, cos_v;
+  std::cout << "Testing sincos vector" << std::endl;
+  std::vector<T> sin_v(size), cos_v(size);
 
-  PRAGMA_OFFLOAD("omp target map(from: sin_v, cos_v)")
+  const int team_size = 79;
+  int n_teams = (size + team_size - 1) / team_size;
+  T* sin_v_ptr = sin_v.data();
+  T* cos_v_ptr = cos_v.data();
+  PRAGMA_OFFLOAD("omp target teams distribute map(from: sin_v_ptr[:size], cos_v_ptr[:size])")
+  for (int team_id = 0; team_id < n_teams; team_id++)
   {
-    sincos(x, &sin_v, &cos_v);
+    int first = team_size * team_id;
+    int last = std::min(team_size * (team_id + 1), size);
+    PRAGMA_OFFLOAD("omp parallel for simd")
+    for (int member_id = first; member_id < last; member_id++)
+      qmcplusplus::sincos(x * member_id / size, sin_v_ptr + member_id, cos_v_ptr + member_id);
   }
 
-  double sin_v_host, cos_v_host;
+  for (int member_id = 0; member_id < size; member_id++)
   {
-    sincos(x, &sin_v_host, &cos_v_host);
+    T sin_v_host, cos_v_host;
+    qmcplusplus::sincos(x * member_id / size, &sin_v_host, &cos_v_host);
+    REQUIRE(sin_v[member_id] == ValueApprox(sin_v_host));
+    REQUIRE(cos_v[member_id] == ValueApprox(cos_v_host));
   }
 
-  REQUIRE(sin_v == ValueApprox(sin_v_host));
-  REQUIRE(cos_v == ValueApprox(cos_v_host));
 }
 
 TEST_CASE("sincos", "[openmp]")
@@ -171,9 +193,11 @@ TEST_CASE("sincos", "[openmp]")
   std::cout << "Testing float" << std::endl;
   test_sincos(1.5f);
   test_sincos(-0.5f);
+  test_sincos_vector(0.5f, 126);
   std::cout << "Testing double" << std::endl;
   test_sincos(1.5);
   test_sincos(-0.5);
+  test_sincos_vector(0.5, 126);
 }
 
 } // namespace qmcplusplus
