@@ -17,7 +17,7 @@
 // -*- C++ -*-
 #ifndef QMCPLUSPLUS_DTDIMPL_AA_H
 #define QMCPLUSPLUS_DTDIMPL_AA_H
-#include "Utilities/SIMD/algorithm.hpp"
+#include "CPU/SIMD/algorithm.hpp"
 
 namespace qmcplusplus
 {

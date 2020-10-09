@@ -23,7 +23,7 @@
 #include <Utilities/NewTimer.h>
 #include <Particle/ParticleSet.h>
 #include <Numerics/Spline2/MultiBsplineRef.hpp>
-#include <Utilities/SIMD/allocator.hpp>
+#include <CPU/SIMD/aligned_allocator.hpp>
 #include "Numerics/OhmmsPETE/OhmmsArray.h"
 #include "QMCWaveFunctions/SPOSet.h"
 #include <iostream>

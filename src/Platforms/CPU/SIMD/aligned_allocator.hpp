@@ -14,16 +14,15 @@
 #ifndef QMCPLUSPLUS_ALLOCATOR_H
 #define QMCPLUSPLUS_ALLOCATOR_H
 
-#include <config.h>
 #include <vector>
 #include <cstdlib>
-#include "Utilities/SIMD/Mallocator.hpp"
+#include "alignment.config.h"
+#include "Mallocator.hpp"
 
 namespace qmcplusplus
 {
-template<class T>
-using aligned_allocator = Mallocator<T, QMC_CLINE>;
-
+template<class T, size_t ALIGN = QMC_CLINE>
+using aligned_allocator = Mallocator<T, ALIGN>;
 template<class T>
 using aligned_vector = std::vector<T, aligned_allocator<T>>;
 

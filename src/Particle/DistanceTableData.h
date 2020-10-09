@@ -26,7 +26,6 @@
 #include "Utilities/PooledData.h"
 #include "Numerics/OhmmsPETE/OhmmsVector.h"
 #include "Numerics/OhmmsPETE/OhmmsMatrix.h"
-#include "Utilities/SIMD/allocator.hpp"
 #include <Numerics/Containers.h>
 #include <limits>
 #include <bitset>

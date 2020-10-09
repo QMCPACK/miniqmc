@@ -22,7 +22,7 @@
 #include "config.h"
 #include <iostream>
 #include <Numerics/Spline2/MultiBsplineData.hpp>
-#include <OMPstd.hpp>
+#include <OMPTarget/OMPstd.hpp>
 #include <stdlib.h>
 
 namespace qmcplusplus

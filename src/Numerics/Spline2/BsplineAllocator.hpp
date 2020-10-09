@@ -15,7 +15,7 @@
 #ifndef QMCPLUSPLUS_EINSPLINE_BSPLINE_ALLOCATOR_H
 #define QMCPLUSPLUS_EINSPLINE_BSPLINE_ALLOCATOR_H
 
-#include "Utilities/SIMD/Mallocator.hpp"
+#include "CPU/SIMD/Mallocator.hpp"
 #include <cmath>
 #include "Numerics/Spline2/bspline_traits.hpp"
 #include <Numerics/OhmmsPETE/OhmmsArray.h>

@@ -24,7 +24,7 @@
 #include <Particle/ParticleSet.h>
 #include <Numerics/Spline2/BsplineAllocator.hpp>
 #include <Numerics/Spline2/MultiBspline.hpp>
-#include <Utilities/SIMD/allocator.hpp>
+#include <CPU/SIMD/allocator.hpp>
 #include "Numerics/OhmmsPETE/OhmmsArray.h"
 #include "QMCWaveFunctions/SPOSet.h"
 #include <iostream>

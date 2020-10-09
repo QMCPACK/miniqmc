@@ -21,7 +21,7 @@
 #include <config.h>
 #include <Numerics/OhmmsPETE/TinyVector.h>
 #include <Numerics/OhmmsPETE/Tensor.h>
-#include <Utilities/SIMD/allocator.hpp>
+#include <CPU/SIMD/aligned_allocator.hpp>
 #include <Numerics/OhmmsPETE/PosTransformer.h>
 
 #include <Numerics/OhmmsPETE/VectorSoAContainer.h>

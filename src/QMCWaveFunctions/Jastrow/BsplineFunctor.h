@@ -31,7 +31,7 @@
 #ifndef QMCPLUSPLUS_BSPLINE_FUNCTOR_H
 #define QMCPLUSPLUS_BSPLINE_FUNCTOR_H
 #include "Numerics/OptimizableFunctorBase.h"
-#include "Utilities/SIMD/allocator.hpp"
+#include "CPU/SIMD/aligned_allocator.hpp"
 #include <cstdio>
 
 /*!

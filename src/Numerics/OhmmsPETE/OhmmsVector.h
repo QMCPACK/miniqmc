@@ -25,7 +25,7 @@
 #include <type_traits>
 #include <stdexcept>
 #include "Numerics/PETE/PETE.h"
-#include "Utilities/SIMD/allocator_traits.hpp"
+#include "CPU/SIMD/allocator_traits.hpp"
 
 namespace qmcplusplus
 {

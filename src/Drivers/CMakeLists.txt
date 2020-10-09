@@ -13,7 +13,7 @@ SET(DRIVERS check_spo check_spo_batched check_wfc miniqmc miniqmc_sync_move)
 
 FOREACH(p ${DRIVERS})
   ADD_EXECUTABLE( ${p}  ${p}.cpp)
-  TARGET_LINK_LIBRARIES(${p} qmcwfs qmcbase qmcutil platform_omptarget ${QMC_UTIL_LIBS} ${MPI_LIBRARY})
+  TARGET_LINK_LIBRARIES(${p} qmcwfs qmcbase qmcutil platform_device ${QMC_UTIL_LIBS} ${MPI_LIBRARY})
 ENDFOREACH(p)
 
 SUBDIRS(tests)

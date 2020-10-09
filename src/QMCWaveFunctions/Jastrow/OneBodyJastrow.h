@@ -13,8 +13,8 @@
 #define QMCPLUSPLUS_ONEBODYJASTROW_H
 #include "Utilities/Configuration.h"
 #include "QMCWaveFunctions/WaveFunctionComponent.h"
-#include <Utilities/SIMD/allocator.hpp>
-#include <Utilities/SIMD/algorithm.hpp>
+#include <CPU/SIMD/aligned_allocator.hpp>
+#include <CPU/SIMD/algorithm.hpp>
 #include <numeric>
 
 /*!

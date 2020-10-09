@@ -18,8 +18,8 @@
 #define QMCPLUSPLUS_VECTOR_SOA_H
 
 #include <type_traits>
-#include "Utilities/SIMD/allocator.hpp"
-#include "Utilities/SIMD/algorithm.hpp"
+#include "CPU/SIMD/aligned_allocator.hpp"
+#include "CPU/SIMD/algorithm.hpp"
 #include "Particle/ParticleAttrib.h"
 
 namespace qmcplusplus

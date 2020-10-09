@@ -23,8 +23,9 @@
 #include <Utilities/NewTimer.h>
 #include <Particle/ParticleSet.h>
 #include <Numerics/Spline2/BsplineAllocator.hpp>
-#include <Utilities/SIMD/allocator.hpp>
-#include <OMPallocator.hpp>
+#include <Numerics/Containers.h>
+#include <PinnedAllocator.h>
+#include <OMPTarget/OMPallocator.hpp>
 #include "QMCWaveFunctions/SPOSet.h"
 
 namespace qmcplusplus
@@ -32,12 +33,14 @@ namespace qmcplusplus
 template<typename T>
 struct einspline_spo_omp : public SPOSet
 {
+  template<typename DT>
+  using OffloadAllocator = OMPallocator<DT, aligned_allocator<DT>>;
+  template<typename DT>
+  using OffloadPinnedAllocator = OMPallocator<DT, PinnedAlignedAllocator<DT>>;
+
   /// define the einsplie data object type
   using self_type   = einspline_spo_omp<T>;
   using spline_type = typename bspline_traits<T, 3>::SplineType;
-  template<typename TT>
-  using OffloadAlignedAllocator = OMPallocator<TT, Mallocator<TT, QMC_CLINE>>;
-  using OMPMatrix_type          = Matrix<T, OffloadAlignedAllocator<T>>;
   using lattice_type            = CrystalLattice<T, 3>;
 
   /// number of blocks
@@ -58,18 +61,18 @@ struct einspline_spo_omp : public SPOSet
   /// use allocator
   BsplineAllocator<T> myAllocator;
 
-  Vector<spline_type*, OMPallocator<spline_type*>> einsplines;
+  Vector<spline_type*, OffloadAllocator<spline_type*>> einsplines;
   ///thread private ratios for reduction when using nested threading, numVP x numThread
-  std::vector<OMPMatrix_type> ratios_private;
+  std::vector<Matrix<T, OffloadPinnedAllocator<T>>> ratios_private;
   ///offload scratch space, dynamically resized to the maximal need
-  std::vector<OMPMatrix_type> offload_scratch;
+  std::vector<Matrix<T, OffloadPinnedAllocator<T>>> offload_scratch;
   ///offload scratch space for multi_XXX, dynamically resized to the maximal need
-  std::vector<OMPMatrix_type> multi_offload_scratch;
+  std::vector<Matrix<T, OffloadPinnedAllocator<T>>> multi_offload_scratch;
   ///psiinv and position scratch space, used to avoid allocation on the fly and faster transfer
-  Vector<T, OffloadAlignedAllocator<T>> psiinv_pos_copy;
+  Vector<T, OffloadPinnedAllocator<T>> psiinv_pos_copy;
 
   // for shadows
-  Vector<T, OMPallocator<T>> pos_scratch;
+  Vector<T, OffloadAllocator<T>> pos_scratch;
 
   /// Timer
   NewTimer* timer;

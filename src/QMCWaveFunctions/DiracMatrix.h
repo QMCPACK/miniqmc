@@ -17,7 +17,7 @@
 #include "Numerics/OhmmsPETE/OhmmsMatrix.h"
 #include "Numerics/BlasThreadingEnv.h"
 #include "Utilities/scalar_traits.h"
-#include "Utilities/SIMD/algorithm.hpp"
+#include "CPU/SIMD/algorithm.hpp"
 #include "QMCWaveFunctions/DeterminantHelper.h"
 
 namespace qmcplusplus

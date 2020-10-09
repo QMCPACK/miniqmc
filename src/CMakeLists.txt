@@ -144,6 +144,7 @@ ENDIF()
     )
 
   ADD_LIBRARY(qmcutil ${UTILITIES})
+  TARGET_LINK_LIBRARIES(qmcutil PUBLIC platform_device)
 
   SUBDIRS(Utilities)
 
@@ -175,6 +176,7 @@ ENDIF()
     )
 
   ADD_LIBRARY(qmcbase ${PARTICLE})
+  TARGET_LINK_LIBRARIES(qmcbase PUBLIC qmcutil)
 
   SUBDIRS(Particle/tests)
 

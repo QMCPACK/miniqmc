@@ -10,10 +10,11 @@
 #//////////////////////////////////////////////////////////////////////////////////////
 
 
-set(SRCS OMPallocator.hpp  OMPMatrix.h  OMPstd.hpp  OMPTinyVector.h  OMPVector.h)
-add_library(platform_omptarget INTERFACE ${OMP_SRCS})
-target_include_directories(platform_omptarget INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}")
-
 if(ENABLE_OFFLOAD)
-    subdirs(tests)
+    subdirs(OMPTarget)
+endif()
+
+
+if(QMC_ENABLE_CUDA)
+    subdirs(CUDA)
 endif()
