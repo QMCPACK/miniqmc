@@ -15,7 +15,7 @@ add_library(platform_device INTERFACE)
 target_include_directories(platform_device INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}")
 
 if(QMC_ENABLE_CUDA)
-  target_link_libraries(platform_device INTERFACE platform_cuda)
+  target_link_libraries(platform_device INTERFACE CUDA::cudart)
 endif()
 
 subdirs(tests)

@@ -1,7 +1,7 @@
 ######################################################################
 # GLOBAL
 ######################################################################
-CMAKE_MINIMUM_REQUIRED(VERSION 3.6.0)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.17.0)
 cmake_policy(SET CMP0003 NEW)
 #Actually set CXX11 flag for Clang on Apple, even llvm non apple clang
 #This is contrary to what the --help-policy says
@@ -127,6 +127,7 @@ SET(BUILD_FCIQMC 0 CACHE BOOL "Build with FCIQMC")
 SET(QMC_BUILD_STATIC 0 CACHE BOOL "Link to static libraries")
 SET(ENABLE_TIMERS 1 CACHE BOOL "Enable internal timers")
 OPTION(ENABLE_OFFLOAD "Enable OpenMP offload" OFF)
+OPTION(QMC_ENABLE_CUDA "Enable CUDA acceleration" OFF)
 # Use CMake object library targets to workaround clang linker not being able to handle fat
 # binary archives which contain both host and device codes, for example OpenMP offload regions.
 # CMake does not propagate indirect object files by design.
@@ -314,6 +315,9 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
     ENDIF()
   ENDIF(QMC_MPI)
 
+  IF(QMC_ENABLE_CUDA)
+    find_package(CUDAToolkit)
+  ENDIF()
   #-------------------------------------------------------------------
   # check lapack/blas
   #-------------------------------------------------------------------

@@ -15,7 +15,7 @@
 
 #include <memory>
 #include "CPU/SIMD/aligned_allocator.hpp"
-#ifdef ENABLE_CUDA
+#ifdef QMC_ENABLE_CUDA
 #include "CUDA/CUDAallocator.hpp"
 #endif
 
@@ -23,14 +23,14 @@ namespace qmcplusplus
 {
 
 template<typename T>
-#ifdef ENABLE_CUDA
+#ifdef QMC_ENABLE_CUDA
 using PinnedAllocator = CUDALockedPageAllocator<T>;
 #else
 using PinnedAllocator = std::allocator<T>;
 #endif
 
 template<typename T, size_t ALIGN = QMC_CLINE>
-#ifdef ENABLE_CUDA
+#ifdef QMC_ENABLE_CUDA
 using PinnedAlignedAllocator = CUDALockedPageAllocator<T, aligned_allocator<T, ALIGN>>;
 #else
 using PinnedAlignedAllocator = aligned_allocator<T, ALIGN>;

@@ -16,7 +16,7 @@
 #include <iostream>
 #include <CUDA/cudaError.h>
 #include <CUDA/CUDAallocator.hpp>
-#include "OhmmsPETE/OhmmsVector.h"
+#include "Numerics/OhmmsPETE/OhmmsVector.h"
 
 namespace qmcplusplus
 {
