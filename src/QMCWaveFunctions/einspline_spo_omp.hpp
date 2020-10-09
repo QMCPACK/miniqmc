@@ -72,7 +72,7 @@ struct einspline_spo_omp : public SPOSet
   Vector<T, OffloadPinnedAllocator<T>> psiinv_pos_copy;
 
   // for shadows
-  Vector<T, OffloadAllocator<T>> pos_scratch;
+  Vector<T, OffloadPinnedAllocator<T>> pos_scratch;
 
   /// Timer
   NewTimer* timer;
