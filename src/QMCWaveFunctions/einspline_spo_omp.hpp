@@ -24,7 +24,7 @@
 #include <Particle/ParticleSet.h>
 #include <Numerics/Spline2/BsplineAllocator.hpp>
 #include <Utilities/SIMD/allocator.hpp>
-#include "OpenMP/OMPallocator.hpp"
+#include <OMPallocator.hpp>
 #include "QMCWaveFunctions/SPOSet.h"
 
 namespace qmcplusplus
@@ -33,12 +33,12 @@ template<typename T>
 struct einspline_spo_omp : public SPOSet
 {
   /// define the einsplie data object type
-  using self_type       = einspline_spo_omp<T>;
-  using spline_type     = typename bspline_traits<T, 3>::SplineType;
+  using self_type   = einspline_spo_omp<T>;
+  using spline_type = typename bspline_traits<T, 3>::SplineType;
   template<typename TT>
   using OffloadAlignedAllocator = OMPallocator<TT, Mallocator<TT, QMC_CLINE>>;
-  using OMPMatrix_type = Matrix<T, OffloadAlignedAllocator<T>>;
-  using lattice_type    = CrystalLattice<T, 3>;
+  using OMPMatrix_type          = Matrix<T, OffloadAlignedAllocator<T>>;
+  using lattice_type            = CrystalLattice<T, 3>;
 
   /// number of blocks
   int nBlocks;
@@ -115,13 +115,16 @@ struct einspline_spo_omp : public SPOSet
   /** evaluate psi, grad and hess */
   void evaluate_vgh(const ParticleSet& P, int iat);
 
-  void evaluate(const ParticleSet& P, int iat, ValueVector_t& psi_v, GradVector_t& dpsi_v, ValueVector_t& d2psi_v) override;
+  void evaluate(const ParticleSet& P,
+                int iat,
+                ValueVector_t& psi_v,
+                GradVector_t& dpsi_v,
+                ValueVector_t& d2psi_v) override;
 
   void evaluate_build_vgl(ValueVector_t& psi_v, GradVector_t& dpsi_v, ValueVector_t& d2psi_v);
 
   /** evaluate psi, grad and hess of multiple walkers with offload */
-  void multi_evaluate_vgh(const std::vector<SPOSet*>& spo_list,
-                          const std::vector<ParticleSet*>& P_list, int iat);
+  void multi_evaluate_vgh(const std::vector<SPOSet*>& spo_list, const std::vector<ParticleSet*>& P_list, int iat);
 
   void multi_evaluate(const std::vector<SPOSet*>& spo_list,
                       const std::vector<ParticleSet*>& P_list,

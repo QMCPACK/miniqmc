@@ -15,6 +15,7 @@
 #define QMCPLUSPLUS_OPENMP_ALLOCATOR_H
 
 #include <memory>
+#include <type_traits>
 #include "config.h"
 
 namespace qmcplusplus
@@ -27,13 +28,12 @@ struct OMPallocator : public HostAllocator
   using pointer       = typename HostAllocator::pointer;
   using const_pointer = typename HostAllocator::const_pointer;
 
+  static_assert(std::is_same<T, value_type>::value, "OMPallocator and HostAllocator data types must agree!");
+
   OMPallocator() = default;
   template<class U, class V>
   OMPallocator(const OMPallocator<U, V>&)
-  {
-    static_assert(std::is_same<T, U>::value, "Inconsistent types in OMPallocator!");
-  }
-
+  {}
   template<class U, class V>
   struct rebind
   {
@@ -42,7 +42,6 @@ struct OMPallocator : public HostAllocator
 
   value_type* allocate(std::size_t n)
   {
-    static_assert(std::is_same<T, value_type>::value, "Inconsistent OMPallocator and HostAllocator types!");
     value_type* pt = HostAllocator::allocate(n);
     PRAGMA_OFFLOAD("omp target enter data map(alloc:pt[0:n])")
     return pt;
@@ -54,6 +53,15 @@ struct OMPallocator : public HostAllocator
     HostAllocator::deallocate(pt, n);
   }
 };
+
+template<typename T>
+T* getOffloadDevicePtr(T* host_ptr)
+{
+  T* device_ptr;
+  PRAGMA_OFFLOAD("omp target data use_device_ptr(host_ptr)") { device_ptr = host_ptr; }
+  return device_ptr;
+}
+
 } // namespace qmcplusplus
 
 #endif

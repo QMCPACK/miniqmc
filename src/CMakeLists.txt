@@ -178,10 +178,6 @@ ENDIF()
 
   SUBDIRS(Particle/tests)
 
-  IF(ENABLE_OFFLOAD)
-    SUBDIRS(OpenMP/tests)
-  ENDIF()
-
+  SUBDIRS(Platforms)
   SUBDIRS(QMCWaveFunctions)
-
   SUBDIRS(Drivers)
