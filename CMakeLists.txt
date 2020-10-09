@@ -128,6 +128,7 @@ SET(QMC_BUILD_STATIC 0 CACHE BOOL "Link to static libraries")
 SET(ENABLE_TIMERS 1 CACHE BOOL "Enable internal timers")
 OPTION(ENABLE_OFFLOAD "Enable OpenMP offload" OFF)
 OPTION(QMC_ENABLE_CUDA "Enable CUDA acceleration" OFF)
+OPTION(QMC_ENABLE_ROCM "Enable GPU support through ROCM" OFF)
 # Use CMake object library targets to workaround clang linker not being able to handle fat
 # binary archives which contain both host and device codes, for example OpenMP offload regions.
 # CMake does not propagate indirect object files by design.
@@ -318,6 +319,23 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
   IF(QMC_ENABLE_CUDA)
     find_package(CUDAToolkit)
   ENDIF()
+
+  #-------------------------------------------------------------------
+  #  set up ROCM compiler options and libraries
+  #-------------------------------------------------------------------
+  IF(QMC_ENABLE_ROCM)
+    IF(NOT ROCM_ROOT)
+      MESSAGE(FATAL_ERROR "ROCM_ROOT not set!")
+    ENDIF()
+    MESSAGE(STATUS "ROCM_ROOT: ${ROCM_ROOT}")
+    SET(CMAKE_MODULE_PATH "${ROCM_ROOT}/hip/cmake" ${CMAKE_MODULE_PATH})
+
+    find_package(ROCR)
+    ADD_LIBRARY(ROCM::ROCr INTERFACE IMPORTED)
+    SET_TARGET_PROPERTIES(ROCM::ROCr PROPERTIES INTERFACE_INCLUDE_DIRECTORIES  "${ROCR_INCLUDES}"
+                                                INTERFACE_LINK_LIBRARIES "${ROCR_LIBRARIES}")
+  ENDIF(QMC_ENABLE_ROCM)
+
   #-------------------------------------------------------------------
   # check lapack/blas
   #-------------------------------------------------------------------

@@ -15,23 +15,29 @@
 
 #include <memory>
 #include "CPU/SIMD/aligned_allocator.hpp"
-#ifdef QMC_ENABLE_CUDA
+#if defined(QMC_ENABLE_CUDA)
 #include "CUDA/CUDAallocator.hpp"
+#elif defined(QMC_ENABLE_ROCM)
+#include "ROCm/ROCRallocator.hpp"
 #endif
 
 namespace qmcplusplus
 {
 
 template<typename T>
-#ifdef QMC_ENABLE_CUDA
+#if defined(QMC_ENABLE_CUDA)
 using PinnedAllocator = CUDALockedPageAllocator<T>;
+#elif defined(QMC_ENABLE_ROCM)
+using PinnedAllocator = ROCRLockedPageAllocator<T>;
 #else
 using PinnedAllocator = std::allocator<T>;
 #endif
 
 template<typename T, size_t ALIGN = QMC_CLINE>
-#ifdef QMC_ENABLE_CUDA
+#if defined(QMC_ENABLE_CUDA)
 using PinnedAlignedAllocator = CUDALockedPageAllocator<T, aligned_allocator<T, ALIGN>>;
+#elif defined(QMC_ENABLE_ROCM)
+using PinnedAlignedAllocator = ROCRLockedPageAllocator<T, aligned_allocator<T, ALIGN>>;
 #else
 using PinnedAlignedAllocator = aligned_allocator<T, ALIGN>;
 #endif

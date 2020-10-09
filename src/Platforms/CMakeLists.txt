@@ -18,4 +18,8 @@ if(QMC_ENABLE_CUDA)
   target_link_libraries(platform_device INTERFACE CUDA::cudart)
 endif()
 
+if(QMC_ENABLE_ROCM)
+  target_link_libraries(platform_device INTERFACE ROCM::ROCr)
+endif()
+
 subdirs(tests)
