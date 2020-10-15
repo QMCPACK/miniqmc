@@ -30,8 +30,8 @@
 namespace qmcplusplus
 {
 /** allocator locks memory pages allocated by ULPHA
- * @tparm T data type
- * @tparm ULPHA host memory allocator using unlocked page
+ * @tparam T data type
+ * @tparam ULPHA host memory allocator using unlocked page
  *
  * ULPHA cannot be ROCRHostAllocator
  */

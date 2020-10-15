@@ -9,156 +9,158 @@
 // File created by: Ye Luo, yeluo@anl.gov, Argonne National Laboratory
 //////////////////////////////////////////////////////////////////////////////////////
 // -*- C++ -*-
-/** @file CUDAallocator.hpp
- * this file provides three C++ memory allocators using CUDA specific memory allocation functions.
+/** @file HIPallocator.hpp
+ * this file provides three C++ memory allocators using HIP specific memory allocation functions.
  *
- * CUDAManagedAllocator allocates CUDA unified memory
- * CUDAAllocator allocates CUDA device memory
- * CUDAHostAllocator allocates CUDA host pinned memory
+ * HIPManagedAllocator allocates HIP unified memory
+ * HIPAllocator allocates HIP device memory
+ * HIPHostAllocator allocates HIP host pinned memory
  */
-#ifndef QMCPLUSPLUS_CUDA_ALLOCATOR_H
-#define QMCPLUSPLUS_CUDA_ALLOCATOR_H
+#ifndef QMCPLUSPLUS_HIP_ALLOCATOR_H
+#define QMCPLUSPLUS_HIP_ALLOCATOR_H
 
 #include <cstdlib>
 #include <stdexcept>
-#include <cuda_runtime_api.h>
+#include <hip_runtime_api.h>
 #include "config.h"
-#include "cudaError.h"
+#include "hipError.h"
 #include "CPU/SIMD/allocator_traits.hpp"
 #include "CPU/SIMD/alignment.config.h"
 
 namespace qmcplusplus
 {
-/** allocator for CUDA unified memory
+/** allocator for HIP unified memory
  * @tparam T data type
  */
+/*
 template<typename T>
-struct CUDAManagedAllocator
+struct HIPManagedAllocator
 {
   typedef T value_type;
   typedef size_t size_type;
   typedef T* pointer;
   typedef const T* const_pointer;
 
-  CUDAManagedAllocator() = default;
+  HIPManagedAllocator() = default;
   template<class U>
-  CUDAManagedAllocator(const CUDAManagedAllocator<U>&)
+  HIPManagedAllocator(const HIPManagedAllocator<U>&)
   {}
 
   template<class U>
   struct rebind
   {
-    typedef CUDAManagedAllocator<U> other;
+    typedef HIPManagedAllocator<U> other;
   };
 
   T* allocate(std::size_t n)
   {
     void* pt;
-    cudaErrorCheck(cudaMallocManaged(&pt, n * sizeof(T)), "Allocation failed in CUDAManagedAllocator!");
+    hipErrorCheck(hipMallocManaged(&pt, n * sizeof(T)), "Allocation failed in HIPManagedAllocator!");
     if ((size_t(pt)) & (QMC_CLINE - 1))
-      throw std::runtime_error("Unaligned memory allocated in CUDAManagedAllocator");
+      throw std::runtime_error("Unaligned memory allocated in HIPManagedAllocator");
     return static_cast<T*>(pt);
   }
-  void deallocate(T* p, std::size_t) { cudaErrorCheck(cudaFree(p), "Deallocation failed in CUDAManagedAllocator!"); }
+  void deallocate(T* p, std::size_t) { hipErrorCheck(hipFree(p), "Deallocation failed in HIPManagedAllocator!"); }
 };
 
 template<class T1, class T2>
-bool operator==(const CUDAManagedAllocator<T1>&, const CUDAManagedAllocator<T2>&)
+bool operator==(const HIPManagedAllocator<T1>&, const HIPManagedAllocator<T2>&)
 {
   return true;
 }
 template<class T1, class T2>
-bool operator!=(const CUDAManagedAllocator<T1>&, const CUDAManagedAllocator<T2>&)
+bool operator!=(const HIPManagedAllocator<T1>&, const HIPManagedAllocator<T2>&)
 {
   return false;
 }
+*/
 
-/** allocator for CUDA device memory
+/** allocator for HIP device memory
  * @tparam T data type
  */
 template<typename T>
-struct CUDAAllocator
+struct HIPAllocator
 {
   typedef T value_type;
   typedef size_t size_type;
   typedef T* pointer;
   typedef const T* const_pointer;
 
-  CUDAAllocator() = default;
+  HIPAllocator() = default;
   template<class U>
-  CUDAAllocator(const CUDAAllocator<U>&)
+  HIPAllocator(const HIPAllocator<U>&)
   {}
 
   template<class U>
   struct rebind
   {
-    typedef CUDAAllocator<U> other;
+    typedef HIPAllocator<U> other;
   };
 
   T* allocate(std::size_t n)
   {
     void* pt;
-    cudaErrorCheck(cudaMalloc(&pt, n * sizeof(T)), "Allocation failed in CUDAAllocator!");
+    hipErrorCheck(hipMalloc(&pt, n * sizeof(T)), "Allocation failed in HIPAllocator!");
     return static_cast<T*>(pt);
   }
-  void deallocate(T* p, std::size_t) { cudaErrorCheck(cudaFree(p), "Deallocation failed in CUDAAllocator!"); }
+  void deallocate(T* p, std::size_t) { hipErrorCheck(hipFree(p), "Deallocation failed in HIPAllocator!"); }
 };
 
 template<class T1, class T2>
-bool operator==(const CUDAAllocator<T1>&, const CUDAAllocator<T2>&)
+bool operator==(const HIPAllocator<T1>&, const HIPAllocator<T2>&)
 {
   return true;
 }
 template<class T1, class T2>
-bool operator!=(const CUDAAllocator<T1>&, const CUDAAllocator<T2>&)
+bool operator!=(const HIPAllocator<T1>&, const HIPAllocator<T2>&)
 {
   return false;
 }
 
 template<typename T>
-struct allocator_traits<CUDAAllocator<T>>
+struct allocator_traits<HIPAllocator<T>>
 {
   const static bool is_host_accessible = false;
 };
 
-/** allocator for CUDA host pinned memory
+/** allocator for HIP host pinned memory
  * @tparam T data type
  */
 template<typename T>
-struct CUDAHostAllocator
+struct HIPHostAllocator
 {
   typedef T value_type;
   typedef size_t size_type;
   typedef T* pointer;
   typedef const T* const_pointer;
 
-  CUDAHostAllocator() = default;
+  HIPHostAllocator() = default;
   template<class U>
-  CUDAHostAllocator(const CUDAHostAllocator<U>&)
+  HIPHostAllocator(const HIPHostAllocator<U>&)
   {}
 
   template<class U>
   struct rebind
   {
-    typedef CUDAHostAllocator<U> other;
+    typedef HIPHostAllocator<U> other;
   };
 
   T* allocate(std::size_t n)
   {
     void* pt;
-    cudaErrorCheck(cudaMallocHost(&pt, n * sizeof(T)), "Allocation failed in CUDAHostAllocator!");
+    hipErrorCheck(hipHostMalloc(&pt, n * sizeof(T)), "Allocation failed in HIPHostAllocator!");
     return static_cast<T*>(pt);
   }
-  void deallocate(T* p, std::size_t) { cudaErrorCheck(cudaFreeHost(p), "Deallocation failed in CUDAHostAllocator!"); }
+  void deallocate(T* p, std::size_t) { hipErrorCheck(hipFreeHost(p), "Deallocation failed in HIPHostAllocator!"); }
 };
 
 template<class T1, class T2>
-bool operator==(const CUDAHostAllocator<T1>&, const CUDAHostAllocator<T2>&)
+bool operator==(const HIPHostAllocator<T1>&, const HIPHostAllocator<T2>&)
 {
   return true;
 }
 template<class T1, class T2>
-bool operator!=(const CUDAHostAllocator<T1>&, const CUDAHostAllocator<T2>&)
+bool operator!=(const HIPHostAllocator<T1>&, const HIPHostAllocator<T2>&)
 {
   return false;
 }
@@ -167,37 +169,37 @@ bool operator!=(const CUDAHostAllocator<T1>&, const CUDAHostAllocator<T2>&)
  * @tparam T data type
  * @tparam ULPHA host memory allocator using unlocked page
  *
- * ULPHA cannot be CUDAHostAllocator
+ * ULPHA cannot be HIPHostAllocator
  */
 template<typename T, class ULPHA = std::allocator<T>>
-struct CUDALockedPageAllocator : public ULPHA
+struct HIPLockedPageAllocator : public ULPHA
 {
   using value_type    = typename ULPHA::value_type;
   using size_type     = typename ULPHA::size_type;
   using pointer       = typename ULPHA::pointer;
   using const_pointer = typename ULPHA::const_pointer;
 
-  CUDALockedPageAllocator() = default;
+  HIPLockedPageAllocator() = default;
   template<class U, class V>
-  CUDALockedPageAllocator(const CUDALockedPageAllocator<U, V>&)
+  HIPLockedPageAllocator(const HIPLockedPageAllocator<U, V>&)
   {}
   template<class U, class V>
   struct rebind
   {
-    typedef CUDALockedPageAllocator<U, V> other;
+    typedef HIPLockedPageAllocator<U, V> other;
   };
 
   value_type* allocate(std::size_t n)
   {
-    static_assert(std::is_same<T, value_type>::value, "CUDALockedPageAllocator and ULPHA data types must agree!");
+    static_assert(std::is_same<T, value_type>::value, "HIPLockedPageAllocator and ULPHA data types must agree!");
     value_type* pt = ULPHA::allocate(n);
-    cudaErrorCheck(cudaHostRegister(pt, n*sizeof(T), cudaHostRegisterDefault), "cudaHostRegister failed in CUDALockedPageAllocator!");
+    hipErrorCheck(hipHostRegister(pt, n*sizeof(T), hipHostRegisterDefault), "hipHostRegister failed in HIPLockedPageAllocator!");
     return pt;
   }
 
   void deallocate(value_type* pt, std::size_t n)
   {
-    cudaErrorCheck(cudaHostUnregister(pt), "cudaHostUnregister failed in CUDALockedPageAllocator!");
+    hipErrorCheck(hipHostUnregister(pt), "hipHostUnregister failed in HIPLockedPageAllocator!");
     ULPHA::deallocate(pt, n);
   }
 };

@@ -19,7 +19,7 @@ if(QMC_ENABLE_CUDA)
 endif()
 
 if(QMC_ENABLE_ROCM)
-  target_link_libraries(platform_device INTERFACE ROCM::ROCr)
+  target_link_libraries(platform_device INTERFACE ROCM::HIP)
 endif()
 
 subdirs(tests)
