@@ -21,7 +21,7 @@
 
 #include <cstdlib>
 #include <stdexcept>
-#include <hip_runtime_api.h>
+#include <hip/hip_runtime_api.h>
 #include "config.h"
 #include "hipError.h"
 #include "CPU/SIMD/allocator_traits.hpp"

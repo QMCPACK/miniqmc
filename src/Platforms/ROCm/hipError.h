@@ -17,7 +17,7 @@
 #include <string>
 #include <sstream>
 #include <stdexcept>
-#include <hip_runtime_api.h>
+#include <hip/hip_runtime_api.h>
 
 #define hipErrorCheck(ans, cause)                \
   {                                               \
