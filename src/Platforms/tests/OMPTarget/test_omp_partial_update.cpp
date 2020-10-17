@@ -32,9 +32,10 @@ TEST_CASE("partial_update", "[openmp]")
     array_ptr[i] += i;
   }
 
-  REQUIRE(array_ptr[4] == 1);
-  #pragma omp target update from(array_ptr[4:array_size])
-  REQUIRE(array_ptr[4] == 5);
+  const int offset = 4;
+  REQUIRE(array_ptr[offset] == 1);
+  #pragma omp target update from(array_ptr[offset:(array_size - offset)])
+  REQUIRE(array_ptr[offset] == offset + 1);
 }
 
 } // namespace qmcplusplus
