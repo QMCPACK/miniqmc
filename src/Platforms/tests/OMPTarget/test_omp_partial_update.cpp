@@ -26,7 +26,7 @@ TEST_CASE("partial_update", "[openmp]")
   std::vector<int, OMPallocator<int>> array(array_size, 1);
   int* array_ptr = array.data();
 
-  #pragma omp target teams distribute parallel for
+  #pragma omp target teams distribute parallel for map(always, to: array_ptr[:array_size])
   for (int i = 0; i < array_size; i++)
   {
     array_ptr[i] += i;
