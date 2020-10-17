@@ -26,7 +26,7 @@ constexpr int array_size = num_sections * section_size;
 
 TEST_CASE("partial_update", "[openmp]")
 {
-  //std::vector<int, PinnedAlignedAllocator<int>> array(array_size, 1);
+  //std::vector<int, OMPallocator<int>> array(array_size, 1);
   std::vector<int, OMPallocator<int, PinnedAlignedAllocator<int>>> array(array_size, 1);
   int* array_ptr = array.data();
 
