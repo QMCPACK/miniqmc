@@ -14,16 +14,18 @@
 #include <cmath>
 #include <iostream>
 #include <stdexcept>
-#include "OMPTarget/OMPallocator.hpp"
+#include "PinnedAllocator.h"
 
 namespace qmcplusplus
 {
 
-const int array_size = 100;
+const int num_sections = 10;
+const int section_size = 10;
+constexpr int array_size = num_sections * section_size;
 
 TEST_CASE("partial_update", "[openmp]")
 {
-  std::vector<int, OMPallocator<int>> array(array_size, 1);
+  std::vector<int, PinnedAlignedAllocator<int>> array(array_size, 1);
   int* array_ptr = array.data();
 
   #pragma omp target teams distribute parallel for map(always, to: array_ptr[:array_size])
@@ -34,7 +36,12 @@ TEST_CASE("partial_update", "[openmp]")
 
   const int offset = 4;
   REQUIRE(array_ptr[offset] == 1);
-  #pragma omp target update from(array_ptr[offset:(array_size - offset)])
+  for (int offset = 0; offset < array_size; offset += section_size)
+  {
+    int* temp_ptr = array_ptr;
+    #pragma omp target update from(temp_ptr[offset:section_size]) nowait
+  }
+  #pragma omp taskwait
   REQUIRE(array_ptr[offset] == offset + 1);
 }
 
