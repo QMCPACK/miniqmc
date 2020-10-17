@@ -364,11 +364,6 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
     SET(LAPACK_FOUND 1)
     SET(LAPACK_LIBRARIES "${MKL_LIBRARIES}")
     SET(LAPACK_LINKER_FLAGS "${MKL_LINKER_FLAGS}")
-  ELSEIF (CMAKE_SYSTEM_NAME STREQUAL "CrayLinuxEnvironment")
-    # Cray specific environment variable indicates we are on a cray. Assume libsci will be linked
-    # preferable to attempt a compile/link 
-    SET(LAPACK_FOUND 1)
-    MESSAGE(STATUS "Assuming Cray libsci or other BLAS/LAPACK will be linked by compiler wrappers")
   ELSE()	 
     # Search for Blas/Lapack
     find_package(LAPACK)
