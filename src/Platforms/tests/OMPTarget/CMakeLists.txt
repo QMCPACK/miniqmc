@@ -11,7 +11,7 @@
 
 SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${QMCPACK_UNIT_TEST_DIR})
 
-FOREACH(NAME math reduction target_task complex complex_reduction math_with_complex_header memory_interop)
+FOREACH(NAME math reduction target_task complex complex_reduction math_with_complex_header memory_interop partial_update)
   SET(UTEST_EXE test_omptarget_${NAME})
   SET(UTEST_NAME unit_${UTEST_EXE})
   ADD_EXECUTABLE(${UTEST_EXE} test_omp_${NAME}.cpp)
