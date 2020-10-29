@@ -182,9 +182,6 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
   SET(ENABLE_OPENMP 0)
   SET(HAVE_MPI 0)
   SET(INTEL_COMPILER 0)
-  SET(HAVE_MKL 0)
-  SET(HAVE_MKL_VML 0)
-  SET(HAVE_ACML 0)
 
   ######################################################
   # Try to identify CPU identity
@@ -316,48 +313,6 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
     ENDIF()
   ENDIF(QMC_MPI)
 
-  #-------------------------------------------------------------------
-  # check lapack/blas
-  #-------------------------------------------------------------------
-  # Quick search for MKL (this will need to be improved).
-  # This reproduces the old intel -mkl behavior or
-  # if ENABLE_MKL is set to 1 supports other compilers
-  IF (INTEL_COMPILER)
-    SET(ENABLE_MKL TRUE CACHE BOOL "ENABLE MKL for Intel compilers")
-  ELSE (INTEL_COMPILER)
-    SET(ENABLE_MKL FALSE CACHE BOOL "ENABLE MKL for non-intel compilers (Experimental)")
-  ENDIF (INTEL_COMPILER)
-  IF (ENABLE_MKL)
-    INCLUDE(CMake/FindMKL.cmake)
-  ENDIF(ENABLE_MKL)
-  IF ( HAVE_MKL )
-    # We found MKL, add the link library
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${MKL_FLAGS}")
-    SET(LAPACK_FOUND 1)
-    SET(LAPACK_LIBRARIES "${MKL_LIBRARIES}")
-    SET(LAPACK_LINKER_FLAGS "${MKL_LINKER_FLAGS}")
-  ELSEIF ( $ENV{CRAYPE_VERSION} MATCHES "." )
-    # Cray specific environment variable indicates we are on a cray. Assume libsci will be linked
-    # preferable to attempt a compile/link 
-    SET(LAPACK_FOUND 1)
-    MESSAGE(STATUS "Assuming Cray libsci or other BLAS/LAPACK will be linked by compiler wrappers")
-  ELSE()	 
-    # Search for Blas/Lapack
-    find_package(LAPACK)
-    IF("${LAPACK_LIBRARIES}" MATCHES "mkl")
-      MESSAGE(FATAL_ERROR "MKL found via LAPACK/BLAS. Please use -DENABLE_MKL=1 when invoking cmake for full Intel MKL utilization. -DMKL_ROOT may also be needed for the include files to be found.")
-    ENDIF()
-  ENDIF()
-  IF(LAPACK_FOUND)
-    MESSAGE(STATUS "LAPACK linker flags: ${LAPACK_LINKER_FLAGS}")
-    MESSAGE(STATUS "LAPACK libraries: ${LAPACK_LIBRARIES}")
-    SET(LAPACK_LIBRARY ${LAPACK_LINKER_FLAGS} ${LAPACK_LIBRARIES})
-  ELSE()
-    MESSAGE(FATAL_ERROR "Could not find required libraries LAPACK &/or BLAS") 
-  ENDIF()
-
-  INCLUDE(CMake/FindVectorMath.cmake)
-
 ENDIF(CMAKE_TOOLCHAIN_FILE)
 
 IF (ENABLE_GCOV)
@@ -406,7 +361,48 @@ INCLUDE(${CMAKE_ROOT}/Modules/FindThreads.cmake)
 ####################################################################
 # list of libraries to be linked with the main applications using I/O
 
-SET(QMC_UTIL_LIBS ${LAPACK_LIBRARY} ${BLAS_LIBRARY})
+#-------------------------------------------------------------------
+# check lapack/blas
+#-------------------------------------------------------------------
+# Add Math::BLAS_LAPACK target
+ADD_LIBRARY(Math::BLAS_LAPACK INTERFACE IMPORTED)
+
+FOREACH(MKL_LIB_PATH IN ITEMS ${MKL_ROOT} $ENV{MKL_ROOT} $ENV{MKLROOT} $ENV{MKL_HOME})
+  SET(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} ${MKL_LIB_PATH}/lib/intel64)
+ENDFOREACH()
+IF(NOT BLA_VENDOR)
+  MESSAGE(STATUS "Trying to find LAPACK from Intel MKL")
+  IF(QMC_OMP)
+    SET(BLA_VENDOR Intel10_64lp)
+  ELSE()
+    SET(BLA_VENDOR Intel10_64lp_seq)
+  ENDIF()
+  find_package(LAPACK)
+  IF(NOT LAPACK_FOUND)
+    MESSAGE(STATUS "Intel MKL library files not found via FindLAPACK.")
+    MESSAGE(STATUS "Trying to find alternative LAPACK libraries")
+    SET(BLA_VENDOR All)
+    find_package(LAPACK REQUIRED)
+  ENDIF()
+ELSE()
+  MESSAGE(STATUS "Trying to find LAPACK library as requested BLA_VENDOR=${BLA_VENDOR}")
+  find_package(LAPACK REQUIRED)
+ENDIF()
+
+MESSAGE(STATUS "LAPACK linker flags: ${LAPACK_LINKER_FLAGS}")
+MESSAGE(STATUS "LAPACK libraries: ${LAPACK_LIBRARIES}")
+SET_TARGET_PROPERTIES(Math::BLAS_LAPACK PROPERTIES INTERFACE_LINK_LIBRARIES "${LAPACK_LINKER_FLAGS};${LAPACK_LIBRARIES}")
+
+# Detects MKL header files and other components.
+IF(LAPACK_LIBRARIES MATCHES "mkl_core")
+  INCLUDE(CMake/FindMKL.cmake)
+ENDIF()
+
+# AFQMC requires MKL sparse for good performance (roughly a factor of 2x)
+IF (BUILD_AFQMC AND NOT MKL_FOUND)
+  MESSAGE(WARNING "AFQMC - MKL not found, using simple sparse matrix routines.  Link with MKL sparse libraries for better performance.")
+ENDIF()
+
 SET(QMC_UTIL_LIBS ${QMC_UTIL_LIBS} ${FORTRAN_LIBRARIES})
 
 #find_package(ZLIB)

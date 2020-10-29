@@ -13,4 +13,6 @@ ADD_LIBRARY(qmcwfs
             ../QMCWaveFunctions/WaveFunction.cpp ../QMCWaveFunctions/SPOSet_builder.cpp
             ../QMCWaveFunctions/DiracDeterminant.cpp ../QMCWaveFunctions/DiracDeterminantRef.cpp)
 
+TARGET_LINK_LIBRARIES(qmcwfs PRIVATE Math::BLAS_LAPACK)
+
 SUBDIRS(tests)
