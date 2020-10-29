@@ -21,4 +21,6 @@ ENDIF(USE_OBJECT_TARGET)
 
 target_link_libraries(qmcwfs PUBLIC qmcbase)
 
+TARGET_LINK_LIBRARIES(qmcwfs PRIVATE Math::BLAS_LAPACK)
+
 SUBDIRS(tests)
