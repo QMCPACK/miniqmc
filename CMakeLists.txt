@@ -274,6 +274,7 @@ ENDIF()
 #-------------------------------------------------------------------
 #  check MPI installation
 #-------------------------------------------------------------------
+ADD_LIBRARY(qmc_mpi_cxx INTERFACE)
 IF(QMC_MPI)
   # for backward compatibility with MPIEXEC
   IF(DEFINED MPIEXEC AND NOT DEFINED MPIEXEC_EXECUTABLE)
@@ -336,6 +337,7 @@ IF(QMC_MPI)
   MESSAGE(STATUS "Tests run as : ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} NUM_PROCS ${MPIEXEC_PREFLAGS_PRINT} EXECUTABLE")
 
   SET(HAVE_MPI 1)
+  TARGET_LINK_LIBRARIES(qmc_mpi_cxx INTERFACE MPI::MPI_CXX)
   MESSAGE(STATUS "MPI is enabled")
 ELSE(QMC_MPI)
   SET(HAVE_MPI 0)
@@ -511,14 +513,9 @@ MESSAGE(STATUS "Ready to build miniQMC")
 ####################################################################
 # add definitions
 #  -DH5_USE_16_API for HDF5
-#  -DMPICH_SKIP_MPICXX : disable C++ binding of MPICH
 ####################################################################
 
 ADD_DEFINITIONS(-DHAVE_CONFIG_H -DH5_USE_16_API -DADD_)
-
-if(HAVE_MPI)
-  ADD_DEFINITIONS(-DMPICH_SKIP_MPICXX)
-endif()
 
 EXECUTE_PROCESS(COMMAND hostname OUTPUT_VARIABLE QMC_HOSTNAME OUTPUT_STRIP_TRAILING_WHITESPACE)
 CONFIGURE_FILE(${miniqmc_SOURCE_DIR}/miniqmc.settings ${miniqmc_BINARY_DIR}/bin/miniqmc.settings)

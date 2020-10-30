@@ -144,6 +144,7 @@ ENDIF()
     )
 
   ADD_LIBRARY(qmcutil ${UTILITIES})
+  TARGET_LINK_LIBRARIES(qmcutil INTERFACE qmc_mpi_cxx)
 
   SUBDIRS(Utilities)
 
