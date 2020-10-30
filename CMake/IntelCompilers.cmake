@@ -1,5 +1,4 @@
 # Check compiler version
-SET(INTEL_COMPILER 1)
 IF ( CMAKE_CXX_COMPILER_VERSION VERSION_LESS 18.0 )
 MESSAGE(FATAL_ERROR "Requires Intel 18.0 or higher ")
 ENDIF()

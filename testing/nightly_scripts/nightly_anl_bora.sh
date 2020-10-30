@@ -80,7 +80,7 @@ elif [[ $sys == *"Clang"* ]]; then
   else
     module load llvm/master-nightly
   fi
-  CTEST_FLAGS="-DCMAKE_CXX_COMPILER=clang++;-DENABLE_MKL=1"
+  CTEST_FLAGS="-DCMAKE_CXX_COMPILER=clang++"
 fi
 
 if [[ $sys == *"Offload"* ]]; then

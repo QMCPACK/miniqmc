@@ -8,7 +8,7 @@ cmake_policy(SET CMP0003 NEW)
 cmake_policy(SET CMP0025 NEW)
 
 ######################################################################
-PROJECT(qmcpack CXX)
+PROJECT(miniqmc CXX)
 ######################################################################
 
 ######################################################################
@@ -22,10 +22,10 @@ SET(QMCPACK_VERSION "${QMCPACK_VERSION_MAJOR}.${QMCPACK_VERSION_MINOR}.${QMCPACK
 ######################################################################
 # CTest
 ######################################################################
-INCLUDE( "${qmcpack_SOURCE_DIR}/CMake/macros.cmake" )
+INCLUDE( "${miniqmc_SOURCE_DIR}/CMake/macros.cmake" )
 SET( DROP_METHOD "http" )
 SET( DROP_SITE "cdash.qmcpack.org" )
-SET( DROP_LOCATION "/CDash/submit.php?project=QMCPACK" )
+SET( DROP_LOCATION "/CDash/submit.php?project=miniQMC" )
 SET( TRIGGER_SITE "" )
 SET( DROP_SITE_CDASH TRUE )
 # Increase timeout per test over the default of 1500 seconds (25 minutes)
@@ -40,10 +40,13 @@ STRING( TOUPPER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE )
 MESSAGE( STATUS "CMAKE_BUILD_TYPE is ${CMAKE_BUILD_TYPE}")
 
 ######################################################################
-#define the paths for library and executable for out-of-soruce compilation
+# Define the paths for library and executable for out-of-soruce compilation
+# Directory where customize cmake files reside
 ######################################################################
-SET (LIBRARY_OUTPUT_PATH ${qmcpack_BINARY_DIR}/lib CACHE PATH "Single output directory for building all libraries.")
-SET (EXECUTABLE_OUTPUT_PATH ${qmcpack_BINARY_DIR}/bin CACHE PATH "Single output directory for building all executables.")
+SET (LIBRARY_OUTPUT_PATH ${miniqmc_BINARY_DIR}/lib CACHE PATH "Single output directory for building all libraries.")
+SET (EXECUTABLE_OUTPUT_PATH ${miniqmc_BINARY_DIR}/bin CACHE PATH "Single output directory for building all executables.")
+SET (PROJECT_CMAKE ${miniqmc_SOURCE_DIR}/CMake)
+SET (QMCPACK_UNIT_TEST_DIR ${miniqmc_BINARY_DIR}/tests/bin)
 
 ######################################################################
 # build include and library paths required for the projects
@@ -72,6 +75,7 @@ SET (EXECUTABLE_OUTPUT_PATH ${qmcpack_BINARY_DIR}/bin CACHE PATH "Single output 
 ######################################################################
 SET(OHMMS_DIM 3 CACHE STRING "Select physical dimension")
 SET(OHMMS_INDEXTYPE int)
+SET(OHMMS_ORTHO 0)
 MESSAGE(STATUS "defining the float point precision")
 SET(OHMMS_PRECISION_FULL double)
 SET(QMC_MIXED_PRECISION 0 CACHE BOOL "Enable/disable mixed precision")
@@ -122,18 +126,14 @@ iF(MIXED_PRECISION AND BUILD_LMYENGINE_INTERFACE)
   SET(BUILD_LMYENGINE_INTERFACE 0)
 ENDIF()
 SET(BUILD_AFQMC 0 CACHE BOOL "Build with AFQMC")
+# AFQMC requires MPI
+If (BUILD_AFQMC AND NOT QMC_MPI)
+  MESSAGE(FATAL_ERROR "AFQMC requires building with MPI (QMC_MPI=1). Set BUILD_AFQMC=0 or configure MPI.")
+ENDIF()
+
 SET(BUILD_FCIQMC 0 CACHE BOOL "Build with FCIQMC")
 SET(QMC_BUILD_STATIC 0 CACHE BOOL "Link to static libraries")
 SET(ENABLE_TIMERS 1 CACHE BOOL "Enable internal timers")
-
-######################################################################
-# FIXED PARAMETERS for test and legacy reasons
-# DO NOT TOUCH THESE
-# QMC_ORTHO  = 0 for general unit cell, 1 for orthogonal cells
-# QMC_FASTWALKER  = true, when operation is faster for each walker
-######################################################################
-SET(QMC_FASTWALKER 1)
-SET(OHMMS_ORTHO 0)
 
 ######################################################################
 #list of options to determine libraries. First, try to use libraries available
@@ -141,13 +141,6 @@ SET(OHMMS_ORTHO 0)
 ######################################################################
 #SET(ENABLE_PHDF5 0 CACHE BOOL "Enable phdf5 for output")
 #SET(HAVE_LIBHDF5 0)
-
-######################################################
-# Directory where customize cmake files reside
-######################################################
-SET (PROJECT_CMAKE ${qmcpack_SOURCE_DIR}/CMake)
-
-SET(QMCPACK_UNIT_TEST_DIR ${qmcpack_BINARY_DIR}/tests/bin)
 
 ######################################################
 # Git information (see src/CMakeLists.txt for the
@@ -180,11 +173,6 @@ IF(CMAKE_TOOLCHAIN_FILE)
 ELSE(CMAKE_TOOLCHAIN_FILE)
   MESSAGE(STATUS "Trying to figure out .....")
   SET(ENABLE_OPENMP 0)
-  SET(HAVE_MPI 0)
-  SET(INTEL_COMPILER 0)
-  SET(HAVE_MKL 0)
-  SET(HAVE_MKL_VML 0)
-  SET(HAVE_ACML 0)
 
   ######################################################
   # Try to identify CPU identity
@@ -195,31 +183,33 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
   #------------------------
   # On Cray's machine
   #------------------------
-  IF($ENV{CRAYPE_VERSION} MATCHES ".")
+  GET_FILENAME_COMPONENT(BASE_CXX_COMPILER_NAME ${CMAKE_CXX_COMPILER} NAME)
+  IF($ENV{CRAYPE_VERSION} MATCHES "." AND NOT BASE_CXX_COMPILER_NAME STREQUAL "CC")
+    MESSAGE(WARNING "Cray Programming Environment has been detected but C++ compiler wrapper CC is not used! "
+                    "Please use cc/CC as the C/C++ compiler to ensure correct cross-compiling for the compute nodes "
+                    "unless you understand cross-compiling and intend not to use Cray compiler wrappers.")
+  ENDIF()
+  IF(CMAKE_SYSTEM_NAME STREQUAL "CrayLinuxEnvironment")
     MESSAGE(STATUS "Running on a Cray machine.")
-    SET(CMAKE_SKIP_RPATH TRUE)
 
-    # Flags for ctest
-    SET(USE_EXT_MPI_FOR_SERIAL_TESTS 1)
-    FIND_PROGRAM(MPIEXEC aprun)
-    IF(NOT MPIEXEC)
-    # For slurm use srun
-      FIND_PROGRAM(MPIEXEC srun)
-    ENDIF(NOT MPIEXEC)
-    SET(MPIEXEC_NUMPROC_FLAG "-n")
+    IF(NOT $ENV{CRAYPE_LINK_TYPE} STREQUAL "dynamic")
+      MESSAGE(WARNING "Cray Programming Environment uses static linking by default. "
+                      "We prefer dynamic linking which makes library searching easier. "
+                      "Set environment variable CRAYPE_LINK_TYPE to \"dynamic\" enables dynamic linking.\n")
+    ENDIF()
 
-    IF(QMC_BUILD_STATIC)
-      MESSAGE(STATUS "Building CPU code. Linking statically.")
-      SET(BUILD_SHARED_LIBS off)
-      SET(CMAKE_FIND_LIBRARY_SUFFIXES .a)
-      FOREACH(type SHARED_LIBRARY SHARED_MODULE EXE)
-        SET(CMAKE_${type}_LINK_STATIC_CXX_FLAGS "-Wl,-Bstatic")
-        SET(CMAKE_${type}_LINK_DYNAMIC_CXX_FLAGS "-static")
-      ENDFOREACH(type)
-    ELSE(QMC_BUILD_STATIC)
-      MESSAGE(STATUS "Building CPU code. Linking dynamically.")
-    ENDIF(QMC_BUILD_STATIC)
-  ENDIF($ENV{CRAYPE_VERSION} MATCHES ".")
+    IF ( NOT DEFINED MPIEXEC_EXECUTABLE )
+      FIND_PROGRAM(MPIEXEC_EXECUTABLE aprun)
+      IF(NOT MPIEXEC_EXECUTABLE)
+        # For slurm use srun
+        FIND_PROGRAM(MPIEXEC_EXECUTABLE srun)
+      ENDIF(NOT MPIEXEC_EXECUTABLE)
+    ENDIF()
+  ELSE()
+    IF($ENV{CRAYPE_VERSION} MATCHES "." AND BASE_CXX_COMPILER_NAME STREQUAL "CC")
+      MESSAGE(FATAL_ERROR "Cray compiler wrapper detected. Empty the build folder and rerun cmake with -DCMAKE_SYSTEM_NAME=CrayLinuxEnvironment added.")
+    ENDIF()
+  ENDIF()
 
   #------------------------------------
   # Identify the compiler
@@ -269,95 +259,6 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
   SET(CMAKE_CXX_STANDARD_REQUIRED ON)
   SET(CMAKE_CXX_EXTENSIONS OFF)
 
-  #-------------------------------------------------------------------
-  #  check MPI installation
-  #-------------------------------------------------------------------
-  IF(QMC_MPI)
-    ## mpi compilers
-    GET_FILENAME_COMPONENT(BASE_CXX_COMPILER_NAME ${CMAKE_CXX_COMPILER} NAME)
-    if(${BASE_CXX_COMPILER_NAME} MATCHES "^mp")
-      SET(HAVE_MPI 1)
-      SET(MPI_FOUND TRUE)
-    elseif($ENV{CRAYPE_VERSION} MATCHES ".")
-      SET(HAVE_MPI 1)
-      SET(MPI_FOUND TRUE)
-    else()
-      include(FindMPI)
-      IF(MPI_FOUND)
-        MESSAGE(STATUS "Found mpi.h and libraries. Check for working mpi compiler ")
-        INCLUDE_DIRECTORIES(${MPI_CXX_INCLUDE_PATH})
-        FILE(WRITE ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp/testmpi.cxx
-          "#include <mpi.h>"
-          "int main(int argc, char** argv){MPI_Init(&argc,&argv); MPI_Finalize();return 0;}\n")
-        #TRY_COMPILE(MPI_WORKS ${CMAKE_BINARY_DIR}
-        #${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp/testmpi.cxx
-        #OUTPUT_VARIABLE OUTPUT)
-        set(MPI_WORKS 1)
-        SET(MPI_WARNING_LIST
-            "Building MPI version without using MPI compiler wrappers.\n"
-            "This may not build qmcpack correctly. To ensure the correct version, specify the compiler wrappers to cmake.\n"
-            "For example: cmake -DCMAKE_CXX_COMPILER=mpic++\n"
-            "To build without MPI, pass '-DQMC_MPI=0' to cmake")
-        MESSAGE(WARNING ${MPI_WARNING_LIST})
-
-        IF(MPI_WORKS)
-          MESSAGE(STATUS "MPI is enabled")
-          SET(HAVE_MPI 1)
-          LINK_LIBRARIES(${MPI_CXX_LIBRARIES})
-        ELSE(MPI_WORKS)
-          MESSAGE(STATUS "MPI is disabled")
-          SET(HAVE_MPI 0)
-          SET(MPI_LIBRARY "")
-        ENDIF(MPI_WORKS)
-      ELSE(MPI_FOUND)
-        MESSAGE(STATUS "MPI not found")
-        SET(MPI_LIBRARY "")
-      ENDIF(MPI_FOUND)
-    ENDIF()
-  ENDIF(QMC_MPI)
-
-  #-------------------------------------------------------------------
-  # check lapack/blas
-  #-------------------------------------------------------------------
-  # Quick search for MKL (this will need to be improved).
-  # This reproduces the old intel -mkl behavior or
-  # if ENABLE_MKL is set to 1 supports other compilers
-  IF (INTEL_COMPILER)
-    SET(ENABLE_MKL TRUE CACHE BOOL "ENABLE MKL for Intel compilers")
-  ELSE (INTEL_COMPILER)
-    SET(ENABLE_MKL FALSE CACHE BOOL "ENABLE MKL for non-intel compilers (Experimental)")
-  ENDIF (INTEL_COMPILER)
-  IF (ENABLE_MKL)
-    INCLUDE(CMake/FindMKL.cmake)
-  ENDIF(ENABLE_MKL)
-  IF ( HAVE_MKL )
-    # We found MKL, add the link library
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${MKL_FLAGS}")
-    SET(LAPACK_FOUND 1)
-    SET(LAPACK_LIBRARIES "${MKL_LIBRARIES}")
-    SET(LAPACK_LINKER_FLAGS "${MKL_LINKER_FLAGS}")
-  ELSEIF ( $ENV{CRAYPE_VERSION} MATCHES "." )
-    # Cray specific environment variable indicates we are on a cray. Assume libsci will be linked
-    # preferable to attempt a compile/link 
-    SET(LAPACK_FOUND 1)
-    MESSAGE(STATUS "Assuming Cray libsci or other BLAS/LAPACK will be linked by compiler wrappers")
-  ELSE()	 
-    # Search for Blas/Lapack
-    find_package(LAPACK)
-    IF("${LAPACK_LIBRARIES}" MATCHES "mkl")
-      MESSAGE(FATAL_ERROR "MKL found via LAPACK/BLAS. Please use -DENABLE_MKL=1 when invoking cmake for full Intel MKL utilization. -DMKL_ROOT may also be needed for the include files to be found.")
-    ENDIF()
-  ENDIF()
-  IF(LAPACK_FOUND)
-    MESSAGE(STATUS "LAPACK linker flags: ${LAPACK_LINKER_FLAGS}")
-    MESSAGE(STATUS "LAPACK libraries: ${LAPACK_LIBRARIES}")
-    SET(LAPACK_LIBRARY ${LAPACK_LINKER_FLAGS} ${LAPACK_LIBRARIES})
-  ELSE()
-    MESSAGE(FATAL_ERROR "Could not find required libraries LAPACK &/or BLAS") 
-  ENDIF()
-
-  INCLUDE(CMake/FindVectorMath.cmake)
-
 ENDIF(CMAKE_TOOLCHAIN_FILE)
 
 IF (ENABLE_GCOV)
@@ -366,39 +267,82 @@ IF (ENABLE_GCOV)
   ENDIF()
 ENDIF(ENABLE_GCOV)
 
-# AFQMC requires MKL sparse for good performance (roughly a factor of 2x)
-IF (BUILD_AFQMC AND NOT MKL_FOUND)
-  MESSAGE(WARNING "AFQMC - MKL not found, using simple sparse matrix routines.  Link with MKL sparse libraries for better performance.")
-ENDIF()
-
-# AFQMC requires MPI
-If (BUILD_AFQMC AND NOT QMC_MPI)
-  MESSAGE(FATAL_ERROR "AFQMC requires building with MPI (QMC_MPI=1). Set BUILD_AFQMC=0 or configure MPI.")
-ENDIF()
-
 IF (BUILD_AFQMC AND NOT APPLE)
   LINK_LIBRARIES("rt")
 ENDIF()
   
-# setup ctest variables
-IF ( HAVE_MPI )
-  SET( USE_MPI 1 )
-  IF ( NOT MPIEXEC )
-    SET( MPIEXEC "mpirun" )
+#-------------------------------------------------------------------
+#  check MPI installation
+#-------------------------------------------------------------------
+ADD_LIBRARY(qmc_mpi_cxx INTERFACE)
+IF(QMC_MPI)
+  # for backward compatibility with MPIEXEC
+  IF(DEFINED MPIEXEC AND NOT DEFINED MPIEXEC_EXECUTABLE)
+    MESSAGE(WARNING "Setting MPIEXEC_EXECUTABLE based on MPIEXEC. MPIEXEC has been deprecated! Use MPIEXEC_EXECUTABLE instead!")
+    SET(MPIEXEC_EXECUTABLE ${MPIEXEC})
+  ENDIF(DEFINED MPIEXEC AND NOT DEFINED MPIEXEC_EXECUTABLE)
+  SET(MPI_CXX_SKIP_MPICXX TRUE)
+  IF(NOT CMAKE_CROSSCOMPILING)
+    SET(MPI_DETERMINE_LIBRARY_VERSION TRUE)
+  ENDIF()
+  FIND_PACKAGE(MPI COMPONENTS CXX)
+
+  IF(NOT MPI_FOUND)
+    MESSAGE(FATAL_ERROR "MPI support not found! Provide MPI compiler wrappers or build without MPI by passing '-DQMC_MPI=0' to cmake.")
+  ENDIF(NOT MPI_FOUND)
+
+  IF(${MPI_CXX_LIBRARY_VERSION_STRING} MATCHES "MVAPICH2")
+    STRING(REGEX REPLACE "\n" ";" ONE_LINE "${MPI_CXX_LIBRARY_VERSION_STRING}")
+    STRING(REGEX REPLACE " +|\t" ";" ONE_LINE "${ONE_LINE}")
+    LIST (GET ONE_LINE 3 MVAPICH2_VERSION)
+    MESSAGE(STATUS "MVAPICH2 version ${MVAPICH2_VERSION}")
+    IF(${MVAPICH2_VERSION} VERSION_LESS "2.4" AND NOT ${MPI_CXX_LIBRARY_VERSION_STRING} MATCHES "disable-registration-cache")
+        MESSAGE(FATAL_ERROR "MVAPICH2 (version < 2.4) with registration cache enabled breaks QMCPACK. "
+                            "Use a different MPI library or a MVAPICH2 >=2.4 "
+                            "or build MVAPICH2 with --disable-registration-cache configure option.")
+    ENDIF()
   ENDIF()
 
-  IF ( NOT DEFINED MPIEXEC_NUMPROC_FLAG )
-    SET( MPIEXEC_NUMPROC_FLAG "-np" )
+  IF(${MPI_CXX_LIBRARY_VERSION_STRING} MATCHES "Open MPI")
+    IF(NOT MPIEXEC_PREFLAGS)
+      SET(MPIEXEC_PREFLAGS "--bind-to;none")
+      MESSAGE(STATUS "Detected Open MPI. Setting bind-to options for thread affinity in MPIEXEC_PREFLAGS.")
+    ELSE(NOT MPIEXEC_PREFLAGS)
+      IF(NOT "${MPIEXEC_PREFLAGS}" MATCHES "--bind-to")
+        MESSAGE(WARNING "Default Open MPI thread affinity policy may bind all the threads to a single core and "
+                        "significantly slow down testing. Add proper --bind-to options via MPIEXEC_PREFLAGS. "
+                        "If you don't know exactly what affinity to add, "
+                        "add '--bind-to;none' to your current MPIEXEC_PREFLAGS to stop this warning.")
+      ENDIF()
+    ENDIF(NOT MPIEXEC_PREFLAGS)
+  ENDIF()
+
+  IF(NOT ${CMAKE_CXX_COMPILER} STREQUAL ${MPI_CXX_COMPILER})
+    SET(MPI_WARNING_LIST
+        "Building MPI version without using MPI compiler wrappers.\n"
+        "This may not build miniqmc correctly. To ensure the correct version, specify the compiler wrappers to cmake.\n"
+        "For example: cmake -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpic++\n"
+        "To build without MPI, pass '-DQMC_MPI=0' to cmake")
+    MESSAGE(WARNING ${MPI_WARNING_LIST})
   ENDIF()
 
   IF ( NOT TEST_MAX_PROCS )
     SET( TEST_MAX_PROCS 100 )
   ENDIF()
 
-  MESSAGE(STATUS "MPI runner is ${MPIEXEC}")
-ENDIF(HAVE_MPI)
+  MESSAGE(STATUS "MPI runner MPIEXEC_EXECUTABLE : ${MPIEXEC_EXECUTABLE}")
+  MESSAGE(STATUS "MPIEXEC_NUMPROC_FLAG : ${MPIEXEC_NUMPROC_FLAG}")
+  MESSAGE(STATUS "MPIEXEC_PREFLAGS : ${MPIEXEC_PREFLAGS}")
+  STRING(REPLACE ";" " " MPIEXEC_PREFLAGS_PRINT "${MPIEXEC_PREFLAGS}")
+  MESSAGE(STATUS "Tests run as : ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} NUM_PROCS ${MPIEXEC_PREFLAGS_PRINT} EXECUTABLE")
 
-INCLUDE(${CMAKE_ROOT}/Modules/FindThreads.cmake)
+  SET(HAVE_MPI 1)
+  TARGET_LINK_LIBRARIES(qmc_mpi_cxx INTERFACE MPI::MPI_CXX)
+  MESSAGE(STATUS "MPI is enabled")
+ELSE(QMC_MPI)
+  SET(HAVE_MPI 0)
+  MESSAGE(STATUS "MPI is disabled")
+ENDIF(QMC_MPI)
 
 ####################################################################
 #First check the required libraries. Abort if these are not found.
@@ -406,7 +350,48 @@ INCLUDE(${CMAKE_ROOT}/Modules/FindThreads.cmake)
 ####################################################################
 # list of libraries to be linked with the main applications using I/O
 
-SET(QMC_UTIL_LIBS ${LAPACK_LIBRARY} ${BLAS_LIBRARY})
+#-------------------------------------------------------------------
+# check lapack/blas
+#-------------------------------------------------------------------
+# Add Math::BLAS_LAPACK target
+ADD_LIBRARY(Math::BLAS_LAPACK INTERFACE IMPORTED)
+
+FOREACH(MKL_LIB_PATH IN ITEMS ${MKL_ROOT} $ENV{MKL_ROOT} $ENV{MKLROOT} $ENV{MKL_HOME})
+  SET(CMAKE_LIBRARY_PATH ${CMAKE_LIBRARY_PATH} ${MKL_LIB_PATH}/lib/intel64)
+ENDFOREACH()
+IF(NOT BLA_VENDOR)
+  MESSAGE(STATUS "Trying to find LAPACK from Intel MKL")
+  IF(QMC_OMP)
+    SET(BLA_VENDOR Intel10_64lp)
+  ELSE()
+    SET(BLA_VENDOR Intel10_64lp_seq)
+  ENDIF()
+  find_package(LAPACK)
+  IF(NOT LAPACK_FOUND)
+    MESSAGE(STATUS "Intel MKL library files not found via FindLAPACK.")
+    MESSAGE(STATUS "Trying to find alternative LAPACK libraries")
+    SET(BLA_VENDOR All)
+    find_package(LAPACK REQUIRED)
+  ENDIF()
+ELSE()
+  MESSAGE(STATUS "Trying to find LAPACK library as requested BLA_VENDOR=${BLA_VENDOR}")
+  find_package(LAPACK REQUIRED)
+ENDIF()
+
+MESSAGE(STATUS "LAPACK linker flags: ${LAPACK_LINKER_FLAGS}")
+MESSAGE(STATUS "LAPACK libraries: ${LAPACK_LIBRARIES}")
+SET_TARGET_PROPERTIES(Math::BLAS_LAPACK PROPERTIES INTERFACE_LINK_LIBRARIES "${LAPACK_LINKER_FLAGS};${LAPACK_LIBRARIES}")
+
+# Detects MKL header files and other components.
+IF(LAPACK_LIBRARIES MATCHES "mkl_core")
+  INCLUDE(CMake/FindMKL.cmake)
+ENDIF()
+
+# AFQMC requires MKL sparse for good performance (roughly a factor of 2x)
+IF (BUILD_AFQMC AND NOT MKL_FOUND)
+  MESSAGE(WARNING "AFQMC - MKL not found, using simple sparse matrix routines.  Link with MKL sparse libraries for better performance.")
+ENDIF()
+
 SET(QMC_UTIL_LIBS ${QMC_UTIL_LIBS} ${FORTRAN_LIBRARIES})
 
 #find_package(ZLIB)
@@ -445,7 +430,7 @@ SET(QMC_UTIL_LIBS ${QMC_UTIL_LIBS} ${FORTRAN_LIBRARIES})
 # Add optional macros
 ######################################################
 
-#include qmcpack/src build/src
+#include miniqmc/src build/src
 INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR}/src ${PROJECT_BINARY_DIR}/src)
 
 #  To connect the timer regions with VTune sampling, some Task API calls
@@ -528,17 +513,12 @@ MESSAGE(STATUS "Ready to build miniQMC")
 ####################################################################
 # add definitions
 #  -DH5_USE_16_API for HDF5
-#  -DMPICH_SKIP_MPICXX : disable C++ binding of MPICH
 ####################################################################
 
 ADD_DEFINITIONS(-DHAVE_CONFIG_H -DH5_USE_16_API -DADD_)
 
-if(HAVE_MPI)
-  ADD_DEFINITIONS(-DMPICH_SKIP_MPICXX)
-endif()
-
 EXECUTE_PROCESS(COMMAND hostname OUTPUT_VARIABLE QMC_HOSTNAME OUTPUT_STRIP_TRAILING_WHITESPACE)
-CONFIGURE_FILE(${qmcpack_SOURCE_DIR}/qmcpack.settings ${qmcpack_BINARY_DIR}/bin/qmcpack.settings)
+CONFIGURE_FILE(${miniqmc_SOURCE_DIR}/miniqmc.settings ${miniqmc_BINARY_DIR}/bin/miniqmc.settings)
 
 SUBDIRS(src)
 

@@ -17,6 +17,6 @@ SET(UTEST_NAME unit_test_${SRC_DIR})
 
 
 ADD_EXECUTABLE(${UTEST_EXE} test_particle.cpp)
-TARGET_LINK_LIBRARIES(${UTEST_EXE} catch_main qmcbase qmcutil ${QMC_UTIL_LIBS} ${MPI_LIBRARY})
+TARGET_LINK_LIBRARIES(${UTEST_EXE} catch_main qmcbase qmcutil ${QMC_UTIL_LIBS})
 
 ADD_UNIT_TEST(${UTEST_NAME} "${QMCPACK_UNIT_TEST_DIR}/${UTEST_EXE}")

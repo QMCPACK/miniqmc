@@ -20,7 +20,7 @@ SET(UTEST_NAME unit_test_${SRC_DIR})
 
 
 ADD_EXECUTABLE(${UTEST_EXE} ../MiniQMCOptions.cpp test_MiniQMCOptions.cpp)
-TARGET_LINK_LIBRARIES(${UTEST_EXE} catch_main qmcutil ${MPI_LIBRARY})
+TARGET_LINK_LIBRARIES(${UTEST_EXE} catch_main qmcutil)
 
 ADD_UNIT_TEST(${UTEST_NAME} "${QMCPACK_UNIT_TEST_DIR}/${UTEST_EXE}")
 
