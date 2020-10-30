@@ -20,8 +20,8 @@
 
 INCLUDE(${PROJECT_SOURCE_DIR}/CMake/unit_test.cmake)
 
-CONFIGURE_FILE(${qmcpack_SOURCE_DIR}/src/config.h.cmake.in
-  ${qmcpack_BINARY_DIR}/src/config.h)
+CONFIGURE_FILE(${miniqmc_SOURCE_DIR}/src/config.h.cmake.in
+  ${miniqmc_BINARY_DIR}/src/config.h)
 
 SET(GITREV_BARE_FILE git-rev.h)
 SET(GITREV_BARE_TMP git-rev-tmp.h)

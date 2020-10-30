@@ -8,7 +8,7 @@ cmake_policy(SET CMP0003 NEW)
 cmake_policy(SET CMP0025 NEW)
 
 ######################################################################
-PROJECT(qmcpack CXX)
+PROJECT(miniqmc CXX)
 ######################################################################
 
 ######################################################################
@@ -22,10 +22,10 @@ SET(QMCPACK_VERSION "${QMCPACK_VERSION_MAJOR}.${QMCPACK_VERSION_MINOR}.${QMCPACK
 ######################################################################
 # CTest
 ######################################################################
-INCLUDE( "${qmcpack_SOURCE_DIR}/CMake/macros.cmake" )
+INCLUDE( "${miniqmc_SOURCE_DIR}/CMake/macros.cmake" )
 SET( DROP_METHOD "http" )
 SET( DROP_SITE "cdash.qmcpack.org" )
-SET( DROP_LOCATION "/CDash/submit.php?project=QMCPACK" )
+SET( DROP_LOCATION "/CDash/submit.php?project=miniQMC" )
 SET( TRIGGER_SITE "" )
 SET( DROP_SITE_CDASH TRUE )
 # Increase timeout per test over the default of 1500 seconds (25 minutes)
@@ -43,10 +43,10 @@ MESSAGE( STATUS "CMAKE_BUILD_TYPE is ${CMAKE_BUILD_TYPE}")
 # Define the paths for library and executable for out-of-soruce compilation
 # Directory where customize cmake files reside
 ######################################################################
-SET (LIBRARY_OUTPUT_PATH ${qmcpack_BINARY_DIR}/lib CACHE PATH "Single output directory for building all libraries.")
-SET (EXECUTABLE_OUTPUT_PATH ${qmcpack_BINARY_DIR}/bin CACHE PATH "Single output directory for building all executables.")
-SET (PROJECT_CMAKE ${qmcpack_SOURCE_DIR}/CMake)
-SET (QMCPACK_UNIT_TEST_DIR ${qmcpack_BINARY_DIR}/tests/bin)
+SET (LIBRARY_OUTPUT_PATH ${miniqmc_BINARY_DIR}/lib CACHE PATH "Single output directory for building all libraries.")
+SET (EXECUTABLE_OUTPUT_PATH ${miniqmc_BINARY_DIR}/bin CACHE PATH "Single output directory for building all executables.")
+SET (PROJECT_CMAKE ${miniqmc_SOURCE_DIR}/CMake)
+SET (QMCPACK_UNIT_TEST_DIR ${miniqmc_BINARY_DIR}/tests/bin)
 
 ######################################################################
 # build include and library paths required for the projects
@@ -319,7 +319,7 @@ IF(QMC_MPI)
   IF(NOT ${CMAKE_CXX_COMPILER} STREQUAL ${MPI_CXX_COMPILER})
     SET(MPI_WARNING_LIST
         "Building MPI version without using MPI compiler wrappers.\n"
-        "This may not build qmcpack correctly. To ensure the correct version, specify the compiler wrappers to cmake.\n"
+        "This may not build miniqmc correctly. To ensure the correct version, specify the compiler wrappers to cmake.\n"
         "For example: cmake -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpic++\n"
         "To build without MPI, pass '-DQMC_MPI=0' to cmake")
     MESSAGE(WARNING ${MPI_WARNING_LIST})
@@ -428,7 +428,7 @@ SET(QMC_UTIL_LIBS ${QMC_UTIL_LIBS} ${FORTRAN_LIBRARIES})
 # Add optional macros
 ######################################################
 
-#include qmcpack/src build/src
+#include miniqmc/src build/src
 INCLUDE_DIRECTORIES( ${PROJECT_SOURCE_DIR}/src ${PROJECT_BINARY_DIR}/src)
 
 #  To connect the timer regions with VTune sampling, some Task API calls
@@ -521,7 +521,7 @@ if(HAVE_MPI)
 endif()
 
 EXECUTE_PROCESS(COMMAND hostname OUTPUT_VARIABLE QMC_HOSTNAME OUTPUT_STRIP_TRAILING_WHITESPACE)
-CONFIGURE_FILE(${qmcpack_SOURCE_DIR}/qmcpack.settings ${qmcpack_BINARY_DIR}/bin/qmcpack.settings)
+CONFIGURE_FILE(${miniqmc_SOURCE_DIR}/miniqmc.settings ${miniqmc_BINARY_DIR}/bin/miniqmc.settings)
 
 SUBDIRS(src)
 
