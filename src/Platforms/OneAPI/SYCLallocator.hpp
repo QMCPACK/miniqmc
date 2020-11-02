@@ -152,15 +152,38 @@ struct SYCLHostAllocator
 
   T* allocate(std::size_t n)
   {
-    sycl::queue queue;
-    void* pt = sycl::aligned_alloc_host(QMC_CLINE, sizeof(int) * n, queue);
+    void* pt = nullptr;
+    try
+    {
+      sycl::queue queue;
+      pt = sycl::aligned_alloc_host(QMC_CLINE, sizeof(int) * n, queue);
+    }
+    catch (sycl::exception const& e)
+    {
+      std::ostringstream err_msg;
+      err_msg << "SYCLHostAllocator::allocate sycl::aligned_alloc_host failed!"
+              << " " << e.what() << "\n";
+      std::cerr << err_msg.str();
+      throw std::runtime_error(err_msg.str());
+    }
     return static_cast<T*>(pt);
   }
 
   void deallocate(T* p, std::size_t)
   {
-    sycl::queue queue;
-    sycl::free(p, queue);
+    try
+    {
+      sycl::queue queue;
+      sycl::free(p, queue);
+    }
+    catch (sycl::exception const& e)
+    {
+      std::ostringstream err_msg;
+      err_msg << "SYCLHostAllocator::deallocate sycl::free failed!"
+              << " " << e.what() << "\n";
+      std::cerr << err_msg.str();
+      throw std::runtime_error(err_msg.str());
+    }
   }
 };
 
