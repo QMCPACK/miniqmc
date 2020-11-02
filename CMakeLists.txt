@@ -388,6 +388,20 @@ IF(QMC_ENABLE_ROCM)
 ENDIF(QMC_ENABLE_ROCM)
 
 #-------------------------------------------------------------------
+#  set up OneAPI compiler options and libraries
+#-------------------------------------------------------------------
+IF(QMC_ENABLE_ONEAPI)
+  #IF(NOT ONEAPI_ROOT)
+  #  MESSAGE(FATAL_ERROR "ONEAPI_ROOT not set!")
+  #ENDIF()
+  #MESSAGE(STATUS "ONEAPI_ROOT: ${ONEAPI_ROOT}")
+
+  ADD_LIBRARY(ONEAPI::DPCPP INTERFACE IMPORTED)
+  SET_TARGET_PROPERTIES(ONEAPI::DPCPP PROPERTIES INTERFACE_COMPILE_OPTIONS "-fsycl"
+                                                 INTERFACE_LINK_OPTIONS "-fsycl")
+ENDIF(QMC_ENABLE_ONEAPI)
+
+#-------------------------------------------------------------------
 # check lapack/blas
 #-------------------------------------------------------------------
 # Add Math::BLAS_LAPACK target

@@ -43,7 +43,7 @@ void test_memory_device_access()
 
 TEST_CASE("sincos", "[openmp]")
 {
-#if defined(QMC_ENABLE_CUDA) || defined(QMC_ENABLE_ROCM)
+#if defined(QMC_ENABLE_CUDA) || defined(QMC_ENABLE_ROCM) || defined(QMC_ENABLE_ONEAPI)
   test_memory_device_access<int, PinnedAlignedAllocator<int>>();
 #endif
 }

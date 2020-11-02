@@ -22,4 +22,8 @@ if(QMC_ENABLE_ROCM)
   target_link_libraries(platform_device INTERFACE ROCM::HIP)
 endif()
 
+if(QMC_ENABLE_ONEAPI)
+  target_link_libraries(platform_device INTERFACE ONEAPI::DPCPP)
+endif()
+
 subdirs(tests)

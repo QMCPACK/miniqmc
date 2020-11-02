@@ -43,6 +43,9 @@
 /* Enable ROCM acceleration. */
 #cmakedefine QMC_ENABLE_ROCM @QMC_ENABLE_ROCM@
 
+/* Enable ONEAPI acceleration. */
+#cmakedefine QMC_ENABLE_ONEAPI @QMC_ENABLE_ONEAPI@
+
 /* Define to 1 if you have the `hdf5' library (-lhdf5). */
 #cmakedefine HAVE_LIBHDF5 @HAVE_LIBHDF5@
 
