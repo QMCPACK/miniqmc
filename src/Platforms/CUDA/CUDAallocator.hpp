@@ -116,6 +116,18 @@ bool operator!=(const CUDAAllocator<T1>&, const CUDAAllocator<T2>&)
 }
 
 template<typename T>
+bool isCUDAPtrDevice(const T* ptr)
+{
+  cudaPointerAttributes attr;
+  cudaErrorCheck(cudaPointerGetAttributes(&attr, ptr), "cudaPointerGetAttributes failed!");
+#if (CUDART_VERSION < 10000)
+  return attr.memoryType == cudaMemoryTypeDevice;
+#else
+  return attr.type == cudaMemoryTypeDevice;
+#endif
+}
+
+template<typename T>
 struct allocator_traits<CUDAAllocator<T>>
 {
   const static bool is_host_accessible = false;

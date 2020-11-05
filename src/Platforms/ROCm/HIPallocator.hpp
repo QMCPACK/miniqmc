@@ -118,6 +118,14 @@ bool operator!=(const HIPAllocator<T1>&, const HIPAllocator<T2>&)
 }
 
 template<typename T>
+bool isHIPPtrDevice(const T* ptr)
+{
+  hipPointerAttribute_t attr;
+  hipErrorCheck(hipPointerGetAttributes(&attr, ptr), "hipPointerGetAttributes failed!");
+  return attr.memoryType == hipMemoryTypeDevice;
+}
+
+template<typename T>
 struct allocator_traits<HIPAllocator<T>>
 {
   const static bool is_host_accessible = false;
