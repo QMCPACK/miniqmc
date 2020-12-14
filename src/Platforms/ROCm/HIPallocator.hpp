@@ -159,7 +159,7 @@ struct HIPHostAllocator
     hipErrorCheck(hipHostMalloc(&pt, n * sizeof(T)), "Allocation failed in HIPHostAllocator!");
     return static_cast<T*>(pt);
   }
-  void deallocate(T* p, std::size_t) { hipErrorCheck(hipFreeHost(p), "Deallocation failed in HIPHostAllocator!"); }
+  void deallocate(T* p, std::size_t) { hipErrorCheck(hipHostFree(p), "Deallocation failed in HIPHostAllocator!"); }
 };
 
 template<class T1, class T2>

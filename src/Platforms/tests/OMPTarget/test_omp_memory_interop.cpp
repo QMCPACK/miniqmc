@@ -11,12 +11,10 @@
 
 
 #include "catch.hpp"
-#include <cmath>
 #include <iostream>
 #include <stdexcept>
 #include <omp.h>
-#include "Utilities/Configuration.h"
-#include "Numerics/my_math.hpp"
+#include "config.h"
 #include "PinnedAllocator.h"
 
 namespace qmcplusplus
@@ -30,7 +28,7 @@ void test_device_memory_omp_access()
   std::vector<T, ALLOC> array(array_size, 1);
   int* array_ptr = array.data();
 
-  #pragma omp target teams distribute parallel for is_device_ptr(array_ptr)
+  #pragma omp target teams distribute parallel for map(tofrom: array_ptr[:array_size])
   for (int i = 0; i < array_size; i++)
   {
     array_ptr[i] += i;
@@ -46,6 +44,9 @@ TEST_CASE("memory_interop", "[openmp]")
 {
 #if defined(QMC_ENABLE_CUDA) || defined(QMC_ENABLE_ROCM) || defined(QMC_ENABLE_ONEAPI)
   test_device_memory_omp_access<int, PinnedAlignedAllocator<int>>();
+#endif
+#if defined(QMC_ENABLE_ROCM)
+  test_device_memory_omp_access<int, HIPHostAllocator<int>>();
 #endif
 
   int* array = (int*)omp_target_alloc(array_size, omp_get_default_device());
