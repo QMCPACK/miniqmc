@@ -50,6 +50,7 @@ void test_icpx_opencl_wrong_number()
     printf("foo after %lf\n", foo_after);
     REQUIRE(std::abs(foo_before - foo_after) < 1E-9);
   }
+#pragma omp target exit data map(delete : q_ptr[:1])
 }
 
 TEST_CASE("icpx OpenCL wrong number", "[openmp]")
