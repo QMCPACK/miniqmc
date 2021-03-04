@@ -392,7 +392,7 @@ int main(int argc, char** argv)
   {
     ratio += RealType(my_accepted_list[iw]) / RealType(nels * nsteps);
     nspheremoves += RealType(my_vals_list[iw]) / RealType(nsteps);
-    dNumVGHCalls += nels;
+    dNumVGHCalls += nels * nsteps;
   }
 
   //evalV_v_err /= nspheremoves;

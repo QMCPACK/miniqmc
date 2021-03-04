@@ -308,7 +308,7 @@ int main(int argc, char** argv)
 
     ratio        += RealType(my_accepted) / RealType(nels * nsteps);
     nspheremoves += RealType(my_vals) / RealType(nsteps);
-    dNumVGHCalls += nels;
+    dNumVGHCalls += nels * nsteps;
 
   } // end of omp parallel
 
