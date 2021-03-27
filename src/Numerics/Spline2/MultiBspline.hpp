@@ -120,7 +120,6 @@ evaluate_vgl(const typename bspline_traits<T, 3>::SplineType* restrict spline_m,
       const T* restrict coefs3zs = coefs + 3 * zs;
       ASSUME_ALIGNED(coefs3zs);
 
-#pragma noprefetch
 #pragma omp simd
       for (int n = 0; n < num_splines; n++)
       {
