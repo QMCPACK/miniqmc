@@ -74,6 +74,7 @@ SET (QMCPACK_UNIT_TEST_DIR ${miniqmc_BINARY_DIR}/tests/bin)
 # QMC_MPI =  enable MPI
 # QMC_OMP = enable OMP
 ######################################################################
+set(QMC_SIMD_ALIGNMENT 64 CACHE STRING "Cache/SIMD alignment in bytes")
 SET(OHMMS_DIM 3 CACHE STRING "Select physical dimension")
 SET(OHMMS_INDEXTYPE int)
 SET(OHMMS_ORTHO 0)
@@ -264,7 +265,7 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
   ENDIF()
 
   # requires C++11 standard
-  SET(CMAKE_CXX_STANDARD 11)
+  SET(CMAKE_CXX_STANDARD 14)
   SET(CMAKE_CXX_STANDARD_REQUIRED ON)
   SET(CMAKE_CXX_EXTENSIONS OFF)
 

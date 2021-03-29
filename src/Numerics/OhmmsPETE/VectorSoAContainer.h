@@ -25,8 +25,8 @@
 namespace qmcplusplus
 {
 /** SoA adaptor class for ParticleAttrib<TinyVector<T,D> >
-   * @tparm T data type, float, double, complex<float>, complex<double>
-   * @tparm Alloc memory allocator
+   * @tparam T data type, float, double, complex<float>, complex<double>
+   * @tparam Alloc memory allocator
    */
 template<typename T, unsigned D, size_t ALIGN = QMC_CLINE, typename Alloc = Mallocator<T, ALIGN>>
 struct VectorSoAContainer

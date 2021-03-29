@@ -10,12 +10,20 @@
 #//////////////////////////////////////////////////////////////////////////////////////
 
 
+set(DEVICE_SRCS
+    MemoryUsage.cpp
+    Host/sysutil.cpp
+)
 
-add_library(platform_device INTERFACE)
-target_include_directories(platform_device INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}")
+add_library(platform_device ${DEVICE_SRCS})
+target_include_directories(platform_device PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
+
+SUBDIRS(OMPTarget)
+target_link_libraries(platform_device PUBLIC platform_omptarget)
 
 if(QMC_ENABLE_CUDA)
-  target_link_libraries(platform_device INTERFACE CUDA::cudart)
+  SUBDIRS(CUDA)
+  target_link_libraries(platform_device PUBLIC platform_cuda)
 endif()
 
 if(QMC_ENABLE_ROCM)

@@ -47,7 +47,7 @@ namespace qmcplusplus
 /** Tensor<T,D>  class for D by D tensor
  *
  * @tparam T datatype
- * @tparm D dimension
+ * @tparam D dimension
  */
 template<class T, unsigned D>
 class Tensor
