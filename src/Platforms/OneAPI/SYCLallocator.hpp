@@ -24,7 +24,6 @@
 #include <CL/sycl.hpp>
 #include "config.h"
 #include "CPU/SIMD/allocator_traits.hpp"
-#include "CPU/SIMD/alignment.config.h"
 
 namespace qmcplusplus
 {
@@ -53,7 +52,7 @@ struct SYCLManagedAllocator
   T* allocate(std::size_t n)
   {
     sycl::queue queue;
-    void* pt = sycl::aligned_alloc_shared(QMC_CLINE, sizeof(int) * n, queue);
+    void* pt = sycl::aligned_alloc_shared(QMC_SIMD_ALIGNMENT, sizeof(int) * n, queue);
     return static_cast<T*>(pt);
   }
 
@@ -100,7 +99,7 @@ struct SYCLAllocator
   T* allocate(std::size_t n)
   {
     sycl::queue queue;
-    void* pt = sycl::aligned_alloc(QMC_CLINE, sizeof(int) * n, queue, sycl::usm::alloc::device);
+    void* pt = sycl::aligned_alloc(QMC_SIMD_ALIGNMENT, sizeof(int) * n, queue, sycl::usm::alloc::device);
     return static_cast<T*>(pt);
   }
 
@@ -156,7 +155,7 @@ struct SYCLHostAllocator
     try
     {
       sycl::queue queue;
-      pt = sycl::aligned_alloc_host(QMC_CLINE, sizeof(int) * n, queue);
+      pt = sycl::aligned_alloc_host(QMC_SIMD_ALIGNMENT, sizeof(int) * n, queue);
     }
     catch (sycl::exception const& e)
     {

@@ -25,7 +25,6 @@
 #include "config.h"
 #include "hipError.h"
 #include "CPU/SIMD/allocator_traits.hpp"
-#include "CPU/SIMD/alignment.config.h"
 
 namespace qmcplusplus
 {
@@ -56,7 +55,7 @@ struct HIPManagedAllocator
   {
     void* pt;
     hipErrorCheck(hipMallocManaged(&pt, n * sizeof(T)), "Allocation failed in HIPManagedAllocator!");
-    if ((size_t(pt)) & (QMC_CLINE - 1))
+    if ((size_t(pt)) & (QMC_SIMD_ALIGNMENT - 1))
       throw std::runtime_error("Unaligned memory allocated in HIPManagedAllocator");
     return static_cast<T*>(pt);
   }

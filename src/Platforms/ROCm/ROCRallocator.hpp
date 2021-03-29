@@ -25,7 +25,6 @@
 #include "config.h"
 #include "rocrError.h"
 #include "CPU/SIMD/allocator_traits.hpp"
-#include "CPU/SIMD/alignment.config.h"
 
 namespace qmcplusplus
 {

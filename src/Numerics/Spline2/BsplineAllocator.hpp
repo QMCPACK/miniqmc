@@ -22,7 +22,7 @@
 
 namespace qmcplusplus
 {
-template<typename T, size_t ALIGN = QMC_CLINE, typename ALLOC = Mallocator<T, ALIGN>>
+template<typename T, size_t ALIGN = QMC_SIMD_ALIGNMENT, typename ALLOC = Mallocator<T, ALIGN>>
 class BsplineAllocator
 {
   using SplineType       = typename bspline_traits<T, 3>::SplineType;
