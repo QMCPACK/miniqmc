@@ -20,3 +20,6 @@ FOREACH(NAME math reduction target_task complex complex_reduction math_with_comp
   TARGET_LINK_LIBRARIES(${UTEST_EXE} platform_device catch_main ${MPI_LIBRARY})
   ADD_UNIT_TEST(${UTEST_NAME} "${QMCPACK_UNIT_TEST_DIR}/${UTEST_EXE}")
 ENDFOREACH()
+
+#intentionally add an unnecessary dependency
+TARGET_LINK_LIBRARIES(test_omptarget_runtime_mem qmcwfs)
