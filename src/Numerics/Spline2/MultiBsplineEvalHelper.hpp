@@ -60,6 +60,15 @@ inline void getSplineBound(T x, TRESIDUAL& dx, int& ind, int nmax)
       dx  = T(1) - std::numeric_limits<T>::epsilon();
     }
   }
+
+#if defined(__INTEL_LLVM_COMPILER) || defined(__INTEL_CLANG_COMPILER)
+  T sf = std::floor(x);
+  T dx2 = x - sf;
+  int ind2 = std::min(std::max(0, static_cast<int>(sf)), nmax);
+  //if (dx2 != dx) printf("dx = %lf dx2 = %lf\n", dx, dx2);
+  //if (ind != ind2) printf("ind = %d ind2 = %d\n", ind, ind2);
+  dx = dx2; ind2 = ind;
+#endif
 }
 
 /** define computeLocationAndFractional: common to any implementation
