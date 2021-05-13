@@ -29,7 +29,7 @@ namespace qmcplusplus
  */
 
 // foward declarations
-template<class T, unsigned D> class TinyVector;
+template<class T, unsigned D> struct TinyVector;
 template<class T, unsigned D> class Tensor;
 template<class T, unsigned D1, unsigned D2> class TinyMatrix;
 
