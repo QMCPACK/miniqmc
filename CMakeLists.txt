@@ -145,6 +145,22 @@ OPTION(QMC_ENABLE_ROCM "Enable GPU support through ROCM" OFF)
 CMAKE_DEPENDENT_OPTION(USE_OBJECT_TARGET "Use CMake object library target" OFF "ENABLE_OFFLOAD" OFF)
 
 ######################################################################
+# Sanitizer options
+######################################################################
+
+# Add optional sanitizers ASAN, UBSAN, MSAN
+SET(VALID_SANITIZERS "none" "asan" "ubsan" "tsan" "msan")
+SET(ENABLE_SANITIZER "none" CACHE STRING "none,asan,ubsan,tsan,msan")
+SET_PROPERTY(CACHE ENABLE_SANITIZER PROPERTY STRINGS ${VALID_SANITIZERS})
+
+# Perform sanitizer option check, only works in debug mode
+IF(NOT ENABLE_SANITIZER IN_LIST VALID_SANITIZERS)
+  MESSAGE( FATAL_ERROR "Invalid -DENABLE_SANITIZER=${ENABLE_SANITIZER}, value must be one of ${VALID_SANITIZERS}")
+ELSE()
+  MESSAGE( STATUS "Enable sanitizer ENABLE_SANITIZER=${ENABLE_SANITIZER}" )
+ENDIF()
+
+######################################################################
 #list of options to determine libraries. First, try to use libraries available
 #FindXYZ.cmake will set the values if successful
 ######################################################################
