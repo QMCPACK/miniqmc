@@ -34,9 +34,9 @@ DiracDeterminantRef<DU_TYPE>::DiracDeterminantRef(SPOSet* const spos, int first,
       Phi(spos),
       FirstIndex(first),
       LastIndex(first + spos->size()),
-      ndelay(delay),
+      NumOrbitals(spos->size()),
       NumPtcls(spos->size()),
-      NumOrbitals(spos->size())
+      ndelay(delay)
 {
   UpdateTimer  = TimerManager.createTimer("DeterminantRef::update", timer_level_fine);
   RatioTimer   = TimerManager.createTimer("DeterminantRef::ratio", timer_level_fine);

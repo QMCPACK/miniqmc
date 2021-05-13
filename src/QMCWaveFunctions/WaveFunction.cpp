@@ -145,13 +145,13 @@ void build_WaveFunction(bool useRef,
 }
 
 WaveFunction::WaveFunction()
-      : FirstTime(true),
+      : Det_up(nullptr),
+        Det_dn(nullptr),
+        LogValue(0.0),
+        FirstTime(true),
         Is_built(false),
         nelup(0),
-        ei_TableID(1),
-        Det_up(nullptr),
-        Det_dn(nullptr),
-        LogValue(0.0)
+        ei_TableID(1)
   {}
 
 WaveFunction::~WaveFunction()

@@ -24,7 +24,7 @@ namespace qmcplusplus
 {
 /// default constructor
 template<typename T>
-einspline_spo_omp<T>::einspline_spo_omp() : nBlocks(0), nSplines(0), firstBlock(0), lastBlock(0), Owner(false)
+einspline_spo_omp<T>::einspline_spo_omp() : nBlocks(0), firstBlock(0), lastBlock(0), nSplines(0), Owner(false)
 {
   timer = TimerManager.createTimer("Single-Particle Orbitals", timer_level_fine);
 }

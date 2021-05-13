@@ -68,7 +68,7 @@ struct einspline_spo_ref : public SPOSet
   NewTimer* timer;
 
   /// default constructor
-  einspline_spo_ref() : nBlocks(0), nSplines(0), firstBlock(0), lastBlock(0), Owner(false)
+  einspline_spo_ref() : nBlocks(0), firstBlock(0), lastBlock(0), nSplines(0), Owner(false)
   {
     timer = TimerManager.createTimer("Single-Particle Orbitals Ref", timer_level_fine);
   }

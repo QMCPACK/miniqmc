@@ -60,7 +60,7 @@ struct PolynomialFunctor3D : public OptimizableFunctorBase
 
   /// constructor
   PolynomialFunctor3D(real_type ee_cusp = 0.0, real_type eI_cusp = 0.0)
-      : N_eI(0), N_ee(0), ResetCount(0), C(3), scale(1.0), notOpt(false)
+      : N_eI(0), N_ee(0), ResetCount(0), scale(1.0), C(3), notOpt(false)
   {
     if (std::abs(ee_cusp) > 0.0 || std::abs(eI_cusp) > 0.0)
     {

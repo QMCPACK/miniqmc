@@ -32,9 +32,9 @@ DiracDeterminant<DU_TYPE>::DiracDeterminant(SPOSet* const spos, int first, int d
       Phi(spos),
       FirstIndex(first),
       LastIndex(first + spos->size()),
-      ndelay(delay),
+      NumOrbitals(spos->size()),
       NumPtcls(spos->size()),
-      NumOrbitals(spos->size())
+      ndelay(delay)
 {
   UpdateTimer  = TimerManager.createTimer("Determinant::update", timer_level_fine);
   RatioTimer   = TimerManager.createTimer("Determinant::ratio", timer_level_fine);

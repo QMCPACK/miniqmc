@@ -36,11 +36,11 @@ ENDIF(QMC_OMP)
 ADD_DEFINITIONS( -Drestrict=__restrict__ )
 
 # set compiler warnings
-#SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-unused-variable -Wno-overloaded-virtual -Wno-unused-private-field -Wno-unused-local-typedef -Wvla")
-#SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas")
-#IF( CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 10.0 )
-#  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wmisleading-indentation")
-#ENDIF()
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-unused-variable -Wno-overloaded-virtual -Wno-unused-private-field -Wno-unused-local-typedef -Wvla")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas")
+IF( CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 10.0 )
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wmisleading-indentation")
+ENDIF()
 
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fomit-frame-pointer -fstrict-aliasing -D__forceinline=inline")
 SET( HAVE_POSIX_MEMALIGN 0 )    # Clang doesn't support -malign-double
