@@ -89,8 +89,8 @@ public:
       : Ions(ions)
   {
     WaveFunctionComponentName                               = "ThreeBodyJastrowRef";
-    myTableID                                               = elecs.addTable(Ions, DT_SOA);
-    elecs.DistTables[myTableID]->Need_full_table_loadWalker = true;
+    myTableID                                               = elecs.addTable(Ions);
+    elecs.DistTables[myTableID]->setFullTableNeeds(true);
     init(elecs);
   }
 

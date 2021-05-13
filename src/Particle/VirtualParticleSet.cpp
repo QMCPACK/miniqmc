@@ -36,7 +36,7 @@ VirtualParticleSet::VirtualParticleSet(const ParticleSet& p, int nptcl) : refPS(
   {
     DistTables.resize(refPS.DistTables.size());
     for (int i = 0; i < DistTables.size(); ++i)
-      DistTables[i] = createDistanceTable(refPS.DistTables[i]->origin(), *this, refPS.DistTables[0]->DTType);
+      DistTables[i] = createDistanceTable(refPS.DistTables[i]->origin(), *this);
   }
 }
 

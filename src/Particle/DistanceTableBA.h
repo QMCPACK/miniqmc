@@ -27,8 +27,6 @@ namespace qmcplusplus
 template<typename T, unsigned D, int SC>
 struct DistanceTableBA : public DTD_BConds<T, D, SC>, public DistanceTableData
 {
-  int Nsources;
-  int Ntargets;
   int BlockSize;
 
   DistanceTableBA(const ParticleSet& source, ParticleSet& target)
@@ -39,8 +37,6 @@ struct DistanceTableBA : public DTD_BConds<T, D, SC>, public DistanceTableData
 
   void resize(int ns, int nt)
   {
-    N[SourceIndex] = Nsources = ns;
-    N[VisitorIndex] = Ntargets = nt;
     if (Nsources * Ntargets == 0)
       return;
 

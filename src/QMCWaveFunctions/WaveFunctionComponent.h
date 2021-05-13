@@ -36,7 +36,7 @@
 namespace qmcplusplus
 {
 /// forward declaration of WaveFunctionComponent
-class WaveFunctionComponent;
+struct WaveFunctionComponent;
 
 typedef WaveFunctionComponent* WaveFunctionComponentPtr;
 
@@ -55,14 +55,6 @@ typedef WaveFunctionComponent* WaveFunctionComponentPtr;
  */
 struct WaveFunctionComponent : public QMCTraits
 {
-  /// recasting enum of DistanceTableData to maintain consistency
-  enum
-  {
-    SourceIndex  = DistanceTableData::SourceIndex,
-    VisitorIndex = DistanceTableData::VisitorIndex,
-    WalkerIndex  = DistanceTableData::WalkerIndex
-  };
-
   /** enum for a update mode */
   enum
   {

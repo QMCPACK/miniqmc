@@ -33,7 +33,7 @@ namespace qmcplusplus
  *\param s source/target particle set
  *\return index of the distance table with the name
  */
-DistanceTableData* createDistanceTable(const ParticleSet& s, ParticleSet& t, int dt_type)
+DistanceTableData* createDistanceTable(const ParticleSet& s, ParticleSet& t)
 {
   typedef OHMMS_PRECISION RealType;
   enum
@@ -55,13 +55,6 @@ DistanceTableData* createDistanceTable(const ParticleSet& s, ParticleSet& t, int
     APP_ABORT("DistanceTableData::createDistanceTable Slab/Wire/Open boundary "
               "conditions are disabled in miniQMC!\n");
   }
-
-  // set dt properties
-  dt->CellType = sc;
-  dt->DTType   = DT_SOA;
-  std::ostringstream p;
-  p << s.getName() << "_" << t.getName();
-  dt->Name = p.str(); // assign the table name
 
   o << " using Cartesian coordinates";
   if (omp_get_thread_num() == 0)

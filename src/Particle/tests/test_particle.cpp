@@ -47,7 +47,7 @@ TEST_CASE("symmetric_distance_table PBC", "[particle]")
   source.R[2] = ParticleSet::PosType(3.37316115, 3.37316115, 0.00000000);
   source.R[3] = ParticleSet::PosType(5.05974172, 5.05974172, 1.68658058);
 
-  int TableID = source.addTable(source, DT_SOA);
+  int TableID = source.addTable(source);
   source.update();
 
   REQUIRE(source.DistTables[TableID]->Distances[1][2] == Approx(2.9212432441));

@@ -65,7 +65,7 @@ struct OneBodyJastrow : public WaveFunctionComponent
   OneBodyJastrow(const ParticleSet& ions, ParticleSet& els) : Ions(ions)
   {
     initalize(els);
-    myTableID                 = els.addTable(ions, DT_SOA);
+    myTableID                 = els.addTable(ions);
     WaveFunctionComponentName = "OneBodyJastrow";
   }
 

@@ -75,8 +75,8 @@ void build_WaveFunction(bool useRef,
     els.RSoA  = els.R;
 
     // distance tables
-    els.addTable(els, DT_SOA);
-    WF.ei_TableID = els.addTable(ions, DT_SOA);
+    els.addTable(els);
+    WF.ei_TableID = els.addTable(ions);
 
     // determinant component
     WF.nelup  = nelup;
@@ -112,8 +112,8 @@ void build_WaveFunction(bool useRef,
     els.RSoA  = els.R;
 
     // distance tables
-    els.addTable(els, DT_SOA);
-    WF.ei_TableID = els.addTable(ions, DT_SOA);
+    els.addTable(els);
+    WF.ei_TableID = els.addTable(ions);
 
     // determinant component
     WF.nelup  = nelup;

@@ -27,7 +27,6 @@ namespace qmcplusplus
 template<typename T, unsigned D, int SC>
 struct DistanceTableAA : public DTD_BConds<T, D, SC>, public DistanceTableData
 {
-  int Ntargets;
   int Ntargets_padded;
   int BlockSize;
 
@@ -50,9 +49,6 @@ struct DistanceTableAA : public DTD_BConds<T, D, SC>, public DistanceTableData
 
   void resize(int n)
   {
-    N[SourceIndex]  = n;
-    N[VisitorIndex] = n;
-    Ntargets        = n;
     Ntargets_padded = getAlignedSize<T>(n);
     Distances.resize(Ntargets, Ntargets_padded);
     const size_t total_size = compute_size(Ntargets);

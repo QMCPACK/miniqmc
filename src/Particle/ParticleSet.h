@@ -121,8 +121,6 @@ public:
 
   /// Long-range box
   ParticleLayout_t LRBox;
-  /// true, if a physical or local bounding box is used
-  bool UseBoundBox;
   /// true if fast update for sphere moves
   bool UseSphereUpdate;
   /// true if the particles are grouped
@@ -179,15 +177,12 @@ public:
   /// reset member data
   void reset();
 
-  /// set UseBoundBox
-  void setBoundBox(bool yes);
-
   /**  add a distance table
    * @param psrc source particle set
    *
    * Ensure that the distance for this-this is always created first.
    */
-  int addTable(const ParticleSet& psrc, int dt_type);
+  int addTable(const ParticleSet& psrc);
 
   /** update the internal data
    *@param skip SK update if skipSK is true
@@ -258,9 +253,6 @@ public:
    *@param skip SK update if skipSK is true
    */
   void donePbyP(bool skipSK = false);
-
-  inline void setTwist(SingleParticlePos_t& t) { myTwist = t; }
-  inline SingleParticlePos_t getTwist() const { return myTwist; }
 
   /** get species name of particle i
    */

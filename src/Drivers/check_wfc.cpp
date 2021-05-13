@@ -205,9 +205,9 @@ int main(int argc, char** argv)
     els_ref.RSoA = els_ref.R;
 
     // create tables
-    els.addTable(els, DT_SOA);
-    els_ref.addTable(els_ref, DT_SOA);
-    const int ei_TableID = els_ref.addTable(ions, DT_SOA);
+    els.addTable(els);
+    els_ref.addTable(els_ref);
+    const int ei_TableID = els_ref.addTable(ions);
 
     ParticlePos_t delta(nels);
 

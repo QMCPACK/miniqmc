@@ -32,60 +32,24 @@
 
 namespace qmcplusplus
 {
-/** enumerator for DistanceTableData::DTType
- *
- * - DT_AOS Use original AoS type
- * - DT_SOA Use SoA type
- * - DT_AOS_PREFERRED Create AoS type, if possible.
- * - DT_SOA_PREFERRED Create SoA type, if possible.
- * The first user of each pair will decide the type of distance table.
- * It is the responsibility of the user class to check DTType.
- */
-enum DistTableType
-{
-  DT_AOS = 0,
-  DT_SOA,
-  DT_AOS_PREFERRED,
-  DT_SOA_PREFERRED
-};
-
 /** @ingroup nnlist
  * @brief Abstract class to manage pair data between two ParticleSets.
  *
  * Each DistanceTableData object is fined by Source and Target of ParticleSet
  * types.
  */
-struct DistanceTableData
+class DistanceTableData
 {
+public:
   constexpr static unsigned DIM = OHMMS_DIM;
-
-  /**enum for index ordering and storage.
-   *@brief Equivalent to using three-dimensional array with (i,j,k)
-   * for i = source particle index (slowest),
-   *     j = target particle index
-   *     k = copies (walkers) index.
-   */
-  enum
-  {
-    WalkerIndex = 0,
-    SourceIndex,
-    VisitorIndex,
-    PairIndex
-  };
 
   using IndexType       = QMCTraits::IndexType;
   using RealType        = QMCTraits::RealType;
   using PosType         = QMCTraits::PosType;
   using IndexVectorType = aligned_vector<IndexType>;
-  using ripair          = std::pair<RealType, IndexType>;
   using RowContainer    = VectorSoAContainer<RealType, DIM>;
 
-  /// type of cell
-  int CellType;
-  /// Type of DT
-  int DTType;
-  /// size of indicies
-  TinyVector<IndexType, 4> N;
+  const ParticleSet* Origin;
 
   /**defgroup SoA data */
   /*@{*/
@@ -95,49 +59,49 @@ struct DistanceTableData
   /** Displacements[Nsources]x[3][Ntargets] */
   std::vector<RowContainer> Displacements;
 
-  /// actual memory for Displacements
-  aligned_vector<RealType> memoryPool;
-
   /** temp_r */
   aligned_vector<RealType> Temp_r;
 
   /** temp_dr */
   RowContainer Temp_dr;
-
-  /** true, if full table is needed at loadWalker */
-  bool Need_full_table_loadWalker;
   /*@}*/
 
+protected:
+  /// actual memory for Displacements
+  aligned_vector<RealType> memoryPool;
+
+  /** true, if full table is needed at loadWalker */
+  bool need_full_table_;
+
+  const int Nsources;
+  const int Ntargets;
+
   /// name of the table
-  std::string Name;
+  const std::string name_;
+
+public:
   /// constructor using source and target ParticleSet
   DistanceTableData(const ParticleSet& source, const ParticleSet& target)
-      : Origin(&source), N(0), Need_full_table_loadWalker(false)
+      : Origin(&source), need_full_table_(false),
+        Nsources(source.getTotalNum()),
+        Ntargets(target.getTotalNum()),
+        name_(source.getName() + "_" + target.getName())
   {}
 
   /// virutal destructor
   virtual ~DistanceTableData() {}
 
   /// return the name of table
-  inline std::string getName() const { return Name; }
-  /// set the name of table
-  inline void setName(const std::string& tname) { Name = tname; }
+  inline const std::string& getName() const { return name_; }
 
   /// returns the reference the origin particleset
   const ParticleSet& origin() const { return *Origin; }
   inline void reset(const ParticleSet* newcenter) { Origin = newcenter; }
 
-  inline bool is_same_type(int dt_type) const { return DTType == dt_type; }
-
   /// returns the number of centers
   inline IndexType centers() const { return Origin->getTotalNum(); }
 
   /// returns the number of centers
-  inline IndexType targets() const { return N[VisitorIndex]; }
-
-  /// returns the size of each dimension using enum
-  inline IndexType size(int i) const { return N[i]; }
-
   /// evaluate the Distance Table using only with position array
   virtual void evaluate(ParticleSet& P) = 0;
 
@@ -150,7 +114,11 @@ struct DistanceTableData
   /// update the distance table by the pair relations
   virtual void update(IndexType jat) = 0;
 
-  const ParticleSet* Origin;
+  ///get need_full_table_
+  inline bool getFullTableNeeds() const { return need_full_table_; }
+
+  ///set need_full_table_
+  inline void setFullTableNeeds(bool is_needed) { need_full_table_ = is_needed; }
 };
 } // namespace qmcplusplus
 #endif

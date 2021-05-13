@@ -50,18 +50,16 @@ TimerNameList_t<DistanceTimers> DistanceTimerNames{
 };
 
 ParticleSet::ParticleSet()
-    : UseBoundBox(true), IsGrouped(true), myName("none"), SameMass(true), myTwist(0.0), activePtcl(-1)
+    : myName("none"), IsGrouped(true), SameMass(true), activePtcl(-1)
 {
   setup_timers(timers, DistanceTimerNames, timer_level_coarse);
 }
 
 ParticleSet::ParticleSet(const ParticleSet& p)
-    : UseBoundBox(p.UseBoundBox),
-      IsGrouped(p.IsGrouped),
-      mySpecies(p.getSpeciesSet()),
+    : IsGrouped(p.IsGrouped),
       SameMass(true),
-      myTwist(0.0),
-      activePtcl(-1)
+      activePtcl(-1),
+      mySpecies(p.getSpeciesSet())
 {
   //distance_timer = TimerManager.createTimer("Distance Tables", timer_level_coarse);
   setup_timers(timers, DistanceTimerNames, timer_level_coarse);
@@ -78,17 +76,13 @@ ParticleSet::ParticleSet(const ParticleSet& p)
   if (p.DistTables.size())
   {
     app_log() << "  Cloning distance tables. It has " << p.DistTables.size() << std::endl;
-    addTable(*this,
-             p.DistTables[0]->DTType); // first is always for this-this pair
+    addTable(*this); // first is always for this-this pair
     for (int i = 1; i < p.DistTables.size(); ++i)
-      addTable(p.DistTables[i]->origin(), p.DistTables[i]->DTType);
+      addTable(p.DistTables[i]->origin());
   }
 
   for (int i = 0; i < p.DistTables.size(); ++i)
-  {
-    DistTables[i]->Need_full_table_loadWalker = p.DistTables[i]->Need_full_table_loadWalker;
-  }
-  myTwist = p.myTwist;
+    DistTables[i]->setFullTableNeeds(p.DistTables[i]->getFullTableNeeds());
 
   RSoA.resize(TotalNum);
 }
@@ -217,33 +211,25 @@ bool ParticleSet::put(std::istream& is) { return true; }
 /// reset member data
 void ParticleSet::reset() { app_log() << "<<<< going to set properties >>>> " << std::endl; }
 
-void ParticleSet::setBoundBox(bool yes) { UseBoundBox = yes; }
-
-int ParticleSet::addTable(const ParticleSet& psrc, int dt_type)
+int ParticleSet::addTable(const ParticleSet& psrc)
 {
   if (myName == "none")
     APP_ABORT("ParticleSet::addTable needs a proper name for this particle set.");
   if (DistTables.empty())
   {
     DistTables.reserve(4);
-    DistTables.push_back(createDistanceTable(*this, dt_type));
+    DistTables.push_back(createDistanceTable(*this));
     // add  this-this pair
     myDistTableMap.clear();
     myDistTableMap[myName] = 0;
-    app_log() << "  ... ParticleSet::addTable Create Table #0 " << DistTables[0]->Name << std::endl;
+    app_log() << "  ... ParticleSet::addTable Create Table #0 " << DistTables[0]->getName() << std::endl;
     if (psrc.getName() == myName)
       return 0;
   }
   if (psrc.getName() == myName)
   {
-    app_log() << "  ... ParticleSet::addTable Reuse Table #" << 0 << " " << DistTables[0]->Name
+    app_log() << "  ... ParticleSet::addTable Reuse Table #" << 0 << " " << DistTables[0]->getName()
               << std::endl;
-    // if(!DistTables[0]->is_same_type(dt_type))
-    //{//itself is special, cannot mix them: some of the users do not check the
-    // index
-    //  APP_ABORT("ParticleSet::addTable for itself Cannot mix AoS and SoA
-    //  distance tables.\n");
-    //}
     return 0;
   }
   int tid;
@@ -251,27 +237,16 @@ int ParticleSet::addTable(const ParticleSet& psrc, int dt_type)
   if (tit == myDistTableMap.end())
   {
     tid = DistTables.size();
-    DistTables.push_back(createDistanceTable(psrc, *this, dt_type));
+    DistTables.push_back(createDistanceTable(psrc, *this));
     myDistTableMap[psrc.getName()] = tid;
-    app_log() << "  ... ParticleSet::addTable Create Table #" << tid << " " << DistTables[tid]->Name
+    app_log() << "  ... ParticleSet::addTable Create Table #" << tid << " " << DistTables[tid]->getName()
               << std::endl;
   }
   else
   {
     tid = (*tit).second;
-    if (dt_type == DT_SOA_PREFERRED || DistTables[tid]->is_same_type(dt_type)) // good to reuse
-    {
       app_log() << "  ... ParticleSet::addTable Reuse Table #" << tid << " "
-                << DistTables[tid]->Name << std::endl;
-    }
-    else
-    {
-      APP_ABORT("ParticleSet::addTable Cannot mix AoS and SoA distance tables.\n");
-    }
-    // if(dt_type == DT_SOA || dt_type == DT_AOS) //not compatible
-    //{
-    //}
-    // for DT_SOA_PREFERRED or DT_AOS_PREFERRED, return the existing table
+                << DistTables[tid]->getName() << std::endl;
   }
   app_log().flush();
   return tid;
@@ -385,7 +360,7 @@ void ParticleSet::loadWalker(Walker_t& awalker, bool pbyp)
   {
     // in certain cases, full tables must be ready
     for (int i = 0; i < DistTables.size(); i++)
-      if (DistTables[i]->Need_full_table_loadWalker)
+      if (DistTables[i]->getFullTableNeeds())
         DistTables[i]->evaluate(*this);
   }
 }
