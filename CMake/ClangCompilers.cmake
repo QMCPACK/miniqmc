@@ -9,14 +9,14 @@ IF(QMC_OMP)
   SET(ENABLE_OPENMP 1)
   IF(ENABLE_OFFLOAD AND NOT CMAKE_SYSTEM_NAME STREQUAL "CrayLinuxEnvironment")
     SET(OFFLOAD_TARGET "nvptx64-nvidia-cuda" CACHE STRING "Offload target architecture")
-    SET(CLANG_OPENMP_OFFLOAD_FLAGS "-fopenmp-targets=${OFFLOAD_TARGET}")
+    SET(OPENMP_OFFLOAD_COMPILE_OPTIONS "-fopenmp-targets=${OFFLOAD_TARGET}")
 
     IF(DEFINED OFFLOAD_ARCH)
-      SET(CLANG_OPENMP_OFFLOAD_FLAGS "${CLANG_OPENMP_OFFLOAD_FLAGS} -Xopenmp-target=${OFFLOAD_TARGET} -march=${OFFLOAD_ARCH}")
+      SET(OPENMP_OFFLOAD_COMPILE_OPTIONS "${OPENMP_OFFLOAD_COMPILE_OPTIONS} -Xopenmp-target=${OFFLOAD_TARGET} -march=${OFFLOAD_ARCH}")
     ENDIF()
 
     IF(OFFLOAD_TARGET MATCHES "nvptx64")
-      SET(CLANG_OPENMP_OFFLOAD_FLAGS "${CLANG_OPENMP_OFFLOAD_FLAGS} -Wno-unknown-cuda-version")
+      SET(OPENMP_OFFLOAD_COMPILE_OPTIONS "${OPENMP_OFFLOAD_COMPILE_OPTIONS} -Wno-unknown-cuda-version")
     ENDIF()
 
     # Intel clang compiler needs a different flag for the host side OpenMP library when offload is used.
@@ -25,6 +25,7 @@ IF(QMC_OMP)
     ELSE(OFFLOAD_TARGET MATCHES "spir64")
       SET(OMP_FLAG "-fopenmp")
     ENDIF(OFFLOAD_TARGET MATCHES "spir64")
+
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OMP_FLAG}")
   ELSE()
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
@@ -33,6 +34,13 @@ ENDIF(QMC_OMP)
 
 # Set clang specfic flags (which we always want)
 ADD_DEFINITIONS( -Drestrict=__restrict__ )
+
+# set compiler warnings
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-unused-variable -Wno-overloaded-virtual -Wno-unused-private-field -Wno-unused-local-typedef -Wvla")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas")
+IF( CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 10.0 )
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wmisleading-indentation")
+ENDIF()
 
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fomit-frame-pointer -fstrict-aliasing -D__forceinline=inline")
 SET( HAVE_POSIX_MEMALIGN 0 )    # Clang doesn't support -malign-double
@@ -66,12 +74,6 @@ ELSEIF(CMAKE_SYSTEM_PROCESSOR MATCHES "ppc64" OR CMAKE_SYSTEM_PROCESSOR MATCHES 
     # use -mcpu=native
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcpu=native")
   endif(NOT CMAKE_CXX_FLAGS MATCHES "-mcpu=")
-ENDIF()
-
-# Add OpenMP offload flags
-# This step is intentionally put after the -march parsing for CPUs.
-IF(DEFINED CLANG_OPENMP_OFFLOAD_FLAGS)
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CLANG_OPENMP_OFFLOAD_FLAGS}")
 ENDIF()
 
 # Add static flags if necessary

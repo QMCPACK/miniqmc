@@ -15,6 +15,7 @@
 #include <vector>
 #include <cassert>
 #include <memory>
+#include "config.h"
 
 namespace qmcplusplus
 {
@@ -69,7 +70,7 @@ public:
     int check_size[2];
     const RefVectorWithLeader<TWF>* check_addr[2];
     std::cout << "vec size outside " << vec_size << " addr " << &wf_list << std::endl;
-    #pragma omp taskloop default(shared) if(wf_leader.use_tasking)
+    PRAGMA_OMP_TASKLOOP("omp taskloop default(shared) if(wf_leader.use_tasking)")
     for(int i=0; i<2; i++)
     {
       check_size[i] = wf_list.size();
