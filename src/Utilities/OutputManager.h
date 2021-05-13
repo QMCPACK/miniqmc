@@ -16,20 +16,13 @@
 #ifndef OUTPUTMANAGER_H
 #define OUTPUTMANAGER_H
 
-#include <Utilities/InfoStream.h>
+#include "InfoStream.h"
 
 
 enum class Verbosity
 {
   LOW,
   HIGH,
-  DEBUG
-};
-enum class LogType
-{
-  SUMMARY,
-  APP,
-  ERROR,
   DEBUG
 };
 
@@ -53,22 +46,6 @@ public:
 
   bool isHighActive() { return isActive(Verbosity::HIGH); }
 
-  std::ostream& getStream(LogType log)
-  {
-    switch (log)
-    {
-    case LogType::SUMMARY:
-      return infoSummary.getStream();
-    case LogType::APP:
-      return infoLog.getStream();
-    case LogType::ERROR:
-      return infoError.getStream();
-    case LogType::DEBUG:
-      return infoDebug.getStream();
-    }
-    return infoDebug.getStream();
-  }
-
   /// Pause the summary and log streams
   void pause();
 
@@ -83,23 +60,15 @@ extern OutputManagerClass outputManager;
 
 namespace qmcplusplus
 {
-inline std::ostream& app_summary() { return outputManager.getStream(LogType::SUMMARY); }
+inline std::ostream& app_summary() { return infoSummary.getStream(); }
 
-inline std::ostream& app_log() { return outputManager.getStream(LogType::APP); }
+inline std::ostream& app_log() { return infoLog.getStream(); }
 
-inline std::ostream& app_error()
-{
-  outputManager.getStream(LogType::ERROR) << "ERROR ";
-  return outputManager.getStream(LogType::ERROR);
-}
+inline std::ostream& app_error() { return infoError.getStream() << "ERROR "; }
 
-inline std::ostream& app_warning()
-{
-  outputManager.getStream(LogType::ERROR) << "WARNING ";
-  return outputManager.getStream(LogType::ERROR);
-}
+inline std::ostream& app_warning() { return infoLog.getStream() << "WARNING "; }
 
-inline std::ostream& app_debug_stream() { return outputManager.getStream(LogType::DEBUG); }
+inline std::ostream& app_debug_stream() { return infoDebug.getStream(); }
 
 // From https://stackoverflow.com/questions/11826554/standard-no-op-output-stream
 // If debugging is not active, this skips evaluation of the arguments
@@ -107,6 +76,31 @@ inline std::ostream& app_debug_stream() { return outputManager.getStream(LogType
   if (!outputManager.isDebugActive()) {} \
   else                                   \
     app_debug_stream
+
+
+// Keep these macros temporarily until all output uses streams
+#define LOGMSG(msg)                             \
+  {                                             \
+    qmcplusplus::app_log() << msg << std::endl; \
+  }
+#define ERRORMSG(msg)                \
+  {                                  \
+    app_error() << msg << std::endl; \
+  }
+#define WARNMSG(msg)                   \
+  {                                    \
+    app_warning() << msg << std::endl; \
+  }
+#ifdef PRINT_DEBUG
+#define DEBUGMSG(msg)                \
+  {                                  \
+    app_debug() << msg << std::endl; \
+  }
+#else
+#define DEBUGMSG(msg)
+#endif
+
+#define XMLReport(msg)
 
 }; // namespace qmcplusplus
 

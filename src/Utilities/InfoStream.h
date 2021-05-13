@@ -17,10 +17,9 @@
 #ifndef INFOSTREAM_H
 #define INFOSTREAM_H
 
-#include <string>
+#include <fstream>
+#include <memory>
 #include <iostream>
-#include <iomanip>
-#include <sstream>
 
 /**
  *  Interface to output streams.  Can redirect output to stdout/stderr, a file, or a null stream.
@@ -29,32 +28,27 @@
 class InfoStream
 {
 public:
-  InfoStream(std::ostream* output_stream)
-      : prevStream(NULL), nullStream(new std::ostream(NULL)), ownStream(false)
-  {
-    currStream = output_stream;
-  }
+  InfoStream(std::ostream* output_stream);
 
-  InfoStream(InfoStream& in)
-      : prevStream(NULL), nullStream(new std::ostream(NULL)), ownStream(false)
-  {
-    redirectToSameStream(in);
-  }
+  InfoStream(const InfoStream& in) = delete;
+  InfoStream& operator=(const InfoStream& in) = delete;
 
-  ~InfoStream();
-
+  /// returns current stream
   std::ostream& getStream(const std::string& tag = "") { return *currStream; }
 
-  void setStream(std::ostream* output_stream) { currStream = output_stream; }
+  void setStream(std::ostream* output_stream);
 
-
-  void flush() { currStream->flush(); }
+  /// flush stream buffer
+  void flush();
 
   /// Stop output (redirect to a null stream)
   void pause();
 
   ///  Continue output on the stream used before pausing
   void resume();
+
+  /// check if the stream is active
+  bool isActive() const { return currStream != &nullStream; }
 
   /// Open a file and output to that file
   void redirectToFile(const std::string& fname);
@@ -66,16 +60,20 @@ public:
   void shutOff();
 
 private:
-  // Keep track of whether we should delete the stream or not
-  bool ownStream;
+  // check currStream, it can only be outputStream or &nullStream
+  bool checkCurr() const { return currStream == outputStream || currStream == &nullStream; }
 
+  // current stream that InfoStream represents
   std::ostream* currStream;
 
-  // save stream during pause
-  std::ostream* prevStream;
+  // the output stream when InfoStream IsActive. (1. from external, 2. nullStream (off), 3. fileStream)
+  std::ostream* outputStream;
 
-  // Created at construction. Used during pause
-  std::ostream* nullStream;
+  // Created at construction. Used during pause and shutoff
+  std::ostream nullStream;
+
+  // ofstream pointer allocated when file output is used
+  std::unique_ptr<std::ofstream> fileStream;
 };
 
 template<class T>

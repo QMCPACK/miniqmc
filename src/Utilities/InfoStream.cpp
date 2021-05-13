@@ -10,53 +10,71 @@
 //////////////////////////////////////////////////////////////////////////////////////
 
 
-#include <Utilities/InfoStream.h>
+#include "InfoStream.h"
 #include <fstream>
+#include <cassert>
 
-InfoStream::~InfoStream()
+InfoStream::InfoStream(std::ostream* output_stream)
+    : currStream(output_stream), outputStream(output_stream), nullStream(nullptr)
 {
-  if (currStream != nullStream)
-  {
-    delete nullStream;
-  }
-  if (ownStream && currStream)
-  {
-    delete (currStream);
-  }
+  if (output_stream == nullptr)
+    currStream = outputStream = &nullStream;
 }
+
+void InfoStream::setStream(std::ostream* output_stream)
+{
+  if (outputStream == output_stream)
+    return;
+  assert(checkCurr());
+  if (output_stream == nullptr)
+    outputStream = &nullStream;
+  else
+    outputStream = output_stream;
+  if (currStream != &nullStream)
+    currStream = outputStream;
+  fileStream.reset();
+  assert(checkCurr());
+}
+
+void InfoStream::flush() { outputStream->flush(); }
 
 void InfoStream::pause()
 {
-  if (currStream != nullStream)
-  {
-    prevStream = currStream;
-    currStream = nullStream;
-  }
+  assert(checkCurr());
+  currStream = &nullStream;
 }
 
 void InfoStream::resume()
 {
-  if (prevStream)
-  {
-    currStream = prevStream;
-    prevStream = NULL;
-  }
+  assert(checkCurr());
+  currStream = outputStream;
 }
 
 void InfoStream::shutOff()
 {
-  prevStream = NULL;
-  currStream = nullStream;
+  assert(checkCurr());
+  currStream = outputStream = &nullStream;
+  fileStream.reset();
 }
 
 void InfoStream::redirectToFile(const std::string& fname)
 {
-  currStream = new std::ofstream(fname);
-  ownStream  = true;
+  assert(checkCurr());
+  fileStream   = std::make_unique<std::ofstream>(fname);
+  outputStream = fileStream.get();
+  if (currStream != &nullStream)
+    currStream = outputStream;
+  assert(checkCurr());
 }
 
 void InfoStream::redirectToSameStream(InfoStream& info)
 {
-  currStream = &info.getStream();
-  ownStream  = false;
+  if (this == &info)
+    return;
+  assert(checkCurr());
+  outputStream = info.outputStream;
+  if (currStream != &nullStream)
+    currStream = outputStream;
+  fileStream.reset();
+  assert(checkCurr());
 }
