@@ -1,6 +1,6 @@
 ################################################
 # Configuration script for Summit at OLCF      #
-# Last modified: Jun. 30, 2021                  #
+# Last modified: Jun 30, 2021                  #
 ################################################
 
 module load cmake
