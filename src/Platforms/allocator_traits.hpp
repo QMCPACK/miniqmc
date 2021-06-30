@@ -14,6 +14,7 @@
 #define QMCPLUSPLUS_ACCESS_TRAITS_H
 
 #include <algorithm>
+#include <type_traits>
 
 namespace qmcplusplus
 {
