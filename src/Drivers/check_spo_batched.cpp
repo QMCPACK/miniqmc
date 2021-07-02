@@ -45,30 +45,26 @@ enum CheckSPOTimers
 };
 
 TimerNameList_t<CheckSPOTimers> CheckSPOTimerNames = {
-    {Timer_Total, "Total"},
-    {Timer_Init, "Initialization"},
-    {Timer_SPO_v, "SPO_v"},
-    {Timer_SPO_vgh, "SPO_vgh"},
-    {Timer_SPO_ref_v, "SPO_ref_v"},
-    {Timer_SPO_ref_vgh, "SPO_ref_vgh"},
+    {Timer_Total, "Total"},     {Timer_Init, "Initialization"}, {Timer_SPO_v, "SPO_v"},
+    {Timer_SPO_vgh, "SPO_vgh"}, {Timer_SPO_ref_v, "SPO_ref_v"}, {Timer_SPO_ref_vgh, "SPO_ref_vgh"},
 };
 
 void print_help()
 {
-  // clang-format off
-  app_summary() << "usage:" << '\n';
-  app_summary() << "  check_spo [-hvV] [-g \"n0 n1 n2\"] [-m meshfactor]"        << '\n';
-  app_summary() << "            [-n steps] [-r rmax] [-s seed]"                  << '\n';
-  app_summary() << "options:"                                                    << '\n';
-  app_summary() << "  -g  set the 3D tiling.             default: 1 1 1"         << '\n';
-  app_summary() << "  -h  print help and exit"                                   << '\n';
-  app_summary() << "  -m  meshfactor                     default: 1.0"           << '\n';
-  app_summary() << "  -n  number of MC steps             default: 5"             << '\n';
-  app_summary() << "  -r  set the Rmax.                  default: 1.7"           << '\n';
-  app_summary() << "  -s  set the random seed.           default: 11"            << '\n';
-  app_summary() << "  -v  verbose output"                                        << '\n';
-  app_summary() << "  -V  print version information and exit"                    << '\n';
-  // clang-format on
+  app_summary() << "usage:";
+  app_summary() << '\n' << "  check_spo [-hvV] [-g \"n0 n1 n2\"] [-m meshfactor]";
+  app_summary() << '\n' << "            [-n steps] [-r rmax] [-s seed] [-w walkers]";
+  app_summary() << '\n' << "options:";
+  app_summary() << '\n' << "  -g  set the 3D tiling.           default: 1 1 1";
+  app_summary() << '\n' << "  -h  print help and exit";
+  app_summary() << '\n' << "  -m  meshfactor                   default: 1.0";
+  app_summary() << '\n' << "  -n  number of MC steps           default: 5";
+  app_summary() << '\n' << "  -r  set the Rmax.                default: 1.7";
+  app_summary() << '\n' << "  -s  set the random seed.         default: 11";
+  app_summary() << '\n' << "  -v  verbose output";
+  app_summary() << '\n' << "  -V  print version information and exit";
+  app_summary() << '\n' << "  -w  number of walkers per rank   default: OpenMP num threads";
+  app_summary() << std::endl;
 
   exit(1); // print help and exit
 }
@@ -94,8 +90,8 @@ int main(int argc, char** argv)
   // this is the cutoff from the non-local PP
   RealType Rmax(1.7);
   int nx = 37, ny = 37, nz = 37;
-  int tileSize  = -1;
-  bool verbose  = false;
+  int tileSize = -1;
+  bool verbose = false;
 
   if (!comm.root())
   {
@@ -118,8 +114,7 @@ int main(int argc, char** argv)
       case 'h':
         print_help();
         break;
-      case 'm':
-      {
+      case 'm': {
         const RealType meshfactor = atof(optarg);
         nx *= meshfactor;
         ny *= meshfactor;
@@ -189,8 +184,7 @@ int main(int argc, char** argv)
     tileSize       = (tileSize > 0) ? tileSize : norb;
     nTiles         = norb / tileSize;
 
-    const size_t SPO_coeff_size =
-        static_cast<size_t>(norb) * (nx + 3) * (ny + 3) * (nz + 3) * sizeof(RealType);
+    const size_t SPO_coeff_size    = static_cast<size_t>(norb) * (nx + 3) * (ny + 3) * (nz + 3) * sizeof(RealType);
     const double SPO_coeff_size_MB = SPO_coeff_size * 1.0 / 1024 / 1024;
 
     app_summary() << "Number of orbitals/splines = " << norb << endl
@@ -203,8 +197,8 @@ int main(int argc, char** argv)
     app_summary() << "MPI processes = " << comm.size() << endl;
 #endif
 
-    app_summary() << "\nSPO coefficients size = " << SPO_coeff_size << " bytes ("
-                  << SPO_coeff_size_MB << " MB)" << endl;
+    app_summary() << "\nSPO coefficients size = " << SPO_coeff_size << " bytes (" << SPO_coeff_size_MB << " MB)"
+                  << endl;
 
     spo_main.set(nx, ny, nz, norb, nTiles);
     spo_main.Lattice.set(lattice_b);
@@ -218,7 +212,7 @@ int main(int argc, char** argv)
 
   // construct a list of movers
   std::vector<Mover*> mover_list(nmovers, nullptr);
-  std::cout << "Constructing " << nmovers << " movers!" << std::endl;
+  std::cout << "Constructing " << nmovers << " walkers!" << std::endl;
   std::vector<spo_type*> spo_views(nmovers, nullptr);
   std::vector<spo_ref_type*> spo_ref_views(nmovers, nullptr);
   // per mover data
@@ -431,15 +425,12 @@ int main(int argc, char** argv)
   if (nfail == 0)
     app_log() << "All checks passed for spo" << std::endl;
 
-  app_log() << "evaluateVGH loads "
-            << size_t(64) * sizeof(OHMMS_PRECISION) * nels/2 * nels * nsteps * nmovers
+  app_log() << "evaluateVGH loads " << size_t(64) * sizeof(OHMMS_PRECISION) * nels / 2 * nels * nsteps * nmovers
             << " bytes of coefficients from memory." << std::endl
-            << "evaluateVGH stores "
-            << size_t(10) * sizeof(OHMMS_PRECISION) * nels/2 * nels * nsteps * nmovers
+            << "evaluateVGH stores " << size_t(10) * sizeof(OHMMS_PRECISION) * nels / 2 * nels * nsteps * nmovers
             << " bytes of result values to memory." << std::endl
-            << "evaluateVGH operates "
-            << size_t(767) * nels/2 * nels * nsteps * nmovers << " FLOP." << std::endl
-            << "evaluateVGH Arithmetic Intensity " << 767.0 / (74 * sizeof(OHMMS_PRECISION))
-            << std::endl << std::endl;
+            << "evaluateVGH operates " << size_t(767) * nels / 2 * nels * nsteps * nmovers << " FLOP." << std::endl
+            << "evaluateVGH Arithmetic Intensity " << 767.0 / (74 * sizeof(OHMMS_PRECISION)) << std::endl
+            << std::endl;
   return 0;
 }
