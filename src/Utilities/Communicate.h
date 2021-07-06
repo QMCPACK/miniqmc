@@ -35,6 +35,7 @@ public:
 #ifdef HAVE_MPI
   MPI_Comm world() { return m_world; }
 #endif
+  void barrier();
   void reduce(int& value);
   void reduce(float& value);
   void reduce(double& value);

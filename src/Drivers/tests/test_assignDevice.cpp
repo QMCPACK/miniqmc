@@ -11,7 +11,7 @@
 
 
 #include "catch.hpp"
-#include "OMPTarget/assignDevice.h"
+#include <OMPTarget/assignDevice.h>
 #include <Utilities/Communicate.h>
 
 namespace qmcplusplus
@@ -25,6 +25,12 @@ TEST_CASE("assignDevice", "[openmp]")
   int assigned_accelerators_id = -1;
 
   assignDevice(num_accelerators, assigned_accelerators_id, comm.rank(), comm.size());
+
+  if (comm.rank() == 0)
+    std::cout << "number of ranks : " << comm.size() << ", number of accelerators : " << num_accelerators << std::endl;
+  comm.barrier();
+  std::cout << "rank id : " << comm.rank() << ", accelerator id : " << assigned_accelerators_id << std::endl;
+  comm.barrier();
 }
 
 } // namespace qmcplusplus

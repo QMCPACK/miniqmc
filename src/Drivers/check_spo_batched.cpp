@@ -29,6 +29,7 @@
 #include <QMCWaveFunctions/einspline_spo_omp.hpp>
 #include <QMCWaveFunctions/einspline_spo_ref.hpp>
 #include <Utilities/qmcpack_version.h>
+#include <OMPTarget/assignDevice.h>
 #include <getopt.h>
 
 using namespace std;
@@ -161,6 +162,13 @@ int main(int argc, char** argv)
 
   print_version(verbose);
 
+  int num_accelerators = 0;
+  int assigned_accelerators_id = -1;
+
+  assignDevice(num_accelerators, assigned_accelerators_id, comm.rank(), comm.size());
+
+  app_summary() << "number of ranks : " << comm.size() << ", number of accelerators : " << num_accelerators << std::endl;
+
   TimerManager.set_timer_threshold(timer_level_fine);
   TimerList_t Timers;
   setup_timers(Timers, CheckSPOTimerNames, timer_level_coarse);
@@ -212,7 +220,7 @@ int main(int argc, char** argv)
 
   // construct a list of movers
   std::vector<Mover*> mover_list(nmovers, nullptr);
-  std::cout << "Constructing " << nmovers << " walkers!" << std::endl;
+  app_summary() << "Constructing " << nmovers << " walkers!" << std::endl;
   std::vector<spo_type*> spo_views(nmovers, nullptr);
   std::vector<spo_ref_type*> spo_ref_views(nmovers, nullptr);
   // per mover data
@@ -260,7 +268,7 @@ int main(int argc, char** argv)
 
   for (int mc = 0; mc < nsteps; ++mc)
   {
-    std::cout << "mc = " << mc << std::endl;
+    app_summary() << "mc = " << mc << std::endl;
     for (size_t iw = 0; iw < mover_list.size(); iw++)
     {
       auto& mover     = *mover_list[iw];

@@ -13,7 +13,7 @@
 /** @file Communicate.cpp
  * @brief Defintion of Communicate and CommunicateMPI classes.
  */
-#include <Utilities/Communicate.h>
+#include "Communicate.h"
 #include <iostream>
 
 Communicate::Communicate(int argc, char** argv)
@@ -33,6 +33,13 @@ Communicate::~Communicate()
 {
 #ifdef HAVE_MPI
   MPI_Finalize();
+#endif
+}
+
+void Communicate::barrier()
+{
+#ifdef HAVE_MPI
+  MPI_Barrier(m_world);
 #endif
 }
 
