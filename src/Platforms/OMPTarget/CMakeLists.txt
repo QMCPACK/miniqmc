@@ -12,6 +12,7 @@
 
 SET(OMP_SRCS
   OMPallocator.cpp
+  assignDevice.cpp
 )
 
 ADD_LIBRARY(platform_omptarget ${OMP_SRCS})
