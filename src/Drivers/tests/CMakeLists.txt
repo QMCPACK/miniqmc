@@ -22,7 +22,7 @@ SET(UTEST_NAME unit_test_${SRC_DIR})
 ADD_EXECUTABLE(${UTEST_EXE} ../MiniQMCOptions.cpp test_MiniQMCOptions.cpp)
 TARGET_LINK_LIBRARIES(${UTEST_EXE} catch_main qmcutil)
 
-ADD_UNIT_TEST(${UTEST_NAME} "${QMCPACK_UNIT_TEST_DIR}/${UTEST_EXE}")
+ADD_UNIT_TEST(${UTEST_NAME} 1 1 "${QMCPACK_UNIT_TEST_DIR}/${UTEST_EXE}")
 
 RUN_APP(miniqmc-g111-r1-t16 miniqmc 1 16 miniqmc TEST_ADDED)
 RUN_APP(miniqmc_sync_move-g111-r1-t16 miniqmc_sync_move 1 16 miniqmc TEST_ADDED)
