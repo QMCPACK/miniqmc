@@ -38,6 +38,7 @@ int getDeviceID(int rank_id, int num_ranks, int num_devices)
 
 void assignDevice(int& num_accelerators, int& assigned_accelerators_id, const int rank_id, const int num_ranks)
 {
+#if defined(ENABLE_OFFLOAD)
   int ompDeviceCount = omp_get_num_devices();
   int ompDeviceID;
   if (num_accelerators == 0)
@@ -57,5 +58,6 @@ void assignDevice(int& num_accelerators, int& assigned_accelerators_id, const in
       throw std::runtime_error("Inconsistent assigned OpenMP devices with the previous record!");
     omp_set_default_device(ompDeviceID);
   }
+#endif
 }
 }
