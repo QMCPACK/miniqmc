@@ -11,8 +11,8 @@
 
 
 #include "catch.hpp"
-#include <OMPTarget/assignDevice.h>
 #include <Utilities/Communicate.h>
+#include <OMPTarget/assignDevice.h>
 
 namespace qmcplusplus
 {

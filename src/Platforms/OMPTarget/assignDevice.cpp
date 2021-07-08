@@ -13,6 +13,7 @@
 #include <stdexcept>
 #include <iostream>
 #include <omp.h>
+#include "config.h"
 
 namespace qmcplusplus
 {
