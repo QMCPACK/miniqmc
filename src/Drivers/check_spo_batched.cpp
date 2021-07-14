@@ -219,10 +219,10 @@ int main(int argc, char** argv)
   const int nels3 = 3 * nels;
 
   // construct a list of movers
-  std::vector<Mover*> mover_list(nmovers, nullptr);
+  std::vector<std::unique_ptr<Mover>> mover_list(nmovers);
   app_summary() << "Constructing " << nmovers << " walkers!" << std::endl;
-  std::vector<spo_type*> spo_views(nmovers, nullptr);
-  std::vector<spo_ref_type*> spo_ref_views(nmovers, nullptr);
+  std::vector<std::unique_ptr<spo_type>> spo_views(nmovers);
+  std::vector<std::unique_ptr<spo_ref_type>> spo_ref_views(nmovers);
   // per mover data
   std::vector<ParticlePos_t> delta_list(nmovers);
   std::vector<ParticlePos_t> rOnSphere_list(nmovers);
@@ -234,20 +234,20 @@ int main(int argc, char** argv)
   for (size_t iw = 0; iw < mover_list.size(); iw++)
   {
     // create and initialize movers
-    Mover* thiswalker = new Mover(MakeSeed(iw, mover_list.size()), ions);
-    mover_list[iw]    = thiswalker;
+    mover_list[iw]    = std::make_unique<Mover>(MakeSeed(iw, mover_list.size()), ions);
+    auto& thiswalker = *mover_list[iw];
 
     // create a spo view in each Mover
-    spo_views[iw]     = new spo_type(spo_main, 1, 0);
-    spo_shadows[iw]   = spo_views[iw];
-    spo_ref_views[iw] = new spo_ref_type(spo_ref_main, 1, 0);
+    spo_views[iw]     = std::make_unique<spo_type>(spo_main, 1, 0);
+    spo_shadows[iw]   = spo_views[iw].get();
+    spo_ref_views[iw] = std::make_unique<spo_ref_type>(spo_ref_main, 1, 0);
 
     // initial computing
-    thiswalker->els.update();
+    thiswalker.els.update();
 
     // temporal data during walking
     delta_list[iw].resize(nels);
-    rOnSphere_list[iw].resize(thiswalker->nlpp.size());
+    rOnSphere_list[iw].resize(thiswalker.nlpp.size());
     ur_list[iw].resize(nels);
   }
 
@@ -280,7 +280,7 @@ int main(int argc, char** argv)
       random_th.generate_uniform(ur.data(), nels);
     }
 
-    spo_type* anon_spo = spo_views[0];
+    spo_type* anon_spo = spo_views[0].get();
     // VMC
     for (int iel = 0; iel < nels; ++iel)
     {
@@ -368,18 +368,6 @@ int main(int argc, char** argv)
   } // steps.
 
   Timers[Timer_Total]->stop();
-
-// free all movers
-#pragma omp parallel for
-  for (int iw = 0; iw < nmovers; iw++)
-  {
-    delete mover_list[iw];
-    delete spo_views[iw];
-    delete spo_ref_views[iw];
-  }
-  mover_list.clear();
-  spo_views.clear();
-  spo_ref_views.clear();
 
   outputManager.resume();
 

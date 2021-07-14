@@ -95,6 +95,14 @@ const std::vector<ParticleSet*> extract_els_list(const std::vector<Mover*>& move
   return els_list;
 }
 
+const std::vector<ParticleSet*> extract_els_list(const std::vector<std::unique_ptr<Mover>>& mover_list)
+{
+  std::vector<ParticleSet*> els_list;
+  for (auto it = mover_list.begin(); it != mover_list.end(); it++)
+    els_list.push_back(&(*it)->els);
+  return els_list;
+}
+
 const std::vector<WaveFunction*> extract_wf_list(const std::vector<Mover*>& mover_list)
 {
   std::vector<WaveFunction*> wf_list;
