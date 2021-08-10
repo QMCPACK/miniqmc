@@ -300,7 +300,7 @@ void WaveFunction::evaluateRatios(VirtualParticleSet& VP, std::vector<valT>& rat
 void WaveFunction::flex_evaluateLog(const std::vector<WaveFunction*>& WF_list,
                                     const std::vector<ParticleSet*>& P_list) const
 {
-  if (!WF_list[0]->FirstTime)
+  if (!WF_list.empty() && !WF_list[0]->FirstTime)
     return;
   else if (P_list.size() > 1)
   {

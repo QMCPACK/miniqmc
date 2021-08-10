@@ -436,10 +436,10 @@ int main(int argc, char** argv)
     #pragma omp parallel for
     for(int batch = 0; batch < nbatches; batch++)
     {
-      Timers[Timer_Diffusion]->start();
-
       int first, last;
       FairDivideLow(mover_list.size(), nbatches, batch, first, last);
+      // no work early return
+      if (first == last) continue;
       const std::vector<Mover*> Sub_list(extract_sub_list(mover_list, first, last));
       const std::vector<ParticleSet*> P_list(extract_els_list(Sub_list));
       const std::vector<WaveFunction*> WF_list(extract_wf_list(Sub_list));
@@ -457,6 +457,7 @@ int main(int argc, char** argv)
       /// masks for movers with valid moves
       std::vector<int> isValid(nw_this_batch);
 
+      Timers[Timer_Diffusion]->start();
       // synchronous walker moves
       for (int l = 0; l < nsubsteps; ++l) // drift-and-diffusion
       {
