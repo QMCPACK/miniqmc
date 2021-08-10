@@ -159,7 +159,7 @@ void print_help()
   app_summary() << "options:"                                                    << '\n';
   app_summary() << "  -a  size of each spline tile       default: num of orbs"   << '\n';
   app_summary() << "  -b  use reference implementations  default: off"           << '\n';
-  app_summary() << "  -c  number of walkers per batch    default: 1"             << '\n';
+  app_summary() << "  -c  number of walker crowds/batchs default: num of threads"<< '\n';
   app_summary() << "  -g  set the 3D tiling.             default: 1 1 1"         << '\n';
   app_summary() << "  -h  print help and exit"                                   << '\n';
   app_summary() << "  -j  enable three body Jastrow      default: off"           << '\n';
@@ -197,9 +197,10 @@ int main(int argc, char** argv)
   int nsteps = 5;
   int iseed  = 11;
   int nx = 37, ny = 37, nz = 37;
-  int nmovers = -1;
-  // number of walkers per batch
-  int nw_b = 1;
+
+  int nmovers = omp_get_max_threads();
+  // number of crowds/batches
+  int nbatches = omp_get_max_threads();;
   // thread blocking
   int tileSize  = -1;
   int nsubsteps = 1;
@@ -234,8 +235,8 @@ int main(int argc, char** argv)
       case 'b':
         useRef = true;
         break;
-      case 'c': // number of walkers per batch
-        nw_b = atoi(optarg);
+      case 'c': // number of crowds/batches
+        nbatches = atoi(optarg);
         break;
       case 'g': // tiling1 tiling2 tiling3
         sscanf(optarg, "%d %d %d", &na, &nb, &nc);
@@ -300,13 +301,6 @@ int main(int argc, char** argv)
       print_help();
     }
   }
-
-  // set default number of walkers
-  if(nmovers<0) nmovers = omp_get_max_threads() * nw_b;
-  // cap nw_b
-  if(nw_b>nmovers) nw_b = nmovers;
-  // number of batches
-  const int nbatches = (nmovers+nw_b-1)/nw_b;
 
   int number_of_electrons = 0;
 
