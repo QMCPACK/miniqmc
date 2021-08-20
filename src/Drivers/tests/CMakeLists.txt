@@ -21,17 +21,17 @@ SET(UTEST_NAME unit_test_${SRC_DIR})
 ADD_EXECUTABLE(${UTEST_EXE} ../MiniQMCOptions.cpp test_MiniQMCOptions.cpp)
 TARGET_LINK_LIBRARIES(${UTEST_EXE} catch_main qmcutil)
 
-ADD_UNIT_TEST(${UTEST_NAME} 1 1 "${QMCPACK_UNIT_TEST_DIR}/${UTEST_EXE}")
+ADD_UNIT_TEST(${UTEST_NAME} 1 1 "${UTEST_EXE}")
 
 SET(UTEST_EXE test_assignDevice)
 ADD_EXECUTABLE(${UTEST_EXE} test_assignDevice.cpp)
 TARGET_LINK_LIBRARIES(${UTEST_EXE} catch_main platform_device qmcutil)
 
-ADD_UNIT_TEST(unit_test_assignDevice 1 1 "${QMCPACK_UNIT_TEST_DIR}/${UTEST_EXE}")
-ADD_UNIT_TEST(unit_test_assignDevice_mpi 3 1 "${QMCPACK_UNIT_TEST_DIR}/${UTEST_EXE}")
+ADD_UNIT_TEST(unit_test_assignDevice 1 1 "${UTEST_EXE}")
+ADD_UNIT_TEST(unit_test_assignDevice_mpi 3 1 "${UTEST_EXE}")
 
 RUN_APP(miniqmc-g111-r1-t16 miniqmc 1 16 miniqmc TEST_ADDED)
 RUN_APP(miniqmc_sync_move-g111-r1-t16 miniqmc_sync_move 1 16 miniqmc TEST_ADDED)
 RUN_APP(check_spo-g111-r1-t16 check_spo 1 16 check TEST_ADDED)
-RUN_APP(check_spo_batched-g111-r1-t16 check_spo 1 16 check TEST_ADDED)
+RUN_APP(check_spo_batched-g111-r1-t16 check_spo_batched 1 16 check TEST_ADDED)
 RUN_APP(check_wfc-g111-r1-t16 check_wfc 1 16 check TEST_ADDED)

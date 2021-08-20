@@ -18,4 +18,4 @@ SET(UTEST_NAME unit_test_${SRC_DIR})
 ADD_EXECUTABLE(${UTEST_EXE} test_dirac_det.cpp test_dirac_matrix.cpp)
 TARGET_LINK_LIBRARIES(${UTEST_EXE} catch_main qmcwfs qmcbase qmcutil ${QMC_UTIL_LIBS})
 
-ADD_UNIT_TEST(${UTEST_NAME} 1 1 "${QMCPACK_UNIT_TEST_DIR}/${UTEST_EXE}")
+ADD_UNIT_TEST(${UTEST_NAME} 1 1 "${UTEST_EXE}")
