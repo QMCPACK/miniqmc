@@ -437,6 +437,91 @@ void einspline_spo_omp<T>::multi_evaluate_vgh(const std::vector<SPOSet*>& spo_li
 }
 
 template<typename T>
+void einspline_spo_omp<T>::multi_evaluate_ratio_grads(const std::vector<SPOSet*>& spo_list,
+                                              const std::vector<ParticleSet*>& P_list,
+                                              int iat)
+{
+  ScopedTimer local_timer(timer);
+
+  const size_t nw = spo_list.size();
+  std::vector<self_type*> shadows;
+  shadows.reserve(spo_list.size());
+  for (int iw = 0; iw < nw; iw++)
+    shadows.push_back(static_cast<self_type*>(spo_list[iw]));
+
+  pos_scratch.resize(nw * 3);
+  for (size_t iw = 0; iw < nw; iw++)
+  {
+    auto u                  = Lattice.toUnit_floor(P_list[iw]->activeR(iat));
+    pos_scratch[iw * 3]     = u[0];
+    pos_scratch[iw * 3 + 1] = u[1];
+    pos_scratch[iw * 3 + 2] = u[2];
+  }
+  //std::cout << "mapped already? " << omp_target_is_present(pos_scratch.data(),0) << std::endl;
+  //pos_scratch.update_to_device();
+
+  auto* pos_scratch_ptr = pos_scratch.data();
+
+  auto nBlocks_local          = nBlocks;
+  auto nSplinesPerBlock_local = nSplinesPerBlock;
+
+  const int ChunkSizePerTeam = 192;
+  const int NumTeams         = (nSplinesPerBlock + ChunkSizePerTeam - 1) / ChunkSizePerTeam;
+
+  for (int i = 0; i < nBlocks; ++i)
+  {
+    const auto* restrict spline_m = einsplines[i];
+    int padded_size               = getAlignedSize<T>(nSplinesPerBlock);
+
+    multi_offload_scratch[i].resize(vgh_dim * nw, padded_size);
+    auto* multi_offload_scratch_ptr = multi_offload_scratch[i].data();
+
+#ifdef ENABLE_OFFLOAD
+    #pragma omp target teams distribute collapse(2) num_teams(nw* NumTeams) thread_limit(ChunkSizePerTeam) \
+      map(always, tofrom: pos_scratch_ptr[:pos_scratch.size()])
+#else
+    #pragma omp parallel for collapse(2)
+#endif
+    for (size_t iw = 0; iw < nw; iw++)
+      for (int team_id = 0; team_id < NumTeams; team_id++)
+      {
+        const int first = ChunkSizePerTeam * team_id;
+        const int last =
+            (first + ChunkSizePerTeam) > nSplinesPerBlock_local ? nSplinesPerBlock_local : first + ChunkSizePerTeam;
+
+        int ix, iy, iz;
+        T a[4], b[4], c[4], da[4], db[4], dc[4], d2a[4], d2b[4], d2c[4];
+        spline2::computeLocationAndFractional(spline_m, pos_scratch_ptr[iw * 3], pos_scratch_ptr[iw * 3 + 1],
+                                              pos_scratch_ptr[iw * 3 + 2], ix, iy, iz, a, b, c, da, db, dc, d2a, d2b,
+                                              d2c);
+
+        PRAGMA_OFFLOAD("omp parallel for")
+        for (int ind = 0; ind < last - first; ind++)
+          spline2offload::evaluate_vgh_v2(spline_m, ix, iy, iz, a, b, c, da, db, dc, d2a, d2b, d2c,
+                                          multi_offload_scratch_ptr + iw * vgh_dim * padded_size + first, padded_size,
+                                          first, ind);
+
+        T ratio(0), grad_x(0), grad_y(0), grad_z(0);
+        PRAGMA_OFFLOAD("omp parallel for reduction(+: ratio, grad_x, grad_y, grad_z)")
+        for (int ind = first / 2; ind < last / 2; ind++)
+        {
+          auto* val = multi_offload_scratch_ptr + iw * vgh_dim * padded_size;
+          auto* deriv_x = val + padded_size;
+          auto* deriv_y = val + padded_size * 2;
+          auto* deriv_z = val + padded_size * 3;
+          ratio += val[ind * 2] * val[ind * 2 + 1];
+          grad_x += val[ind * 2] * deriv_x[ind * 2] + val[ind * 2 + 1] * deriv_x[ind * 2 + 1];
+          grad_y += val[ind * 2] * deriv_y[ind * 2] + val[ind * 2 + 1] * deriv_y[ind * 2 + 1];
+          grad_z += val[ind * 2] * deriv_z[ind * 2] + val[ind * 2 + 1] * deriv_z[ind * 2 + 1];
+        }
+        pos_scratch_ptr[iw * 3] = grad_x;
+        pos_scratch_ptr[iw * 3 + 1] = grad_y;
+        pos_scratch_ptr[iw * 3 + 2] = grad_z;
+      }
+  }
+}
+
+template<typename T>
 inline void einspline_spo_omp<T>::multi_evaluate(const std::vector<SPOSet*>& spo_list,
                                                  const std::vector<ParticleSet*>& P_list,
                                                  int iat,

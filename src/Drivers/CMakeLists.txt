@@ -9,7 +9,7 @@
 #// File created by: Ye Luo, yeluo@anl.gov, Argonne National Laboratory
 #//////////////////////////////////////////////////////////////////////////////////////
 
-SET(DRIVERS check_spo check_spo_batched check_wfc miniqmc miniqmc_sync_move)
+SET(DRIVERS check_spo check_spo_batched check_spo_batched_reduction check_wfc miniqmc miniqmc_sync_move)
 
 FOREACH(p ${DRIVERS})
   ADD_EXECUTABLE( ${p}  ${p}.cpp)

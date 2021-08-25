@@ -129,6 +129,8 @@ struct einspline_spo_omp : public SPOSet
   /** evaluate psi, grad and hess of multiple walkers with offload */
   void multi_evaluate_vgh(const std::vector<SPOSet*>& spo_list, const std::vector<ParticleSet*>& P_list, int iat);
 
+  void multi_evaluate_ratio_grads(const std::vector<SPOSet*>& spo_list, const std::vector<ParticleSet*>& P_list, int iat);
+
   void multi_evaluate(const std::vector<SPOSet*>& spo_list,
                       const std::vector<ParticleSet*>& P_list,
                       int iat,
