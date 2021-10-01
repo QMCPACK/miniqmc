@@ -29,7 +29,7 @@ void test_map()
     a_check = a;
   }
 
-  REQUIRE(a_check == ComplexApprox(a));
+  CHECK(a_check == ComplexApprox(a));
 }
 
 #if !defined(__NO_UDR)
@@ -54,7 +54,7 @@ void test_reduction()
   for (int i = 0; i < size; i++)
     sum += array[i];
 
-  REQUIRE(sum == ComplexApprox(sum_host));
+  CHECK(sum == ComplexApprox(sum_host));
 
   std::cout << "hierarchical parallelism" << std::endl;
   const int nblock(10), block_size(10);
@@ -75,7 +75,7 @@ void test_reduction()
   for (int ib = 0; ib < nblock; ib++)
     sum += block_sum[ib];
 
-  REQUIRE(sum == ComplexApprox(sum_host));
+  CHECK(sum == ComplexApprox(sum_host));
 }
 
 template<typename T>

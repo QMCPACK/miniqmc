@@ -36,15 +36,15 @@ TEST_CASE("partial_update_full", "[openmp]")
     array_ptr[i] += i;
   }
 
-  REQUIRE(array_ptr[4] == 1);
-  REQUIRE(array_ptr[94] == 1);
+  CHECK(array_ptr[4] == 1);
+  CHECK(array_ptr[94] == 1);
   for (int offset = 0; offset < array_size; offset += section_size)
   {
     #pragma omp target update from(array_ptr[offset:section_size]) nowait
   }
   #pragma omp taskwait
-  REQUIRE(array_ptr[4] == 5);
-  REQUIRE(array_ptr[94] == 95);
+  CHECK(array_ptr[4] == 5);
+  CHECK(array_ptr[94] == 95);
 }
 
 } // namespace qmcplusplus

@@ -30,8 +30,8 @@ TEST_CASE("partial_update", "[openmp]")
   std::vector<int, OMPallocator<int, PinnedAlignedAllocator<int>>> array(array_size, 1);
   int* array_ptr = array.data();
 
-  REQUIRE(array_ptr[4] == 1);
-  REQUIRE(array_ptr[94] == 1);
+  CHECK(array_ptr[4] == 1);
+  CHECK(array_ptr[94] == 1);
   #pragma omp target update to(array_ptr[:array_size])
   #pragma omp target teams distribute parallel for map(tofrom: array_ptr[:array_size])
   for (int i = 0; i < array_size; i++)
@@ -39,14 +39,14 @@ TEST_CASE("partial_update", "[openmp]")
     array_ptr[i] += i;
   }
 
-  REQUIRE(array_ptr[4] == 1);
-  REQUIRE(array_ptr[94] == 1);
+  CHECK(array_ptr[4] == 1);
+  CHECK(array_ptr[94] == 1);
   for (int offset = 0; offset < array_size; offset += section_size)
   {
     #pragma omp target update from(array_ptr[offset:section_size]) 
   }
-  REQUIRE(array_ptr[4] == 5);
-  REQUIRE(array_ptr[94] == 95);
+  CHECK(array_ptr[4] == 5);
+  CHECK(array_ptr[94] == 95);
 }
 
 } // namespace qmcplusplus

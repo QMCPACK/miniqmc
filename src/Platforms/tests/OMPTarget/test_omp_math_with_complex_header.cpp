@@ -20,9 +20,9 @@ namespace qmcplusplus
 
 TEST_CASE("sqrt", "[openmp]")
 {
-  REQUIRE( Approx(1.414213562) == std::sqrt(2.0));
-  REQUIRE( Approx(1.414213562) == std::sqrt(2.0f));
-  REQUIRE( Approx(1.414213562) == std::sqrt(2));
+  CHECK( Approx(1.414213562) == std::sqrt(2.0));
+  CHECK( Approx(1.414213562) == std::sqrt(2.0f));
+  CHECK( Approx(1.414213562) == std::sqrt(2));
 }
 
 } // namespace qmcplusplus

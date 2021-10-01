@@ -29,7 +29,7 @@ void test_map()
     a_check = a;
   }
 
-  REQUIRE(a_check == ComplexApprox(a));
+  CHECK(a_check == ComplexApprox(a));
 }
 
 template<typename RT, typename AT, typename BT>
@@ -44,7 +44,7 @@ void test_plus(AT a, BT b)
     c = a + b;
   }
 
-  REQUIRE(c == ComplexApprox(c_host));
+  CHECK(c == ComplexApprox(c_host));
 }
 
 template<typename RT, typename AT, typename BT>
@@ -59,7 +59,7 @@ void test_minus(AT a, BT b)
     c = a - b;
   }
 
-  REQUIRE(c == ComplexApprox(c_host));
+  CHECK(c == ComplexApprox(c_host));
 }
 
 template<typename RT, typename AT, typename BT>
@@ -74,7 +74,7 @@ void test_mul(AT a, BT b)
     c = a * b;
   }
 
-  REQUIRE(c == ComplexApprox(c_host));
+  CHECK(c == ComplexApprox(c_host));
 }
 
 template<typename RT, typename AT, typename BT>
@@ -89,7 +89,7 @@ void test_div(AT a, BT b)
     c = a / b;
   }
 
-  REQUIRE(c == ComplexApprox(c_host));
+  CHECK(c == ComplexApprox(c_host));
 }
 
 template<typename T>

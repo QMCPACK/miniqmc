@@ -28,7 +28,7 @@ TEST_CASE("reduction with parallel for", "[openmp]")
       counts_team += 1;
     counts1 = counts_team;
   }
-  REQUIRE(counts1 == 4);
+  CHECK(counts1 == 4);
 
   int counts2 = 0;
   #pragma omp target teams map(from:counts2)
@@ -39,7 +39,7 @@ TEST_CASE("reduction with parallel for", "[openmp]")
         counts_team += 1;
     counts2 = counts_team;
   }
-  REQUIRE(counts2 == 4);
+  CHECK(counts2 == 4);
 }
 
 TEST_CASE("reduction with parallel and for split", "[openmp]")
@@ -57,7 +57,7 @@ TEST_CASE("reduction with parallel and for split", "[openmp]")
     }
     counts1 = counts_team;
   }
-  REQUIRE(counts1 == 4);
+  CHECK(counts1 == 4);
 
   int counts2 = 0;
   #pragma omp target teams map(from:counts2)
@@ -71,7 +71,7 @@ TEST_CASE("reduction with parallel and for split", "[openmp]")
     }
     counts2 = counts_team;
   }
-  REQUIRE(counts2 == 4);
+  CHECK(counts2 == 4);
 }
 
 } // namespace qmcplusplus

@@ -40,8 +40,8 @@ void test_modf(T x)
     intx_host = static_cast<int>(ipart);
   }
 
-  REQUIRE(intx == intx_host);
-  REQUIRE(dx == dx_host);
+  CHECK(intx == intx_host);
+  CHECK(dx == dx_host);
 }
 
 template<typename T>
@@ -64,8 +64,8 @@ void test_my_modf(T x)
     intx_host = static_cast<int>(ipart);
   }
 
-  REQUIRE(intx == intx_host);
-  REQUIRE(dx == dx_host);
+  CHECK(intx == intx_host);
+  CHECK(dx == dx_host);
 }
 
 TEST_CASE("float_point_break_up", "[openmp]")
@@ -114,8 +114,8 @@ void test_sin_cos(T x)
     cos_v_host = std::cos(x);
   }
 
-  REQUIRE(sin_v == ValueApprox(sin_v_host));
-  REQUIRE(cos_v == ValueApprox(cos_v_host));
+  CHECK(sin_v == ValueApprox(sin_v_host));
+  CHECK(cos_v == ValueApprox(cos_v_host));
 }
 
 TEST_CASE("sin_cos", "[openmp]")
@@ -154,8 +154,8 @@ void test_sincos(T x)
     qmcplusplus::sincos(x, &sin_v_host, &cos_v_host);
   }
 
-  REQUIRE(sin_v == ValueApprox(sin_v_host));
-  REQUIRE(cos_v == ValueApprox(cos_v_host));
+  CHECK(sin_v == ValueApprox(sin_v_host));
+  CHECK(cos_v == ValueApprox(cos_v_host));
 }
 
 template<typename T>
@@ -182,8 +182,8 @@ void test_sincos_vector(T x, int size)
   {
     T sin_v_host, cos_v_host;
     qmcplusplus::sincos(x * member_id / size, &sin_v_host, &cos_v_host);
-    REQUIRE(sin_v[member_id] == ValueApprox(sin_v_host));
-    REQUIRE(cos_v[member_id] == ValueApprox(cos_v_host));
+    CHECK(sin_v[member_id] == ValueApprox(sin_v_host));
+    CHECK(cos_v[member_id] == ValueApprox(cos_v_host));
   }
 
 }
