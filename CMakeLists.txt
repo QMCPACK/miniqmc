@@ -417,6 +417,7 @@ ENDIF()
 #  set up ROCM compiler options and libraries
 #-------------------------------------------------------------------
 IF(QMC_ENABLE_ROCM)
+  # use FindHIP.cmake to confirm ROCM_ROOT but FindHIP.cmake module is not used
   if(ROCM_ROOT)
     message(STATUS "ROCM_ROOT provided. Searching for FindHIP.cmake file")
     find_path(
@@ -439,9 +440,8 @@ IF(QMC_ENABLE_ROCM)
   endif()
   message(STATUS "Using ROCM_ROOT: ${ROCM_ROOT}")
 
-  list(APPEND CMAKE_MODULE_PATH ${HIP_MODULE_FILE_DIR})
   list(APPEND CMAKE_PREFIX_PATH ${ROCM_ROOT})
-  find_package(HIP REQUIRED)
+  find_package(hip REQUIRED)
 
 ENDIF(QMC_ENABLE_ROCM)
 

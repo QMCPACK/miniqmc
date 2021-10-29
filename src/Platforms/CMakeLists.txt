@@ -27,7 +27,7 @@ if(QMC_ENABLE_CUDA)
 endif()
 
 if(QMC_ENABLE_ROCM)
-  target_link_libraries(platform_device INTERFACE roc::hip)
+  target_link_libraries(platform_device INTERFACE hip::host)
 endif()
 
 if(QMC_ENABLE_ONEAPI)
