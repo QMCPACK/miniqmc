@@ -417,23 +417,31 @@ ENDIF()
 #  set up ROCM compiler options and libraries
 #-------------------------------------------------------------------
 IF(QMC_ENABLE_ROCM)
-  IF(NOT ROCM_ROOT)
-    MESSAGE(FATAL_ERROR "ROCM_ROOT not set!")
-  ENDIF()
-  MESSAGE(STATUS "ROCM_ROOT: ${ROCM_ROOT}")
-  SET(CMAKE_MODULE_PATH "${ROCM_ROOT}/hip/cmake" ${CMAKE_MODULE_PATH})
+  if(ROCM_ROOT)
+    message(STATUS "ROCM_ROOT provided. Searching for FindHIP.cmake file")
+    find_path(
+      HIP_MODULE_FILE_DIR FindHIP.cmake
+      HINTS ${ROCM_ROOT}
+      PATH_SUFFIXES hip/cmake REQUIRED
+      NO_DEFAULT_PATH)
+  else()
+    message(STATUS "ROCM_ROOT not provided. Searching for FindHIP.cmake file.")
+    find_path(
+      HIP_MODULE_FILE_DIR FindHIP.cmake
+      HINTS /opt/rocm
+      PATH_SUFFIXES hip/cmake)
+    if(HIP_MODULE_FILE_DIR)
+      message(STATUS "Found FindHIP.cmake file. ROCM_ROOT will be derived.")
+    else()
+      message(FATAL_ERROR "Failed to find FindHIP.cmake file. Please set ROCM_ROOT to your ROCm installation.")
+    endif()
+    string(REGEX REPLACE "\/hip\/cmake" "" ROCM_ROOT "${HIP_MODULE_FILE_DIR}")
+  endif()
+  message(STATUS "Using ROCM_ROOT: ${ROCM_ROOT}")
 
-  #find_package(ROCR)
-  #ADD_LIBRARY(ROCM::ROCr INTERFACE IMPORTED)
-  #SET_TARGET_PROPERTIES(ROCM::ROCr PROPERTIES INTERFACE_INCLUDE_DIRECTORIES  "${ROCR_INCLUDES}"
-  #                                            INTERFACE_LINK_LIBRARIES "${ROCR_LIBRARIES}")
-
+  list(APPEND CMAKE_MODULE_PATH ${HIP_MODULE_FILE_DIR})
+  list(APPEND CMAKE_PREFIX_PATH ${ROCM_ROOT})
   find_package(HIP REQUIRED)
-  ADD_LIBRARY(ROCM::HIP INTERFACE IMPORTED)
-  SET_TARGET_PROPERTIES(ROCM::HIP PROPERTIES INTERFACE_COMPILE_DEFINITIONS "__HIP_PLATFORM_HCC__"
-                                             INTERFACE_INCLUDE_DIRECTORIES "${HIP_ROOT_DIR}/include;${ROCM_ROOT}/include"
-                                             INTERFACE_LINK_LIBRARIES "-L${HIP_ROOT_DIR}/lib;-lamdhip64")
-  #TARGET_LINK_LIBRARIES(ROCM::HIP INTERFACE ROCM::ROCr)
 
 ENDIF(QMC_ENABLE_ROCM)
 
