@@ -66,6 +66,7 @@ void test_vendor_device_memory_omp_access()
 
 TEST_CASE("memory_interop", "[openmp]")
 {
+  std::cout << "test memory_interop map" << std::endl;
 #if defined(QMC_ENABLE_CUDA) || defined(QMC_ENABLE_ROCM) || defined(QMC_ENABLE_ONEAPI)
   test_pinned_memory_omp_access<int, PinnedAlignedAllocator<int>>();
 #endif
@@ -74,12 +75,14 @@ TEST_CASE("memory_interop", "[openmp]")
   test_pinned_memory_omp_access<int, HIPHostAllocator<int>>();
 #endif
 
+  std::cout << "test memory_interop vendor device alloc" << std::endl;
 #if defined(QMC_ENABLE_CUDA)
   test_vendor_device_memory_omp_access<int, CUDAAllocator<int>>();
 #elif defined(QMC_ENABLE_ROCM)
   test_vendor_device_memory_omp_access<int, HIPAllocator<int>>();
 #endif
 
+  std::cout << "test memory_interop omp_target_alloc" << std::endl;
   int* array = (int*)omp_target_alloc(array_size * sizeof(int), omp_get_default_device());
 #if defined(QMC_ENABLE_CUDA)
   CUDAfill_n(array, array_size, 0);
