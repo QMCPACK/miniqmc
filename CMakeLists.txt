@@ -420,7 +420,7 @@ IF(QMC_ENABLE_ROCM)
   # use FindHIP.cmake to confirm ROCM_ROOT but FindHIP.cmake module is not used
   if(ROCM_ROOT)
     message(STATUS "Using ROCM_ROOT: ${ROCM_ROOT}")
-    list(APPEND CMAKE_PREFIX_PATH ${ROCM_ROOT})
+    list(PREPEND CMAKE_PREFIX_PATH ${ROCM_ROOT})
   endif()
   find_package(hip CONFIG REQUIRED)
 
