@@ -327,7 +327,18 @@ message(STATUS "ENABLE_OMP_TASKLOOP is set to ${ENABLE_OMP_TASKLOOP}")
 # Set up OpenMP offload compile options
 #---------------------------------------------------------
 if (ENABLE_OFFLOAD AND DEFINED OPENMP_OFFLOAD_COMPILE_OPTIONS)
+  message(STATUS "OpenMP offload CXX flags: ${OPENMP_OFFLOAD_COMPILE_OPTIONS}")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OPENMP_OFFLOAD_COMPILE_OPTIONS}")
+endif()
+
+#-------------------------------------------------------------------
+# final test for compile options before searching for libraries
+#-------------------------------------------------------------------
+check_cxx_source_compiles("int main(){}" TEST_CXX_COMPILE_MAIN)
+if (NOT TEST_CXX_COMPILE_MAIN)
+  unset(TEST_CXX_COMPILE_MAIN CACHE)
+  message(FATAL_ERROR "Failed in compiling a main function likely due to incorrect compile options. "
+                      "Check error in \"${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/CMakeError.log\".")
 endif()
 
 #-------------------------------------------------------------------
