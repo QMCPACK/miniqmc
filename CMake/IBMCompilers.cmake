@@ -1,43 +1,43 @@
-IF(CMAKE_SYSTEM_PROCESSOR MATCHES "ppc64le")
-MESSAGE(STATUS "Power8+ system using xlC/xlc/xlf")
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "ppc64le")
+  message(STATUS "Power8+ system using xlC/xlc/xlf")
 
-ADD_DEFINITIONS( -Drestrict=__restrict__ )
+  add_definitions(-Drestrict=__restrict__)
 
-# Clean up flags
-IF(CMAKE_CXX_FLAGS MATCHES "-qhalt=e")
-  SET(CMAKE_CXX_FLAGS "")
-ENDIF()
+  # Clean up flags
+  if(CMAKE_CXX_FLAGS MATCHES "-qhalt=e")
+    set(CMAKE_CXX_FLAGS "")
+  endif()
 
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__forceinline=inline")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__forceinline=inline")
 
-# Suppress compile warnings
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated -Wno-unused-value")
+  # Suppress compile warnings
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated -Wno-unused-value")
 
-# Set extra optimization specific flags
-SET( CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG" )
-SET( CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -O3" )
+  # Set extra optimization specific flags
+  set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
+  set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -O3")
 
-# Set language standardards
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -qnoxlcompatmacros")
+  # Set language standardards
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -qnoxlcompatmacros")
 
-# CMake < 3.9 didn't have support for language standards in XL
-IF(NOT CMAKE_CXX11_STANDARD_COMPILE_OPTION)
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-ENDIF()
+  # CMake < 3.9 didn't have support for language standards in XL
+  if(NOT CMAKE_CXX11_STANDARD_COMPILE_OPTION)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+  endif()
 
-IF(QMC_OMP)
-  SET(ENABLE_OPENMP 1)
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -qsmp=omp")
-  IF(ENABLE_OFFLOAD)
-    set(OPENMP_OFFLOAD_COMPILE_OPTIONS "-qoffload")
-  ENDIF(ENABLE_OFFLOAD)
-ELSE(QMC_OMP)
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -qnothreaded")
-ENDIF(QMC_OMP)
+  if(QMC_OMP)
+    set(ENABLE_OPENMP 1)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -qsmp=omp")
+    if(ENABLE_OFFLOAD)
+      set(OPENMP_OFFLOAD_COMPILE_OPTIONS "-qoffload")
+    endif(ENABLE_OFFLOAD)
+  else(QMC_OMP)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -qnothreaded")
+  endif(QMC_OMP)
 
-# Add static flags if necessary
-IF(QMC_BUILD_STATIC)
-    SET(CMAKE_CXX_LINK_FLAGS " -static")
-ENDIF(QMC_BUILD_STATIC)
+  # Add static flags if necessary
+  if(QMC_BUILD_STATIC)
+    set(CMAKE_CXX_LINK_FLAGS " -static")
+  endif(QMC_BUILD_STATIC)
 
-ENDIF(CMAKE_SYSTEM_PROCESSOR MATCHES "ppc64le")
+endif(CMAKE_SYSTEM_PROCESSOR MATCHES "ppc64le")

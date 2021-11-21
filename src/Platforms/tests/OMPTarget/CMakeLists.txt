@@ -9,16 +9,31 @@
 #// File created by: Ye Luo, yeluo@anl.gov, Argonne National Laboratory
 #//////////////////////////////////////////////////////////////////////////////////////
 
-
-FOREACH(NAME math reduction target_task complex complex_reduction math_with_complex_header memory_interop
-             partial_update partial_update_full map_always icpx_opencl_wrong_number nowait_taskwait taskloop
-             runtime_mem map_transfer allocator vector)
-  SET(UTEST_EXE test_omptarget_${NAME})
-  SET(UTEST_NAME unit_${UTEST_EXE})
-  ADD_EXECUTABLE(${UTEST_EXE} test_omp_${NAME}.cpp)
-  TARGET_LINK_LIBRARIES(${UTEST_EXE} platform_runtime catch_main)
+foreach(
+  NAME
+  math
+  reduction
+  target_task
+  complex
+  complex_reduction
+  math_with_complex_header
+  memory_interop
+  partial_update
+  partial_update_full
+  map_always
+  icpx_opencl_wrong_number
+  nowait_taskwait
+  taskloop
+  runtime_mem
+  map_transfer
+  allocator
+  vector)
+  set(UTEST_EXE test_omptarget_${NAME})
+  set(UTEST_NAME unit_${UTEST_EXE})
+  add_executable(${UTEST_EXE} test_omp_${NAME}.cpp)
+  target_link_libraries(${UTEST_EXE} platform_runtime catch_main)
   add_unit_test(${UTEST_NAME} 1 1 $<TARGET_FILE:${UTEST_EXE}>)
-ENDFOREACH()
+endforeach()
 
 set(UTEST_EXE test_omptarget_blas)
 set(UTEST_NAME unit_${UTEST_EXE})

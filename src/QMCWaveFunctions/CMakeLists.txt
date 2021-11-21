@@ -9,18 +9,16 @@
 #// File created by: Ye Luo, yeluo@anl.gov, Argonne National Laboratory
 #//////////////////////////////////////////////////////////////////////////////////////
 
-SET(WFS_SRC einspline_spo_omp.cpp
-            WaveFunction.cpp SPOSet_builder.cpp
-            DiracDeterminant.cpp DiracDeterminantRef.cpp)
+set(WFS_SRC einspline_spo_omp.cpp WaveFunction.cpp SPOSet_builder.cpp DiracDeterminant.cpp DiracDeterminantRef.cpp)
 
-IF(USE_OBJECT_TARGET)
-  ADD_LIBRARY(qmcwfs OBJECT ${WFS_SRC})
-ELSE(USE_OBJECT_TARGET)
-  ADD_LIBRARY(qmcwfs ${WFS_SRC})
-ENDIF(USE_OBJECT_TARGET)
+if(USE_OBJECT_TARGET)
+  add_library(qmcwfs OBJECT ${WFS_SRC})
+else(USE_OBJECT_TARGET)
+  add_library(qmcwfs ${WFS_SRC})
+endif(USE_OBJECT_TARGET)
 
 target_link_libraries(qmcwfs PUBLIC qmcparticle)
 
-TARGET_LINK_LIBRARIES(qmcwfs PRIVATE platform_LA)
+target_link_libraries(qmcwfs PRIVATE platform_LA)
 
-SUBDIRS(tests)
+subdirs(tests)

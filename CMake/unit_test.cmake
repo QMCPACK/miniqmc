@@ -17,8 +17,16 @@ function(ADD_UNIT_TEST TESTNAME PROCS THREADS TEST_BINARY)
   endif()
 
   if(TEST_ADDED)
-    set_tests_properties(${TESTNAME} PROPERTIES PROCESSORS ${TOT_PROCS} ENVIRONMENT OMP_NUM_THREADS=${THREADS}
-                                                PROCESSOR_AFFINITY TRUE LABELS "unit")
+    set_tests_properties(
+      ${TESTNAME}
+      PROPERTIES PROCESSORS
+                 ${TOT_PROCS}
+                 ENVIRONMENT
+                 OMP_NUM_THREADS=${THREADS}
+                 PROCESSOR_AFFINITY
+                 TRUE
+                 LABELS
+                 "unit")
 
     if(QMC_CUDA
        OR ENABLE_CUDA

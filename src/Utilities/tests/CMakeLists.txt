@@ -9,12 +9,11 @@
 #// File created by: Mark Dewing, markdewing@gmail.com, University of Illinois at Urbana-Champaign
 #//////////////////////////////////////////////////////////////////////////////////////
 
+set(SRC_DIR utilities)
+set(UTEST_EXE test_${SRC_DIR})
+set(UTEST_NAME unit_test_${SRC_DIR})
 
-SET(SRC_DIR utilities)
-SET(UTEST_EXE test_${SRC_DIR})
-SET(UTEST_NAME unit_test_${SRC_DIR})
+add_executable(${UTEST_EXE} test_PrimeNumberSet.cpp test_ParallelBlock.cpp)
+target_link_libraries(${UTEST_EXE} catch_main qmcutil ${QMC_UTIL_LIBS})
 
-ADD_EXECUTABLE(${UTEST_EXE} test_PrimeNumberSet.cpp test_ParallelBlock.cpp)
-TARGET_LINK_LIBRARIES(${UTEST_EXE} catch_main qmcutil ${QMC_UTIL_LIBS})
-
-ADD_UNIT_TEST(${UTEST_NAME} 1 1 "${UTEST_EXE}")
+add_unit_test(${UTEST_NAME} 1 1 "${UTEST_EXE}")

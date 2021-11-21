@@ -9,7 +9,6 @@
 #// File created by: Ye Luo, yeluo@anl.gov, Argonne National Laboratory
 #//////////////////////////////////////////////////////////////////////////////////////
 
-
 add_library(platform_cpu_runtime INTERFACE)
 
 set(CPU_SRCS BlasThreadingEnv.cpp)

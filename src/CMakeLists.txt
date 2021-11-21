@@ -12,28 +12,25 @@
 #//                    Norbert Podhorszki, pnorbert@ornl.gov, Oak Ridge National Laboratory
 #//                    Cynthia Gu, zg1@ornl.gov, Oak Ridge National Laboratory
 #//                    Ken Esler, kpesler@gmail.com, University of Illinois at Urbana-Champaign
-#//                    Jeremy McMinnis, jmcminis@gmail.com, University of Illinois at Urbana-Champaign  
+#//                    Jeremy McMinnis, jmcminis@gmail.com, University of Illinois at Urbana-Champaign
 #//                    Jeongnim Kim, jeongnim.kim@gmail.com, University of Illinois at Urbana-Champaign
 #//
 #// File created by: Jeongnim Kim, jeongnim.kim@gmail.com, University of Illinois at Urbana-Champaign
 #//////////////////////////////////////////////////////////////////////////////////////
 
-INCLUDE(${PROJECT_SOURCE_DIR}/CMake/unit_test.cmake)
+include(${PROJECT_SOURCE_DIR}/CMake/unit_test.cmake)
 
-CONFIGURE_FILE(${miniqmc_SOURCE_DIR}/src/config.h.cmake.in
-  ${miniqmc_BINARY_DIR}/src/config.h)
+configure_file(${miniqmc_SOURCE_DIR}/src/config.h.cmake.in ${miniqmc_BINARY_DIR}/src/config.h)
 
-SET(GITREV_BARE_FILE git-rev.h)
-SET(GITREV_BARE_TMP git-rev-tmp.h)
-SET(GITREV_FILE ${CMAKE_BINARY_DIR}/src/${GITREV_BARE_FILE})
-SET(GITREV_TMP ${CMAKE_BINARY_DIR}/src/${GITREV_BARE_TMP})
+set(GITREV_BARE_FILE git-rev.h)
+set(GITREV_BARE_TMP git-rev-tmp.h)
+set(GITREV_FILE ${CMAKE_BINARY_DIR}/src/${GITREV_BARE_FILE})
+set(GITREV_TMP ${CMAKE_BINARY_DIR}/src/${GITREV_BARE_TMP})
 
 # Always clean up git-rev-tmp.h file when cmake is run
-EXECUTE_PROCESS(
-  COMMAND ${CMAKE_COMMAND} -E remove ${GITREV_TMP}
-)
+execute_process(COMMAND ${CMAKE_COMMAND} -E remove ${GITREV_TMP})
 
-IF (IS_GIT_PROJECT)
+if(IS_GIT_PROJECT)
   # The following custom command picks up changes to the git revision information
   # every time the project is rebuilt. Even if the repositiory is updated (git pull)
   # without re-running cmake. It also appends '-dirty' to the commit hash if there are
@@ -50,24 +47,25 @@ IF (IS_GIT_PROJECT)
 
   # Sed flags were once an issue and some HPC have old sed's
   set(SED_FLAG "-E")
-  EXECUTE_PROCESS(COMMAND "sed" ${SED_FLAG} "s/\"/\\\\\"/g" "<${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists.txt"
-    OUTPUT_QUIET
-    ERROR_VARIABLE SED_ERROR)
-  if ( SED_ERROR MATCHES ".*invalid.*" )
+  execute_process(COMMAND "sed" ${SED_FLAG} "s/\"/\\\\\"/g" "<${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists.txt" OUTPUT_QUIET
+                  ERROR_VARIABLE SED_ERROR)
+  if(SED_ERROR MATCHES ".*invalid.*")
     set(SED_FLAG "-r")
-    EXECUTE_PROCESS(COMMAND "sed" ${SED_FLAG} "s/\"/\\\\\"/g" "<${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists.txt"
-      OUTPUT_QUIET ERROR_QUIET
-      ERROR_VARIABLE SED_ERROR)
-    if ( SED_ERROR MATCHES ".*invalid.*" )
-      MESSAGE(WARNING "Your system supports neither the sed -E or -r flag, git revision information will not be included in output")
-    else ( SED_ERROR MATCHES ".*invalid.*" )
-      MESSAGE("sed supports -r")
-    endif ( SED_ERROR MATCHES ".*invalid.*" )
-  else ( SED_ERROR MATCHES ".*invalid.*" )
-    MESSAGE("sed supports -E")
-  endif ( SED_ERROR MATCHES ".*invalid.*" )
+    execute_process(COMMAND "sed" ${SED_FLAG} "s/\"/\\\\\"/g" "<${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists.txt" OUTPUT_QUIET
+                            ERROR_QUIET ERROR_VARIABLE SED_ERROR)
+    if(SED_ERROR MATCHES ".*invalid.*")
+      message(
+        WARNING
+          "Your system supports neither the sed -E or -r flag, git revision information will not be included in output")
+    else(SED_ERROR MATCHES ".*invalid.*")
+      message("sed supports -r")
+    endif(SED_ERROR MATCHES ".*invalid.*")
+  else(SED_ERROR MATCHES ".*invalid.*")
+    message("sed supports -E")
+  endif(SED_ERROR MATCHES ".*invalid.*")
 
-  add_custom_target(gitrev
+  add_custom_target(
+    gitrev
     COMMAND ${CMAKE_COMMAND} -E echo_append "#define GIT_BRANCH_RAW " > ${GITREV_TMP}
     COMMAND ${GIT_EXECUTABLE} rev-parse --abbrev-ref HEAD >> ${GITREV_TMP}
     COMMAND ${CMAKE_COMMAND} -E echo >> ${GITREV_TMP}
@@ -89,12 +87,10 @@ IF (IS_GIT_PROJECT)
   # Print some configure-time git info (useful for understanding what commits
   # are in particular build for the nightly CDash reports)
 
-  EXECUTE_PROCESS(
+  execute_process(
     COMMAND ${GIT_EXECUTABLE} rev-parse --abbrev-ref HEAD
     OUTPUT_VARIABLE GIT_CONFIG_BRANCH
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-  )
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} OUTPUT_STRIP_TRAILING_WHITESPACE)
 
   # Breaking down the arguments to 'git describe'
   #  --abbrev=40     Size of hash to print.  This should print the entire hash.
@@ -107,41 +103,37 @@ IF (IS_GIT_PROJECT)
   #       second_annotated_tag-29-g1fd38cccc0fd2f683ec223ca0783bb671bfedd4e
   #     In order to always get just the commit hash, specify a tag pattern
   #     that should never match.
-  EXECUTE_PROCESS(
+  execute_process(
     COMMAND ${GIT_EXECUTABLE} describe --always --dirty --abbrev=40 --match="NoTagWithThisName"
     OUTPUT_VARIABLE GIT_CONFIG_COMMIT_HASH
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-  )
-  MESSAGE("Git branch: ${GIT_CONFIG_BRANCH}")
-  MESSAGE("Git commit hash: ${GIT_CONFIG_COMMIT_HASH}")
-ELSE()
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} OUTPUT_STRIP_TRAILING_WHITESPACE)
+  message("Git branch: ${GIT_CONFIG_BRANCH}")
+  message("Git commit hash: ${GIT_CONFIG_COMMIT_HASH}")
+else()
   # Output a blank git version file
-  EXECUTE_PROCESS(
+  execute_process(
     COMMAND ${CMAKE_COMMAND} -E remove ${GITREV_FILE}
     COMMAND ${CMAKE_COMMAND} -E touch ${GITREV_FILE}
     COMMAND ${CMAKE_COMMAND} -E remove ${GITREV_TMP}
-    COMMAND ${CMAKE_COMMAND} -E touch ${GITREV_TMP}
-  )
-ENDIF()
+    COMMAND ${CMAKE_COMMAND} -E touch ${GITREV_TMP})
+endif()
 
+# For unit tests, enable use for the fake RNG
+function(USE_FAKE_RNG TARGET)
+  target_compile_definitions(${TARGET} PRIVATE "USE_FAKE_RNG")
+endfunction()
 
-  # For unit tests, enable use for the fake RNG
-  FUNCTION( USE_FAKE_RNG TARGET )
-    TARGET_COMPILE_DEFINITIONS(${TARGET} PRIVATE "USE_FAKE_RNG")
-  ENDFUNCTION()
+# Put the fake RNG in a separate library so production code doesn't
+# accidentally link to it
 
-  # Put the fake RNG in a separate library so production code doesn't
-  # accidentally link to it
+#IF(QMC_BUILD_STATIC)
+#  ADD_LIBRARY(qmcutil STATIC ${UTILITIES})
+#ELSE(QMC_BUILD_STATIC)
+#  ADD_LIBRARY(qmcutil SHARED ${UTILITIES})
+#ENDIF(QMC_BUILD_STATIC)
 
-  #IF(QMC_BUILD_STATIC)
-  #  ADD_LIBRARY(qmcutil STATIC ${UTILITIES})
-  #ELSE(QMC_BUILD_STATIC)
-  #  ADD_LIBRARY(qmcutil SHARED ${UTILITIES})
-  #ENDIF(QMC_BUILD_STATIC)
-
-  SUBDIRS(Platforms)
-  SUBDIRS(Utilities)
-  SUBDIRS(Particle)
-  SUBDIRS(QMCWaveFunctions)
-  SUBDIRS(Drivers)
+subdirs(Platforms)
+subdirs(Utilities)
+subdirs(Particle)
+subdirs(QMCWaveFunctions)
+subdirs(Drivers)
