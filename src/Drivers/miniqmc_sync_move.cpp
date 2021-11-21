@@ -153,7 +153,7 @@ void print_help()
   app_summary() << "usage:" << '\n';
   app_summary() << "  miniqmc   [-bhjPvV] [-g \"n0 n1 n2\"] [-m meshfactor]"     << '\n';
   app_summary() << "            [-n steps] [-N substeps] [-x rmax]"              << '\n';
-  app_summary() << "            [-r AcceptanceRatio] [-s seed] [-w walkers]"     << '\n';
+  app_summary() << "            [-r AcceptanceRatio] [-w walkers]"               << '\n';
   app_summary() << "            [-a tile_size] [-t timer_level] [-c nw_b]"       << '\n';
   app_summary() << "            [-k delay_rank]"                                 << '\n';
   app_summary() << "options:"                                                    << '\n';
@@ -168,7 +168,6 @@ void print_help()
   app_summary() << "  -N  number of MC substeps          default: 1"             << '\n';
   app_summary() << "  -P  not running pseudo potential   default: off"           << '\n';
   app_summary() << "  -r  set the acceptance ratio.      default: 0.5"           << '\n';
-  app_summary() << "  -s  set the random seed.           default: 11"            << '\n';
   app_summary() << "  -t  timer level: coarse or fine    default: fine"          << '\n';
   app_summary() << "  -k  matrix delayed update rank     default: 32"            << '\n';
   app_summary() << "  -v  verbose output"                                        << '\n';
@@ -195,7 +194,6 @@ int main(int argc, char** argv)
   int nb     = 1;
   int nc     = 1;
   int nsteps = 5;
-  int iseed  = 11;
   int nx = 37, ny = 37, nz = 37;
 
   int nmovers = omp_get_max_threads();
@@ -267,9 +265,6 @@ int main(int argc, char** argv)
         break;
       case 'r':
         accept = atof(optarg);
-        break;
-      case 's':
-        iseed = atoi(optarg);
         break;
       case 't':
         timer_level_name = std::string(optarg);

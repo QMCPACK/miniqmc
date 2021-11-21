@@ -54,14 +54,13 @@ void print_help()
 {
   app_summary() << "usage:";
   app_summary() << '\n' << "  check_spo [-hvV] [-g \"n0 n1 n2\"] [-m meshfactor]";
-  app_summary() << '\n' << "            [-n steps] [-r rmax] [-s seed] [-w walkers]";
+  app_summary() << '\n' << "            [-n steps] [-r rmax] [-w walkers]";
   app_summary() << '\n' << "options:";
   app_summary() << '\n' << "  -g  set the 3D tiling.           default: 1 1 1";
   app_summary() << '\n' << "  -h  print help and exit";
   app_summary() << '\n' << "  -m  meshfactor                   default: 1.0";
   app_summary() << '\n' << "  -n  number of MC steps           default: 5";
   app_summary() << '\n' << "  -r  set the Rmax.                default: 1.7";
-  app_summary() << '\n' << "  -s  set the random seed.         default: 11";
   app_summary() << '\n' << "  -v  verbose output";
   app_summary() << '\n' << "  -V  print version information and exit";
   app_summary() << '\n' << "  -w  number of walkers per rank   default: OpenMP num threads";
@@ -87,7 +86,6 @@ int main(int argc, char** argv)
   int nc      = 1;
   int nsteps  = 5;
   int nmovers = omp_get_max_threads();
-  int iseed   = 11;
   // this is the cutoff from the non-local PP
   RealType Rmax(1.7);
   int nx = 37, ny = 37, nz = 37;
@@ -127,9 +125,6 @@ int main(int argc, char** argv)
         break;
       case 'r': // rmax
         Rmax = atof(optarg);
-        break;
-      case 's':
-        iseed = atoi(optarg);
         break;
       case 'v':
         verbose = true;

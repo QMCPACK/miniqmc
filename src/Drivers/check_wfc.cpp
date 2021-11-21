@@ -50,14 +50,13 @@ void print_help()
   // clang-format off
   cout << "usage:" << '\n';
   cout << "  check_wfc [-hvV] [-f wfc_component] [-g \"n0 n1 n2\"]"     << '\n';
-  cout << "            [-r rmax] [-s seed]"                             << '\n';
+  cout << "            [-r rmax]"                                       << '\n';
   cout << "options:"                                                    << '\n';
   cout << "  -f  specify wavefunction component to check"               << '\n';
   cout << "      one of: J1, J2, J3, Det.       default: J2"            << '\n';
   cout << "  -g  set the 3D tiling.             default: 1 1 1"         << '\n';
   cout << "  -h  print help and exit"                                   << '\n';
   cout << "  -r  set the Rmax.                  default: 1.7"           << '\n';
-  cout << "  -s  set the random seed.           default: 11"            << '\n';
   cout << "  -v  verbose output"                                        << '\n';
   cout << "  -V  print version information and exit"                    << '\n';
   // clang-format on
@@ -96,7 +95,6 @@ int main(int argc, char** argv)
   int na    = 1;
   int nb    = 1;
   int nc    = 1;
-  int iseed = 11;
   RealType Rmax(1.7);
   string wfc_name("J2");
 
@@ -120,9 +118,6 @@ int main(int argc, char** argv)
         break;
       case 'r': // rmax
         Rmax = atof(optarg);
-        break;
-      case 's':
-        iseed = atoi(optarg);
         break;
       case 'v':
         verbose = true;
