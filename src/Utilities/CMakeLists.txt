@@ -13,4 +13,25 @@ ADD_LIBRARY(catch_main catch_main.cpp)
 TARGET_INCLUDE_DIRECTORIES(catch_main PUBLIC "${PROJECT_SOURCE_DIR}/external_codes/catch")
 target_link_libraries(catch_main PRIVATE platform_runtime qmcutil)
 
+  ####################################
+  # create libqmcutil
+  ####################################
+  SET(UTILITIES
+    SpeciesSet.cpp 
+    Communicate.cpp
+    NewTimer.cpp
+    XMLWriter.cpp
+    tinyxml/tinyxml2.cpp
+    qmcpack_version.cpp
+    )
+
+  ADD_LIBRARY(qmcutil ${UTILITIES})
+  TARGET_LINK_LIBRARIES(qmcutil PUBLIC platform_runtime
+                                INTERFACE qmc_mpi_cxx)
+
+
+if(IS_GIT_PROJECT)
+  add_dependencies(qmcutil gitrev)
+endif()
+
 SUBDIRS(tests)

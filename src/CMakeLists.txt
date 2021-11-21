@@ -67,8 +67,7 @@ IF (IS_GIT_PROJECT)
     MESSAGE("sed supports -E")
   endif ( SED_ERROR MATCHES ".*invalid.*" )
 
-  ADD_CUSTOM_COMMAND(
-    OUTPUT ${GITREV_TMP}
+  add_custom_target(gitrev
     COMMAND ${CMAKE_COMMAND} -E echo_append "#define GIT_BRANCH_RAW " > ${GITREV_TMP}
     COMMAND ${GIT_EXECUTABLE} rev-parse --abbrev-ref HEAD >> ${GITREV_TMP}
     COMMAND ${CMAKE_COMMAND} -E echo >> ${GITREV_TMP}
@@ -84,9 +83,8 @@ IF (IS_GIT_PROJECT)
     COMMAND ${CMAKE_COMMAND} -E echo >> ${GITREV_TMP}
     COMMAND ${CMAKE_COMMAND} -E copy_if_different ${GITREV_TMP} ${GITREV_FILE}
     COMMAND ${CMAKE_COMMAND} -E remove ${GITREV_TMP}
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-    VERBATIM
-  )
+    WORKING_DIRECTORY ${miniqmc_SOURCE_DIR}
+    VERBATIM)
 
   # Print some configure-time git info (useful for understanding what commits
   # are in particular build for the nightly CDash reports)
@@ -128,25 +126,6 @@ ELSE()
 ENDIF()
 
 
-  ####################################
-  # create libqmcutil
-  ####################################
-  SET(UTILITIES
-    Utilities/SpeciesSet.cpp 
-    Utilities/Communicate.cpp
-    Utilities/NewTimer.cpp
-    Utilities/XMLWriter.cpp
-    Utilities/tinyxml/tinyxml2.cpp
-    Utilities/qmcpack_version.cpp
-    ${GITREV_TMP}
-    )
-
-  ADD_LIBRARY(qmcutil ${UTILITIES})
-  TARGET_LINK_LIBRARIES(qmcutil PUBLIC platform_runtime
-                                INTERFACE qmc_mpi_cxx)
-
-  SUBDIRS(Utilities)
-
   # For unit tests, enable use for the fake RNG
   FUNCTION( USE_FAKE_RNG TARGET )
     TARGET_COMPILE_DEFINITIONS(${TARGET} PRIVATE "USE_FAKE_RNG")
@@ -161,24 +140,8 @@ ENDIF()
   #  ADD_LIBRARY(qmcutil SHARED ${UTILITIES})
   #ENDIF(QMC_BUILD_STATIC)
 
-
-  ####################################
-  # create libqmcbase 
-  ####################################
-  SET(PARTICLE ${PARTICLE}
-    Particle/VirtualParticleSet.cpp 
-    Particle/ParticleSet.cpp 
-    Particle/ParticleSet.BC.cpp 
-    Particle/DistanceTableAA.cpp
-    Particle/DistanceTableAB.cpp
-    Particle/ParticleSet_builder.cpp
-    )
-
-  ADD_LIBRARY(qmcbase ${PARTICLE})
-  TARGET_LINK_LIBRARIES(qmcbase PUBLIC qmcutil)
-
-  SUBDIRS(Particle/tests)
-
   SUBDIRS(Platforms)
+  SUBDIRS(Utilities)
+  SUBDIRS(Particle)
   SUBDIRS(QMCWaveFunctions)
   SUBDIRS(Drivers)

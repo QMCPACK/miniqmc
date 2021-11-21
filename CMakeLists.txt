@@ -44,10 +44,7 @@ MESSAGE( STATUS "CMAKE_BUILD_TYPE is ${CMAKE_BUILD_TYPE}")
 # Define the paths for library and executable for out-of-soruce compilation
 # Directory where customize cmake files reside
 ######################################################################
-SET (LIBRARY_OUTPUT_PATH ${miniqmc_BINARY_DIR}/lib CACHE PATH "Single output directory for building all libraries.")
-SET (EXECUTABLE_OUTPUT_PATH ${miniqmc_BINARY_DIR}/bin CACHE PATH "Single output directory for building all executables.")
 SET (PROJECT_CMAKE ${miniqmc_SOURCE_DIR}/CMake)
-SET (QMCPACK_UNIT_TEST_DIR ${miniqmc_BINARY_DIR}/tests/bin)
 
 ######################################################################
 # build include and library paths required for the projects

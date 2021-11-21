@@ -11,9 +11,11 @@
 
 SET(DRIVERS check_spo check_spo_batched check_spo_batched_reduction check_wfc miniqmc miniqmc_sync_move)
 
+
 FOREACH(p ${DRIVERS})
   ADD_EXECUTABLE( ${p}  ${p}.cpp)
-  TARGET_LINK_LIBRARIES(${p} qmcwfs qmcbase qmcutil platform_runtime ${QMC_UTIL_LIBS})
+  TARGET_LINK_LIBRARIES(${p} qmcwfs qmcparticle qmcutil platform_runtime ${QMC_UTIL_LIBS})
+  set_target_properties(${p} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${miniqmc_BINARY_DIR}/bin)
 ENDFOREACH(p)
 
 SUBDIRS(tests)

@@ -19,7 +19,7 @@ ELSE(USE_OBJECT_TARGET)
   ADD_LIBRARY(qmcwfs ${WFS_SRC})
 ENDIF(USE_OBJECT_TARGET)
 
-target_link_libraries(qmcwfs PUBLIC qmcbase)
+target_link_libraries(qmcwfs PUBLIC qmcparticle)
 
 TARGET_LINK_LIBRARIES(qmcwfs PRIVATE platform_LA)
 

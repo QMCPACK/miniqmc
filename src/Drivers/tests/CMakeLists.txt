@@ -12,7 +12,6 @@
 #// Peter Doak, doakpw@ornl.gov, Oak Ridge National Lab
 #////////////////////////////////////////////////////////////////////////////////
 
-SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${QMCPACK_UNIT_TEST_DIR})
 
 SET(SRC_DIR Drivers)
 SET(UTEST_EXE test_${SRC_DIR})
