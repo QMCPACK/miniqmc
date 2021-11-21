@@ -12,7 +12,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "Drivers/MiniQMCOptions.h"
-#include "Utilities/OutputManager.h"
+#include "Host/OutputManager.h"
 
 namespace qmcplusplus
 {

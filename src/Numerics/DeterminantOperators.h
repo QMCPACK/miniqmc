@@ -31,7 +31,7 @@
 #include <Numerics/OhmmsPETE/TinyVector.h>
 #include <Numerics/OhmmsPETE/OhmmsVector.h>
 #include <Numerics/OhmmsPETE/OhmmsMatrix.h>
-#include <Numerics/OhmmsBlas.h>
+#include <CPU/BLAS.hpp>
 #include "Utilities/Constants.h"
 
 namespace qmcplusplus

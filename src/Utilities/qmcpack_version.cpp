@@ -12,7 +12,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include <Utilities/qmcpack_version.h>
-#include <Utilities/OutputManager.h>
+#include <Host/OutputManager.h>
 
 #define STR_EXPAND(x) #x
 #define STR(x) STR_EXPAND(x)

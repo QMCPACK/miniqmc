@@ -4,17 +4,16 @@
 //
 // Copyright (c) 2021 QMCPACK developers.
 //
-// File developed by: Ye Luo, yeluo@anl.gov, Argonne National Laboratory
+// File developed by: Peter Doak, doakpw@ornl.gov, Oak Ridge National Lab
 //
-// File created by: Ye Luo, yeluo@anl.gov, Argonne National Laboratory
+// Refactored from: OMPallocator.cpp
 //////////////////////////////////////////////////////////////////////////////////////
 
 
-#ifndef QMCPLUSPLUS_CUDA_RUNTIME_H
-#define QMCPLUSPLUS_CUDA_RUNTIME_H
-
 #include <cstddef>
+#include <atomic>
 
-size_t getCUDAdeviceFreeMem();
-
-#endif
+namespace qmcplusplus
+{
+  std::atomic<size_t> dual_device_mem_allocated(0);
+}

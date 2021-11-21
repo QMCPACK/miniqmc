@@ -15,9 +15,9 @@
 #include "config.h"
 #include <Numerics/OhmmsPETE/OhmmsVector.h>
 #include <Numerics/OhmmsPETE/OhmmsMatrix.h>
-#include "Numerics/OhmmsBlas.h"
+#include "CPU/BLAS.hpp"
+#include "CPU/BlasThreadingEnv.h"
 #include "QMCWaveFunctions/DiracMatrix.h"
-#include "Numerics/BlasThreadingEnv.h"
 
 namespace qmcplusplus
 {

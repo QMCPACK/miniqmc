@@ -115,7 +115,7 @@
 #include <QMCWaveFunctions/SPOSet.h>
 #include <QMCWaveFunctions/SPOSet_builder.h>
 #include <QMCWaveFunctions/WaveFunction.h>
-#include <OMPTarget/assignDevice.h>
+#include <DeviceManager.h>
 #include <Drivers/Mover.hpp>
 #include <getopt.h>
 
@@ -332,12 +332,8 @@ int main(int argc, char** argv)
 
   print_version(verbose);
 
-  int num_accelerators = 0;
-  int assigned_accelerators_id = -1;
-
-  assignDevice(num_accelerators, assigned_accelerators_id, comm.rank(), comm.size());
-
-  app_summary() << "number of ranks : " << comm.size() << ", number of accelerators : " << num_accelerators << std::endl;
+  DeviceManager dm(comm.rank(), comm.size());
+  app_summary() << "number of ranks : " << comm.size() << ", number of accelerators : " << dm.getNumDevices() << std::endl;
 
   SPOSet* spo_main;
   int nTiles = 1;

@@ -7,28 +7,28 @@
 // File developed by: Ye Luo, yeluo@anl.gov, Argonne National Laboratory
 //
 // File created by: Ye Luo, yeluo@anl.gov, Argonne National Laboratory
+//
 //////////////////////////////////////////////////////////////////////////////////////
 
-
-#ifndef QMCPLUSPLUS_ACCESS_TRAITS_H
-#define QMCPLUSPLUS_ACCESS_TRAITS_H
+#ifndef QMCPLUSPLUS_BLAS_THREADING_ENV_H
+#define QMCPLUSPLUS_BLAS_THREADING_ENV_H
 
 namespace qmcplusplus
 {
-/** template class defines whether the memory allocated by the allocator is host accessible
+/** service class for explicitly managing the threading of BLAS/LAPACK calls from OpenMP parallel region
+ *
+ * intended to use only locally around heavy calls.
  */
-template<class Allocator>
-struct allocator_traits
+class BlasThreadingEnv
 {
-  const static bool is_host_accessible = true;
+  int old_state_;
+
+public:
+  /// Constructor, obtains the number of threads at the next level
+  BlasThreadingEnv(int num_threads);
+  ~BlasThreadingEnv();
+
+  static bool NestedThreadingSupported();
 };
-
-template<class Allocator>
-using IsHostSafe = typename std::enable_if<allocator_traits<Allocator>::is_host_accessible>::type;
-
-template<class Allocator>
-using IsNotHostSafe = typename std::enable_if<!allocator_traits<Allocator>::is_host_accessible>::type;
-
 } // namespace qmcplusplus
-
-#endif // QMCPLUSPLUS_ACCESS_TRAITS_H
+#endif

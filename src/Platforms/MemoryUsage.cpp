@@ -18,7 +18,7 @@
 #include "OMPTarget/OMPallocator.hpp"
 #ifdef QMC_ENABLE_CUDA
 #include "CUDA/CUDAallocator.hpp"
-#include "CUDA/CUDAruntime.h"
+#include "CUDA/CUDAruntime.hpp"
 #endif
 
 namespace qmcplusplus

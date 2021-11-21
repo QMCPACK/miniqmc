@@ -30,7 +30,7 @@
 #include <Numerics/OhmmsPETE/Tensor.h>
 #include "Particle/Lattice/CrystalLattice.h"
 #include <Particle/ParticleAttrib.h>
-#include <Utilities/OutputManager.h>
+#include <Host/OutputManager.h>
 
 #define APP_ABORT(msg)                                            \
   {                                                               \

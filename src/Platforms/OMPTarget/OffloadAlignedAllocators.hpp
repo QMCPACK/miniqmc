@@ -10,7 +10,19 @@
 //////////////////////////////////////////////////////////////////////////////////////
 
 
+#ifndef QMCPLUSPLUS_OMPTARGET_ALIGNED_ALLOCATOR_H
+#define QMCPLUSPLUS_OMPTARGET_ALIGNED_ALLOCATOR_H
+
+#include <CPU/SIMD/aligned_allocator.hpp>
+#include "OMPallocator.hpp"
+#include "PinnedAllocator.h"
+
 namespace qmcplusplus
 {
-void assignDevice(int& num_accelerators, int& assigned_accelerators_id, const int rank_id, const int num_ranks);
-}
+template<typename T>
+using OffloadAllocator = OMPallocator<T, aligned_allocator<T>>;
+template<typename T>
+using OffloadPinnedAllocator = OMPallocator<T, PinnedAlignedAllocator<T>>;
+} // namespace qmcplusplus
+
+#endif

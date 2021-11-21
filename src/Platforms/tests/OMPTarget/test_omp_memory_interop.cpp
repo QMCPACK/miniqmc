@@ -57,8 +57,6 @@ void test_vendor_device_memory_omp_access()
 
 #if defined(QMC_ENABLE_CUDA)
   cudaErrorCheck(cudaMemset(array_ptr, 0, array_size * sizeof(int)), "cudaMemset failed on ALLOC memory!");
-#elif defined(QMC_ENABLE_ROCM)
-  hipErrorCheck(hipMemset(array_ptr, 0, array_size * sizeof(int)), "hipMemset failed on ALLOC memory!");
 #endif
   CHECK(sum == (array_size - 1) * array_size / 2);
   allocator.deallocate(array_ptr, array_size);
@@ -67,30 +65,25 @@ void test_vendor_device_memory_omp_access()
 TEST_CASE("memory_interop", "[openmp]")
 {
   std::cout << "test memory_interop map" << std::endl;
-#if defined(QMC_ENABLE_CUDA) || defined(QMC_ENABLE_ROCM) || defined(QMC_ENABLE_ONEAPI)
+#if defined(QMC_ENABLE_CUDA) || defined(QMC_ENABLE_ONEAPI)
   test_pinned_memory_omp_access<int, PinnedAlignedAllocator<int>>();
-#endif
-
-#if defined(QMC_ENABLE_ROCM)
-  test_pinned_memory_omp_access<int, HIPHostAllocator<int>>();
 #endif
 
   std::cout << "test memory_interop vendor device alloc" << std::endl;
 #if defined(QMC_ENABLE_CUDA)
   test_vendor_device_memory_omp_access<int, CUDAAllocator<int>>();
-#elif defined(QMC_ENABLE_ROCM)
-  test_vendor_device_memory_omp_access<int, HIPAllocator<int>>();
 #endif
 
   std::cout << "test memory_interop omp_target_alloc" << std::endl;
   int* array = (int*)omp_target_alloc(array_size * sizeof(int), omp_get_default_device());
+  //OMPallocator<int> alloc;
+  //int* host = alloc.allocate(array_size);
+  //int* array = alloc.get_device_ptr();
 #if defined(QMC_ENABLE_CUDA)
-  CUDAfill_n(array, array_size, 0);
+  cudaErrorCheck(cudaMemset(array, 0, array_size * sizeof(int)), "cudaMemset failed on omp_target_alloc memory!")
   REQUIRE(isCUDAPtrDevice(array));
-#elif defined(QMC_ENABLE_ROCM)
-  hipErrorCheck(hipMemset(array, 0, array_size * sizeof(int)), "hipMemset failed on omp_target_alloc memory!");
-  REQUIRE(isHIPPtrDevice(array));
 #endif
+  //alloc.deallocate(host, array_size);
   omp_target_free(array, omp_get_default_device());
 }
 

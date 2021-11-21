@@ -17,12 +17,18 @@
 #include <string>
 #include <sstream>
 #include <stdexcept>
-#include <cuda_runtime_api.h>
 
 #define cudaErrorCheck(ans, cause)                \
   {                                               \
     cudaAssert((ans), cause, __FILE__, __LINE__); \
   }
+
+// If the cause is largely redundant with the __FILE__ and __LINE__ information
+#define cudaCheck(ans)                         \
+  {                                            \
+    cudaAssert((ans), "", __FILE__, __LINE__); \
+  }
+
 /// prints CUDA error messages. Always use cudaErrorCheck macro.
 inline void cudaAssert(cudaError_t code, const std::string& cause, const char* filename, int line, bool abort = true)
 {

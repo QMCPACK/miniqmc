@@ -1,3 +1,0 @@
-mpicxx -std=c++11 -fopenmp -fopenmp-targets=nvptx64-nvidia-cuda --cuda-path=${OLCF_CUDA_ROOT} -Drestrict=__restrict__ -I.. map_structure.cpp
-
-mpicxx -std=c++11 -fopenmp -fopenmp-targets=nvptx64-nvidia-cuda --cuda-path=${OLCF_CUDA_ROOT} -Drestrict=__restrict__ -I../einspline -I../../build_miniapps_offload_clang/src main.cpp

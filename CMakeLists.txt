@@ -136,8 +136,12 @@ SET(BUILD_FCIQMC 0 CACHE BOOL "Build with FCIQMC")
 SET(QMC_BUILD_STATIC 0 CACHE BOOL "Link to static libraries")
 SET(ENABLE_TIMERS 1 CACHE BOOL "Enable internal timers")
 OPTION(ENABLE_OFFLOAD "Enable OpenMP offload" OFF)
-OPTION(QMC_ENABLE_CUDA "Enable CUDA acceleration" OFF)
 OPTION(QMC_ENABLE_ROCM "Enable GPU support through ROCM" OFF)
+if(QMC_ENABLE_ROCM)
+  set(QMC_ENABLE_CUDA ON)
+  set(QMC_CUDA2HIP ON)
+endif()
+OPTION(QMC_ENABLE_CUDA "Enable CUDA acceleration" OFF)
 # Use CMake object library targets to workaround clang linker not being able to handle fat
 # binary archives which contain both host and device codes, for example OpenMP offload regions.
 # CMake does not propagate indirect object files by design.
@@ -281,8 +285,8 @@ ELSE(CMAKE_TOOLCHAIN_FILE)
     MESSAGE(WARNING "No default file for compiler (${COMPILER})")
   ENDIF()
 
-  # requires C++11 standard
-  SET(CMAKE_CXX_STANDARD 14)
+  # requires C++17 standard
+  SET(CMAKE_CXX_STANDARD 17)
   SET(CMAKE_CXX_STANDARD_REQUIRED ON)
   SET(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -326,10 +330,22 @@ message(STATUS "ENABLE_OMP_TASKLOOP is set to ${ENABLE_OMP_TASKLOOP}")
 #---------------------------------------------------------
 # Set up OpenMP offload compile options
 #---------------------------------------------------------
-if (ENABLE_OFFLOAD AND DEFINED OPENMP_OFFLOAD_COMPILE_OPTIONS)
+set(QMC_OFFLOAD_MEM_ASSOCIATED_DEFAULT OFF)
+if(ENABLE_OFFLOAD AND DEFINED OPENMP_OFFLOAD_COMPILE_OPTIONS)
   message(STATUS "OpenMP offload CXX flags: ${OPENMP_OFFLOAD_COMPILE_OPTIONS}")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OPENMP_OFFLOAD_COMPILE_OPTIONS}")
+  if(${COMPILER} MATCHES "Clang"
+     AND OPENMP_OFFLOAD_COMPILE_OPTIONS MATCHES "amdgcn"
+     AND QMC_CUDA2HIP)
+    # As of 11/2021, QMC_OFFLOAD_MEM_ASSOCIATED=ON is needed for AMD and mainline LLVM compilers
+    # when using OpenMP offload to AMD GPU together with HIP.
+    set(QMC_OFFLOAD_MEM_ASSOCIATED_DEFAULT ON)
+  endif()
 endif()
+# Some OpenMP offload runtime libraries have composibility issue with a vendor native runtime.
+# A workaround is making the vendor native runtime responsible for memory allocations and OpenMP associate/disassocate them.
+cmake_dependent_option(QMC_OFFLOAD_MEM_ASSOCIATED "Manage OpenMP memory allocations via the vendor runtime"
+                       ${QMC_OFFLOAD_MEM_ASSOCIATED_DEFAULT} "ENABLE_OFFLOAD;QMC_ENABLE_CUDA" OFF)
 
 #-------------------------------------------------------------------
 # final test for compile options before searching for libraries
@@ -420,7 +436,7 @@ ENDIF(QMC_MPI)
 ####################################################################
 # list of libraries to be linked with the main applications using I/O
 
-IF(QMC_ENABLE_CUDA)
+IF(QMC_ENABLE_CUDA AND NOT QMC_CUDA2HIP)
   find_package(CUDAToolkit)
 ENDIF()
 
@@ -434,7 +450,8 @@ IF(QMC_ENABLE_ROCM)
     list(PREPEND CMAKE_PREFIX_PATH ${ROCM_ROOT})
   endif()
   find_package(hip CONFIG REQUIRED)
-
+  find_package(hipblas CONFIG REQUIRED)
+  find_package(rocsolver CONFIG REQUIRED)
 ENDIF(QMC_ENABLE_ROCM)
 
 #-------------------------------------------------------------------

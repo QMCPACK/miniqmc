@@ -46,8 +46,14 @@
   #define PRAGMA_OMP_TASKLOOP(x) _Pragma("omp taskgroup")
 #endif
 
+/* Manage memory allocations via vendor APIs and associate them with the OpenMP runtime */
+#cmakedefine QMC_OFFLOAD_MEM_ASSOCIATED @QMC_OFFLOAD_MEM_ASSOCIATED@
+
 /* Enable CUDA acceleration. */
 #cmakedefine QMC_ENABLE_CUDA @QMC_ENABLE_CUDA@
+
+/* Enable CUDA2HIP. */
+#cmakedefine QMC_CUDA2HIP @QMC_CUDA2HIP@
 
 /* Enable ROCM acceleration. */
 #cmakedefine QMC_ENABLE_ROCM @QMC_ENABLE_ROCM@

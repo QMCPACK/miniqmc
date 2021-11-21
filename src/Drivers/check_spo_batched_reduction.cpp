@@ -29,7 +29,7 @@
 #include <QMCWaveFunctions/einspline_spo_omp.hpp>
 #include <QMCWaveFunctions/einspline_spo_ref.hpp>
 #include <Utilities/qmcpack_version.h>
-#include <OMPTarget/assignDevice.h>
+#include <DeviceManager.h>
 #include <getopt.h>
 
 using namespace std;
@@ -162,12 +162,8 @@ int main(int argc, char** argv)
 
   print_version(verbose);
 
-  int num_accelerators = 0;
-  int assigned_accelerators_id = -1;
-
-  assignDevice(num_accelerators, assigned_accelerators_id, comm.rank(), comm.size());
-
-  app_summary() << "number of ranks : " << comm.size() << ", number of accelerators : " << num_accelerators << std::endl;
+  DeviceManager dm(comm.rank(), comm.size());
+  app_summary() << "number of ranks : " << comm.size() << ", number of accelerators : " << dm.getNumDevices() << std::endl;
 
   TimerManager.set_timer_threshold(timer_level_fine);
   TimerList_t Timers;

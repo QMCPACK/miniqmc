@@ -14,8 +14,8 @@
 
 #include <memory>
 #include <iostream>
-#include <CUDA/cudaError.h>
-#include <CUDA/CUDAallocator.hpp>
+#include "CUDA/CUDAruntime.hpp"
+#include "CUDA/CUDAallocator.hpp"
 #include "Numerics/OhmmsPETE/OhmmsVector.h"
 
 namespace qmcplusplus
@@ -39,7 +39,6 @@ TEST_CASE("CUDA_allocators", "[CUDA]")
 #else
     REQUIRE(attr.type == cudaMemoryTypeDevice);
 #endif
-    REQUIRE(isCUDAPtrDevice(vec.data()));
   }
   { // CUDAHostAllocator
     Vector<double, CUDAHostAllocator<double>> vec(1024);

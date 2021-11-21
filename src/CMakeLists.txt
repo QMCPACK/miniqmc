@@ -133,8 +133,6 @@ ENDIF()
   ####################################
   SET(UTILITIES
     Utilities/SpeciesSet.cpp 
-    Utilities/InfoStream.cpp
-    Utilities/OutputManager.cpp
     Utilities/Communicate.cpp
     Utilities/NewTimer.cpp
     Utilities/XMLWriter.cpp
@@ -144,7 +142,7 @@ ENDIF()
     )
 
   ADD_LIBRARY(qmcutil ${UTILITIES})
-  TARGET_LINK_LIBRARIES(qmcutil PUBLIC platform_device
+  TARGET_LINK_LIBRARIES(qmcutil PUBLIC platform_runtime
                                 INTERFACE qmc_mpi_cxx)
 
   SUBDIRS(Utilities)

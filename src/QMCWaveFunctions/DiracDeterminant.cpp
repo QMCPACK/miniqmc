@@ -17,7 +17,7 @@
 
 
 #include "QMCWaveFunctions/DiracDeterminant.h"
-#include "Numerics/OhmmsBlas.h"
+#include "CPU/BLAS.hpp"
 #include "QMCWaveFunctions/DeterminantHelper.h"
 
 namespace qmcplusplus

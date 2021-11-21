@@ -9,12 +9,20 @@
 #// File created by: Ye Luo, yeluo@anl.gov, Argonne National Laboratory
 #//////////////////////////////////////////////////////////////////////////////////////
 
+set(CUDA_RT_SRCS CUDAfill.cpp CUDAallocator.cpp CUDAruntime.cpp)
+#set(CUDA_LA_SRCS cuBLAS_missing_functions.cu)
 
-SET(CUDA_SRCS
-  CUDAfill.cpp
-  CUDAallocator.cpp
-  CUDAruntime.cpp
-)
+if(NOT QMC_CUDA2HIP)
+  add_library(platform_cuda_runtime ${CUDA_RT_SRCS})
+  target_link_libraries(platform_cuda_runtime PUBLIC CUDA::cudart)
+  #add_library(platform_cuda_LA INTERFACE)
+  #target_link_libraries(platform_cuda_LA INTERFACE CUDA::cublas CUDA::cusolver)
+else()
+  add_library(platform_cuda_runtime ${CUDA_RT_SRCS})
+  target_compile_definitions(platform_cuda_runtime PUBLIC "__HIP_PLATFORM_AMD__")
+  target_link_libraries(platform_cuda_runtime PUBLIC platform_rocm_runtime)
+  #add_library(platform_cuda_LA INTERFACE)
+  #target_link_libraries(platform_cuda_LA INTERFACE platform_rocm_LA)
+endif()
 
-add_library(platform_cuda ${CUDA_SRCS})
-TARGET_LINK_LIBRARIES(platform_cuda PUBLIC CUDA::cudart)
+#target_link_libraries(platform_cuda_LA INTERFACE platform_cuda_runtime)

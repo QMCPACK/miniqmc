@@ -17,6 +17,7 @@
 #include "Numerics/OhmmsPETE/OhmmsMatrix.h"
 #include "Particle/ParticleSet.h"
 #include "Particle/VirtualParticleSet.h"
+#include "CPU/SIMD/simd.hpp"
 
 namespace qmcplusplus
 {

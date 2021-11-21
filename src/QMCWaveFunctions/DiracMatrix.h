@@ -12,12 +12,12 @@
 #ifndef QMCPLUSPLUS_DIRAC_MATRIX_H
 #define QMCPLUSPLUS_DIRAC_MATRIX_H
 
-#include "Numerics/Blasf.h"
-#include "Numerics/OhmmsBlas.h"
+#include "CPU/Blasf.h"
+#include "CPU/BLAS.hpp"
 #include "Numerics/OhmmsPETE/OhmmsMatrix.h"
-#include "Numerics/BlasThreadingEnv.h"
+#include "CPU/BlasThreadingEnv.h"
 #include "Utilities/scalar_traits.h"
-#include "CPU/SIMD/algorithm.hpp"
+#include "CPU/SIMD/simd.hpp"
 #include "QMCWaveFunctions/DeterminantHelper.h"
 
 namespace qmcplusplus

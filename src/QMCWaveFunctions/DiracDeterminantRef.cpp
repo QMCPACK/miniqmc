@@ -17,7 +17,7 @@
 
 
 #include "QMCWaveFunctions/DiracDeterminantRef.h"
-#include "Numerics/OhmmsBlas.h"
+#include "CPU/BLAS.hpp"
 #include "QMCWaveFunctions/DeterminantHelper.h"
 
 namespace miniqmcreference

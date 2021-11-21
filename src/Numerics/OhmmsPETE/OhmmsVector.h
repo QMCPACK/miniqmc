@@ -2,16 +2,16 @@
 // This file is distributed under the University of Illinois/NCSA Open Source License.
 // See LICENSE file in top directory for details.
 //
-// Copyright (c) 2016 Jeongnim Kim and QMCPACK developers.
+// Copyright (c) 2021 QMCPACK developers.
 //
 // File developed by: Jeongnim Kim, jeongnim.kim@intel.com, Intel Corp.
 //                    Ye Luo, yeluo@anl.gov, Argonne National Laboratory
+//                    Peter Doak, doakpw@ornl.gov, Oak Ridge National Laboratory
 //
 // File created by: Jeongnim Kim, jeongnim.kim@intel.com, Intel Corp.
 //////////////////////////////////////////////////////////////////////////////////////
 
-
-/** @file Vector.h
+/** @file
  *
  *  Declaraton of Vector<T,Alloc>
  *  Manage memory through Alloc directly and allow referencing an existing memory.
@@ -25,7 +25,7 @@
 #include <type_traits>
 #include <stdexcept>
 #include "Numerics/PETE/PETE.h"
-#include "CPU/SIMD/allocator_traits.hpp"
+#include "allocator_traits.hpp"
 
 namespace qmcplusplus
 {
@@ -43,28 +43,66 @@ public:
   typedef Vector<T, Alloc> This_t;
 
   /** constructor with size n*/
-  explicit inline Vector(size_t n = 0, Type_t val = Type_t()) : nLocal(n), nAllocated(0), X(nullptr)
+  explicit inline Vector(size_t n = 0, Type_t val = Type_t()) : nLocal(n)
   {
     if (n)
     {
       resize_impl(n);
-      if (allocator_traits<Alloc>::is_host_accessible)
-        std::fill_n(X, n, val);
+      qmc_allocator_traits<Alloc>::fill_n(X, n, val);
     }
   }
 
   /** constructor with an initialized ref */
-  explicit inline Vector(T* ref, size_t n) : nLocal(n), nAllocated(0), X(ref) {}
+  explicit inline Vector(T* ref, size_t n) : nLocal(n), X(ref) {}
 
   /** copy constructor */
-  Vector(const Vector& rhs) : nLocal(rhs.nLocal), nAllocated(0), X(nullptr)
+  Vector(const Vector& rhs) : nLocal(rhs.nLocal)
   {
     if (nLocal)
     {
       resize_impl(rhs.nLocal);
-      if (allocator_traits<Alloc>::is_host_accessible)
+      if (qmc_allocator_traits<Alloc>::is_host_accessible)
         std::copy_n(rhs.data(), nLocal, X);
+      else
+        qmc_allocator_traits<Alloc>::fill_n(X, nLocal, T());
     }
+  }
+
+  /** This allows construction of a Vector on another containers owned memory that is using a dualspace allocator.
+   *  It can be any span of that memory.
+   *  You're going to get a bunch of compile errors if the Container in questions is not using a the QMCPACK
+   *  realspace dualspace allocator "interface"
+   */
+  template<typename CONTAINER>
+  Vector(CONTAINER& from, T* ref, size_t n) : nLocal(n), X(ref)
+  {
+    qmc_allocator_traits<Alloc>::attachReference(from.mAllocator, mAllocator, from.data(), ref);
+  }
+
+  /** Initializer list constructor that can deal with both POD
+   *  and nontrivial nested elements with move assignment operators.
+   */
+  Vector(std::initializer_list<T> ts)
+  {
+    if (qmc_allocator_traits<Alloc>::is_host_accessible)
+    {
+      if (ts.size() == 0)
+        return;
+      std::size_t num_elements = ts.size();
+      resize_impl(num_elements);
+      if constexpr (std::is_trivial<T>::value)
+      {
+        std::copy_n(ts.begin(), ts.size(), X);
+      }
+      else
+      {
+        auto ts_it = ts.begin();
+        for (int i = 0; i < num_elements; ++i, ++ts_it)
+          (*this)[i] = std::move(*ts_it);
+      }
+    }
+    else
+      throw std::runtime_error("initializer lists are not supported for Vector's inaccessible to the host");
   }
 
   // default assignment operator
@@ -74,8 +112,10 @@ public:
       return *this;
     if (nLocal != rhs.nLocal)
       resize(rhs.nLocal);
-    if (allocator_traits<Alloc>::is_host_accessible)
+    if (qmc_allocator_traits<Alloc>::is_host_accessible)
       std::copy_n(rhs.data(), nLocal, X);
+    else
+      qmc_allocator_traits<Alloc>::fill_n(X, nLocal, T());
     return *this;
   }
 
@@ -101,19 +141,37 @@ public:
   }
 
   //! Destructor
-  virtual ~Vector()
-  {
-    free();
-  }
+  virtual ~Vector() { free(); }
 
   // Attach to pre-allocated memory
   inline void attachReference(T* ref, size_t n)
   {
     if (nAllocated)
-      throw std::runtime_error("Pointer attaching is not allowed on Vector with allocated memory.");
+    {
+      free();
+      // std::cerr << "Allocated OhmmsVector attachReference called.\n" << std::endl;
+      // Nice idea but "default" constructed WFC elements in the batched driver make this a mess.
+      //throw std::runtime_error("Pointer attaching is not allowed on Vector with allocated memory.");
+    }
     nLocal     = n;
     nAllocated = 0;
     X          = ref;
+  }
+
+  /** Attach to pre-allocated memory and propagate the allocator of the owning container.
+   *  Required for sane access to dual space memory
+   */
+  template<typename CONTAINER>
+  inline void attachReference(const CONTAINER& other, T* ref, size_t n)
+  {
+    if (nAllocated)
+    {
+      free();
+    }
+    nLocal     = n;
+    nAllocated = 0;
+    X          = ref;
+    qmc_allocator_traits<Alloc>::attachReference(other.mAllocator, mAllocator, other.data(), ref);
   }
 
   //! return the current size
@@ -122,34 +180,29 @@ public:
   ///resize
   inline void resize(size_t n, Type_t val = Type_t())
   {
-    static_assert(std::is_same<value_type, typename Alloc::value_type>::value, "Vector and Alloc data types must agree!");
+    static_assert(std::is_same<value_type, typename Alloc::value_type>::value,
+                  "Vector and Alloc data types must agree!");
     if (nLocal > nAllocated)
       throw std::runtime_error("Resize not allowed on Vector constructed by initialized memory.");
-    if(allocator_traits<Alloc>::is_host_accessible)
+
+    if (n > nAllocated)
     {
-      if (n > nAllocated)
-      {
-        resize_impl(n);
-        std::fill_n(X, n, val);
-      }
-      else
-      {
-        if (n > nLocal) std::fill_n(X + nLocal, n - nLocal, val);
-        nLocal = n;
-      }
+      resize_impl(n);
+      qmc_allocator_traits<Alloc>::fill_n(X, n, val);
     }
     else
     {
-      if (n > nAllocated)
-        resize_impl(n);
-      else
-        nLocal = n;
+      if (n > nLocal)
+        qmc_allocator_traits<Alloc>::fill_n(X + nLocal, n - nLocal, val);
+      nLocal = n;
     }
     return;
   }
 
   ///clear
   inline void clear() { nLocal = 0; }
+
+  inline void zero() { qmc_allocator_traits<Alloc>::fill_n(X, nAllocated, T()); }
 
   ///free
   inline void free()
@@ -195,22 +248,49 @@ public:
   inline pointer data() { return X; }
   inline const_pointer data() const { return X; }
 
+  /** Return the device_ptr matching X if this is a vector attached or
+   *  owning dual space memory.
+   */
+  template<typename Allocator = Alloc, typename = IsDualSpace<Allocator>>
+  inline pointer device_data()
+  {
+    return mAllocator.get_device_ptr();
+  }
+  template<typename Allocator = Alloc, typename = IsDualSpace<Allocator>>
+  inline const_pointer device_data() const
+  {
+    return mAllocator.get_device_ptr();
+  }
+
   inline pointer first_address() { return X; }
   inline const_pointer first_address() const { return X; }
 
   inline pointer last_address() { return X + nLocal; }
   inline const_pointer last_address() const { return X + nLocal; }
 
+  // Abstract Dual Space Transfers
+  template<typename Allocator = Alloc, typename = IsDualSpace<Allocator>>
+  void updateTo()
+  {
+    qmc_allocator_traits<Alloc>::updateTo(mAllocator, X, nLocal);
+  }
+  template<typename Allocator = Alloc, typename = IsDualSpace<Allocator>>
+  void updateFrom()
+  {
+    qmc_allocator_traits<Alloc>::updateFrom(mAllocator, X, nLocal);
+  }
+
 private:
   ///size
-  size_t nLocal;
+  size_t nLocal = 0;
   ///The number of allocated
-  size_t nAllocated;
-  ///pointer to the data managed by this object
-  T* X;
+  size_t nAllocated = 0;
+  ///pointer to the data accessed through this object
+  T* X = nullptr;
   ///allocator
   Alloc mAllocator;
 
+  ///a dumb resize, always free existing memory and resize to n. n must be protected positive
   inline void resize_impl(size_t n)
   {
     if (nAllocated)
@@ -313,18 +393,43 @@ inline void evaluate(Vector<T, C>& lhs, const Op& op, const Expression<RHS>& rhs
     throw std::runtime_error("Error in evaluate: LHS and RHS don't conform in OhmmsVector.");
   }
 }
-// I/O
-template<class T, class C>
-std::ostream& operator<<(std::ostream& out, const Vector<T, C>& rhs)
+
+template<class T, class Alloc>
+bool operator==(const Vector<T, Alloc>& lhs, const Vector<T, Alloc>& rhs)
 {
+  static_assert(qmc_allocator_traits<Alloc>::is_host_accessible, "operator== requires host accessible Vector.");
+  if (lhs.size() == rhs.size())
+  {
+    for (int i = 0; i < rhs.size(); i++)
+      if (lhs[i] != rhs[i])
+        return false;
+    return true;
+  }
+  else
+    return false;
+}
+
+template<class T, class Alloc>
+bool operator!=(const Vector<T, Alloc>& lhs, const Vector<T, Alloc>& rhs)
+{
+  static_assert(qmc_allocator_traits<Alloc>::is_host_accessible, "operator== requires host accessible Vector.");
+  return !(lhs == rhs);
+}
+
+// I/O
+template<class T, class Alloc>
+std::ostream& operator<<(std::ostream& out, const Vector<T, Alloc>& rhs)
+{
+  static_assert(qmc_allocator_traits<Alloc>::is_host_accessible, "operator<< requires host accessible Vector.");
   for (int i = 0; i < rhs.size(); i++)
     out << rhs[i] << std::endl;
   return out;
 }
 
-template<class T, class C>
-std::istream& operator>>(std::istream& is, Vector<T, C>& rhs)
+template<class T, class Alloc>
+std::istream& operator>>(std::istream& is, Vector<T, Alloc>& rhs)
 {
+  static_assert(qmc_allocator_traits<Alloc>::is_host_accessible, "operator>> requires host accessible Vector.");
   //printTinyVector<TinyVector<T,D> >::print(out,rhs);
   for (int i = 0; i < rhs.size(); i++)
     is >> rhs[i];

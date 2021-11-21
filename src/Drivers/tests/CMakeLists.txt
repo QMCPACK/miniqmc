@@ -25,7 +25,7 @@ ADD_UNIT_TEST(${UTEST_NAME} 1 1 "${UTEST_EXE}")
 
 SET(UTEST_EXE test_assignDevice)
 ADD_EXECUTABLE(${UTEST_EXE} test_assignDevice.cpp)
-TARGET_LINK_LIBRARIES(${UTEST_EXE} catch_main platform_device qmcutil)
+TARGET_LINK_LIBRARIES(${UTEST_EXE} catch_main platform_runtime qmcutil)
 
 ADD_UNIT_TEST(unit_test_assignDevice 1 1 "${UTEST_EXE}")
 ADD_UNIT_TEST(unit_test_assignDevice_mpi 3 1 "${UTEST_EXE}")

@@ -13,7 +13,7 @@ SET(DRIVERS check_spo check_spo_batched check_spo_batched_reduction check_wfc mi
 
 FOREACH(p ${DRIVERS})
   ADD_EXECUTABLE( ${p}  ${p}.cpp)
-  TARGET_LINK_LIBRARIES(${p} qmcwfs qmcbase qmcutil platform_device ${QMC_UTIL_LIBS})
+  TARGET_LINK_LIBRARIES(${p} qmcwfs qmcbase qmcutil platform_runtime ${QMC_UTIL_LIBS})
 ENDFOREACH(p)
 
 SUBDIRS(tests)
