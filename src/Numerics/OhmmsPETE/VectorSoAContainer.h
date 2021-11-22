@@ -119,7 +119,7 @@ struct VectorSoAContainer
   }
 
   ///initialize the data members
-  __forceinline void setDefaults()
+  void setDefaults()
   {
     nLocal     = 0;
     nGhosts    = 0;
@@ -132,7 +132,7 @@ struct VectorSoAContainer
        *
        * nAllocated is used to ensure no memory leak
        */
-  __forceinline void resize(size_t n)
+  void resize(size_t n)
   {
     static_assert(std::is_same<Element_t, typename Alloc::value_type>::value, "VectorSoAContainer and Alloc data types must agree!");
     if (nAllocated)
@@ -145,7 +145,7 @@ struct VectorSoAContainer
 
   /** free myData
        */
-  __forceinline void free()
+  void free()
   {
     if (nAllocated)
       myAlloc.deallocate(myData, nAllocated);
@@ -162,7 +162,7 @@ struct VectorSoAContainer
        *
        * Free existing memory and reset the internal variables
        */
-  __forceinline void attachReference(size_t n, size_t n_padded, T* ptr)
+  void attachReference(size_t n, size_t n_padded, T* ptr)
   {
     if (nAllocated)
       throw std::runtime_error("Pointer attaching is not allowed on VectorSoAContainer with allocated memory.");
@@ -173,9 +173,9 @@ struct VectorSoAContainer
   }
 
   ///return the physical size
-  __forceinline size_t size() const { return nLocal; }
+  size_t size() const { return nLocal; }
   ///return the physical size
-  __forceinline size_t capacity() const { return nGhosts; }
+  size_t capacity() const { return nGhosts; }
 
   /** AoS to SoA : copy from ParticleAttrib<>
        *
@@ -200,16 +200,16 @@ struct VectorSoAContainer
 
   /** return TinyVector<T,D>
        */
-  __forceinline const Type_t operator[](size_t i) const { return Type_t(myData + i, nGhosts); }
+  const Type_t operator[](size_t i) const { return Type_t(myData + i, nGhosts); }
 
   ///helper class for operator ()(size_t i) to assign a value
   struct Accessor
   {
     T* _base;
     size_t M;
-    __forceinline Accessor(T* a, size_t ng) : _base(a), M(ng) {}
+    Accessor(T* a, size_t ng) : _base(a), M(ng) {}
     template<typename T1>
-    __forceinline Accessor& operator=(const TinyVector<T1, D>& rhs)
+    Accessor& operator=(const TinyVector<T1, D>& rhs)
     {
 #pragma unroll
       for (size_t i = 0; i < D; ++i)
@@ -219,7 +219,7 @@ struct VectorSoAContainer
 
     /** assign value */
     template<typename T1>
-    __forceinline Accessor& operator=(T1 rhs)
+    Accessor& operator=(T1 rhs)
     {
 #pragma unroll
       for (size_t i = 0; i < D; ++i)
@@ -232,19 +232,19 @@ struct VectorSoAContainer
        *
        * Use for (*this)[i]=TinyVector<T,D>;
        */
-  __forceinline Accessor operator()(size_t i) { return Accessor(myData + i, nGhosts); }
+  Accessor operator()(size_t i) { return Accessor(myData + i, nGhosts); }
   ///return the base
-  __forceinline T* data() { return myData; }
+  T* data() { return myData; }
   ///return the base
-  __forceinline const T* data() const { return myData; }
+  const T* data() const { return myData; }
   ///return the pointer of the i-th components
-  __forceinline T* restrict data(size_t i) { return myData + i * nGhosts; }
+  T* restrict data(size_t i) { return myData + i * nGhosts; }
   ///return the const pointer of the i-th components
-  __forceinline const T* restrict data(size_t i) const { return myData + i * nGhosts; }
+  const T* restrict data(size_t i) const { return myData + i * nGhosts; }
   ///return the end
-  __forceinline T* end() { return myData + D * nGhosts; }
+  T* end() { return myData + D * nGhosts; }
   ///return the end
-  __forceinline const T* end() const { return myData + D * nGhosts; }
+  const T* end() const { return myData + D * nGhosts; }
 
 };
 

@@ -19,41 +19,67 @@ function(COPY_DIRECTORY SRC_DIR DST_DIR)
   execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory "${SRC_DIR}" "${DST_DIR}")
 endfunction()
 
-# Function to copy a directory using symlinks for the files. This saves storage
-# space with large test files.
-# SRC_DIR must be an absolute path
-# The -s flag copies using symlinks
-# The -T ${DST_DIR} ensures the destination is copied as the directory, and not
-#  placed as a subdirectory if the destination already exists.
-function(COPY_DIRECTORY_USING_SYMLINK SRC_DIR DST_DIR)
-  execute_process(COMMAND cp -as --remove-destination "${SRC_DIR}" -T "${DST_DIR}")
-endfunction()
-
-# Copy files, but symlink the *.h5 files (which are the large ones)
-function(COPY_DIRECTORY_SYMLINK_H5 SRC_DIR DST_DIR)
-  # Copy everything but *.h5 files and pseudopotential files
-  file(
-    COPY "${SRC_DIR}/"
-    DESTINATION "${DST_DIR}"
-    PATTERN "*.h5" EXCLUDE
-    PATTERN "*.opt.xml" EXCLUDE
-    PATTERN "*.ncpp.xml" EXCLUDE
-    PATTERN "*.BFD.xml" EXCLUDE)
-
-  # Now find and symlink the *.h5 files and psuedopotential files
-  file(GLOB_RECURSE H5 "${SRC_DIR}/*.h5" "${SRC_DIR}/*.opt.xml" "${SRC_DIR}/*.ncpp.xml" "${SRC_DIR}/*.BFD.xml")
-  foreach(F IN LISTS H5)
-    file(RELATIVE_PATH R "${SRC_DIR}" "${F}")
-    #MESSAGE("Creating symlink from  ${SRC_DIR}/${R} to ${DST_DIR}/${R}")
-    execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink "${SRC_DIR}/${R}" "${DST_DIR}/${R}")
+# Create symlinks for a list of files.
+function(SYMLINK_LIST_OF_FILES FILENAMES DST_DIR)
+  foreach(F IN LISTS FILENAMES)
+    get_filename_component(NAME_ONLY ${F} NAME)
+    file(CREATE_LINK ${F} "${DST_DIR}/${NAME_ONLY}" SYMBOLIC)
   endforeach()
 endfunction()
 
+# Function to copy a directory using symlinks for the files to save storage space.
+# Subdirectories are ignored.
+# SRC_DIR must be an absolute path
+# The -s flag copies using symlinks
+# The -t ${DST_DIR} ensures the destination must be a directory
+function(COPY_DIRECTORY_USING_SYMLINK SRC_DIR DST_DIR)
+  file(MAKE_DIRECTORY "${DST_DIR}")
+  # Find all the files but not subdirectories
+  file(
+    GLOB FILE_ONLY_NAMES
+    LIST_DIRECTORIES TRUE
+    "${SRC_DIR}/*")
+  symlink_list_of_files("${FILE_ONLY_NAMES}" "${DST_DIR}")
+endfunction()
+
+# Copy selected files only. h5, pseudopotentials, wavefunction, structure and the used one input file are copied.
+function(COPY_DIRECTORY_USING_SYMLINK_LIMITED SRC_DIR DST_DIR ${ARGN})
+  file(MAKE_DIRECTORY "${DST_DIR}")
+  # Find all the files but not subdirectories
+  file(
+    GLOB FILE_FOLDER_NAMES
+    LIST_DIRECTORIES TRUE
+    "${SRC_DIR}/qmc_ref"
+    "${SRC_DIR}/qmc-ref"
+    "${SRC_DIR}/*.h5"
+    "${SRC_DIR}/*.opt.xml"
+    "${SRC_DIR}/*.ncpp.xml"
+    "${SRC_DIR}/*.BFD.xml"
+    "${SRC_DIR}/*.ccECP.xml"
+    "${SRC_DIR}/*.py"
+    "${SRC_DIR}/*.sh"
+    "${SRC_DIR}/*.restart.xml"
+    "${SRC_DIR}/Li.xml"
+    "${SRC_DIR}/H.xml"
+    "${SRC_DIR}/*.L2_test.xml"
+    "${SRC_DIR}/*.opt_L2.xml"
+    "${SRC_DIR}/*.wfnoj.xml"
+    "${SRC_DIR}/*.wfj*.xml"
+    "${SRC_DIR}/*.wfs*.xml"
+    "${SRC_DIR}/*.wfn*.xml"
+    "${SRC_DIR}/*.cuspInfo.xml"
+    "${SRC_DIR}/*.H*.xml"
+    "${SRC_DIR}/*.structure.xml"
+    "${SRC_DIR}/*ptcl.xml")
+  symlink_list_of_files("${FILE_FOLDER_NAMES}" "${DST_DIR}")
+  list(TRANSFORM ARGN PREPEND "${SRC_DIR}/")
+  symlink_list_of_files("${ARGN}" "${DST_DIR}")
+endfunction()
+
 # Control copy vs. symlink with top-level variable
-function(COPY_DIRECTORY_MAYBE_USING_SYMLINK SRC_DIR DST_DIR)
+function(COPY_DIRECTORY_MAYBE_USING_SYMLINK SRC_DIR DST_DIR ${ARGN})
   if(QMC_SYMLINK_TEST_FILES)
-    #COPY_DIRECTORY_USING_SYMLINK("${SRC_DIR}" "${DST_DIR}")
-    copy_directory_symlink_h5("${SRC_DIR}" "${DST_DIR}")
+    copy_directory_using_symlink_limited("${SRC_DIR}" "${DST_DIR}" ${ARGN})
   else()
     copy_directory("${SRC_DIR}" "${DST_DIR}")
   endif()
@@ -62,31 +88,11 @@ endfunction()
 # Symlink or copy an individual file
 function(MAYBE_SYMLINK SRC_DIR DST_DIR)
   if(QMC_SYMLINK_TEST_FILES)
-    execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink "${SRC_DIR}" "${DST_DIR}")
+    file(CREATE_LINK ${SRC_DIR} ${DST_DIR} SYMBOLIC)
   else()
-    execute_process(COMMAND ${CMAKE_COMMAND} -E copy "${SRC_DIR}" "${DST_DIR}")
+    file(COPY ${SRC_DIR} DESTINATION ${DST_DIR})
   endif()
 endfunction()
-
-# Macro to add the dependencies and libraries to an executable
-macro(ADD_QMC_EXE_DEP EXE)
-  # Add the package dependencies
-  target_link_libraries(
-    ${EXE}
-    qmc
-    qmcdriver
-    qmcham
-    qmcwfs
-    qmcbase
-    qmcutil
-    adios_config)
-  foreach(l ${QMC_UTIL_LIBS})
-    target_link_libraries(${EXE} ${l})
-  endforeach(l ${QMC_UTIL_LIBS})
-  if(MPI_LIBRARY)
-    target_link_libraries(${EXE} ${MPI_LIBRARY})
-  endif(MPI_LIBRARY)
-endmacro()
 
 # Macro to create the test name
 macro(CREATE_TEST_NAME TEST ${ARGN})
@@ -97,29 +103,29 @@ macro(CREATE_TEST_NAME TEST ${ARGN})
   # STRING(REGEX REPLACE "--" "-" TESTNAME ${TESTNAME} )
 endmacro()
 
-# Runs given apps
+# Runs qmcpack
 #  Note that TEST_ADDED is an output variable
 function(
   RUN_APP
   TESTNAME
-  APPNAME
+  APP_NAME
   PROCS
   THREADS
   TEST_LABELS
   TEST_ADDED
   ${ARGN})
   math(EXPR TOT_PROCS "${PROCS} * ${THREADS}")
-  set(APP_EXE $<TARGET_FILE:${APPNAME}>)
   set(TEST_ADDED_TEMP FALSE)
   if(HAVE_MPI)
     if(${TOT_PROCS} GREATER ${TEST_MAX_PROCS})
-      message("Disabling test ${TESTNAME} (exceeds maximum number of processors ${TEST_MAX_PROCS})")
+      message(VERBOSE "Disabling test ${TESTNAME} (exceeds maximum number of processors ${TEST_MAX_PROCS})")
     else()
-      add_test(NAME ${TESTNAME} COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${PROCS} ${APP_EXE} ${ARGN})
+      add_test(NAME ${TESTNAME} COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${PROCS} ${MPIEXEC_PREFLAGS}
+                                        ${APP_NAME} ${ARGN})
       set_tests_properties(
         ${TESTNAME}
         PROPERTIES FAIL_REGULAR_EXPRESSION
-                   "${TEST_FAIL_REGULAR_EXPRESSION}"
+                   "ERROR"
                    PROCESSORS
                    ${TOT_PROCS}
                    PROCESSOR_AFFINITY
@@ -130,11 +136,11 @@ function(
     endif()
   else()
     if((${PROCS} STREQUAL "1"))
-      add_test(NAME ${TESTNAME} COMMAND ${APP_EXE} ${ARGN})
+      add_test(NAME ${TESTNAME} COMMAND ${APP_NAME} ${ARGN})
       set_tests_properties(
         ${TESTNAME}
         PROPERTIES FAIL_REGULAR_EXPRESSION
-                   "${TEST_FAIL_REGULAR_EXPRESSION}"
+                   "ERROR"
                    PROCESSORS
                    ${TOT_PROCS}
                    PROCESSOR_AFFINITY
@@ -143,15 +149,12 @@ function(
                    OMP_NUM_THREADS=${THREADS})
       set(TEST_ADDED_TEMP TRUE)
     else()
-      message("Disabling test ${TESTNAME} (building without MPI)")
+      message(VERBOSE "Disabling test ${TESTNAME} (building without MPI)")
     endif()
   endif()
 
   if(TEST_ADDED_TEMP)
-    if(ENABLE_OFFLOAD
-       OR QMC_ENABLE_CUDA
-       OR QMC_ENABLE_ROCM
-       OR QMC_ENABLE_ONEAPI)
+    if(QMC_ENABLE_CUDA OR QMC_ENABLE_ROCM OR ENABLE_OFFLOAD)
       set_tests_properties(${TESTNAME} PROPERTIES RESOURCE_LOCK exclusively_owned_gpus)
     endif()
     set_property(

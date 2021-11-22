@@ -20,22 +20,6 @@ set(QMCPACK_VERSION_MINOR 1)
 set(QMCPACK_VERSION_PATCH 0)
 set(QMCPACK_VERSION "${QMCPACK_VERSION_MAJOR}.${QMCPACK_VERSION_MINOR}.${QMCPACK_VERSION_PATCH}")
 
-######################################################################
-# CTest
-######################################################################
-include("${miniqmc_SOURCE_DIR}/CMake/macros.cmake")
-set(DROP_METHOD "http")
-set(DROP_SITE "cdash.qmcpack.org")
-set(DROP_LOCATION "/CDash/submit.php?project=miniQMC")
-set(TRIGGER_SITE "")
-set(DROP_SITE_CDASH TRUE)
-# Increase timeout per test over the default of 1500 seconds (25 minutes)
-set(DART_TESTING_TIMEOUT
-    3600
-    CACHE STRING "Maximum time for one test")
-enable_testing()
-include(CTest)
-
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_TOOLCHAIN_FILE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
@@ -205,32 +189,14 @@ if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
   set(IS_GIT_PROJECT 1)
 endif()
 
-######################################################
-#COMPILER choose one of the cmake files to customize the compiler options
-#If nothing is chosen, default settings by cmake will  be used.
-#If the automatic detection does not work, comment out everything
-#upto COMPILER MANUAL SELECTION and use one of the customized cmake file.
-######################################################
-include(${CMAKE_ROOT}/Modules/CheckCXXCompilerFlag.cmake)
-
-######################################################
-# DO NOT MODIFY BELOW
-# If you like to customize your build, create a toolchain as instructed
-######################################################
-######################################################
-# now set the compiler flags and the macros in src/config.h
-######################################################
+######################################################################
+# Set the compiler specific options/flags
+######################################################################
 if(CMAKE_TOOLCHAIN_FILE)
   message(STATUS "Using ${CMAKE_TOOLCHAIN_FILE} toolchain ")
 else(CMAKE_TOOLCHAIN_FILE)
-  message(STATUS "Trying to figure out .....")
+  message(STATUS "Trying to figure out compiler options ....")
   set(ENABLE_OPENMP 0)
-
-  ######################################################
-  # Try to identify CPU identity
-  ######################################################
-  set(CPU_IDENTITY "generic")
-  #INCLUDE(${PROJECT_CMAKE}/CheckProcessorID.cmake)
 
   #------------------------
   # On Cray's machine
@@ -247,7 +213,7 @@ else(CMAKE_TOOLCHAIN_FILE)
     if(NOT $ENV{CRAYPE_LINK_TYPE} STREQUAL "dynamic")
       message(WARNING "Cray Programming Environment uses static linking by default. "
                       "We prefer dynamic linking which makes library searching easier. "
-                      "Set environment variable CRAYPE_LINK_TYPE to \"dynamic\" enables dynamic linking.\n")
+                      "Setting environment variable CRAYPE_LINK_TYPE to \"dynamic\" enables dynamic linking.\n")
     endif()
 
     if(NOT DEFINED MPIEXEC_EXECUTABLE)
@@ -266,57 +232,14 @@ else(CMAKE_TOOLCHAIN_FILE)
     endif()
   endif()
 
-  #------------------------------------
-  # Identify the compiler
-  #------------------------------------
-  if(CMAKE_CXX_COMPILER_WORKS)
-    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-      set(COMPILER GNU)
-    elseif(CMAKE_CXX_COMPILER_ID MATCHES "XL")
-      set(COMPILER IBM)
-    elseif(CMAKE_CXX_COMPILER_ID MATCHES "IntelLLVM")
-      set(COMPILER Clang)
-    elseif(CMAKE_CXX_COMPILER_ID MATCHES "Intel")
-      set(COMPILER Intel)
-    elseif(CMAKE_CXX_COMPILER_ID MATCHES "PGI" OR CMAKE_CXX_COMPILER_ID MATCHES "NVHPC")
-      set(COMPILER PGI)
-    elseif(CMAKE_CXX_COMPILER_ID MATCHES "Cray")
-      set(COMPILER Cray)
-    elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-      set(COMPILER Clang)
-    else()
-      set(USING_DEFAULT TRUE)
-      message("${CMAKE_CXX_COMPILER_ID}")
-      message(WARNING "Unknown C++ compiler, default flags will be used")
-    endif()
-  else()
-    message(WARNING "No compiler identified")
-  endif()
-  message(STATUS "Compiler: ${COMPILER}")
-
-  #------------------------------------
-  # Include compiler-specific cmake file
-  #------------------------------------
-  if(${COMPILER} MATCHES "IBM")
-    include(${PROJECT_CMAKE}/IBMCompilers.cmake)
-  elseif(${COMPILER} MATCHES "Intel")
-    include(${PROJECT_CMAKE}/IntelCompilers.cmake)
-  elseif(${COMPILER} MATCHES "GNU")
-    include(${PROJECT_CMAKE}/GNUCompilers.cmake)
-  elseif(${COMPILER} MATCHES "Clang")
-    include(${PROJECT_CMAKE}/ClangCompilers.cmake)
-  elseif(${COMPILER} MATCHES "PGI")
-    include(${PROJECT_CMAKE}/PGICompilers.cmake)
-  else()
-    message(WARNING "No default file for compiler (${COMPILER})")
-  endif()
-
-  # requires C++17 standard
-  set(CMAKE_CXX_STANDARD 17)
-  set(CMAKE_CXX_STANDARD_REQUIRED ON)
-  set(CMAKE_CXX_EXTENSIONS OFF)
+  include(inspectCompiler)
 
 endif(CMAKE_TOOLCHAIN_FILE)
+
+# requires C++17 standard
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 if(ENABLE_GCOV)
   if(NOT GCOV_SUPPORTED)
@@ -378,17 +301,7 @@ cmake_dependent_option(QMC_OFFLOAD_MEM_ASSOCIATED "Manage OpenMP memory allocati
                        ${QMC_OFFLOAD_MEM_ASSOCIATED_DEFAULT} "ENABLE_OFFLOAD;QMC_ENABLE_CUDA" OFF)
 
 #-------------------------------------------------------------------
-# final test for compile options before searching for libraries
-#-------------------------------------------------------------------
-check_cxx_source_compiles("int main(){}" TEST_CXX_COMPILE_MAIN)
-if(NOT TEST_CXX_COMPILE_MAIN)
-  unset(TEST_CXX_COMPILE_MAIN CACHE)
-  message(FATAL_ERROR "Failed in compiling a main function likely due to incorrect compile options. "
-                      "Check error in \"${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/CMakeError.log\".")
-endif()
-
-#-------------------------------------------------------------------
-#  check MPI installation
+# Check MPI installation. MPI is treated as a part of compiler
 #-------------------------------------------------------------------
 add_library(qmc_mpi_cxx INTERFACE)
 if(QMC_MPI)
@@ -399,7 +312,9 @@ if(QMC_MPI)
         "Setting MPIEXEC_EXECUTABLE based on MPIEXEC. MPIEXEC has been deprecated! Use MPIEXEC_EXECUTABLE instead!")
     set(MPIEXEC_EXECUTABLE ${MPIEXEC})
   endif(DEFINED MPIEXEC AND NOT DEFINED MPIEXEC_EXECUTABLE)
-  set(MPI_CXX_SKIP_MPICXX TRUE)
+  set(MPI_CXX_SKIP_MPICXX
+      TRUE
+      CACHE BOOL "Must be TRUE for QMCPACK. Cached for working around CMake FindMPI issue.")
   if(NOT CMAKE_CROSSCOMPILING)
     set(MPI_DETERMINE_LIBRARY_VERSION TRUE)
   endif()
@@ -444,14 +359,10 @@ if(QMC_MPI)
   if(NOT ${CMAKE_CXX_COMPILER} STREQUAL ${MPI_CXX_COMPILER})
     set(MPI_WARNING_LIST
         "Building MPI version without using MPI compiler wrappers.\n"
-        "This may not build miniqmc correctly. To ensure the correct version, specify the compiler wrappers to cmake.\n"
+        "This may not build qmcpack correctly. To ensure the correct version, specify the compiler wrappers to cmake.\n"
         "For example: cmake -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpic++\n"
         "To build without MPI, pass '-DQMC_MPI=0' to cmake")
     message(WARNING ${MPI_WARNING_LIST})
-  endif()
-
-  if(NOT TEST_MAX_PROCS)
-    set(TEST_MAX_PROCS 100)
   endif()
 
   message(STATUS "MPI runner MPIEXEC_EXECUTABLE : ${MPIEXEC_EXECUTABLE}")
@@ -469,6 +380,17 @@ else(QMC_MPI)
   set(HAVE_MPI 0)
   message(STATUS "MPI is disabled")
 endif(QMC_MPI)
+
+#-------------------------------------------------------------------
+# final test for compile options before searching for libraries
+#-------------------------------------------------------------------
+include(CheckCXXSourceCompiles)
+check_cxx_source_compiles("int main(){}" TEST_CXX_COMPILE_MAIN)
+if (NOT TEST_CXX_COMPILE_MAIN)
+  unset(TEST_CXX_COMPILE_MAIN CACHE)
+  message(FATAL_ERROR "Failed in compiling a main() function likely due to incorrect compile options. "
+                      "Check error in \"${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/CMakeError.log\".")
+endif()
 
 ####################################################################
 #First check the required libraries. Abort if these are not found.
@@ -508,7 +430,7 @@ if(QMC_ENABLE_ONEAPI)
 endif(QMC_ENABLE_ONEAPI)
 
 #-------------------------------------------------------------------
-# check lapack/blas
+# Check LAPACK/BLAS
 #-------------------------------------------------------------------
 # Add Math::BLAS_LAPACK target
 add_library(Math::BLAS_LAPACK INTERFACE IMPORTED)
@@ -518,7 +440,7 @@ foreach(MKL_LIB_PATH IN ITEMS ${MKL_ROOT} $ENV{MKL_ROOT} $ENV{MKLROOT} $ENV{MKL_
 endforeach()
 if(NOT BLA_VENDOR)
   message(STATUS "Trying to find LAPACK from Intel MKL")
-  if(QMC_OMP AND CMAKE_CXX_COMPILER_ID MATCHES "Intel")
+  if(QMC_OMP AND COMPILER STREQUAL "Intel")
     set(BLA_VENDOR Intel10_64lp)
   else()
     set(BLA_VENDOR Intel10_64lp_seq)
@@ -540,17 +462,14 @@ message(STATUS "LAPACK libraries: ${LAPACK_LIBRARIES}")
 set_target_properties(Math::BLAS_LAPACK PROPERTIES INTERFACE_LINK_LIBRARIES
                                                    "${LAPACK_LINKER_FLAGS};${LAPACK_LIBRARIES}")
 
+#create scalar_vector_functions target
+add_library(Math::scalar_vector_functions INTERFACE IMPORTED)
+#create fftw3 target
+add_library(Math::FFTW3 INTERFACE IMPORTED)
+
 # Detects MKL header files and other components.
 if(LAPACK_LIBRARIES MATCHES "mkl_core")
-  include(CMake/FindMKL.cmake)
-endif()
-
-# AFQMC requires MKL sparse for good performance (roughly a factor of 2x)
-if(BUILD_AFQMC AND NOT MKL_FOUND)
-  message(
-    WARNING
-      "AFQMC - MKL not found, using simple sparse matrix routines.  Link with MKL sparse libraries for better performance."
-  )
+  include(FindMKL)
 endif()
 
 set(QMC_UTIL_LIBS ${QMC_UTIL_LIBS} ${FORTRAN_LIBRARIES})
@@ -694,11 +613,29 @@ foreach(target_type IN ITEMS EXE SHARED)
   message("Project ${target_type}_LINKER_FLAGS: ${TMP_PROJECT_CMAKE_${target_type}_LINKER_FLAGS}")
 endforeach(target_type IN ITEMS EXE SHARED)
 
-###################################################
-# Done searching libraries. Start building miniQMC
-###################################################
+######################################################################
+# CTest
+######################################################################
+include("${miniqmc_SOURCE_DIR}/CMake/macros.cmake")
+set(DROP_METHOD "http")
+set(DROP_SITE "cdash.qmcpack.org")
+set(DROP_LOCATION "/CDash/submit.php?project=miniQMC")
+set(TRIGGER_SITE "")
+set(DROP_SITE_CDASH TRUE)
+# Increase timeout per test over the default of 1500 seconds (25 minutes)
+set(DART_TESTING_TIMEOUT
+    3600
+    CACHE STRING "Maximum time for one test")
+enable_testing()
+include(CTest)
 
-message(STATUS "Ready to build miniQMC")
+if(NOT TEST_MAX_PROCS)
+  set(TEST_MAX_PROCS 100)
+endif()
+
+######################################################################
+message(STATUS "Ready to parse miniQMC source tree")
+######################################################################
 
 ####################################################################
 # add definitions

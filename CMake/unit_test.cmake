@@ -12,25 +12,14 @@ function(ADD_UNIT_TEST TESTNAME PROCS THREADS TEST_BINARY)
       set(TEST_ADDED TRUE)
     else()
       message(VERBOSE "Disabling test ${TESTNAME} (building without MPI)")
-      set(TEST_ADDED FALSE)
     endif()
   endif()
 
   if(TEST_ADDED)
-    set_tests_properties(
-      ${TESTNAME}
-      PROPERTIES PROCESSORS
-                 ${TOT_PROCS}
-                 ENVIRONMENT
-                 OMP_NUM_THREADS=${THREADS}
-                 PROCESSOR_AFFINITY
-                 TRUE
-                 LABELS
-                 "unit")
+    set_tests_properties(${TESTNAME} PROPERTIES PROCESSORS ${TOT_PROCS} ENVIRONMENT OMP_NUM_THREADS=${THREADS}
+                                                PROCESSOR_AFFINITY TRUE)
 
-    if(QMC_CUDA
-       OR ENABLE_CUDA
-       OR ENABLE_OFFLOAD)
+    if(QMC_ENABLE_CUDA OR QMC_ENABLE_ROCM OR ENABLE_OFFLOAD)
       set_tests_properties(${TESTNAME} PROPERTIES RESOURCE_LOCK exclusively_owned_gpus)
     endif()
   endif()
