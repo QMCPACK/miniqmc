@@ -4,7 +4,6 @@
 #  to be the default for other OpenMP implementations)
 if(QMC_OMP)
   set(ENABLE_OPENMP 1)
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mp=allcores")
   if(ENABLE_OFFLOAD)
     message(WARNING "QMCPACK OpenMP offload is not ready for NVIDIA HPC compiler.")
     if(NOT DEFINED OFFLOAD_ARCH AND DEFINED CMAKE_CUDA_ARCHITECTURES)
@@ -37,13 +36,11 @@ add_definitions(-Drestrict=__restrict__)
 # 550 variable "XX" was set but never used
 # 612 overloaded virtual function "AA" is only partially overridden in class "BB"
 # 998 function "AA" is hidden by "BB" -- virtual function override intended?
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --display_error_number --diag_suppress 177 --diag_suppress 550")
 set(CMAKE_CXX_FLAGS
     "${CMAKE_CXX_FLAGS} --display_error_number --diag_suppress 177 --diag_suppress 550 --diag_suppress 612 --diag_suppress 998"
 )
 
 # Set extra optimization specific flags
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fast")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fast")
 
 # Setting this to 'OFF' adds the -A flag, which enforces strict standard compliance
