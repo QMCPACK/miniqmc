@@ -66,12 +66,12 @@ ParticleSet::ParticleSet(const ParticleSet& p)
   Mass = p.Mass;
   Z    = p.Z;
   this->setName(p.getName());
-  app_log() << "  Copying a particle set " << p.getName() << " to " << this->getName() << " groups=" << groups()
+  app_debug() << "  Copying a particle set " << p.getName() << " to " << this->getName() << " groups=" << groups()
             << std::endl;
   // construct the distance tables with the same order
   if (p.DistTables.size())
   {
-    app_log() << "  Cloning distance tables. It has " << p.DistTables.size() << std::endl;
+    app_debug() << "  Cloning distance tables. It has " << p.DistTables.size() << std::endl;
     addTable(*this); // first is always for this-this pair
     for (int i = 1; i < p.DistTables.size(); ++i)
       addTable(p.DistTables[i]->origin());
@@ -120,8 +120,8 @@ void ParticleSet::resetGroups()
   int qind = mySpecies.addAttribute("charge");
   if (natt == qind)
   {
-    app_log() << " Missing charge attribute of the SpeciesSet " << myName << " particleset" << std::endl;
-    app_log() << " Assume neutral particles Z=0.0 " << std::endl;
+    app_debug() << " Missing charge attribute of the SpeciesSet " << myName << " particleset" << std::endl;
+    app_debug() << " Assume neutral particles Z=0.0 " << std::endl;
     for (int ig = 0; ig < nspecies; ig++)
       mySpecies(qind, ig) = 0.0;
   }
@@ -139,9 +139,9 @@ void ParticleSet::resetGroups()
   for (int ig = 1; ig < nspecies; ig++)
     SameMass &= (mySpecies(massind, ig) == m0);
   if (SameMass)
-    app_log() << "  All the species have the same mass " << m0 << std::endl;
+    app_debug() << "  All the species have the same mass " << m0 << std::endl;
   else
-    app_log() << "  Distinctive masses for each species " << std::endl;
+    app_debug() << "  Distinctive masses for each species " << std::endl;
   for (int iat = 0; iat < Mass.size(); iat++)
     Mass[iat] = mySpecies(massind, GroupID[iat]);
   std::vector<int> ng(nspecies, 0);
@@ -170,9 +170,9 @@ void ParticleSet::resetGroups()
   for (int iat = 0; iat < ID.size(); ++iat)
     IsGrouped &= (IndirectID[iat] == ID[iat]);
   if (IsGrouped)
-    app_log() << "Particles are grouped. Safe to use groups " << std::endl;
+    app_debug() << "Particles are grouped. Safe to use groups " << std::endl;
   else
-    app_log() << "ID is not grouped. Need to use IndirectID for "
+    app_debug() << "ID is not grouped. Need to use IndirectID for "
                  "species-dependent operations "
               << std::endl;
 }
@@ -204,7 +204,7 @@ bool ParticleSet::get(std::ostream& os) const
 bool ParticleSet::put(std::istream& is) { return true; }
 
 /// reset member data
-void ParticleSet::reset() { app_log() << "<<<< going to set properties >>>> " << std::endl; }
+void ParticleSet::reset() { app_debug() << "<<<< going to set properties >>>> " << std::endl; }
 
 int ParticleSet::addTable(const ParticleSet& psrc)
 {
@@ -217,13 +217,13 @@ int ParticleSet::addTable(const ParticleSet& psrc)
     // add  this-this pair
     myDistTableMap.clear();
     myDistTableMap[myName] = 0;
-    app_log() << "  ... ParticleSet::addTable Create Table #0 " << DistTables[0]->getName() << std::endl;
+    app_debug() << "  ... ParticleSet::addTable Create Table #0 " << DistTables[0]->getName() << std::endl;
     if (psrc.getName() == myName)
       return 0;
   }
   if (psrc.getName() == myName)
   {
-    app_log() << "  ... ParticleSet::addTable Reuse Table #" << 0 << " " << DistTables[0]->getName() << std::endl;
+    app_debug() << "  ... ParticleSet::addTable Reuse Table #" << 0 << " " << DistTables[0]->getName() << std::endl;
     return 0;
   }
   int tid;
@@ -233,14 +233,14 @@ int ParticleSet::addTable(const ParticleSet& psrc)
     tid = DistTables.size();
     DistTables.push_back(createDistanceTable(psrc, *this));
     myDistTableMap[psrc.getName()] = tid;
-    app_log() << "  ... ParticleSet::addTable Create Table #" << tid << " " << DistTables[tid]->getName() << std::endl;
+    app_debug() << "  ... ParticleSet::addTable Create Table #" << tid << " " << DistTables[tid]->getName() << std::endl;
   }
   else
   {
     tid = (*tit).second;
-    app_log() << "  ... ParticleSet::addTable Reuse Table #" << tid << " " << DistTables[tid]->getName() << std::endl;
+    app_debug() << "  ... ParticleSet::addTable Reuse Table #" << tid << " " << DistTables[tid]->getName() << std::endl;
   }
-  app_log().flush();
+  app_debug().flush();
   return tid;
 }
 

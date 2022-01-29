@@ -271,26 +271,23 @@ void TimerManager<TIMER>::collate_stack_profile(StackProfileData& p)
 }
 
 template<class TIMER>
-void TimerManager<TIMER>::print()
+void TimerManager<TIMER>::print(std::ostream& out)
 {
   if (timer_threshold <= timer_level_none)
     return;
 #ifdef ENABLE_TIMERS
-  app_log() << std::endl;
-  app_log() << "Use --enable-timers=<value> command line option to increase or decrease level of timing information"
-            << std::endl;
 #ifdef USE_STACK_TIMERS
-  app_log() << "Stack timer profile" << std::endl;
-  print_stack();
+  out << "Stack timer profile" << std::endl;
+  print_stack(out);
 #else
-  app_log() << "\nFlat profile" << std::endl;
-  print_flat();
+  out << "Flat profile" << std::endl;
+  print_flat(out);
 #endif
 #endif
 }
 
 template<class TIMER>
-void TimerManager<TIMER>::print_flat()
+void TimerManager<TIMER>::print_flat(std::ostream& out)
 {
 #ifdef ENABLE_TIMERS
   FlatProfileData p;
@@ -310,7 +307,7 @@ void TimerManager<TIMER>::print_flat()
                p.callList[i],
                p.timeList[i] / (static_cast<double>(p.callList[i]) + std::numeric_limits<double>::epsilon()),
                p.timeList[i] / static_cast<double>(omp_get_max_threads()));
-      app_log() << tmpout;
+      out << tmpout;
       ++it;
     }
   }
@@ -327,7 +324,7 @@ void pad_string(const std::string& in, std::string& out, int field_len)
 }
 
 template<class TIMER>
-void TimerManager<TIMER>::print_stack()
+void TimerManager<TIMER>::print_stack(std::ostream& out)
 {
 #ifdef ENABLE_TIMERS
   StackProfileData p;
@@ -359,7 +356,7 @@ void TimerManager<TIMER>::print_stack()
 
   snprintf(tmpout, bufsize, "%s  %-9s  %-9s  %-10s  %-13s\n", timer_name.c_str(), "Inclusive_time", "Exclusive_time",
            "Calls", "Time_per_call");
-  app_log() << tmpout;
+  out << tmpout;
 
   for (int i = 0; i < p.names.size(); i++)
   {
@@ -373,7 +370,7 @@ void TimerManager<TIMER>::print_stack()
     snprintf(tmpout, bufsize, "%s  %9.4f  %9.4f  %13ld  %16.9f\n", padded_name_str.c_str(), p.timeList[i],
              p.timeExclList[i], p.callList[i],
              p.timeList[i] / (static_cast<double>(p.callList[i]) + std::numeric_limits<double>::epsilon()));
-    app_log() << tmpout;
+    out << tmpout;
   }
 #endif
 }
@@ -382,7 +379,7 @@ template<class TIMER>
 XMLNode* TimerManager<TIMER>::TimerManager::output_timing(XMLDocument& doc)
 {
   XMLNode* timing_root = doc.NewElement("timing");
-#if ENABLE_TIMERS
+#ifdef ENABLE_TIMERS
   StackProfileData p;
 
   collate_stack_profile(p);

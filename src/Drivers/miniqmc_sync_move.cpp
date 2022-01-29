@@ -531,7 +531,7 @@ int main(int argc, char** argv)
   {
     cout << "================================== " << endl;
 
-    timer_manager.print();
+    timer_manager.print(app_summary());
 
     cout << endl << "========== Throughput ============ " << endl << endl;
     cout << "Total throughput ( N_walkers * N_elec^3 / Total time ) = "

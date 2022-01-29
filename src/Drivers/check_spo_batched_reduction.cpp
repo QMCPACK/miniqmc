@@ -346,7 +346,7 @@ int main(int argc, char** argv)
   if (comm.root())
   {
     cout << "================================== " << endl;
-    timer_manager.print();
+    timer_manager.print(app_summary());
     cout << "================================== " << endl;
   }
 

@@ -64,8 +64,8 @@ private:
 
   void initializeTimer(TIMER& t);
 
-  void print_flat();
-  void print_stack();
+  void print_flat(std::ostream&);
+  void print_stack(std::ostream&);
 
 public:
 #ifdef USE_VTUNE_TASKS
@@ -102,7 +102,7 @@ public:
   bool maximum_number_of_timers_exceeded() const { return max_timers_exceeded; }
 
   void reset();
-  void print();
+  void print(std::ostream&);
 
   using nameList_t = std::map<std::string, int>;
   using timeList_t = std::vector<double>;
