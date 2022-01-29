@@ -198,16 +198,17 @@ int main(int argc, char** argv)
 
   int nmovers = omp_get_max_threads();
   // number of crowds/batches
-  int nbatches = omp_get_max_threads();;
+  int nbatches = omp_get_max_threads();
+  ;
   // thread blocking
   int tileSize  = -1;
   int nsubsteps = 1;
   // Set cutoff for NLPP use.
   RealType Rmax(1.7);
-  RealType accept  = 0.5;
-  int delay_rank = 32;
-  bool useRef   = false;
-  bool enableJ3 = false;
+  RealType accept = 0.5;
+  int delay_rank  = 32;
+  bool useRef     = false;
+  bool enableJ3   = false;
   bool run_pseudo = true;
 
   PrimeNumberSet<uint32_t> myPrimes;
@@ -246,8 +247,7 @@ int main(int argc, char** argv)
       case 'j':
         enableJ3 = true;
         break;
-      case 'm':
-      {
+      case 'm': {
         const RealType meshfactor = atof(optarg);
         nx *= meshfactor;
         ny *= meshfactor;
@@ -294,7 +294,7 @@ int main(int argc, char** argv)
     {
       app_error() << "Non-option arguments not allowed" << endl;
       print_help();
-        return 1;
+      return 1;
     }
   }
 
@@ -309,8 +309,7 @@ int main(int argc, char** argv)
   }
   else if (timer_level_name != "fine")
   {
-    app_error() << "Timer level should be 'coarse' or 'fine', name given: " << timer_level_name
-                << endl;
+    app_error() << "Timer level should be 'coarse' or 'fine', name given: " << timer_level_name << endl;
     return 1;
   }
 
@@ -329,7 +328,8 @@ int main(int argc, char** argv)
   print_version(verbose);
 
   DeviceManager dm(comm.rank(), comm.size());
-  app_summary() << "number of ranks : " << comm.size() << ", number of accelerators : " << dm.getNumDevices() << std::endl;
+  app_summary() << "number of ranks : " << comm.size() << ", number of accelerators : " << dm.getNumDevices()
+                << std::endl;
 
   std::unique_ptr<SPOSet> spo_main;
   int nTiles = 1;
@@ -347,8 +347,7 @@ int main(int argc, char** argv)
 
     number_of_electrons = nels;
 
-    const size_t SPO_coeff_size =
-        static_cast<size_t>(norb) * (nx + 3) * (ny + 3) * (nz + 3) * sizeof(RealType);
+    const size_t SPO_coeff_size    = static_cast<size_t>(norb) * (nx + 3) * (ny + 3) * (nz + 3) * sizeof(RealType);
     const double SPO_coeff_size_MB = SPO_coeff_size * 1.0 / 1024 / 1024;
 
     app_summary() << "Number of orbitals/splines = " << norb << endl
@@ -365,8 +364,8 @@ int main(int argc, char** argv)
     app_summary() << "Number of walkers per rank = " << nmovers << endl;
     app_summary() << "Number of batches = " << nbatches << endl;
 
-    app_summary() << "\nSPO coefficients size = " << SPO_coeff_size << " bytes ("
-                  << SPO_coeff_size_MB << " MB)" << endl;
+    app_summary() << "\nSPO coefficients size = " << SPO_coeff_size << " bytes (" << SPO_coeff_size_MB << " MB)"
+                  << endl;
     app_summary() << "delayed update rank = " << delay_rank << endl;
 
     spo_main = build_SPOSet(useRef, nx, ny, nz, norb, nTiles, lattice_b);
@@ -374,19 +373,21 @@ int main(int argc, char** argv)
 
   if (!useRef)
     app_summary() << "Using SoA distance table, Jastrow + einspline, " << endl
-                  << "and determinant update." << endl << endl;
+                  << "and determinant update." << endl
+                  << endl;
   else
     app_summary() << "Using the reference implementation for Jastrow, " << endl
                   << "determinant update, and distance table + einspline of the " << endl
-                  << "reference implementation " << endl << endl;
+                  << "reference implementation " << endl
+                  << endl;
 
   Timers[Timer_Total].get().start();
 
   Timers[Timer_Init].get().start();
   std::vector<Mover*> mover_list(nmovers, nullptr);
 
-  // prepare movers
-  #pragma omp parallel for
+// prepare movers
+#pragma omp parallel for
   for (int iw = 0; iw < nmovers; iw++)
   {
     // create and initialize movers
@@ -394,7 +395,8 @@ int main(int argc, char** argv)
     mover_list[iw]    = thiswalker;
 
     // create wavefunction per mover
-    build_WaveFunction(useRef, *spo_main, thiswalker->wavefunction, ions, thiswalker->els, thiswalker->rng, delay_rank, enableJ3);
+    build_WaveFunction(useRef, *spo_main, thiswalker->wavefunction, ions, thiswalker->els, thiswalker->rng, delay_rank,
+                       enableJ3);
 
     // initialize virtual particle sets
     thiswalker->nlpp.initialize_VPs(ions, thiswalker->els, Rmax);
@@ -403,9 +405,9 @@ int main(int argc, char** argv)
     thiswalker->els.update();
   }
 
-  // initial computing
-  #pragma omp parallel for
-  for(int batch = 0; batch < nbatches; batch++)
+// initial computing
+#pragma omp parallel for
+  for (int batch = 0; batch < nbatches; batch++)
   {
     int first, last;
     FairDivideLow(mover_list.size(), nbatches, batch, first, last);
@@ -415,29 +417,30 @@ int main(int argc, char** argv)
   }
   Timers[Timer_Init].get().stop();
 
-  const int nions    = ions.getTotalNum();
-  const int nels     = mover_list[0]->els.getTotalNum();
-  const int nels3    = 3 * nels;
+  const int nions = ions.getTotalNum();
+  const int nels  = mover_list[0]->els.getTotalNum();
+  const int nels3 = 3 * nels;
 
   // this is the number of qudrature points for the non-local PP
   const int nknots(mover_list[0]->nlpp.size());
 
   for (int mc = 0; mc < nsteps; ++mc)
   {
-    #pragma omp parallel for
-    for(int batch = 0; batch < nbatches; batch++)
+#pragma omp parallel for
+    for (int batch = 0; batch < nbatches; batch++)
     {
       int first, last;
       FairDivideLow(mover_list.size(), nbatches, batch, first, last);
       // no work early return
-      if (first == last) continue;
+      if (first == last)
+        continue;
       const std::vector<Mover*> Sub_list(extract_sub_list(mover_list, first, last));
       const std::vector<ParticleSet*> P_list(extract_els_list(Sub_list));
       const std::vector<WaveFunction*> WF_list(extract_wf_list(Sub_list));
       const std::vector<NonLocalPP<RealType>*> NLPP_list(extract_nlpp_list(Sub_list));
       const Mover& anon_mover = *Sub_list[0];
 
-      int nw_this_batch = last - first;
+      int nw_this_batch   = last - first;
       int nw_this_batch_3 = nw_this_batch * 3;
 
       std::vector<GradType> grad_now(nw_this_batch);
@@ -454,7 +457,7 @@ int main(int argc, char** argv)
       {
         for (int iel = 0; iel < nels; ++iel)
         {
-	  // Operate on electron with index iel
+          // Operate on electron with index iel
           anon_mover.els.flex_setActive(P_list, iel);
 
           // Compute gradient at the current position
@@ -506,7 +509,8 @@ int main(int argc, char** argv)
 
       Timers[Timer_Diffusion].get().stop();
 
-      if(!run_pseudo) continue;
+      if (!run_pseudo)
+        continue;
 
       // Compute NLPP energy using integral over spherical points
       {
@@ -514,11 +518,11 @@ int main(int argc, char** argv)
         Sub_list[0]->nlpp.multi_evaluate(NLPP_list, WF_list, P_list);
       }
     } // batch
-  } // nsteps
+  }   // nsteps
   Timers[Timer_Total].get().stop();
 
-  // free all movers
-  #pragma omp parallel for
+// free all movers
+#pragma omp parallel for
   for (int iw = 0; iw < nmovers; iw++)
     delete mover_list[iw];
   mover_list.clear();
@@ -531,12 +535,13 @@ int main(int argc, char** argv)
 
     cout << endl << "========== Throughput ============ " << endl << endl;
     cout << "Total throughput ( N_walkers * N_elec^3 / Total time ) = "
-         << (nmovers * comm.size() * std::pow(double(nels),3) / Timers[Timer_Total].get().get_total()) << std::endl;
+         << (nmovers * comm.size() * std::pow(double(nels), 3) / Timers[Timer_Total].get().get_total()) << std::endl;
     cout << "Diffusion throughput ( N_walkers * N_elec^3 / Diffusion time ) = "
-         << (nmovers * comm.size() * std::pow(double(nels),3) / Timers[Timer_Diffusion].get().get_total()) << std::endl;
-    if(run_pseudo)
+         << (nmovers * comm.size() * std::pow(double(nels), 3) / Timers[Timer_Diffusion].get().get_total())
+         << std::endl;
+    if (run_pseudo)
       cout << "Pseudopotential throughput ( N_walkers * N_elec^2 / Pseudopotential time ) = "
-           << (nmovers * comm.size() * std::pow(double(nels),2) / Timers[Timer_ECP].get().get_total()) << std::endl;
+           << (nmovers * comm.size() * std::pow(double(nels), 2) / Timers[Timer_ECP].get().get_total()) << std::endl;
     cout << endl;
 
     XMLDocument doc;
@@ -563,8 +568,7 @@ int main(int argc, char** argv)
     run_info->InsertEndChild(driver_info);
     resources->InsertEndChild(run_info);
 
-    std::string info_name =
-        "info_" + std::to_string(na) + "_" + std::to_string(nb) + "_" + std::to_string(nc) + ".xml";
+    std::string info_name = "info_" + std::to_string(na) + "_" + std::to_string(nb) + "_" + std::to_string(nc) + ".xml";
     doc.SaveFile(info_name.c_str());
   }
 

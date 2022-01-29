@@ -62,7 +62,11 @@ public:
    * @param dpsi gradients of the SPO
    * @param d2psi laplacians of the SPO
    */
-  virtual void evaluate(const ParticleSet& P, int iat, ValueVector_t& psi_v, GradVector_t& dpsi_v, ValueVector_t& d2psi_v) = 0;
+  virtual void evaluate(const ParticleSet& P,
+                        int iat,
+                        ValueVector_t& psi_v,
+                        GradVector_t& dpsi_v,
+                        ValueVector_t& d2psi_v) = 0;
 
   /** evaluate determinant ratios for virtual moves, e.g., sphere move for nonlocalPP
    * @param VP virtual particle set
@@ -109,7 +113,9 @@ public:
   }
 
   /// operates on multiple walkers
-  virtual void multi_evaluate(const std::vector<SPOSet*>& spo_list, const std::vector<ParticleSet*>& P_list, int iat,
+  virtual void multi_evaluate(const std::vector<SPOSet*>& spo_list,
+                              const std::vector<ParticleSet*>& P_list,
+                              int iat,
                               const std::vector<ValueVector_t*>& psi_v_list)
   {
 #pragma omp parallel for
@@ -117,7 +123,9 @@ public:
       spo_list[iw]->evaluate(*P_list[iw], iat, *psi_v_list[iw]);
   }
 
-  virtual void multi_evaluate(const std::vector<SPOSet*>& spo_list, const std::vector<ParticleSet*>& P_list, int iat,
+  virtual void multi_evaluate(const std::vector<SPOSet*>& spo_list,
+                              const std::vector<ParticleSet*>& P_list,
+                              int iat,
                               const std::vector<ValueVector_t*>& psi_v_list,
                               const std::vector<GradVector_t*>& dpsi_v_list,
                               const std::vector<ValueVector_t*>& d2psi_v_list)
@@ -126,7 +134,6 @@ public:
     for (int iw = 0; iw < spo_list.size(); iw++)
       spo_list[iw]->evaluate(*P_list[iw], iat, *psi_v_list[iw], *dpsi_v_list[iw], *d2psi_v_list[iw]);
   }
-
 };
 
 } // namespace qmcplusplus

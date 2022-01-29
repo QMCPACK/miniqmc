@@ -74,24 +74,22 @@ public:
   void evaluateRatios(VirtualParticleSet& P, std::vector<valT>& ratios);
 
   /// operates on multiple walkers
-  void flex_evaluateLog(const std::vector<WaveFunction*>& WF_list,
-                         const std::vector<ParticleSet*>& P_list) const;
+  void flex_evaluateLog(const std::vector<WaveFunction*>& WF_list, const std::vector<ParticleSet*>& P_list) const;
   void flex_evalGrad(const std::vector<WaveFunction*>& WF_list,
+                     const std::vector<ParticleSet*>& P_list,
+                     int iat,
+                     std::vector<posT>& grad_now) const;
+  void flex_ratioGrad(const std::vector<WaveFunction*>& WF_list,
                       const std::vector<ParticleSet*>& P_list,
                       int iat,
-                      std::vector<posT>& grad_now) const;
-  void flex_ratioGrad(const std::vector<WaveFunction*>& WF_list,
-                       const std::vector<ParticleSet*>& P_list,
-                       int iat,
-                       std::vector<valT>& ratio_list,
-                       std::vector<posT>& grad_new) const;
+                      std::vector<valT>& ratio_list,
+                      std::vector<posT>& grad_new) const;
   void flex_ratio(const std::vector<ParticleSet*>& P_list, int iat) const {};
   void flex_acceptrestoreMove(const std::vector<WaveFunction*>& WF_list,
-                               const std::vector<ParticleSet*>& P_list,
-                               const std::vector<bool>& isAccepted,
-                               int iat) const;
-  void flex_evaluateGL(const std::vector<WaveFunction*>& WF_list,
-                        const std::vector<ParticleSet*>& P_list) const;
+                              const std::vector<ParticleSet*>& P_list,
+                              const std::vector<bool>& isAccepted,
+                              int iat) const;
+  void flex_evaluateGL(const std::vector<WaveFunction*>& WF_list, const std::vector<ParticleSet*>& P_list) const;
 
   void flex_completeUpdates(const std::vector<WaveFunction*>& WF_list) const;
 
@@ -109,12 +107,10 @@ public:
                                  const RandomGenerator<QMCTraits::RealType>& RNG,
                                  int delay_rank,
                                  bool enableJ3);
-  const std::vector<WaveFunctionComponent*>
-      extract_up_list(const std::vector<WaveFunction*>& WF_list) const;
-  const std::vector<WaveFunctionComponent*>
-      extract_dn_list(const std::vector<WaveFunction*>& WF_list) const;
-  const std::vector<WaveFunctionComponent*>
-      extract_jas_list(const std::vector<WaveFunction*>& WF_list, int jas_id) const;
+  const std::vector<WaveFunctionComponent*> extract_up_list(const std::vector<WaveFunction*>& WF_list) const;
+  const std::vector<WaveFunctionComponent*> extract_dn_list(const std::vector<WaveFunction*>& WF_list) const;
+  const std::vector<WaveFunctionComponent*> extract_jas_list(const std::vector<WaveFunction*>& WF_list,
+                                                             int jas_id) const;
 };
 
 void build_WaveFunction(bool useRef,

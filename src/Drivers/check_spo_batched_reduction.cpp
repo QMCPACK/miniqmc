@@ -158,7 +158,8 @@ int main(int argc, char** argv)
   print_version(verbose);
 
   DeviceManager dm(comm.rank(), comm.size());
-  app_summary() << "number of ranks : " << comm.size() << ", number of accelerators : " << dm.getNumDevices() << std::endl;
+  app_summary() << "number of ranks : " << comm.size() << ", number of accelerators : " << dm.getNumDevices()
+                << std::endl;
 
   timer_manager.set_timer_threshold(timer_level_fine);
   TimerList Timers;
@@ -225,7 +226,7 @@ int main(int argc, char** argv)
   for (size_t iw = 0; iw < mover_list.size(); iw++)
   {
     // create and initialize movers
-    mover_list[iw]    = std::make_unique<Mover>(MakeSeed(iw, mover_list.size()), ions);
+    mover_list[iw]   = std::make_unique<Mover>(MakeSeed(iw, mover_list.size()), ions);
     auto& thiswalker = *mover_list[iw];
 
     // create a spo view in each Mover

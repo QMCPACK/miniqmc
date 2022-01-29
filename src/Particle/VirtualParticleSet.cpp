@@ -47,7 +47,7 @@ void VirtualParticleSet::makeMoves(int jel, const ParticlePos_t& vitualPos, bool
 
   if (sphere && iat < 0)
     APP_ABORT("VirtualParticleSet::makeMoves is invoked incorrectly, the flag sphere=true requires iat specified!");
-  onSphere = sphere;
+  onSphere      = sphere;
   refPtcl       = jel;
   refSourcePtcl = iat;
   R             = vitualPos;

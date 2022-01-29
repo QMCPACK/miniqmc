@@ -82,7 +82,8 @@ protected:
 public:
   /// constructor using source and target ParticleSet
   DistanceTableData(const ParticleSet& source, const ParticleSet& target)
-      : Origin(&source), need_full_table_(false),
+      : Origin(&source),
+        need_full_table_(false),
         Nsources(source.getTotalNum()),
         Ntargets(target.getTotalNum()),
         name_(source.getName() + "_" + target.getName())

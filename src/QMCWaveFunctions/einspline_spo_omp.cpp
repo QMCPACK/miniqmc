@@ -24,16 +24,19 @@ namespace qmcplusplus
 {
 /// default constructor
 template<typename T>
-einspline_spo_omp<T>::einspline_spo_omp() : nBlocks(0), firstBlock(0), lastBlock(0), nSplines(0), Owner(false),
-  timer(*timer_manager.createTimer("Single-Particle Orbitals", timer_level_fine))
-{
-}
+einspline_spo_omp<T>::einspline_spo_omp()
+    : nBlocks(0),
+      firstBlock(0),
+      lastBlock(0),
+      nSplines(0),
+      Owner(false),
+      timer(*timer_manager.createTimer("Single-Particle Orbitals", timer_level_fine))
+{}
 
 /// copy constructor
 template<typename T>
 einspline_spo_omp<T>::einspline_spo_omp(const einspline_spo_omp& in, int team_size, int member_id)
-    : Owner(false), Lattice(in.Lattice),
-   timer(*timer_manager.createTimer("Single-Particle Orbitals", timer_level_fine))
+    : Owner(false), Lattice(in.Lattice), timer(*timer_manager.createTimer("Single-Particle Orbitals", timer_level_fine))
 {
   OrbitalSetSize   = in.OrbitalSetSize;
   nSplines         = in.nSplines;
@@ -49,7 +52,7 @@ einspline_spo_omp<T>::einspline_spo_omp(const einspline_spo_omp& in, int team_si
 #ifdef ENABLE_OFFLOAD
     spline_type** einsplines_ptr = einsplines.data();
     spline_type* tile_ptr        = in.einsplines[t];
-    #pragma omp target map(to : i)
+#pragma omp target map(to : i)
     {
       einsplines_ptr[i] = tile_ptr;
     }
@@ -119,11 +122,11 @@ void einspline_spo_omp<T>::set(int nx, int ny, int nz, int num_splines, int nblo
       spline_type** einsplines_ptr = einsplines.data();
       spline_type* tile_ptr        = einsplines[i];
       T* coefs_ptr                 = einsplines[i]->coefs;
-      #pragma omp target enter data map(to : tile_ptr [0:1])
-      // Ye: I still don't understand why this line must be separated from the previous one.
-      #pragma omp target enter data map(to : coefs_ptr [0:einsplines[i]->coefs_size])
-      //std::cout << "YYYY offload size = " << einsplines[i]->coefs_size << std::endl;
-      #pragma omp target map(to : i)
+#pragma omp target enter data map(to : tile_ptr [0:1])
+// Ye: I still don't understand why this line must be separated from the previous one.
+#pragma omp target enter data map(to : coefs_ptr [0:einsplines[i]->coefs_size])
+//std::cout << "YYYY offload size = " << einsplines[i]->coefs_size << std::endl;
+#pragma omp target map(to : i)
       {
         einsplines_ptr[i]        = tile_ptr;
         einsplines_ptr[i]->coefs = coefs_ptr;
@@ -157,10 +160,11 @@ void einspline_spo_omp<T>::evaluate_v(const ParticleSet& P, int iat)
     auto* restrict psi_ptr        = offload_scratch[i].data();
 
 #ifdef ENABLE_OFFLOAD
-    #pragma omp target teams distribute num_teams(NumTeams) thread_limit(ChunkSizePerTeam) \
-      map(always, from: psi_ptr[:nSplinesPerBlock])
+#pragma omp target teams distribute num_teams(NumTeams) thread_limit(ChunkSizePerTeam) \
+    map(always, from                                                                   \
+        : psi_ptr[:nSplinesPerBlock])
 #else
-    #pragma omp parallel for
+#pragma omp parallel for
 #endif
     for (int team_id = 0; team_id < NumTeams; team_id++)
     {
@@ -237,11 +241,12 @@ void einspline_spo_omp<T>::evaluateDetRatios(const VirtualParticleSet& VP,
     const auto psiinv_size             = psiinv.size();
 
 #ifdef ENABLE_OFFLOAD
-    #pragma omp target teams distribute collapse(2) num_teams(nVP* NumTeams) thread_limit(ChunkSizePerTeam) \
-      map(always, to: psiinv_ptr [0:psiinv_pos_copy.size()]) \
-      map(always, from: ratios_private_ptr [0:NumTeams * nVP])
+#pragma omp target teams distribute collapse(2) num_teams(nVP* NumTeams) thread_limit(ChunkSizePerTeam) \
+    map(always, to                                                                                      \
+        : psiinv_ptr [0:psiinv_pos_copy.size()]) map(always, from                                       \
+                                                     : ratios_private_ptr [0:NumTeams * nVP])
 #else
-    #pragma omp parallel for collapse(2)
+#pragma omp parallel for collapse(2)
 #endif
     for (size_t iVP = 0; iVP < nVP; iVP++)
       for (int team_id = 0; team_id < NumTeams; team_id++)
@@ -309,10 +314,11 @@ void einspline_spo_omp<T>::evaluate_vgh(const ParticleSet& P, int iat)
     int padded_size                    = getAlignedSize<T>(nSplinesPerBlock);
 
 #ifdef ENABLE_OFFLOAD
-    #pragma omp target teams distribute num_teams(NumTeams) thread_limit(ChunkSizePerTeam) \
-    map(always, from: offload_scratch_ptr[:vgh_dim * padded_size])
+#pragma omp target teams distribute num_teams(NumTeams) thread_limit(ChunkSizePerTeam) \
+    map(always, from                                                                   \
+        : offload_scratch_ptr[:vgh_dim * padded_size])
 #else
-    #pragma omp parallel for
+#pragma omp parallel for
 #endif
     for (int team_id = 0; team_id < NumTeams; team_id++)
     {
@@ -356,7 +362,7 @@ void einspline_spo_omp<T>::evaluate_build_vgl(ValueVector_t& psi_v, GradVector_t
     {
       psi_v[j]   = offload_scratch[i][0][j - first];
       dpsi_v[j]  = GradType(offload_scratch[i][1][j - first], offload_scratch[i][2][j - first],
-                           offload_scratch[i][3][j - first]);
+                            offload_scratch[i][3][j - first]);
       d2psi_v[j] = offload_scratch[i][4][j - first];
     }
   }
@@ -404,11 +410,12 @@ void einspline_spo_omp<T>::multi_evaluate_vgh(const std::vector<SPOSet*>& spo_li
     auto* multi_offload_scratch_ptr = multi_offload_scratch[i].data();
 
 #ifdef ENABLE_OFFLOAD
-    #pragma omp target teams distribute collapse(2) num_teams(nw* NumTeams) thread_limit(ChunkSizePerTeam) \
-      map(always, to: pos_scratch_ptr[:pos_scratch.size()]) \
-      map(always, from: multi_offload_scratch_ptr[:vgh_dim * nw * padded_size])
+#pragma omp target teams distribute collapse(2) num_teams(nw* NumTeams) thread_limit(ChunkSizePerTeam) \
+    map(always, to                                                                                     \
+        : pos_scratch_ptr[:pos_scratch.size()]) map(always, from                                       \
+                                                    : multi_offload_scratch_ptr[:vgh_dim * nw * padded_size])
 #else
-    #pragma omp parallel for collapse(2)
+#pragma omp parallel for collapse(2)
 #endif
     for (size_t iw = 0; iw < nw; iw++)
       for (int team_id = 0; team_id < NumTeams; team_id++)
@@ -438,8 +445,8 @@ void einspline_spo_omp<T>::multi_evaluate_vgh(const std::vector<SPOSet*>& spo_li
 
 template<typename T>
 void einspline_spo_omp<T>::multi_evaluate_ratio_grads(const std::vector<SPOSet*>& spo_list,
-                                              const std::vector<ParticleSet*>& P_list,
-                                              int iat)
+                                                      const std::vector<ParticleSet*>& P_list,
+                                                      int iat)
 {
   ScopedTimer local_timer(timer);
 
@@ -477,10 +484,11 @@ void einspline_spo_omp<T>::multi_evaluate_ratio_grads(const std::vector<SPOSet*>
     auto* multi_offload_scratch_ptr = multi_offload_scratch[i].data();
 
 #ifdef ENABLE_OFFLOAD
-    #pragma omp target teams distribute collapse(2) num_teams(nw* NumTeams) thread_limit(ChunkSizePerTeam) \
-      map(always, tofrom: pos_scratch_ptr[:pos_scratch.size()])
+#pragma omp target teams distribute collapse(2) num_teams(nw* NumTeams) thread_limit(ChunkSizePerTeam) \
+    map(always, tofrom                                                                                 \
+        : pos_scratch_ptr[:pos_scratch.size()])
 #else
-    #pragma omp parallel for collapse(2)
+#pragma omp parallel for collapse(2)
 #endif
     for (size_t iw = 0; iw < nw; iw++)
       for (int team_id = 0; team_id < NumTeams; team_id++)
@@ -505,7 +513,7 @@ void einspline_spo_omp<T>::multi_evaluate_ratio_grads(const std::vector<SPOSet*>
         PRAGMA_OFFLOAD("omp parallel for reduction(+: ratio, grad_x, grad_y, grad_z)")
         for (int ind = first / 2; ind < last / 2; ind++)
         {
-          auto* val = multi_offload_scratch_ptr + iw * vgh_dim * padded_size;
+          auto* val     = multi_offload_scratch_ptr + iw * vgh_dim * padded_size;
           auto* deriv_x = val + padded_size;
           auto* deriv_y = val + padded_size * 2;
           auto* deriv_z = val + padded_size * 3;
@@ -514,7 +522,7 @@ void einspline_spo_omp<T>::multi_evaluate_ratio_grads(const std::vector<SPOSet*>
           grad_y += val[ind * 2] * deriv_y[ind * 2] + val[ind * 2 + 1] * deriv_y[ind * 2 + 1];
           grad_z += val[ind * 2] * deriv_z[ind * 2] + val[ind * 2 + 1] * deriv_z[ind * 2 + 1];
         }
-        pos_scratch_ptr[iw * 3] = grad_x;
+        pos_scratch_ptr[iw * 3]     = grad_x;
         pos_scratch_ptr[iw * 3 + 1] = grad_y;
         pos_scratch_ptr[iw * 3 + 2] = grad_z;
       }

@@ -24,9 +24,9 @@
 
 namespace qmcplusplus
 {
-using tinyxml2::XMLNode;
 using tinyxml2::XMLDocument;
 using tinyxml2::XMLElement;
+using tinyxml2::XMLNode;
 using tinyxml2::XMLText;
 
 

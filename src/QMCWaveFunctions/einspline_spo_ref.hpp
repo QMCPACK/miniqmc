@@ -68,10 +68,14 @@ struct einspline_spo_ref : public SPOSet
   NewTimer& timer;
 
   /// default constructor
-  einspline_spo_ref() : nBlocks(0), firstBlock(0), lastBlock(0), nSplines(0), Owner(false),
-    timer(*timer_manager.createTimer("Single-Particle Orbitals", timer_level_fine))
-  {
-  }
+  einspline_spo_ref()
+      : nBlocks(0),
+        firstBlock(0),
+        lastBlock(0),
+        nSplines(0),
+        Owner(false),
+        timer(*timer_manager.createTimer("Single-Particle Orbitals", timer_level_fine))
+  {}
   /// disable copy constructor
   einspline_spo_ref(const einspline_spo_ref& in) = delete;
   /// disable copy operator
@@ -84,8 +88,10 @@ struct einspline_spo_ref : public SPOSet
    *
    * Create a view of the big object. A simple blocking & padding  method.
    */
-  einspline_spo_ref(const einspline_spo_ref& in, int team_size, int member_id) : Owner(false), Lattice(in.Lattice),
-    timer(*timer_manager.createTimer("Single-Particle Orbitals", timer_level_fine))
+  einspline_spo_ref(const einspline_spo_ref& in, int team_size, int member_id)
+      : Owner(false),
+        Lattice(in.Lattice),
+        timer(*timer_manager.createTimer("Single-Particle Orbitals", timer_level_fine))
   {
     OrbitalSetSize   = in.OrbitalSetSize;
     nSplines         = in.nSplines;

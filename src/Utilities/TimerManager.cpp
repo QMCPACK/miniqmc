@@ -298,22 +298,22 @@ void TimerManager<TIMER>::print_flat()
   collate_flat_profile(p);
 
 #pragma omp master
+  {
+    const int bufsize = 256;
+    char tmpout[bufsize];
+    std::map<std::string, int>::iterator it(p.nameList.begin()), it_end(p.nameList.end());
+    while (it != it_end)
     {
-      const int bufsize = 256;
-      char tmpout[bufsize];
-      std::map<std::string, int>::iterator it(p.nameList.begin()), it_end(p.nameList.end());
-      while (it != it_end)
-      {
-        int i = (*it).second;
-        //if(callList[i]) //skip zeros
-        snprintf(tmpout, bufsize, "%-40s  %9.4f  %13ld  %16.9f  %12.6f TIMER\n", (*it).first.c_str(), p.timeList[i],
-                 p.callList[i],
-                 p.timeList[i] / (static_cast<double>(p.callList[i]) + std::numeric_limits<double>::epsilon()),
-                 p.timeList[i] / static_cast<double>(omp_get_max_threads()));
-        app_log() << tmpout;
-        ++it;
-      }
+      int i = (*it).second;
+      //if(callList[i]) //skip zeros
+      snprintf(tmpout, bufsize, "%-40s  %9.4f  %13ld  %16.9f  %12.6f TIMER\n", (*it).first.c_str(), p.timeList[i],
+               p.callList[i],
+               p.timeList[i] / (static_cast<double>(p.callList[i]) + std::numeric_limits<double>::epsilon()),
+               p.timeList[i] / static_cast<double>(omp_get_max_threads()));
+      app_log() << tmpout;
+      ++it;
     }
+  }
 #endif
 }
 
@@ -334,47 +334,47 @@ void TimerManager<TIMER>::print_stack()
 
   collate_stack_profile(p);
 
-    if (timer_max_level_exceeded)
-    {
-      app_warning() << "Maximum stack level (" << StackKey::max_level << ") exceeded.  Results may be incorrect."
-                    << std::endl;
-      app_warning() << "Adjust StackKey in NewTimer.h and recompile." << std::endl;
-    }
+  if (timer_max_level_exceeded)
+  {
+    app_warning() << "Maximum stack level (" << StackKey::max_level << ") exceeded.  Results may be incorrect."
+                  << std::endl;
+    app_warning() << "Adjust StackKey in NewTimer.h and recompile." << std::endl;
+  }
 
-    int indent_len   = 2;
-    int max_name_len = 0;
-    for (int i = 0; i < p.names.size(); i++)
-    {
-      std::string stack_name = p.names[i];
-      int level              = get_level(stack_name);
-      std::string name       = get_leaf_name(stack_name);
-      int name_len           = name.size() + indent_len * level;
-      max_name_len           = std::max(name_len, max_name_len);
-    }
+  int indent_len   = 2;
+  int max_name_len = 0;
+  for (int i = 0; i < p.names.size(); i++)
+  {
+    std::string stack_name = p.names[i];
+    int level              = get_level(stack_name);
+    std::string name       = get_leaf_name(stack_name);
+    int name_len           = name.size() + indent_len * level;
+    max_name_len           = std::max(name_len, max_name_len);
+  }
 
-    const int bufsize = 256;
-    char tmpout[bufsize];
-    std::string timer_name;
-    pad_string("Timer", timer_name, max_name_len);
+  const int bufsize = 256;
+  char tmpout[bufsize];
+  std::string timer_name;
+  pad_string("Timer", timer_name, max_name_len);
 
-    snprintf(tmpout, bufsize, "%s  %-9s  %-9s  %-10s  %-13s\n", timer_name.c_str(), "Inclusive_time", "Exclusive_time",
-             "Calls", "Time_per_call");
+  snprintf(tmpout, bufsize, "%s  %-9s  %-9s  %-10s  %-13s\n", timer_name.c_str(), "Inclusive_time", "Exclusive_time",
+           "Calls", "Time_per_call");
+  app_log() << tmpout;
+
+  for (int i = 0; i < p.names.size(); i++)
+  {
+    std::string stack_name = p.names[i];
+    int level              = get_level(stack_name);
+    std::string name       = get_leaf_name(stack_name);
+    std::string indent_str(indent_len * level, ' ');
+    std::string indented_str = indent_str + name;
+    std::string padded_name_str;
+    pad_string(indented_str, padded_name_str, max_name_len);
+    snprintf(tmpout, bufsize, "%s  %9.4f  %9.4f  %13ld  %16.9f\n", padded_name_str.c_str(), p.timeList[i],
+             p.timeExclList[i], p.callList[i],
+             p.timeList[i] / (static_cast<double>(p.callList[i]) + std::numeric_limits<double>::epsilon()));
     app_log() << tmpout;
-
-    for (int i = 0; i < p.names.size(); i++)
-    {
-      std::string stack_name = p.names[i];
-      int level              = get_level(stack_name);
-      std::string name       = get_leaf_name(stack_name);
-      std::string indent_str(indent_len * level, ' ');
-      std::string indented_str = indent_str + name;
-      std::string padded_name_str;
-      pad_string(indented_str, padded_name_str, max_name_len);
-      snprintf(tmpout, bufsize, "%s  %9.4f  %9.4f  %13ld  %16.9f\n", padded_name_str.c_str(), p.timeList[i],
-               p.timeExclList[i], p.callList[i],
-               p.timeList[i] / (static_cast<double>(p.callList[i]) + std::numeric_limits<double>::epsilon()));
-      app_log() << tmpout;
-    }
+  }
 #endif
 }
 
@@ -389,8 +389,7 @@ XMLNode* TimerManager<TIMER>::TimerManager::output_timing(XMLDocument& doc)
 
   timing_root->InsertEndChild(
       MakeTextElement(doc, "max_stack_level_exceeded", timer_max_level_exceeded ? "yes" : "no"));
-  timing_root->InsertEndChild(
-      MakeTextElement(doc, "max_timers_exceeded", max_timers_exceeded ? "yes" : "no"));
+  timing_root->InsertEndChild(MakeTextElement(doc, "max_timers_exceeded", max_timers_exceeded ? "yes" : "no"));
 
   std::vector<XMLNode*> node_stack;
   node_stack.push_back(timing_root);

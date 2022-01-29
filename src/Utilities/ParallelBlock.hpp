@@ -58,7 +58,8 @@ inline void ParallelBlockBarrier<TT>::wait()
 template<>
 inline void ParallelBlockBarrier<ParallelBlockThreading::STD>::wait()
 {
-  std::cout << "Barrier not supported by std threading. Implementation needed to avoid performance hit at end of QMCBlock.\n";
+  std::cout
+      << "Barrier not supported by std threading. Implementation needed to avoid performance hit at end of QMCBlock.\n";
 }
 
 
@@ -91,7 +92,7 @@ void ParallelBlock<TT>::operator()(F&& f, Args&&... args)
     f(task_id, std::forward<Args>(args)...);
   }
 }
-    
+
 template<>
 template<typename F, typename... Args>
 void ParallelBlock<ParallelBlockThreading::STD>::operator()(F&& f, Args&&... args)
@@ -101,7 +102,7 @@ void ParallelBlock<ParallelBlockThreading::STD>::operator()(F&& f, Args&&... arg
 
   for (int task_id = 0; task_id < num_threads_; ++task_id)
   {
-      threads[task_id] = std::thread(std::forward<F>(f), task_id, std::forward<Args>(args)...);
+    threads[task_id] = std::thread(std::forward<F>(f), task_id, std::forward<Args>(args)...);
   }
 
   for (int task_id = 0; task_id < num_threads_; ++task_id)

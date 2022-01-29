@@ -231,7 +231,7 @@ public:
   friend void set_num_calls(TimerType<CLOCK1>* timer, long num_calls_input);
 };
 
-using NewTimer  = TimerType<CPUClock>;
+using NewTimer = TimerType<CPUClock>;
 extern template class TimerType<CPUClock>;
 
 // Wrapper for timer that starts on construction and stops on destruction
@@ -252,7 +252,7 @@ private:
   TIMER& timer;
 };
 
-using ScopedTimer     = ScopeGuard<NewTimer>;
+using ScopedTimer = ScopeGuard<NewTimer>;
 
 } // namespace qmcplusplus
 

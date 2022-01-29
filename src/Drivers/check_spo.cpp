@@ -101,8 +101,7 @@ int main(int argc, char** argv)
       case 'h':
         print_help();
         break;
-      case 'm':
-      {
+      case 'm': {
         const RealType meshfactor = atof(optarg);
         nx *= meshfactor;
         ny *= meshfactor;
@@ -162,8 +161,7 @@ int main(int argc, char** argv)
     tileSize       = (tileSize > 0) ? tileSize : norb;
     nTiles         = norb / tileSize;
 
-    const size_t SPO_coeff_size =
-        static_cast<size_t>(norb) * (nx + 3) * (ny + 3) * (nz + 3) * sizeof(RealType);
+    const size_t SPO_coeff_size    = static_cast<size_t>(norb) * (nx + 3) * (ny + 3) * (nz + 3) * sizeof(RealType);
     const double SPO_coeff_size_MB = SPO_coeff_size * 1.0 / 1024 / 1024;
 
     app_summary() << "Number of orbitals/splines = " << norb << endl
@@ -176,8 +174,8 @@ int main(int argc, char** argv)
     app_summary() << "MPI processes = " << comm.size() << endl;
 #endif
 
-    app_summary() << "\nSPO coefficients size = " << SPO_coeff_size << " bytes ("
-                  << SPO_coeff_size_MB << " MB)" << endl;
+    app_summary() << "\nSPO coefficients size = " << SPO_coeff_size << " bytes (" << SPO_coeff_size_MB << " MB)"
+                  << endl;
 
     spo_main.set(nx, ny, nz, norb, nTiles);
     spo_main.Lattice.set(lattice_b);
@@ -193,7 +191,7 @@ int main(int argc, char** argv)
   double evalVGH_g_err = 0.0;
   double evalVGH_h_err = 0.0;
 
-  // clang-format off
+// clang-format off
   #pragma omp parallel reduction(+:ratio,nspheremoves,dNumVGHCalls) \
    reduction(+:evalV_v_err,evalVGH_v_err,evalVGH_g_err,evalVGH_h_err)
   // clang-format on
@@ -229,7 +227,7 @@ int main(int argc, char** argv)
     ParticlePos_t delta(nels);
     ParticlePos_t rOnSphere(nknots);
 
-    RealType accept  = 0.5;
+    RealType accept = 0.5;
 
     vector<RealType> ur(nels);
     random_th.generate_uniform(ur.data(), nels);
@@ -301,7 +299,7 @@ int main(int argc, char** argv)
 
     } // steps.
 
-    ratio        += RealType(my_accepted) / RealType(nels * nsteps);
+    ratio += RealType(my_accepted) / RealType(nels * nsteps);
     nspheremoves += RealType(my_vals) / RealType(nsteps);
     dNumVGHCalls += nels * nsteps;
 
@@ -309,7 +307,7 @@ int main(int argc, char** argv)
 
   outputManager.resume();
 
-  evalV_v_err   /= nspheremoves;
+  evalV_v_err /= nspheremoves;
   evalVGH_v_err /= dNumVGHCalls;
   evalVGH_g_err /= dNumVGHCalls;
   evalVGH_h_err /= dNumVGHCalls;
@@ -325,7 +323,7 @@ int main(int argc, char** argv)
     app_log() << "Fail in evaluate_v, V error =" << evalV_v_err / np << std::endl;
     nfail = 1;
   }
-  if (evalVGH_v_err / np > small_v || evalVGH_v_err!= evalVGH_v_err)
+  if (evalVGH_v_err / np > small_v || evalVGH_v_err != evalVGH_v_err)
   {
     app_log() << "Fail in evaluate_vgh, V error =" << evalVGH_v_err / np << std::endl;
     nfail += 1;

@@ -58,10 +58,7 @@ struct PooledData
   }
 
   /// return the size of the data
-  inline size_type byteSize() const
-  {
-    return sizeof(T) * myData.size() + sizeof(fp_value_type) * myData_DP.size();
-  }
+  inline size_type byteSize() const { return sizeof(T) * myData.size() + sizeof(fp_value_type) * myData_DP.size(); }
 
   /// return the size of the data
   inline size_type size() const { return myData.size(); }
@@ -284,10 +281,7 @@ struct PooledData
   /** return the address of the first DP element **/
   inline fp_value_type* data_DP() { return &(myData_DP[0]); }
 
-  inline void print(std::ostream& os)
-  {
-    copy(myData.begin(), myData.end(), std::ostream_iterator<T>(os, " "));
-  }
+  inline void print(std::ostream& os) { copy(myData.begin(), myData.end(), std::ostream_iterator<T>(os, " ")); }
 
   template<class Msg>
   inline Msg& putMessage(Msg& m)

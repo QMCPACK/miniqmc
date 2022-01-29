@@ -92,8 +92,8 @@ typename DiracDeterminantRef<DU_TYPE>::GradType DiracDeterminantRef<DU_TYPE>::ev
 
 template<typename DU_TYPE>
 typename DiracDeterminantRef<DU_TYPE>::ValueType DiracDeterminantRef<DU_TYPE>::ratioGrad(ParticleSet& P,
-                                                                                   int iat,
-                                                                                   GradType& grad_iat)
+                                                                                         int iat,
+                                                                                         GradType& grad_iat)
 {
   SPOVGLTimer->start();
   Phi->evaluate(P, iat, psiV, dpsiV, d2psiV);
@@ -150,9 +150,9 @@ void DiracDeterminantRef<DU_TYPE>::completeUpdates()
 
 template<typename DU_TYPE>
 void DiracDeterminantRef<DU_TYPE>::evaluateGL(ParticleSet& P,
-                                           ParticleSet::ParticleGradient_t& G,
-                                           ParticleSet::ParticleLaplacian_t& L,
-                                           bool fromscratch)
+                                              ParticleSet::ParticleGradient_t& G,
+                                              ParticleSet::ParticleLaplacian_t& L,
+                                              bool fromscratch)
 {
   if (UpdateMode == ORB_PBYP_RATIO)
   { //need to compute dpsiM and d2psiM. Do not touch psiM!
@@ -228,9 +228,10 @@ void DiracDeterminantRef<DU_TYPE>::evaluateRatios(VirtualParticleSet& VP, std::v
  *for local energy calculations.
  */
 template<typename DU_TYPE>
-typename DiracDeterminantRef<DU_TYPE>::RealType DiracDeterminantRef<DU_TYPE>::evaluateLog(ParticleSet& P,
-                                                                                    ParticleSet::ParticleGradient_t& G,
-                                                                                    ParticleSet::ParticleLaplacian_t& L)
+typename DiracDeterminantRef<DU_TYPE>::RealType DiracDeterminantRef<DU_TYPE>::evaluateLog(
+    ParticleSet& P,
+    ParticleSet::ParticleGradient_t& G,
+    ParticleSet::ParticleLaplacian_t& L)
 {
   recompute(P);
 
@@ -281,4 +282,4 @@ template class DiracDeterminantRef<>;
 template class DiracDeterminantRef<DelayedUpdateCUDA<ValueType, mValueType>>;
 #endif
 
-} // namespace qmcplusplus
+} // namespace miniqmcreference

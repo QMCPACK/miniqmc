@@ -42,11 +42,9 @@ struct ConvertPosUnit<ParticleAttrib<TinyVector<T, 3>>, Tensor<T, 3>, 3, false>
   typedef ParticleAttrib<TinyVector<T, 3>> Array_t;
   typedef Tensor<T, 3> Transformer_t;
 
-  inline static void
-      apply(const Array_t& pin, const Transformer_t& X, Array_t& pout, int first, int last)
+  inline static void apply(const Array_t& pin, const Transformer_t& X, Array_t& pout, int first, int last)
   {
-    T x00 = X[0], x01 = X[1], x02 = X[2], x10 = X[3], x11 = X[4], x12 = X[5], x20 = X[6],
-      x21 = X[7], x22 = X[8];
+    T x00 = X[0], x01 = X[1], x02 = X[2], x10 = X[3], x11 = X[4], x12 = X[5], x20 = X[6], x21 = X[7], x22 = X[8];
 #pragma ivdep
     for (int i = first; i < last; i++)
     {
@@ -56,11 +54,9 @@ struct ConvertPosUnit<ParticleAttrib<TinyVector<T, 3>>, Tensor<T, 3>, 3, false>
     }
   }
 
-  inline static void
-      apply(const Transformer_t& X, const Array_t& pin, Array_t& pout, int first, int last)
+  inline static void apply(const Transformer_t& X, const Array_t& pin, Array_t& pout, int first, int last)
   {
-    T x00 = X[0], x01 = X[1], x02 = X[2], x10 = X[3], x11 = X[4], x12 = X[5], x20 = X[6],
-      x21 = X[7], x22 = X[8];
+    T x00 = X[0], x01 = X[1], x02 = X[2], x10 = X[3], x11 = X[4], x12 = X[5], x20 = X[6], x21 = X[7], x22 = X[8];
 #pragma ivdep
     for (int i = first; i < last; i++)
     {
@@ -72,8 +68,7 @@ struct ConvertPosUnit<ParticleAttrib<TinyVector<T, 3>>, Tensor<T, 3>, 3, false>
 
   inline static void apply(Array_t& pinout, const Transformer_t& X, int first, int last)
   {
-    T x00 = X[0], x01 = X[1], x02 = X[2], x10 = X[3], x11 = X[4], x12 = X[5], x20 = X[6],
-      x21 = X[7], x22 = X[8];
+    T x00 = X[0], x01 = X[1], x02 = X[2], x10 = X[3], x11 = X[4], x12 = X[5], x20 = X[6], x21 = X[7], x22 = X[8];
 #pragma ivdep
     for (int i = first; i < last; i++)
     {
@@ -86,8 +81,7 @@ struct ConvertPosUnit<ParticleAttrib<TinyVector<T, 3>>, Tensor<T, 3>, 3, false>
 
   inline static void apply(const Transformer_t& X, Array_t& pinout, int first, int last)
   {
-    T x00 = X[0], x01 = X[1], x02 = X[2], x10 = X[3], x11 = X[4], x12 = X[5], x20 = X[6],
-      x21 = X[7], x22 = X[8];
+    T x00 = X[0], x01 = X[1], x02 = X[2], x10 = X[3], x11 = X[4], x12 = X[5], x20 = X[6], x21 = X[7], x22 = X[8];
 #pragma ivdep
     for (int i = first; i < last; i++)
     {

@@ -36,7 +36,7 @@ public:
   /** constructor with an initialized ref */
   explicit inline ParticleAttrib(T* ref, size_t n) : __my_base(ref, n), InUnit(0) {}
 
-  ParticleAttrib(const ParticleAttrib& rhs) = default;
+  ParticleAttrib(const ParticleAttrib& rhs)                   = default;
   inline ParticleAttrib& operator=(const ParticleAttrib& rhs) = default;
 
   /** assignment operator to enable PETE */

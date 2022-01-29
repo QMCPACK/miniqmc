@@ -36,9 +36,8 @@ enum WaveFunctionTimers
   Timer_CompleteUpdates,
 };
 
-TimerNameList_t<WaveFunctionTimers> WaveFunctionTimerNames =
-    {{Timer_GL, "Kinetic Energy"},
-     {Timer_CompleteUpdates, "Complete Updates"}};
+TimerNameList_t<WaveFunctionTimers> WaveFunctionTimerNames = {{Timer_GL, "Kinetic Energy"},
+                                                              {Timer_CompleteUpdates, "Complete Updates"}};
 
 
 void build_WaveFunction(bool useRef,
@@ -146,14 +145,8 @@ void build_WaveFunction(bool useRef,
 }
 
 WaveFunction::WaveFunction()
-      : Det_up(nullptr),
-        Det_dn(nullptr),
-        LogValue(0.0),
-        FirstTime(true),
-        Is_built(false),
-        nelup(0),
-        ei_TableID(1)
-  {}
+    : Det_up(nullptr), Det_dn(nullptr), LogValue(0.0), FirstTime(true), Is_built(false), nelup(0), ei_TableID(1)
+{}
 
 WaveFunction::~WaveFunction()
 {
@@ -170,8 +163,7 @@ void WaveFunction::setupTimers()
 {
   setup_timers(timers, WaveFunctionTimerNames, timer_level_coarse);
   for (int i = 0; i < Jastrows.size(); i++)
-    jastrow_timers.push_back(
-        *timer_manager.createTimer(Jastrows[i]->WaveFunctionComponentName, timer_level_fine));
+    jastrow_timers.push_back(*timer_manager.createTimer(Jastrows[i]->WaveFunctionComponentName, timer_level_fine));
 }
 
 void WaveFunction::evaluateLog(ParticleSet& P)
@@ -327,7 +319,7 @@ void WaveFunction::flex_evaluateLog(const std::vector<WaveFunction*>& WF_list,
     for (int iw = 0; iw < P_list.size(); iw++)
       WF_list[iw]->FirstTime = false;
   }
-  else if(P_list.size()==1)
+  else if (P_list.size() == 1)
     WF_list[0]->evaluateLog(*P_list[0]);
 }
 
@@ -362,7 +354,7 @@ void WaveFunction::flex_evalGrad(const std::vector<WaveFunction*>& WF_list,
         grad_now[iw] += grad_now_jas[iw];
     }
   }
-  else if(P_list.size()==1)
+  else if (P_list.size() == 1)
     grad_now[0] = WF_list[0]->evalGrad(*P_list[0], iat);
 }
 
@@ -400,7 +392,7 @@ void WaveFunction::flex_ratioGrad(const std::vector<WaveFunction*>& WF_list,
         ratios[iw] *= ratios_jas[iw];
     }
   }
-  else if(P_list.size()==1)
+  else if (P_list.size() == 1)
     ratios[0] = WF_list[0]->ratioGrad(*P_list[0], iat, grad_new[0]);
 }
 
@@ -429,7 +421,7 @@ void WaveFunction::flex_acceptrestoreMove(const std::vector<WaveFunction*>& WF_l
       Jastrows[i]->multi_acceptrestoreMove(jas_list, P_list, isAccepted, iat);
     }
   }
-  else if(P_list.size()==1 && isAccepted[0])
+  else if (P_list.size() == 1 && isAccepted[0])
     WF_list[0]->acceptMove(*P_list[0], iat);
 }
 
@@ -467,7 +459,7 @@ void WaveFunction::flex_evaluateGL(const std::vector<WaveFunction*>& WF_list,
         WF_list[iw]->LogValue += jas_list[iw]->LogValue;
     }
   }
-  else if(P_list.size()==1)
+  else if (P_list.size() == 1)
     WF_list[0]->evaluateGL(*P_list[0]);
 }
 
@@ -482,7 +474,7 @@ void WaveFunction::flex_completeUpdates(const std::vector<WaveFunction*>& WF_lis
     std::vector<WaveFunctionComponent*> dn_list(extract_dn_list(WF_list));
     Det_dn->multi_completeUpdates(dn_list);
   }
-  else if(WF_list.size()==1)
+  else if (WF_list.size() == 1)
     WF_list[0]->completeUpdates();
 }
 
@@ -502,8 +494,8 @@ const std::vector<WaveFunctionComponent*> WaveFunction::extract_dn_list(const st
   return dn_list;
 }
 
-const std::vector<WaveFunctionComponent*>
-    WaveFunction::extract_jas_list(const std::vector<WaveFunction*>& WF_list, int jas_id) const
+const std::vector<WaveFunctionComponent*> WaveFunction::extract_jas_list(const std::vector<WaveFunction*>& WF_list,
+                                                                         int jas_id) const
 {
   std::vector<WaveFunctionComponent*> jas_list;
   for (auto it = WF_list.begin(); it != WF_list.end(); it++)

@@ -34,8 +34,8 @@ MiniQMCOptions readOptions(int argc, char** argv)
         mq_opt.useRef = true;
         break;
       case 'C':
-	  mq_opt.num_crowds = atoi(optarg);
-	  break;
+        mq_opt.num_crowds = atoi(optarg);
+        break;
       case 'c':
         mq_opt.crowd_size = atoi(optarg);
         break;
@@ -54,8 +54,7 @@ MiniQMCOptions readOptions(int argc, char** argv)
       case 'j':
         mq_opt.enableJ3 = true;
         break;
-      case 'm':
-      {
+      case 'm': {
         const QMCT::RealType meshfactor = atof(optarg);
         mq_opt.nx *= meshfactor;
         mq_opt.ny *= meshfactor;

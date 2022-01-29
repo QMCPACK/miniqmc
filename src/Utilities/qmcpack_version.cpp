@@ -29,8 +29,8 @@
 #define QMCPACK_GIT_COMMIT_SUBJECT GIT_COMMIT_SUBJECT_RAW
 #endif
 
-using std::endl;
 using qmcplusplus::app_summary;
+using std::endl;
 
 void print_version(bool verbose)
 {

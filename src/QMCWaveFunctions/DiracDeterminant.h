@@ -52,7 +52,7 @@ public:
   DiracDeterminant(std::unique_ptr<SPOSet> spos, int first = 0, int delay = 1);
 
   // copy constructor and assign operator disabled
-  DiracDeterminant(const DiracDeterminant& s) = delete;
+  DiracDeterminant(const DiracDeterminant& s)            = delete;
   DiracDeterminant& operator=(const DiracDeterminant& s) = delete;
 
   ///invert psiM or its copies
@@ -85,7 +85,9 @@ public:
   void completeUpdates() override;
 
   ///evaluate log of a determinant for a particle set
-  RealType evaluateLog(ParticleSet& P, ParticleSet::ParticleGradient_t& G, ParticleSet::ParticleLaplacian_t& L) override;
+  RealType evaluateLog(ParticleSet& P,
+                       ParticleSet::ParticleGradient_t& G,
+                       ParticleSet::ParticleLaplacian_t& L) override;
 
   void recompute(ParticleSet& P);
 
@@ -139,7 +141,6 @@ public:
   ValueType curRatio;
 
 private:
-
   /// Timers
   NewTimer* UpdateTimer;
   NewTimer* RatioTimer;

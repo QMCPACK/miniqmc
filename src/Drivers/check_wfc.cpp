@@ -65,9 +65,9 @@ void print_help()
 }
 
 template<typename T>
-T check_grads(TinyVector<T,3>& grad, TinyVector<T,3>& grad_ref, bool use_relative_error)
+T check_grads(TinyVector<T, 3>& grad, TinyVector<T, 3>& grad_ref, bool use_relative_error)
 {
-  if(use_relative_error)
+  if (use_relative_error)
     return sqrt(dot(grad - grad_ref, grad - grad_ref) / dot(grad, grad_ref));
   else
     return sqrt(dot(grad - grad_ref, grad - grad_ref));
@@ -76,10 +76,10 @@ T check_grads(TinyVector<T,3>& grad, TinyVector<T,3>& grad_ref, bool use_relativ
 template<typename T>
 T check_val(T val, T val_ref, bool use_relative_error)
 {
-  if(use_relative_error)
-    return abs((val-val_ref)/val_ref);
+  if (use_relative_error)
+    return abs((val - val_ref) / val_ref);
   else
-    return abs(val-val_ref);
+    return abs(val - val_ref);
 }
 
 int main(int argc, char** argv)
@@ -92,9 +92,9 @@ int main(int argc, char** argv)
 
   // use the global generator
 
-  int na    = 1;
-  int nb    = 1;
-  int nc    = 1;
+  int na = 1;
+  int nb = 1;
+  int nc = 1;
   RealType Rmax(1.7);
   string wfc_name("J2");
 
@@ -175,10 +175,11 @@ int main(int argc, char** argv)
     ParticleSet els;
     RandomGenerator<RealType> random_th(myPrimes[0]);
     build_els(els, ions, random_th);
-    if (wfc_name == "Det") spo_main = build_SPOSet(false, 40, 40, 40, els.getTotalNum(), 1, lattice_b);
+    if (wfc_name == "Det")
+      spo_main = build_SPOSet(false, 40, 40, 40, els.getTotalNum(), 1, lattice_b);
   }
 
-// clang-format off
+  // clang-format off
   #pragma omp parallel reduction(+:evaluateLog_v_err,evaluateLog_g_err,evaluateLog_l_err,evalGrad_g_err) \
    reduction(+:ratioGrad_r_err,ratioGrad_g_err,evaluateGL_g_err,evaluateGL_l_err,ratio_err)
   // clang-format on
@@ -228,8 +229,7 @@ int main(int argc, char** argv)
     }
     else if (wfc_name == "J1")
     {
-      OneBodyJastrow<BsplineFunctor<RealType>>* J =
-          new OneBodyJastrow<BsplineFunctor<RealType>>(ions, els);
+      OneBodyJastrow<BsplineFunctor<RealType>>* J = new OneBodyJastrow<BsplineFunctor<RealType>>(ions, els);
       buildJ1(*J, els.Lattice.WignerSeitzRadius);
       wfc.reset(dynamic_cast<WaveFunctionComponentPtr>(J));
       cout << "Built J1" << endl;
@@ -253,11 +253,11 @@ int main(int argc, char** argv)
     }
     else if (wfc_name == "Det")
     {
-      auto spo = build_SPOSet_view(false, *spo_main, 1, 0);
+      auto spo  = build_SPOSet_view(false, *spo_main, 1, 0);
       auto* Det = new DiracDeterminant<>(std::move(spo), 0, 31);
       wfc.reset(dynamic_cast<WaveFunctionComponentPtr>(Det));
       cout << "Built Det" << endl;
-      auto spo_ref = build_SPOSet_view(false, *spo_main, 1, 0);
+      auto spo_ref  = build_SPOSet_view(false, *spo_main, 1, 0);
       auto* Det_ref = new miniqmcreference::DiracDeterminantRef<>(std::move(spo_ref), 0, 31);
       wfc_ref.reset(dynamic_cast<WaveFunctionComponentPtr>(Det_ref));
       cout << "Built Det_ref" << endl;
@@ -280,9 +280,7 @@ int main(int argc, char** argv)
       wfc_ref->evaluateLog(els_ref, els_ref.G, els_ref.L);
 
       cout << "Check values " << wfc->LogValue << " " << els.G[12] << " " << els.L[12] << endl;
-      cout << "Check values ref " << wfc_ref->LogValue << " " << els_ref.G[12] << " "
-           << els_ref.L[12] << endl
-           << endl;
+      cout << "Check values ref " << wfc_ref->LogValue << " " << els_ref.G[12] << " " << els_ref.L[12] << endl << endl;
       cout << "evaluateLog::V Error = " << (wfc->LogValue - wfc_ref->LogValue) / nels << endl;
       evaluateLog_v_err += std::fabs((wfc->LogValue - wfc_ref->LogValue) / nels);
       {
@@ -355,7 +353,7 @@ int main(int argc, char** argv)
       cout << "evalGrad::G      Error = " << g_eval / nels << endl;
       cout << "ratioGrad::G     Error = " << g_ratio / nels << endl;
       cout << "ratioGrad::Ratio Error = " << r_ratio / nels << endl;
-      evalGrad_g_err  += std::fabs(g_eval / nels);
+      evalGrad_g_err += std::fabs(g_eval / nels);
       ratioGrad_g_err += std::fabs(g_ratio / nels);
       ratioGrad_r_err += std::fabs(r_ratio / nels);
 
@@ -415,33 +413,29 @@ int main(int argc, char** argv)
             }
           }
       }
-      cout << "ratio with SphereMove  Error = " << r_ratio / nsphere << " # of moves =" << nsphere
-           << endl;
+      cout << "ratio with SphereMove  Error = " << r_ratio / nsphere << " # of moves =" << nsphere << endl;
       ratio_err += std::fabs(r_ratio / (nels * nknots));
     }
   } // end of omp parallel
 
-  int np = omp_get_max_threads();
-  const RealType small = std::numeric_limits<RealType>::epsilon() * ( wfc_name == "Det" ? 1e6 : 1e4 );
+  int np               = omp_get_max_threads();
+  const RealType small = std::numeric_limits<RealType>::epsilon() * (wfc_name == "Det" ? 1e6 : 1e4);
   std::cout << "Passing Tolerance " << small << std::endl;
-  bool fail                = false;
+  bool fail = false;
   cout << std::endl;
   if (evaluateLog_v_err / np > small)
   {
-    cout << "Fail in evaluateLog, V error =" << evaluateLog_v_err / np << " for " << wfc_name
-         << std::endl;
+    cout << "Fail in evaluateLog, V error =" << evaluateLog_v_err / np << " for " << wfc_name << std::endl;
     fail = true;
   }
   if (evaluateLog_g_err / np > small)
   {
-    cout << "Fail in evaluateLog, G error =" << evaluateLog_g_err / np << " for " << wfc_name
-         << std::endl;
+    cout << "Fail in evaluateLog, G error =" << evaluateLog_g_err / np << " for " << wfc_name << std::endl;
     fail = true;
   }
   if (evaluateLog_l_err / np > small)
   {
-    cout << "Fail in evaluateLog, L error =" << evaluateLog_l_err / np << " for " << wfc_name
-         << std::endl;
+    cout << "Fail in evaluateLog, L error =" << evaluateLog_l_err / np << " for " << wfc_name << std::endl;
     fail = true;
   }
   if (evalGrad_g_err / np > small)
@@ -451,26 +445,22 @@ int main(int argc, char** argv)
   }
   if (ratioGrad_r_err / np > small)
   {
-    cout << "Fail in ratioGrad, ratio error =" << ratioGrad_r_err / np << " for " << wfc_name
-         << std::endl;
+    cout << "Fail in ratioGrad, ratio error =" << ratioGrad_r_err / np << " for " << wfc_name << std::endl;
     fail = true;
   }
   if (ratioGrad_g_err / np > small)
   {
-    cout << "Fail in ratioGrad, G error =" << ratioGrad_g_err / np << " for " << wfc_name
-         << std::endl;
+    cout << "Fail in ratioGrad, G error =" << ratioGrad_g_err / np << " for " << wfc_name << std::endl;
     fail = true;
   }
   if (evaluateGL_g_err / np > small)
   {
-    cout << "Fail in evaluateGL, G error =" << evaluateGL_g_err / np << " for " << wfc_name
-         << std::endl;
+    cout << "Fail in evaluateGL, G error =" << evaluateGL_g_err / np << " for " << wfc_name << std::endl;
     fail = true;
   }
   if (evaluateGL_l_err / np > small)
   {
-    cout << "Fail in evaluateGL, L error =" << evaluateGL_l_err / np << " for " << wfc_name
-         << std::endl;
+    cout << "Fail in evaluateGL, L error =" << evaluateGL_l_err / np << " for " << wfc_name << std::endl;
     fail = true;
   }
   if (ratio_err / np > small)

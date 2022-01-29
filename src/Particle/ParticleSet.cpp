@@ -49,17 +49,13 @@ TimerNameList_t<DistanceTimers> DistanceTimerNames{
     {Timer_acceptMove, "Accept move"},
 };
 
-ParticleSet::ParticleSet()
-    : myName("none"), IsGrouped(true), SameMass(true), activePtcl(-1)
+ParticleSet::ParticleSet() : myName("none"), IsGrouped(true), SameMass(true), activePtcl(-1)
 {
   setup_timers(timers, DistanceTimerNames, timer_level_coarse);
 }
 
 ParticleSet::ParticleSet(const ParticleSet& p)
-    : IsGrouped(p.IsGrouped),
-      SameMass(true),
-      activePtcl(-1),
-      mySpecies(p.getSpeciesSet())
+    : IsGrouped(p.IsGrouped), SameMass(true), activePtcl(-1), mySpecies(p.getSpeciesSet())
 {
   //distance_timer = timer_manager.createTimer("Distance Tables", timer_level_coarse);
   setup_timers(timers, DistanceTimerNames, timer_level_coarse);
@@ -70,8 +66,8 @@ ParticleSet::ParticleSet(const ParticleSet& p)
   Mass = p.Mass;
   Z    = p.Z;
   this->setName(p.getName());
-  app_log() << "  Copying a particle set " << p.getName() << " to " << this->getName()
-            << " groups=" << groups() << std::endl;
+  app_log() << "  Copying a particle set " << p.getName() << " to " << this->getName() << " groups=" << groups()
+            << std::endl;
   // construct the distance tables with the same order
   if (p.DistTables.size())
   {
@@ -124,8 +120,7 @@ void ParticleSet::resetGroups()
   int qind = mySpecies.addAttribute("charge");
   if (natt == qind)
   {
-    app_log() << " Missing charge attribute of the SpeciesSet " << myName << " particleset"
-              << std::endl;
+    app_log() << " Missing charge attribute of the SpeciesSet " << myName << " particleset" << std::endl;
     app_log() << " Assume neutral particles Z=0.0 " << std::endl;
     for (int ig = 0; ig < nspecies; ig++)
       mySpecies(qind, ig) = 0.0;
@@ -228,8 +223,7 @@ int ParticleSet::addTable(const ParticleSet& psrc)
   }
   if (psrc.getName() == myName)
   {
-    app_log() << "  ... ParticleSet::addTable Reuse Table #" << 0 << " " << DistTables[0]->getName()
-              << std::endl;
+    app_log() << "  ... ParticleSet::addTable Reuse Table #" << 0 << " " << DistTables[0]->getName() << std::endl;
     return 0;
   }
   int tid;
@@ -239,14 +233,12 @@ int ParticleSet::addTable(const ParticleSet& psrc)
     tid = DistTables.size();
     DistTables.push_back(createDistanceTable(psrc, *this));
     myDistTableMap[psrc.getName()] = tid;
-    app_log() << "  ... ParticleSet::addTable Create Table #" << tid << " " << DistTables[tid]->getName()
-              << std::endl;
+    app_log() << "  ... ParticleSet::addTable Create Table #" << tid << " " << DistTables[tid]->getName() << std::endl;
   }
   else
   {
     tid = (*tit).second;
-      app_log() << "  ... ParticleSet::addTable Reuse Table #" << tid << " "
-                << DistTables[tid]->getName() << std::endl;
+    app_log() << "  ... ParticleSet::addTable Reuse Table #" << tid << " " << DistTables[tid]->getName() << std::endl;
   }
   app_log().flush();
   return tid;
@@ -275,11 +267,12 @@ void ParticleSet::flex_setActive(const std::vector<ParticleSet*>& P_list, int ia
     ScopedTimer local_timer(timers[Timer_setActive]);
     for (size_t i = 0; i < DistTables.size(); i++)
     {
-      #pragma omp parallel for
+#pragma omp parallel for
       for (int iw = 0; iw < P_list.size(); iw++)
         P_list[iw]->DistTables[i]->evaluate(*P_list[iw], iat);
     }
-  } else if (P_list.size()==1)
+  }
+  else if (P_list.size() == 1)
     P_list[0]->setActive(iat);
 }
 
@@ -298,7 +291,9 @@ void ParticleSet::makeMove(Index_t iat, const SingleParticlePos_t& displ)
     DistTables[i]->move(*this, activePos);
 }
 
-void ParticleSet::flex_makeMove(const std::vector<ParticleSet*>& P_list, Index_t iat, const std::vector<SingleParticlePos_t>& displs) const
+void ParticleSet::flex_makeMove(const std::vector<ParticleSet*>& P_list,
+                                Index_t iat,
+                                const std::vector<SingleParticlePos_t>& displs) const
 {
   if (P_list.size() > 1)
   {
@@ -312,11 +307,12 @@ void ParticleSet::flex_makeMove(const std::vector<ParticleSet*>& P_list, Index_t
 
     for (int i = 0; i < DistTables.size(); ++i)
     {
-      #pragma omp parallel for
+#pragma omp parallel for
       for (int iw = 0; iw < P_list.size(); iw++)
         P_list[iw]->DistTables[i]->move(*P_list[iw], P_list[iw]->activePos);
     }
-  } else if (P_list.size()==1)
+  }
+  else if (P_list.size() == 1)
     P_list[0]->makeMove(iat, displs[0]);
 }
 
@@ -375,8 +371,7 @@ void ParticleSet::clearDistanceTables()
   DistTables.clear();
 }
 
-const std::vector<ParticleSet::ParticleGradient_t*>
-    extract_G_list(const std::vector<ParticleSet*>& P_list)
+const std::vector<ParticleSet::ParticleGradient_t*> extract_G_list(const std::vector<ParticleSet*>& P_list)
 {
   std::vector<ParticleSet::ParticleGradient_t*> G_list;
   for (auto it = P_list.begin(); it != P_list.end(); it++)
@@ -384,8 +379,7 @@ const std::vector<ParticleSet::ParticleGradient_t*>
   return G_list;
 }
 
-const std::vector<ParticleSet::ParticleLaplacian_t*>
-    extract_L_list(const std::vector<ParticleSet*>& P_list)
+const std::vector<ParticleSet::ParticleLaplacian_t*> extract_L_list(const std::vector<ParticleSet*>& P_list)
 {
   std::vector<ParticleSet::ParticleLaplacian_t*> L_list;
   for (auto it = P_list.begin(); it != P_list.end(); it++)

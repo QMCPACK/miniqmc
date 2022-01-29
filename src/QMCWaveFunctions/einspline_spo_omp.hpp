@@ -39,9 +39,9 @@ struct einspline_spo_omp : public SPOSet
   using OffloadPinnedAllocator = OMPallocator<DT, PinnedAlignedAllocator<DT>>;
 
   /// define the einsplie data object type
-  using self_type   = einspline_spo_omp<T>;
-  using spline_type = typename bspline_traits<T, 3>::SplineType;
-  using lattice_type            = CrystalLattice<T, 3>;
+  using self_type    = einspline_spo_omp<T>;
+  using spline_type  = typename bspline_traits<T, 3>::SplineType;
+  using lattice_type = CrystalLattice<T, 3>;
 
   /// number of blocks
   int nBlocks;
@@ -129,7 +129,9 @@ struct einspline_spo_omp : public SPOSet
   /** evaluate psi, grad and hess of multiple walkers with offload */
   void multi_evaluate_vgh(const std::vector<SPOSet*>& spo_list, const std::vector<ParticleSet*>& P_list, int iat);
 
-  void multi_evaluate_ratio_grads(const std::vector<SPOSet*>& spo_list, const std::vector<ParticleSet*>& P_list, int iat);
+  void multi_evaluate_ratio_grads(const std::vector<SPOSet*>& spo_list,
+                                  const std::vector<ParticleSet*>& P_list,
+                                  int iat);
 
   void multi_evaluate(const std::vector<SPOSet*>& spo_list,
                       const std::vector<ParticleSet*>& P_list,

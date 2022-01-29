@@ -100,10 +100,9 @@ typename DiracDeterminant<DU_TYPE>::ValueType DiracDeterminant<DU_TYPE>::ratioGr
 }
 
 template<typename DU_TYPE>
-typename DiracDeterminant<DU_TYPE>::ValueType DiracDeterminant<DU_TYPE>::ratioGrad_compute(int iat,
-                                                                                           GradType& grad_iat)
+typename DiracDeterminant<DU_TYPE>::ValueType DiracDeterminant<DU_TYPE>::ratioGrad_compute(int iat, GradType& grad_iat)
 {
-  UpdateMode             = ORB_PBYP_PARTIAL;
+  UpdateMode = ORB_PBYP_PARTIAL;
   RatioTimer->start();
   const int WorkingIndex = iat - FirstIndex;
   ValueType ratio;
@@ -281,10 +280,10 @@ void DiracDeterminant<DU_TYPE>::recompute(ParticleSet& P)
 
 template<typename DU_TYPE>
 void DiracDeterminant<DU_TYPE>::multi_evaluateLog(const std::vector<WaveFunctionComponent*>& WFC_list,
-                                 const std::vector<ParticleSet*>& P_list,
-                                 const std::vector<ParticleSet::ParticleGradient_t*>& G_list,
-                                 const std::vector<ParticleSet::ParticleLaplacian_t*>& L_list,
-                                 ParticleSet::ParticleValue_t& values)
+                                                  const std::vector<ParticleSet*>& P_list,
+                                                  const std::vector<ParticleSet::ParticleGradient_t*>& G_list,
+                                                  const std::vector<ParticleSet::ParticleLaplacian_t*>& L_list,
+                                                  ParticleSet::ParticleValue_t& values)
 {
   for (int iw = 0; iw < P_list.size(); iw++)
     values[iw] = WFC_list[iw]->evaluateLog(*P_list[iw], *G_list[iw], *L_list[iw]);
@@ -292,18 +291,22 @@ void DiracDeterminant<DU_TYPE>::multi_evaluateLog(const std::vector<WaveFunction
 
 template<typename DU_TYPE>
 void DiracDeterminant<DU_TYPE>::multi_ratioGrad(const std::vector<WaveFunctionComponent*>& WFC_list,
-                       const std::vector<ParticleSet*>& P_list,
-                       int iat,
-                       std::vector<ValueType>& ratios,
-                       std::vector<PosType>& grad_new)
+                                                const std::vector<ParticleSet*>& P_list,
+                                                int iat,
+                                                std::vector<ValueType>& ratios,
+                                                std::vector<PosType>& grad_new)
 {
   SPOVGLTimer->start();
-  std::vector<SPOSet*> phi_list; phi_list.reserve(WFC_list.size());
-  std::vector<ValueVector_t*> psi_v_list; psi_v_list.reserve(WFC_list.size());
-  std::vector<GradVector_t*> dpsi_v_list; dpsi_v_list.reserve(WFC_list.size());
-  std::vector<ValueVector_t*> d2psi_v_list; d2psi_v_list.reserve(WFC_list.size());
+  std::vector<SPOSet*> phi_list;
+  phi_list.reserve(WFC_list.size());
+  std::vector<ValueVector_t*> psi_v_list;
+  psi_v_list.reserve(WFC_list.size());
+  std::vector<GradVector_t*> dpsi_v_list;
+  dpsi_v_list.reserve(WFC_list.size());
+  std::vector<ValueVector_t*> d2psi_v_list;
+  d2psi_v_list.reserve(WFC_list.size());
 
-  for(auto wfc : WFC_list)
+  for (auto wfc : WFC_list)
   {
     auto det = static_cast<DiracDeterminant<DU_TYPE>*>(wfc);
     phi_list.push_back(det->Phi.get());
@@ -322,9 +325,9 @@ void DiracDeterminant<DU_TYPE>::multi_ratioGrad(const std::vector<WaveFunctionCo
 
 template<typename DU_TYPE>
 void DiracDeterminant<DU_TYPE>::multi_acceptrestoreMove(const std::vector<WaveFunctionComponent*>& WFC_list,
-                                       const std::vector<ParticleSet*>& P_list,
-                                       const std::vector<bool>& isAccepted,
-                                       int iat)
+                                                        const std::vector<ParticleSet*>& P_list,
+                                                        const std::vector<bool>& isAccepted,
+                                                        int iat)
 {
   for (int iw = 0; iw < P_list.size(); iw++)
     if (isAccepted[iw])

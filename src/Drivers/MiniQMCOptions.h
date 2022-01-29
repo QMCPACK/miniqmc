@@ -55,24 +55,24 @@ public:
 
   static void print_help();
 
-  using QMCT        = QMCTraits;
+  using QMCT = QMCTraits;
   //Devices device    = Devices::CPU;
-  bool valid        = true;
+  bool valid = true;
   //int device_number = 0;
-  int na            = 1;
-  int nb            = 1;
-  int nc            = 1;
-  int nsteps        = 5;
-  int iseed         = 11;
+  int na     = 1;
+  int nb     = 1;
+  int nc     = 1;
+  int nsteps = 5;
+  int iseed  = 11;
   int nx = 37, ny = 37, nz = 37;
-  int num_crowds = 1;
+  int num_crowds        = 1;
   int splines_per_block = -1;
   int nsubsteps         = 1;
-  int nels = 0;
+  int nels              = 0;
   // Set cutoff for NLPP use.
   // This makes precision an issue to select at run time.
-  QMCT::RealType Rmax          = 1.7;
-  QMCT::RealType accept_ratio  = 0.5;
+  QMCT::RealType Rmax         = 1.7;
+  QMCT::RealType accept_ratio = 0.5;
   //useRef is a particular implementation of numerous objects fix that remove this option
   //and many branch statements
   bool useRef                  = false;
@@ -81,13 +81,13 @@ public:
   bool verbose                 = false;
   std::string timer_level_name = "fine";
   TimerList Timers;
-  int crowd_size  = 1;
-  int walkers_per_rank = 0;
+  int crowd_size                        = 1;
+  int walkers_per_rank                  = 0;
   MiniQMCOptions()                      = default;
   MiniQMCOptions(const MiniQMCOptions&) = default;
 };
 
-MiniQMCOptions readOptions(int argc,char** argv);
+MiniQMCOptions readOptions(int argc, char** argv);
 
 } // namespace qmcplusplus
 

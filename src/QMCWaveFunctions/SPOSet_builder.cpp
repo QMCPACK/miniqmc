@@ -17,13 +17,13 @@
 namespace qmcplusplus
 {
 std::unique_ptr<SPOSet> build_SPOSet(bool useRef,
-                     int nx,
-                     int ny,
-                     int nz,
-                     int num_splines,
-                     int nblocks,
-                     const Tensor<OHMMS_PRECISION, 3>& lattice_b,
-                     bool init_random)
+                                     int nx,
+                                     int ny,
+                                     int nz,
+                                     int num_splines,
+                                     int nblocks,
+                                     const Tensor<OHMMS_PRECISION, 3>& lattice_b,
+                                     bool init_random)
 {
   if (useRef)
   {
@@ -45,8 +45,7 @@ std::unique_ptr<SPOSet> build_SPOSet_view(bool useRef, const SPOSet& SPOSet_main
 {
   if (useRef)
   {
-    auto& temp_ptr =
-        dynamic_cast<const miniqmcreference::einspline_spo_ref<OHMMS_PRECISION>&>(SPOSet_main);
+    auto& temp_ptr = dynamic_cast<const miniqmcreference::einspline_spo_ref<OHMMS_PRECISION>&>(SPOSet_main);
     auto spo_view =
         std::make_unique<miniqmcreference::einspline_spo_ref<OHMMS_PRECISION>>(temp_ptr, team_size, member_id);
     return spo_view;
@@ -54,8 +53,7 @@ std::unique_ptr<SPOSet> build_SPOSet_view(bool useRef, const SPOSet& SPOSet_main
   else
   {
     auto& temp_ptr = dynamic_cast<const einspline_spo_omp<OHMMS_PRECISION>&>(SPOSet_main);
-    auto spo_view =
-    std::make_unique<einspline_spo_omp<OHMMS_PRECISION>>(temp_ptr, team_size, member_id);
+    auto spo_view  = std::make_unique<einspline_spo_omp<OHMMS_PRECISION>>(temp_ptr, team_size, member_id);
     return spo_view;
   }
 }

@@ -57,17 +57,14 @@ struct Mover
   NonLocalPP<RealType> nlpp;
 
   /// constructor
-  Mover(const uint32_t myPrime, const ParticleSet& ions) : rng(myPrime), nlpp(rng, ions)
-  {
-    build_els(els, ions, rng);
-  }
+  Mover(const uint32_t myPrime, const ParticleSet& ions) : rng(myPrime), nlpp(rng, ions) { build_els(els, ions, rng); }
 };
 
 inline void FairDivideLow(int ntot, int nparts, int me, int& first, int& last)
 {
   int bat     = ntot / nparts;
   int residue = nparts - ntot % nparts;
-  if(me<residue)
+  if (me < residue)
   {
     first = bat * me;
     last  = bat * (me + 1);
