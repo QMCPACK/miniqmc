@@ -51,7 +51,7 @@ public:
    *@param spos the single-particle orbital set
    *@param first index of the first particle
    */
-  DiracDeterminantRef(SPOSet* const spos, int first = 0, int delay = 1);
+  DiracDeterminantRef(std::unique_ptr<SPOSet> spos, int first = 0, int delay = 1);
 
   // copy constructor and assign operator disabled
   DiracDeterminantRef(const DiracDeterminantRef& s) = delete;
@@ -129,7 +129,7 @@ private:
   NewTimer* SPOVTimer;
   NewTimer* SPOVGLTimer;
   /// a set of single-particle orbitals used to fill in the  values of the matrix
-  SPOSet* const Phi;
+  const std::unique_ptr<SPOSet> Phi;
   ///index of the first particle with respect to the particle set
   int FirstIndex;
   ///index of the last particle with respect to the particle set

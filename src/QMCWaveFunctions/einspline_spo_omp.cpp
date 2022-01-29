@@ -24,15 +24,16 @@ namespace qmcplusplus
 {
 /// default constructor
 template<typename T>
-einspline_spo_omp<T>::einspline_spo_omp() : nBlocks(0), firstBlock(0), lastBlock(0), nSplines(0), Owner(false)
+einspline_spo_omp<T>::einspline_spo_omp() : nBlocks(0), firstBlock(0), lastBlock(0), nSplines(0), Owner(false),
+  timer(*timer_manager.createTimer("Single-Particle Orbitals", timer_level_fine))
 {
-  timer = TimerManager.createTimer("Single-Particle Orbitals", timer_level_fine);
 }
 
 /// copy constructor
 template<typename T>
 einspline_spo_omp<T>::einspline_spo_omp(const einspline_spo_omp& in, int team_size, int member_id)
-    : Owner(false), Lattice(in.Lattice)
+    : Owner(false), Lattice(in.Lattice),
+   timer(*timer_manager.createTimer("Single-Particle Orbitals", timer_level_fine))
 {
   OrbitalSetSize   = in.OrbitalSetSize;
   nSplines         = in.nSplines;
@@ -55,7 +56,6 @@ einspline_spo_omp<T>::einspline_spo_omp(const einspline_spo_omp& in, int team_si
 #endif
   }
   resize();
-  timer = TimerManager.createTimer("Single-Particle Orbitals", timer_level_fine);
 }
 
 /// destructors

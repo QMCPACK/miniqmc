@@ -195,10 +195,11 @@ void FakeSPO::evaluate_notranspose(const ParticleSet& P,
 
 TEST_CASE("DiracDeterminant_first", "[wavefunction][fermion]")
 {
-  FakeSPO* spo = new FakeSPO();
+  auto spo_ptr = std::make_unique<FakeSPO>();
+  auto& spo = *spo_ptr;
   const int norb = 3;
-  spo->setOrbitalSetSize(norb);
-  DetType ddb(spo, 0);
+  spo.setOrbitalSetSize(norb);
+  DetType ddb(std::move(spo_ptr), 0);
 
   // occurs in call to registerData
   ddb.dpsiV.resize(norb);
@@ -251,10 +252,11 @@ TEST_CASE("DiracDeterminant_first", "[wavefunction][fermion]")
 
 TEST_CASE("DiracDeterminant_second", "[wavefunction][fermion]")
 {
-  FakeSPO* spo = new FakeSPO();
+  auto spo_ptr = std::make_unique<FakeSPO>();
+  auto& spo = *spo_ptr;
   const int norb = 4;
-  spo->setOrbitalSetSize(norb);
-  DetType ddb(spo, 0);
+  spo.setOrbitalSetSize(norb);
+  DetType ddb(std::move(spo_ptr), 0);
 
   // occurs in call to registerData
   ddb.dpsiV.resize(norb);
@@ -268,13 +270,13 @@ TEST_CASE("DiracDeterminant_second", "[wavefunction][fermion]")
 
   Matrix<ValueType> orig_a;
   orig_a.resize(4, 4);
-  orig_a = spo->a2;
+  orig_a = spo.a2;
 
   for (int i = 0; i < 3; i++)
   {
     for (int j = 0; j < norb; j++)
     {
-      orig_a(j, i) = spo->v2(i, j);
+      orig_a(j, i) = spo.v2(i, j);
     }
   }
 
@@ -284,29 +286,29 @@ TEST_CASE("DiracDeterminant_second", "[wavefunction][fermion]")
   Matrix<ValueType> a_update1, scratchT;
   a_update1.resize(4, 4);
   scratchT.resize(4, 4);
-  a_update1 = spo->a2;
+  a_update1 = spo.a2;
   for (int j = 0; j < norb; j++)
   {
-    a_update1(j, 0) = spo->v2(0, j);
+    a_update1(j, 0) = spo.v2(0, j);
   }
 
   Matrix<ValueType> a_update2;
   a_update2.resize(4, 4);
-  a_update2 = spo->a2;
+  a_update2 = spo.a2;
   for (int j = 0; j < norb; j++)
   {
-    a_update2(j, 0) = spo->v2(0, j);
-    a_update2(j, 1) = spo->v2(1, j);
+    a_update2(j, 0) = spo.v2(0, j);
+    a_update2(j, 1) = spo.v2(1, j);
   }
 
   Matrix<ValueType> a_update3;
   a_update3.resize(4, 4);
-  a_update3 = spo->a2;
+  a_update3 = spo.a2;
   for (int j = 0; j < norb; j++)
   {
-    a_update3(j, 0) = spo->v2(0, j);
-    a_update3(j, 1) = spo->v2(1, j);
-    a_update3(j, 2) = spo->v2(2, j);
+    a_update3(j, 0) = spo.v2(0, j);
+    a_update3(j, 1) = spo.v2(1, j);
+    a_update3(j, 2) = spo.v2(2, j);
   }
 
   ParticleSet::GradType grad;
@@ -378,11 +380,12 @@ TEST_CASE("DiracDeterminant_second", "[wavefunction][fermion]")
 
 TEST_CASE("DiracDeterminant_delayed_update", "[wavefunction][fermion]")
 {
-  FakeSPO* spo = new FakeSPO();
+  auto spo_ptr = std::make_unique<FakeSPO>();
+  auto& spo = *spo_ptr;
   const int norb = 4;
-  spo->setOrbitalSetSize(norb);
+  spo.setOrbitalSetSize(norb);
   // maximum delay 2
-  DetType ddc(spo, 0, 2);
+  DetType ddc(std::move(spo_ptr), 0, 2);
 
   // occurs in call to registerData
   ddc.dpsiV.resize(norb);
@@ -396,13 +399,13 @@ TEST_CASE("DiracDeterminant_delayed_update", "[wavefunction][fermion]")
 
   Matrix<ValueType> orig_a;
   orig_a.resize(4, 4);
-  orig_a = spo->a2;
+  orig_a = spo.a2;
 
   for (int i = 0; i < 3; i++)
   {
     for (int j = 0; j < norb; j++)
     {
-      orig_a(j, i) = spo->v2(i, j);
+      orig_a(j, i) = spo.v2(i, j);
     }
   }
 
@@ -412,29 +415,29 @@ TEST_CASE("DiracDeterminant_delayed_update", "[wavefunction][fermion]")
   Matrix<ValueType> a_update1, scratchT;
   scratchT.resize(4, 4);
   a_update1.resize(4, 4);
-  a_update1 = spo->a2;
+  a_update1 = spo.a2;
   for (int j = 0; j < norb; j++)
   {
-    a_update1(j, 0) = spo->v2(0, j);
+    a_update1(j, 0) = spo.v2(0, j);
   }
 
   Matrix<ValueType> a_update2;
   a_update2.resize(4, 4);
-  a_update2 = spo->a2;
+  a_update2 = spo.a2;
   for (int j = 0; j < norb; j++)
   {
-    a_update2(j, 0) = spo->v2(0, j);
-    a_update2(j, 1) = spo->v2(1, j);
+    a_update2(j, 0) = spo.v2(0, j);
+    a_update2(j, 1) = spo.v2(1, j);
   }
 
   Matrix<ValueType> a_update3;
   a_update3.resize(4, 4);
-  a_update3 = spo->a2;
+  a_update3 = spo.a2;
   for (int j = 0; j < norb; j++)
   {
-    a_update3(j, 0) = spo->v2(0, j);
-    a_update3(j, 1) = spo->v2(1, j);
-    a_update3(j, 2) = spo->v2(2, j);
+    a_update3(j, 0) = spo.v2(0, j);
+    a_update3(j, 1) = spo.v2(1, j);
+    a_update3(j, 2) = spo.v2(2, j);
   }
 
 

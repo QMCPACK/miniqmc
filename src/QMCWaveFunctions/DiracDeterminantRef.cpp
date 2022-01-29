@@ -29,22 +29,22 @@ using namespace qmcplusplus;
  *@param first index of the first particle
  */
 template<typename DU_TYPE>
-DiracDeterminantRef<DU_TYPE>::DiracDeterminantRef(SPOSet* const spos, int first, int delay)
+DiracDeterminantRef<DU_TYPE>::DiracDeterminantRef(std::unique_ptr<SPOSet> spos, int first, int delay)
     : invRow_id(-1),
-      Phi(spos),
+      Phi(std::move(spos)),
       FirstIndex(first),
-      LastIndex(first + spos->size()),
-      NumOrbitals(spos->size()),
-      NumPtcls(spos->size()),
+      LastIndex(first + Phi->size()),
+      NumOrbitals(Phi->size()),
+      NumPtcls(Phi->size()),
       ndelay(delay)
 {
-  UpdateTimer  = TimerManager.createTimer("DeterminantRef::update", timer_level_fine);
-  RatioTimer   = TimerManager.createTimer("DeterminantRef::ratio", timer_level_fine);
-  InverseTimer = TimerManager.createTimer("DeterminantRef::inverse", timer_level_fine);
-  BufferTimer  = TimerManager.createTimer("DeterminantRef::buffer", timer_level_fine);
-  SPOVTimer    = TimerManager.createTimer("DeterminantRef::spoval", timer_level_fine);
-  SPOVGLTimer  = TimerManager.createTimer("DeterminantRef::spovgl", timer_level_fine);
-  resize(spos->size(), spos->size());
+  UpdateTimer  = timer_manager.createTimer("DeterminantRef::update", timer_level_fine);
+  RatioTimer   = timer_manager.createTimer("DeterminantRef::ratio", timer_level_fine);
+  InverseTimer = timer_manager.createTimer("DeterminantRef::inverse", timer_level_fine);
+  BufferTimer  = timer_manager.createTimer("DeterminantRef::buffer", timer_level_fine);
+  SPOVTimer    = timer_manager.createTimer("DeterminantRef::spoval", timer_level_fine);
+  SPOVGLTimer  = timer_manager.createTimer("DeterminantRef::spovgl", timer_level_fine);
+  resize(Phi->size(), Phi->size());
 }
 
 template<typename DU_TYPE>

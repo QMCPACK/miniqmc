@@ -18,7 +18,7 @@
 #include <iostream>
 #include <cstdio>
 #include "Utilities/qmcpack_version.h"
-#include "Utilities/NewTimer.h"
+#include "Utilities/TimerManager.h"
 
 namespace qmcplusplus
 {
@@ -80,7 +80,7 @@ public:
   bool enableCrowd             = false;
   bool verbose                 = false;
   std::string timer_level_name = "fine";
-  TimerList_t Timers;
+  TimerList Timers;
   int crowd_size  = 1;
   int walkers_per_rank = 0;
   MiniQMCOptions()                      = default;

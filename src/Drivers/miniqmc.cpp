@@ -234,7 +234,7 @@ int main(int argc, char** argv)
         break;
       case 'h':
         print_help();
-        return 1;
+        return 0;
         break;
       case 'j':
         enableJ3 = true;
@@ -267,7 +267,7 @@ int main(int argc, char** argv)
         break;
       case 'V':
         print_version(true);
-        return 1;
+        return 0;
         break;
       case 'w': // number of nmovers
         nmovers = atoi(optarg);
@@ -284,6 +284,7 @@ int main(int argc, char** argv)
     {
       app_error() << "Non-option arguments not allowed" << endl;
       print_help();
+      return 1;
     }
   }
 
@@ -303,8 +304,8 @@ int main(int argc, char** argv)
     return 1;
   }
 
-  TimerManager.set_timer_threshold(timer_level);
-  TimerList_t Timers;
+  timer_manager.set_timer_threshold(timer_level);
+  TimerList Timers;
   setup_timers(Timers, MiniQMCTimerNames, timer_level_coarse);
 
   if (comm.root())
@@ -320,13 +321,13 @@ int main(int argc, char** argv)
   DeviceManager dm(comm.rank(), comm.size());
   app_summary() << "number of ranks : " << comm.size() << ", number of accelerators : " << dm.getNumDevices() << std::endl;
 
-  SPOSet* spo_main;
+  std::unique_ptr<SPOSet> spo_main;
   int nTiles = 1;
 
   ParticleSet ions;
   // initialize ions and splines which are shared by all threads later
   {
-    Timers[Timer_Setup]->start();
+    Timers[Timer_Setup].get().start();
     Tensor<OHMMS_PRECISION, 3> lattice_b;
     build_ions(ions, tmat, lattice_b);
     const int nels = count_electrons(ions, 1);
@@ -359,7 +360,7 @@ int main(int argc, char** argv)
 
 
     spo_main = build_SPOSet(useRef, nx, ny, nz, norb, nTiles, lattice_b);
-    Timers[Timer_Setup]->stop();
+    Timers[Timer_Setup].get().stop();
   }
 
   if (!useRef)
@@ -370,9 +371,9 @@ int main(int argc, char** argv)
                   << "determinant update, and distance table + einspline of the " << endl
                   << "reference implementation " << endl;
 
-  Timers[Timer_Total]->start();
+  Timers[Timer_Total].get().start();
 
-  Timers[Timer_Init]->start();
+  Timers[Timer_Init].get().start();
   std::vector<Mover*> mover_list(nmovers, nullptr);
 // prepare movers
   #pragma omp parallel for
@@ -386,13 +387,13 @@ int main(int argc, char** argv)
     mover_list[iw]    = thiswalker;
 
     // create wavefunction per mover
-    build_WaveFunction(useRef, spo_main, thiswalker->wavefunction, ions, thiswalker->els, thiswalker->rng, delay_rank, enableJ3);
+    build_WaveFunction(useRef, *spo_main, thiswalker->wavefunction, ions, thiswalker->els, thiswalker->rng, delay_rank, enableJ3);
 
     // initial computing
     thiswalker->els.update();
     thiswalker->wavefunction.evaluateLog(thiswalker->els);
   }
-  Timers[Timer_Init]->stop();
+  Timers[Timer_Init].get().stop();
 
   const int nions = ions.getTotalNum();
   const int nels  = mover_list[0]->els.getTotalNum();
@@ -417,7 +418,7 @@ int main(int argc, char** argv)
 
       aligned_vector<RealType> ur(nels);
 
-      Timers[Timer_Diffusion]->start();
+      Timers[Timer_Diffusion].get().start();
       for (int l = 0; l < nsubsteps; ++l) // drift-and-diffusion
       {
         random_th.generate_uniform(ur.data(), nels);
@@ -427,26 +428,26 @@ int main(int argc, char** argv)
           // Operate on electron with index iel
           els.setActive(iel);
           // Compute gradient at the current position
-          Timers[Timer_evalGrad]->start();
+          Timers[Timer_evalGrad].get().start();
           PosType grad_now = wavefunction.evalGrad(els, iel);
-          Timers[Timer_evalGrad]->stop();
+          Timers[Timer_evalGrad].get().stop();
 
           // Construct trial move
           els.makeMove(iel, delta[iel]);
 
           // Compute gradient at the trial position
-          Timers[Timer_ratioGrad]->start();
+          Timers[Timer_ratioGrad].get().start();
           PosType grad_new;
           wavefunction.ratioGrad(els, iel, grad_new);
-          Timers[Timer_ratioGrad]->stop();
+          Timers[Timer_ratioGrad].get().stop();
 
           // Accept/reject the trial move
           if (ur[iel] < accept) // MC
           {
             // Update position, and update temporary storage
-            Timers[Timer_Update]->start();
+            Timers[Timer_Update].get().start();
             wavefunction.acceptMove(els, iel);
-            Timers[Timer_Update]->stop();
+            Timers[Timer_Update].get().stop();
             els.acceptMove(iel);
             my_accepted++;
           }
@@ -464,14 +465,14 @@ int main(int argc, char** argv)
       // evaluate Kinetic Energy
       wavefunction.evaluateGL(els);
 
-      Timers[Timer_Diffusion]->stop();
+      Timers[Timer_Diffusion].get().stop();
 
       // Compute NLPP energy using integral over spherical points
 
       ecp.randomize(rOnSphere); // pick random sphere
       const DistanceTableData* d_ie = els.DistTables[wavefunction.get_ei_TableID()];
 
-      Timers[Timer_ECP]->start();
+      Timers[Timer_ECP].get().start();
       for (int jel = 0; jel < els.getTotalNum(); ++jel)
       {
         const auto& dist  = d_ie->Distances[jel];
@@ -484,40 +485,39 @@ int main(int argc, char** argv)
 
               els.makeMove(jel, deltar);
 
-              Timers[Timer_Value]->start();
+              Timers[Timer_Value].get().start();
               wavefunction.ratio(els, jel);
-              Timers[Timer_Value]->stop();
+              Timers[Timer_Value].get().stop();
 
               els.rejectMove(jel);
             }
       }
-      Timers[Timer_ECP]->stop();
+      Timers[Timer_ECP].get().stop();
 
     } // end of mover loop
 
   } // nsteps
-  Timers[Timer_Total]->stop();
+  Timers[Timer_Total].get().stop();
 
   // free all movers
   #pragma omp parallel for
   for (int iw = 0; iw < nmovers; iw++)
     delete mover_list[iw];
   mover_list.clear();
-  delete spo_main;
 
   if (comm.root())
   {
     cout << "================================== " << endl;
 
-    TimerManager.print();
+    timer_manager.print();
 
     cout << endl << "========== Throughput ============ " << endl << endl;
     cout << "Total throughput ( N_walkers * N_elec^3 / Total time ) = "
-         << (nmovers * comm.size() * std::pow(double(nels),3) / Timers[Timer_Total]->get_total()) << std::endl;
+         << (nmovers * comm.size() * std::pow(double(nels),3) / Timers[Timer_Total].get().get_total()) << std::endl;
     cout << "Diffusion throughput ( N_walkers * N_elec^3 / Diffusion time ) = "
-         << (nmovers * comm.size() * std::pow(double(nels),3) / Timers[Timer_Diffusion]->get_total()) << std::endl;
+         << (nmovers * comm.size() * std::pow(double(nels),3) / Timers[Timer_Diffusion].get().get_total()) << std::endl;
     cout << "Pseudopotential throughput ( N_walkers * N_elec^2 / Pseudopotential time ) = "
-         << (nmovers * comm.size() * std::pow(double(nels),2) / Timers[Timer_ECP]->get_total()) << std::endl;
+         << (nmovers * comm.size() * std::pow(double(nels),2) / Timers[Timer_ECP].get().get_total()) << std::endl;
     cout << endl;
 
     XMLDocument doc;
@@ -525,7 +525,7 @@ int main(int argc, char** argv)
     XMLNode* hardware  = doc.NewElement("hardware");
     resources->InsertEndChild(hardware);
     doc.InsertEndChild(resources);
-    XMLNode* timing = TimerManager.output_timing(doc);
+    XMLNode* timing = timer_manager.output_timing(doc);
     resources->InsertEndChild(timing);
 
     XMLNode* particle_info = doc.NewElement("particles");

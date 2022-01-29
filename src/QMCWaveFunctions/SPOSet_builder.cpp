@@ -16,7 +16,7 @@
 
 namespace qmcplusplus
 {
-SPOSet* build_SPOSet(bool useRef,
+std::unique_ptr<SPOSet> build_SPOSet(bool useRef,
                      int nx,
                      int ny,
                      int nz,
@@ -27,35 +27,36 @@ SPOSet* build_SPOSet(bool useRef,
 {
   if (useRef)
   {
-    auto* spo_main = new miniqmcreference::einspline_spo_ref<OHMMS_PRECISION>;
+    auto spo_main = std::make_unique<miniqmcreference::einspline_spo_ref<OHMMS_PRECISION>>();
     spo_main->set(nx, ny, nz, num_splines, nblocks);
     spo_main->Lattice.set(lattice_b);
-    return dynamic_cast<SPOSet*>(spo_main);
+    return spo_main;
   }
   else
   {
-    auto* spo_main = new einspline_spo_omp<OHMMS_PRECISION>;
+    auto spo_main = std::make_unique<einspline_spo_omp<OHMMS_PRECISION>>();
     spo_main->set(nx, ny, nz, num_splines, nblocks);
     spo_main->Lattice.set(lattice_b);
-    return dynamic_cast<SPOSet*>(spo_main);
+    return spo_main;
   }
 }
 
-SPOSet* build_SPOSet_view(bool useRef, const SPOSet* SPOSet_main, int team_size, int member_id)
+std::unique_ptr<SPOSet> build_SPOSet_view(bool useRef, const SPOSet& SPOSet_main, int team_size, int member_id)
 {
   if (useRef)
   {
-    auto* temp_ptr =
-        dynamic_cast<const miniqmcreference::einspline_spo_ref<OHMMS_PRECISION>*>(SPOSet_main);
-    auto* spo_view =
-        new miniqmcreference::einspline_spo_ref<OHMMS_PRECISION>(*temp_ptr, team_size, member_id);
-    return dynamic_cast<SPOSet*>(spo_view);
+    auto& temp_ptr =
+        dynamic_cast<const miniqmcreference::einspline_spo_ref<OHMMS_PRECISION>&>(SPOSet_main);
+    auto spo_view =
+        std::make_unique<miniqmcreference::einspline_spo_ref<OHMMS_PRECISION>>(temp_ptr, team_size, member_id);
+    return spo_view;
   }
   else
   {
-    auto* temp_ptr = dynamic_cast<const einspline_spo_omp<OHMMS_PRECISION>*>(SPOSet_main);
-    auto* spo_view = new einspline_spo_omp<OHMMS_PRECISION>(*temp_ptr, team_size, member_id);
-    return dynamic_cast<SPOSet*>(spo_view);
+    auto& temp_ptr = dynamic_cast<const einspline_spo_omp<OHMMS_PRECISION>&>(SPOSet_main);
+    auto spo_view =
+    std::make_unique<einspline_spo_omp<OHMMS_PRECISION>>(temp_ptr, team_size, member_id);
+    return spo_view;
   }
 }
 

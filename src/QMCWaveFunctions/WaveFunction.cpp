@@ -36,13 +36,13 @@ enum WaveFunctionTimers
   Timer_CompleteUpdates,
 };
 
-TimerNameLevelList_t<WaveFunctionTimers> WaveFunctionTimerNames =
-    {{Timer_GL, "Kinetic Energy", timer_level_coarse},
-     {Timer_CompleteUpdates, "Complete Updates", timer_level_coarse}};
+TimerNameList_t<WaveFunctionTimers> WaveFunctionTimerNames =
+    {{Timer_GL, "Kinetic Energy"},
+     {Timer_CompleteUpdates, "Complete Updates"}};
 
 
 void build_WaveFunction(bool useRef,
-                        const SPOSet* spo_main,
+                        const SPOSet& spo_main,
                         WaveFunction& WF,
                         ParticleSet& ions,
                         ParticleSet& els,
@@ -60,7 +60,8 @@ void build_WaveFunction(bool useRef,
   }
 
   // create a spo view
-  auto spo = build_SPOSet_view(useRef, spo_main, 1, 0);
+  auto spo_up = build_SPOSet_view(useRef, spo_main, 1, 0);
+  auto spo_dn = build_SPOSet_view(useRef, spo_main, 1, 0);
 
   const int nelup = els.getTotalNum() / 2;
 
@@ -80,8 +81,8 @@ void build_WaveFunction(bool useRef,
 
     // determinant component
     WF.nelup  = nelup;
-    WF.Det_up = new DetType(spo, 0, delay_rank);
-    WF.Det_dn = new DetType(spo, nelup, delay_rank);
+    WF.Det_up = new DetType(std::move(spo_up), 0, delay_rank);
+    WF.Det_dn = new DetType(std::move(spo_dn), nelup, delay_rank);
 
     // J1 component
     J1OrbType* J1 = new J1OrbType(ions, els);
@@ -117,8 +118,8 @@ void build_WaveFunction(bool useRef,
 
     // determinant component
     WF.nelup  = nelup;
-    WF.Det_up = new DetType(spo, 0, delay_rank);
-    WF.Det_dn = new DetType(spo, nelup, delay_rank);
+    WF.Det_up = new DetType(std::move(spo_up), 0, delay_rank);
+    WF.Det_dn = new DetType(std::move(spo_dn), nelup, delay_rank);
 
     // J1 component
     J1OrbType* J1 = new J1OrbType(ions, els);
@@ -167,12 +168,10 @@ WaveFunction::~WaveFunction()
 
 void WaveFunction::setupTimers()
 {
-  setup_timers(timers, WaveFunctionTimerNames);
+  setup_timers(timers, WaveFunctionTimerNames, timer_level_coarse);
   for (int i = 0; i < Jastrows.size(); i++)
-  {
     jastrow_timers.push_back(
-        TimerManager.createTimer(Jastrows[i]->WaveFunctionComponentName, timer_level_fine));
-  }
+        *timer_manager.createTimer(Jastrows[i]->WaveFunctionComponentName, timer_level_fine));
 }
 
 void WaveFunction::evaluateLog(ParticleSet& P)
@@ -186,9 +185,8 @@ void WaveFunction::evaluateLog(ParticleSet& P)
     LogValue += Det_dn->evaluateLog(P, P.G, P.L);
     for (size_t i = 0; i < Jastrows.size(); i++)
     {
-      jastrow_timers[i]->start();
+      ScopedTimer local_timer(jastrow_timers[i]);
       LogValue += Jastrows[i]->evaluateLog(P, P.G, P.L);
-      jastrow_timers[i]->stop();
     }
     FirstTime = false;
   }
@@ -200,9 +198,8 @@ WaveFunction::posT WaveFunction::evalGrad(ParticleSet& P, int iat)
 
   for (size_t i = 0; i < Jastrows.size(); i++)
   {
-    jastrow_timers[i]->start();
+    ScopedTimer local_timer(jastrow_timers[i]);
     grad_iat += Jastrows[i]->evalGrad(P, iat);
-    jastrow_timers[i]->stop();
   }
   return grad_iat;
 }
@@ -214,9 +211,8 @@ WaveFunction::valT WaveFunction::ratioGrad(ParticleSet& P, int iat, posT& grad)
 
   for (size_t i = 0; i < Jastrows.size(); i++)
   {
-    jastrow_timers[i]->start();
+    ScopedTimer local_timer(jastrow_timers[i]);
     ratio *= Jastrows[i]->ratioGrad(P, iat, grad);
-    jastrow_timers[i]->stop();
   }
   return ratio;
 }
@@ -227,9 +223,8 @@ WaveFunction::valT WaveFunction::ratio(ParticleSet& P, int iat)
 
   for (size_t i = 0; i < Jastrows.size(); i++)
   {
-    jastrow_timers[i]->start();
+    ScopedTimer local_timer(jastrow_timers[i]);
     ratio *= Jastrows[i]->ratio(P, iat);
-    jastrow_timers[i]->stop();
   }
   return ratio;
 }
@@ -243,9 +238,8 @@ void WaveFunction::acceptMove(ParticleSet& P, int iat)
 
   for (size_t i = 0; i < Jastrows.size(); i++)
   {
-    jastrow_timers[i]->start();
+    ScopedTimer local_timer(jastrow_timers[i]);
     Jastrows[i]->acceptMove(P, iat);
-    jastrow_timers[i]->stop();
   }
 }
 
@@ -271,10 +265,9 @@ void WaveFunction::evaluateGL(ParticleSet& P)
 
   for (size_t i = 0; i < Jastrows.size(); i++)
   {
-    jastrow_timers[i]->start();
+    ScopedTimer local_timer(jastrow_timers[i]);
     Jastrows[i]->evaluateGL(P, P.G, P.L);
     LogValue += Jastrows[i]->LogValue;
-    jastrow_timers[i]->stop();
   }
 }
 
@@ -289,11 +282,10 @@ void WaveFunction::evaluateRatios(VirtualParticleSet& VP, std::vector<valT>& rat
   std::vector<valT> t(ratios.size());
   for (size_t i = 0; i < Jastrows.size(); i++)
   {
-    jastrow_timers[i]->start();
+    ScopedTimer local_timer(jastrow_timers[i]);
     Jastrows[i]->evaluateRatios(VP, t);
     for (int j = 0; j < ratios.size(); ++j)
       ratios[j] *= t[j];
-    jastrow_timers[i]->stop();
   }
 }
 
@@ -326,12 +318,11 @@ void WaveFunction::flex_evaluateLog(const std::vector<WaveFunction*>& WF_list,
     // Jastrow factors
     for (size_t i = 0; i < Jastrows.size(); i++)
     {
-      jastrow_timers[i]->start();
+      ScopedTimer local_timer(jastrow_timers[i]);
       std::vector<WaveFunctionComponent*> jas_list(extract_jas_list(WF_list, i));
       Jastrows[i]->multi_evaluateLog(jas_list, P_list, G_list, L_list, LogValues);
       for (int iw = 0; iw < P_list.size(); iw++)
         WF_list[iw]->LogValue += LogValues[iw];
-      jastrow_timers[i]->stop();
     }
     for (int iw = 0; iw < P_list.size(); iw++)
       WF_list[iw]->FirstTime = false;
@@ -363,13 +354,12 @@ void WaveFunction::flex_evalGrad(const std::vector<WaveFunction*>& WF_list,
 
     for (size_t i = 0; i < Jastrows.size(); i++)
     {
-      jastrow_timers[i]->start();
+      ScopedTimer local_timer(jastrow_timers[i]);
       std::vector<posT> grad_now_jas(P_list.size());
       std::vector<WaveFunctionComponent*> jas_list(extract_jas_list(WF_list, i));
       Jastrows[i]->multi_evalGrad(jas_list, P_list, iat, grad_now_jas);
       for (int iw = 0; iw < P_list.size(); iw++)
         grad_now[iw] += grad_now_jas[iw];
-      jastrow_timers[i]->stop();
     }
   }
   else if(P_list.size()==1)
@@ -402,13 +392,12 @@ void WaveFunction::flex_ratioGrad(const std::vector<WaveFunction*>& WF_list,
 
     for (size_t i = 0; i < Jastrows.size(); i++)
     {
-      jastrow_timers[i]->start();
+      ScopedTimer local_timer(jastrow_timers[i]);
       std::vector<valT> ratios_jas(P_list.size());
       std::vector<WaveFunctionComponent*> jas_list(extract_jas_list(WF_list, i));
       Jastrows[i]->multi_ratioGrad(jas_list, P_list, iat, ratios_jas, grad_new);
       for (int iw = 0; iw < P_list.size(); iw++)
         ratios[iw] *= ratios_jas[iw];
-      jastrow_timers[i]->stop();
     }
   }
   else if(P_list.size()==1)
@@ -435,10 +424,9 @@ void WaveFunction::flex_acceptrestoreMove(const std::vector<WaveFunction*>& WF_l
 
     for (size_t i = 0; i < Jastrows.size(); i++)
     {
-      jastrow_timers[i]->start();
+      ScopedTimer local_timer(jastrow_timers[i]);
       std::vector<WaveFunctionComponent*> jas_list(extract_jas_list(WF_list, i));
       Jastrows[i]->multi_acceptrestoreMove(jas_list, P_list, isAccepted, iat);
-      jastrow_timers[i]->stop();
     }
   }
   else if(P_list.size()==1 && isAccepted[0])

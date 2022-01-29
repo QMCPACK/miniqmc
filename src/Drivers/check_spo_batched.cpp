@@ -160,12 +160,12 @@ int main(int argc, char** argv)
   DeviceManager dm(comm.rank(), comm.size());
   app_summary() << "number of ranks : " << comm.size() << ", number of accelerators : " << dm.getNumDevices() << std::endl;
 
-  TimerManager.set_timer_threshold(timer_level_fine);
-  TimerList_t Timers;
+  timer_manager.set_timer_threshold(timer_level_fine);
+  TimerList Timers;
   setup_timers(Timers, CheckSPOTimerNames, timer_level_coarse);
 
-  Timers[Timer_Total]->start();
-  Timers[Timer_Init]->start();
+  Timers[Timer_Total].get().start();
+  Timers[Timer_Init].get().start();
 
   using spo_type = einspline_spo_omp<OHMMS_PRECISION>;
   spo_type spo_main;
@@ -242,7 +242,7 @@ int main(int argc, char** argv)
     ur_list[iw].resize(nels);
   }
 
-  Timers[Timer_Init]->stop();
+  Timers[Timer_Init].get().stop();
 
   RealType sqrttau = 2.0;
   RealType accept  = 0.5;
@@ -283,9 +283,9 @@ int main(int argc, char** argv)
         els.makeMove(iel, pos);
       }
 
-      Timers[Timer_SPO_vgh]->start();
+      Timers[Timer_SPO_vgh].get().start();
       anon_spo->multi_evaluate_vgh(spo_shadows, extract_els_list(mover_list), iel);
-      Timers[Timer_SPO_vgh]->stop();
+      Timers[Timer_SPO_vgh].get().stop();
 
 #pragma omp parallel for reduction(+ : evalVGH_v_err, evalVGH_g_err, evalVGH_h_err)
       for (size_t iw = 0; iw < mover_list.size(); iw++)
@@ -296,9 +296,9 @@ int main(int argc, char** argv)
         auto& els         = mover.els;
         auto& ur          = ur_list[iw];
         auto& my_accepted = my_accepted_list[iw];
-        Timers[Timer_SPO_ref_vgh]->start();
+        Timers[Timer_SPO_ref_vgh].get().start();
         spo_ref.evaluate_vgh(els, iel);
-        Timers[Timer_SPO_ref_vgh]->stop();
+        Timers[Timer_SPO_ref_vgh].get().stop();
         // accumulate error
         for (int ib = 0; ib < spo.nBlocks; ib++)
           for (int n = 0; n < spo.nSplinesPerBlock; n++)
@@ -358,14 +358,14 @@ int main(int argc, char** argv)
 
   } // steps.
 
-  Timers[Timer_Total]->stop();
+  Timers[Timer_Total].get().stop();
 
   outputManager.resume();
 
   if (comm.root())
   {
     cout << "================================== " << endl;
-    TimerManager.print();
+    timer_manager.print();
     cout << "================================== " << endl;
   }
 

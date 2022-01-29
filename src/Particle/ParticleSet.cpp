@@ -61,7 +61,7 @@ ParticleSet::ParticleSet(const ParticleSet& p)
       activePtcl(-1),
       mySpecies(p.getSpeciesSet())
 {
-  //distance_timer = TimerManager.createTimer("Distance Tables", timer_level_coarse);
+  //distance_timer = timer_manager.createTimer("Distance Tables", timer_level_coarse);
   setup_timers(timers, DistanceTimerNames, timer_level_coarse);
   // initBase();
   assign(p); // only the base is copied, assumes that other properties are not

@@ -75,7 +75,7 @@ struct einspline_spo_omp : public SPOSet
   Vector<T, OffloadPinnedAllocator<T>> pos_scratch;
 
   /// Timer
-  NewTimer* timer;
+  NewTimer& timer;
 
   /// default constructor
   einspline_spo_omp();

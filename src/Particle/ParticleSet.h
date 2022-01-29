@@ -35,7 +35,7 @@
 #include <Particle/Walker.h>
 #include <Utilities/SpeciesSet.h>
 #include <Utilities/PooledData.h>
-#include <Utilities/NewTimer.h>
+#include <Utilities/TimerManager.h>
 #include <Numerics/Containers.h>
 
 namespace qmcplusplus
@@ -319,7 +319,7 @@ protected:
   ParticleIndex_t SubPtcl;
 
   /// Timer
-  TimerList_t timers;
+  TimerList timers;
 };
 
 const std::vector<ParticleSet::ParticleGradient_t*>

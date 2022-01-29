@@ -27,22 +27,22 @@ namespace qmcplusplus
  *@param first index of the first particle
  */
 template<typename DU_TYPE>
-DiracDeterminant<DU_TYPE>::DiracDeterminant(SPOSet* const spos, int first, int delay)
+DiracDeterminant<DU_TYPE>::DiracDeterminant(std::unique_ptr<SPOSet> spos, int first, int delay)
     : invRow_id(-1),
-      Phi(spos),
+      Phi(std::move(spos)),
       FirstIndex(first),
-      LastIndex(first + spos->size()),
-      NumOrbitals(spos->size()),
-      NumPtcls(spos->size()),
+      LastIndex(first + Phi->size()),
+      NumOrbitals(Phi->size()),
+      NumPtcls(Phi->size()),
       ndelay(delay)
 {
-  UpdateTimer  = TimerManager.createTimer("Determinant::update", timer_level_fine);
-  RatioTimer   = TimerManager.createTimer("Determinant::ratio", timer_level_fine);
-  InverseTimer = TimerManager.createTimer("Determinant::inverse", timer_level_fine);
-  BufferTimer  = TimerManager.createTimer("Determinant::buffer", timer_level_fine);
-  SPOVTimer    = TimerManager.createTimer("Determinant::spoval", timer_level_fine);
-  SPOVGLTimer  = TimerManager.createTimer("Determinant::spovgl", timer_level_fine);
-  resize(spos->size(), spos->size());
+  UpdateTimer  = timer_manager.createTimer("Determinant::update", timer_level_fine);
+  RatioTimer   = timer_manager.createTimer("Determinant::ratio", timer_level_fine);
+  InverseTimer = timer_manager.createTimer("Determinant::inverse", timer_level_fine);
+  BufferTimer  = timer_manager.createTimer("Determinant::buffer", timer_level_fine);
+  SPOVTimer    = timer_manager.createTimer("Determinant::spoval", timer_level_fine);
+  SPOVGLTimer  = timer_manager.createTimer("Determinant::spovgl", timer_level_fine);
+  resize(Phi->size(), Phi->size());
 }
 
 template<typename DU_TYPE>
@@ -306,7 +306,7 @@ void DiracDeterminant<DU_TYPE>::multi_ratioGrad(const std::vector<WaveFunctionCo
   for(auto wfc : WFC_list)
   {
     auto det = static_cast<DiracDeterminant<DU_TYPE>*>(wfc);
-    phi_list.push_back(det->Phi);
+    phi_list.push_back(det->Phi.get());
     psi_v_list.push_back(&(det->psiV));
     dpsi_v_list.push_back(&(det->dpsiV));
     d2psi_v_list.push_back(&(det->d2psiV));

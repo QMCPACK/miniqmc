@@ -52,8 +52,8 @@ private:
   bool FirstTime, Is_built;
   int nelup, ei_TableID;
 
-  TimerList_t timers;
-  TimerList_t jastrow_timers;
+  TimerList timers;
+  TimerList jastrow_timers;
 
 public:
   WaveFunction();
@@ -102,7 +102,7 @@ public:
 
   // friends
   friend void build_WaveFunction(bool useRef,
-                                 const SPOSet* spo_main,
+                                 const SPOSet& spo_main,
                                  WaveFunction& WF,
                                  ParticleSet& ions,
                                  ParticleSet& els,
