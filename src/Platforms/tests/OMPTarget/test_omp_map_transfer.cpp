@@ -18,7 +18,7 @@
 namespace qmcplusplus
 {
 
-TEST_CASE("map_always", "[openmp]")
+TEST_CASE("map_update", "[openmp]")
 {
   constexpr int array_size = 64 << 20;
   std::vector<int, OMPallocator<int, PinnedAlignedAllocator<int>>> array(array_size, 1);

@@ -16,7 +16,7 @@
 namespace qmcplusplus
 {
 
-TEST_CASE("reduction with parallel for", "[openmp]")
+TEST_CASE("task depend taskwait", "[openmp]")
 {
   int a = 0;
   #pragma omp target map(tofrom: a) depend(out: a) nowait
