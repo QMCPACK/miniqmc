@@ -9,8 +9,8 @@
 #// File created by: Ye Luo, yeluo@anl.gov, Argonne National Laboratory
 #//////////////////////////////////////////////////////////////////////////////////////
 
-foreach(
-  NAME
+
+set(OMPTARGET_SRC_NAMES
   math
   reduction
   target_task
@@ -28,12 +28,28 @@ foreach(
   map_transfer
   allocator
   vector)
+
+if(OMP_TESTS_ALL_IN_ONE)
+  set(OMPTARGET_SRCS)
+  foreach(NAME IN LISTS OMPTARGET_SRC_NAMES)
+    list(APPEND OMPTARGET_SRCS test_omp_${NAME}.cpp)
+  endforeach()
+  set(NAME all_in_one)
   set(UTEST_EXE test_omptarget_${NAME})
   set(UTEST_NAME unit_${UTEST_EXE})
-  add_executable(${UTEST_EXE} test_omp_${NAME}.cpp)
+  add_executable(${UTEST_EXE} ${OMPTARGET_SRCS})
   target_link_libraries(${UTEST_EXE} platform_runtime catch_main)
   add_unit_test(${UTEST_NAME} 1 1 $<TARGET_FILE:${UTEST_EXE}>)
-endforeach()
+else()
+  foreach(
+    NAME IN LISTS OMPTARGET_SRC_NAMES)
+    set(UTEST_EXE test_omptarget_${NAME})
+    set(UTEST_NAME unit_${UTEST_EXE})
+    add_executable(${UTEST_EXE} test_omp_${NAME}.cpp)
+    target_link_libraries(${UTEST_EXE} platform_runtime catch_main)
+    add_unit_test(${UTEST_NAME} 1 1 $<TARGET_FILE:${UTEST_EXE}>)
+  endforeach()
+endif()
 
 set(UTEST_EXE test_omptarget_blas)
 set(UTEST_NAME unit_${UTEST_EXE})
