@@ -48,7 +48,7 @@ void test_vendor_device_memory_omp_access()
   int* array_ptr = allocator.allocate(array_size);
 
   int sum = 0;
-  #pragma omp target teams distribute parallel for is_device_ptr(array_ptr) reduction(+:sum)
+  #pragma omp target is_device_ptr(array_ptr) map(tofrom: sum)
   for (int i = 0; i < array_size; i++)
   {
     array_ptr[i] = i;
