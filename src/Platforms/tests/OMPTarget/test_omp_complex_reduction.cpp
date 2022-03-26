@@ -15,6 +15,7 @@
 #include <complex>
 #include "Utilities/Configuration.h"
 #include "Numerics/my_math.hpp"
+#include "OMPTarget/ompReduction.hpp"
 
 namespace qmcplusplus
 {
@@ -31,11 +32,6 @@ void test_map()
 
   CHECK(a_check == ComplexApprox(a));
 }
-
-#if !defined(__NO_UDR)
-#pragma omp declare reduction(+ : std::complex <float> : omp_out += omp_in)
-#pragma omp declare reduction(+ : std::complex <double> : omp_out += omp_in)
-#endif
 
 template<typename T>
 void test_reduction()

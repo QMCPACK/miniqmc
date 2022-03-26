@@ -25,7 +25,7 @@ if(QMC_ENABLE_CUDA AND QMC_OFFLOAD_MEM_ASSOCIATED)
 endif()
 
 if(NOT QMC_COMPLEX)
-  target_compile_definitions(platform_omptarget_LA PUBLIC OPENMP_NO_COMPLEX)
+  target_compile_definitions(platform_omptarget_runtime PUBLIC OPENMP_NO_COMPLEX)
 else()
   # Test if C++ compiler supports OpenMP user defined reduction on complex type
   try_compile(
@@ -53,7 +53,7 @@ else()
       message(FATAL_ERROR "OpenMP implicit reduction on complex functionality compilation check failed!"
                           "See compiler output at ${COMPILE_FAIL_OUTPUT}")
     else()
-      target_compile_definitions(platform_omptarget_LA PUBLIC OPENMP_NO_UDR)
+      target_compile_definitions(platform_omptarget_runtime PUBLIC OPENMP_NO_UDR)
       message(STATUS "OpenMP implicit reduction functionality compilation check pass")
     endif()
   else()
