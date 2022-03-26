@@ -305,6 +305,8 @@ public:
   inline int last(int igroup) const { return SubPtcl[igroup + 1]; }
 
 protected:
+  static std::vector<DistanceTableData*> extractDTRefList(const std::vector<ParticleSet*>& p_list, int id);
+
   /** map to handle distance tables
    *
    * myDistTableMap[source-particle-tag]= locator in the distance table

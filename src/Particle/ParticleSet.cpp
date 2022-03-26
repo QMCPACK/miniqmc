@@ -288,7 +288,7 @@ void ParticleSet::makeMove(Index_t iat, const SingleParticlePos_t& displ)
   activePtcl = iat;
   activePos  = R[iat] + displ;
   for (int i = 0; i < DistTables.size(); ++i)
-    DistTables[i]->move(*this, activePos);
+    DistTables[i]->move(*this, activePos, iat);
 }
 
 void ParticleSet::flex_makeMove(const std::vector<ParticleSet*>& P_list,
@@ -299,17 +299,22 @@ void ParticleSet::flex_makeMove(const std::vector<ParticleSet*>& P_list,
   {
     ScopedTimer local_timer(timers[Timer_makeMove]);
 
+    std::vector<SingleParticlePos_t> new_positions;
+    new_positions.reserve(displs.size());
+
     for (int iw = 0; iw < P_list.size(); iw++)
     {
       P_list[iw]->activePtcl = iat;
       P_list[iw]->activePos  = P_list[iw]->R[iat] + displs[iw];
+      new_positions.push_back(P_list[iw]->activePos);
     }
 
-    for (int i = 0; i < DistTables.size(); ++i)
+    auto& p_leader = *P_list[0];
+    const int dist_tables_size = p_leader.DistTables.size();
+    for (int i = 0; i < dist_tables_size; ++i)
     {
-#pragma omp parallel for
-      for (int iw = 0; iw < P_list.size(); iw++)
-        P_list[iw]->DistTables[i]->move(*P_list[iw], P_list[iw]->activePos);
+      const auto dt_list(extractDTRefList(P_list, i));
+      p_leader.DistTables[i]->mw_move(dt_list, P_list, new_positions, iat);
     }
   }
   else if (P_list.size() == 1)
@@ -385,6 +390,15 @@ const std::vector<ParticleSet::ParticleLaplacian_t*> extract_L_list(const std::v
   for (auto it = P_list.begin(); it != P_list.end(); it++)
     L_list.push_back(&(*it)->L);
   return L_list;
+}
+
+std::vector<DistanceTableData*> ParticleSet::extractDTRefList(const std::vector<ParticleSet*>& p_list, int id)
+{
+  std::vector<DistanceTableData*> dt_list;
+  dt_list.reserve(p_list.size());
+  for (ParticleSet* p : p_list)
+    dt_list.push_back(p->DistTables[id]);
+  return dt_list;
 }
 
 } // namespace qmcplusplus

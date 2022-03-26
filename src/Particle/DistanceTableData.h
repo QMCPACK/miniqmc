@@ -110,7 +110,21 @@ public:
   virtual void evaluate(ParticleSet& P, int jat) = 0;
 
   /// evaluate the temporary pair relations
-  virtual void move(const ParticleSet& P, const PosType& rnew) = 0;
+  virtual void move(const ParticleSet& P, const PosType& rnew, IndexType iat) = 0;
+
+  /** walker batched version of move. this function may be implemented asynchronously.
+   * Additional synchroniziation for collecting results should be handled by the caller.
+   * If DTModes::NEED_TEMP_DATA_ON_HOST, host data will be updated.
+   * If no consumer requests data on the host, the transfer is skipped.
+   */
+  virtual void mw_move(const std::vector<DistanceTableData*>& dt_list,
+                       const std::vector<ParticleSet*>& p_list,
+                       const std::vector<PosType>& rnew_list,
+                       const IndexType iat = 0) const
+  {
+    for (int iw = 0; iw < dt_list.size(); iw++)
+      dt_list[iw]->move(*p_list[iw], rnew_list[iw], iat);
+  }
 
   /// update the distance table by the pair relations
   virtual void update(IndexType jat) = 0;
