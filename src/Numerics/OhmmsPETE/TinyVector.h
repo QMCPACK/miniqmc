@@ -174,9 +174,7 @@ struct TinyVector
 
   // Get and Set Operations
   inline Type_t& operator[](unsigned int i) { return X[i]; }
-  inline Type_t operator[](unsigned int i) const { return X[i]; }
-  inline Type_t& operator()(unsigned int i) { return X[i]; }
-  inline Type_t operator()(unsigned int i) const { return X[i]; }
+  inline const Type_t& operator[](unsigned int i) const { return X[i]; }
 
   inline Type_t* data() { return X; }
   inline const Type_t* data() const { return X; }

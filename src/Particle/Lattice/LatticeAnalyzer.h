@@ -120,9 +120,9 @@ struct LatticeAnalyzer<T, 3>
     T scr = 0.5 * std::numeric_limits<T>::max();
     for (int i = 0; i < 3; ++i)
     {
-      SingleParticlePos_t A   = a(i);
-      SingleParticlePos_t B   = a((i + 1) % 3);
-      SingleParticlePos_t C   = a((i + 2) % 3);
+      SingleParticlePos_t A   = a[i];
+      SingleParticlePos_t B   = a[(i + 1) % 3];
+      SingleParticlePos_t C   = a[(i + 2) % 3];
       SingleParticlePos_t BxC = cross(B, C);
       T dist                  = 0.5 * std::abs(dot(A, BxC)) / std::sqrt(dot(BxC, BxC));
       scr                     = std::min(scr, dist);
