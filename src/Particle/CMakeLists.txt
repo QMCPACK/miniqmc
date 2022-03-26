@@ -13,7 +13,11 @@
 set(PARTICLE VirtualParticleSet.cpp ParticleSet.cpp ParticleSet.BC.cpp DistanceTableAA.cpp DistanceTableAB.cpp
              ParticleSet_builder.cpp)
 
-add_library(qmcparticle ${PARTICLE})
+if(USE_OBJECT_TARGET)
+  add_library(qmcparticle OBJECT ${PARTICLE})
+else()
+  add_library(qmcparticle ${PARTICLE})
+endif()
 target_link_libraries(qmcparticle PUBLIC qmcutil)
 
 subdirs(tests)
