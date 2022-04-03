@@ -28,10 +28,26 @@
 #include <QMCWaveFunctions/einspline_spo_ref.hpp>
 #include <Drivers/NonLocalPP.hpp>
 #include <Utilities/qmcpack_version.h>
+#include <DeviceManager.h>
 #include <getopt.h>
 
 using namespace std;
 using namespace qmcplusplus;
+
+enum CheckSPOTimers
+{
+  Timer_Total,
+  Timer_Init,
+  Timer_SPO_v,
+  Timer_SPO_vgh,
+  Timer_SPO_ref_v,
+  Timer_SPO_ref_vgh
+};
+
+TimerNameList_t<CheckSPOTimers> CheckSPOTimerNames = {
+    {Timer_Total, "Total"},     {Timer_Init, "Initialization"}, {Timer_SPO_v, "SPO_v"},
+    {Timer_SPO_vgh, "SPO_vgh"}, {Timer_SPO_ref_v, "SPO_ref_v"}, {Timer_SPO_ref_vgh, "SPO_ref_vgh"},
+};
 
 void print_help()
 {
@@ -75,6 +91,7 @@ int main(int argc, char** argv)
   int tileSize  = -1;
   int team_size = 1;
 
+  bool speedy  = false;
   bool verbose = false;
 
   if (!comm.root())
@@ -85,7 +102,7 @@ int main(int argc, char** argv)
   int opt;
   while (optind < argc)
   {
-    if ((opt = getopt(argc, argv, "hvVa:c:f:g:m:n:r:s:")) != -1)
+    if ((opt = getopt(argc, argv, "hsvVa:c:f:g:m:n:r:")) != -1)
     {
       switch (opt)
       {
@@ -114,6 +131,9 @@ int main(int argc, char** argv)
       case 'r': // rmax
         Rmax = atof(optarg);
         break;
+      case 's':
+        speedy = true;
+        break;
       case 'v':
         verbose = true;
         break;
@@ -141,6 +161,17 @@ int main(int argc, char** argv)
   }
 
   print_version(verbose);
+
+  DeviceManager dm(comm.rank(), comm.size());
+  app_summary() << "number of ranks : " << comm.size() << ", number of accelerators : " << dm.getNumDevices()
+                << std::endl;
+
+  timer_manager.set_timer_threshold(timer_level_fine);
+  TimerList Timers;
+  setup_timers(Timers, CheckSPOTimerNames, timer_level_coarse);
+
+  Timers[Timer_Total].get().start();
+  Timers[Timer_Init].get().start();
 
   Tensor<int, 3> tmat(na, 0, 0, 0, nb, 0, 0, 0, nc);
 
@@ -182,6 +213,8 @@ int main(int argc, char** argv)
     spo_ref_main.set(nx, ny, nz, norb, nTiles);
     spo_ref_main.Lattice.set(lattice_b);
   }
+
+  Timers[Timer_Init].get().stop();
 
   double nspheremoves = 0;
   double dNumVGHCalls = 0;
@@ -237,6 +270,9 @@ int main(int argc, char** argv)
 
     for (int mc = 0; mc < nsteps; ++mc)
     {
+#pragma omp master
+      app_summary() << "mc = " << mc << std::endl;
+
       random_th.generate_normal(&delta[0][0], nels3);
       random_th.generate_uniform(ur.data(), nels);
 
@@ -244,26 +280,36 @@ int main(int argc, char** argv)
       for (int iel = 0; iel < nels; ++iel)
       {
         els.makeMove(iel, delta[iel]);
-        spo.evaluate_vgh(els, iel);
-        spo_ref.evaluate_vgh(els, iel);
-        // accumulate error
-        for (int ib = 0; ib < spo.nBlocks; ib++)
-          for (int n = 0; n < spo.nSplinesPerBlock; n++)
+        {
+          ScopedTimer local(Timers[Timer_SPO_vgh].get());
+          spo.evaluate_vgh(els, iel, !speedy);
+        }
+
+        if (!speedy)
+        {
           {
-            // value
-            evalVGH_v_err += std::fabs(spo.offload_scratch[ib][0][n] - spo_ref.psi[ib][n]);
-            // grad
-            evalVGH_g_err += std::fabs(spo.offload_scratch[ib][1][n] - spo_ref.grad[ib].data(0)[n]);
-            evalVGH_g_err += std::fabs(spo.offload_scratch[ib][2][n] - spo_ref.grad[ib].data(1)[n]);
-            evalVGH_g_err += std::fabs(spo.offload_scratch[ib][3][n] - spo_ref.grad[ib].data(2)[n]);
-            // hess
-            evalVGH_h_err += std::fabs(spo.offload_scratch[ib][4][n] - spo_ref.hess[ib].data(0)[n]);
-            evalVGH_h_err += std::fabs(spo.offload_scratch[ib][5][n] - spo_ref.hess[ib].data(1)[n]);
-            evalVGH_h_err += std::fabs(spo.offload_scratch[ib][6][n] - spo_ref.hess[ib].data(2)[n]);
-            evalVGH_h_err += std::fabs(spo.offload_scratch[ib][7][n] - spo_ref.hess[ib].data(3)[n]);
-            evalVGH_h_err += std::fabs(spo.offload_scratch[ib][8][n] - spo_ref.hess[ib].data(4)[n]);
-            evalVGH_h_err += std::fabs(spo.offload_scratch[ib][9][n] - spo_ref.hess[ib].data(5)[n]);
+            ScopedTimer local(Timers[Timer_SPO_ref_vgh].get());
+            spo_ref.evaluate_vgh(els, iel);
           }
+          // accumulate error
+          for (int ib = 0; ib < spo.nBlocks; ib++)
+            for (int n = 0; n < spo.nSplinesPerBlock; n++)
+            {
+              // value
+              evalVGH_v_err += std::fabs(spo.offload_scratch[ib][0][n] - spo_ref.psi[ib][n]);
+              // grad
+              evalVGH_g_err += std::fabs(spo.offload_scratch[ib][1][n] - spo_ref.grad[ib].data(0)[n]);
+              evalVGH_g_err += std::fabs(spo.offload_scratch[ib][2][n] - spo_ref.grad[ib].data(1)[n]);
+              evalVGH_g_err += std::fabs(spo.offload_scratch[ib][3][n] - spo_ref.grad[ib].data(2)[n]);
+              // hess
+              evalVGH_h_err += std::fabs(spo.offload_scratch[ib][4][n] - spo_ref.hess[ib].data(0)[n]);
+              evalVGH_h_err += std::fabs(spo.offload_scratch[ib][5][n] - spo_ref.hess[ib].data(1)[n]);
+              evalVGH_h_err += std::fabs(spo.offload_scratch[ib][6][n] - spo_ref.hess[ib].data(2)[n]);
+              evalVGH_h_err += std::fabs(spo.offload_scratch[ib][7][n] - spo_ref.hess[ib].data(3)[n]);
+              evalVGH_h_err += std::fabs(spo.offload_scratch[ib][8][n] - spo_ref.hess[ib].data(4)[n]);
+              evalVGH_h_err += std::fabs(spo.offload_scratch[ib][9][n] - spo_ref.hess[ib].data(5)[n]);
+            }
+        }
         if (ur[iel] < accept)
         {
           els.acceptMove(iel);
@@ -287,12 +333,21 @@ int main(int argc, char** argv)
           {
             PosType delta_qp = centerP + r * rOnSphere[k] - els.R[iel];
             els.makeMove(iel, delta_qp);
-            spo.evaluate_v(els, iel);
-            spo_ref.evaluate_v(els, iel);
-            // accumulate error
-            for (int ib = 0; ib < spo.nBlocks; ib++)
-              for (int n = 0; n < spo.nSplinesPerBlock; n++)
-                evalV_v_err += std::fabs(spo.offload_scratch[ib][0][n] - spo_ref.psi[ib][n]);
+            {
+              ScopedTimer local(Timers[Timer_SPO_v].get());
+              spo.evaluate_v(els, iel, !speedy);
+            }
+            if (!speedy)
+            {
+              {
+                ScopedTimer local(Timers[Timer_SPO_ref_v].get());
+                spo_ref.evaluate_v(els, iel);
+              }
+              // accumulate error
+              for (int ib = 0; ib < spo.nBlocks; ib++)
+                for (int n = 0; n < spo.nSplinesPerBlock; n++)
+                  evalV_v_err += std::fabs(spo.offload_scratch[ib][0][n] - spo_ref.psi[ib][n]);
+            }
           }
         } // els
       }   // ions
@@ -305,43 +360,54 @@ int main(int argc, char** argv)
 
   } // end of omp parallel
 
+  Timers[Timer_Total].get().stop();
+
   outputManager.resume();
 
-  evalV_v_err /= nspheremoves;
-  evalVGH_v_err /= dNumVGHCalls;
-  evalVGH_g_err /= dNumVGHCalls;
-  evalVGH_h_err /= dNumVGHCalls;
+  if (comm.root())
+  {
+    cout << "================================== " << endl;
+    timer_manager.print(app_summary());
+    cout << "================================== " << endl;
+  }
 
-  int np                     = omp_get_max_threads();
-  constexpr RealType small_v = std::numeric_limits<RealType>::epsilon() * 1e4;
-  constexpr RealType small_g = std::numeric_limits<RealType>::epsilon() * 3e6;
-  constexpr RealType small_h = std::numeric_limits<RealType>::epsilon() * 6e8;
-  int nfail                  = 0;
-  app_log() << std::endl;
-  if (evalV_v_err / np > small_v || evalV_v_err != evalV_v_err)
+  if (!speedy)
   {
-    app_log() << "Fail in evaluate_v, V error =" << evalV_v_err / np << std::endl;
-    nfail = 1;
-  }
-  if (evalVGH_v_err / np > small_v || evalVGH_v_err != evalVGH_v_err)
-  {
-    app_log() << "Fail in evaluate_vgh, V error =" << evalVGH_v_err / np << std::endl;
-    nfail += 1;
-  }
-  if (evalVGH_g_err / np > small_g || evalVGH_g_err != evalVGH_g_err)
-  {
-    app_log() << "Fail in evaluate_vgh, G error =" << evalVGH_g_err / np << std::endl;
-    nfail += 1;
-  }
-  if (evalVGH_h_err / np > small_h || evalVGH_h_err != evalVGH_h_err)
-  {
-    app_log() << "Fail in evaluate_vgh, H error =" << evalVGH_h_err / np << std::endl;
-    nfail += 1;
-  }
-  comm.reduce(nfail);
+    evalV_v_err /= nspheremoves;
+    evalVGH_v_err /= dNumVGHCalls;
+    evalVGH_g_err /= dNumVGHCalls;
+    evalVGH_h_err /= dNumVGHCalls;
 
-  if (nfail == 0)
-    app_log() << "All checks passed for spo" << std::endl;
+    int np                     = omp_get_max_threads();
+    constexpr RealType small_v = std::numeric_limits<RealType>::epsilon() * 1e4;
+    constexpr RealType small_g = std::numeric_limits<RealType>::epsilon() * 3e6;
+    constexpr RealType small_h = std::numeric_limits<RealType>::epsilon() * 6e8;
+    int nfail                  = 0;
+    app_log() << std::endl;
+    if (evalV_v_err / np > small_v || evalV_v_err != evalV_v_err)
+    {
+      app_log() << "Fail in evaluate_v, V error =" << evalV_v_err / np << std::endl;
+      nfail = 1;
+    }
+    if (evalVGH_v_err / np > small_v || evalVGH_v_err != evalVGH_v_err)
+    {
+      app_log() << "Fail in evaluate_vgh, V error =" << evalVGH_v_err / np << std::endl;
+      nfail += 1;
+    }
+    if (evalVGH_g_err / np > small_g || evalVGH_g_err != evalVGH_g_err)
+    {
+      app_log() << "Fail in evaluate_vgh, G error =" << evalVGH_g_err / np << std::endl;
+      nfail += 1;
+    }
+    if (evalVGH_h_err / np > small_h || evalVGH_h_err != evalVGH_h_err)
+    {
+      app_log() << "Fail in evaluate_vgh, H error =" << evalVGH_h_err / np << std::endl;
+      nfail += 1;
+    }
+    comm.reduce(nfail);
 
+    if (nfail == 0)
+      app_log() << "All checks passed for spo" << std::endl;
+  }
   return 0;
 }

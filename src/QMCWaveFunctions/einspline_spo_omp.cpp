@@ -140,7 +140,7 @@ void einspline_spo_omp<T>::set(int nx, int ny, int nz, int num_splines, int nblo
 
 /** evaluate psi */
 template<typename T>
-void einspline_spo_omp<T>::evaluate_v(const ParticleSet& P, int iat)
+void einspline_spo_omp<T>::evaluate_v(const ParticleSet& P, int iat, bool host_ready)
 {
   ScopedTimer local_timer(timer);
 
@@ -159,8 +159,7 @@ void einspline_spo_omp<T>::evaluate_v(const ParticleSet& P, int iat)
     const auto* restrict spline_m = einsplines[i];
     auto* restrict psi_ptr        = offload_scratch[i].data();
 
-    PRAGMA_OFFLOAD("omp target teams distribute num_teams(NumTeams) thread_limit(ChunkSizePerTeam) \
-                    map(always, from: psi_ptr[:nSplinesPerBlock])")
+    PRAGMA_OFFLOAD("omp target teams distribute num_teams(NumTeams) thread_limit(ChunkSizePerTeam)")
     for (int team_id = 0; team_id < NumTeams; team_id++)
     {
       const int first = ChunkSizePerTeam * team_id;
@@ -173,6 +172,11 @@ void einspline_spo_omp<T>::evaluate_v(const ParticleSet& P, int iat)
       PRAGMA_OFFLOAD("omp parallel for")
       for (int ind = 0; ind < last - first; ind++)
         spline2offload::evaluate_v_v2(spline_m, ix, iy, iz, a, b, c, psi_ptr + first, first, ind);
+    }
+
+    if (host_ready)
+    {
+      PRAGMA_OFFLOAD("omp target update from(psi_ptr[:nSplinesPerBlock])")
     }
   }
 }
@@ -283,7 +287,7 @@ void einspline_spo_omp<T>::evaluate_vgl(const ParticleSet& P, int iat)
 
 /** evaluate psi, grad and hess */
 template<typename T>
-void einspline_spo_omp<T>::evaluate_vgh(const ParticleSet& P, int iat)
+void einspline_spo_omp<T>::evaluate_vgh(const ParticleSet& P, int iat, bool host_ready)
 {
   ScopedTimer local_timer(timer);
 
@@ -303,8 +307,7 @@ void einspline_spo_omp<T>::evaluate_vgh(const ParticleSet& P, int iat)
     auto* restrict offload_scratch_ptr = offload_scratch[i].data();
     int padded_size                    = getAlignedSize<T>(nSplinesPerBlock);
 
-    PRAGMA_OFFLOAD("omp target teams distribute num_teams(NumTeams) thread_limit(ChunkSizePerTeam) \
-                    map(always, from: offload_scratch_ptr[:vgh_dim * padded_size])")
+    PRAGMA_OFFLOAD("omp target teams distribute num_teams(NumTeams) thread_limit(ChunkSizePerTeam)")
     for (int team_id = 0; team_id < NumTeams; team_id++)
     {
       const int first = ChunkSizePerTeam * team_id;
@@ -320,6 +323,9 @@ void einspline_spo_omp<T>::evaluate_vgh(const ParticleSet& P, int iat)
         spline2offload::evaluate_vgh_v2(spline_m, ix, iy, iz, a, b, c, da, db, dc, d2a, d2b, d2c,
                                         offload_scratch_ptr + first, padded_size, first, ind);
     }
+
+    if (host_ready)
+      offload_scratch[i].updateFrom();
   }
 }
 

@@ -103,7 +103,7 @@ struct einspline_spo_omp : public SPOSet
   void set(int nx, int ny, int nz, int num_splines, int nblocks, bool init_random = true);
 
   /** evaluate psi */
-  void evaluate_v(const ParticleSet& P, int iat);
+  void evaluate_v(const ParticleSet& P, int iat, bool host_ready = true);
 
   void evaluate(const ParticleSet& P, int iat, ValueVector_t& psi_v) override;
 
@@ -116,7 +116,7 @@ struct einspline_spo_omp : public SPOSet
   void evaluate_vgl(const ParticleSet& P, int iat);
 
   /** evaluate psi, grad and hess */
-  void evaluate_vgh(const ParticleSet& P, int iat);
+  void evaluate_vgh(const ParticleSet& P, int iat, bool host_ready = true);
 
   void evaluate(const ParticleSet& P,
                 int iat,

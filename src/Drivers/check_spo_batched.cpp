@@ -46,8 +46,8 @@ enum CheckSPOTimers
 };
 
 TimerNameList_t<CheckSPOTimers> CheckSPOTimerNames = {
-    {Timer_Total, "Total"},     {Timer_Init, "Initialization"}, {Timer_SPO_v, "SPO_v"},
-    {Timer_SPO_vgh, "SPO_vgh"}, {Timer_SPO_ref_v, "SPO_ref_v"}, {Timer_SPO_ref_vgh, "SPO_ref_vgh"},
+    {Timer_Total, "Total"},           {Timer_Init, "Initialization"}, {Timer_SPO_v, "SPO_v"},
+    {Timer_SPO_vgh, "multi_SPO_vgh"}, {Timer_SPO_ref_v, "SPO_ref_v"}, {Timer_SPO_ref_vgh, "SPO_ref_vgh"},
 };
 
 void print_help()
@@ -290,7 +290,7 @@ int main(int argc, char** argv)
       }
 
       Timers[Timer_SPO_vgh].get().start();
-      anon_spo->multi_evaluate_vgh(spo_shadows, extract_els_list(mover_list), iel, true);
+      anon_spo->multi_evaluate_vgh(spo_shadows, extract_els_list(mover_list), iel, !speedy);
       Timers[Timer_SPO_vgh].get().stop();
 
       if (!speedy)
