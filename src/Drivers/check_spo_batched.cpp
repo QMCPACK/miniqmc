@@ -285,7 +285,7 @@ int main(int argc, char** argv)
       }
 
       Timers[Timer_SPO_vgh].get().start();
-      anon_spo->multi_evaluate_vgh(spo_shadows, extract_els_list(mover_list), iel);
+      anon_spo->multi_evaluate_vgh(spo_shadows, extract_els_list(mover_list), iel, true);
       Timers[Timer_SPO_vgh].get().stop();
 
 #pragma omp parallel for reduction(+ : evalVGH_v_err, evalVGH_g_err, evalVGH_h_err)

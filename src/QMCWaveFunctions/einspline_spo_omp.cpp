@@ -159,13 +159,8 @@ void einspline_spo_omp<T>::evaluate_v(const ParticleSet& P, int iat)
     const auto* restrict spline_m = einsplines[i];
     auto* restrict psi_ptr        = offload_scratch[i].data();
 
-#ifdef ENABLE_OFFLOAD
-#pragma omp target teams distribute num_teams(NumTeams) thread_limit(ChunkSizePerTeam) \
-    map(always, from                                                                   \
-        : psi_ptr[:nSplinesPerBlock])
-#else
-#pragma omp parallel for
-#endif
+    PRAGMA_OFFLOAD("omp target teams distribute num_teams(NumTeams) thread_limit(ChunkSizePerTeam) \
+                    map(always, from: psi_ptr[:nSplinesPerBlock])")
     for (int team_id = 0; team_id < NumTeams; team_id++)
     {
       const int first = ChunkSizePerTeam * team_id;
@@ -240,14 +235,9 @@ void einspline_spo_omp<T>::evaluateDetRatios(const VirtualParticleSet& VP,
     auto* restrict psiinv_ptr          = psiinv_pos_copy.data();
     const auto psiinv_size             = psiinv.size();
 
-#ifdef ENABLE_OFFLOAD
-#pragma omp target teams distribute collapse(2) num_teams(nVP* NumTeams) thread_limit(ChunkSizePerTeam) \
-    map(always, to                                                                                      \
-        : psiinv_ptr [0:psiinv_pos_copy.size()]) map(always, from                                       \
-                                                     : ratios_private_ptr [0:NumTeams * nVP])
-#else
-#pragma omp parallel for collapse(2)
-#endif
+    PRAGMA_OFFLOAD("omp target teams distribute collapse(2) num_teams(nVP* NumTeams) thread_limit(ChunkSizePerTeam) \
+                    map(always, to: psiinv_ptr [0:psiinv_pos_copy.size()]) \
+                    map(always, from: ratios_private_ptr [0:NumTeams * nVP])")
     for (size_t iVP = 0; iVP < nVP; iVP++)
       for (int team_id = 0; team_id < NumTeams; team_id++)
       {
@@ -313,13 +303,8 @@ void einspline_spo_omp<T>::evaluate_vgh(const ParticleSet& P, int iat)
     auto* restrict offload_scratch_ptr = offload_scratch[i].data();
     int padded_size                    = getAlignedSize<T>(nSplinesPerBlock);
 
-#ifdef ENABLE_OFFLOAD
-#pragma omp target teams distribute num_teams(NumTeams) thread_limit(ChunkSizePerTeam) \
-    map(always, from                                                                   \
-        : offload_scratch_ptr[:vgh_dim * padded_size])
-#else
-#pragma omp parallel for
-#endif
+    PRAGMA_OFFLOAD("omp target teams distribute num_teams(NumTeams) thread_limit(ChunkSizePerTeam) \
+                    map(always, from: offload_scratch_ptr[:vgh_dim * padded_size])")
     for (int team_id = 0; team_id < NumTeams; team_id++)
     {
       const int first = ChunkSizePerTeam * team_id;
@@ -372,7 +357,8 @@ void einspline_spo_omp<T>::evaluate_build_vgl(ValueVector_t& psi_v, GradVector_t
 template<typename T>
 void einspline_spo_omp<T>::multi_evaluate_vgh(const std::vector<SPOSet*>& spo_list,
                                               const std::vector<ParticleSet*>& P_list,
-                                              int iat)
+                                              int iat,
+                                              bool host_ready)
 {
   ScopedTimer local_timer(timer);
 
@@ -409,14 +395,8 @@ void einspline_spo_omp<T>::multi_evaluate_vgh(const std::vector<SPOSet*>& spo_li
     multi_offload_scratch[i].resize(vgh_dim * nw, padded_size);
     auto* multi_offload_scratch_ptr = multi_offload_scratch[i].data();
 
-#ifdef ENABLE_OFFLOAD
-#pragma omp target teams distribute collapse(2) num_teams(nw* NumTeams) thread_limit(ChunkSizePerTeam) \
-    map(always, to                                                                                     \
-        : pos_scratch_ptr[:pos_scratch.size()]) map(always, from                                       \
-                                                    : multi_offload_scratch_ptr[:vgh_dim * nw * padded_size])
-#else
-#pragma omp parallel for collapse(2)
-#endif
+    PRAGMA_OFFLOAD("omp target teams distribute collapse(2) num_teams(nw* NumTeams) thread_limit(ChunkSizePerTeam) \
+                    map(always, to: pos_scratch_ptr[:pos_scratch.size()])")
     for (size_t iw = 0; iw < nw; iw++)
       for (int team_id = 0; team_id < NumTeams; team_id++)
       {
@@ -437,9 +417,13 @@ void einspline_spo_omp<T>::multi_evaluate_vgh(const std::vector<SPOSet*>& spo_li
                                           first, ind);
       }
 
-    for (size_t iw = 0; iw < nw; iw++)
-      std::copy_n(multi_offload_scratch_ptr + iw * vgh_dim * padded_size, padded_size * vgh_dim,
-                  shadows[iw]->offload_scratch[i].data());
+    if (host_ready)
+    {
+      multi_offload_scratch[i].updateFrom();
+      for (size_t iw = 0; iw < nw; iw++)
+        std::copy_n(multi_offload_scratch_ptr + iw * vgh_dim * padded_size, padded_size * vgh_dim,
+                    shadows[iw]->offload_scratch[i].data());
+    }
   }
 }
 
@@ -483,13 +467,8 @@ void einspline_spo_omp<T>::multi_evaluate_ratio_grads(const std::vector<SPOSet*>
     multi_offload_scratch[i].resize(vgh_dim * nw, padded_size);
     auto* multi_offload_scratch_ptr = multi_offload_scratch[i].data();
 
-#ifdef ENABLE_OFFLOAD
-#pragma omp target teams distribute collapse(2) num_teams(nw* NumTeams) thread_limit(ChunkSizePerTeam) \
-    map(always, tofrom                                                                                 \
-        : pos_scratch_ptr[:pos_scratch.size()])
-#else
-#pragma omp parallel for collapse(2)
-#endif
+    PRAGMA_OFFLOAD("omp target teams distribute collapse(2) num_teams(nw* NumTeams) thread_limit(ChunkSizePerTeam) \
+                    map(always, tofrom: pos_scratch_ptr[:pos_scratch.size()])")
     for (size_t iw = 0; iw < nw; iw++)
       for (int team_id = 0; team_id < NumTeams; team_id++)
       {
@@ -537,7 +516,7 @@ inline void einspline_spo_omp<T>::multi_evaluate(const std::vector<SPOSet*>& spo
                                                  const std::vector<GradVector_t*>& dpsi_v_list,
                                                  const std::vector<ValueVector_t*>& d2psi_v_list)
 {
-  multi_evaluate_vgh(spo_list, P_list, iat);
+  multi_evaluate_vgh(spo_list, P_list, iat, true);
   for (size_t iw = 0; iw < spo_list.size(); iw++)
     static_cast<self_type*>(spo_list[iw])->evaluate_build_vgl(*psi_v_list[iw], *dpsi_v_list[iw], *d2psi_v_list[iw]);
 }
