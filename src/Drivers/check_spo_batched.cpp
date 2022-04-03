@@ -53,7 +53,7 @@ TimerNameList_t<CheckSPOTimers> CheckSPOTimerNames = {
 void print_help()
 {
   app_summary() << "usage:";
-  app_summary() << '\n' << "  check_spo [-hvV] [-g \"n0 n1 n2\"] [-m meshfactor]";
+  app_summary() << '\n' << "  check_spo [-hsvV] [-g \"n0 n1 n2\"] [-m meshfactor]";
   app_summary() << '\n' << "            [-n steps] [-r rmax] [-w walkers]";
   app_summary() << '\n' << "options:";
   app_summary() << '\n' << "  -g  set the 3D tiling.           default: 1 1 1";
@@ -61,6 +61,7 @@ void print_help()
   app_summary() << '\n' << "  -m  meshfactor                   default: 1.0";
   app_summary() << '\n' << "  -n  number of MC steps           default: 5";
   app_summary() << '\n' << "  -r  set the Rmax.                default: 1.7";
+  app_summary() << '\n' << "  -s  speedy mode. Skip all transfer and checks.";
   app_summary() << '\n' << "  -v  verbose output";
   app_summary() << '\n' << "  -V  print version information and exit";
   app_summary() << '\n' << "  -w  number of walkers per rank   default: OpenMP num threads";
@@ -90,6 +91,7 @@ int main(int argc, char** argv)
   RealType Rmax(1.7);
   int nx = 37, ny = 37, nz = 37;
   int tileSize = -1;
+  bool speedy  = false;
   bool verbose = false;
 
   if (!comm.root())
@@ -100,7 +102,7 @@ int main(int argc, char** argv)
   int opt;
   while (optind < argc)
   {
-    if ((opt = getopt(argc, argv, "hvVa:g:m:n:r:s:w:")) != -1)
+    if ((opt = getopt(argc, argv, "hsvVa:g:m:n:r:w:")) != -1)
     {
       switch (opt)
       {
@@ -125,6 +127,9 @@ int main(int argc, char** argv)
         break;
       case 'r': // rmax
         Rmax = atof(optarg);
+        break;
+      case 's':
+        speedy = true;
         break;
       case 'v':
         verbose = true;
@@ -288,42 +293,43 @@ int main(int argc, char** argv)
       anon_spo->multi_evaluate_vgh(spo_shadows, extract_els_list(mover_list), iel, true);
       Timers[Timer_SPO_vgh].get().stop();
 
+      if (!speedy)
 #pragma omp parallel for reduction(+ : evalVGH_v_err, evalVGH_g_err, evalVGH_h_err)
-      for (size_t iw = 0; iw < mover_list.size(); iw++)
-      {
-        auto& mover       = *mover_list[iw];
-        auto& spo         = *spo_views[iw];
-        auto& spo_ref     = *spo_ref_views[iw];
-        auto& els         = mover.els;
-        auto& ur          = ur_list[iw];
-        auto& my_accepted = my_accepted_list[iw];
-        Timers[Timer_SPO_ref_vgh].get().start();
-        spo_ref.evaluate_vgh(els, iel);
-        Timers[Timer_SPO_ref_vgh].get().stop();
-        // accumulate error
-        for (int ib = 0; ib < spo.nBlocks; ib++)
-          for (int n = 0; n < spo.nSplinesPerBlock; n++)
-          {
-            // value
-            evalVGH_v_err += std::fabs(spo.offload_scratch[ib][0][n] - spo_ref.psi[ib][n]);
-            // grad
-            evalVGH_g_err += std::fabs(spo.offload_scratch[ib][1][n] - spo_ref.grad[ib].data(0)[n]);
-            evalVGH_g_err += std::fabs(spo.offload_scratch[ib][2][n] - spo_ref.grad[ib].data(1)[n]);
-            evalVGH_g_err += std::fabs(spo.offload_scratch[ib][3][n] - spo_ref.grad[ib].data(2)[n]);
-            // hess
-            evalVGH_h_err += std::fabs(spo.offload_scratch[ib][4][n] - spo_ref.hess[ib].data(0)[n]);
-            evalVGH_h_err += std::fabs(spo.offload_scratch[ib][5][n] - spo_ref.hess[ib].data(1)[n]);
-            evalVGH_h_err += std::fabs(spo.offload_scratch[ib][6][n] - spo_ref.hess[ib].data(2)[n]);
-            evalVGH_h_err += std::fabs(spo.offload_scratch[ib][7][n] - spo_ref.hess[ib].data(3)[n]);
-            evalVGH_h_err += std::fabs(spo.offload_scratch[ib][8][n] - spo_ref.hess[ib].data(4)[n]);
-            evalVGH_h_err += std::fabs(spo.offload_scratch[ib][9][n] - spo_ref.hess[ib].data(5)[n]);
-          }
-        if (ur[iel] > accept)
+        for (size_t iw = 0; iw < mover_list.size(); iw++)
         {
-          els.acceptMove(iel);
-          my_accepted++;
+          auto& mover       = *mover_list[iw];
+          auto& spo         = *spo_views[iw];
+          auto& spo_ref     = *spo_ref_views[iw];
+          auto& els         = mover.els;
+          auto& ur          = ur_list[iw];
+          auto& my_accepted = my_accepted_list[iw];
+          Timers[Timer_SPO_ref_vgh].get().start();
+          spo_ref.evaluate_vgh(els, iel);
+          Timers[Timer_SPO_ref_vgh].get().stop();
+          // accumulate error
+          for (int ib = 0; ib < spo.nBlocks; ib++)
+            for (int n = 0; n < spo.nSplinesPerBlock; n++)
+            {
+              // value
+              evalVGH_v_err += std::fabs(spo.offload_scratch[ib][0][n] - spo_ref.psi[ib][n]);
+              // grad
+              evalVGH_g_err += std::fabs(spo.offload_scratch[ib][1][n] - spo_ref.grad[ib].data(0)[n]);
+              evalVGH_g_err += std::fabs(spo.offload_scratch[ib][2][n] - spo_ref.grad[ib].data(1)[n]);
+              evalVGH_g_err += std::fabs(spo.offload_scratch[ib][3][n] - spo_ref.grad[ib].data(2)[n]);
+              // hess
+              evalVGH_h_err += std::fabs(spo.offload_scratch[ib][4][n] - spo_ref.hess[ib].data(0)[n]);
+              evalVGH_h_err += std::fabs(spo.offload_scratch[ib][5][n] - spo_ref.hess[ib].data(1)[n]);
+              evalVGH_h_err += std::fabs(spo.offload_scratch[ib][6][n] - spo_ref.hess[ib].data(2)[n]);
+              evalVGH_h_err += std::fabs(spo.offload_scratch[ib][7][n] - spo_ref.hess[ib].data(3)[n]);
+              evalVGH_h_err += std::fabs(spo.offload_scratch[ib][8][n] - spo_ref.hess[ib].data(4)[n]);
+              evalVGH_h_err += std::fabs(spo.offload_scratch[ib][9][n] - spo_ref.hess[ib].data(5)[n]);
+            }
+          if (ur[iel] > accept)
+          {
+            els.acceptMove(iel);
+            my_accepted++;
+          }
         }
-      }
     }
 
 #if 0
@@ -377,43 +383,47 @@ int main(int argc, char** argv)
     dNumVGHCalls += nels * nsteps;
   }
 
-  //evalV_v_err /= nspheremoves;
-  evalVGH_v_err /= dNumVGHCalls;
-  evalVGH_g_err /= dNumVGHCalls;
-  evalVGH_h_err /= dNumVGHCalls;
+  if (!speedy)
+  {
+    //evalV_v_err /= nspheremoves;
+    evalVGH_v_err /= dNumVGHCalls;
+    evalVGH_g_err /= dNumVGHCalls;
+    evalVGH_h_err /= dNumVGHCalls;
 
-  const int np               = nmovers;
-  constexpr RealType small_v = std::numeric_limits<RealType>::epsilon() * 1e4;
-  constexpr RealType small_g = std::numeric_limits<RealType>::epsilon() * 3e6;
-  constexpr RealType small_h = std::numeric_limits<RealType>::epsilon() * 6e8;
-  int nfail                  = 0;
-  app_log() << std::endl;
-  if (evalV_v_err / np > small_v || evalV_v_err != evalV_v_err)
-  {
-    app_log() << "Fail in evaluate_v, V error =" << evalV_v_err / np << std::endl;
-    nfail = 1;
-  }
-  if (evalVGH_v_err / np > small_v || evalVGH_v_err != evalVGH_v_err)
-  {
-    app_log() << "Fail in evaluate_vgh, V error =" << evalVGH_v_err / np << std::endl;
-    nfail += 1;
-  }
-  if (evalVGH_g_err / np > small_g || evalVGH_g_err != evalVGH_g_err)
-  {
-    app_log() << "Fail in evaluate_vgh, G error =" << evalVGH_g_err / np << std::endl;
-    nfail += 1;
-  }
-  if (evalVGH_h_err / np > small_h || evalVGH_h_err != evalVGH_h_err)
-  {
-    app_log() << "Fail in evaluate_vgh, H error =" << evalVGH_h_err / np << std::endl;
-    nfail += 1;
-  }
-  comm.reduce(nfail);
+    const int np               = nmovers;
+    constexpr RealType small_v = std::numeric_limits<RealType>::epsilon() * 1e4;
+    constexpr RealType small_g = std::numeric_limits<RealType>::epsilon() * 3e6;
+    constexpr RealType small_h = std::numeric_limits<RealType>::epsilon() * 6e8;
+    int nfail                  = 0;
+    app_log() << std::endl;
+    if (evalV_v_err / np > small_v || evalV_v_err != evalV_v_err)
+    {
+      app_log() << "Fail in evaluate_v, V error =" << evalV_v_err / np << std::endl;
+      nfail = 1;
+    }
+    if (evalVGH_v_err / np > small_v || evalVGH_v_err != evalVGH_v_err)
+    {
+      app_log() << "Fail in evaluate_vgh, V error =" << evalVGH_v_err / np << std::endl;
+      nfail += 1;
+    }
+    if (evalVGH_g_err / np > small_g || evalVGH_g_err != evalVGH_g_err)
+    {
+      app_log() << "Fail in evaluate_vgh, G error =" << evalVGH_g_err / np << std::endl;
+      nfail += 1;
+    }
+    if (evalVGH_h_err / np > small_h || evalVGH_h_err != evalVGH_h_err)
+    {
+      app_log() << "Fail in evaluate_vgh, H error =" << evalVGH_h_err / np << std::endl;
+      nfail += 1;
+    }
+    comm.reduce(nfail);
 
-  if (nfail == 0)
-    app_log() << "All checks passed for spo" << std::endl;
+    if (nfail == 0)
+      app_log() << "All checks passed for spo" << std::endl;
+  }
 
-  app_log() << "evaluateVGH loads " << size_t(64) * sizeof(OHMMS_PRECISION) * nels / 2 * nels * nsteps * nmovers
+  app_log() << std::endl
+            << "evaluateVGH loads " << size_t(64) * sizeof(OHMMS_PRECISION) * nels / 2 * nels * nsteps * nmovers
             << " bytes of coefficients from memory." << std::endl
             << "evaluateVGH stores " << size_t(10) * sizeof(OHMMS_PRECISION) * nels / 2 * nels * nsteps * nmovers
             << " bytes of result values to memory." << std::endl

@@ -23,7 +23,7 @@ MiniQMCOptions readOptions(int argc, char** argv)
   int opt;
   while (optind < argc)
   {
-    if ((opt = getopt(argc, argv, "bhjvVa:c:C:d:g:m:n:N:r:s:t:w:x:z:")) != -1)
+    if ((opt = getopt(argc, argv, "bhjsvVa:c:C:d:g:m:n:N:r:t:w:x:z:")) != -1)
     {
       switch (opt)
       {
@@ -71,7 +71,7 @@ MiniQMCOptions readOptions(int argc, char** argv)
         mq_opt.accept_ratio = atof(optarg);
         break;
       case 's':
-        mq_opt.iseed = atoi(optarg);
+        mq_opt.speedy = true;
         break;
       case 't':
         mq_opt.timer_level_name = std::string(optarg);

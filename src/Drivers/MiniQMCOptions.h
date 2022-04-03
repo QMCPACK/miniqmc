@@ -63,7 +63,6 @@ public:
   int nb     = 1;
   int nc     = 1;
   int nsteps = 5;
-  int iseed  = 11;
   int nx = 37, ny = 37, nz = 37;
   int num_crowds        = 1;
   int splines_per_block = -1;
@@ -75,9 +74,11 @@ public:
   QMCT::RealType accept_ratio = 0.5;
   //useRef is a particular implementation of numerous objects fix that remove this option
   //and many branch statements
-  bool useRef                  = false;
-  bool enableJ3                = false;
-  bool enableCrowd             = false;
+  bool useRef      = false;
+  bool enableJ3    = false;
+  bool enableCrowd = false;
+  /// speedy mode. Skip all transfer and checks.
+  bool speedy                  = false;
   bool verbose                 = false;
   std::string timer_level_name = "fine";
   TimerList Timers;
