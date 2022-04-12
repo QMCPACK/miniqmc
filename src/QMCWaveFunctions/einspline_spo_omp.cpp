@@ -353,7 +353,7 @@ void einspline_spo_omp<T>::evaluate_build_vgl(ValueVector_t& psi_v, GradVector_t
     {
       psi_v[j]   = offload_scratch[i][0][j - first];
       dpsi_v[j]  = GradType(offload_scratch[i][1][j - first], offload_scratch[i][2][j - first],
-                            offload_scratch[i][3][j - first]);
+                           offload_scratch[i][3][j - first]);
       d2psi_v[j] = offload_scratch[i][4][j - first];
     }
   }
@@ -401,34 +401,59 @@ void einspline_spo_omp<T>::multi_evaluate_vgh(const std::vector<SPOSet*>& spo_li
     multi_offload_scratch[i].resize(vgh_dim * nw, padded_size);
     auto* multi_offload_scratch_ptr = multi_offload_scratch[i].data();
 
-    PRAGMA_OFFLOAD("omp target teams distribute collapse(2) num_teams(nw* NumTeams) thread_limit(ChunkSizePerTeam) \
-                    map(always, to: pos_scratch_ptr[:pos_scratch.size()])")
-    for (size_t iw = 0; iw < nw; iw++)
-      for (int team_id = 0; team_id < NumTeams; team_id++)
-      {
-        const int first = ChunkSizePerTeam * team_id;
-        const int last =
-            (first + ChunkSizePerTeam) > nSplinesPerBlock_local ? nSplinesPerBlock_local : first + ChunkSizePerTeam;
-
-        int ix, iy, iz;
-        T a[4], b[4], c[4], da[4], db[4], dc[4], d2a[4], d2b[4], d2c[4];
-        spline2::computeLocationAndFractional(spline_m, pos_scratch_ptr[iw * 3], pos_scratch_ptr[iw * 3 + 1],
-                                              pos_scratch_ptr[iw * 3 + 2], ix, iy, iz, a, b, c, da, db, dc, d2a, d2b,
-                                              d2c);
-
-        PRAGMA_OFFLOAD("omp parallel for")
-        for (int ind = 0; ind < last - first; ind++)
-          spline2offload::evaluate_vgh_v2(spline_m, ix, iy, iz, a, b, c, da, db, dc, d2a, d2b, d2c,
-                                          multi_offload_scratch_ptr + iw * vgh_dim * padded_size + first, padded_size,
-                                          first, ind);
-      }
-
     if (host_ready)
     {
-      multi_offload_scratch[i].updateFrom();
+      PRAGMA_OFFLOAD("omp target teams distribute collapse(2) num_teams(nw* NumTeams) thread_limit(ChunkSizePerTeam) \
+                    map(always, to: pos_scratch_ptr[:pos_scratch.size()]) \
+                    map(always, from: multi_offload_scratch_ptr[:multi_offload_scratch[i].size()])")
+      for (size_t iw = 0; iw < nw; iw++)
+        for (int team_id = 0; team_id < NumTeams; team_id++)
+        {
+          const int first = ChunkSizePerTeam * team_id;
+          const int last =
+              (first + ChunkSizePerTeam) > nSplinesPerBlock_local ? nSplinesPerBlock_local : first + ChunkSizePerTeam;
+
+          int ix, iy, iz;
+          T a[4], b[4], c[4], da[4], db[4], dc[4], d2a[4], d2b[4], d2c[4];
+          spline2::computeLocationAndFractional(spline_m, pos_scratch_ptr[iw * 3], pos_scratch_ptr[iw * 3 + 1],
+                                                pos_scratch_ptr[iw * 3 + 2], ix, iy, iz, a, b, c, da, db, dc, d2a, d2b,
+                                                d2c);
+
+          PRAGMA_OFFLOAD("omp parallel for")
+          for (int ind = 0; ind < last - first; ind++)
+            spline2offload::evaluate_vgh_v2(spline_m, ix, iy, iz, a, b, c, da, db, dc, d2a, d2b, d2c,
+                                            multi_offload_scratch_ptr + iw * vgh_dim * padded_size + first, padded_size,
+                                            first, ind);
+        }
+
       for (size_t iw = 0; iw < nw; iw++)
         std::copy_n(multi_offload_scratch_ptr + iw * vgh_dim * padded_size, padded_size * vgh_dim,
                     shadows[iw]->offload_scratch[i].data());
+    }
+    else
+    {
+      // exactly the same as above but without D2H transfer
+      PRAGMA_OFFLOAD("omp target teams distribute collapse(2) num_teams(nw* NumTeams) thread_limit(ChunkSizePerTeam) \
+                    map(always, to: pos_scratch_ptr[:pos_scratch.size()])")
+      for (size_t iw = 0; iw < nw; iw++)
+        for (int team_id = 0; team_id < NumTeams; team_id++)
+        {
+          const int first = ChunkSizePerTeam * team_id;
+          const int last =
+              (first + ChunkSizePerTeam) > nSplinesPerBlock_local ? nSplinesPerBlock_local : first + ChunkSizePerTeam;
+
+          int ix, iy, iz;
+          T a[4], b[4], c[4], da[4], db[4], dc[4], d2a[4], d2b[4], d2c[4];
+          spline2::computeLocationAndFractional(spline_m, pos_scratch_ptr[iw * 3], pos_scratch_ptr[iw * 3 + 1],
+                                                pos_scratch_ptr[iw * 3 + 2], ix, iy, iz, a, b, c, da, db, dc, d2a, d2b,
+                                                d2c);
+
+          PRAGMA_OFFLOAD("omp parallel for")
+          for (int ind = 0; ind < last - first; ind++)
+            spline2offload::evaluate_vgh_v2(spline_m, ix, iy, iz, a, b, c, da, db, dc, d2a, d2b, d2c,
+                                            multi_offload_scratch_ptr + iw * vgh_dim * padded_size + first, padded_size,
+                                            first, ind);
+        }
     }
   }
 }
