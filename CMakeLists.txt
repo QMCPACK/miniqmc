@@ -148,6 +148,7 @@ if(QMC_ENABLE_ROCM)
   set(QMC_CUDA2HIP ON)
 endif()
 option(QMC_ENABLE_CUDA "Enable CUDA acceleration" OFF)
+option(QMC_ENABLE_SYCL "Enable SYCL offload" OFF)
 # Use CMake object library targets to workaround clang linker not being able to handle fat
 # binary archives which contain both host and device codes, for example OpenMP offload regions.
 # CMake does not propagate indirect object files by design.
@@ -417,17 +418,18 @@ if(QMC_ENABLE_ROCM)
 endif(QMC_ENABLE_ROCM)
 
 #-------------------------------------------------------------------
-#  set up OneAPI compiler options and libraries
+#  set up SYCL compiler options and libraries
 #-------------------------------------------------------------------
-if(QMC_ENABLE_ONEAPI)
-  #IF(NOT ONEAPI_ROOT)
-  #  MESSAGE(FATAL_ERROR "ONEAPI_ROOT not set!")
-  #ENDIF()
-  #MESSAGE(STATUS "ONEAPI_ROOT: ${ONEAPI_ROOT}")
-
-  add_library(ONEAPI::DPCPP INTERFACE IMPORTED)
-  set_target_properties(ONEAPI::DPCPP PROPERTIES INTERFACE_COMPILE_OPTIONS "-fsycl" INTERFACE_LINK_OPTIONS "-fsycl")
-endif(QMC_ENABLE_ONEAPI)
+if(QMC_ENABLE_SYCL)
+  if(NOT (CMAKE_CXX_COMPILER_ID MATCHES "IntelLLVM" OR INTEL_ONEAPI_COMPILER_FOUND))
+    message(FATAL_ERROR "Only LLVM-based Intel compiler supports SYCL.")
+  endif()
+  add_library(SYCL::host INTERFACE IMPORTED)
+  add_library(SYCL::device INTERFACE IMPORTED)
+  find_package(IntelDPCPP REQUIRED CONFIGS IntelDPCPPConfig-modified.cmake PATHS ${PROJECT_CMAKE})
+  target_link_libraries(SYCL::host INTERFACE OneAPI::DPCPP-host)
+  target_link_libraries(SYCL::device INTERFACE OneAPI::DPCPP-device)
+endif(QMC_ENABLE_SYCL)
 
 #-------------------------------------------------------------------
 # Check LAPACK/BLAS

@@ -16,12 +16,11 @@
 
 #include <stdexcept>
 #include <omp.h>
-#include "Host/OutputManager.h"
+#include "OutputManager.h"
 #include "determineDefaultDeviceNum.h"
 
 namespace qmcplusplus
 {
-
 /** OpenMP device manager
  */
 class OMPDeviceManager

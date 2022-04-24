@@ -65,7 +65,7 @@ void test_vendor_device_memory_omp_access()
 TEST_CASE("memory_interop", "[openmp]")
 {
   std::cout << "test memory_interop map" << std::endl;
-#if defined(QMC_ENABLE_CUDA) || defined(QMC_ENABLE_ONEAPI)
+#if defined(QMC_ENABLE_CUDA) || defined(QMC_ENABLE_SYCL)
   test_pinned_memory_omp_access<int, PinnedAlignedAllocator<int>>();
 #endif
 

@@ -18,7 +18,6 @@
 
 namespace qmcplusplus
 {
-
 DeviceManager::DeviceManager(int local_rank, int local_size)
     : default_device_num(-1),
       num_devices(0)
@@ -29,6 +28,10 @@ DeviceManager::DeviceManager(int local_rank, int local_size)
 #if defined(ENABLE_OFFLOAD)
       ,
       omptarget_dm_(default_device_num, num_devices, local_rank, local_size)
+#endif
+#if defined(QMC_ENABLE_SYCL)
+      ,
+      sycl_dm_(default_device_num, num_devices, local_rank, local_size)
 #endif
 {
   if (num_devices > 0)
@@ -56,7 +59,7 @@ void DeviceManager::initializeGlobalDeviceManager(int local_rank, int local_size
 const DeviceManager& DeviceManager::getGlobal()
 {
   if (!global)
-    throw std::runtime_error("DeviceManager::getGlobal cannot access initialized the global instance.");
+    throw std::runtime_error("DeviceManager::getGlobal the global instance was not initialized.");
   return *global;
 }
 } // namespace qmcplusplus

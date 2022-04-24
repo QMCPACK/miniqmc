@@ -16,12 +16,11 @@
 
 #include <stdexcept>
 #include "CUDAruntime.hpp"
-#include "Host/OutputManager.h"
+#include "OutputManager.h"
 #include "determineDefaultDeviceNum.h"
 
 namespace qmcplusplus
 {
-
 /** CUDA device manager
  */
 class CUDADeviceManager
