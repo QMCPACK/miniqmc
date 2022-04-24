@@ -12,6 +12,9 @@
 add_library(catch_main catch_main.cpp)
 target_include_directories(catch_main PUBLIC "${PROJECT_SOURCE_DIR}/external_codes/catch")
 target_link_libraries(catch_main PRIVATE platform_runtime qmcutil)
+if(HAVE_MPI)
+  target_compile_definitions(catch_main PRIVATE "CATCH_MAIN_HAVE_MPI")
+endif()
 
 ####################################
 # create libqmcutil
