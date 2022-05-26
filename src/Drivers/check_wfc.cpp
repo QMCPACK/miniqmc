@@ -125,7 +125,6 @@ int main(int argc, char** argv)
       case 'V':
         print_version(true);
         return 1;
-        break;
       default:
         print_help();
       }

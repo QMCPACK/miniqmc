@@ -235,7 +235,6 @@ int main(int argc, char** argv)
       case 'h':
         print_help();
         return 0;
-        break;
       case 'j':
         enableJ3 = true;
         break;
@@ -267,7 +266,6 @@ int main(int argc, char** argv)
       case 'V':
         print_version(true);
         return 0;
-        break;
       case 'w': // number of nmovers
         nmovers = atoi(optarg);
         break;

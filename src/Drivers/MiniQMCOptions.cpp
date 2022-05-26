@@ -50,7 +50,6 @@ MiniQMCOptions readOptions(int argc, char** argv)
         //should throw
         mq_opt.valid = false;
         return mq_opt;
-        break;
       case 'j':
         mq_opt.enableJ3 = true;
         break;
@@ -82,7 +81,6 @@ MiniQMCOptions readOptions(int argc, char** argv)
       case 'V':
         ::print_version(true);
         return mq_opt;
-        break;
       case 'w':
         mq_opt.walkers_per_rank = atoi(optarg);
         break;
