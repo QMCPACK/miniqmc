@@ -655,5 +655,6 @@ execute_process(
   OUTPUT_VARIABLE QMC_HOSTNAME
   OUTPUT_STRIP_TRAILING_WHITESPACE)
 configure_file(${miniqmc_SOURCE_DIR}/miniqmc.settings ${miniqmc_BINARY_DIR}/bin/miniqmc.settings)
+install(FILES ${miniqmc_BINARY_DIR}/bin/miniqmc.settings DESTINATION bin)
 
 subdirs(src)
