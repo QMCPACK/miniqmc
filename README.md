@@ -1,6 +1,6 @@
 # miniQMC - QMCPACK Miniapp
 
-**This is the CPU only version of miniQMC. OpenMP offload version is in the [OMP_offload](https://github.com/QMCPACK/miniqmc/tree/OMP_offload) branch.**
+**This is OpenMP offload version. Here are [offload enabled build recipes](https://github.com/QMCPACK/miniqmc/wiki/OpenMP-offload#build-recipes).**
 
 # Documentation and support
 1. Out-of-source documentation at https://github.com/QMCPACK/miniqmc/wiki
