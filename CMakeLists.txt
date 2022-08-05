@@ -465,8 +465,7 @@ endif()
 
 message(STATUS "LAPACK linker flags: ${LAPACK_LINKER_FLAGS}")
 message(STATUS "LAPACK libraries: ${LAPACK_LIBRARIES}")
-set_target_properties(Math::BLAS_LAPACK PROPERTIES INTERFACE_LINK_LIBRARIES
-                                                   "${LAPACK_LINKER_FLAGS};${LAPACK_LIBRARIES}")
+target_link_libraries(Math::BLAS_LAPACK INTERFACE "${LAPACK_LINKER_FLAGS};${LAPACK_LIBRARIES}")
 
 #create scalar_vector_functions target
 add_library(Math::scalar_vector_functions INTERFACE IMPORTED)
@@ -476,6 +475,10 @@ add_library(Math::FFTW3 INTERFACE IMPORTED)
 # Detects MKL header files and other components.
 if(LAPACK_LIBRARIES MATCHES "mkl_core")
   include(FindMKL)
+endif()
+
+if(MKL_FOUND)
+  target_link_libraries(Math::BLAS_LAPACK INTERFACE MKL::BLAS_LAPACK)
 endif()
 
 set(QMC_UTIL_LIBS ${QMC_UTIL_LIBS} ${FORTRAN_LIBRARIES})
