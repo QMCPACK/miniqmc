@@ -22,5 +22,12 @@ function(ADD_UNIT_TEST TESTNAME PROCS THREADS TEST_BINARY)
     if(QMC_ENABLE_CUDA OR QMC_ENABLE_ROCM OR ENABLE_OFFLOAD)
       set_tests_properties(${TESTNAME} PROPERTIES RESOURCE_LOCK exclusively_owned_gpus)
     endif()
+
+    if(ENABLE_OFFLOAD)
+      set_property(
+        TEST ${TESTNAME}
+        APPEND
+        PROPERTY ENVIRONMENT "OMP_TARGET_OFFLOAD=mandatory")
+    endif()
   endif()
 endfunction()
