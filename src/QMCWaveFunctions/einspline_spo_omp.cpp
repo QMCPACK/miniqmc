@@ -77,10 +77,9 @@ void einspline_spo_omp<T>::resize()
   ratios_private.resize(nBlocks);
   offload_scratch.resize(nBlocks);
   multi_offload_scratch.resize(nBlocks);
+  multi_reduction_fake_results.resize(nBlocks);
   for (int i = 0; i < nBlocks; ++i)
-  {
     offload_scratch[i].resize(vgh_dim, getAlignedSize<T>(nSplinesPerBlock));
-  }
 }
 
 /// If not initialized previously, generate splines coeficients of \p num_splines
@@ -122,9 +121,9 @@ void einspline_spo_omp<T>::set(int nx, int ny, int nz, int num_splines, int nblo
       spline_type** einsplines_ptr = einsplines.data();
       spline_type* tile_ptr        = einsplines[i];
       T* coefs_ptr                 = einsplines[i]->coefs;
-#pragma omp target enter data map(to : tile_ptr [0:1])
+#pragma omp target enter data map(to : tile_ptr[0 : 1])
 // Ye: I still don't understand why this line must be separated from the previous one.
-#pragma omp target enter data map(to : coefs_ptr [0:einsplines[i]->coefs_size])
+#pragma omp target enter data map(to : coefs_ptr[0 : einsplines[i]->coefs_size])
 //std::cout << "YYYY offload size = " << einsplines[i]->coefs_size << std::endl;
 #pragma omp target map(to : i)
       {
@@ -353,7 +352,7 @@ void einspline_spo_omp<T>::evaluate_build_vgl(ValueVector_t& psi_v, GradVector_t
     {
       psi_v[j]   = offload_scratch[i][0][j - first];
       dpsi_v[j]  = GradType(offload_scratch[i][1][j - first], offload_scratch[i][2][j - first],
-                           offload_scratch[i][3][j - first]);
+                            offload_scratch[i][3][j - first]);
       d2psi_v[j] = offload_scratch[i][4][j - first];
     }
   }
@@ -496,10 +495,13 @@ void einspline_spo_omp<T>::multi_evaluate_ratio_grads(const std::vector<SPOSet*>
     int padded_size               = getAlignedSize<T>(nSplinesPerBlock);
 
     multi_offload_scratch[i].resize(vgh_dim * nw, padded_size);
-    auto* multi_offload_scratch_ptr = multi_offload_scratch[i].data();
+    multi_reduction_fake_results[i].resize(4 * nw); // ratio, grad_x, grad_y, grad_z
+    auto* multi_offload_scratch_ptr   = multi_offload_scratch[i].data();
+    auto* multi_reduction_results_ptr = multi_reduction_fake_results[i].data();
 
-    PRAGMA_OFFLOAD("omp target teams distribute collapse(2) num_teams(nw* NumTeams) thread_limit(ChunkSizePerTeam) \
-                    map(always, tofrom: pos_scratch_ptr[:pos_scratch.size()])")
+    PRAGMA_OFFLOAD("omp target teams distribute collapse(2) num_teams(nw * NumTeams) thread_limit(ChunkSizePerTeam) \
+                    map(always, to: pos_scratch_ptr[:pos_scratch.size()]) \
+                    map(always, from: multi_reduction_results_ptr[:multi_reduction_fake_results[i].size()])")
     for (size_t iw = 0; iw < nw; iw++)
       for (int team_id = 0; team_id < NumTeams; team_id++)
       {
@@ -532,10 +534,15 @@ void einspline_spo_omp<T>::multi_evaluate_ratio_grads(const std::vector<SPOSet*>
           grad_y += val[ind * 2] * deriv_y[ind * 2] + val[ind * 2 + 1] * deriv_y[ind * 2 + 1];
           grad_z += val[ind * 2] * deriv_z[ind * 2] + val[ind * 2 + 1] * deriv_z[ind * 2 + 1];
         }
-        pos_scratch_ptr[iw * 3]     = grad_x;
-        pos_scratch_ptr[iw * 3 + 1] = grad_y;
-        pos_scratch_ptr[iw * 3 + 2] = grad_z;
+        multi_reduction_results_ptr[iw]          = ratio;
+        multi_reduction_results_ptr[iw + nw]     = grad_x;
+        multi_reduction_results_ptr[iw + nw * 2] = grad_y;
+        multi_reduction_results_ptr[iw + nw * 3] = grad_z;
       }
+
+    for (size_t iw = 0; iw < nw; iw++)
+      std::copy_n(multi_offload_scratch_ptr + iw * vgh_dim * padded_size, padded_size * vgh_dim,
+                  shadows[iw]->offload_scratch[i].data());
   }
 }
 

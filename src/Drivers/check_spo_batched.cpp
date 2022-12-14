@@ -288,9 +288,10 @@ int main(int argc, char** argv)
         els.makeMove(iel, pos);
       }
 
-      Timers[Timer_SPO_vgh].get().start();
-      anon_spo->multi_evaluate_vgh(spo_shadows, extract_els_list(mover_list), iel, !speedy);
-      Timers[Timer_SPO_vgh].get().stop();
+      {
+        ScopedTimer local(Timers[Timer_SPO_vgh]);
+        anon_spo->multi_evaluate_vgh(spo_shadows, extract_els_list(mover_list), iel, !speedy);
+      }
 
       if (!speedy)
 #pragma omp parallel for reduction(+ : evalVGH_v_err, evalVGH_g_err, evalVGH_h_err)
@@ -302,9 +303,10 @@ int main(int argc, char** argv)
           auto& els         = mover.els;
           auto& ur          = ur_list[iw];
           auto& my_accepted = my_accepted_list[iw];
-          Timers[Timer_SPO_ref_vgh].get().start();
-          spo_ref.evaluate_vgh(els, iel);
-          Timers[Timer_SPO_ref_vgh].get().stop();
+          {
+            ScopedTimer local(Timers[Timer_SPO_ref_vgh]);
+            spo_ref.evaluate_vgh(els, iel);
+          }
           // accumulate error
           for (int ib = 0; ib < spo.nBlocks; ib++)
             for (int n = 0; n < spo.nSplinesPerBlock; n++)

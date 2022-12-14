@@ -70,6 +70,8 @@ struct einspline_spo_omp : public SPOSet
   std::vector<Matrix<T, OffloadPinnedAllocator<T>>> multi_offload_scratch;
   ///psiinv and position scratch space, used to avoid allocation on the fly and faster transfer
   Vector<T, OffloadPinnedAllocator<T>> psiinv_pos_copy;
+  ///
+  std::vector<Vector<T, OffloadPinnedAllocator<T>>> multi_reduction_fake_results;
 
   // for shadows
   Vector<T, OffloadPinnedAllocator<T>> pos_scratch;

@@ -260,7 +260,8 @@ int main(int argc, char** argv)
   for (int mc = 0; mc < nsteps; ++mc)
   {
     app_summary() << "mc = " << mc << std::endl;
-    for (size_t iw = 0; iw < mover_list.size(); iw++)
+    const size_t nw = mover_list.size();
+    for (size_t iw = 0; iw < nw; iw++)
     {
       auto& mover     = *mover_list[iw];
       auto& random_th = mover.rng;
@@ -288,8 +289,9 @@ int main(int argc, char** argv)
         anon_spo->multi_evaluate_ratio_grads(spo_shadows, extract_els_list(mover_list), iel);
       }
 
+      //if (!speedy)
 #pragma omp parallel for reduction(+ : evalVGH_v_err, evalVGH_g_err, evalVGH_h_err)
-      for (size_t iw = 0; iw < mover_list.size(); iw++)
+      for (size_t iw = 0; iw < nw; iw++)
       {
         auto& mover       = *mover_list[iw];
         auto& spo         = *spo_views[iw];
@@ -297,6 +299,33 @@ int main(int argc, char** argv)
         auto& els         = mover.els;
         auto& ur          = ur_list[iw];
         auto& my_accepted = my_accepted_list[iw];
+        {
+          ScopedTimer local(Timers[Timer_SPO_ref_vgh]);
+          spo_ref.evaluate_vgh(els, iel);
+        }
+
+        // accumulate error
+        for (int ib = 0; ib < spo.nBlocks; ib++)
+        {
+          OHMMS_PRECISION reduction_val(0), reduction_grad_x(0), reduction_grad_y(0), reduction_grad_z(0);
+          for (int ind = 0; ind < spo.nSplinesPerBlock / 2; ind++)
+          {
+            // value
+            reduction_val += spo_ref.psi[ib][ind * 2] * spo_ref.psi[ib][ind * 2 + 1];
+            // grad
+            reduction_grad_x += spo_ref.psi[ib][ind * 2] * spo_ref.grad[ib].data(0)[ind * 2] +
+                spo_ref.psi[ib][ind * 2 + 1] * spo_ref.grad[ib].data(0)[ind * 2 + 1];
+            reduction_grad_y += spo_ref.psi[ib][ind * 2] * spo_ref.grad[ib].data(1)[ind * 2] +
+                spo_ref.psi[ib][ind * 2 + 1] * spo_ref.grad[ib].data(1)[ind * 2 + 1];
+            reduction_grad_z += spo_ref.psi[ib][ind * 2] * spo_ref.grad[ib].data(2)[ind * 2] +
+                spo_ref.psi[ib][ind * 2 + 1] * spo_ref.grad[ib].data(2)[ind * 2 + 1];
+          }
+          auto& val_grads = anon_spo->multi_reduction_fake_results[ib];
+          evalVGH_v_err += std::fabs(val_grads[iw] - reduction_val);
+          evalVGH_g_err += std::fabs(val_grads[iw + nw] - reduction_grad_x);
+          evalVGH_g_err += std::fabs(val_grads[iw + nw * 2] - reduction_grad_y);
+          evalVGH_g_err += std::fabs(val_grads[iw + nw * 3] - reduction_grad_z);
+        }
         if (ur[iel] > accept)
         {
           els.acceptMove(iel);
@@ -392,7 +421,8 @@ int main(int argc, char** argv)
   if (nfail == 0)
     app_log() << "All checks passed for spo" << std::endl;
 
-  app_log() << "evaluateVGH loads " << size_t(64) * sizeof(OHMMS_PRECISION) * nels / 2 * nels * nsteps * nmovers
+  app_log() << std::endl
+            << "evaluateVGH loads " << size_t(64) * sizeof(OHMMS_PRECISION) * nels / 2 * nels * nsteps * nmovers
             << " bytes of coefficients from memory." << std::endl
             << "evaluateVGH stores " << size_t(10) * sizeof(OHMMS_PRECISION) * nels / 2 * nels * nsteps * nmovers
             << " bytes of result values to memory." << std::endl
