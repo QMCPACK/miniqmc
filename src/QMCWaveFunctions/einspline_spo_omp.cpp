@@ -19,6 +19,7 @@
 #include <Numerics/Spline2/MultiBsplineOffload.hpp>
 #include "Numerics/OhmmsPETE/OhmmsArray.h"
 #include <Utilities/RandomGenerator.h>
+#include "OMPTarget/OMPTargetMath.hpp"
 
 namespace qmcplusplus
 {
@@ -529,7 +530,10 @@ void einspline_spo_omp<T>::multi_evaluate_ratio_grads(const std::vector<SPOSet*>
           auto* deriv_x = val + padded_size;
           auto* deriv_y = val + padded_size * 2;
           auto* deriv_z = val + padded_size * 3;
-          ratio += val[ind * 2] * val[ind * 2 + 1];
+          // all the computation below is faked.
+          T s, c;
+          omptarget::sincos(val[ind * 2] + val[ind * 2 + 1], &s, &c);
+          ratio += val[ind * 2] * val[ind * 2 + 1] + s + c;
           grad_x += val[ind * 2] * deriv_x[ind * 2] + val[ind * 2 + 1] * deriv_x[ind * 2 + 1];
           grad_y += val[ind * 2] * deriv_y[ind * 2] + val[ind * 2 + 1] * deriv_y[ind * 2 + 1];
           grad_z += val[ind * 2] * deriv_z[ind * 2] + val[ind * 2 + 1] * deriv_z[ind * 2 + 1];

@@ -311,7 +311,9 @@ int main(int argc, char** argv)
           for (int ind = 0; ind < spo.nSplinesPerBlock / 2; ind++)
           {
             // value
-            reduction_val += spo_ref.psi[ib][ind * 2] * spo_ref.psi[ib][ind * 2 + 1];
+            OHMMS_PRECISION s, c;
+            sincos(spo_ref.psi[ib][ind * 2] + spo_ref.psi[ib][ind * 2 + 1], &s, &c);
+            reduction_val += spo_ref.psi[ib][ind * 2] * spo_ref.psi[ib][ind * 2 + 1] + s + c;
             // grad
             reduction_grad_x += spo_ref.psi[ib][ind * 2] * spo_ref.grad[ib].data(0)[ind * 2] +
                 spo_ref.psi[ib][ind * 2 + 1] * spo_ref.grad[ib].data(0)[ind * 2 + 1];
