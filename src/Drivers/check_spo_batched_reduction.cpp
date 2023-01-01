@@ -30,6 +30,7 @@
 #include <QMCWaveFunctions/einspline_spo_ref.hpp>
 #include <Utilities/qmcpack_version.h>
 #include <DeviceManager.h>
+#include "CPU/math.hpp"
 #include <getopt.h>
 
 using namespace std;
@@ -312,7 +313,7 @@ int main(int argc, char** argv)
           {
             // value
             OHMMS_PRECISION s, c;
-            sincos(spo_ref.psi[ib][ind * 2] + spo_ref.psi[ib][ind * 2 + 1], &s, &c);
+            qmcplusplus::sincos(spo_ref.psi[ib][ind * 2] + spo_ref.psi[ib][ind * 2 + 1], &s, &c);
             reduction_val += spo_ref.psi[ib][ind * 2] * spo_ref.psi[ib][ind * 2 + 1] + s + c;
             // grad
             reduction_grad_x += spo_ref.psi[ib][ind * 2] * spo_ref.grad[ib].data(0)[ind * 2] +
