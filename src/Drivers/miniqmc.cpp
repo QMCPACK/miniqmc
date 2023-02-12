@@ -389,6 +389,9 @@ int main(int argc, char** argv)
     // create wavefunction per mover
     build_WaveFunction(useRef, *spo_main, thiswalker->wavefunction, ions, els, thiswalker->rng, delay_rank, enableJ3);
 
+    // initialize virtual particle sets
+    thiswalker->nlpp.initialize_VPs(ions, els, Rmax);
+
     // initial computing
     els.update();
     thiswalker->wavefunction.evaluateLog(els);
@@ -466,31 +469,11 @@ int main(int argc, char** argv)
       Timers[Timer_Diffusion].get().stop();
 
       // Compute NLPP energy using integral over spherical points
-
-      ecp.randomize(rOnSphere); // pick random sphere
-      const auto& d_ie = els.getDistTableAB(wavefunction.get_ei_TableID());
-
-      Timers[Timer_ECP].get().start();
-      for (int jel = 0; jel < els.getTotalNum(); ++jel)
       {
-        const auto& dist  = d_ie.getDistRow(jel);
-        const auto& displ = d_ie.getDisplRow(jel);
-        for (int iat = 0; iat < nions; ++iat)
-          if (dist[iat] < Rmax)
-            for (int k = 0; k < nknots; k++)
-            {
-              PosType deltar(dist[iat] * rOnSphere[k] - displ[iat]);
-
-              els.makeMove(jel, deltar);
-
-              Timers[Timer_Value].get().start();
-              wavefunction.ratio(els, jel);
-              Timers[Timer_Value].get().stop();
-
-              els.rejectMove(jel);
-            }
+        ecp.randomize(rOnSphere); // pick random sphere
+        ScopedTimer local(Timers[Timer_ECP]);
+        ecp.evaluate(els, wavefunction);
       }
-      Timers[Timer_ECP].get().stop();
     } // end of mover loop
   }   // nsteps
   Timers[Timer_Total].get().stop();
