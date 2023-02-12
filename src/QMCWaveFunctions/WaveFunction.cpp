@@ -71,9 +71,6 @@ void build_WaveFunction(bool useRef,
     using J3OrbType = miniqmcreference::ThreeBodyJastrowRef<PolynomialFunctor3D>;
     using DetType   = miniqmcreference::DiracDeterminantRef<>;
 
-    ions.RSoA = ions.R;
-    els.RSoA  = els.R;
-
     // distance tables
     els.addTable(els);
     WF.ei_TableID = els.addTable(ions);
@@ -85,19 +82,19 @@ void build_WaveFunction(bool useRef,
 
     // J1 component
     J1OrbType* J1 = new J1OrbType(ions, els);
-    buildJ1(*J1, els.Lattice.WignerSeitzRadius);
+    buildJ1(*J1, els.getLattice().WignerSeitzRadius);
     WF.Jastrows.push_back(J1);
 
     // J2 component
     J2OrbType* J2 = new J2OrbType(els);
-    buildJ2(*J2, els.Lattice.WignerSeitzRadius);
+    buildJ2(*J2, els.getLattice().WignerSeitzRadius);
     WF.Jastrows.push_back(J2);
 
     // J3 component
     if (enableJ3)
     {
       J3OrbType* J3 = new J3OrbType(ions, els);
-      buildJeeI(*J3, els.Lattice.WignerSeitzRadius);
+      buildJeeI(*J3, els.getLattice().WignerSeitzRadius);
       WF.Jastrows.push_back(J3);
     }
   }
@@ -108,9 +105,6 @@ void build_WaveFunction(bool useRef,
     using J3OrbType = ThreeBodyJastrow<PolynomialFunctor3D>;
     using DetType   = DiracDeterminant<>;
 
-    ions.RSoA = ions.R;
-    els.RSoA  = els.R;
-
     // distance tables
     els.addTable(els);
     WF.ei_TableID = els.addTable(ions);
@@ -122,19 +116,19 @@ void build_WaveFunction(bool useRef,
 
     // J1 component
     J1OrbType* J1 = new J1OrbType(ions, els);
-    buildJ1(*J1, els.Lattice.WignerSeitzRadius);
+    buildJ1(*J1, els.getLattice().WignerSeitzRadius);
     WF.Jastrows.push_back(J1);
 
     // J2 component
     J2OrbType* J2 = new J2OrbType(els);
-    buildJ2(*J2, els.Lattice.WignerSeitzRadius);
+    buildJ2(*J2, els.getLattice().WignerSeitzRadius);
     WF.Jastrows.push_back(J2);
 
     // J3 component
     if (enableJ3)
     {
       J3OrbType* J3 = new J3OrbType(ions, els);
-      buildJeeI(*J3, els.Lattice.WignerSeitzRadius);
+      buildJeeI(*J3, els.getLattice().WignerSeitzRadius);
       WF.Jastrows.push_back(J3);
     }
   }
@@ -289,9 +283,9 @@ void WaveFunction::flex_evaluateLog(const std::vector<WaveFunction*>& WF_list,
   else if (P_list.size() > 1)
   {
     constexpr valT czero(0);
-    const std::vector<ParticleSet::ParticleGradient_t*> G_list(extract_G_list(P_list));
-    const std::vector<ParticleSet::ParticleLaplacian_t*> L_list(extract_L_list(P_list));
-    ParticleSet::ParticleValue_t LogValues(P_list.size());
+    const std::vector<ParticleSet::ParticleGradient*> G_list(extract_G_list(P_list));
+    const std::vector<ParticleSet::ParticleLaplacian*> L_list(extract_L_list(P_list));
+    ParticleSet::ParticleValue LogValues(P_list.size());
 
     for (int iw = 0; iw < P_list.size(); iw++)
     {
@@ -433,8 +427,8 @@ void WaveFunction::flex_evaluateGL(const std::vector<WaveFunction*>& WF_list,
     ScopedTimer local_timer(timers[Timer_GL]);
 
     constexpr valT czero(0);
-    const std::vector<ParticleSet::ParticleGradient_t*> G_list(extract_G_list(P_list));
-    const std::vector<ParticleSet::ParticleLaplacian_t*> L_list(extract_L_list(P_list));
+    const std::vector<ParticleSet::ParticleGradient*> G_list(extract_G_list(P_list));
+    const std::vector<ParticleSet::ParticleLaplacian*> L_list(extract_L_list(P_list));
 
     for (int iw = 0; iw < P_list.size(); iw++)
     {

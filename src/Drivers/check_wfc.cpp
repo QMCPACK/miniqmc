@@ -47,19 +47,18 @@ using namespace qmcplusplus;
 
 void print_help()
 {
-  // clang-format off
-  cout << "usage:" << '\n';
-  cout << "  check_wfc [-hvV] [-f wfc_component] [-g \"n0 n1 n2\"]"     << '\n';
-  cout << "            [-r rmax]"                                       << '\n';
-  cout << "options:"                                                    << '\n';
-  cout << "  -f  specify wavefunction component to check"               << '\n';
-  cout << "      one of: J1, J2, J3, Det.       default: J2"            << '\n';
-  cout << "  -g  set the 3D tiling.             default: 1 1 1"         << '\n';
-  cout << "  -h  print help and exit"                                   << '\n';
-  cout << "  -r  set the Rmax.                  default: 1.7"           << '\n';
-  cout << "  -v  verbose output"                                        << '\n';
-  cout << "  -V  print version information and exit"                    << '\n';
-  // clang-format on
+  cout << "usage:";
+  cout << '\n' << "  check_wfc [-hvV] [-f wfc_component] [-g \"n0 n1 n2\"]";
+  cout << '\n' << "            [-r rmax]";
+  cout << '\n' << "options:";
+  cout << '\n' << "  -f  specify wavefunction component to check";
+  cout << '\n' << "      one of: J1, J2, J3, Det.       default: J2";
+  cout << '\n' << "  -g  set the 3D tiling.             default: 1 1 1";
+  cout << '\n' << "  -h  print help and exit";
+  cout << '\n' << "  -r  set the Rmax.                  default: 1.7";
+  cout << '\n' << "  -v  verbose output";
+  cout << '\n' << "  -V  print version information and exit";
+  app_summary() << std::endl;
 
   exit(1); // print help and exit
 }
@@ -86,7 +85,7 @@ int main(int argc, char** argv)
 {
   // clang-format off
   typedef QMCTraits::RealType           RealType;
-  typedef ParticleSet::ParticlePos_t    ParticlePos_t;
+  typedef ParticleSet::ParticlePos    ParticlePos;
   typedef ParticleSet::PosType          PosType;
   // clang-format on
 
@@ -98,12 +97,13 @@ int main(int argc, char** argv)
   RealType Rmax(1.7);
   string wfc_name("J2");
 
-  bool verbose = false;
+  bool use_offload = true;
+  bool verbose     = false;
 
   int opt;
   while (optind < argc)
   {
-    if ((opt = getopt(argc, argv, "hvVf:g:r:s:")) != -1)
+    if ((opt = getopt(argc, argv, "huvVf:g:r:s:")) != -1)
     {
       switch (opt)
       {
@@ -118,6 +118,9 @@ int main(int argc, char** argv)
         break;
       case 'r': // rmax
         Rmax = atof(optarg);
+        break;
+      case 'u':
+        use_offload = false;
         break;
       case 'v':
         verbose = true;
@@ -152,9 +155,8 @@ int main(int argc, char** argv)
   Tensor<int, 3> tmat(na, 0, 0, 0, nb, 0, 0, 0, nc);
 
   // setup ions
-  ParticleSet ions;
-  Tensor<OHMMS_PRECISION, 3> lattice_b;
-  build_ions(ions, tmat, lattice_b);
+  std::unique_ptr<ParticleSet> ions_ptr = build_ions(tmat, use_offload);
+  auto& ions(*ions_ptr);
 
   // list of accumulated errors
   double evaluateLog_v_err = 0.0;
@@ -171,14 +173,13 @@ int main(int argc, char** argv)
 
   std::unique_ptr<SPOSet> spo_main;
   {
-    ParticleSet els;
     RandomGenerator<RealType> random_th(myPrimes[0]);
-    build_els(els, ions, random_th);
+    const int norb = count_electrons(*ions_ptr, 1) / 2;
     if (wfc_name == "Det")
-      spo_main = build_SPOSet(false, 40, 40, 40, els.getTotalNum(), 1, lattice_b);
+      spo_main = build_SPOSet(false, 40, 40, 40, norb, 1, ions_ptr->getSimulationCell().getPrimLattice().R);
   }
 
-  // clang-format off
+// clang-format off
   #pragma omp parallel reduction(+:evaluateLog_v_err,evaluateLog_g_err,evaluateLog_l_err,evalGrad_g_err) \
    reduction(+:ratioGrad_r_err,ratioGrad_g_err,evaluateGL_g_err,evaluateGL_l_err,ratio_err)
   // clang-format on
@@ -188,23 +189,21 @@ int main(int argc, char** argv)
     // create generator within the thread
     RandomGenerator<RealType> random_th(myPrimes[ip]);
 
-    ParticleSet els;
-    build_els(els, ions, random_th);
-    els.update();
+    auto els_ptr = build_els(ions, random_th, use_offload);
+    auto& els(*els_ptr);
 
     const int nions = ions.getTotalNum();
     const int nels  = els.getTotalNum();
     const int nels3 = 3 * nels;
 
     ParticleSet els_ref(els);
-    els_ref.RSoA = els_ref.R;
 
     // create tables
     els.addTable(els);
     els_ref.addTable(els_ref);
     const int ei_TableID = els_ref.addTable(ions);
 
-    ParticlePos_t delta(nels);
+    ParticlePos delta(nels);
 
     vector<RealType> ur(nels);
     random_th.generate_uniform(ur.data(), nels);
@@ -217,36 +216,36 @@ int main(int argc, char** argv)
     if (wfc_name == "J2")
     {
       TwoBodyJastrow<BsplineFunctor<RealType>>* J = new TwoBodyJastrow<BsplineFunctor<RealType>>(els);
-      buildJ2(*J, els.Lattice.WignerSeitzRadius);
+      buildJ2(*J, els.getLattice().WignerSeitzRadius);
       wfc.reset(dynamic_cast<WaveFunctionComponentPtr>(J));
       cout << "Built J2" << endl;
       miniqmcreference::TwoBodyJastrowRef<BsplineFunctor<RealType>>* J_ref =
           new miniqmcreference::TwoBodyJastrowRef<BsplineFunctor<RealType>>(els_ref);
-      buildJ2(*J_ref, els.Lattice.WignerSeitzRadius);
+      buildJ2(*J_ref, els.getLattice().WignerSeitzRadius);
       wfc_ref.reset(dynamic_cast<WaveFunctionComponentPtr>(J_ref));
       cout << "Built J2_ref" << endl;
     }
     else if (wfc_name == "J1")
     {
       OneBodyJastrow<BsplineFunctor<RealType>>* J = new OneBodyJastrow<BsplineFunctor<RealType>>(ions, els);
-      buildJ1(*J, els.Lattice.WignerSeitzRadius);
+      buildJ1(*J, els.getLattice().WignerSeitzRadius);
       wfc.reset(dynamic_cast<WaveFunctionComponentPtr>(J));
       cout << "Built J1" << endl;
       miniqmcreference::OneBodyJastrowRef<BsplineFunctor<RealType>>* J_ref =
           new miniqmcreference::OneBodyJastrowRef<BsplineFunctor<RealType>>(ions, els_ref);
-      buildJ1(*J_ref, els.Lattice.WignerSeitzRadius);
+      buildJ1(*J_ref, els.getLattice().WignerSeitzRadius);
       wfc_ref.reset(dynamic_cast<WaveFunctionComponentPtr>(J_ref));
       cout << "Built J1_ref" << endl;
     }
     else if (wfc_name == "JeeI" || wfc_name == "J3")
     {
       ThreeBodyJastrow<PolynomialFunctor3D>* J = new ThreeBodyJastrow<PolynomialFunctor3D>(ions, els);
-      buildJeeI(*J, els.Lattice.WignerSeitzRadius);
+      buildJeeI(*J, els.getLattice().WignerSeitzRadius);
       wfc.reset(dynamic_cast<WaveFunctionComponentPtr>(J));
       cout << "Built JeeI" << endl;
       miniqmcreference::ThreeBodyJastrowRef<PolynomialFunctor3D>* J_ref =
           new miniqmcreference::ThreeBodyJastrowRef<PolynomialFunctor3D>(ions, els_ref);
-      buildJeeI(*J_ref, els.Lattice.WignerSeitzRadius);
+      buildJeeI(*J_ref, els.getLattice().WignerSeitzRadius);
       wfc_ref.reset(dynamic_cast<WaveFunctionComponentPtr>(J_ref));
       cout << "Built JeeI_ref" << endl;
     }
@@ -311,10 +310,8 @@ int main(int argc, char** argv)
 
       for (int iel = 0; iel < nels; ++iel)
       {
-        els.setActive(iel);
         PosType grad_soa = wfc->evalGrad(els, iel);
 
-        els_ref.setActive(iel);
         PosType grad_ref = wfc_ref->evalGrad(els_ref, iel);
         g_eval += check_grads(grad_soa, grad_ref, use_relative_error);
 
@@ -393,7 +390,7 @@ int main(int argc, char** argv)
       int nsphere          = 0;
       for (int jel = 0; jel < els_ref.getTotalNum(); ++jel)
       {
-        const auto& dist = els_ref.DistTables[ei_TableID]->Distances[jel];
+        const auto& dist = els_ref.getDistTableAB(ei_TableID).getDistRow(jel);
         for (int iat = 0; iat < nions; ++iat)
           if (dist[iat] < Rmax)
           {

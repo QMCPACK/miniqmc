@@ -59,8 +59,8 @@ public:
   void invertPsiM(const ValueMatrix_t& logdetT, ValueMatrix_t& invMat);
 
   void evaluateGL(ParticleSet& P,
-                  ParticleSet::ParticleGradient_t& G,
-                  ParticleSet::ParticleLaplacian_t& L,
+                  ParticleSet::ParticleGradient& G,
+                  ParticleSet::ParticleLaplacian& L,
                   bool fromscratch = false) override;
 
   /** return the ratio only for the  iat-th partcle move
@@ -86,16 +86,16 @@ public:
 
   ///evaluate log of a determinant for a particle set
   RealType evaluateLog(ParticleSet& P,
-                       ParticleSet::ParticleGradient_t& G,
-                       ParticleSet::ParticleLaplacian_t& L) override;
+                       ParticleSet::ParticleGradient& G,
+                       ParticleSet::ParticleLaplacian& L) override;
 
   void recompute(ParticleSet& P);
 
   void multi_evaluateLog(const std::vector<WaveFunctionComponent*>& WFC_list,
                          const std::vector<ParticleSet*>& P_list,
-                         const std::vector<ParticleSet::ParticleGradient_t*>& G_list,
-                         const std::vector<ParticleSet::ParticleLaplacian_t*>& L_list,
-                         ParticleSet::ParticleValue_t& values) override;
+                         const std::vector<ParticleSet::ParticleGradient*>& G_list,
+                         const std::vector<ParticleSet::ParticleLaplacian*>& L_list,
+                         ParticleSet::ParticleValue& values) override;
 
   void multi_ratioGrad(const std::vector<WaveFunctionComponent*>& WFC_list,
                        const std::vector<ParticleSet*>& P_list,

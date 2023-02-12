@@ -115,6 +115,7 @@
 #include <QMCWaveFunctions/SPOSet.h>
 #include <QMCWaveFunctions/SPOSet_builder.h>
 #include <QMCWaveFunctions/WaveFunction.h>
+#include <ResourceCollection.h>
 #include <DeviceManager.h>
 #include <Drivers/Mover.hpp>
 #include <getopt.h>
@@ -149,32 +150,31 @@ TimerNameList_t<MiniQMCTimers> MiniQMCTimerNames = {
 
 void print_help()
 {
-  // clang-format off
-  app_summary() << "usage:" << '\n';
-  app_summary() << "  miniqmc   [-bhjPvV] [-g \"n0 n1 n2\"] [-m meshfactor]"     << '\n';
-  app_summary() << "            [-n steps] [-N substeps] [-x rmax]"              << '\n';
-  app_summary() << "            [-r AcceptanceRatio] [-w walkers]"               << '\n';
-  app_summary() << "            [-a tile_size] [-t timer_level] [-c nw_b]"       << '\n';
-  app_summary() << "            [-k delay_rank]"                                 << '\n';
-  app_summary() << "options:"                                                    << '\n';
-  app_summary() << "  -a  size of each spline tile       default: num of orbs"   << '\n';
-  app_summary() << "  -b  use reference implementations  default: off"           << '\n';
-  app_summary() << "  -c  number of walker crowds/batchs default: num of threads"<< '\n';
-  app_summary() << "  -g  set the 3D tiling.             default: 1 1 1"         << '\n';
-  app_summary() << "  -h  print help and exit"                                   << '\n';
-  app_summary() << "  -j  enable three body Jastrow      default: off"           << '\n';
-  app_summary() << "  -m  meshfactor                     default: 1.0"           << '\n';
-  app_summary() << "  -n  number of MC steps             default: 5"             << '\n';
-  app_summary() << "  -N  number of MC substeps          default: 1"             << '\n';
-  app_summary() << "  -P  not running pseudo potential   default: off"           << '\n';
-  app_summary() << "  -r  set the acceptance ratio.      default: 0.5"           << '\n';
-  app_summary() << "  -t  timer level: coarse or fine    default: fine"          << '\n';
-  app_summary() << "  -k  matrix delayed update rank     default: 32"            << '\n';
-  app_summary() << "  -v  verbose output"                                        << '\n';
-  app_summary() << "  -V  print version information and exit"                    << '\n';
-  app_summary() << "  -w  number of walker(movers)       default: num of threads"<< '\n';
-  app_summary() << "  -x  set the Rmax.                  default: 1.7"           << '\n';
-  // clang-format on
+  app_summary() << "usage:";
+  app_summary() << '\n' << "  miniqmc   [-bhjPvV] [-g \"n0 n1 n2\"] [-m meshfactor]";
+  app_summary() << '\n' << "            [-n steps] [-N substeps] [-x rmax]";
+  app_summary() << '\n' << "            [-r AcceptanceRatio] [-w walkers]";
+  app_summary() << '\n' << "            [-a tile_size] [-t timer_level] [-c nw_b]";
+  app_summary() << '\n' << "            [-k delay_rank]";
+  app_summary() << '\n' << "options:";
+  app_summary() << '\n' << "  -a  size of each spline tile       default: num of orbs";
+  app_summary() << '\n' << "  -b  use reference implementations  default: off";
+  app_summary() << '\n' << "  -c  number of walker crowds/batchs default: num of threads";
+  app_summary() << '\n' << "  -g  set the 3D tiling.             default: 1 1 1";
+  app_summary() << '\n' << "  -h  print help and exit";
+  app_summary() << '\n' << "  -j  enable three body Jastrow      default: off";
+  app_summary() << '\n' << "  -m  meshfactor                     default: 1.0";
+  app_summary() << '\n' << "  -n  number of MC steps             default: 5";
+  app_summary() << '\n' << "  -N  number of MC substeps          default: 1";
+  app_summary() << '\n' << "  -P  not running pseudo potential   default: off";
+  app_summary() << '\n' << "  -r  set the acceptance ratio.      default: 0.5";
+  app_summary() << '\n' << "  -t  timer level: coarse or fine    default: fine";
+  app_summary() << '\n' << "  -k  matrix delayed update rank     default: 32";
+  app_summary() << '\n' << "  -v  verbose output";
+  app_summary() << '\n' << "  -V  print version information and exit";
+  app_summary() << '\n' << "  -w  number of walker(movers)       default: num of threads";
+  app_summary() << '\n' << "  -x  set the Rmax.                  default: 1.7";
+  app_summary() << std::endl;
 }
 
 int main(int argc, char** argv)
@@ -213,6 +213,7 @@ int main(int argc, char** argv)
 
   PrimeNumberSet<uint32_t> myPrimes;
 
+  bool use_offload             = true;
   bool verbose                 = false;
   std::string timer_level_name = "fine";
 
@@ -224,7 +225,7 @@ int main(int argc, char** argv)
   int opt;
   while (optind < argc)
   {
-    if ((opt = getopt(argc, argv, "bhjPvVa:c:g:m:n:N:r:s:t:k:w:x:")) != -1)
+    if ((opt = getopt(argc, argv, "bhjPuvVa:c:g:m:n:N:r:s:t:k:w:x:")) != -1)
     {
       switch (opt)
       {
@@ -270,6 +271,9 @@ int main(int argc, char** argv)
         break;
       case 'k':
         delay_rank = atoi(optarg);
+        break;
+      case 'u':
+        use_offload = false;
         break;
       case 'v':
         verbose = true;
@@ -332,13 +336,12 @@ int main(int argc, char** argv)
   std::unique_ptr<SPOSet> spo_main;
   int nTiles = 1;
 
-  ParticleSet ions;
+  std::unique_ptr<ParticleSet> ions_ptr;
   // initialize ions and splines which are shared by all threads later
   {
     ScopedTimer local(Timers[Timer_Setup]);
-    Tensor<OHMMS_PRECISION, 3> lattice_b;
-    build_ions(ions, tmat, lattice_b);
-    const int nels = count_electrons(ions, 1);
+    ions_ptr       = build_ions(tmat, use_offload);
+    const int nels = count_electrons(*ions_ptr, 1);
     const int norb = nels / 2;
     tileSize       = (tileSize > 0) ? tileSize : norb;
     nTiles         = norb / tileSize;
@@ -366,7 +369,7 @@ int main(int argc, char** argv)
                   << endl;
     app_summary() << "delayed update rank = " << delay_rank << endl;
 
-    spo_main = build_SPOSet(useRef, nx, ny, nz, norb, nTiles, lattice_b);
+    spo_main = build_SPOSet(useRef, nx, ny, nz, norb, nTiles, ions_ptr->getSimulationCell().getPrimLattice().R);
   }
 
   if (!useRef)
@@ -383,24 +386,25 @@ int main(int argc, char** argv)
 
   Timers[Timer_Init].get().start();
   std::vector<Mover*> mover_list(nmovers, nullptr);
+  ParticleSet& ions(*ions_ptr);
 
 // prepare movers
 #pragma omp parallel for
   for (int iw = 0; iw < nmovers; iw++)
   {
     // create and initialize movers
-    Mover* thiswalker = new Mover(myPrimes[iw], ions);
+    Mover* thiswalker = new Mover(myPrimes[iw], ions, use_offload);
     mover_list[iw]    = thiswalker;
 
+    auto& els(*thiswalker->els_ptr);
     // create wavefunction per mover
-    build_WaveFunction(useRef, *spo_main, thiswalker->wavefunction, ions, thiswalker->els, thiswalker->rng, delay_rank,
-                       enableJ3);
+    build_WaveFunction(useRef, *spo_main, thiswalker->wavefunction, ions, els, thiswalker->rng, delay_rank, enableJ3);
 
     // initialize virtual particle sets
-    thiswalker->nlpp.initialize_VPs(ions, thiswalker->els, Rmax);
+    thiswalker->nlpp.initialize_VPs(ions, els, Rmax);
 
     // initial computing
-    thiswalker->els.update();
+    els.update();
   }
 
 // initial computing
@@ -413,10 +417,15 @@ int main(int argc, char** argv)
     const std::vector<WaveFunction*> WF_list(extract_wf_list(extract_sub_list(mover_list, first, last)));
     mover_list[first]->wavefunction.flex_evaluateLog(WF_list, P_list);
   }
+
+  ResourceCollection pset_res("test_pset_res");
+  mover_list[0]->els_ptr->createResource(pset_res);
+  std::vector<ResourceCollection> pset_res_batches(nbatches, pset_res);
+
   Timers[Timer_Init].get().stop();
 
   const int nions = ions.getTotalNum();
-  const int nels  = mover_list[0]->els.getTotalNum();
+  const int nels  = mover_list[0]->els_ptr->getTotalNum();
   const int nels3 = 3 * nels;
 
   // this is the number of qudrature points for the non-local PP
@@ -436,6 +445,12 @@ int main(int argc, char** argv)
       const std::vector<ParticleSet*> P_list(extract_els_list(Sub_list));
       const std::vector<WaveFunction*> WF_list(extract_wf_list(Sub_list));
       const std::vector<NonLocalPP<RealType>*> NLPP_list(extract_nlpp_list(Sub_list));
+      RefVectorWithLeader<ParticleSet> pref_list(*P_list[0]);
+      for(int i = 0; i < P_list.size(); i++)
+        pref_list.push_back(*P_list[i]);
+
+      ResourceCollectionTeamLock<ParticleSet> mw_pset_lock(pset_res_batches[batch], pref_list);
+
       const Mover& anon_mover = *Sub_list[0];
 
       int nw_this_batch   = last - first;
@@ -455,9 +470,6 @@ int main(int argc, char** argv)
       {
         for (int iel = 0; iel < nels; ++iel)
         {
-          // Operate on electron with index iel
-          anon_mover.els.flex_setActive(P_list, iel);
-
           // Compute gradient at the current position
           Timers[Timer_evalGrad].get().start();
           anon_mover.wavefunction.flex_evalGrad(WF_list, P_list, iel, grad_now);
@@ -466,7 +478,7 @@ int main(int argc, char** argv)
           // Construct trial move
           Sub_list[0]->rng.generate_uniform(ur.data(), nw_this_batch);
           Sub_list[0]->rng.generate_normal(&delta[0][0], nw_this_batch_3);
-          anon_mover.els.flex_makeMove(P_list, iel, delta);
+          ParticleSet::mw_makeMove(pref_list, iel, delta);
 
           std::vector<bool> isAccepted(Sub_list.size());
 
@@ -488,19 +500,12 @@ int main(int argc, char** argv)
           Timers[Timer_Update].get().stop();
 
           // Update position
-          for (int iw = 0; iw < nw_this_batch; iw++)
-          {
-            if (isAccepted[iw]) // MC
-              Sub_list[iw]->els.acceptMove(iel);
-            else
-              Sub_list[iw]->els.rejectMove(iel);
-          }
+          ParticleSet::mw_accept_rejectMove(pref_list, iel, isAccepted, true);
         } // iel
         anon_mover.wavefunction.flex_completeUpdates(WF_list);
-      } // substeps
+      }   // substeps
 
-      for (int iw = 0; iw < nw_this_batch; iw++)
-        Sub_list[iw]->els.donePbyP();
+      ParticleSet::mw_donePbyP(pref_list);
 
       // evaluate Kinetic Energy
       anon_mover.wavefunction.flex_evaluateGL(WF_list, P_list);

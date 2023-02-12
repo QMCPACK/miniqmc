@@ -19,9 +19,10 @@ endif()
 ####################################
 # create libqmcutil
 ####################################
-set(UTILITIES SpeciesSet.cpp Communicate.cpp NewTimer.cpp TimerManager.cpp XMLWriter.cpp tinyxml/tinyxml2.cpp qmcpack_version.cpp)
+set(UTILITIES Communicate.cpp NewTimer.cpp TimerManager.cpp XMLWriter.cpp tinyxml/tinyxml2.cpp qmcpack_version.cpp ResourceCollection.cpp)
 
 add_library(qmcutil ${UTILITIES})
+target_include_directories(qmcutil PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(
   qmcutil
   PUBLIC platform_runtime

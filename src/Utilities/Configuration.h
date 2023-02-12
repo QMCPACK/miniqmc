@@ -1,21 +1,16 @@
-////////////////////////////////////////////////////////////////////////////////
-// This file is distributed under the University of Illinois/NCSA Open Source
-// License.  See LICENSE file in top directory for details.
+//////////////////////////////////////////////////////////////////////////////////////
+// This file is distributed under the University of Illinois/NCSA Open Source License.
+// See LICENSE file in top directory for details.
 //
 // Copyright (c) 2016 Jeongnim Kim and QMCPACK developers.
 //
-// File developed by:
-// Ken Esler, kpesler@gmail.com,
-//    University of Illinois at Urbana-Champaign
-// Jeongnim Kim, jeongnim.kim@gmail.com,
-//    University of Illinois at Urbana-Champaign
-// Jeremy McMinnis, jmcminis@gmail.com,
-//    University of Illinois at Urbana-Champaign
+// File developed by: Ken Esler, kpesler@gmail.com, University of Illinois at Urbana-Champaign
+//                    Jeongnim Kim, jeongnim.kim@gmail.com, University of Illinois at Urbana-Champaign
+//                    Jeremy McMinnis, jmcminis@gmail.com, University of Illinois at Urbana-Champaign
 //
-// File created by:
-// Jeongnim Kim, jeongnim.kim@gmail.com,
-//    University of Illinois at Urbana-Champaign
-////////////////////////////////////////////////////////////////////////////////
+// File created by: Jeongnim Kim, jeongnim.kim@gmail.com, University of Illinois at Urbana-Champaign
+//////////////////////////////////////////////////////////////////////////////////////
+
 
 #ifndef QMCPLUSPLUS_TRAITS_H
 #define QMCPLUSPLUS_TRAITS_H
@@ -24,13 +19,10 @@
 #include <string>
 #include <vector>
 #include <map>
-#include <complex>
-#include <Utilities/QMCTypes.h>
-#include <Numerics/OhmmsPETE/TinyVector.h>
-#include <Numerics/OhmmsPETE/Tensor.h>
+#include "Utilities/QMCTypes.h"
 #include "Particle/Lattice/CrystalLattice.h"
-#include <Particle/ParticleAttrib.h>
-#include <Host/OutputManager.h>
+#include "Particle/ParticleAttrib.h"
+#include "Platforms/Host/OutputManager.h"
 
 #define APP_ABORT(msg)                                            \
   {                                                               \
@@ -38,28 +30,21 @@
     exit(1);                                                      \
   }
 
-// define empty DEBUG_MEMORY
+//define empty DEBUG_MEMORY
 #define DEBUG_MEMORY(msg)
-// uncomment this out to trace the call tree of destructors
+//uncomment this out to trace the call tree of destructors
 //#define DEBUG_MEMORY(msg) std::cerr << "<<<< " << msg << std::endl;
+
+#if defined(DEBUG_PSIBUFFER_ON)
+#define DEBUG_PSIBUFFER(who, msg)                              \
+  std::cerr << "PSIBUFFER " << who << " " << msg << std::endl; \
+  std::cerr.flush();
+#else
+#define DEBUG_PSIBUFFER(who, msg)
+#endif
 
 namespace qmcplusplus
 {
-/** traits for the common particle attributes
- *
- *This is an alternative to the global typedefs.
- */
-struct PtclAttribTraits
-{
-  // clang-format off
-  typedef int                                                     Index_t;
-  typedef ParticleAttrib<Index_t>                                 ParticleIndex_t;
-  typedef ParticleAttrib<OHMMS_PRECISION>                         ParticleScalar_t;
-  typedef ParticleAttrib<TinyVector<OHMMS_PRECISION, OHMMS_DIM> > ParticlePos_t;
-  typedef ParticleAttrib<Tensor<OHMMS_PRECISION, OHMMS_DIM> >     ParticleTensor_t;
-  // clang-format on
-};
-
 /** traits for QMC variables
  *
  *typedefs for the QMC data types
@@ -68,65 +53,60 @@ struct QMCTraits
 {
   enum
   {
-    DIM = OHMMS_DIM
+    DIM = OHMMS_DIM,
+    DIM_VGL = OHMMS_DIM + 2 // Value(1) + Gradients(OHMMS_DIM) + Laplacian(1)
   };
-  using QTBase = QMCTypes<OHMMS_PRECISION, DIM>;
-  using QTFull = QMCTypes<OHMMS_PRECISION_FULL, DIM>;
-  typedef QTBase::RealType RealType;
-  typedef QTBase::ComplexType ComplexType;
-  typedef QTBase::ValueType ValueType;
-  typedef QTBase::PosType PosType;
-  typedef QTBase::GradType GradType;
-  typedef QTBase::TensorType TensorType;
+  using QTBase      = QMCTypes<OHMMS_PRECISION, DIM>;
+  using QTFull      = QMCTypes<OHMMS_PRECISION_FULL, DIM>;
+  using RealType    = QTBase::RealType;
+  using ComplexType = QTBase::ComplexType;
+  using ValueType   = QTBase::ValueType;
+  using PosType     = QTBase::PosType;
+  using GradType    = QTBase::GradType;
+  using TensorType  = QTBase::TensorType;
   ///define other types
-  typedef OHMMS_INDEXTYPE IndexType;
-  typedef QTFull::RealType EstimatorRealType;
-};
+  using IndexType         = OHMMS_INDEXTYPE;
+  using FullPrecRealType  = QTFull::RealType;
+  using FullPrecValueType = QTFull::ValueType;
 
+  // Type for particle group index pairs
+  using PtclGrpIndexes = std::vector<std::pair<int, int>>;
+};
 
 /** Particle traits to use UniformGridLayout for the ParticleLayout.
  */
 struct PtclOnLatticeTraits
 {
-  // clang-format off
-  typedef CrystalLattice<OHMMS_PRECISION,3,OHMMS_ORTHO>  ParticleLayout_t;
+  using ParticleLayout = CrystalLattice<OHMMS_PRECISION, OHMMS_DIM>;
+  using QTFull         = QMCTraits::QTFull;
 
-  using QTFull = QMCTraits::QTFull;
+  using Index_t   = int;
+  using Scalar_t  = QTFull::RealType;
+  using Complex_t = QTFull::ComplexType;
 
-  typedef int Index_t;
-  typedef QTFull::RealType Scalar_t;
-  typedef QTFull::ComplexType Complex_t;
+  using SingleParticleIndex = ParticleLayout::SingleParticleIndex;
+  using SingleParticlePos   = ParticleLayout::SingleParticlePos;
+  using Tensor_t            = ParticleLayout::Tensor_t;
 
-  typedef ParticleLayout_t::SingleParticleIndex_t      SingleParticleIndex_t;
-  typedef ParticleLayout_t::SingleParticlePos_t        SingleParticlePos_t;
-  typedef ParticleLayout_t::Tensor_t                   Tensor_t;
+  using ParticleIndex  = ParticleAttrib<Index_t>;
+  using ParticleScalar = ParticleAttrib<Scalar_t>;
+  using ParticlePos    = ParticleAttrib<SingleParticlePos>;
+  using ParticleTensor = ParticleAttrib<Tensor_t>;
 
-  typedef ParticleAttrib<Index_t>                      ParticleIndex_t;
-  typedef ParticleAttrib<Scalar_t>                     ParticleScalar_t;
-  typedef ParticleAttrib<SingleParticlePos_t>          ParticlePos_t;
-  typedef ParticleAttrib<Tensor_t>                     ParticleTensor_t;
-
-#if defined(QMC_COMPLEX)
-  typedef ParticleAttrib<TinyVector<Complex_t,OHMMS_DIM> > ParticleGradient_t;
-  typedef ParticleAttrib<Complex_t>                      ParticleLaplacian_t;
-  typedef ParticleAttrib<Complex_t>                      ParticleValue_t;
-  typedef Complex_t                                      SingleParticleValue_t;
-#else
-  typedef ParticleAttrib<TinyVector<Scalar_t,OHMMS_DIM> > ParticleGradient_t;
-  typedef ParticleAttrib<Scalar_t>                       ParticleLaplacian_t;
-  typedef ParticleAttrib<Scalar_t>                       ParticleValue_t;
-  typedef Scalar_t                                       SingleParticleValue_t;
-#endif
-  // clang-format on
+  using ParticleValue   = ParticleAttrib<QTFull::ValueType>;
+  using ParticleGradient    = ParticleAttrib<QTFull::GradType>;
+  using ParticleLaplacian   = ParticleAttrib<QTFull::ValueType>;
+  using SingleParticleValue = QTFull::ValueType;
 };
+
 
 // For unit tests
 //  Check if we are compiling with Catch defined.  Could use other symbols if needed.
 #ifdef TEST_CASE
 #ifdef QMC_COMPLEX
-typedef ComplexApprox ValueApprox;
+using ValueApprox = Catch::Detail::ComplexApprox;
 #else
-typedef Approx ValueApprox;
+using ValueApprox = Catch::Detail::Approx;
 #endif
 #endif
 

@@ -19,18 +19,25 @@ T count_electrons(const ParticleSet& ions, T scale)
   return ions.getTotalNum() * scale * 12;
 }
 
-template<typename T>
-Tensor<T, 3> tile_cell(ParticleSet& ions, const Tensor<int, 3>& tmat, T scale)
+inline std::unique_ptr<ParticleSet> tile_cell(std::unique_ptr<SimulationCell>& global, const Tensor<int, 3>& tmat, bool use_offload)
 {
-  Tensor<T, 3> nio_cell = {7.8811, 7.8811, 0.0, -7.8811, 7.8811, 0.0, 0.0, 0.0, 15.7622};
+  if (!global)
+  {
+  PtclOnLatticeTraits::Tensor_t nio_cell{7.8811, 7.8811, 0.0, -7.8811, 7.8811, 0.0, 0.0, 0.0, 15.7622};
+  SimulationCell::Lattice nio_lat;
   // set PBC in x,y,z directions
-  ions.Lattice.BoxBConds = 1;
+  nio_lat.BoxBConds = 1;
   // set the lattice
-  ions.Lattice.set(nio_cell); // CrystalLattice.h:321
+  nio_lat.set(nio_cell); // CrystalLattice.h:321
+  global = std::make_unique<SimulationCell>(nio_lat);
+  }
+
+  auto ions_ptr = std::make_unique<ParticleSet>(*global, use_offload ? DynamicCoordinateKind::DC_POS_OFFLOAD : DynamicCoordinateKind::DC_POS);
+  auto& ions(*ions_ptr);
+
   // create Ni and O by group
-  std::vector<int> nio_group(2);
-  nio_group[0] = nio_group[1] = 16;
-  ions.create(32); // ParticleSet.h:176 "number of particles per group"
+  std::vector<int> nio_group(2, 16);
+  ions.create(nio_group); // ParticleSet.h:176 "number of particles per group"
   // using lattice coordinates
   ions.R.InUnit = 1;
 
@@ -75,7 +82,7 @@ Tensor<T, 3> tile_cell(ParticleSet& ions, const Tensor<int, 3>& tmat, T scale)
 
   ions.resetGroups();
 
-  return nio_cell;
+  return ions_ptr;
 }
 
 template<typename J2Type>

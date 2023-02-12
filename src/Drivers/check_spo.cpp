@@ -51,19 +51,19 @@ TimerNameList_t<CheckSPOTimers> CheckSPOTimerNames = {
 
 void print_help()
 {
-  // clang-format off
-  app_summary() << "usage:" << '\n';
-  app_summary() << "  check_spo [-hvV] [-g \"n0 n1 n2\"] [-m meshfactor]"        << '\n';
-  app_summary() << "            [-n steps] [-r rmax]"                            << '\n';
-  app_summary() << "options:"                                                    << '\n';
-  app_summary() << "  -g  set the 3D tiling.             default: 1 1 1"         << '\n';
-  app_summary() << "  -h  print help and exit"                                   << '\n';
-  app_summary() << "  -m  meshfactor                     default: 1.0"           << '\n';
-  app_summary() << "  -n  number of MC steps             default: 5"             << '\n';
-  app_summary() << "  -r  set the Rmax.                  default: 1.7"           << '\n';
-  app_summary() << "  -v  verbose output"                                        << '\n';
-  app_summary() << "  -V  print version information and exit"                    << '\n';
-  // clang-format on
+  app_summary() << "usage:";
+  app_summary() << '\n' << "  check_spo [-hvV] [-g \"n0 n1 n2\"] [-m meshfactor]";
+  app_summary() << '\n' << "            [-n steps] [-r rmax]";
+  app_summary() << '\n' << "options:";
+  app_summary() << '\n' << "  -g  set the 3D tiling.             default: 1 1 1";
+  app_summary() << '\n' << "  -h  print help and exit";
+  app_summary() << '\n' << "  -m  meshfactor                     default: 1.0";
+  app_summary() << '\n' << "  -n  number of MC steps             default: 5";
+  app_summary() << '\n' << "  -r  set the Rmax.                  default: 1.7";
+  app_summary() << '\n' << "  -u  disable gpu";
+  app_summary() << '\n' << "  -v  verbose output";
+  app_summary() << '\n' << "  -V  print version information and exit";
+  app_summary() << std::endl;
 
   exit(1); // print help and exit
 }
@@ -72,7 +72,7 @@ int main(int argc, char** argv)
 {
   // clang-format off
   typedef QMCTraits::RealType           RealType;
-  typedef ParticleSet::ParticlePos_t    ParticlePos_t;
+  typedef ParticleSet::ParticlePos    ParticlePos;
   typedef ParticleSet::PosType          PosType;
   // clang-format on
 
@@ -91,8 +91,9 @@ int main(int argc, char** argv)
   int tileSize  = -1;
   int team_size = 1;
 
-  bool speedy  = false;
-  bool verbose = false;
+  bool speedy      = false;
+  bool use_offload = true;
+  bool verbose     = false;
 
   if (!comm.root())
   {
@@ -102,7 +103,7 @@ int main(int argc, char** argv)
   int opt;
   while (optind < argc)
   {
-    if ((opt = getopt(argc, argv, "hsvVa:c:f:g:m:n:r:")) != -1)
+    if ((opt = getopt(argc, argv, "hsuvVa:c:f:g:m:n:r:")) != -1)
     {
       switch (opt)
       {
@@ -133,6 +134,9 @@ int main(int argc, char** argv)
         break;
       case 's':
         speedy = true;
+        break;
+      case 'u':
+        use_offload = false;
         break;
       case 'v':
         verbose = true;
@@ -182,12 +186,11 @@ int main(int argc, char** argv)
   spo_ref_type spo_ref_main;
   int nTiles = 1;
 
-  ParticleSet ions;
+  std::unique_ptr<ParticleSet> ions_ptr;
   // initialize ions and splines which are shared by all threads later
   {
-    Tensor<OHMMS_PRECISION, 3> lattice_b;
-    build_ions(ions, tmat, lattice_b);
-    const int norb = count_electrons(ions, 1) / 2;
+    ions_ptr       = build_ions(tmat, use_offload);
+    const int norb = count_electrons(*ions_ptr, 1) / 2;
     tileSize       = (tileSize > 0) ? tileSize : norb;
     nTiles         = norb / tileSize;
 
@@ -208,12 +211,14 @@ int main(int argc, char** argv)
                   << endl;
 
     spo_main.set(nx, ny, nz, norb, nTiles);
-    spo_main.Lattice.set(lattice_b);
+    spo_main.Lattice.set(ions_ptr->getSimulationCell().getPrimLattice().R);
     spo_ref_main.set(nx, ny, nz, norb, nTiles);
-    spo_ref_main.Lattice.set(lattice_b);
+    spo_ref_main.Lattice.set(ions_ptr->getSimulationCell().getPrimLattice().R);
   }
 
   Timers[Timer_Init].get().stop();
+
+  ParticleSet& ions(*ions_ptr);
 
   double nspheremoves = 0;
   double dNumVGHCalls = 0;
@@ -223,7 +228,7 @@ int main(int argc, char** argv)
   double evalVGH_g_err = 0.0;
   double evalVGH_h_err = 0.0;
 
-// clang-format off
+  // clang-format off
   #pragma omp parallel reduction(+:ratio,nspheremoves,dNumVGHCalls) \
    reduction(+:evalV_v_err,evalVGH_v_err,evalVGH_g_err,evalVGH_h_err)
   // clang-format on
@@ -236,8 +241,8 @@ int main(int argc, char** argv)
     // create generator within the thread
     RandomGenerator<RealType> random_th(MakeSeed(team_id, np));
 
-    ParticleSet els;
-    build_els(els, ions, random_th);
+    auto els_ptr = build_els(ions, random_th, use_offload);
+    auto& els(*els_ptr);
     els.update();
 
     const int nions = ions.getTotalNum();
@@ -256,8 +261,8 @@ int main(int argc, char** argv)
     // this is the cutoff from the non-local PP
     const int nknots(ecp.size());
 
-    ParticlePos_t delta(nels);
-    ParticlePos_t rOnSphere(nknots);
+    ParticlePos delta(nels);
+    ParticlePos rOnSphere(nknots);
 
     RealType accept = 0.5;
 
@@ -351,7 +356,7 @@ int main(int argc, char** argv)
         } // els
       }   // ions
 
-    } // steps.
+    }     // steps.
 
     ratio += RealType(my_accepted) / RealType(nels * nsteps);
     nspheremoves += RealType(my_vals) / RealType(nsteps);

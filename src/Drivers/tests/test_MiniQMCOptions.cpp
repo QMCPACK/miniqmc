@@ -12,6 +12,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include <string>
+#include <cstring>
 #include <vector>
 #include "catch.hpp"
 #include "Drivers/MiniQMCOptions.h"

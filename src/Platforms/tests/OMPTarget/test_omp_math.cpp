@@ -128,16 +128,6 @@ TEST_CASE("sin_cos", "[openmp]")
   test_sin_cos<double>(-0.5);
 }
 
-inline void sincos(double a, double* s, double* c)
-{
-  ::sincos(a,s,c);
-}
-
-inline void sincos(float a, float* s, float* c)
-{
-  ::sincosf(a,s,c);
-}
-
 template<typename T>
 void test_sincos(T x)
 {

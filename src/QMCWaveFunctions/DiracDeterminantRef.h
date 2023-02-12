@@ -61,8 +61,8 @@ public:
   void invertPsiM(const ValueMatrix_t& logdetT, ValueMatrix_t& invMat);
 
   void evaluateGL(ParticleSet& P,
-                  ParticleSet::ParticleGradient_t& G,
-                  ParticleSet::ParticleLaplacian_t& L,
+                  ParticleSet::ParticleGradient& G,
+                  ParticleSet::ParticleLaplacian& L,
                   bool fromscratch = false) override;
 
   /** return the ratio only for the  iat-th partcle move
@@ -85,8 +85,8 @@ public:
 
   ///evaluate log of a determinant for a particle set
   RealType evaluateLog(ParticleSet& P,
-                       ParticleSet::ParticleGradient_t& G,
-                       ParticleSet::ParticleLaplacian_t& L) override;
+                       ParticleSet::ParticleGradient& G,
+                       ParticleSet::ParticleLaplacian& L) override;
 
   void recompute(ParticleSet& P);
 

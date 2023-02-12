@@ -155,8 +155,8 @@ void DiracDeterminant<DU_TYPE>::completeUpdates()
 
 template<typename DU_TYPE>
 void DiracDeterminant<DU_TYPE>::evaluateGL(ParticleSet& P,
-                                           ParticleSet::ParticleGradient_t& G,
-                                           ParticleSet::ParticleLaplacian_t& L,
+                                           ParticleSet::ParticleGradient& G,
+                                           ParticleSet::ParticleLaplacian& L,
                                            bool fromscratch)
 {
   if (UpdateMode == ORB_PBYP_RATIO)
@@ -234,8 +234,8 @@ void DiracDeterminant<DU_TYPE>::evaluateRatios(VirtualParticleSet& VP, std::vect
  */
 template<typename DU_TYPE>
 typename DiracDeterminant<DU_TYPE>::RealType DiracDeterminant<DU_TYPE>::evaluateLog(ParticleSet& P,
-                                                                                    ParticleSet::ParticleGradient_t& G,
-                                                                                    ParticleSet::ParticleLaplacian_t& L)
+                                                                                    ParticleSet::ParticleGradient& G,
+                                                                                    ParticleSet::ParticleLaplacian& L)
 {
   recompute(P);
 
@@ -281,9 +281,9 @@ void DiracDeterminant<DU_TYPE>::recompute(ParticleSet& P)
 template<typename DU_TYPE>
 void DiracDeterminant<DU_TYPE>::multi_evaluateLog(const std::vector<WaveFunctionComponent*>& WFC_list,
                                                   const std::vector<ParticleSet*>& P_list,
-                                                  const std::vector<ParticleSet::ParticleGradient_t*>& G_list,
-                                                  const std::vector<ParticleSet::ParticleLaplacian_t*>& L_list,
-                                                  ParticleSet::ParticleValue_t& values)
+                                                  const std::vector<ParticleSet::ParticleGradient*>& G_list,
+                                                  const std::vector<ParticleSet::ParticleLaplacian*>& L_list,
+                                                  ParticleSet::ParticleValue& values)
 {
   for (int iw = 0; iw < P_list.size(); iw++)
     values[iw] = WFC_list[iw]->evaluateLog(*P_list[iw], *G_list[iw], *L_list[iw]);

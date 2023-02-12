@@ -36,7 +36,7 @@ struct NonLocalPP
   using RealType      = T;
   using PosType       = TinyVector<T, D>;
   using TensorType    = Tensor<T, D>;
-  using ParticlePos_t = ParticleSet::ParticlePos_t;
+  using ParticlePos = ParticleSet::ParticlePos;
 
   /** pseudo region, defined per specie in real simulation*/
   RealType Rmax;
@@ -47,7 +47,7 @@ struct NonLocalPP
   /** positions on a sphere */
   std::vector<PosType> sgridxyz_m;
   /** Virtual ParticleSet for each ionic specie*/
-  std::vector<VirtualParticleSet> VPs;
+  std::vector<std::unique_ptr<VirtualParticleSet>> VPs;
   /** ions particle set */
   const ParticleSet& ions_ref;
 
@@ -89,9 +89,8 @@ struct NonLocalPP
       throw std::runtime_error("Can not create VPs again.\n");
     // reserving space avoids the copy constructor of VirtualParticleSet which is not safe to use
     // due to the unsafety of ParticleSet base class. To be fixed.
-    VPs.reserve(ions.groups());
     for (int i = 0; i < ions.groups(); ++i)
-      VPs.emplace_back(elecs, size());
+      VPs.push_back(std::make_unique<VirtualParticleSet>(elecs, size()));
     Rmax = Rmax_in;
   }
 
@@ -114,16 +113,16 @@ struct NonLocalPP
 
   void evaluate(const ParticleSet& els, WaveFunction& wf)
   {
-    ParticlePos_t rOnSphere(size());
-    ParticlePos_t virtualPos(size());
+    ParticlePos rOnSphere(size());
+    std::vector<QMCTraits::PosType> virtualPos(size());
     std::vector<QMCTraits::ValueType> ratios(size());
     randomize(rOnSphere); // pick random sphere
-    const DistanceTableData* d_ie = els.DistTables[wf.get_ei_TableID()];
+    const auto& d_ie = els.getDistTableAB(wf.get_ei_TableID());
 
     for (int jel = 0; jel < els.getTotalNum(); ++jel)
     {
-      const auto& dist  = d_ie->Distances[jel];
-      const auto& displ = d_ie->Displacements[jel];
+      const auto& dist  = d_ie.getDistRow(jel);
+      const auto& displ = d_ie.getDisplRow(jel);
       for (int iat = 0; iat < ions_ref.getTotalNum(); ++iat)
       {
         //due to < Rmax condition, the actually iteration iat is [0,2] in a real simulation
@@ -131,8 +130,8 @@ struct NonLocalPP
         {
           for (int k = 0; k < size(); k++)
             virtualPos[k] = dist[iat] * rOnSphere[k] + displ[iat] + els.R[jel];
-          auto& VP = VPs[ions_ref.GroupID[iat]];
-          VP.makeMoves(jel, virtualPos, true, iat);
+          auto& VP = *VPs[ions_ref.GroupID[iat]];
+          VP.makeMoves(els, jel, virtualPos, true, iat);
           wf.evaluateRatios(VP, ratios);
         }
       }

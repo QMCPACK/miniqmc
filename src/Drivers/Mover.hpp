@@ -50,14 +50,14 @@ struct Mover
   /// random number generator
   RandomGenerator<RealType> rng;
   /// electrons
-  ParticleSet els;
+  std::unique_ptr<ParticleSet> els_ptr;
   /// wavefunction container
   WaveFunction wavefunction;
   /// non-local pseudo-potentials
   NonLocalPP<RealType> nlpp;
 
   /// constructor
-  Mover(const uint32_t myPrime, const ParticleSet& ions) : rng(myPrime), nlpp(rng, ions) { build_els(els, ions, rng); }
+  Mover(const uint32_t myPrime, const ParticleSet& ions, bool use_offload) : rng(myPrime), els_ptr(build_els(ions, rng, use_offload)), nlpp(rng, ions) { }
 };
 
 inline void FairDivideLow(int ntot, int nparts, int me, int& first, int& last)
@@ -88,7 +88,7 @@ const std::vector<ParticleSet*> extract_els_list(const std::vector<Mover*>& move
 {
   std::vector<ParticleSet*> els_list;
   for (auto it = mover_list.begin(); it != mover_list.end(); it++)
-    els_list.push_back(&(*it)->els);
+    els_list.push_back((*it)->els_ptr.get());
   return els_list;
 }
 
@@ -96,7 +96,7 @@ const std::vector<ParticleSet*> extract_els_list(const std::vector<std::unique_p
 {
   std::vector<ParticleSet*> els_list;
   for (auto it = mover_list.begin(); it != mover_list.end(); it++)
-    els_list.push_back(&(*it)->els);
+    els_list.push_back((*it)->els_ptr.get());
   return els_list;
 }
 

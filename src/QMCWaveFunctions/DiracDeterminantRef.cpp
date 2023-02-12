@@ -150,8 +150,8 @@ void DiracDeterminantRef<DU_TYPE>::completeUpdates()
 
 template<typename DU_TYPE>
 void DiracDeterminantRef<DU_TYPE>::evaluateGL(ParticleSet& P,
-                                              ParticleSet::ParticleGradient_t& G,
-                                              ParticleSet::ParticleLaplacian_t& L,
+                                              ParticleSet::ParticleGradient& G,
+                                              ParticleSet::ParticleLaplacian& L,
                                               bool fromscratch)
 {
   if (UpdateMode == ORB_PBYP_RATIO)
@@ -230,8 +230,8 @@ void DiracDeterminantRef<DU_TYPE>::evaluateRatios(VirtualParticleSet& VP, std::v
 template<typename DU_TYPE>
 typename DiracDeterminantRef<DU_TYPE>::RealType DiracDeterminantRef<DU_TYPE>::evaluateLog(
     ParticleSet& P,
-    ParticleSet::ParticleGradient_t& G,
-    ParticleSet::ParticleLaplacian_t& L)
+    ParticleSet::ParticleGradient& G,
+    ParticleSet::ParticleLaplacian& L)
 {
   recompute(P);
 

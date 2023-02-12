@@ -19,11 +19,13 @@
 
 namespace qmcplusplus
 {
+extern std::unique_ptr<SimulationCell> global_cell;
+
 /// build the ParticleSet of ions
-int build_ions(ParticleSet& ions, const Tensor<int, 3>& tmat, Tensor<QMCTraits::RealType, 3>& lattice);
+std::unique_ptr<ParticleSet> build_ions(const Tensor<int, 3>& tmat, bool use_offload);
 
 /// build the ParticleSet of electrons
-int build_els(ParticleSet& els, const ParticleSet& ions, RandomGenerator<QMCTraits::RealType>& rng);
+std::unique_ptr<ParticleSet> build_els(const ParticleSet& ions, RandomGenerator<QMCTraits::RealType>& rng, bool use_offload);
 } // namespace qmcplusplus
 
 #endif

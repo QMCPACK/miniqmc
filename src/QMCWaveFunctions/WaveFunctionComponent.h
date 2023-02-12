@@ -28,7 +28,7 @@
 #include "Utilities/Configuration.h"
 #include "Particle/ParticleSet.h"
 #include "Particle/VirtualParticleSet.h"
-#include "Particle/DistanceTableData.h"
+#include "Particle/DistanceTable.h"
 
 /**@file WaveFunctionComponent.h
  *@brief Declaration of WaveFunctionComponent
@@ -67,8 +67,6 @@ struct WaveFunctionComponent : public QMCTraits
 
   typedef ParticleAttrib<ValueType> ValueVectorType;
   typedef ParticleAttrib<GradType> GradVectorType;
-  typedef PooledData<RealType> BufferType;
-  typedef ParticleSet::Walker_t Walker_t;
 
   /** flag to set the optimization mode */
   bool IsOptimizing;
@@ -117,8 +115,8 @@ struct WaveFunctionComponent : public QMCTraits
    *
    */
   virtual RealType evaluateLog(ParticleSet& P,
-                               ParticleSet::ParticleGradient_t& G,
-                               ParticleSet::ParticleLaplacian_t& L) = 0;
+                               ParticleSet::ParticleGradient& G,
+                               ParticleSet::ParticleLaplacian& L) = 0;
 
   /** return the current gradient for the iat-th particle
    * @param Pquantum particle set
@@ -158,8 +156,8 @@ struct WaveFunctionComponent : public QMCTraits
    *
    */
   virtual void evaluateGL(ParticleSet& P,
-                          ParticleSet::ParticleGradient_t& G,
-                          ParticleSet::ParticleLaplacian_t& L,
+                          ParticleSet::ParticleGradient& G,
+                          ParticleSet::ParticleLaplacian& L,
                           bool fromscratch = false) = 0;
 
   /** complete all the delayed updates, must be called after each substep or step during pbyp move
@@ -175,9 +173,9 @@ struct WaveFunctionComponent : public QMCTraits
   /// operates on multiple walkers
   virtual void multi_evaluateLog(const std::vector<WaveFunctionComponent*>& WFC_list,
                                  const std::vector<ParticleSet*>& P_list,
-                                 const std::vector<ParticleSet::ParticleGradient_t*>& G_list,
-                                 const std::vector<ParticleSet::ParticleLaplacian_t*>& L_list,
-                                 ParticleSet::ParticleValue_t& values)
+                                 const std::vector<ParticleSet::ParticleGradient*>& G_list,
+                                 const std::vector<ParticleSet::ParticleLaplacian*>& L_list,
+                                 ParticleSet::ParticleValue& values)
   {
 #pragma omp parallel for
     for (int iw = 0; iw < P_list.size(); iw++)
@@ -221,14 +219,14 @@ struct WaveFunctionComponent : public QMCTraits
   virtual void multi_ratio(const std::vector<WaveFunctionComponent*>& WFC_list,
                            const std::vector<ParticleSet*>& P_list,
                            int iat,
-                           ParticleSet::ParticleValue_t& ratio_list){
+                           ParticleSet::ParticleValue& ratio_list){
       // TODO
   };
 
   virtual void multi_evaluateGL(const std::vector<WaveFunctionComponent*>& WFC_list,
                                 const std::vector<ParticleSet*>& P_list,
-                                const std::vector<ParticleSet::ParticleGradient_t*>& G_list,
-                                const std::vector<ParticleSet::ParticleLaplacian_t*>& L_list,
+                                const std::vector<ParticleSet::ParticleGradient*>& G_list,
+                                const std::vector<ParticleSet::ParticleLaplacian*>& L_list,
                                 bool fromscratch = false)
   {
 #pragma omp parallel for

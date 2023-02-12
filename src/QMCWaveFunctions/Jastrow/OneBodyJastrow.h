@@ -36,9 +36,7 @@ struct OneBodyJastrow : public WaveFunctionComponent
   /// element position type
   using posT = TinyVector<valT, OHMMS_DIM>;
   /// use the same container
-  using RowContainer = DistanceTableData::RowContainer;
-  /// table index
-  int myTableID;
+  using DisplRow = DistanceTable::DisplRow;
   /// number of ions
   int Nions;
   /// number of electrons
@@ -47,6 +45,8 @@ struct OneBodyJastrow : public WaveFunctionComponent
   int NumGroups;
   /// reference to the sources (ions)
   const ParticleSet& Ions;
+  /// table index
+  const int myTableID;
 
   valT curAt;
   valT curLap;
@@ -62,10 +62,9 @@ struct OneBodyJastrow : public WaveFunctionComponent
   /// Container for \f$F[ig*NumGroups+jg]\f$
   std::vector<FT*> F;
 
-  OneBodyJastrow(const ParticleSet& ions, ParticleSet& els) : Ions(ions)
+  OneBodyJastrow(const ParticleSet& ions, ParticleSet& els) : Ions(ions), myTableID(els.addTable(ions))
   {
     initalize(els);
-    myTableID                 = els.addTable(ions);
     WaveFunctionComponentName = "OneBodyJastrow";
   }
 
@@ -84,10 +83,7 @@ struct OneBodyJastrow : public WaveFunctionComponent
     Nions     = Ions.getTotalNum();
     NumGroups = Ions.getSpeciesSet().getTotalNum();
     F.resize(std::max(NumGroups, 4), nullptr);
-    if (NumGroups > 1 && !Ions.IsGrouped)
-    {
-      NumGroups = 0;
-    }
+
     Nelec = els.getTotalNum();
     Vat.resize(Nelec);
     Grad.resize(Nelec);
@@ -109,18 +105,18 @@ struct OneBodyJastrow : public WaveFunctionComponent
 
   void recompute(ParticleSet& P)
   {
-    const DistanceTableData& d_ie(*(P.DistTables[myTableID]));
+    const auto& d_ie = P.getDistTableAB(myTableID);
     for (int iat = 0; iat < Nelec; ++iat)
     {
-      computeU3(P, iat, d_ie.Distances[iat]);
+      computeU3(P, iat, d_ie.getDistRow(iat).data());
       Vat[iat] = simd::accumulate_n(U.data(), Nions, valT());
-      Lap[iat] = accumulateGL(dU.data(), d2U.data(), d_ie.Displacements[iat], Grad[iat]);
+     Lap[iat] = accumulateGL(dU.data(), d2U.data(), d_ie.getDisplRow(iat), Grad[iat]);
     }
   }
 
   RealType evaluateLog(ParticleSet& P,
-                       ParticleSet::ParticleGradient_t& G,
-                       ParticleSet::ParticleLaplacian_t& L)
+                       ParticleSet::ParticleGradient& G,
+                       ParticleSet::ParticleLaplacian& L)
   {
     evaluateGL(P, G, L, true);
     return LogValue;
@@ -129,14 +125,14 @@ struct OneBodyJastrow : public WaveFunctionComponent
   ValueType ratio(ParticleSet& P, int iat)
   {
     UpdateMode = ORB_PBYP_RATIO;
-    curAt      = computeU(P.DistTables[myTableID]->Temp_r.data());
+    curAt      = computeU(P.getDistTableAB(myTableID).getTempDists().data());
     return std::exp(Vat[iat] - curAt);
   }
 
   inline void evaluateRatios(VirtualParticleSet& VP, std::vector<ValueType>& ratios)
   {
     for (int k = 0; k < ratios.size(); ++k)
-      ratios[k] = std::exp(Vat[VP.refPtcl] - computeU(VP.DistTables[myTableID]->Distances[k]));
+      ratios[k] = std::exp(Vat[VP.refPtcl] - computeU(VP.getDistTableAB(myTableID).getDistRow(k).data()));
   }
 
   inline valT computeU(const valT* dist)
@@ -163,8 +159,8 @@ struct OneBodyJastrow : public WaveFunctionComponent
   }
 
   inline void evaluateGL(ParticleSet& P,
-                         ParticleSet::ParticleGradient_t& G,
-                         ParticleSet::ParticleLaplacian_t& L,
+                         ParticleSet::ParticleGradient& G,
+                         ParticleSet::ParticleLaplacian& L,
                          bool fromscratch = false)
   {
     if (fromscratch)
@@ -182,7 +178,7 @@ struct OneBodyJastrow : public WaveFunctionComponent
    */
   inline valT accumulateGL(const valT* restrict du,
                            const valT* restrict d2u,
-                           const RowContainer& displ,
+                           const DisplRow& displ,
                            posT& grad) const
   {
     valT lap(0);
@@ -260,8 +256,8 @@ struct OneBodyJastrow : public WaveFunctionComponent
   {
     UpdateMode = ORB_PBYP_PARTIAL;
 
-    computeU3(P, iat, P.DistTables[myTableID]->Temp_r.data());
-    curLap = accumulateGL(dU.data(), d2U.data(), P.DistTables[myTableID]->Temp_dr, curGrad);
+    computeU3(P, iat, P.getDistTableAB(myTableID).getTempDists().data());
+    curLap = accumulateGL(dU.data(), d2U.data(), P.getDistTableAB(myTableID).getTempDispls(), curGrad);
     curAt  = simd::accumulate_n(U.data(), Nions, valT());
     grad_iat += curGrad;
     return std::exp(Vat[iat] - curAt);
@@ -272,8 +268,8 @@ struct OneBodyJastrow : public WaveFunctionComponent
   {
     if (UpdateMode == ORB_PBYP_RATIO)
     {
-      computeU3(P, iat, P.DistTables[myTableID]->Temp_r.data());
-      curLap = accumulateGL(dU.data(), d2U.data(), P.DistTables[myTableID]->Temp_dr, curGrad);
+      computeU3(P, iat, P.getDistTableAB(myTableID).getTempDists().data());
+      curLap = accumulateGL(dU.data(), d2U.data(), P.getDistTableAB(myTableID).getTempDispls(), curGrad);
     }
 
     LogValue += Vat[iat] - curAt;

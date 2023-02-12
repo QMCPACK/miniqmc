@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include <string>
 #include "QMCWaveFunctions/DiracDeterminant.h"
+#include "Particle/ParticleSet_builder.hpp"
 
 using std::string;
 
@@ -206,9 +207,9 @@ TEST_CASE("DiracDeterminant_first", "[wavefunction][fermion]")
   ddb.d2psiV.resize(norb);
 
 
-  ParticleSet elec;
+  ParticleSet elec(*global_cell);
 
-  elec.create(3);
+  elec.create({3});
   ddb.recompute(elec);
 
   Matrix<ValueType> b;
@@ -263,9 +264,9 @@ TEST_CASE("DiracDeterminant_second", "[wavefunction][fermion]")
   ddb.d2psiV.resize(norb);
 
 
-  ParticleSet elec;
+  ParticleSet elec(*global_cell);
 
-  elec.create(4);
+  elec.create({4});
   ddb.recompute(elec);
 
   Matrix<ValueType> orig_a;
@@ -391,10 +392,9 @@ TEST_CASE("DiracDeterminant_delayed_update", "[wavefunction][fermion]")
   ddc.dpsiV.resize(norb);
   ddc.d2psiV.resize(norb);
 
+  ParticleSet elec(*global_cell);
 
-  ParticleSet elec;
-
-  elec.create(4);
+  elec.create({4});
   ddc.recompute(elec);
 
   Matrix<ValueType> orig_a;

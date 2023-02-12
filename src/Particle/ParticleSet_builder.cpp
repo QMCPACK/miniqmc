@@ -20,25 +20,27 @@
 
 namespace qmcplusplus
 {
-int build_ions(ParticleSet& ions, const Tensor<int, 3>& tmat, Tensor<QMCTraits::RealType, 3>& lattice)
-{
-  ions.setName("ion");
-  ions.Lattice.BoxBConds = 1;
-  lattice                = tile_cell(ions, tmat, static_cast<OHMMS_PRECISION>(1.0));
-  ions.RSoA              = ions.R; // fill the SoA
 
-  return ions.getTotalNum();
+std::unique_ptr<SimulationCell> global_cell;
+
+std::unique_ptr<ParticleSet> build_ions(const Tensor<int, 3>& tmat, bool use_offload)
+{
+  auto ions = tile_cell(global_cell, tmat, use_offload);
+  ions->setName("ion");
+  ions->update();
+  return ions;
 }
 
-int build_els(ParticleSet& els, const ParticleSet& ions, RandomGenerator<QMCTraits::RealType>& rng)
+std::unique_ptr<ParticleSet> build_els(const ParticleSet& ions, RandomGenerator<QMCTraits::RealType>& rng, bool use_offload)
 {
+  auto els_ptr = std::make_unique<ParticleSet>(ions.getSimulationCell(), use_offload ? DynamicCoordinateKind::DC_POS_OFFLOAD : DynamicCoordinateKind::DC_POS);
+  auto& els(*els_ptr);
+
   els.setName("e");
   const int nels  = count_electrons(ions, 1);
   const int nels3 = 3 * nels;
 
   { // create up/down electrons
-    els.Lattice.BoxBConds = 1;
-    els.Lattice.set(ions.Lattice);
     std::vector<int> ud(2);
     ud[0] = nels / 2;
     ud[1] = nels - ud[0];
@@ -46,10 +48,10 @@ int build_els(ParticleSet& els, const ParticleSet& ions, RandomGenerator<QMCTrai
     els.R.InUnit = 1;
     rng.generate_uniform(&els.R[0][0], nels3);
     els.convert2Cart(els.R); // convert to Cartiesian
-    els.RSoA = els.R;
+    els.update();
   }
 
-  return nels;
+  return els_ptr;
 }
 
 } // namespace qmcplusplus

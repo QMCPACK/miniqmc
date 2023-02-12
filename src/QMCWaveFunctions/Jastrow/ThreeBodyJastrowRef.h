@@ -12,7 +12,7 @@
 #define QMCPLUSPLUS_EEIJASTROW_REF_H
 #include "Utilities/Configuration.h"
 #include "QMCWaveFunctions/WaveFunctionComponent.h"
-#include "Particle/DistanceTableData.h"
+#include "Particle/DistanceTable.h"
 #include <numeric>
 
 namespace miniqmcreference
@@ -35,9 +35,7 @@ class ThreeBodyJastrowRef : public WaveFunctionComponent
   /// element position type
   using posT = TinyVector<valT, OHMMS_DIM>;
   /// use the same container
-  using RowContainer = DistanceTableData::RowContainer;
-  /// table index for i-el, el-el is always zero
-  int myTableID;
+  using DisplRow = DistanceTable::DisplRow;
   // nuber of particles
   int Nelec, Nion;
   /// number of particles + padded
@@ -46,6 +44,10 @@ class ThreeBodyJastrowRef : public WaveFunctionComponent
   int eGroups, iGroups;
   /// reference to the sources (ions)
   const ParticleSet& Ions;
+  /// table index for el-el
+  const int ee_Table_ID_;
+  /// table index for i-el
+  const int ei_Table_ID_;
   /// diff value
   RealType DiffVal;
 
@@ -86,11 +88,11 @@ public:
   using FuncType = FT;
 
   ThreeBodyJastrowRef(const ParticleSet& ions, ParticleSet& elecs, bool is_master = false)
-      : Ions(ions)
+      : Ions(ions),
+        ee_Table_ID_(elecs.addTable(elecs, DTModes::NEED_TEMP_DATA_ON_HOST | DTModes::NEED_VP_FULL_TABLE_ON_HOST)),
+        ei_Table_ID_(elecs.addTable(ions, DTModes::NEED_FULL_TABLE_ANYTIME | DTModes::NEED_VP_FULL_TABLE_ON_HOST))
   {
     WaveFunctionComponentName                               = "ThreeBodyJastrowRef";
-    myTableID                                               = elecs.addTable(Ions);
-    elecs.DistTables[myTableID]->setFullTableNeeds(true);
     init(elecs);
   }
 
@@ -222,7 +224,7 @@ public:
 
   void build_compact_list(ParticleSet& P)
   {
-    const DistanceTableData& eI_table = (*P.DistTables[myTableID]);
+    const auto& eI_table = P.getDistTableAB(ei_Table_ID_);
 
     for (int iat = 0; iat < Nion; ++iat)
       for (int jg = 0; jg < eGroups; ++jg)
@@ -235,17 +237,17 @@ public:
     for (int jg = 0; jg < eGroups; ++jg)
       for (int jel = P.first(jg); jel < P.last(jg); jel++)
         for (int iat = 0; iat < Nion; ++iat)
-          if (eI_table.Distances[jel][iat] < Ion_cutoff[iat])
+          if (eI_table.getDistRow(jel)[iat] < Ion_cutoff[iat])
           {
             elecs_inside(jg, iat).push_back(jel);
-            elecs_inside_dist(jg, iat).push_back(eI_table.Distances[jel][iat]);
-            elecs_inside_displ(jg, iat).push_back(eI_table.Displacements[jel][iat]);
+            elecs_inside_dist(jg, iat).push_back(eI_table.getDistRow(jel)[iat]);
+            elecs_inside_displ(jg, iat).push_back(eI_table.getDisplRow(jel)[iat]);
           }
   }
 
   RealType evaluateLog(ParticleSet& P,
-                       ParticleSet::ParticleGradient_t& G,
-                       ParticleSet::ParticleLaplacian_t& L)
+                       ParticleSet::ParticleGradient& G,
+                       ParticleSet::ParticleLaplacian& L)
   {
     evaluateGL(P, G, L, true);
     return LogValue;
@@ -255,9 +257,9 @@ public:
   {
     UpdateMode = ORB_PBYP_RATIO;
 
-    const DistanceTableData& eI_table = (*P.DistTables[myTableID]);
-    const DistanceTableData& ee_table = (*P.DistTables[0]);
-    cur_Uat = computeU(P, iat, P.GroupID[iat], eI_table.Temp_r.data(), ee_table.Temp_r.data());
+    const auto& eI_table = P.getDistTableAB(ei_Table_ID_);
+    const auto& ee_table = P.getDistTableAA(ee_Table_ID_);
+    cur_Uat = computeU(P, iat, P.GroupID[iat], eI_table.getTempDists().data(), ee_table.getTempDists().data());
     DiffVal = Uat[iat] - cur_Uat;
     return std::exp(DiffVal);
   }
@@ -266,11 +268,11 @@ public:
   {
     for (int k = 0; k < ratios.size(); ++k)
       ratios[k] = std::exp(Uat[VP.refPtcl] -
-                           computeU(VP.refPS,
+                           computeU(VP.getRefPS(),
                                     VP.refPtcl,
-                                    VP.refPS.GroupID[VP.refPtcl],
-                                    VP.DistTables[myTableID]->Distances[k],
-                                    VP.DistTables[0]->Distances[k]));
+                                    VP.getRefPS().GroupID[VP.refPtcl],
+                                    VP.getDistTableAB(ei_Table_ID_).getDistRow(k).data(),
+                                    VP.getDistTableAA(ee_Table_ID_).getDistRow(k).data()));
   }
 
   GradType evalGrad(ParticleSet& P, int iat) { return GradType(dUat[iat]); }
@@ -279,14 +281,14 @@ public:
   {
     UpdateMode = ORB_PBYP_PARTIAL;
 
-    const DistanceTableData& eI_table = (*P.DistTables[myTableID]);
-    const DistanceTableData& ee_table = (*P.DistTables[0]);
+    const auto& eI_table = P.getDistTableAB(ei_Table_ID_);
+    const auto& ee_table = P.getDistTableAA(ee_Table_ID_);
     computeU3(P,
               iat,
-              eI_table.Temp_r.data(),
-              eI_table.Temp_dr,
-              ee_table.Temp_r.data(),
-              ee_table.Temp_dr,
+              eI_table.getTempDists().data(),
+              eI_table.getTempDispls(),
+              ee_table.getTempDists().data(),
+              ee_table.getTempDispls(),
               cur_Uat,
               cur_dUat,
               cur_d2Uat,
@@ -300,15 +302,15 @@ public:
 
   void acceptMove(ParticleSet& P, int iat)
   {
-    const DistanceTableData& eI_table = (*P.DistTables[myTableID]);
-    const DistanceTableData& ee_table = (*P.DistTables[0]);
+    const auto& eI_table = P.getDistTableAB(ei_Table_ID_);
+    const auto& ee_table = P.getDistTableAA(ee_Table_ID_);
     // get the old value, grad, lapl
     computeU3(P,
               iat,
-              eI_table.Distances[iat],
-              eI_table.Displacements[iat],
-              ee_table.Distances[iat],
-              ee_table.Displacements[iat],
+              eI_table.getDistRow(iat).data(),
+              eI_table.getDisplRow(iat),
+              ee_table.getDistRow(iat).data(),
+              ee_table.getDisplRow(iat),
               Uat[iat],
               dUat_temp,
               d2Uat[iat],
@@ -319,10 +321,10 @@ public:
     { // ratio-only during the move; need to compute derivatives
       computeU3(P,
                 iat,
-                eI_table.Temp_r.data(),
-                eI_table.Temp_dr,
-                ee_table.Temp_r.data(),
-                ee_table.Temp_dr,
+                eI_table.getTempDists().data(),
+                eI_table.getTempDispls(),
+                ee_table.getTempDists().data(),
+                ee_table.getTempDispls(),
                 cur_Uat,
                 cur_dUat,
                 cur_d2Uat,
@@ -354,7 +356,7 @@ public:
     // update compact list elecs_inside
     for (int jat = 0; jat < Nion; jat++)
     {
-      bool inside = eI_table.Temp_r[jat] < Ion_cutoff[jat];
+      bool inside = eI_table.getTempDists()[jat] < Ion_cutoff[jat];
       auto iter   = find(elecs_inside(ig, jat).begin(), elecs_inside(ig, jat).end(), iat);
       auto iter_dist =
           elecs_inside_dist(ig, jat).begin() + std::distance(elecs_inside(ig, jat).begin(), iter);
@@ -365,13 +367,13 @@ public:
         if (iter == elecs_inside(ig, jat).end())
         {
           elecs_inside(ig, jat).push_back(iat);
-          elecs_inside_dist(ig, jat).push_back(eI_table.Temp_r[jat]);
-          elecs_inside_displ(ig, jat).push_back(eI_table.Temp_dr[jat]);
+          elecs_inside_dist(ig, jat).push_back(eI_table.getTempDists()[jat]);
+          elecs_inside_displ(ig, jat).push_back(eI_table.getTempDispls()[jat]);
         }
         else
         {
-          *iter_dist  = eI_table.Temp_r[jat];
-          *iter_displ = eI_table.Temp_dr[jat];
+          *iter_dist  = eI_table.getTempDists()[jat];
+          *iter_displ = eI_table.getTempDispls()[jat];
         }
       }
       else
@@ -391,8 +393,8 @@ public:
 
   inline void recompute(ParticleSet& P)
   {
-    const DistanceTableData& eI_table = (*P.DistTables[myTableID]);
-    const DistanceTableData& ee_table = (*P.DistTables[0]);
+    const auto& eI_table = P.getDistTableAB(ei_Table_ID_);
+    const auto& ee_table = P.getDistTableAA(ee_Table_ID_);
 
     build_compact_list(P);
 
@@ -400,10 +402,10 @@ public:
     {
       computeU3(P,
                 jel,
-                eI_table.Distances[jel],
-                eI_table.Displacements[jel],
-                ee_table.Distances[jel],
-                ee_table.Displacements[jel],
+                eI_table.getDistRow(jel).data(),
+                eI_table.getDisplRow(jel),
+                ee_table.getDistRow(jel).data(),
+                ee_table.getDisplRow(jel),
                 Uat[jel],
                 dUat_temp,
                 d2Uat[jel],
@@ -431,7 +433,7 @@ public:
   inline valT
       computeU(const ParticleSet& P, int jel, int jg, const RealType* distjI, const RealType* distjk)
   {
-    const DistanceTableData& eI_table = (*P.DistTables[myTableID]);
+    const auto& eI_table = P.getDistTableAB(ei_Table_ID_);
 
     ions_nearby.clear();
     for (int iat = 0; iat < Nion; ++iat)
@@ -492,7 +494,7 @@ public:
                                gContainer_type& dUk,
                                Vector<valT>& d2Uk)
   {
-    const DistanceTableData& eI_table = (*P.DistTables[myTableID]);
+    const auto& eI_table = P.getDistTableAB(ei_Table_ID_);
 
     constexpr valT czero(0);
     constexpr valT cone(1);
@@ -583,9 +585,9 @@ public:
   inline void computeU3(const ParticleSet& P,
                         int jel,
                         const RealType* distjI,
-                        const RowContainer& displjI,
+                        const DisplRow& displjI,
                         const RealType* distjk,
-                        const RowContainer& displjk,
+                        const DisplRow& displjk,
                         valT& Uj,
                         posT& dUj,
                         valT& d2Uj,
@@ -655,8 +657,8 @@ public:
   }
 
   void evaluateGL(ParticleSet& P,
-                  ParticleSet::ParticleGradient_t& G,
-                  ParticleSet::ParticleLaplacian_t& L,
+                  ParticleSet::ParticleGradient& G,
+                  ParticleSet::ParticleLaplacian& L,
                   bool fromscratch = false)
   {
     if (fromscratch)

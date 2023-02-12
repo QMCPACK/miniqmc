@@ -62,6 +62,7 @@ void print_help()
   app_summary() << '\n' << "  -n  number of MC steps           default: 5";
   app_summary() << '\n' << "  -r  set the Rmax.                default: 1.7";
   app_summary() << '\n' << "  -s  speedy mode. Skip all transfer and checks.";
+  app_summary() << '\n' << "  -u  disable gpu";
   app_summary() << '\n' << "  -v  verbose output";
   app_summary() << '\n' << "  -V  print version information and exit";
   app_summary() << '\n' << "  -w  number of walkers per rank   default: OpenMP num threads";
@@ -74,7 +75,7 @@ int main(int argc, char** argv)
 {
   // clang-format off
   typedef QMCTraits::RealType           RealType;
-  typedef ParticleSet::ParticlePos_t    ParticlePos_t;
+  typedef ParticleSet::ParticlePos    ParticlePos;
   typedef ParticleSet::PosType          PosType;
   // clang-format on
 
@@ -91,8 +92,10 @@ int main(int argc, char** argv)
   RealType Rmax(1.7);
   int nx = 37, ny = 37, nz = 37;
   int tileSize = -1;
-  bool speedy  = false;
-  bool verbose = false;
+
+  bool speedy      = false;
+  bool use_offload = true;
+  bool verbose     = false;
 
   if (!comm.root())
   {
@@ -102,7 +105,7 @@ int main(int argc, char** argv)
   int opt;
   while (optind < argc)
   {
-    if ((opt = getopt(argc, argv, "hsvVa:g:m:n:r:w:")) != -1)
+    if ((opt = getopt(argc, argv, "hsuvVa:g:m:n:r:w:")) != -1)
     {
       switch (opt)
       {
@@ -130,6 +133,9 @@ int main(int argc, char** argv)
         break;
       case 's':
         speedy = true;
+        break;
+      case 'u':
+        use_offload = false;
         break;
       case 'v':
         verbose = true;
@@ -179,12 +185,11 @@ int main(int argc, char** argv)
   int nTiles = 1;
   Tensor<int, 3> tmat(na, 0, 0, 0, nb, 0, 0, 0, nc);
 
-  ParticleSet ions;
+  std::unique_ptr<ParticleSet> ions_ptr;
   // initialize ions and splines which are shared by all threads later
   {
-    Tensor<OHMMS_PRECISION, 3> lattice_b;
-    build_ions(ions, tmat, lattice_b);
-    const int norb = count_electrons(ions, 1) / 2;
+    ions_ptr       = build_ions(tmat, use_offload);
+    const int norb = count_electrons(*ions_ptr, 1) / 2;
     tileSize       = (tileSize > 0) ? tileSize : norb;
     nTiles         = norb / tileSize;
 
@@ -205,11 +210,12 @@ int main(int argc, char** argv)
                   << endl;
 
     spo_main.set(nx, ny, nz, norb, nTiles);
-    spo_main.Lattice.set(lattice_b);
+    spo_main.Lattice.set(ions_ptr->getSimulationCell().getPrimLattice().R);
     spo_ref_main.set(nx, ny, nz, norb, nTiles);
-    spo_ref_main.Lattice.set(lattice_b);
+    spo_ref_main.Lattice.set(ions_ptr->getSimulationCell().getPrimLattice().R);
   }
 
+  auto& ions(*ions_ptr);
   const int nions = ions.getTotalNum();
   const int nels  = count_electrons(ions, 1);
   const int nels3 = 3 * nels;
@@ -220,8 +226,8 @@ int main(int argc, char** argv)
   std::vector<std::unique_ptr<spo_type>> spo_views(nmovers);
   std::vector<std::unique_ptr<spo_ref_type>> spo_ref_views(nmovers);
   // per mover data
-  std::vector<ParticlePos_t> delta_list(nmovers);
-  std::vector<ParticlePos_t> rOnSphere_list(nmovers);
+  std::vector<ParticlePos> delta_list(nmovers);
+  std::vector<ParticlePos> rOnSphere_list(nmovers);
   std::vector<std::vector<RealType>> ur_list(nmovers);
   std::vector<int> my_accepted_list(nmovers), my_vals_list(nmovers);
   std::vector<SPOSet*> spo_shadows(nmovers);
@@ -230,7 +236,7 @@ int main(int argc, char** argv)
   for (size_t iw = 0; iw < mover_list.size(); iw++)
   {
     // create and initialize movers
-    mover_list[iw]   = std::make_unique<Mover>(MakeSeed(iw, mover_list.size()), ions);
+    mover_list[iw]   = std::make_unique<Mover>(MakeSeed(iw, mover_list.size()), ions, use_offload);
     auto& thiswalker = *mover_list[iw];
 
     // create a spo view in each Mover
@@ -239,7 +245,7 @@ int main(int argc, char** argv)
     spo_ref_views[iw] = std::make_unique<spo_ref_type>(spo_ref_main, 1, 0);
 
     // initial computing
-    thiswalker.els.update();
+    thiswalker.els_ptr->update();
 
     // temporal data during walking
     delta_list[iw].resize(nels);
@@ -282,7 +288,7 @@ int main(int argc, char** argv)
     {
       for (size_t iw = 0; iw < mover_list.size(); iw++)
       {
-        auto& els   = mover_list[iw]->els;
+        auto& els   = *mover_list[iw]->els_ptr;
         auto& delta = delta_list[iw];
         auto pos    = sqrttau * delta[iel];
         els.makeMove(iel, pos);
@@ -300,7 +306,7 @@ int main(int argc, char** argv)
           auto& mover       = *mover_list[iw];
           auto& spo         = *spo_views[iw];
           auto& spo_ref     = *spo_ref_views[iw];
-          auto& els         = mover.els;
+          auto& els         = *mover.els_ptr;
           auto& ur          = ur_list[iw];
           auto& my_accepted = my_accepted_list[iw];
           {
