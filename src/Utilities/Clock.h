@@ -15,29 +15,13 @@
 #ifndef QMCPLUSPLUS_CLOCK_H
 #define QMCPLUSPLUS_CLOCK_H
 
-#include <sys/time.h>
 #include <stddef.h>
-#include "Utilities/Configuration.h"
+#include <chrono>
 
 namespace qmcplusplus
 {
-/** functor for high precision clock
- * calling CPUClock()() returns the clock value
- */
-class CPUClock
-{
-public:
-  double operator()()
-  {
-#ifdef _OPENMP
-    return omp_get_wtime();
-#else
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    return (double)tv.tv_sec + (1.e-6) * tv.tv_usec;
-#endif
-  }
-};
+
+using ChronoClock = std::chrono::system_clock;
 
 } // namespace qmcplusplus
 #endif

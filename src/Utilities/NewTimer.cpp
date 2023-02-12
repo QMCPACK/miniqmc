@@ -17,9 +17,9 @@
  */
 #include "NewTimer.h"
 #include <iostream>
-#include "Clock.h"
 #include "config.h"
 #include "TimerManager.h"
+#include "OpenMP.h"
 
 namespace qmcplusplus
 {
@@ -72,10 +72,10 @@ void TimerType<CLOCK>::start()
 
         manager->push_timer(this);
       }
-      start_time = CLOCK()();
+      start_time = CLOCK::now();
     }
 #else
-    start_time     = CLOCK()();
+    start_time                            = CLOCK::now();
 #endif
   }
 }
@@ -101,19 +101,19 @@ void TimerType<CLOCK>::stop()
         is_true_master = false;
     if (is_true_master)
     {
-      double elapsed = CLOCK()() - start_time;
-      total_time += elapsed;
+      std::chrono::duration<double> elapsed = CLOCK::now() - start_time;
+      total_time += elapsed.count();
       num_calls++;
 
-      per_stack_total_time[current_stack_key] += elapsed;
+      per_stack_total_time[current_stack_key] += elapsed.count();
       per_stack_num_calls[current_stack_key] += 1;
 
       if (manager)
         manager->pop_timer(this);
     }
 #else
-    double elapsed = CLOCK()() - start_time;
-    total_time += elapsed;
+    std::chrono::duration<double> elapsed = CLOCK::now() - start_time;
+    total_time += elapsed.count();
     num_calls++;
 #endif
   }
@@ -129,6 +129,6 @@ void TimerType<CLOCK>::set_active_by_timer_threshold(const timer_levels threshol
     active = false;
 }
 
-template class TimerType<CPUClock>;
+template class TimerType<ChronoClock>;
 
 } // namespace qmcplusplus

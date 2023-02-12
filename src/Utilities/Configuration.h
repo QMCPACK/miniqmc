@@ -38,30 +38,6 @@
     exit(1);                                                      \
   }
 
-#if defined(ENABLE_OPENMP)
-#include <omp.h>
-#else
-typedef int omp_int_t;
-inline omp_int_t omp_get_thread_num() { return 0; }
-inline omp_int_t omp_get_max_threads() { return 1; }
-inline omp_int_t omp_get_num_threads() { return 1; }
-inline omp_int_t omp_get_level() { return 0; }
-inline omp_int_t omp_get_ancestor_thread_num(int level) { return 0; }
-inline bool omp_get_nested() { return false; }
-#endif
-
-/// get the number of threads at the next parallel level
-inline int getNextLevelNumThreads()
-{
-  int num_threads = 1;
-#pragma omp parallel
-  {
-#pragma omp master
-    num_threads = omp_get_num_threads();
-  }
-  return num_threads;
-}
-
 // define empty DEBUG_MEMORY
 #define DEBUG_MEMORY(msg)
 // uncomment this out to trace the call tree of destructors

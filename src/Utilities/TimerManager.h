@@ -47,7 +47,7 @@ class TimerManager
 private:
   /// All the timers created by this manager
   std::vector<std::unique_ptr<TIMER>> timer_list_;
-  /// mutex for TimerList
+  /// mutex for timer_list_
   std::mutex timer_list_lock_;
   /// The stack of nested active timers
   std::vector<TIMER*> CurrentTimerStack;

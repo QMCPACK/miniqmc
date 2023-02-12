@@ -22,6 +22,7 @@
 #include <array>
 #include <stdexcept>
 #include "Configuration.h"
+#include "OpenMP.h"
 
 namespace qmcplusplus
 {
@@ -276,6 +277,9 @@ void TimerManager<TIMER>::print(std::ostream& out)
   if (timer_threshold <= timer_level_none)
     return;
 #ifdef ENABLE_TIMERS
+  out << std::endl;
+  out << "Use --enable-timers=<value> command line option to increase or decrease level of timing information"
+      << std::endl;
 #ifdef USE_STACK_TIMERS
   out << "Stack timer profile" << std::endl;
   print_stack(out);
@@ -291,7 +295,6 @@ void TimerManager<TIMER>::print_flat(std::ostream& out)
 {
 #ifdef ENABLE_TIMERS
   FlatProfileData p;
-
   collate_flat_profile(p);
 
 #pragma omp master
@@ -331,46 +334,49 @@ void TimerManager<TIMER>::print_stack(std::ostream& out)
 
   collate_stack_profile(p);
 
-  if (timer_max_level_exceeded)
+#pragma omp master
   {
-    app_warning() << "Maximum stack level (" << StackKey::max_level << ") exceeded.  Results may be incorrect."
-                  << std::endl;
-    app_warning() << "Adjust StackKey in NewTimer.h and recompile." << std::endl;
-  }
+    if (timer_max_level_exceeded)
+    {
+      app_warning() << "Maximum stack level (" << StackKey::max_level << ") exceeded.  Results may be incorrect."
+                    << std::endl;
+      app_warning() << "Adjust StackKey in NewTimer.h and recompile." << std::endl;
+    }
 
-  int indent_len   = 2;
-  int max_name_len = 0;
-  for (int i = 0; i < p.names.size(); i++)
-  {
-    std::string stack_name = p.names[i];
-    int level              = get_level(stack_name);
-    std::string name       = get_leaf_name(stack_name);
-    int name_len           = name.size() + indent_len * level;
-    max_name_len           = std::max(name_len, max_name_len);
-  }
+    int indent_len   = 2;
+    int max_name_len = 0;
+    for (int i = 0; i < p.names.size(); i++)
+    {
+      std::string stack_name = p.names[i];
+      int level              = get_level(stack_name);
+      std::string name       = get_leaf_name(stack_name);
+      int name_len           = name.size() + indent_len * level;
+      max_name_len           = std::max(name_len, max_name_len);
+    }
 
-  const int bufsize = 256;
-  char tmpout[bufsize];
-  std::string timer_name;
-  pad_string("Timer", timer_name, max_name_len);
+    const int bufsize = 256;
+    char tmpout[bufsize];
+    std::string timer_name;
+    pad_string("Timer", timer_name, max_name_len);
 
-  snprintf(tmpout, bufsize, "%s  %-9s  %-9s  %-10s  %-13s\n", timer_name.c_str(), "Inclusive_time", "Exclusive_time",
-           "Calls", "Time_per_call");
-  out << tmpout;
-
-  for (int i = 0; i < p.names.size(); i++)
-  {
-    std::string stack_name = p.names[i];
-    int level              = get_level(stack_name);
-    std::string name       = get_leaf_name(stack_name);
-    std::string indent_str(indent_len * level, ' ');
-    std::string indented_str = indent_str + name;
-    std::string padded_name_str;
-    pad_string(indented_str, padded_name_str, max_name_len);
-    snprintf(tmpout, bufsize, "%s  %9.4f  %9.4f  %13ld  %16.9f\n", padded_name_str.c_str(), p.timeList[i],
-             p.timeExclList[i], p.callList[i],
-             p.timeList[i] / (static_cast<double>(p.callList[i]) + std::numeric_limits<double>::epsilon()));
+    snprintf(tmpout, bufsize, "%s  %-9s  %-9s  %-10s  %-13s\n", timer_name.c_str(), "Inclusive_time", "Exclusive_time",
+             "Calls", "Time_per_call");
     out << tmpout;
+
+    for (int i = 0; i < p.names.size(); i++)
+    {
+      std::string stack_name = p.names[i];
+      int level              = get_level(stack_name);
+      std::string name       = get_leaf_name(stack_name);
+      std::string indent_str(indent_len * level, ' ');
+      std::string indented_str = indent_str + name;
+      std::string padded_name_str;
+      pad_string(indented_str, padded_name_str, max_name_len);
+      snprintf(tmpout, bufsize, "%s  %9.4f  %9.4f  %13ld  %16.9f\n", padded_name_str.c_str(), p.timeList[i],
+               p.timeExclList[i], p.callList[i],
+               p.timeList[i] / (static_cast<double>(p.callList[i]) + std::numeric_limits<double>::epsilon()));
+      out << tmpout;
+    }
   }
 #endif
 }
@@ -435,4 +441,5 @@ XMLNode* TimerManager<TIMER>::TimerManager::output_timing(XMLDocument& doc)
 }
 
 template class TimerManager<NewTimer>;
+
 } // namespace qmcplusplus
