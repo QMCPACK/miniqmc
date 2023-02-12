@@ -16,6 +16,7 @@
 #include "CPU/BLAS.hpp"
 #include "Numerics/OhmmsPETE/OhmmsMatrix.h"
 #include "CPU/BlasThreadingEnv.h"
+#include "Utilities/OpenMP.h"
 #include "Utilities/scalar_traits.h"
 #include "CPU/SIMD/simd.hpp"
 #include "QMCWaveFunctions/DeterminantHelper.h"

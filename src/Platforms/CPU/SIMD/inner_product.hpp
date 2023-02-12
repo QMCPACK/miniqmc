@@ -23,6 +23,7 @@
 #ifndef QMCPLUSPLUS_INNER_PRODUCT_HPP
 #define QMCPLUSPLUS_INNER_PRODUCT_HPP
 
+#include <cstring>
 #include "Numerics/OhmmsPETE/TinyVector.h"
 
 namespace qmcplusplus
@@ -49,7 +50,7 @@ inline void copy(T1* restrict target, const T2* restrict source, size_t n)
 template<typename T>
 inline void copy(T* restrict target, const T* restrict source, size_t n)
 {
-  memcpy(target, source, sizeof(T) * n);
+  std::memcpy(target, source, sizeof(T) * n);
 }
 
 /** copy complex to two real containers */

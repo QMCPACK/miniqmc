@@ -19,6 +19,7 @@
 #include <cstdio>
 #include "Utilities/qmcpack_version.h"
 #include "Utilities/TimerManager.h"
+#include "Utilities/Configuration.h"
 
 namespace qmcplusplus
 {
