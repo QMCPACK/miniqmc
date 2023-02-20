@@ -55,10 +55,24 @@ inline void evaluate_v(const typename bspline_traits<T, 3>::SplineType* restrict
       const T* restrict coefs = spline_m->coefs + ((ix + i) * xs + (iy + j) * ys + iz * zs);
       ASSUME_ALIGNED(coefs);
       //#pragma omp simd
-      for (size_t n = 0; n < num_splines; n++)
+      /*for (size_t n = 0; n < num_splines; n++)
         vals[n] += pre00 *
             (c[0] * coefs[n] + c[1] * coefs[n + zs] + c[2] * coefs[n + 2 * zs] +
-             c[3] * coefs[n + 3 * zs]);
+             c[3] * coefs[n + 3 * zs]);*/
+      // déroulage de boucle par 4 element 
+      #pragma omp simd aligned(coefs:64)
+       for (size_t n = 0; n < num_splines-(num_splines%4); n+=4)
+        {
+          vals[n] += pre00 * (c[0] * coefs[n] + c[1] * coefs[n + zs] + c[2] * coefs[n + 2 * zs] + c[3] * coefs[n + 3 * zs]);
+          vals[n+1] += pre00 * (c[0] * coefs[n+1] + c[1] * coefs[(n+1) + zs] + c[2] * coefs[(n+1) + 2 * zs] + c[3] * coefs[(n+1) + 3 * zs]);
+          vals[n+2] += pre00 * (c[0] * coefs[n+2] + c[1] * coefs[(n+2) + zs] + c[2] * coefs[(n+2) + 2 * zs] + c[3] * coefs[(n+2) + 3 * zs]);
+          vals[n+3] += pre00 * (c[0] * coefs[n+3] + c[1] * coefs[(n+3) + zs] + c[2] * coefs[(n+3) + 2 * zs] + c[3] * coefs[(n+3) + 3 * zs]);
+        }
+      for (size_t n = num_splines-(num_splines%4); n< num_splines; n++)
+      {
+          vals[n] += pre00 * (c[0] * coefs[n] + c[1] * coefs[n + zs] + c[2] * coefs[n + 2 * zs] + c[3] * coefs[n + 3 * zs]);
+      }
+
     }
 }
 
