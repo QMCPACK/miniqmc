@@ -13,7 +13,7 @@ set(SRC_DIR CUDA)
 set(UTEST_EXE test_${SRC_DIR})
 set(UTEST_NAME unit_test_${SRC_DIR})
 
-add_executable(${UTEST_EXE} test_CUDAallocator.cpp)
+add_executable(${UTEST_EXE} test_CUDAallocator.cpp many_transfer.MallocHost.cpp many_transfer.omp.cpp many_transfer.Register.cpp)
 target_link_libraries(${UTEST_EXE} platform_runtime catch_main)
 
 add_unit_test(${UTEST_NAME} 1 1 $<TARGET_FILE:${UTEST_EXE}>)
