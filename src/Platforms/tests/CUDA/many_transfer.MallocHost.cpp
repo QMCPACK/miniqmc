@@ -30,11 +30,19 @@ TEST_CASE("many_transfer.MallocHost", "[CUDA]")
   cudaCheck(cudaStreamCreate(&stream));
 
   {
-    Timer local("many_transfer.MallocHost");
+    Timer local("many_transfer.MallocHost first run");
     for(int i = 0; i<N; i++)
       cudaCheck(cudaMemcpyAsync(segments_dev[i], segments[i], SEG_SIZE * sizeof(double), cudaMemcpyHostToDevice, stream));
   }
   cudaCheck(cudaStreamSynchronize(stream));
+
+  {
+    Timer local("many_transfer.MallocHost second run");
+    for(int i = 0; i<N; i++)
+      cudaCheck(cudaMemcpyAsync(segments_dev[i], segments[i], SEG_SIZE * sizeof(double), cudaMemcpyHostToDevice, stream));
+  }
+  cudaCheck(cudaStreamSynchronize(stream));
+
   std::cout << "Success" << std::endl;
 
   cudaCheck(cudaStreamDestroy(stream));
