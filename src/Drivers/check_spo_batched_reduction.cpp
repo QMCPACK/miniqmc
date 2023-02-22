@@ -319,15 +319,12 @@ int main(int argc, char** argv)
           {
             // value
             OHMMS_PRECISION s, c;
-            qmcplusplus::sincos(spo_ref.psi[ib][ind * 2] + spo_ref.psi[ib][ind * 2 + 1], &s, &c);
-            reduction_val += spo_ref.psi[ib][ind * 2] * spo_ref.psi[ib][ind * 2 + 1] + s + c;
+            qmcplusplus::sincos(ind / OHMMS_PRECISION(512), &s, &c);
+            reduction_val += s * spo_ref.psi[ib][ind * 2] + c * spo_ref.psi[ib][ind * 2 + 1];
             // grad
-            reduction_grad_x += spo_ref.psi[ib][ind * 2] * spo_ref.grad[ib].data(0)[ind * 2] +
-                spo_ref.psi[ib][ind * 2 + 1] * spo_ref.grad[ib].data(0)[ind * 2 + 1];
-            reduction_grad_y += spo_ref.psi[ib][ind * 2] * spo_ref.grad[ib].data(1)[ind * 2] +
-                spo_ref.psi[ib][ind * 2 + 1] * spo_ref.grad[ib].data(1)[ind * 2 + 1];
-            reduction_grad_z += spo_ref.psi[ib][ind * 2] * spo_ref.grad[ib].data(2)[ind * 2] +
-                spo_ref.psi[ib][ind * 2 + 1] * spo_ref.grad[ib].data(2)[ind * 2 + 1];
+            reduction_grad_x += s * spo_ref.grad[ib].data(0)[ind * 2] + c * spo_ref.grad[ib].data(0)[ind * 2 + 1];
+            reduction_grad_y += s * spo_ref.grad[ib].data(1)[ind * 2] + c * spo_ref.grad[ib].data(1)[ind * 2 + 1];
+            reduction_grad_z += s * spo_ref.grad[ib].data(2)[ind * 2] + c * spo_ref.grad[ib].data(2)[ind * 2 + 1];
           }
           auto& val_grads = anon_spo->multi_reduction_fake_results[ib];
           evalVGH_v_err += std::fabs(val_grads[iw] - reduction_val);

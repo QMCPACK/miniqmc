@@ -533,11 +533,11 @@ void einspline_spo_omp<T>::multi_evaluate_ratio_grads(const std::vector<SPOSet*>
           auto* deriv_z = val + padded_size * 3;
           // all the computation below is faked.
           T s, c;
-          omptarget::sincos(val[ind * 2] + val[ind * 2 + 1], &s, &c);
-          ratio += val[ind * 2] * val[ind * 2 + 1] + s + c;
-          grad_x += val[ind * 2] * deriv_x[ind * 2] + val[ind * 2 + 1] * deriv_x[ind * 2 + 1];
-          grad_y += val[ind * 2] * deriv_y[ind * 2] + val[ind * 2 + 1] * deriv_y[ind * 2 + 1];
-          grad_z += val[ind * 2] * deriv_z[ind * 2] + val[ind * 2 + 1] * deriv_z[ind * 2 + 1];
+          omptarget::sincos(ind / T(512), &s, &c);
+          ratio += s * val[ind * 2] + c * val[ind * 2 + 1];
+          grad_x += s * deriv_x[ind * 2] + c * deriv_x[ind * 2 + 1];
+          grad_y += s * deriv_y[ind * 2] + c * deriv_y[ind * 2 + 1];
+          grad_z += s * deriv_z[ind * 2] + c * deriv_z[ind * 2 + 1];
         }
         multi_reduction_results_ptr[iw]          = ratio;
         multi_reduction_results_ptr[iw + nw]     = grad_x;
