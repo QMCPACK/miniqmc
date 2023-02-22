@@ -19,8 +19,6 @@
 #include <cmath>
 #include <algorithm>
 
-namespace qmcplusplus
-{
 namespace spline2
 {
 /** break x into the integer part and residual part and apply bounds
@@ -121,6 +119,5 @@ inline void computeLocationAndFractional(
 }
 
 } // namespace spline2
-} // namespace qmcplusplus
 
 #endif

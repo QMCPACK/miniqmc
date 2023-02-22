@@ -16,7 +16,7 @@
 #ifndef QMCPLUSPLUS_MULTIEINSPLINE_DATA_HPP
 #define QMCPLUSPLUS_MULTIEINSPLINE_DATA_HPP
 
-namespace qmcplusplus
+namespace spline2
 {
 /** class for cublic spline parameters
  *

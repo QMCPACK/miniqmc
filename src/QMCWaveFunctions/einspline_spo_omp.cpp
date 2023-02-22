@@ -171,7 +171,7 @@ void einspline_spo_omp<T>::evaluate_v(const ParticleSet& P, int iat, bool host_r
       spline2::computeLocationAndFractional(spline_m, x, y, z, ix, iy, iz, a, b, c);
       PRAGMA_OFFLOAD("omp parallel for")
       for (int ind = 0; ind < last - first; ind++)
-        spline2offload::evaluate_v_v2(spline_m, ix, iy, iz, a, b, c, psi_ptr + first, first, ind);
+        spline2offload::evaluate_v_impl_v2(spline_m, ix, iy, iz, first + ind, a, b, c, psi_ptr + first + ind);
     }
 
     if (host_ready)
@@ -257,7 +257,8 @@ void einspline_spo_omp<T>::evaluateDetRatios(const VirtualParticleSet& VP,
                                               pos_scratch[iVP * 3 + 2], ix, iy, iz, a, b, c);
         PRAGMA_OFFLOAD("omp parallel for")
         for (int ind = 0; ind < last - first; ind++)
-          spline2offload::evaluate_v_v2(spline_m, ix, iy, iz, a, b, c, offload_scratch_iVP_ptr + first, first, ind);
+          spline2offload::evaluate_v_impl_v2(spline_m, ix, iy, iz, first + ind, a, b, c,
+                                             offload_scratch_iVP_ptr + first + ind);
         T sum(0);
         PRAGMA_OFFLOAD("omp parallel for reduction(+:sum)")
         for (int j = first; j < last; j++)
@@ -320,8 +321,8 @@ void einspline_spo_omp<T>::evaluate_vgh(const ParticleSet& P, int iat, bool host
 
       PRAGMA_OFFLOAD("omp parallel for")
       for (int ind = 0; ind < last - first; ind++)
-        spline2offload::evaluate_vgh_v2(spline_m, ix, iy, iz, a, b, c, da, db, dc, d2a, d2b, d2c,
-                                        offload_scratch_ptr + first, padded_size, first, ind);
+        spline2offload::evaluate_vgh_impl_v2(spline_m, ix, iy, iz, first + ind, a, b, c, da, db, dc, d2a, d2b, d2c,
+                                             offload_scratch_ptr + first + ind, padded_size);
     }
 
     if (host_ready)
@@ -421,9 +422,9 @@ void einspline_spo_omp<T>::multi_evaluate_vgh(const std::vector<SPOSet*>& spo_li
 
           PRAGMA_OFFLOAD("omp parallel for")
           for (int ind = 0; ind < last - first; ind++)
-            spline2offload::evaluate_vgh_v2(spline_m, ix, iy, iz, a, b, c, da, db, dc, d2a, d2b, d2c,
-                                            multi_offload_scratch_ptr + iw * vgh_dim * padded_size + first, padded_size,
-                                            first, ind);
+            spline2offload::evaluate_vgh_impl_v2(spline_m, ix, iy, iz, first + ind, a, b, c, da, db, dc, d2a, d2b, d2c,
+                                                 multi_offload_scratch_ptr + iw * vgh_dim * padded_size + first + ind,
+                                                 padded_size);
         }
 
       for (size_t iw = 0; iw < nw; iw++)
@@ -450,9 +451,9 @@ void einspline_spo_omp<T>::multi_evaluate_vgh(const std::vector<SPOSet*>& spo_li
 
           PRAGMA_OFFLOAD("omp parallel for")
           for (int ind = 0; ind < last - first; ind++)
-            spline2offload::evaluate_vgh_v2(spline_m, ix, iy, iz, a, b, c, da, db, dc, d2a, d2b, d2c,
-                                            multi_offload_scratch_ptr + iw * vgh_dim * padded_size + first, padded_size,
-                                            first, ind);
+            spline2offload::evaluate_vgh_impl_v2(spline_m, ix, iy, iz, first + ind, a, b, c, da, db, dc, d2a, d2b, d2c,
+                                                 multi_offload_scratch_ptr + iw * vgh_dim * padded_size + first + ind,
+                                                 padded_size);
         }
     }
   }
@@ -518,9 +519,9 @@ void einspline_spo_omp<T>::multi_evaluate_ratio_grads(const std::vector<SPOSet*>
 
         PRAGMA_OFFLOAD("omp parallel for")
         for (int ind = 0; ind < last - first; ind++)
-          spline2offload::evaluate_vgh_v2(spline_m, ix, iy, iz, a, b, c, da, db, dc, d2a, d2b, d2c,
-                                          multi_offload_scratch_ptr + iw * vgh_dim * padded_size + first, padded_size,
-                                          first, ind);
+          spline2offload::evaluate_vgh_impl_v2(spline_m, ix, iy, iz, first + ind, a, b, c, da, db, dc, d2a, d2b, d2c,
+                                               multi_offload_scratch_ptr + iw * vgh_dim * padded_size + first + ind,
+                                               padded_size);
 
         T ratio(0), grad_x(0), grad_y(0), grad_z(0);
         PRAGMA_OFFLOAD("omp parallel for reduction(+: ratio, grad_x, grad_y, grad_z)")
