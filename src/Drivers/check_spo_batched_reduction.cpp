@@ -82,6 +82,7 @@ int main(int argc, char** argv)
   Communicate comm(argc, argv);
 
   // use the global generator
+  int seed    = -1;
 
   int na      = 1;
   int nb      = 1;
@@ -129,6 +130,9 @@ int main(int argc, char** argv)
         break;
       case 'r': // rmax
         Rmax = atof(optarg);
+        break;
+      case 's': // seed
+        seed = atoi(optarg);
         break;
       case 'u':
         use_offload = false;
@@ -232,7 +236,7 @@ int main(int argc, char** argv)
   for (size_t iw = 0; iw < mover_list.size(); iw++)
   {
     // create and initialize movers
-    mover_list[iw]   = std::make_unique<Mover>(MakeSeed(iw, mover_list.size()), ions, use_offload);
+    mover_list[iw]   = std::make_unique<Mover>(MakeSeed(iw, mover_list.size(), seed), ions, use_offload);
     auto& thiswalker = *mover_list[iw];
 
     // create a spo view in each Mover

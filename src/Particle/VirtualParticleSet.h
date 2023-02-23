@@ -19,6 +19,7 @@
 
 #include "Configuration.h"
 #include "Particle/ParticleSet.h"
+#include <optional>
 #include "OMPTarget/OffloadAlignedAllocators.hpp"
 
 namespace qmcplusplus

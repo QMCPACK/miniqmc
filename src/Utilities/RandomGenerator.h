@@ -78,10 +78,13 @@ struct BoxMuller2
   }
 };
 
-inline uint32_t MakeSeed(int i, int n)
+inline uint32_t MakeSeed(int i, int n, int init = -1)
 {
   const uint32_t u = 1 << 10;
-  return static_cast<uint32_t>(std::time(nullptr)) % u + (i + 1) * n + i;
+  if (init < 0)
+    return static_cast<uint32_t>(std::time(nullptr)) % u + (i + 1) * n + i;
+  else
+    return static_cast<uint32_t>(init) % u + (i + 1) * n + i;
 }
 
 #include "Utilities/StdRandom.h"
