@@ -21,6 +21,7 @@
  */
 
 #include <Utilities/Configuration.h>
+#include <Utilities/Communicate.h>
 #include <Particle/ParticleSet.h>
 #include <Particle/ParticleSet_builder.hpp>
 #include <Particle/DistanceTable.h>
@@ -40,6 +41,7 @@
 #include <QMCWaveFunctions/DiracDeterminantRef.h>
 #include <QMCWaveFunctions/DiracDeterminant.h>
 #include <Utilities/qmcpack_version.h>
+#include <DeviceManager.h>
 #include <getopt.h>
 
 using namespace std;
@@ -88,6 +90,8 @@ int main(int argc, char** argv)
   typedef ParticleSet::ParticlePos    ParticlePos;
   typedef ParticleSet::PosType          PosType;
   // clang-format on
+
+  Communicate comm(argc, argv);
 
   // use the global generator
 
@@ -140,6 +144,10 @@ int main(int argc, char** argv)
   }
 
   print_version(verbose);
+
+  DeviceManager dm(comm.rank(), comm.size());
+  app_summary() << "number of ranks : " << comm.size() << ", number of accelerators : " << dm.getNumDevices()
+                << std::endl;
 
   if (verbose)
     outputManager.setVerbosity(Verbosity::HIGH);
