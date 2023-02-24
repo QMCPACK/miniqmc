@@ -14,7 +14,7 @@
 set(UTEST_EXE test_sycl)
 set(UTEST_NAME deterministic-unit_${UTEST_EXE})
 
-add_executable(${UTEST_EXE} test_SYCLallocator.cpp)
+add_executable(${UTEST_EXE} test_SYCLallocator.cpp many_transfer.MallocHost.cpp)
 target_link_libraries(${UTEST_EXE} SYCL::device platform_runtime catch_main)
 
 add_unit_test(${UTEST_NAME} 1 1 $<TARGET_FILE:${UTEST_EXE}>)
