@@ -16,28 +16,30 @@ TEST_CASE("many_transfer.omp", "[CUDA]")
 {
   int count = 0;
   cudaCheck(cudaGetDeviceCount(&count));
-  if(count == 0) std::exit(100);
+  if (count == 0)
+    std::exit(100);
 
   std::vector<double*> segments(N, nullptr);
   std::vector<double*> segments_dev(N, nullptr);
-  for(int i = 0; i<N; i++)
+  for (int i = 0; i < N; i++)
   {
     //cudaCheck(cudaMallocHost(&segments[i], SEG_SIZE * sizeof(double)));
-    segments[i] = (double*) malloc(SEG_SIZE * sizeof(double));
+    segments[i] = (double*)malloc(SEG_SIZE * sizeof(double));
     cudaCheck(cudaHostRegister(segments[i], SEG_SIZE * sizeof(double), cudaHostRegisterDefault));
     cudaCheck(cudaMalloc(&segments_dev[i], SEG_SIZE * sizeof(double)));
   }
 
-  #pragma omp parallel
+#pragma omp parallel
   {
     cudaStream_t stream;
     cudaCheck(cudaStreamCreate(&stream));
 
     {
       Timer local("many_transfer.omp");
-      #pragma omp for nowait
-      for(int i = 0; i<N; i++)
-        cudaCheck(cudaMemcpyAsync(segments_dev[i], segments[i], SEG_SIZE * sizeof(double), cudaMemcpyHostToDevice, stream));
+#pragma omp for nowait
+      for (int i = 0; i < N; i++)
+        cudaCheck(
+            cudaMemcpyAsync(segments_dev[i], segments[i], SEG_SIZE * sizeof(double), cudaMemcpyHostToDevice, stream));
     }
     cudaCheck(cudaStreamSynchronize(stream));
     cudaCheck(cudaStreamDestroy(stream));
@@ -45,7 +47,7 @@ TEST_CASE("many_transfer.omp", "[CUDA]")
 
   std::cout << "Success" << std::endl;
 
-  for(int i = 0; i<N; i++)
+  for (int i = 0; i < N; i++)
   {
     //cudaCheck(cudaFreeHost(segments[i]));
     cudaCheck(cudaHostUnregister(segments[i]));

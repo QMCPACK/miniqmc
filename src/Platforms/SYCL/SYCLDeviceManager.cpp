@@ -33,7 +33,7 @@ syclDeviceInfo::syclDeviceInfo(const sycl::context& context, const sycl::device&
 syclDeviceInfo::~syclDeviceInfo()
 {
 #if defined(ENABLE_OFFLOAD)
-  #pragma omp interop destroy(interop_)
+#pragma omp interop destroy(interop_)
 #endif
 }
 
@@ -141,7 +141,8 @@ sycl::queue& SYCLDeviceManager::getDefaultDeviceDefaultQueue()
 
 sycl::queue SYCLDeviceManager::createQueueDefaultDevice() const
 {
-  return sycl::queue(visible_devices[sycl_default_device_num].get_context(), visible_devices[sycl_default_device_num].get_device());
+  return sycl::queue(visible_devices[sycl_default_device_num].get_context(),
+                     visible_devices[sycl_default_device_num].get_device());
 }
 
 } // namespace qmcplusplus
