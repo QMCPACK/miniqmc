@@ -122,6 +122,7 @@ struct TwoBodyJastrow : public WaveFunctionComponent
   {
     valT curUat(0);
     const int igt = P.GroupID[iat] * NumGroups;
+    #pragma simd
     for (int jg = 0; jg < NumGroups; ++jg)
     {
       const FuncType& f2(*F[igt + jg]);
@@ -148,8 +149,9 @@ struct TwoBodyJastrow : public WaveFunctionComponent
     for (int idim = 0; idim < OHMMS_DIM; ++idim)
     {
       const valT* restrict dX = displ.data(idim);
-      valT s                  = valT();
+      valT s = valT();
 
+    #pragma omp simd reduction(+ : s)
       for (int jat = 0; jat < N; ++jat)
         s += du[jat] * dX[jat];
       grad[idim] = s;
@@ -263,6 +265,9 @@ inline void TwoBodyJastrow<FT>::computeU3(const ParticleSet& P,
   std::fill_n(d2u, jelmax, czero);
 
   const int igt = P.GroupID[iat] * NumGroups;
+
+  #pragma omp simd 
+
   for (int jg = 0; jg < NumGroups; ++jg)
   {
     const FuncType& f2(*F[igt + jg]);
@@ -319,6 +324,8 @@ void TwoBodyJastrow<FT>::acceptMove(ParticleSet& P, int iat)
   const auto& new_dr    = d_table->Temp_dr;
   const auto& old_dr    = d_table->Displacements[iat];
   constexpr valT lapfac = OHMMS_DIM - RealType(1);
+  
+  #pragma omp simd 
   for (int jat = 0; jat < N; jat++)
   {
     const valT du   = cur_u[jat] - old_u[jat];
@@ -337,6 +344,8 @@ void TwoBodyJastrow<FT>::acceptMove(ParticleSet& P, int iat)
     const valT* restrict old_du_pt = old_du.data();
     valT* restrict save_g          = dUat.data(idim);
     valT cur_g                     = cur_dUat[idim];
+
+    #pragma omp simd 
     for (int jat = 0; jat < N; jat++)
     {
       const valT newg = cur_du_pt[jat] * new_dX[jat];
@@ -376,6 +385,8 @@ void TwoBodyJastrow<FT>::recompute(ParticleSet& P)
       {
         const valT* restrict dX = displ.data(idim);
         valT s                  = valT();
+
+         #pragma omp simd reduction(+ : s)
         for (int jat = 0; jat < iat; ++jat)
           s += du[jat] * dX[jat];
         grad[idim] = s;
@@ -383,15 +394,20 @@ void TwoBodyJastrow<FT>::recompute(ParticleSet& P)
       dUat(iat)  = grad;
       d2Uat[iat] = -lap;
       // add the contribution from the upper triangle
+
+      #pragma omp simd 
       for (int jat = 0; jat < iat; jat++)
       {
         Uat[jat] += u[jat];
         d2Uat[jat] -= d2u[jat] + lapfac * du[jat];
       }
+
       for (int idim = 0; idim < OHMMS_DIM; ++idim)
       {
         valT* restrict save_g   = dUat.data(idim);
         const valT* restrict dX = displ.data(idim);
+
+        #pragma omp simd
         for (int jat = 0; jat < iat; jat++)
           save_g[jat] -= du[jat] * dX[jat];
       }
@@ -418,6 +434,8 @@ void TwoBodyJastrow<FT>::evaluateGL(ParticleSet& P,
   if (fromscratch)
     recompute(P);
   LogValue = valT(0);
+
+   #pragma omp simd reduction(+ : LogValue)
   for (int iat = 0; iat < N; ++iat)
   {
     LogValue += Uat[iat];
