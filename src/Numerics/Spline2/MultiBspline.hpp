@@ -48,6 +48,7 @@ inline void evaluate_v(const typename bspline_traits<T, 3>::SplineType* restrict
   ASSUME_ALIGNED(vals);
   std::fill(vals, vals + num_splines, zero);
 
+
   for (size_t i = 0; i < 4; i++)
     for (size_t j = 0; j < 4; j++)
     {
@@ -60,7 +61,8 @@ inline void evaluate_v(const typename bspline_traits<T, 3>::SplineType* restrict
             (c[0] * coefs[n] + c[1] * coefs[n + zs] + c[2] * coefs[n + 2 * zs] +
              c[3] * coefs[n + 3 * zs]);*/
       // déroulage de boucle par 4 element 
-      #pragma omp simd aligned(coefs:64)
+
+      #pragma omp parallel for simd aligned(coefs:64)
        for (size_t n = 0; n < num_splines-(num_splines%4); n+=4)
         {
           vals[n+0] += pre00 * (c[0] * coefs[n] + c[1] * coefs[n + zs] + c[2] * coefs[n + 2 * zs] + c[3] * coefs[n + 3 * zs]);
@@ -135,7 +137,10 @@ evaluate_vgl(const typename bspline_traits<T, 3>::SplineType* restrict spline_m,
       ASSUME_ALIGNED(coefs3zs);
 
 #pragma noprefetch
-#pragma omp simd
+#pragma omp parallel 
+
+{
+    #pragma omp for simd
       for (int n = 0; n < num_splines; n++)
       {
         const T coefsv    = coefs[n];
@@ -164,7 +169,7 @@ evaluate_vgl(const typename bspline_traits<T, 3>::SplineType* restrict spline_m,
   const T dyInv2 = dyInv * dyInv;
   const T dzInv2 = dzInv * dzInv;
 
-#pragma omp simd
+#pragma omp for simd
   for (int n = 0; n < num_splines; n++)
   {
     gx[n] *= dxInv;
@@ -174,6 +179,7 @@ evaluate_vgl(const typename bspline_traits<T, 3>::SplineType* restrict spline_m,
   }
 }
 
+}
 template<typename T>
 inline void
 evaluate_vgh(const typename bspline_traits<T, 3>::SplineType* restrict spline_m, T x, T y, T z,
@@ -243,7 +249,8 @@ evaluate_vgh(const typename bspline_traits<T, 3>::SplineType* restrict spline_m,
       const T pre02 = a[i] * d2b[j];
 
       const int iSplitPoint = num_splines;
-#pragma omp simd
+
+#pragma omp parallel for simd
       for (int n = 0; n < iSplitPoint; n++)
       {
         T coefsv    = coefs[n];
@@ -278,7 +285,7 @@ evaluate_vgh(const typename bspline_traits<T, 3>::SplineType* restrict spline_m,
   const T dxz   = dxInv * dzInv;
   const T dyz   = dyInv * dzInv;
 
-#pragma omp simd
+#pragma omp parallel for simd
   for (int n = 0; n < num_splines; n++)
   {
     gx[n] *= dxInv;
