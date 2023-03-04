@@ -32,6 +32,14 @@ TEST_CASE("many_transfer.Register", "[CUDA]")
   cudaStream_t stream;
   cudaCheck(cudaStreamCreate(&stream));
 
+  { //warmup
+    for (int i = 0; i < N; i++)
+      cudaCheck(
+          cudaMemcpyAsync(segments_dev[i], segments[i], SEG_SIZE * sizeof(double), cudaMemcpyHostToDevice, stream));
+    cudaCheck(cudaStreamSynchronize(stream));
+  }
+
+  cudaCheck(cudaStreamSynchronize(stream));
   {
     Timer local("many_transfer.Register");
     for (int i = 0; i < N; i++)

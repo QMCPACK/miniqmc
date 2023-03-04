@@ -35,6 +35,15 @@ TEST_CASE("many_transfer.omp", "[CUDA]")
     cudaStream_t stream;
     cudaCheck(cudaStreamCreate(&stream));
 
+    { //warmup
+#pragma omp for nowait
+      for (int i = 0; i < N; i++)
+        cudaCheck(
+            cudaMemcpyAsync(segments_dev[i], segments[i], SEG_SIZE * sizeof(double), cudaMemcpyHostToDevice, stream));
+      cudaCheck(cudaStreamSynchronize(stream));
+      #pragma omp barrier
+    }
+
     {
       Timer local("many_transfer.omp thread " + std::to_string(omp_get_thread_num()));
 #pragma omp for nowait
