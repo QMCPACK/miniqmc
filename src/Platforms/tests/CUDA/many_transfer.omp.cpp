@@ -8,6 +8,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <timer.h>
+#include <omp.h>
 
 #define N 32768
 #define SEG_SIZE 1024
@@ -35,7 +36,7 @@ TEST_CASE("many_transfer.omp", "[CUDA]")
     cudaCheck(cudaStreamCreate(&stream));
 
     {
-      Timer local("many_transfer.omp");
+      Timer local("many_transfer.omp thread " + std::to_string(omp_get_thread_num()));
 #pragma omp for nowait
       for (int i = 0; i < N; i++)
         cudaCheck(
