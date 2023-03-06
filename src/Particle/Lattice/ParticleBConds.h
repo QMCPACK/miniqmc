@@ -82,6 +82,8 @@ struct DTD_BConds
   {
     const int n = dr.size();
     const T cone(1);
+
+    #pragma omp simd
     for (int i = 0; i < n; ++i)
     {
       r[i]    = std::sqrt(apply_bc(dr[i]));

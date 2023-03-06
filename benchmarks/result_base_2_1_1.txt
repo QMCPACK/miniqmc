@@ -1,0 +1,66 @@
+miniqmc git branch: develop
+miniqmc git commit: 5ed650c8c390884d6a84f002be2bbfa103b7df3e
+
+Number of orbitals/splines = 384
+Tile size = 384
+Number of tiles = 1
+Number of electrons = 768
+Rmax = 1.7
+AcceptanceRatio = 0.5
+Iterations = 5
+OpenMP threads = 4
+Number of walkers per rank = 4
+
+SPO coefficients size = 196608000 bytes (187.5 MB)
+delayed update rank = 32
+Using SoA distance table, Jastrow + einspline, 
+and determinant update.
+================================== 
+Stack timer profile in seconds
+Timer                             Inclusive_time  Exclusive_time  Calls       Time_per_call
+Setup                                0.0572     0.0572              1       0.057204007
+Total                                2.3655     0.3644              1       2.365510626
+  Diffusion                          0.9438     0.0031              5       0.188756147
+    Accept move                      0.0015     0.0015           1913       0.000000782
+    Complete Updates                 0.0296     0.0000              5       0.005926068
+      Determinant::update            0.0296     0.0296             10       0.002961351
+    Current Gradient                 0.0485     0.0014           3840       0.000012624
+      Determinant::ratio             0.0464     0.0464           3840       0.000012076
+      OneBodyJastrow                 0.0004     0.0004           3840       0.000000102
+      TwoBodyJastrow                 0.0003     0.0003           3840       0.000000082
+    Kinetic Energy                   0.0090     0.0090              5       0.001805381
+      OneBodyJastrow                 0.0000     0.0000              5       0.000009225
+      TwoBodyJastrow                 0.0000     0.0000              5       0.000005901
+    Make move                        0.0826     0.0826           3840       0.000021510
+    New Gradient                     0.2125     0.0021           3840       0.000055339
+      Determinant::ratio             0.0024     0.0024           3840       0.000000613
+      Determinant::spovgl            0.1814     0.0048           3840       0.000047232
+        Single-Particle Orbitals     0.1766     0.1766           3840       0.000045983
+      OneBodyJastrow                 0.0027     0.0027           3840       0.000000692
+      TwoBodyJastrow                 0.0240     0.0240           3840       0.000006247
+    Set active                       0.0836     0.0836           3840       0.000021775
+    Update                           0.4734     0.0010           1913       0.000247448
+      Determinant::update            0.4559     0.4559           1913       0.000238301
+      OneBodyJastrow                 0.0002     0.0002           1913       0.000000106
+      TwoBodyJastrow                 0.0163     0.0163           1913       0.000008520
+  Initialization                     0.1507     0.0716              1       0.150714155
+    Determinant::inverse             0.0249     0.0249              2       0.012473029
+    Determinant::spovgl              0.0504     0.0019              2       0.025175876
+      Single-Particle Orbitals       0.0484     0.0484            768       0.000063085
+    OneBodyJastrow                   0.0005     0.0005              1       0.000466003
+    TwoBodyJastrow                   0.0033     0.0033              1       0.003317725
+  Pseudopotential                    0.9067     0.0046              5       0.181331985
+    Make move                        0.3530     0.3530          15792       0.000022355
+    Value                            0.5491     0.0062          15792       0.000034768
+      Determinant::ratio             0.0051     0.0051          15792       0.000000323
+      Determinant::spoval            0.4879     0.0040          15792       0.000030896
+        Single-Particle Orbitals     0.4839     0.4839          15792       0.000030640
+      OneBodyJastrow                 0.0052     0.0052          15792       0.000000331
+      TwoBodyJastrow                 0.0446     0.0446          15792       0.000002825
+
+========== Throughput ============ 
+
+Total throughput ( N_walkers * N_elec^3 / Total time ) = 7.65982e+08
+Diffusion throughput ( N_walkers * N_elec^3 / Diffusion time ) = 1.91987e+09
+Pseudopotential throughput ( N_walkers * N_elec^2 / Pseudopotential time ) = 2.60218e+06
+
