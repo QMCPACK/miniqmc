@@ -14,9 +14,10 @@ if(QMC_OMP)
       message(WARNING "GCC OpenMP offload feature requires 12.0 or higher.")
     endif()
 
-    if (QMC_CUDA2HIP)
+    if(QMC_ENABLE_ROCM)
       set(OFFLOAD_TARGET_DEFAULT "amdgcn-amdhsa")
-    else()
+    endif()
+    if(QMC_ENABLE_CUDA)
       set(OFFLOAD_TARGET_DEFAULT "nvptx-none")
     endif()
     set(OFFLOAD_TARGET
@@ -24,18 +25,16 @@ if(QMC_OMP)
         CACHE STRING "Offload target architecture")
     set(OPENMP_OFFLOAD_COMPILE_OPTIONS "-foffload=${OFFLOAD_TARGET} -foffload-options=\"-lm -latomic\"")
 
-    if(NOT DEFINED OFFLOAD_ARCH AND OFFLOAD_TARGET MATCHES "amdgcn-amdhsa")
-      set(OFFLOAD_ARCH gfx906)
-    endif()
-
-    if(NOT DEFINED OFFLOAD_ARCH AND OFFLOAD_TARGET MATCHES "nvptx-none" AND DEFINED CMAKE_CUDA_ARCHITECTURES)
-      list(LENGTH CMAKE_CUDA_ARCHITECTURES NUMBER_CUDA_ARCHITECTURES)
-      if(NUMBER_CUDA_ARCHITECTURES EQUAL "1")
-        set(OFFLOAD_ARCH sm_${CMAKE_CUDA_ARCHITECTURES})
+    if(NOT DEFINED OFFLOAD_ARCH AND DEFINED QMC_GPU_ARCHS)
+      list(LENGTH QMC_GPU_ARCHS QMC_GPU_ARCH_COUNT)
+      if(QMC_GPU_ARCH_COUNT EQUAL "1")
+        set(OFFLOAD_ARCH ${QMC_GPU_ARCHS})
       else()
-        message(FATAL_ERROR "GCC does not yet support offload to multiple architectures! "
-                            "Deriving OFFLOAD_ARCH from CMAKE_CUDA_ARCHITECTURES failed. "
-                            "Please keep only one entry in CMAKE_CUDA_ARCHITECTURES or set OFFLOAD_ARCH.")
+        message(
+          FATAL_ERROR
+            "GCC does not yet support offload to multiple architectures! "
+            "Deriving OFFLOAD_ARCH from QMC_GPU_ARCHS failed. "
+            "Please keep only one entry in QMC_GPU_ARCHS or set OFFLOAD_ARCH.")
       endif()
     endif()
 
@@ -47,7 +46,10 @@ if(QMC_OMP)
         set(OPENMP_OFFLOAD_COMPILE_OPTIONS
             "${OPENMP_OFFLOAD_COMPILE_OPTIONS} -foffload-options=${OFFLOAD_TARGET}=\"-misa=${OFFLOAD_ARCH}\"")
       else()
-        message(WARNING "We don't know how to handle OFFLOAD_ARCH=${OFFLOAD_ARCH} for OFFLOAD_TARGET=${OFFLOAD_TARGET}. Got ignored.")
+        message(
+          WARNING
+            "We don't know how to handle OFFLOAD_ARCH=${OFFLOAD_ARCH} for OFFLOAD_TARGET=${OFFLOAD_TARGET}. Got ignored."
+        )
       endif()
     endif()
   else()

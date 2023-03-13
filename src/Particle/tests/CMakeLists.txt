@@ -11,7 +11,7 @@
 
 set(SRC_DIR particle)
 set(UTEST_EXE test_${SRC_DIR})
-set(UTEST_NAME deterministic-unit_${UTEST_EXE})
+set(UTEST_NAME unit_${UTEST_EXE})
 
 add_executable(
   ${UTEST_EXE}
@@ -25,7 +25,7 @@ endif()
 add_unit_test(${UTEST_NAME} 1 1 $<TARGET_FILE:${UTEST_EXE}>)
 
 set(UTEST_EXE test_distance_table)
-set(UTEST_NAME deterministic-unit_${UTEST_EXE})
+set(UTEST_NAME unit_${UTEST_EXE})
 
 add_executable(
   ${UTEST_EXE}

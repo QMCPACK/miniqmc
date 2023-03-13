@@ -155,6 +155,9 @@ option(QMC_ENABLE_SYCL "Enable SYCL offload" OFF)
 # So the dependency must be explicitly specified with USE_OBJECT_TARGET.
 cmake_dependent_option(USE_OBJECT_TARGET "Use CMake object library target" OFF "ENABLE_OFFLOAD" OFF)
 
+include(DetermineDeviceArchitectures)
+message(STATUS "GPU device architectures: ${QMC_GPU_ARCHS}")
+
 ######################################################################
 # Sanitizer options
 ######################################################################
