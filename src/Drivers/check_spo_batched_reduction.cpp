@@ -82,7 +82,7 @@ int main(int argc, char** argv)
   Communicate comm(argc, argv);
 
   // use the global generator
-  int seed    = -1;
+  int seed = -1;
 
   int na      = 1;
   int nb      = 1;
@@ -439,5 +439,5 @@ int main(int argc, char** argv)
             << "evaluateVGH operates " << size_t(767) * nels / 2 * nels * nsteps * nmovers << " FLOP." << std::endl
             << "evaluateVGH Arithmetic Intensity " << 767.0 / (74 * sizeof(OHMMS_PRECISION)) << std::endl
             << std::endl;
-  return 0;
+  return nfail;
 }

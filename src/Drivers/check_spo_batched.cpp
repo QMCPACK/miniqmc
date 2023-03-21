@@ -390,6 +390,15 @@ int main(int argc, char** argv)
     dNumVGHCalls += nels * nsteps;
   }
 
+  app_log() << std::endl
+            << "evaluateVGH loads " << size_t(64) * sizeof(OHMMS_PRECISION) * nels / 2 * nels * nsteps * nmovers
+            << " bytes of coefficients from memory." << std::endl
+            << "evaluateVGH stores " << size_t(10) * sizeof(OHMMS_PRECISION) * nels / 2 * nels * nsteps * nmovers
+            << " bytes of result values to memory." << std::endl
+            << "evaluateVGH operates " << size_t(767) * nels / 2 * nels * nsteps * nmovers << " FLOP." << std::endl
+            << "evaluateVGH Arithmetic Intensity " << 767.0 / (74 * sizeof(OHMMS_PRECISION)) << std::endl
+            << std::endl;
+
   if (!speedy)
   {
     //evalV_v_err /= nspheremoves;
@@ -427,15 +436,8 @@ int main(int argc, char** argv)
 
     if (nfail == 0)
       app_log() << "All checks passed for spo" << std::endl;
+    return nfail;
   }
-
-  app_log() << std::endl
-            << "evaluateVGH loads " << size_t(64) * sizeof(OHMMS_PRECISION) * nels / 2 * nels * nsteps * nmovers
-            << " bytes of coefficients from memory." << std::endl
-            << "evaluateVGH stores " << size_t(10) * sizeof(OHMMS_PRECISION) * nels / 2 * nels * nsteps * nmovers
-            << " bytes of result values to memory." << std::endl
-            << "evaluateVGH operates " << size_t(767) * nels / 2 * nels * nsteps * nmovers << " FLOP." << std::endl
-            << "evaluateVGH Arithmetic Intensity " << 767.0 / (74 * sizeof(OHMMS_PRECISION)) << std::endl
-            << std::endl;
-  return 0;
+  else
+    return 0;
 }
