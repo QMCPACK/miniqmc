@@ -21,12 +21,15 @@ TEST_CASE("many_transfer.Register", "[CUDA]")
 
   std::vector<double*> segments(N, nullptr);
   std::vector<double*> segments_dev(N, nullptr);
-  for (int i = 0; i < N; i++)
   {
-    //cudaCheck(cudaMallocHost(&segments[i], SEG_SIZE * sizeof(double)));
-    segments[i] = (double*)malloc(SEG_SIZE * sizeof(double));
-    cudaCheck(cudaHostRegister(segments[i], SEG_SIZE * sizeof(double), cudaHostRegisterDefault));
-    cudaCheck(cudaMalloc(&segments_dev[i], SEG_SIZE * sizeof(double)));
+    Timer local("many_transfer.Register HostRegistering");
+    for (int i = 0; i < N; i++)
+    {
+      //cudaCheck(cudaMallocHost(&segments[i], SEG_SIZE * sizeof(double)));
+      segments[i] = (double*)malloc(SEG_SIZE * sizeof(double));
+      cudaCheck(cudaHostRegister(segments[i], SEG_SIZE * sizeof(double), cudaHostRegisterDefault));
+      cudaCheck(cudaMalloc(&segments_dev[i], SEG_SIZE * sizeof(double)));
+    }
   }
 
   cudaStream_t stream;
@@ -41,7 +44,7 @@ TEST_CASE("many_transfer.Register", "[CUDA]")
 
   cudaCheck(cudaStreamSynchronize(stream));
   {
-    Timer local("many_transfer.Register");
+    Timer local("many_transfer.Register enqueuing transfers");
     for (int i = 0; i < N; i++)
       cudaCheck(
           cudaMemcpyAsync(segments_dev[i], segments[i], SEG_SIZE * sizeof(double), cudaMemcpyHostToDevice, stream));

@@ -22,12 +22,15 @@ TEST_CASE("many_transfer.omp", "[CUDA]")
 
   std::vector<double*> segments(N, nullptr);
   std::vector<double*> segments_dev(N, nullptr);
-  for (int i = 0; i < N; i++)
   {
-    //cudaCheck(cudaMallocHost(&segments[i], SEG_SIZE * sizeof(double)));
-    segments[i] = (double*)malloc(SEG_SIZE * sizeof(double));
-    cudaCheck(cudaHostRegister(segments[i], SEG_SIZE * sizeof(double), cudaHostRegisterDefault));
-    cudaCheck(cudaMalloc(&segments_dev[i], SEG_SIZE * sizeof(double)));
+    Timer local("many_transfer.omp HostRegistering");
+    for (int i = 0; i < N; i++)
+    {
+      //cudaCheck(cudaMallocHost(&segments[i], SEG_SIZE * sizeof(double)));
+      segments[i] = (double*)malloc(SEG_SIZE * sizeof(double));
+      cudaCheck(cudaHostRegister(segments[i], SEG_SIZE * sizeof(double), cudaHostRegisterDefault));
+      cudaCheck(cudaMalloc(&segments_dev[i], SEG_SIZE * sizeof(double)));
+    }
   }
 
 #pragma omp parallel
@@ -41,7 +44,7 @@ TEST_CASE("many_transfer.omp", "[CUDA]")
         cudaCheck(
             cudaMemcpyAsync(segments_dev[i], segments[i], SEG_SIZE * sizeof(double), cudaMemcpyHostToDevice, stream));
       cudaCheck(cudaStreamSynchronize(stream));
-      #pragma omp barrier
+#pragma omp barrier
     }
 
     {

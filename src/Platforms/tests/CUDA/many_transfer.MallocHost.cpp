@@ -21,10 +21,13 @@ TEST_CASE("many_transfer.MallocHost", "[CUDA]")
 
   std::vector<double*> segments(N, nullptr);
   std::vector<double*> segments_dev(N, nullptr);
-  for (int i = 0; i < N; i++)
   {
-    cudaCheck(cudaMallocHost(&segments[i], SEG_SIZE * sizeof(double)));
-    cudaCheck(cudaMalloc(&segments_dev[i], SEG_SIZE * sizeof(double)));
+    Timer local("many_transfer.MallocHost MallocHost");
+    for (int i = 0; i < N; i++)
+    {
+      cudaCheck(cudaMallocHost(&segments[i], SEG_SIZE * sizeof(double)));
+      cudaCheck(cudaMalloc(&segments_dev[i], SEG_SIZE * sizeof(double)));
+    }
   }
 
   cudaStream_t stream;
