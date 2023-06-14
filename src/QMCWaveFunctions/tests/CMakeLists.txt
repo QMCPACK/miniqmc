@@ -15,5 +15,8 @@ set(UTEST_NAME unit_test_${SRC_DIR})
 
 add_executable(${UTEST_EXE} test_dirac_det.cpp test_dirac_matrix.cpp)
 target_link_libraries(${UTEST_EXE} catch_main qmcwfs qmcparticle qmcutil ${QMC_UTIL_LIBS})
+if(USE_OBJECT_TARGET)
+  target_link_libraries(${UTEST_EXE} qmcparticle_omptarget)
+endif()
 
 add_unit_test(${UTEST_NAME} 1 1 "${UTEST_EXE}")
