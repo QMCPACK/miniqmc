@@ -68,7 +68,13 @@ einspline_spo_omp<T>::~einspline_spo_omp()
 {
   if (Owner)
     for (int i = 0; i < nBlocks; ++i)
+    {
+      spline_type* tile_ptr        = einsplines[i];
+      T* coefs_ptr                 = einsplines[i]->coefs;
+#pragma omp target enter data map(to : coefs_ptr[0 : einsplines[i]->coefs_size])
+#pragma omp target enter data map(to : tile_ptr[0 : 1])
       myAllocator.destroy(einsplines[i]);
+    }
 }
 
 /// resize the containers
