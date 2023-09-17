@@ -24,12 +24,12 @@ TEST_CASE("task depend taskwait", "[openmp]")
     int sum = 0;
     for (int i = 0; i < 100000; i++)
       sum++;
-    a = 1;
+    a = sum;
   }
 
   #pragma omp task depend(in: a) shared(a)
   {
-    REQUIRE(a == 1);
+    REQUIRE(a == 100000);
   }
 
   #pragma omp taskwait
