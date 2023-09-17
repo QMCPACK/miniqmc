@@ -418,6 +418,7 @@ if(QMC_ENABLE_ROCM)
   find_package(hip CONFIG REQUIRED)
   find_package(hipblas CONFIG REQUIRED)
   find_package(rocsolver CONFIG REQUIRED)
+  option(QMC_DISABLE_HIP_HOST_REGISTER "Disable hipHostRegister for pinning host memory" ON)
 endif(QMC_ENABLE_ROCM)
 
 #-------------------------------------------------------------------
